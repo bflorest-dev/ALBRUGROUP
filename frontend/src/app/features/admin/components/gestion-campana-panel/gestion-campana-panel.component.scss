@@ -40,6 +40,14 @@
   min-width: min(18rem, 100%);
 }
 
+.gxc__controls--external {
+  justify-content: flex-end;
+}
+
+:host ::ng-deep .gxc__controls--external > .metrics-controls {
+  display: contents;
+}
+
 .gxc__control-label {
   font-size: 0.8rem;
   font-weight: 600;
@@ -71,17 +79,11 @@
   width: 100%;
 }
 
-// Campañas: compacto y pegado a la derecha, debajo de los controles.
 .gxc__diagram {
   display: grid;
   gap: 1rem;
   min-height: var(--gxc-diagram-min-height);
   min-width: 0;
-}
-
-.gxc__campanas {
-  display: none;
-  justify-content: flex-end;
 }
 
 ::ng-deep .gxc__multiselect {

@@ -18,6 +18,8 @@
     ></button>
   </app-section-header>
 
+  <ng-content />
+
   @if (facade.errorMessage()) {
     <p-message severity="error" [text]="facade.errorMessage()!" />
   }

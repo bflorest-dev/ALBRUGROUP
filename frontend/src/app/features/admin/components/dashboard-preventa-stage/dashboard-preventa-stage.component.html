@@ -5,64 +5,11 @@
     description="Métricas del día por equipo de la etapa de preventa."
   />
 
-  <p-card styleClass="metrics-filter-card">
+  <p-card styleClass="metrics-view-card">
     <app-section-header
-      title="Filtros de preventa"
-      description="Contexto usado por los bloques de métricas de preventa."
+      title="Vista de preventa"
+      description="Elige el bloque de métricas que quieres revisar."
     />
-
-    <div class="metrics-controls">
-      @if (showEquipoSelector()) {
-        <div class="metrics-control">
-          <span class="metrics-control-label">Equipo</span>
-          <p-selectButton
-            [options]="equipoOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [allowEmpty]="false"
-            [ngModel]="selectedEquipoId()"
-            [ngModelOptions]="{ standalone: true }"
-            (onChange)="onEquipoChange($event.value)"
-          />
-        </div>
-      }
-
-      <div class="metrics-control">
-        <span class="metrics-control-label">Modo</span>
-        <p-selectButton
-          [options]="modoOptions"
-          optionLabel="label"
-          optionValue="value"
-          [allowEmpty]="false"
-          [ngModel]="modo()"
-          [ngModelOptions]="{ standalone: true }"
-          (onChange)="onModoChange($event.value)"
-        />
-      </div>
-
-      <div class="metrics-control">
-        <span class="metrics-control-label">Tipificación</span>
-        <p-selectButton
-          [options]="campoOptions"
-          optionLabel="label"
-          optionValue="value"
-          [allowEmpty]="false"
-          [ngModel]="campo()"
-          [ngModelOptions]="{ standalone: true }"
-          (onChange)="onCampoChange($event.value)"
-        />
-      </div>
-
-      <div class="metrics-control">
-        <span class="metrics-control-label">Período</span>
-        <app-period-selector
-          [periodo]="periodo()"
-          [dia]="dia()"
-          (periodoChange)="onPeriodoChange($event)"
-          (diaChange)="onDiaChange($event)"
-        />
-      </div>
-    </div>
 
     <div class="metrics-view-toggle">
       <p-selectButton
@@ -90,7 +37,60 @@
           [dia]="dia()"
           [modo]="modo()"
           [campo]="campo()"
-        />
+        >
+          <div class="metrics-controls">
+            @if (showEquipoSelector()) {
+              <div class="metrics-control">
+                <span class="metrics-control-label">Equipo</span>
+                <p-selectButton
+                  [options]="equipoOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [ngModel]="selectedEquipoId()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (onChange)="onEquipoChange($event.value)"
+                />
+              </div>
+            }
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Modo</span>
+              <p-selectButton
+                [options]="modoOptions"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false"
+                [ngModel]="modo()"
+                [ngModelOptions]="{ standalone: true }"
+                (onChange)="onModoChange($event.value)"
+              />
+            </div>
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Tipificación</span>
+              <p-selectButton
+                [options]="campoOptions"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false"
+                [ngModel]="campo()"
+                [ngModelOptions]="{ standalone: true }"
+                (onChange)="onCampoChange($event.value)"
+              />
+            </div>
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Período</span>
+              <app-period-selector
+                [periodo]="periodo()"
+                [dia]="dia()"
+                (periodoChange)="onPeriodoChange($event)"
+                (diaChange)="onDiaChange($event)"
+              />
+            </div>
+          </div>
+        </app-advisor-management-summary-panel>
       </p-card>
     }
     @case ('campanas') {
@@ -103,7 +103,60 @@
           [dia]="dia()"
           [modo]="modo()"
           [campo]="campo()"
-        />
+        >
+          <div class="metrics-controls">
+            @if (showEquipoSelector()) {
+              <div class="metrics-control">
+                <span class="metrics-control-label">Equipo</span>
+                <p-selectButton
+                  [options]="equipoOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [ngModel]="selectedEquipoId()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (onChange)="onEquipoChange($event.value)"
+                />
+              </div>
+            }
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Modo</span>
+              <p-selectButton
+                [options]="modoOptions"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false"
+                [ngModel]="modo()"
+                [ngModelOptions]="{ standalone: true }"
+                (onChange)="onModoChange($event.value)"
+              />
+            </div>
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Tipificación</span>
+              <p-selectButton
+                [options]="campoOptions"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false"
+                [ngModel]="campo()"
+                [ngModelOptions]="{ standalone: true }"
+                (onChange)="onCampoChange($event.value)"
+              />
+            </div>
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Período</span>
+              <app-period-selector
+                [periodo]="periodo()"
+                [dia]="dia()"
+                (periodoChange)="onPeriodoChange($event)"
+                (diaChange)="onDiaChange($event)"
+              />
+            </div>
+          </div>
+        </app-gestion-campana-panel>
       </p-card>
     }
     @default {
@@ -126,6 +179,59 @@
             aria-label="Actualizar"
           ></button>
         </app-section-header>
+
+        <div class="metrics-controls">
+          @if (showEquipoSelector()) {
+            <div class="metrics-control">
+              <span class="metrics-control-label">Equipo</span>
+              <p-selectButton
+                [options]="equipoOptions()"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false"
+                [ngModel]="selectedEquipoId()"
+                [ngModelOptions]="{ standalone: true }"
+                (onChange)="onEquipoChange($event.value)"
+              />
+            </div>
+          }
+
+          <div class="metrics-control">
+            <span class="metrics-control-label">Modo</span>
+            <p-selectButton
+              [options]="modoOptions"
+              optionLabel="label"
+              optionValue="value"
+              [allowEmpty]="false"
+              [ngModel]="modo()"
+              [ngModelOptions]="{ standalone: true }"
+              (onChange)="onModoChange($event.value)"
+            />
+          </div>
+
+          <div class="metrics-control">
+            <span class="metrics-control-label">Tipificación</span>
+            <p-selectButton
+              [options]="campoOptions"
+              optionLabel="label"
+              optionValue="value"
+              [allowEmpty]="false"
+              [ngModel]="campo()"
+              [ngModelOptions]="{ standalone: true }"
+              (onChange)="onCampoChange($event.value)"
+            />
+          </div>
+
+          <div class="metrics-control">
+            <span class="metrics-control-label">Período</span>
+            <app-period-selector
+              [periodo]="periodo()"
+              [dia]="dia()"
+              (periodoChange)="onPeriodoChange($event)"
+              (diaChange)="onDiaChange($event)"
+            />
+          </div>
+        </div>
 
         @if (errorMessage()) {
           <p-message severity="error" [text]="errorMessage()" styleClass="metrics-message" />
