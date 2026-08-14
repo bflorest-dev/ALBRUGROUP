@@ -116,7 +116,7 @@ class ResumenMensualServiceTest {
         ResumenAsistenciaMensual snapshot = ResumenAsistenciaMensual.builder()
                 .idEmpleado(EMP).anio(ANIO).mes(JULIO)
                 .diasLaborables(23).diasPresente(20).diasTardanza(2)
-                .diasTardanzaCompensada(1).diasTardanzaJustificada(0).diasFalta(1)
+                .diasTardanzaCompensable(1).diasTardanzaJustificada(0).diasFalta(1)
                 .minutosObjetivo(11040).minutosTrabajados(10800).balanceFinal(-240)
                 .minutosExtra(60).minutosCompensados(0).cantidadTardanzas(2)
                 .build();
@@ -142,7 +142,7 @@ class ResumenMensualServiceTest {
         assertThat(r.getDiasLaborables()).isEqualTo(31);
         assertThat(r.getDiasPresente()).isEqualTo(2);          // Jul 1, Jul 7
         assertThat(r.getDiasTardanza()).isEqualTo(3);          // cruda + compensada + justificada (umbrella)
-        assertThat(r.getDiasTardanzaCompensada()).isEqualTo(1); // Jul 3
+        assertThat(r.getDiasTardanzaCompensable()).isEqualTo(1); // Jul 3
         assertThat(r.getDiasTardanzaJustificada()).isEqualTo(1);// Jul 6
         assertThat(r.getDiasFalta()).isEqualTo(26);            // 31 - 5 con marca
         assertThat(r.getMinutosObjetivo()).isEqualTo(31 * 480);
@@ -256,7 +256,7 @@ class ResumenMensualServiceTest {
 
         when(ajusteRepository.findByIdEmpleadoAndFechaOperativaBetweenAndEstado(eq(EMP), any(), any(), eq(EstadoAjusteJornada.ACTIVO)))
                 .thenReturn(List.of(
-                        ajuste(LocalDate.of(ANIO, JULIO, 3), RazonAjuste.CORRIMIENTO_COMPENSADA),
+                        ajuste(LocalDate.of(ANIO, JULIO, 3), RazonAjuste.CORRIMIENTO_COMPENSABLE),
                         ajuste(LocalDate.of(ANIO, JULIO, 6), RazonAjuste.CORRIMIENTO_JUSTIFICADA)));
     }
 

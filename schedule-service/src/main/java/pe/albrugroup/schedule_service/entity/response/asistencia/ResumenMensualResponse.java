@@ -29,7 +29,7 @@ public class ResumenMensualResponse {
     private Integer diasLaborables;
     private Integer diasPresente;
     private Integer diasTardanza;
-    private Integer diasTardanzaCompensada;
+    private Integer diasTardanzaCompensable;
     private Integer diasTardanzaJustificada;
     private Integer diasFalta;
 

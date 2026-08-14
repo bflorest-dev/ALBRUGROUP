@@ -155,13 +155,13 @@ public class AjusteJornadaService {
         boolean admin = roles.contains("ADMINISTRADOR");
         switch (razon) {
             case AMPLIACION_OPERATIVA -> { /* cualquiera con EXTEND_HORARIO */ }
-            case CORRIMIENTO_COMPENSADA -> {
+            case CORRIMIENTO_COMPENSABLE -> {
                 if (admin) {
                     return;
                 }
                 boolean supervisor = roles.contains("SUPERVISOR_VENTAS") || roles.contains("SUPERVISOR_GTR");
                 if (!supervisor) {
-                    throw new BadRequestException("Solo un supervisor o el administrador pueden aplicar una tardanza compensada");
+                    throw new BadRequestException("Solo un supervisor o el administrador pueden aplicar una tardanza compensable");
                 }
                 if (desplazamientoMin > 60) {
                     throw new BadRequestException("Un supervisor solo puede desplazar el horario hasta 1 hora; para más, requiere al administrador");
@@ -173,7 +173,11 @@ public class AjusteJornadaService {
                 }
             }
             case COMPENSACION -> {
-                // Cualquiera con EXTEND_HORARIO; el guard real es el deficit (ver validarCompensacion).
+                // Solo ADMIN o RRHH programan horas de compensacion; ademas el guard del deficit
+                // (validarCompensacion) exige que el empleado deba horas ese mes.
+                if (!admin && !roles.contains("RRHH")) {
+                    throw new BadRequestException("Solo RRHH o el administrador pueden programar horas de compensación");
+                }
             }
         }
     }

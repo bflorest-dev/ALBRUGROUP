@@ -101,7 +101,7 @@ public class ResumenMensualService {
                 .collect(Collectors.groupingBy(AjusteJornada::getFechaOperativa));
         int tolerancia = parametroResolver.resolve(List.of()).toleranciaTardanzaMin();
 
-        int diasLaborables = 0, diasPresente = 0, diasTardanza = 0, diasCompensada = 0, diasJustificada = 0, diasFalta = 0;
+        int diasLaborables = 0, diasPresente = 0, diasTardanza = 0, diasCompensable = 0, diasJustificada = 0, diasFalta = 0;
         int minutosObjetivo = 0, minutosTrabajados = 0, minutosExtra = 0, sumaBalance = 0, sumaCompensados = 0;
 
         for (LocalDate fecha = desde; !fecha.isAfter(hasta); fecha = fecha.plusDays(1)) {
@@ -129,7 +129,7 @@ public class ResumenMensualService {
             switch (clasificar(asistencia, ajustesPorFecha.get(fecha), tolerancia)) {
                 case PRESENTE -> diasPresente++;
                 case TARDANZA -> diasTardanza++;
-                case TARDANZA_COMPENSADA -> { diasTardanza++; diasCompensada++; }
+                case TARDANZA_COMPENSABLE -> { diasTardanza++; diasCompensable++; }
                 case TARDANZA_JUSTIFICADA -> { diasTardanza++; diasJustificada++; }
                 case FALTA, NO_LABORABLE -> { /* no alcanzable aqui */ }
             }
@@ -150,7 +150,7 @@ public class ResumenMensualService {
                 .diasLaborables(diasLaborables)
                 .diasPresente(diasPresente)
                 .diasTardanza(diasTardanza)
-                .diasTardanzaCompensada(diasCompensada)
+                .diasTardanzaCompensable(diasCompensable)
                 .diasTardanzaJustificada(diasJustificada)
                 .diasFalta(diasFalta)
                 .minutosObjetivo(minutosObjetivo)
@@ -171,8 +171,8 @@ public class ResumenMensualService {
         if (tieneRazon(ajustesDelDia, RazonAjuste.CORRIMIENTO_JUSTIFICADA)) {
             return EstadoDia.TARDANZA_JUSTIFICADA;
         }
-        if (tieneRazon(ajustesDelDia, RazonAjuste.CORRIMIENTO_COMPENSADA)) {
-            return EstadoDia.TARDANZA_COMPENSADA;
+        if (tieneRazon(ajustesDelDia, RazonAjuste.CORRIMIENTO_COMPENSABLE)) {
+            return EstadoDia.TARDANZA_COMPENSABLE;
         }
         return esTardanza(asistencia, tolerancia) ? EstadoDia.TARDANZA : EstadoDia.PRESENTE;
     }
@@ -238,7 +238,7 @@ public class ResumenMensualService {
                 .diasLaborables(r.getDiasLaborables())
                 .diasPresente(r.getDiasPresente())
                 .diasTardanza(r.getDiasTardanza())
-                .diasTardanzaCompensada(r.getDiasTardanzaCompensada())
+                .diasTardanzaCompensable(r.getDiasTardanzaCompensable())
                 .diasTardanzaJustificada(r.getDiasTardanzaJustificada())
                 .diasFalta(r.getDiasFalta())
                 .minutosObjetivo(r.getMinutosObjetivo())

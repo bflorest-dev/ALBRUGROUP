@@ -7,8 +7,8 @@ package pe.albrugroup.schedule_service.entity.enums;
 public enum RazonAjuste {
     /** Tramo aditivo fuera del base (entrar antes / periodo extra) -> horas extra, no ensucia status. */
     AMPLIACION_OPERATIVA,
-    /** Mueve la ventana base por tardanza no notificada -> status TARDANZA COMPENSADA. */
-    CORRIMIENTO_COMPENSADA,
+    /** Mueve la ventana base por tardanza no notificada -> status TARDANZA COMPENSABLE (horas por compensar). */
+    CORRIMIENTO_COMPENSABLE,
     /** Mueve la ventana base por tardanza notificada a RRHH -> status TARDANZA JUSTIFICADA. */
     CORRIMIENTO_JUSTIFICADA,
     /** Tramo aditivo que neutraliza deficit de horas (tope en 0). */

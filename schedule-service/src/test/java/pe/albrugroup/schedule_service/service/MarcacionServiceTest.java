@@ -476,6 +476,23 @@ class MarcacionServiceTest {
         assertThat(a.getMinutosBalance()).isEqualTo(-5);       // 3 tarde + 2 antes, solo contra el base
     }
 
+    // ===================== Corrimiento por tardanza (REEMPLAZO_BASE) =====================
+
+    @Test
+    void corrimientoParcialMantieneObjetivoBaseYDejaDeficit() {
+        // Base 08:00-17:00 (neta 480). Corrimiento COMPENSABLE que mueve SOLO el ingreso a 09:00 (misma
+        // salida 17:00): la ventana se acorta pero el objetivo del dia sigue siendo la neta base (480),
+        // NO la ventana corrida (que daria 420). Asi la hora perdida queda como deficit por compensar.
+        stubAjustes(corrimiento(50L, LocalTime.of(9, 0), LocalTime.of(17, 0)));
+        reloj(9, 0);
+        service.registrarIngreso();
+
+        Asistencia a = almacen.get();
+        assertThat(a.getOrigenTramoActual()).isEqualTo(OrigenTramo.REEMPLAZO_BASE);
+        assertThat(a.getEntradaProgramada()).isEqualTo(LocalTime.of(9, 0)); // la ventana si se corrio
+        assertThat(a.getMinutosObjetivoDia()).isEqualTo(480);               // pero el objetivo es la neta base
+    }
+
     // ===================== Dia no laborable =====================
 
     @Test
@@ -523,6 +540,15 @@ class MarcacionServiceTest {
                 .inicio(LocalDateTime.of(DIA, inicio)).fin(LocalDateTime.of(DIA, fin))
                 .estado(EstadoAjusteJornada.ACTIVO).origen(OrigenAjusteJornada.TRAMO_ADICIONAL)
                 .razon(RazonAjuste.AMPLIACION_OPERATIVA).motivo("Horas extra").creadoPor(99L)
+                .build();
+    }
+
+    private AjusteJornada corrimiento(long id, LocalTime inicio, LocalTime fin) {
+        return AjusteJornada.builder()
+                .id(id).idEmpleado(EMP).horario(horario).fechaOperativa(DIA)
+                .inicio(LocalDateTime.of(DIA, inicio)).fin(LocalDateTime.of(DIA, fin))
+                .estado(EstadoAjusteJornada.ACTIVO).origen(OrigenAjusteJornada.REEMPLAZO_BASE)
+                .razon(RazonAjuste.CORRIMIENTO_COMPENSABLE).motivo("Corrimiento por tardanza").creadoPor(99L)
                 .build();
     }
 

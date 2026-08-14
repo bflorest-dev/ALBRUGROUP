@@ -87,6 +87,7 @@ class EventoServiceDailyGroupingTest {
                 .build();
         when(eventoRepository.listarRegistrosDiarios(
                 eq(Accion.REGISTRO),
+                eq(Accion.ASIGNACION),
                 eq(Etapa.PREVENTA),
                 any(Instant.class),
                 any(Instant.class),
@@ -120,6 +121,7 @@ class EventoServiceDailyGroupingTest {
 
         verify(eventoRepository).listarRegistrosDiarios(
                 eq(Accion.REGISTRO),
+                eq(Accion.ASIGNACION),
                 eq(Etapa.PREVENTA),
                 eq(Instant.parse("2026-06-10T05:00:00Z")),
                 eq(Instant.parse("2026-06-11T05:00:00Z")),
@@ -149,6 +151,7 @@ class EventoServiceDailyGroupingTest {
                 .build();
         when(eventoRepository.listarRegistrosDiarios(
                 eq(Accion.REGISTRO),
+                eq(Accion.ASIGNACION),
                 eq(Etapa.PREVENTA),
                 any(Instant.class),
                 any(Instant.class),
@@ -182,6 +185,7 @@ class EventoServiceDailyGroupingTest {
 
         verify(eventoRepository).listarRegistrosDiarios(
                 eq(Accion.REGISTRO),
+                eq(Accion.ASIGNACION),
                 eq(Etapa.PREVENTA),
                 eq(Instant.parse("2026-06-10T05:00:00Z")),
                 eq(Instant.parse("2026-06-11T05:00:00Z")),

@@ -195,8 +195,11 @@ td small {
   right: 0.6rem;
   top: 50%;
   margin: 0;
+  pointer-events: none;
   transform: translateY(-50%);
 }
+
+.actions-cell .lead-warning * { pointer-events: none; }
 
 .gtr-assign-button {
   gap: 0;
