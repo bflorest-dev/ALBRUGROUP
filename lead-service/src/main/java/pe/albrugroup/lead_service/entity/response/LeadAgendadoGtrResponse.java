@@ -36,6 +36,8 @@ public class LeadAgendadoGtrResponse {
     private String nombreAsesorTipifico;
     private EstadoSeguimiento estadoSeguimiento;
     private long totalAsignaciones;
+    private long totalAsignacionesPreventa;
+    private long totalAsignacionesHoyPreventa;
     private Instant fechaAgendamiento;
     private String comentario;
     private LocalTime horaProgramada;

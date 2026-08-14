@@ -220,13 +220,13 @@
             <button
               type="button"
               class="daily-leads__sort-header"
-              [class.daily-leads__sort-header--active]="facade.sortActive('totalAsignacionesDia')"
-              [attr.aria-label]="facade.sortLabel('totalAsignacionesDia', 'asignaciones')"
-              [title]="facade.sortLabel('totalAsignacionesDia', 'asignaciones')"
-              (click)="facade.changeColumnSort('totalAsignacionesDia')"
+              [class.daily-leads__sort-header--active]="facade.sortActive('totalAsignacionesHoyPreventa')"
+              [attr.aria-label]="facade.sortLabel('totalAsignacionesHoyPreventa', 'asignaciones hoy')"
+              [title]="facade.sortLabel('totalAsignacionesHoyPreventa', 'asignaciones hoy')"
+              (click)="facade.changeColumnSort('totalAsignacionesHoyPreventa')"
             >
-              <span>Asignaciones</span>
-              <i [class]="facade.sortIcon('totalAsignacionesDia')" aria-hidden="true"></i>
+              <span>Asignaciones hoy</span>
+              <i [class]="facade.sortIcon('totalAsignacionesHoyPreventa')" aria-hidden="true"></i>
             </button>
           </th>
           <th>Campaña</th>
@@ -316,8 +316,8 @@
           <td class="daily-leads__person" [title]="row.ultimaAsignacion">{{ row.ultimaAsignacionDisplay }}</td>
           <td>
             <p-tag
-              [value]="facade.display(row.totalAsignacionesDia)"
-              [severity]="row.totalAsignacionesDia > 0 ? 'info' : 'secondary'"
+              [value]="facade.display(row.totalAsignacionesHoyPreventa)"
+              [severity]="row.totalAsignacionesHoyPreventa > 0 ? 'info' : 'secondary'"
               styleClass="daily-leads__assignments-tag"
             />
           </td>

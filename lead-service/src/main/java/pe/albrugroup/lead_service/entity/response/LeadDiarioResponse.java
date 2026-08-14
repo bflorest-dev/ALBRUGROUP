@@ -36,6 +36,8 @@ public class LeadDiarioResponse {
     private String ultimoNombreAsesorAsignado;
     private String ultimoNombreAsesorAsignacion;
     private Long totalAsignacionesDia;
+    private Long totalAsignacionesPreventa;
+    private Long totalAsignacionesHoyPreventa;
     /** Cantidad de eventos REGISTRO del lead en el día operativo (>= 1). La fila representa el registro más temprano. */
     private Long totalRegistrosDia;
 }

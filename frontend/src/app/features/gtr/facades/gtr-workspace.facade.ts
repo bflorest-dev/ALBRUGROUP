@@ -127,6 +127,7 @@ type GtrPlatformSortField =
   | 'primeraTipificacion'
   | 'mayorTipificacion'
   | 'ultimaTipificacion'
+  | 'totalAsignacionesPreventa'
   | 'estado';
 type GtrHistoricosSortField = 'lastEntryAt' | 'codigoTipificacion' | 'estado' | 'nombreAsesorAsignado';
 type GtrPlatformSortDirection = 'asc' | 'desc';
@@ -896,6 +897,7 @@ export class GtrWorkspaceFacade {
     { label: 'Primera tipificación', value: 'primeraTipificacion' },
     { label: 'Mayor tipificación', value: 'mayorTipificacion' },
     { label: 'Última tipificación', value: 'ultimaTipificacion' },
+    { label: 'Asignaciones PREVENTA', value: 'totalAsignacionesPreventa' },
     { label: 'Estado', value: 'estado' }
   ];
   readonly platformSortDirectionOptions = computed<Array<{ label: string; value: GtrPlatformSortDirection }>>(() =>
@@ -904,6 +906,11 @@ export class GtrWorkspaceFacade {
           { label: 'Más antiguos', value: 'asc' },
           { label: 'Más recientes', value: 'desc' }
         ]
+      : this.platformSortField() === 'totalAsignacionesPreventa'
+        ? [
+            { label: 'Menos asignaciones', value: 'asc' },
+            { label: 'Más asignaciones', value: 'desc' }
+          ]
       : [
           { label: 'A-Z', value: 'asc' },
           { label: 'Z-A', value: 'desc' }
@@ -4561,7 +4568,7 @@ export class GtrWorkspaceFacade {
   }
 
   private defaultPlatformSortDirection(field: GtrPlatformSortField): GtrPlatformSortDirection {
-    return field === 'lastEntryAt' || field === 'createdAt' ? 'desc' : 'asc';
+    return field === 'lastEntryAt' || field === 'createdAt' || field === 'totalAsignacionesPreventa' ? 'desc' : 'asc';
   }
 
   private defaultAgendadosSortDirection(field: AgendadosSortField): GtrPlatformSortDirection {
@@ -4612,7 +4619,8 @@ export class GtrWorkspaceFacade {
         row.codigoTipificacion ?? '',
         row.codigoSubtipificacion ?? '',
         row.nombreAsesorAsignado ?? '',
-        row.totalAsignaciones ?? '',
+        row.totalAsignacionesPreventa ?? row.totalAsignaciones ?? '',
+        row.totalAsignacionesHoyPreventa ?? '',
         row.numeroDocumentoTitularServicio ?? '',
         row.lastEntryAt ?? '',
         row.createdAt ?? ''
@@ -4853,7 +4861,9 @@ export class GtrWorkspaceFacade {
       codigoSubtipificacion: row.codigoSubtipificacion,
       nombreAsesorAsignado: row.nombreAsesorAsignado,
       estadoSeguimiento: row.estadoSeguimiento,
-      totalAsignaciones: row.totalAsignaciones,
+      totalAsignaciones: row.totalAsignacionesPreventa ?? row.totalAsignaciones,
+      totalAsignacionesPreventa: row.totalAsignacionesPreventa ?? row.totalAsignaciones,
+      totalAsignacionesHoyPreventa: row.totalAsignacionesHoyPreventa ?? 0,
       tieneAlertaRegistrosDia: false,
       tieneMultiplesRegistrosDia: false,
       tieneRegistrosMismaCampanaDia: false

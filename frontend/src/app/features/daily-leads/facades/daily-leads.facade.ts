@@ -161,7 +161,7 @@ export class DailyLeadsFacade {
   });
   readonly sortOptions: Array<{ label: string; value: DailyLeadSortField }> = [
     { label: 'Hora de registro', value: 'createdAt' },
-    { label: 'Asignaciones', value: 'totalAsignacionesDia' },
+    { label: 'Asignaciones hoy', value: 'totalAsignacionesHoyPreventa' },
     { label: 'Primera tipificación', value: 'primeraTipificacion' },
     { label: 'Mayor tipificación', value: 'mayorTipificacion' },
     { label: 'Última tipificación', value: 'ultimaTipificacion' }
@@ -173,7 +173,7 @@ export class DailyLeadsFacade {
         { label: 'Más recientes', value: 'desc' }
       ];
     }
-    if (this.sortField() === 'totalAsignacionesDia') {
+    if (this.sortField() === 'totalAsignacionesHoyPreventa') {
       return [
         { label: 'Menos asignaciones', value: 'asc' },
         { label: 'Más asignaciones', value: 'desc' }
@@ -655,7 +655,9 @@ export class DailyLeadsFacade {
       ultimoAsesorDisplay: this.firstWords(ultimoAsesor, 2),
       ultimaAsignacion,
       ultimaAsignacionDisplay: this.firstWords(ultimaAsignacion, 2),
-      totalAsignacionesDia: item.totalAsignacionesDia ?? 0,
+      totalAsignacionesDia: item.totalAsignacionesHoyPreventa ?? item.totalAsignacionesDia ?? 0,
+      totalAsignacionesPreventa: item.totalAsignacionesPreventa ?? item.totalAsignacionesDia ?? 0,
+      totalAsignacionesHoyPreventa: item.totalAsignacionesHoyPreventa ?? item.totalAsignacionesDia ?? 0,
       totalRegistrosDia: item.totalRegistrosDia ?? 1,
       primeraCodigoTipificacion: item.primeraCodigoTipificacion,
       primeraCodigoSubtipificacion: item.primeraCodigoSubtipificacion,
@@ -706,6 +708,8 @@ export class DailyLeadsFacade {
       ultimaAsignacion: '',
       ultimaAsignacionDisplay: '',
       totalAsignacionesDia: 0,
+      totalAsignacionesPreventa: 0,
+      totalAsignacionesHoyPreventa: 0,
       totalRegistrosDia: 1,
       isPlaceholder: true
     };
@@ -750,7 +754,7 @@ export class DailyLeadsFacade {
   }
 
   private defaultSortDirection(field: DailyLeadSortField): DailyLeadSortDirection {
-    return field === 'createdAt' || field === 'totalAsignacionesDia' ? 'desc' : 'asc';
+    return field === 'createdAt' || field === 'totalAsignacionesHoyPreventa' ? 'desc' : 'asc';
   }
 
   private selectedHistoryDate(): string {

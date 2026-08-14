@@ -61,6 +61,7 @@ public class EventoService {
     private static final Set<String> LEADS_DIARIOS_SORT_FIELDS = Set.of(
             "createdAt",
             "totalAsignacionesDia",
+            "totalAsignacionesHoyPreventa",
             "primeraTipificacion",
             "mayorTipificacion",
             "ultimaTipificacion"
@@ -225,6 +226,7 @@ public class EventoService {
 
         var registros = eventoRepository.listarRegistrosDiarios(
                 Accion.REGISTRO,
+                Accion.ASIGNACION,
                 Etapa.PREVENTA,
                 rango.inicio(),
                 rango.fin(),

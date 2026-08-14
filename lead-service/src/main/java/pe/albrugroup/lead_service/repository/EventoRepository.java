@@ -147,6 +147,24 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     );
 
     @Query("""
+            SELECT e.idLead, COUNT(e.id)
+            FROM Evento e
+            WHERE e.idLead IN :leadIds
+              AND e.accion = :accion
+              AND e.etapa = :etapa
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+            GROUP BY e.idLead
+            """)
+    List<Object[]> contarPorLeadIdsYAccionYEtapaYFechas(
+            @Param("leadIds") Collection<Long> leadIds,
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query("""
             SELECT e.idLead, e.idCampana, COUNT(e.id)
             FROM Evento e
             WHERE e.idLead IN :leadIds
@@ -263,7 +281,25 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                         r.ultimaCodigoSubtipificacion,
                        r.nombreAsesorUltimaGestion,
                        NULL,
+                       CAST((
+                            SELECT COUNT(asignacion.id)
+                            FROM Evento asignacion
+                            WHERE asignacion.idLead = e.idLead
+                              AND asignacion.accion = :accionAsignacion
+                              AND asignacion.etapa = :etapaResumen
+                              AND asignacion.createdAt >= :inicio
+                              AND asignacion.createdAt < :fin
+                       ) AS long),
                        CAST(COALESCE(r.totalAsignaciones, 0) AS long),
+                       CAST((
+                            SELECT COUNT(asignacion.id)
+                            FROM Evento asignacion
+                            WHERE asignacion.idLead = e.idLead
+                              AND asignacion.accion = :accionAsignacion
+                              AND asignacion.etapa = :etapaResumen
+                              AND asignacion.createdAt >= :inicio
+                              AND asignacion.createdAt < :fin
+                       ) AS long),
                        0L)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
@@ -360,8 +396,24 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             ORDER BY
               CASE WHEN :sortBy = 'createdAt' AND :sortDesc = false THEN e.createdAt END ASC,
               CASE WHEN :sortBy = 'createdAt' AND :sortDesc = true THEN e.createdAt END DESC,
-              CASE WHEN :sortBy = 'totalAsignacionesDia' AND :sortDesc = false THEN COALESCE(r.totalAsignaciones, 0) END ASC,
-              CASE WHEN :sortBy = 'totalAsignacionesDia' AND :sortDesc = true THEN COALESCE(r.totalAsignaciones, 0) END DESC,
+              CASE WHEN :sortBy IN ('totalAsignacionesDia', 'totalAsignacionesHoyPreventa') AND :sortDesc = false THEN (
+                    SELECT COUNT(asignacionOrden.id)
+                    FROM Evento asignacionOrden
+                    WHERE asignacionOrden.idLead = e.idLead
+                      AND asignacionOrden.accion = :accionAsignacion
+                      AND asignacionOrden.etapa = :etapaResumen
+                      AND asignacionOrden.createdAt >= :inicio
+                      AND asignacionOrden.createdAt < :fin
+              ) END ASC,
+              CASE WHEN :sortBy IN ('totalAsignacionesDia', 'totalAsignacionesHoyPreventa') AND :sortDesc = true THEN (
+                    SELECT COUNT(asignacionOrden.id)
+                    FROM Evento asignacionOrden
+                    WHERE asignacionOrden.idLead = e.idLead
+                      AND asignacionOrden.accion = :accionAsignacion
+                      AND asignacionOrden.etapa = :etapaResumen
+                      AND asignacionOrden.createdAt >= :inicio
+                      AND asignacionOrden.createdAt < :fin
+              ) END DESC,
 
               CASE WHEN :sortBy = 'primeraTipificacion' THEN CASE WHEN tPrimera.orden IS NULL THEN 1 ELSE 0 END ELSE 0 END ASC,
               CASE WHEN :sortBy = 'primeraTipificacion' AND :sortDesc = false THEN tPrimera.orden END ASC,
@@ -488,6 +540,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             """)
     Page<LeadDiarioResponse> listarRegistrosDiarios(
             @Param("accion") Accion accion,
+            @Param("accionAsignacion") Accion accionAsignacion,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,

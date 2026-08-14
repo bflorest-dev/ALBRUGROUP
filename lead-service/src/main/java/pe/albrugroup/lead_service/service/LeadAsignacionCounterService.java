@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.repository.EventoRepository;
+import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -18,6 +20,7 @@ import java.time.Instant;
 public class LeadAsignacionCounterService {
 
     private final EventoRepository eventoRepository;
+    private final LeadEtapaResumenRepository leadEtapaResumenRepository;
 
     public Map<Long, Long> contarAsignacionesPorLeadIds(Collection<Long> leadIds) {
         List<Long> ids = normalizarIds(leadIds);
@@ -40,6 +43,43 @@ public class LeadAsignacionCounterService {
 
         Map<Long, Long> conteos = new HashMap<>();
         for (Object[] row : eventoRepository.contarPorLeadIdsYAccionYFechas(ids, Accion.ASIGNACION, fechaDesde, fechaHasta)) {
+            conteos.put((Long) row[0], (Long) row[1]);
+        }
+        return conteos;
+    }
+
+    public Map<Long, Long> contarAsignacionesPreventaPorLeadIds(Collection<Long> leadIds) {
+        List<Long> ids = normalizarIds(leadIds);
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, Long> conteos = new HashMap<>();
+        for (Object[] row : leadEtapaResumenRepository.contarAsignacionesPorLeadIdsYEtapa(ids, Etapa.PREVENTA)) {
+            Number total = (Number) row[1];
+            conteos.put((Long) row[0], total == null ? 0L : total.longValue());
+        }
+        return conteos;
+    }
+
+    public Map<Long, Long> contarAsignacionesHoyPreventaPorLeadIds(
+            Collection<Long> leadIds,
+            Instant fechaDesde,
+            Instant fechaHasta
+    ) {
+        List<Long> ids = normalizarIds(leadIds);
+        if (ids.isEmpty() || fechaDesde == null || fechaHasta == null) {
+            return Map.of();
+        }
+
+        Map<Long, Long> conteos = new HashMap<>();
+        for (Object[] row : eventoRepository.contarPorLeadIdsYAccionYEtapaYFechas(
+                ids,
+                Accion.ASIGNACION,
+                Etapa.PREVENTA,
+                fechaDesde,
+                fechaHasta
+        )) {
             conteos.put((Long) row[0], (Long) row[1]);
         }
         return conteos;

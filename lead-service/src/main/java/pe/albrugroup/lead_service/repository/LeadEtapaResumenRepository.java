@@ -11,6 +11,7 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,17 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     Optional<LeadEtapaResumen> findByIdLeadAndEtapa(Long idLead, Etapa etapa);
 
     List<LeadEtapaResumen> findByIdLead(Long idLead);
+
+    @Query("""
+            SELECT r.idLead, COALESCE(r.totalAsignaciones, 0)
+            FROM LeadEtapaResumen r
+            WHERE r.idLead IN :leadIds
+              AND r.etapa = :etapa
+            """)
+    List<Object[]> contarAsignacionesPorLeadIdsYEtapa(
+            @Param("leadIds") Collection<Long> leadIds,
+            @Param("etapa") Etapa etapa
+    );
 
     // Re-ejecutabilidad del backfill: se borran las filas del lead antes de reconstruirlas.
     void deleteByIdLead(Long idLead);

@@ -206,6 +206,7 @@ public class LeadService {
             "primeraTipificacion",
             "mayorTipificacion",
             "ultimaTipificacion",
+            "totalAsignacionesPreventa",
             "estado"
     );
     private static final Set<String> LEAD_AGENDADOS_GTR_SORT_FIELDS = Set.of(
@@ -293,7 +294,14 @@ public class LeadService {
                         estadoOrden.gestionado(),
                         pageable
                 );
-        aplicarTotalesAsignacion(leads.getContent(), LeadGtrResponse::getId, this::setTotalesAsignacion);
+        aplicarTotalesAsignacionPreventa(
+                leads.getContent(),
+                LeadGtrResponse::getId,
+                this::setTotalesAsignacion,
+                this::setTotalesAsignacionPreventa,
+                this::setTotalesAsignacionHoyPreventa,
+                OperationalDateTime.dayRange(fecha)
+        );
         if (!buscandoPorLead) {
             aplicarAlertasRegistrosDia(leads.getContent(), rangoDia.inicio(), rangoDia.fin());
         }
@@ -539,7 +547,14 @@ public class LeadService {
 
     public PageResponse<LeadAgendadoGtrResponse> listarAgendadosGtr(PageRequest pageRequest, Long idEquipo) {
         Page<LeadAgendadoGtrResponse> leads = listarAgendadosGtrOrdenados(pageRequest, idEquipo);
-        aplicarTotalesAsignacion(leads.getContent(), LeadAgendadoGtrResponse::getId, this::setTotalesAsignacion);
+        aplicarTotalesAsignacionPreventa(
+                leads.getContent(),
+                LeadAgendadoGtrResponse::getId,
+                this::setTotalesAsignacion,
+                this::setTotalesAsignacionPreventa,
+                this::setTotalesAsignacionHoyPreventa,
+                OperationalDateTime.dayRange(OperationalDateTime.today())
+        );
         return PageResponse.from(leads);
     }
 
@@ -3941,6 +3956,33 @@ public class LeadService {
         }
     }
 
+    private <T> void aplicarTotalesAsignacionPreventa(
+            List<T> items,
+            java.util.function.Function<T, Long> idExtractor,
+            java.util.function.ObjLongConsumer<T> totalSetter,
+            java.util.function.ObjLongConsumer<T> totalPreventaSetter,
+            java.util.function.ObjLongConsumer<T> totalHoyPreventaSetter,
+            OperationalDateTime.InstantRange rangoDia
+    ) {
+        List<Long> ids = items.stream()
+                .map(idExtractor)
+                .filter(id -> id != null && id > 0)
+                .toList();
+        Map<Long, Long> totalesPreventa = leadAsignacionCounterService.contarAsignacionesPreventaPorLeadIds(ids);
+        Map<Long, Long> totalesHoyPreventa = leadAsignacionCounterService.contarAsignacionesHoyPreventaPorLeadIds(
+                ids,
+                rangoDia.inicio(),
+                rangoDia.fin()
+        );
+        for (T item : items) {
+            Long id = idExtractor.apply(item);
+            long totalPreventa = totalesPreventa.getOrDefault(id, 0L);
+            totalSetter.accept(item, totalPreventa);
+            totalPreventaSetter.accept(item, totalPreventa);
+            totalHoyPreventaSetter.accept(item, totalesHoyPreventa.getOrDefault(id, 0L));
+        }
+    }
+
     private <T> Map<Long, Long> obtenerTotalesAsignacion(
             List<T> items,
             java.util.function.Function<T, Long> idExtractor
@@ -3963,6 +4005,22 @@ public class LeadService {
 
     private void setTotalesAsignacion(LeadAgendadoGtrResponse response, long totalAsignaciones) {
         response.setTotalAsignaciones(totalAsignaciones);
+    }
+
+    private void setTotalesAsignacionPreventa(LeadGtrResponse response, long totalAsignaciones) {
+        response.setTotalAsignacionesPreventa(totalAsignaciones);
+    }
+
+    private void setTotalesAsignacionPreventa(LeadAgendadoGtrResponse response, long totalAsignaciones) {
+        response.setTotalAsignacionesPreventa(totalAsignaciones);
+    }
+
+    private void setTotalesAsignacionHoyPreventa(LeadGtrResponse response, long totalAsignaciones) {
+        response.setTotalAsignacionesHoyPreventa(totalAsignaciones);
+    }
+
+    private void setTotalesAsignacionHoyPreventa(LeadAgendadoGtrResponse response, long totalAsignaciones) {
+        response.setTotalAsignacionesHoyPreventa(totalAsignaciones);
     }
 
     private void aplicarAlertasRegistrosDia(List<LeadGtrResponse> leads, Instant inicioDia, Instant finDia) {

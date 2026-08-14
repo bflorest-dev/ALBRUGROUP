@@ -19,6 +19,8 @@ export interface LeadDiarioResponse {
   ultimoNombreAsesorAsignado?: string | null;
   ultimoNombreAsesorAsignacion?: string | null;
   totalAsignacionesDia?: number | null;
+  totalAsignacionesPreventa?: number | null;
+  totalAsignacionesHoyPreventa?: number | null;
   /** Cantidad de eventos REGISTRO del lead en el día (>= 1). La fila es el registro más temprano. */
   totalRegistrosDia?: number | null;
 }
@@ -55,6 +57,8 @@ export interface DailyLeadRowView {
   ultimaAsignacion: string;
   ultimaAsignacionDisplay: string;
   totalAsignacionesDia: number;
+  totalAsignacionesPreventa: number;
+  totalAsignacionesHoyPreventa: number;
   /** Cantidad de registros del lead en el día; > 1 habilita el despliegue de repeticiones. */
   totalRegistrosDia: number;
   primeraCodigoTipificacion?: string | null;
@@ -78,7 +82,7 @@ export type DailyLeadGroupMode = 'SIN_AGRUPAR' | DailyLeadGroupType;
 
 export type DailyLeadSortField =
   | 'createdAt'
-  | 'totalAsignacionesDia'
+  | 'totalAsignacionesHoyPreventa'
   | 'primeraTipificacion'
   | 'mayorTipificacion'
   | 'ultimaTipificacion';

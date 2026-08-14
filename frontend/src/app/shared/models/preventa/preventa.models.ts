@@ -108,6 +108,8 @@ export interface LeadGtrResponse {
   nombreAsesorAsignado?: string | null;
   estadoSeguimiento?: EstadoSeguimiento | string | null;
   totalAsignaciones: number;
+  totalAsignacionesPreventa?: number | null;
+  totalAsignacionesHoyPreventa?: number | null;
   tieneAlertaRegistrosDia?: boolean;
   tieneMultiplesRegistrosDia?: boolean;
   tieneRegistrosMismaCampanaDia?: boolean;
@@ -192,6 +194,8 @@ export interface LeadAgendadoGtrResponse {
   nombreAsesorTipifico?: string | null;
   estadoSeguimiento?: EstadoSeguimiento | string | null;
   totalAsignaciones: number;
+  totalAsignacionesPreventa?: number | null;
+  totalAsignacionesHoyPreventa?: number | null;
   fechaAgendamiento?: string | null;
   comentario?: string | null;
   horaProgramada?: string | null;
