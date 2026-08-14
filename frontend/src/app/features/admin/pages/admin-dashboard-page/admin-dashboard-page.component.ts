@@ -54,7 +54,13 @@ export class AdminDashboardPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly mode = this.route.snapshot.data['mode'] as 'colaboradores' | 'personal';
-  protected readonly minDate = new Date();
+  // El cambio de horario sobre un empleado que ya marcó hoy solo puede aplicar desde mañana en adelante.
+  protected readonly minDate = (() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  })();
   private simpleTimeSnapshot: {
     horaEntrada: string;
     horaSalida: string;

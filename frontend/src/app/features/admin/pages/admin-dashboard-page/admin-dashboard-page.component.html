@@ -339,54 +339,30 @@
     >
       <div class="correction-decision-body">
         <p>
-          No podemos corregir el horario en vigencia porque ya hay marcaciones reales registradas.
-          Elige como aplicar los cambios:
+          @if (facade.selectedEmployeeForScheduleChange(); as empleado) {
+            {{ empleado.nombres }} ya marcó asistencia hoy.
+          } @else {
+            El empleado ya marcó asistencia hoy.
+          }
+          Para no alterar el día en curso, el nuevo horario se aplica <strong>desde mañana</strong>; el
+          horario actual se cierra hoy.
         </p>
 
-        <label class="field">
-          <span>Motivo (queda en el historial)</span>
-          <input
-            pInputText
-            type="text"
-            [ngModel]="facade.correctionDecisionMotivo()"
-            (ngModelChange)="facade.setCorrectionDecisionMotivo($event)"
-            placeholder="Correccion administrativa"
-          />
-        </label>
+        <button
+          pButton
+          type="button"
+          class="cd-primary"
+          icon="pi pi-forward"
+          label="Aplicar desde mañana"
+          [loading]="facade.isApplyingCorrectionDecision()"
+          (click)="facade.applyCorrectionFromTomorrow()"
+        ></button>
 
-        <div class="decision-options">
-          <button
-            pButton
-            type="button"
-            icon="pi pi-calendar"
-            label="Solo para hoy"
-            [outlined]="true"
-            [loading]="facade.isApplyingCorrectionDecision()"
-            (click)="facade.applyCorrectionOnlyToday()"
-          ></button>
-          <button
-            pButton
-            type="button"
-            icon="pi pi-forward"
-            label="Desde manana en adelante"
-            [outlined]="true"
-            [loading]="facade.isApplyingCorrectionDecision()"
-            (click)="facade.applyCorrectionFromTomorrow()"
-          ></button>
-          <button
-            pButton
-            type="button"
-            icon="pi pi-bolt"
-            label="Hoy + desde manana"
-            [loading]="facade.isApplyingCorrectionDecision()"
-            (click)="facade.applyCorrectionTodayAndTomorrow()"
-          ></button>
-        </div>
-
-        <div class="custom-date-row">
-          <label class="field">
-            <span>O elige una fecha de inicio especifica</span>
+        <div class="cd-alt">
+          <span class="cd-alt__label">O elige una fecha de inicio posterior</span>
+          <div class="cd-alt__row">
             <p-datepicker
+              styleClass="cd-alt__date"
               [ngModel]="toPickerDate(facade.correctionDecisionCustomDate())"
               [ngModelOptions]="{ standalone: true }"
               dateFormat="dd/mm/yy"
@@ -395,16 +371,16 @@
               appendTo="body"
               (ngModelChange)="setCorrectionCustomDate($event)"
             />
-          </label>
-          <button
-            pButton
-            type="button"
-            icon="pi pi-check"
-            label="Aplicar desde esa fecha"
-            [outlined]="true"
-            [loading]="facade.isApplyingCorrectionDecision()"
-            (click)="facade.applyCorrectionFromCustomDate()"
-          ></button>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-check"
+              label="Aplicar"
+              [outlined]="true"
+              [loading]="facade.isApplyingCorrectionDecision()"
+              (click)="facade.applyCorrectionFromCustomDate()"
+            ></button>
+          </div>
         </div>
 
         <div class="actions actions--end">
