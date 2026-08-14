@@ -14,6 +14,7 @@ import { SelectModule } from 'primeng/select';
 import { StepperModule } from 'primeng/stepper';
 import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
+import { ScheduleWeekEditorComponent } from '../schedule-week-editor/schedule-week-editor.component';
 
 type SelectOption = {
   label: string;
@@ -39,7 +40,8 @@ type ScheduleRule = {
     SelectModule,
     StepperModule,
     TagModule,
-    ToggleButtonModule
+    ToggleButtonModule,
+    ScheduleWeekEditorComponent
   ],
   templateUrl: './personal-registration-panel.component.html',
   styleUrl: './personal-registration-panel.component.scss',

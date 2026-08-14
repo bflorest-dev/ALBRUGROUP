@@ -137,9 +137,38 @@
         filterBy="label"
         appendTo="body"
         styleClass="equipos-grow"
+        (onChange)="onEmpleadosChange()"
       />
       <small class="equipos-hint">Agrupados por rol; busca por nombre. Un operativo solo puede estar en un equipo (se mueve).</small>
     </div>
+
+    @if (postventaEmpleadosSeleccionados().length) {
+      <div class="equipos-field equipos-postventa">
+        <div class="equipos-postventa__header">
+          <label>Alcance Postventa por asesor</label>
+          <small class="equipos-hint">Define la cartera instalada que vera cada asesor segun el proveedor vendido.</small>
+        </div>
+        @for (empleado of postventaEmpleadosSeleccionados(); track empleado.idEmpleado) {
+          <div class="equipos-postventa__row">
+            <div class="equipos-postventa__person">
+              <span>{{ nombreEmpleado(empleado) }}</span>
+              <small>{{ empleado.puestoTrabajo }}</small>
+            </div>
+            <p-multiSelect
+              [options]="proveedores()"
+              optionLabel="nombre"
+              optionValue="id"
+              [(ngModel)]="postventaProveedorIdsByEmpleado[empleado.idEmpleado]"
+              placeholder="Proveedor postventa"
+              display="chip"
+              [filter]="true"
+              appendTo="body"
+              styleClass="equipos-grow"
+            />
+          </div>
+        }
+      </div>
+    }
   </div>
 
   <ng-template pTemplate="footer">

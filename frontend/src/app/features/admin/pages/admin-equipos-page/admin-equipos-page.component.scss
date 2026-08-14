@@ -122,6 +122,52 @@
   text-transform: uppercase;
 }
 
+.equipos-postventa {
+  border-top: 1px solid var(--app-border-soft);
+  padding-top: 1rem;
+}
+
+.equipos-postventa__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.equipos-postventa__header > label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.equipos-postventa__row {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.equipos-postventa__person {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.equipos-postventa__person span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.equipos-postventa__person small {
+  color: var(--text-color-secondary);
+}
+
 .equipos-footer__delete {
   margin-right: auto;
+}
+
+@media (max-width: 640px) {
+  .equipos-postventa__row {
+    grid-template-columns: 1fr;
+  }
 }

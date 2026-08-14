@@ -52,6 +52,33 @@ public interface CalendarioFacturacionPostventaRepository extends JpaRepository<
             "lead",
             "lead.datosPreventa",
             "lead.plan",
+            "lead.plan.proveedor",
+            "lead.plataformaDigitalOfrecida"
+    })
+    @Query("""
+            SELECT c
+            FROM CalendarioFacturacionPostventa c
+            JOIN c.lead l
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            WHERE l.etapa = :etapa
+              AND c.activo = true
+              AND (
+                    pp.id IN :proveedorIds
+                    OR UPPER(TRIM(COALESCE(c.proveedorSnapshot, ''))) IN :proveedorNombres
+                  )
+            """)
+    Page<CalendarioFacturacionPostventa> listarBandejaPostventaPorProveedores(
+            @Param("etapa") Etapa etapa,
+            @Param("proveedorIds") java.util.Collection<Long> proveedorIds,
+            @Param("proveedorNombres") java.util.Collection<String> proveedorNombres,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {
+            "lead",
+            "lead.datosPreventa",
+            "lead.plan",
             "lead.plataformaDigitalOfrecida"
     })
     @Query("""
@@ -67,6 +94,37 @@ public interface CalendarioFacturacionPostventaRepository extends JpaRepository<
             @Param("etapa") Etapa etapa,
             @Param("mesCorteBase") LocalDate mesCorteBase,
             @Param("numeroCorteBase") Integer numeroCorteBase,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {
+            "lead",
+            "lead.datosPreventa",
+            "lead.plan",
+            "lead.plan.proveedor",
+            "lead.plataformaDigitalOfrecida"
+    })
+    @Query("""
+            SELECT c
+            FROM CalendarioFacturacionPostventa c
+            JOIN c.lead l
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            WHERE l.etapa = :etapa
+              AND c.activo = true
+              AND c.mesCorteBase = :mesCorteBase
+              AND c.numeroCorteBase = :numeroCorteBase
+              AND (
+                    pp.id IN :proveedorIds
+                    OR UPPER(TRIM(COALESCE(c.proveedorSnapshot, ''))) IN :proveedorNombres
+                  )
+            """)
+    Page<CalendarioFacturacionPostventa> listarBandejaPostventaPorCorteYProveedores(
+            @Param("etapa") Etapa etapa,
+            @Param("mesCorteBase") LocalDate mesCorteBase,
+            @Param("numeroCorteBase") Integer numeroCorteBase,
+            @Param("proveedorIds") java.util.Collection<Long> proveedorIds,
+            @Param("proveedorNombres") java.util.Collection<String> proveedorNombres,
             Pageable pageable
     );
 }

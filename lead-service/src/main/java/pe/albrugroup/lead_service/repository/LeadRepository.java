@@ -51,6 +51,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             SELECT l
             FROM Lead l
             LEFT JOIN FETCH l.datosPreventa dp
+            LEFT JOIN FETCH l.plan pl
+            LEFT JOIN FETCH pl.proveedor
             WHERE l.lead = :buscar
                OR l.numeroDocumentoTitularServicioSnapshot = :buscar
                OR dp.numeroDocumentoTitularServicio = :buscar

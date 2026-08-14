@@ -54,6 +54,7 @@ public class PostventaBandejaService {
     private final LeadRepository leadRepository;
     private final PeriodoFacturacionPostventaRepository periodoRepository;
     private final PaginationService paginationService;
+    private final PostventaAsesorProveedorService postventaAsesorProveedorService;
 
     private static final Set<String> BANDEJA_SORT_FIELDS = Set.of(
             "fechaInstalacion", "createdAt", "updatedAt"
@@ -71,14 +72,16 @@ public class PostventaBandejaService {
             Integer numeroCorteBase
     ) {
         Pageable pageable = paginationService.toPageable(normalizarOrden(pageRequest), BANDEJA_SORT_FIELDS);
-        Page<CalendarioFacturacionPostventa> calendarios = mesCorteBase == null || numeroCorteBase == null
-                ? calendarioRepository.listarBandejaPostventa(Etapa.POSTVENTA, pageable)
-                : calendarioRepository.listarBandejaPostventaPorCorte(
-                        Etapa.POSTVENTA,
-                        mesCorteBase,
-                        numeroCorteBase,
-                        pageable
-                );
+        PostventaAsesorProveedorService.Scope scope = postventaAsesorProveedorService.resolverScopeActual();
+        if (scope.vacio()) {
+            return PageResponse.from(Page.empty(pageable));
+        }
+        Page<CalendarioFacturacionPostventa> calendarios = listarCalendarios(
+                mesCorteBase,
+                numeroCorteBase,
+                pageable,
+                scope
+        );
 
         List<Long> leadIds = calendarios.getContent().stream()
                 .map(CalendarioFacturacionPostventa::getLead)
@@ -124,6 +127,12 @@ public class PostventaBandejaService {
                     .mensajeUsuario("El lead existe, pero actualmente esta en etapa " + lead.getEtapa() + ".")
                     .build();
         }
+        if (!postventaAsesorProveedorService.esLeadVisibleParaUsuarioActual(lead)) {
+            return LeadPostventaBusquedaResponse.builder()
+                    .existe(false)
+                    .mensajeUsuario("No encontramos ese lead o documento en tu alcance de Postventa.")
+                    .build();
+        }
 
         CalendarioFacturacionPostventa calendario = calendarioRepository.findWithLeadByLeadId(lead.getId())
                 .orElse(null);
@@ -148,6 +157,39 @@ public class PostventaBandejaService {
                 .etapaActual(lead.getEtapa())
                 .lead(row)
                 .build();
+    }
+
+    private Page<CalendarioFacturacionPostventa> listarCalendarios(
+            LocalDate mesCorteBase,
+            Integer numeroCorteBase,
+            Pageable pageable,
+            PostventaAsesorProveedorService.Scope scope
+    ) {
+        if (!scope.restringido()) {
+            return mesCorteBase == null || numeroCorteBase == null
+                    ? calendarioRepository.listarBandejaPostventa(Etapa.POSTVENTA, pageable)
+                    : calendarioRepository.listarBandejaPostventaPorCorte(
+                            Etapa.POSTVENTA,
+                            mesCorteBase,
+                            numeroCorteBase,
+                            pageable
+                    );
+        }
+        return mesCorteBase == null || numeroCorteBase == null
+                ? calendarioRepository.listarBandejaPostventaPorProveedores(
+                        Etapa.POSTVENTA,
+                        scope.idsParaQuery(),
+                        scope.nombresParaQuery(),
+                        pageable
+                )
+                : calendarioRepository.listarBandejaPostventaPorCorteYProveedores(
+                        Etapa.POSTVENTA,
+                        mesCorteBase,
+                        numeroCorteBase,
+                        scope.idsParaQuery(),
+                        scope.nombresParaQuery(),
+                        pageable
+                );
     }
 
     private PageRequest normalizarOrden(PageRequest request) {

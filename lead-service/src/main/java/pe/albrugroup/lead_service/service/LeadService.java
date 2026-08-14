@@ -159,6 +159,7 @@ public class LeadService {
     private final LeadEtapaResumenService leadEtapaResumenService;
     private final CalendarioFacturacionPostventaService calendarioFacturacionPostventaService;
     private final FacturacionPostventaService facturacionPostventaService;
+    private final PostventaAsesorProveedorService postventaAsesorProveedorService;
     private final PlanService planService;
     private final AuthEquipoClient authEquipoClient;
 
@@ -769,6 +770,9 @@ public class LeadService {
         Long idAsesor = currentUser.empleadoID();
         Lead lead = leadRepository.buscarDetalleAsesor(idLead, idAsesor, etapa)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        if (etapa == Etapa.POSTVENTA) {
+            postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(lead);
+        }
 
         Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
                 .map(Evento::getCreatedAt)
@@ -783,6 +787,7 @@ public class LeadService {
         if (lead.getEtapa() != Etapa.POSTVENTA && lead.getEtapa() != Etapa.COBRANZA) {
             throw new NotFoundException(Lead.class, idLead);
         }
+        postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(lead);
 
         Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
                 .map(Evento::getCreatedAt)
@@ -2193,6 +2198,7 @@ public class LeadService {
     public void tomarLeadPostventaGestion(Long idLead, boolean confirmarReasignacion) {
         Lead lead = leadRepository.findByIdAndEtapa(idLead, Etapa.POSTVENTA)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(lead);
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         Long idAsesorActual = currentUser.empleadoID();
         boolean mismoAsesor = idAsesorAnterior != null && idAsesorAnterior.equals(idAsesorActual);
@@ -4174,8 +4180,12 @@ public class LeadService {
     }
 
     private Lead obtenerLeadAsignadoEnEtapa(Long idLead, Etapa etapa) {
-        return leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(idLead, currentUser.empleadoID(), etapa)
+        Lead lead = leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(idLead, currentUser.empleadoID(), etapa)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        if (etapa == Etapa.POSTVENTA) {
+            postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(lead);
+        }
+        return lead;
     }
 
     private void validarOfertaComercialVentaObligatoria(LeadOfertaComercialRequest request) {

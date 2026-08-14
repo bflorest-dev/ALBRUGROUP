@@ -55,6 +55,7 @@ public class PlataformaDigitalPostventaService {
     private final MarcaDispositivoRepository marcaRepository;
     private final LeadRepository leadRepository;
     private final CurrentUser currentUser;
+    private final PostventaAsesorProveedorService postventaAsesorProveedorService;
 
     @Transactional
     public PlataformaResponse crearPlataforma(PlataformaRequest request) {
@@ -254,12 +255,14 @@ public class PlataformaDigitalPostventaService {
     }
 
     private Lead obtenerLeadAsignadoGestionable(Long idLead) {
-        return leadRepository.findByIdAndIdAsesorAsignadoAndEtapaIn(
+        Lead lead = leadRepository.findByIdAndIdAsesorAsignadoAndEtapaIn(
                         idLead,
                         currentUser.empleadoID(),
                         ETAPAS_GESTION_POSTVENTA
                 )
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(lead);
+        return lead;
     }
 
     private PlataformaResponse toResponse(Plataforma plataforma) {

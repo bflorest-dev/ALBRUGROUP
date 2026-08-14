@@ -51,9 +51,11 @@ public class FacturacionPostventaService {
     private final PeriodoFacturacionPostventaRepository periodoRepository;
     private final PagoPostventaRepository pagoRepository;
     private final CalculadoraFacturacionPostventaResolver calculadoraResolver;
+    private final PostventaAsesorProveedorService postventaAsesorProveedorService;
 
     public List<PeriodoFacturacionPostventaResponse> listarPeriodosPorLead(Long idLead) {
         return periodoRepository.findByLeadIdOrderByNumeroPeriodoAsc(idLead).stream()
+                .peek(periodo -> postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(periodo.getLead()))
                 .map(this::toResponse)
                 .toList();
     }
@@ -151,8 +153,10 @@ public class FacturacionPostventaService {
     }
 
     private PeriodoFacturacionPostventa obtenerPeriodoEntity(Long idPeriodo) {
-        return periodoRepository.findById(idPeriodo)
+        PeriodoFacturacionPostventa periodo = periodoRepository.findById(idPeriodo)
                 .orElseThrow(() -> new NotFoundException(PeriodoFacturacionPostventa.class, idPeriodo));
+        postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(periodo.getLead());
+        return periodo;
     }
 
     private PeriodoFacturacionPostventa obtenerPeriodoAbiertoPorLead(Long idLead) {
@@ -164,8 +168,10 @@ public class FacturacionPostventaService {
     }
 
     private CalendarioFacturacionPostventa obtenerCalendarioConLead(Long idCalendario) {
-        return calendarioRepository.findWithLeadById(idCalendario)
+        CalendarioFacturacionPostventa calendario = calendarioRepository.findWithLeadById(idCalendario)
                 .orElseThrow(() -> new NotFoundException(CalendarioFacturacionPostventa.class, idCalendario));
+        postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(calendario.getLead());
+        return calendario;
     }
 
     private PeriodoFacturacionPostventa obtenerPeriodoUno(CalendarioFacturacionPostventa calendario) {

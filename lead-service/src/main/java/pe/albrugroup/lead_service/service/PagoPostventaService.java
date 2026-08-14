@@ -41,6 +41,7 @@ public class PagoPostventaService {
     private final CurrentUser currentUser;
     private final PagoPostventaMapper mapper;
     private final PaginationService paginationService;
+    private final PostventaAsesorProveedorService postventaAsesorProveedorService;
 
     private static final Set<Etapa> ETAPAS_GESTION_POSTVENTA = Set.of(Etapa.POSTVENTA);
     private static final Set<String> PAGO_SORT_FIELDS = Set.of(
@@ -256,12 +257,14 @@ public class PagoPostventaService {
     }
 
     private Lead obtenerLeadAsignadoGestionable(Long idLead) {
-        return leadRepository.findByIdAndIdAsesorAsignadoAndEtapaIn(
+        Lead lead = leadRepository.findByIdAndIdAsesorAsignadoAndEtapaIn(
                         idLead,
                         currentUser.empleadoID(),
                         ETAPAS_GESTION_POSTVENTA
                 )
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(lead);
+        return lead;
     }
 
     private void validarLeadAsignadoGestionable(Lead lead) {
@@ -272,5 +275,6 @@ public class PagoPostventaService {
             Long idLead = lead == null ? null : lead.getId();
             throw new NotFoundException(Lead.class, idLead);
         }
+        postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(lead);
     }
 }

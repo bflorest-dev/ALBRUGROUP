@@ -64,7 +64,8 @@ class EncuestaPostventaServiceTest {
                 mock(PeriodoFacturacionPostventaRepository.class),
                 currentUser,
                 mapper,
-                mock(PaginationService.class)
+                mock(PaginationService.class),
+                mock(PostventaAsesorProveedorService.class)
         );
     }
 

@@ -43,6 +43,7 @@ public class EncuestaPostventaService {
     private final CurrentUser currentUser;
     private final EncuestaPostventaMapper mapper;
     private final PaginationService paginationService;
+    private final PostventaAsesorProveedorService postventaAsesorProveedorService;
 
     private static final Set<Etapa> ETAPAS_GESTION_POSTVENTA = Set.of(Etapa.POSTVENTA);
     private static final Set<String> ENCUESTA_SORT_FIELDS = Set.of(
@@ -182,11 +183,13 @@ public class EncuestaPostventaService {
     }
 
     private Lead obtenerLeadAsignadoGestionable(Long idLead) {
-        return leadRepository.findByIdAndIdAsesorAsignadoAndEtapaIn(
+        Lead lead = leadRepository.findByIdAndIdAsesorAsignadoAndEtapaIn(
                         idLead,
                         currentUser.empleadoID(),
                         ETAPAS_GESTION_POSTVENTA
                 )
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(lead);
+        return lead;
     }
 }

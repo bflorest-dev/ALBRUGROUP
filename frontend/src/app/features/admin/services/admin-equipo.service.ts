@@ -38,6 +38,7 @@ export class AdminEquipoService {
   private readonly authEquiposUrl = `${API_CONSTANTS.gatewayBaseUrl}/auth/equipos`;
   private readonly leadEquiposUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/equipos`;
   private readonly proveedoresUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/proveedores`;
+  private readonly postventaAsesoresUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/postventa/asesores`;
   private readonly backfillUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/equipos-backfill`;
   private readonly empleadosLightUrl = `${API_CONSTANTS.gatewayBaseUrl}/rrhh/empleados/light`;
 
@@ -96,6 +97,14 @@ export class AdminEquipoService {
       proveedorIds,
       idProveedorFallbackLeadSinCampana: idProveedorFallbackLeadSinCampana ?? null
     });
+  }
+
+  listarProveedoresPostventaAsesor(empleadoId: number): Observable<ProveedorLite[]> {
+    return this.http.get<ProveedorLite[]>(`${this.postventaAsesoresUrl}/${empleadoId}/proveedores`);
+  }
+
+  asignarProveedoresPostventaAsesor(empleadoId: number, proveedorIds: number[]): Observable<ProveedorLite[]> {
+    return this.http.put<ProveedorLite[]>(`${this.postventaAsesoresUrl}/${empleadoId}/proveedores`, { proveedorIds });
   }
 
   backfillLeads(): Observable<{ leadsActualizados: number }> {
