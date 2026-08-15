@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, Validators } from '@angular/forms';
@@ -16,7 +17,7 @@ import {
   ConnectedUserResponse,
   PresenceService
 } from '../../../core/services/presence.service';
-import { formatLeadIdentity } from '../../../shared/utils/phone-link';
+import { buildWhatsAppUrl, formatLeadIdentity, normalizeUsermeta } from '../../../shared/utils/phone-link';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 import { DailyLeadsService } from '../services/daily-leads.service';
@@ -90,6 +91,7 @@ export class DailyLeadsFacade {
   private readonly presenceService = inject(PresenceService);
   private readonly session = inject(SessionService);
   private readonly fb = inject(FormBuilder);
+  private readonly document = inject(DOCUMENT);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly operationalGateService = inject(OperationalGateService);
   private readonly operationalGate = this.operationalGateService.createGate('daily-leads');
@@ -181,6 +183,8 @@ export class DailyLeadsFacade {
   readonly selectedAssignmentAdvisorId = signal(0);
   readonly pendingReassignment = signal<PendingReassignment | null>(null);
   readonly pendingTakeover = signal<PendingTakeover | null>(null);
+  readonly snapshotPhoneEditorOpen = signal(false);
+  readonly snapshotNumberMaxLength = signal(9);
   /** Fecha operativa seleccionada (YYYY-MM-DD). Vacío = hoy (lo resuelve el backend en America/Lima). */
   readonly fecha = signal('');
   readonly leadSearchDraft = signal('');
@@ -665,6 +669,7 @@ export class DailyLeadsFacade {
     const lead = this.toGtrLead(row);
     this.clearMessages();
     this.activeSnapshotLead.set(lead);
+    this.snapshotPhoneEditorOpen.set(false);
     this.snapshotForm.reset({
       idLead: lead.id,
       prefijo: lead.prefijo || PERU_PHONE_PREFIX,
@@ -699,6 +704,7 @@ export class DailyLeadsFacade {
       numeroDocumentoTitularServicio: '',
       direccion: ''
     });
+    this.snapshotPhoneEditorOpen.set(false);
   }
 
   async submitAssignment(): Promise<void> {
@@ -878,6 +884,66 @@ export class DailyLeadsFacade {
   cancelTakeover(): void {
     this.pendingTakeover.set(null);
     this.activeDialog.set('snapshot');
+  }
+
+  canShowSnapshotPhoneCompletion(row: { prefijo?: string | null; lead?: string | null }): boolean {
+    return !this.hasLeadPhone(row);
+  }
+
+  openSnapshotPhoneEditor(): void {
+    const lead = this.selectedSnapshotLead();
+    if (!lead || this.hasLeadPhone(lead)) {
+      return;
+    }
+    this.snapshotPhoneEditorOpen.set(true);
+  }
+
+  normalizeSnapshotLeadNumber(value: string | null | undefined): void {
+    const normalized = this.normalizePhoneInput(value);
+    if (this.snapshotForm.controls.lead.value !== normalized) {
+      this.snapshotForm.controls.lead.setValue(normalized);
+    }
+  }
+
+  normalizeSnapshotUsermeta(value: string | null | undefined): void {
+    const normalized = normalizeUsermeta(value);
+    if (this.snapshotForm.controls.usermeta.value !== normalized) {
+      this.snapshotForm.controls.usermeta.setValue(normalized);
+    }
+  }
+
+  normalizeSnapshotDocumentNumber(value: string | null | undefined): void {
+    const normalized = (value ?? '').replace(/\D/g, '').slice(0, 11);
+    if (this.snapshotForm.controls.numeroDocumentoTitularServicio.value !== normalized) {
+      this.snapshotForm.controls.numeroDocumentoTitularServicio.setValue(normalized);
+    }
+  }
+
+  snapshotIdentityErrorMessage(): string | null {
+    const leadControl = this.snapshotForm.controls.lead;
+    if (leadControl.invalid && (leadControl.touched || leadControl.dirty)) {
+      return this.snapshotForm.controls.prefijo.value === PERU_PHONE_PREFIX
+        ? 'El numero debe tener 9 digitos.'
+        : 'El numero debe tener entre 6 y 15 digitos.';
+    }
+    return null;
+  }
+
+  hasLeadChat(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): boolean {
+    return !!buildWhatsAppUrl(row.prefijo, row.lead, row.usermeta);
+  }
+
+  openWhatsAppChat(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): void {
+    const url = buildWhatsAppUrl(row.prefijo, row.lead, row.usermeta);
+    if (!url) {
+      this.errorMessage.set('El lead no tiene telefono ni usermeta para abrir WhatsApp.');
+      return;
+    }
+    this.document.defaultView?.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  showCallError(message: string): void {
+    this.errorMessage.set(message);
   }
 
   closeEventHistory(): void {
@@ -1472,6 +1538,7 @@ export class DailyLeadsFacade {
   private updateSnapshotLeadValidation(prefijo?: string | null): void {
     const leadControl = this.snapshotForm.controls.lead;
     const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
+    this.snapshotNumberMaxLength.set(isPeruPrefix ? 9 : 15);
     leadControl.setValidators([Validators.pattern(isPeruPrefix ? PERU_LEAD_PATTERN : INTERNATIONAL_LEAD_PATTERN)]);
     leadControl.updateValueAndValidity({ emitEvent: false });
     this.snapshotForm.updateValueAndValidity({ emitEvent: false });
@@ -1502,6 +1569,14 @@ export class DailyLeadsFacade {
 
   private normalizeLookup(value?: string | null): string {
     return (value ?? '').trim().toUpperCase();
+  }
+
+  private normalizePhoneInput(value?: string | null): string {
+    return (value ?? '').replace(/\D/g, '');
+  }
+
+  private hasLeadPhone(row: { prefijo?: string | null; lead?: string | null }): boolean {
+    return !!row.prefijo && !!row.lead;
   }
 
   private async loadTipificationPalette(): Promise<void> {

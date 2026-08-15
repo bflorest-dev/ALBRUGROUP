@@ -13,6 +13,8 @@ import { PopoverModule } from 'primeng/popover';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { PhoneActionButtonComponent } from '../../../../shared/components/phone-action-button/phone-action-button.component';
+import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { DailyLeadsMetricsBarComponent } from '../../components/daily-leads-metrics-bar/daily-leads-metrics-bar.component';
 import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
@@ -37,6 +39,8 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
     SelectModule,
     InputTextModule,
     DateFieldComponent,
+    PhoneActionButtonComponent,
+    PhoneNumberFieldComponent,
     TipificationStackComponent,
     DailyLeadsMetricsBarComponent
   ],

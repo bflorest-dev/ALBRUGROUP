@@ -637,63 +637,118 @@
     [draggable]="false"
     [resizable]="false"
     appendTo="body"
-    styleClass="daily-leads-action-dialog daily-leads-action-dialog--wide"
+    styleClass="gtr-dialog gtr-dialog--snapshot"
   >
     <ng-template #header>
-      <span class="daily-leads__dialog-title">Gestionar</span>
+      <div class="snapshot-dialog-header">
+        @if (facade.selectedSnapshotLead(); as lead) {
+          <div class="snapshot-dialog-header__title">
+            <strong>Gestionar</strong>
+            <span>{{ facade.leadIdentity(lead) }}</span>
+          </div>
+          <div class="lead-contact-actions" aria-label="Contacto del lead">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-check-circle"
+              label="Tipificar"
+              size="small"
+              severity="secondary"
+              [disabled]="!facade.canMutateOperationalData()"
+              [loading]="facade.isSaving()"
+              (click)="facade.takeSnapshotLead()"
+            ></button>
+            <app-phone-action-button
+              [idLead]="lead.id"
+              [prefijo]="lead.prefijo"
+              [lead]="lead.lead"
+              size="small"
+              [disabled]="!facade.canMutateOperationalData()"
+              (callError)="facade.showCallError($event)"
+            />
+            <button
+              pButton
+              type="button"
+              icon="pi pi-whatsapp"
+              label="Chat"
+              size="small"
+              severity="secondary"
+              [disabled]="!facade.hasLeadChat(lead) || !facade.canMutateOperationalData()"
+              (click)="facade.openWhatsAppChat(lead)"
+            ></button>
+          </div>
+        } @else {
+          <div class="snapshot-dialog-header__title">
+            <strong>Gestionar</strong>
+          </div>
+        }
+      </div>
     </ng-template>
 
     @if (facade.activeSnapshotLead(); as lead) {
-      <form class="daily-leads__dialog-form" [formGroup]="facade.snapshotForm" (ngSubmit)="facade.saveSnapshot()">
-        <div class="daily-leads__dialog-lead daily-leads__dialog-lead--split">
-          <div>
-            <span>Lead</span>
-            <strong>{{ facade.leadIdentity(lead) }}</strong>
-          </div>
+      <form class="form-grid" [formGroup]="facade.snapshotForm" (ngSubmit)="facade.saveSnapshot()">
+        @if (!facade.canShowSnapshotPhoneCompletion(lead) || facade.snapshotPhoneEditorOpen()) {
+          <app-phone-number-field
+            class="wide"
+            label="Numero Celular"
+            [prefixControl]="$any(facade.snapshotForm.controls.prefijo)"
+            [numberControl]="$any(facade.snapshotForm.controls.lead)"
+            [numberMaxLength]="facade.snapshotNumberMaxLength()"
+            numberPlaceholder="Numero de lead"
+            [numberInvalidMessage]="facade.snapshotIdentityErrorMessage() ?? ''"
+            (focusout)="facade.normalizeSnapshotLeadNumber(facade.snapshotForm.controls.lead.value)"
+          />
+        } @else {
           <button
             pButton
+            class="wide"
             type="button"
-            icon="pi pi-user-edit"
-            label="Tomar gestión"
+            icon="pi pi-plus"
+            label="Agregar numero de contacto"
             severity="secondary"
             [outlined]="true"
-            [loading]="facade.isSaving()"
-            (click)="facade.takeSnapshotLead()"
+            [disabled]="facade.isSavingSnapshot() || !facade.canMutateOperationalData()"
+            (click)="facade.openSnapshotPhoneEditor()"
           ></button>
-        </div>
+        }
+        <label class="wide">
+          <span>Usuario WhatsApp</span>
+          <input
+            pInputText
+            type="text"
+            formControlName="usermeta"
+            placeholder="@EfrainBay"
+            autocomplete="off"
+            (blur)="facade.normalizeSnapshotUsermeta(facade.snapshotForm.controls.usermeta.value)"
+          />
+        </label>
+        @if (facade.snapshotIdentityErrorMessage(); as identityMessage) {
+          <p-message class="wide" severity="warn" [text]="identityMessage" />
+        }
+        <label class="wide">
+          <span>Numero de documento</span>
+          <input
+            pInputText
+            type="text"
+            formControlName="numeroDocumentoTitularServicio"
+            maxlength="11"
+            inputmode="numeric"
+            (input)="facade.normalizeSnapshotDocumentNumber(facade.snapshotForm.controls.numeroDocumentoTitularServicio.value)"
+          />
+        </label>
+        <label class="wide">
+          <span>Direccion</span>
+          <input pInputText type="text" formControlName="direccion" />
+        </label>
 
-        <div class="daily-leads__snapshot-grid">
-          <label class="daily-leads__dialog-field daily-leads__prefix-field">
-            <span>Prefijo</span>
-            <input pInputText formControlName="prefijo" />
-          </label>
-          <label class="daily-leads__dialog-field">
-            <span>Lead</span>
-            <input pInputText formControlName="lead" />
-          </label>
-          <label class="daily-leads__dialog-field">
-            <span>Usermeta</span>
-            <input pInputText formControlName="usermeta" />
-          </label>
-          <label class="daily-leads__dialog-field">
-            <span>Documento</span>
-            <input pInputText formControlName="numeroDocumentoTitularServicio" />
-          </label>
-          <label class="daily-leads__dialog-field daily-leads__full-field">
-            <span>Dirección</span>
-            <input pInputText formControlName="direccion" />
-          </label>
-        </div>
-
-        <div class="daily-leads__dialog-actions">
-          <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" (click)="facade.closeDialog()"></button>
+        <div class="dialog-actions">
+          <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeDialog()"></button>
           <button
             pButton
             type="submit"
             label="Guardar"
-            icon="pi pi-save"
             [loading]="facade.isSavingSnapshot()"
-            [disabled]="facade.snapshotForm.invalid"
+            [disabled]="!facade.canMutateOperationalData()"
           ></button>
         </div>
       </form>
