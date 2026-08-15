@@ -648,9 +648,10 @@ public class AsistenciaService implements IAsistencia {
 
     /**
      * Cierre automatico de la jornada (safety net). Lo invoca el job de reconciliacion del gateway
-     * cuando el empleado ya no esta conectado y su horario termino, para garantizar que quede su
-     * marca OFFLINE aunque haya cerrado el navegador sin marcar. Es idempotente: si la jornada ya
-     * esta cerrada o aun no vence, no hace nada. La salida se estampa en la salida programada.
+     * cuando el empleado ya no esta conectado y su horario termino. Solo limpia el estado real-time
+     * (OFFLINE) para que el monitor no lo muestre como conectado. NO estampa fechaHoraSalida: la
+     * politica es que el empleado DEBE marcar OFFLINE manualmente; si no lo hizo, el dia queda sin
+     * salida y se computa como FALTA en el resumen mensual y en el cumplimiento.
      */
     @Override
     @Transactional
@@ -667,15 +668,12 @@ public class AsistenciaService implements IAsistencia {
         LocalDateTime topeSalida = resolverTopeSalidaProgramada(idEmpleado, hoy);
         LocalDateTime ahora = OperationalDateTime.nowLocalDateTime();
         if (topeSalida == null || !ahora.isAfter(topeSalida)) {
-            // Aun dentro de su horario: no corresponde cerrar todavia.
             return toDetalleOperativoResponse(asistencia);
         }
 
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
         finalizarPausaPendiente(asistencia, topeSalida);
-        asistencia.setFechaHoraSalida(topeSalida);
         asistencia.setEstadoActual(EstadoAsistencia.OFFLINE);
-        recalcularMinutos(asistencia);
         Asistencia savedAsistencia = asistenciaRepository.save(asistencia);
         attendanceRealtimeNotifier.publishAfterCommit(
                 "ASISTENCIA_ESTADO_CAMBIADO",
@@ -858,7 +856,10 @@ public class AsistenciaService implements IAsistencia {
             diasLaborables++;
             minutosObjetivo += asistencia != null ? asistencia.getMinutosObjetivoDia() : programacion.minutosObjetivo();
 
-            if (asistencia == null || asistencia.getFechaHoraIngreso() == null) {
+            boolean sinRegistroCompleto = asistencia == null
+                    || asistencia.getFechaHoraIngreso() == null
+                    || (asistencia.getFechaHoraSalida() == null && fecha.isBefore(OperationalDateTime.today()));
+            if (sinRegistroCompleto) {
                 diasSinRegistro++;
                 continue;
             }

@@ -117,9 +117,10 @@ public class ResumenMensualService {
                     ? safe(asistencia.getMinutosObjetivoDia())
                     : objetivoNetoBase(idEmpleado, fecha);
 
-            if (asistencia == null || asistencia.getFechaHoraIngreso() == null) {
+            if (asistencia == null || asistencia.getFechaHoraIngreso() == null
+                    || asistencia.getFechaHoraSalida() == null) {
                 diasFalta++;
-                continue; // FALTA: la falta la penaliza el ms de calculo por conteo, no via balance.
+                continue; // FALTA: sin marca de ingreso O sin marca de salida (OFFLINE manual).
             }
             minutosTrabajados += safe(asistencia.getMinutosTrabajados());
             minutosExtra += safe(asistencia.getMinutosExtra());
