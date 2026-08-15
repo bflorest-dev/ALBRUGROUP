@@ -113,7 +113,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
   });
   protected readonly isAlwaysOnlineRole = computed(() => {
     const primaryRole = this.session()?.primaryRole;
-    return primaryRole === 'ADMINISTRADOR' || primaryRole === 'COMMUNITY';
+    return primaryRole === 'ADMINISTRADOR';
   });
   protected readonly attendanceStatusLabel = computed(() => {
     if (this.isAlwaysOnlineRole()) return 'ONLINE';
@@ -453,7 +453,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
         this.gtrAgendadosAlertFacade.stop();
       }
 
-      if (!session || session.primaryRole === 'ADMINISTRADOR' || session.primaryRole === 'COMMUNITY' || this.attendanceInitialized) {
+      if (!session || session.primaryRole === 'ADMINISTRADOR' || this.attendanceInitialized) {
         return;
       }
 

@@ -12,6 +12,7 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import {
@@ -52,6 +53,8 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly sessionService = inject(SessionService);
+  private readonly operationalGateService = inject(OperationalGateService);
+  private readonly operationalGate = this.operationalGateService.createGate('community-campaign-correction');
   private readonly realtimeSubscription = new Subscription();
 
   protected readonly leadQuery = signal('');
@@ -67,6 +70,8 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   protected readonly lastResult = signal<LeadCampanaCorreccionResponse | null>(null);
   protected readonly correctionDialogVisible = signal(false);
   protected readonly correctionDialogMessage = signal<string | null>(null);
+  protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
+  protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly pageEyebrow = computed(() =>
     this.sessionService.primaryRole() === 'ADMINISTRADOR' ? 'ADMIN' : 'COMMUNITY'
   );
@@ -102,6 +107,10 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   }
 
   protected async search(showLoading = true): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearCorrectionView();
+      return;
+    }
     const lead = this.normalizeLeadOrUsermeta(this.leadQuery());
     this.clearMessages();
     this.lastResult.set(null);
@@ -138,6 +147,10 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   }
 
   protected async selectCandidate(candidate: LeadCampanaCorreccionCandidatoResponse): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearCorrectionView();
+      return;
+    }
     this.selectedCandidate.set(candidate);
     this.selectedCampaignId.set(null);
     this.activeCampaigns.set([]);
@@ -151,6 +164,10 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   }
 
   protected confirmCorrection(): void {
+    if (!this.canMutateOperationalData()) {
+      this.errorMessage.set('Marca ONLINE para corregir la campaña.');
+      return;
+    }
     const candidate = this.selectedCandidate();
     if (!candidate) {
       this.errorMessage.set('Selecciona el lead que deseas corregir.');
@@ -199,6 +216,10 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   }
 
   private async saveCorrection(candidate: LeadCampanaCorreccionCandidatoResponse): Promise<void> {
+    if (!this.canMutateOperationalData()) {
+      this.errorMessage.set('Marca ONLINE para corregir la campaña.');
+      return;
+    }
     this.isSaving.set(true);
     this.clearMessages();
     try {
@@ -216,6 +237,9 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   }
 
   private async loadCompatibleCampaigns(candidate: LeadCampanaCorreccionCandidatoResponse): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     if (candidate.idEquipo === null || candidate.idEquipo === undefined) {
       return;
     }

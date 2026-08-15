@@ -18,6 +18,7 @@
         optionLabel="label"
         optionValue="value"
         [allowEmpty]="false"
+        [disabled]="!canDisplayOperationalData()"
         [fluid]="true"
         [ngModel]="activeView()"
         [ngModelOptions]="{ standalone: true }"
@@ -26,6 +27,14 @@
       />
     </div>
   </p-card>
+
+  @if (!canDisplayOperationalData()) {
+    <p-message
+      severity="warn"
+      text="Marca ONLINE para ver el dashboard de preventa."
+      styleClass="metrics-message"
+    />
+  } @else {
 
   @switch (activeView()) {
     @case ('asesores') {
@@ -172,8 +181,9 @@
             severity="secondary"
             [rounded]="true"
             [outlined]="true"
-            [loading]="isLoading()"
-            (click)="load()"
+          [loading]="isLoading()"
+          [disabled]="!canDisplayOperationalData()"
+          (click)="load()"
             pTooltip="Actualizar"
             tooltipPosition="top"
             aria-label="Actualizar"
@@ -250,5 +260,6 @@
         }
       </p-card>
     }
+  }
   }
 </section>

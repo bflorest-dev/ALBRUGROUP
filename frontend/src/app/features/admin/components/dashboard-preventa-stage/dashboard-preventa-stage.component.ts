@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
@@ -10,6 +10,8 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { SectionHeaderComponent } from '../../../../shared/components/section-header/section-header.component';
 import { CurrentUserTeamScopeService } from '../../../../core/services/current-user-team-scope.service';
+import { OperationalGateService } from '../../../../core/services/operational-gate.service';
+import { SessionService } from '../../../../core/services/session.service';
 import { esEquipoOperativo } from '../../../../shared/utils/equipos-operativos';
 import { resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { GestionCampoTipi } from '../../services/admin-gestion-campana.service';
@@ -69,6 +71,9 @@ export class DashboardPreventaStageComponent implements OnInit {
   private readonly metricsService = inject(AdminDailyMetricsService);
   private readonly equipoService = inject(AdminEquipoService);
   private readonly teamScope = inject(CurrentUserTeamScopeService);
+  private readonly operationalGateService = inject(OperationalGateService);
+  private readonly sessionService = inject(SessionService);
+  private readonly operationalGate = this.operationalGateService.createGate('dashboard-preventa-stage');
 
   protected readonly periodo = signal<MetricsPeriodo>('dia');
   /** Día puntual elegido en el segmento "Hoy" (`YYYY-MM-DD`). `null` = hoy. */
@@ -79,6 +84,8 @@ export class DashboardPreventaStageComponent implements OnInit {
   protected readonly modo = signal<GestionModoMetricas>('INGRESADOS');
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
+  protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly activeView = signal<PreventaDashboardView>('rendimiento');
   private readonly raw = signal<LeadsDiariosMetricasEquipo[]>([]);
   private readonly equipos = signal<Array<{ id: number; nombre: string; color?: string | null; activo: boolean }>>([]);
@@ -87,6 +94,8 @@ export class DashboardPreventaStageComponent implements OnInit {
   protected readonly selectedEquipoId = signal<number | null>(null);
   protected readonly isTeamScopedDashboard = signal(false);
   private readonly lockedEquipoId = signal<number | null>(null);
+  private readonly viewReady = signal(false);
+  private loadedAfterGate = false;
 
   /** "Todos" conserva la comparación lado a lado entre equipos, que es el valor de este bloque. */
   protected readonly equipoOptions = computed(() => [
@@ -174,6 +183,24 @@ export class DashboardPreventaStageComponent implements OnInit {
     return cards;
   });
 
+  constructor() {
+    effect(() => {
+      if (!this.viewReady()) {
+        return;
+      }
+      if (!this.canDisplayOperationalData()) {
+        this.loadedAfterGate = false;
+        this.clearOperationalData();
+        return;
+      }
+      if (this.loadedAfterGate) {
+        return;
+      }
+      this.loadedAfterGate = true;
+      void this.load();
+    });
+  }
+
   async ngOnInit(): Promise<void> {
     this.isTeamScopedDashboard.set(this.teamScope.isDashboardTeamScoped());
     const equipoId = await this.teamScope.getPrimaryEquipoId();
@@ -181,10 +208,14 @@ export class DashboardPreventaStageComponent implements OnInit {
     if (this.isTeamScopedDashboard()) {
       this.selectedEquipoId.set(equipoId);
     }
-    void this.load();
+    this.viewReady.set(true);
   }
 
   protected async onPeriodoChange(value: MetricsPeriodo): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (this.periodo() === value) {
       return;
     }
@@ -197,6 +228,10 @@ export class DashboardPreventaStageComponent implements OnInit {
   }
 
   protected async onDiaChange(value: string): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (this.dia() === value) {
       return;
     }
@@ -206,6 +241,10 @@ export class DashboardPreventaStageComponent implements OnInit {
   }
 
   protected async onCampoChange(value: GestionCampoTipi | null): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (!value || this.campo() === value) {
       return;
     }
@@ -214,6 +253,10 @@ export class DashboardPreventaStageComponent implements OnInit {
   }
 
   protected async onModoChange(value: GestionModoMetricas | null): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (!value || this.modo() === value) {
       return;
     }
@@ -223,6 +266,10 @@ export class DashboardPreventaStageComponent implements OnInit {
 
   /** El equipo solo filtra las tarjetas ya cargadas: no vuelve a pegar al backend. */
   protected onEquipoChange(value: number | null): void {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (this.isTeamScopedDashboard()) {
       this.selectedEquipoId.set(this.lockedEquipoId());
       return;
@@ -237,6 +284,11 @@ export class DashboardPreventaStageComponent implements OnInit {
   }
 
   protected async load(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
+    this.loadedAfterGate = true;
     this.isLoading.set(true);
     this.errorMessage.set('');
     try {
@@ -245,7 +297,7 @@ export class DashboardPreventaStageComponent implements OnInit {
         firstValueFrom(
           this.metricsService.obtenerPorEquipo(rango.desde, rango.hasta, this.campo(), this.modo())
         ),
-        firstValueFrom(this.equipoService.listarEquipos())
+        firstValueFrom(this.shouldUseVisibleTeamsCatalog() ? this.equipoService.listarMisEquipos() : this.equipoService.listarEquipos())
       ]);
       this.equipos.set(equipos);
       this.equipoNombreById.set(new Map(equipos.map((equipo) => [equipo.id, equipo.nombre])));
@@ -253,7 +305,9 @@ export class DashboardPreventaStageComponent implements OnInit {
         new Map(equipos.filter((equipo) => equipo.color).map((equipo) => [equipo.id, equipo.color as string]))
       );
       if (this.isTeamScopedDashboard()) {
-        this.selectedEquipoId.set(this.lockedEquipoId());
+        const equipoId = this.resolveLockedEquipoId(equipos);
+        this.lockedEquipoId.set(equipoId);
+        this.selectedEquipoId.set(equipoId);
       }
       this.raw.set(metricas);
     } catch {
@@ -262,6 +316,28 @@ export class DashboardPreventaStageComponent implements OnInit {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private clearOperationalData(): void {
+    this.raw.set([]);
+    this.equipos.set([]);
+    this.equipoNombreById.set(new Map());
+    this.equipoColorById.set(new Map());
+    this.errorMessage.set('');
+    this.isLoading.set(false);
+  }
+
+  private shouldUseVisibleTeamsCatalog(): boolean {
+    return this.isTeamScopedDashboard() || this.sessionService.getPrimaryRole() === 'COMMUNITY';
+  }
+
+  private resolveLockedEquipoId(equipos: Array<{ id: number; nombre: string; activo: boolean }>): number | null {
+    const locked = this.lockedEquipoId();
+    if (locked !== null) {
+      return locked;
+    }
+
+    return equipos.find((equipo) => equipo.activo !== false && esEquipoOperativo(equipo.nombre))?.id ?? equipos[0]?.id ?? null;
   }
 
   private toRow(metrica: LeadsDiariosMetricasEquipo, nombres: Map<number, string>): DashboardMetricRow {

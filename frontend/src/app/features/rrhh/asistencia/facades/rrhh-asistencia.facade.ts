@@ -15,9 +15,7 @@ import {
 import { HorarioResponse } from '../../../../shared/models/schedule/horario-response';
 import {
   AjusteJornadaRequest,
-  AjusteJornadaResponse,
   JornadaEfectivaResponse,
-  PreviewAjusteJornadaResponse,
   RazonAjuste,
   RegistrarAjusteV2Request
 } from '../../../../shared/models/schedule/jornada-efectiva-response';
@@ -337,12 +335,9 @@ export class RrhhAsistenciaFacade {
   readonly scheduleChangeErrorMessage = signal<string>('');
   readonly scheduleChangeSuccessMessage = signal<string>('');
 
-  // Ajuste puntual del horario efectivo de un dia
-  readonly isAdjustmentDialogVisible = signal<boolean>(false);
+  // Ajuste del día (v2): jornada base + señales compartidas por los editores inline
   readonly adjustmentDate = signal<string>('');
   readonly adjustmentJornada = signal<JornadaEfectivaResponse | null>(null);
-  readonly adjustmentPreview = signal<PreviewAjusteJornadaResponse | null>(null);
-  readonly adjustmentHistory = signal<AjusteJornadaResponse[]>([]);
   readonly isLoadingAdjustment = signal<boolean>(false);
   readonly isSavingAdjustment = signal<boolean>(false);
   readonly adjustmentError = signal<string | null>(null);
@@ -556,7 +551,8 @@ export class RrhhAsistenciaFacade {
     this.drawerHorario.set(null);
     this.drawerDetalleDias.set([]);
     this.isCorrectionDecisionVisible.set(false);
-    this.closeScheduleAdjustment();
+    this.adjustmentJornada.set(null);
+    this.adjustmentError.set(null);
   }
 
   // ─────────────────────────────────────────────────────────────────────
@@ -607,103 +603,6 @@ export class RrhhAsistenciaFacade {
       }
     } finally {
       this.isSubmittingHorario.set(false);
-    }
-  }
-
-  openScheduleAdjustment(): void {
-    if (!this.ensureCanMutate()) {
-      return;
-    }
-
-    if (!this.drawerEmpleado()) return;
-    this.adjustmentDate.set(this.getToday());
-    this.adjustmentPreview.set(null);
-    this.adjustmentError.set(null);
-    this.isAdjustmentDialogVisible.set(true);
-    void this.loadScheduleAdjustment();
-  }
-
-  closeScheduleAdjustment(): void {
-    this.isAdjustmentDialogVisible.set(false);
-    this.adjustmentJornada.set(null);
-    this.adjustmentPreview.set(null);
-    this.adjustmentHistory.set([]);
-    this.adjustmentError.set(null);
-  }
-
-  changeScheduleAdjustmentDate(fecha: string): void {
-    this.adjustmentDate.set(fecha);
-    this.adjustmentPreview.set(null);
-    void this.loadScheduleAdjustment();
-  }
-
-  async previewScheduleAdjustment(request: AjusteJornadaRequest): Promise<void> {
-    const empleado = this.drawerEmpleado();
-    if (!empleado) return;
-    this.isLoadingAdjustment.set(true);
-    this.adjustmentError.set(null);
-    try {
-      const preview = await firstValueFrom(
-        this.scheduleAdjustmentService
-          .preview(empleado.idEmpleado, request)
-          .pipe(timeout(REQUEST_TIMEOUT_MS))
-      );
-      this.adjustmentPreview.set(preview);
-    } catch (error) {
-      this.adjustmentError.set(this.extractErrorMessage(error, 'No se pudo preparar la vista previa.'));
-    } finally {
-      this.isLoadingAdjustment.set(false);
-    }
-  }
-
-  async saveScheduleAdjustment(request: AjusteJornadaRequest): Promise<void> {
-    if (!this.ensureCanMutate()) {
-      return;
-    }
-
-    const empleado = this.drawerEmpleado();
-    if (!empleado) return;
-    this.isSavingAdjustment.set(true);
-    this.adjustmentError.set(null);
-    try {
-      await firstValueFrom(
-        this.scheduleAdjustmentService
-          .registrar(empleado.idEmpleado, request)
-          .pipe(timeout(REQUEST_TIMEOUT_MS))
-      );
-      this.scheduleChangeSuccessMessage.set('Ajuste puntual guardado. El horario base no cambio.');
-      await this.loadScheduleAdjustment();
-      await this.refreshDrawerAfterScheduleMutation(empleado.idEmpleado);
-      void this.recargar();
-    } catch (error) {
-      this.adjustmentError.set(this.extractErrorMessage(error, 'No se pudo guardar el ajuste puntual.'));
-    } finally {
-      this.isSavingAdjustment.set(false);
-    }
-  }
-
-  async cancelScheduleAdjustment(idAjuste: number): Promise<void> {
-    if (!this.ensureCanMutate()) {
-      return;
-    }
-
-    const empleado = this.drawerEmpleado();
-    if (!empleado) return;
-    this.isSavingAdjustment.set(true);
-    this.adjustmentError.set(null);
-    try {
-      await firstValueFrom(
-        this.scheduleAdjustmentService
-          .cancelar(empleado.idEmpleado, idAjuste)
-          .pipe(timeout(REQUEST_TIMEOUT_MS))
-      );
-      await this.loadScheduleAdjustment();
-      await this.refreshDrawerAfterScheduleMutation(empleado.idEmpleado);
-      void this.recargar();
-    } catch (error) {
-      this.adjustmentError.set(this.extractErrorMessage(error, 'No se pudo cancelar el ajuste puntual.'));
-    } finally {
-      this.isSavingAdjustment.set(false);
     }
   }
 
@@ -786,20 +685,12 @@ export class RrhhAsistenciaFacade {
     this.isLoadingAdjustment.set(true);
     this.adjustmentError.set(null);
     try {
-      const [jornada, history] = await Promise.all([
-        firstValueFrom(
-          this.scheduleAdjustmentService
-            .getJornada(empleado.idEmpleado, fecha)
-            .pipe(timeout(REQUEST_TIMEOUT_MS))
-        ),
-        firstValueFrom(
-          this.scheduleAdjustmentService
-            .listar(empleado.idEmpleado, fecha)
-            .pipe(timeout(REQUEST_TIMEOUT_MS))
-        )
-      ]);
+      const jornada = await firstValueFrom(
+        this.scheduleAdjustmentService
+          .getJornada(empleado.idEmpleado, fecha)
+          .pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
       this.adjustmentJornada.set(jornada);
-      this.adjustmentHistory.set(history);
     } catch (error) {
       this.adjustmentError.set(this.extractErrorMessage(error, 'No fue posible cargar el horario de ese dia.'));
     } finally {

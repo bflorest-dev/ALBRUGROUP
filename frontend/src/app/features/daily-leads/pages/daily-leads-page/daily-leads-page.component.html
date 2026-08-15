@@ -45,6 +45,13 @@
     @if (facade.errorMessage()) {
       <p-message severity="error" [text]="facade.errorMessage()" styleClass="daily-leads__message" />
     }
+    @if (!facade.canDisplayOperationalData()) {
+      <p-message
+        severity="warn"
+        text="Marca ONLINE para ver y gestionar los leads del día."
+        styleClass="daily-leads__message"
+      />
+    }
 
     <section class="daily-leads__organization" aria-label="Organizar resultados">
       <div class="daily-leads__organization-copy">
@@ -58,12 +65,27 @@
       </div>
 
       <div class="daily-leads__organization-actions">
+        <label class="daily-leads__tip-view-select">
+          <span>Ver tipi</span>
+          <select
+            class="daily-leads__tip-view-select-control"
+            [ngModel]="visibleTipificationColumn"
+            [disabled]="!facade.canDisplayOperationalData()"
+            (ngModelChange)="setVisibleTipificationColumn($any($event))"
+          >
+            @for (option of visibleTipificationColumnOptions; track option.value) {
+              <option [ngValue]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+
         <button
           pButton
           type="button"
           icon="pi pi-search"
           label="Buscar"
           severity="secondary"
+          [disabled]="!facade.canDisplayOperationalData()"
           (click)="searchPopover.toggle($event)"
         ></button>
 
@@ -79,6 +101,7 @@
                 placeholder="Ej. 987654321 o PedroVM"
                 [ngModel]="facade.leadSearchDraft()"
                 name="dailyLeadsSearch"
+                [disabled]="!facade.canDisplayOperationalData()"
                 (ngModelChange)="onLeadSearchChange($event)"
               />
             </label>
@@ -90,7 +113,7 @@
                 label="Limpiar"
                 severity="secondary"
                 [outlined]="true"
-                [disabled]="!facade.leadSearch() && !facade.leadSearchDraft()"
+                [disabled]="!facade.canDisplayOperationalData() || (!facade.leadSearch() && !facade.leadSearchDraft())"
                 (click)="onLeadSearchClear(searchPopover)"
               ></button>
               <button
@@ -98,7 +121,7 @@
                 type="submit"
                 label="Buscar"
                 icon="pi pi-search"
-                [disabled]="!facade.leadSearchDraft()"
+                [disabled]="!facade.canDisplayOperationalData() || !facade.leadSearchDraft()"
               ></button>
             </div>
           </form>
@@ -111,6 +134,7 @@
           label="Organizar"
           severity="secondary"
           [outlined]="true"
+          [disabled]="!facade.canDisplayOperationalData()"
           (mouseenter)="onOrganizeEnter()"
           (mouseleave)="onOrganizeLeave(organizePopover)"
           (click)="onOrganizeEnter(); organizePopover.toggle($event)"
@@ -124,6 +148,7 @@
               inputId="daily-leads-grouping"
               [options]="facade.groupingModeOptions()"
               [ngModel]="facade.groupingMode()"
+              [disabled]="!facade.canDisplayOperationalData()"
               optionLabel="label"
               optionValue="value"
               (onChange)="onGroupingModeChange($any($event.value))"
@@ -139,6 +164,7 @@
                 [options]="facade.activeGroupOptions()"
                 optionLabel="etiqueta"
                 [showClear]="true"
+                [disabled]="!facade.canDisplayOperationalData()"
                 emptyMessage="No hay opciones disponibles"
                 (onChange)="onGroupChange($event.value)"
               >
@@ -160,6 +186,7 @@
               inputId="daily-leads-sort"
               [options]="facade.sortOptions"
               [ngModel]="facade.sortField()"
+              [disabled]="!facade.canDisplayOperationalData()"
               optionLabel="label"
               optionValue="value"
               (onChange)="onSortFieldChange($any($event.value))"
@@ -172,6 +199,7 @@
               inputId="daily-leads-direction"
               [options]="facade.sortDirectionOptions()"
               [ngModel]="facade.sortDirection()"
+              [disabled]="!facade.canDisplayOperationalData()"
               optionLabel="label"
               optionValue="value"
               (onChange)="onSortDirectionChange($any($event.value))"
@@ -193,83 +221,116 @@
       [loading]="facade.isLoading()"
       [rowHover]="true"
       [scrollable]="true"
-      [tableStyle]="{ 'min-width': '1500px', 'table-layout': 'fixed' }"
+      [tableStyle]="{ width: '100%', 'table-layout': 'fixed' }"
       styleClass="p-datatable-sm daily-leads__table"
     >
+      <ng-template #colgroup>
+        <colgroup>
+          <col class="daily-leads__expander-col" />
+          <col class="daily-leads__time-col" />
+          <col class="daily-leads__lead-col" />
+          <col class="daily-leads__gtr-col" />
+          <col class="daily-leads__last-manager-col" />
+          <col class="daily-leads__last-assignment-col" />
+          <col class="daily-leads__assignments-col" />
+          <col class="daily-leads__campaign-col" />
+          <col class="daily-leads__tipifications-col" />
+          <col class="daily-leads__actions-col" />
+        </colgroup>
+      </ng-template>
       <ng-template #header>
         <tr>
           <th class="daily-leads__expander-col"></th>
-          <th>
+          <th class="daily-leads__time-col">
             <button
               type="button"
               class="daily-leads__sort-header"
               [class.daily-leads__sort-header--active]="facade.sortActive('createdAt')"
               [attr.aria-label]="facade.sortLabel('createdAt', 'hora registro')"
               [title]="facade.sortLabel('createdAt', 'hora registro')"
+              [disabled]="!facade.canDisplayOperationalData()"
               (click)="facade.changeColumnSort('createdAt')"
             >
-              <span>Hora Registro</span>
+              <span>Hora</span>
               <i [class]="facade.sortIcon('createdAt')" aria-hidden="true"></i>
             </button>
           </th>
-          <th>Lead</th>
-          <th>GTR</th>
-          <th>Ultimo Gestor</th>
-          <th>Ultima Asignacion</th>
-          <th>
+          <th class="daily-leads__lead-col">Lead</th>
+          <th class="daily-leads__gtr-col">GTR</th>
+          <th class="daily-leads__last-manager-col">
+            <span class="daily-leads__head-stack">
+              <span>Ultimo</span>
+              <span>Gestor</span>
+            </span>
+          </th>
+          <th class="daily-leads__last-assignment-col">
+            <span class="daily-leads__head-stack">
+              <span>Ultima</span>
+              <span>Asignacion</span>
+            </span>
+          </th>
+          <th class="daily-leads__assignments-col">
             <button
               type="button"
               class="daily-leads__sort-header"
               [class.daily-leads__sort-header--active]="facade.sortActive('totalAsignacionesHoyPreventa')"
               [attr.aria-label]="facade.sortLabel('totalAsignacionesHoyPreventa', 'asignaciones hoy')"
               [title]="facade.sortLabel('totalAsignacionesHoyPreventa', 'asignaciones hoy')"
+              [disabled]="!facade.canDisplayOperationalData()"
               (click)="facade.changeColumnSort('totalAsignacionesHoyPreventa')"
             >
-              <span>Asignaciones hoy</span>
+              <span class="daily-leads__head-stack">
+                <span>Asignaciones</span>
+                <span>hoy</span>
+              </span>
               <i [class]="facade.sortIcon('totalAsignacionesHoyPreventa')" aria-hidden="true"></i>
             </button>
           </th>
-          <th>Campaña</th>
-          <th>
-            <button
-              type="button"
-              class="daily-leads__sort-header"
-              [class.daily-leads__sort-header--active]="facade.sortActive('primeraTipificacion')"
-              [attr.aria-label]="facade.sortLabel('primeraTipificacion', 'primera tipificación')"
-              [title]="facade.sortLabel('primeraTipificacion', 'primera tipificación')"
-              (click)="facade.changeColumnSort('primeraTipificacion')"
-            >
-              <span>Primera tipificación</span>
-              <i [class]="facade.sortIcon('primeraTipificacion')" aria-hidden="true"></i>
-            </button>
+          <th class="daily-leads__campaign-col">Campaña</th>
+          <th class="daily-leads__tipifications-col">
+            <div class="daily-leads__tip-sort-group">
+              <span class="daily-leads__tip-sort-title">Tipificación</span>
+              <span class="daily-leads__tip-sort-actions">
+                <button
+                  type="button"
+                  class="daily-leads__sort-header daily-leads__sort-header--tip"
+                  [class.daily-leads__sort-header--active]="facade.sortActive('primeraTipificacion')"
+                  [attr.aria-label]="facade.sortLabel('primeraTipificacion', 'primera tipificación')"
+                  [title]="facade.sortLabel('primeraTipificacion', 'primera tipificación')"
+                  [disabled]="!facade.canDisplayOperationalData()"
+                  (click)="facade.changeColumnSort('primeraTipificacion')"
+                >
+                  <span>Primera</span>
+                  <i [class]="facade.sortIcon('primeraTipificacion')" aria-hidden="true"></i>
+                </button>
+                <button
+                  type="button"
+                  class="daily-leads__sort-header daily-leads__sort-header--tip"
+                  [class.daily-leads__sort-header--active]="facade.sortActive('mayorTipificacion')"
+                  [attr.aria-label]="facade.sortLabel('mayorTipificacion', 'mayor tipificación')"
+                  [title]="facade.sortLabel('mayorTipificacion', 'mayor tipificación')"
+                  [disabled]="!facade.canDisplayOperationalData()"
+                  (click)="facade.changeColumnSort('mayorTipificacion')"
+                >
+                  <span>Mayor</span>
+                  <i [class]="facade.sortIcon('mayorTipificacion')" aria-hidden="true"></i>
+                </button>
+                <button
+                  type="button"
+                  class="daily-leads__sort-header daily-leads__sort-header--tip"
+                  [class.daily-leads__sort-header--active]="facade.sortActive('ultimaTipificacion')"
+                  [attr.aria-label]="facade.sortLabel('ultimaTipificacion', 'última tipificación')"
+                  [title]="facade.sortLabel('ultimaTipificacion', 'última tipificación')"
+                  [disabled]="!facade.canDisplayOperationalData()"
+                  (click)="facade.changeColumnSort('ultimaTipificacion')"
+                >
+                  <span>Última</span>
+                  <i [class]="facade.sortIcon('ultimaTipificacion')" aria-hidden="true"></i>
+                </button>
+              </span>
+            </div>
           </th>
-          <th>
-            <button
-              type="button"
-              class="daily-leads__sort-header"
-              [class.daily-leads__sort-header--active]="facade.sortActive('mayorTipificacion')"
-              [attr.aria-label]="facade.sortLabel('mayorTipificacion', 'mayor tipificación')"
-              [title]="facade.sortLabel('mayorTipificacion', 'mayor tipificación')"
-              (click)="facade.changeColumnSort('mayorTipificacion')"
-            >
-              <span>Mayor tipificación</span>
-              <i [class]="facade.sortIcon('mayorTipificacion')" aria-hidden="true"></i>
-            </button>
-          </th>
-          <th>
-            <button
-              type="button"
-              class="daily-leads__sort-header"
-              [class.daily-leads__sort-header--active]="facade.sortActive('ultimaTipificacion')"
-              [attr.aria-label]="facade.sortLabel('ultimaTipificacion', 'última tipificación')"
-              [title]="facade.sortLabel('ultimaTipificacion', 'última tipificación')"
-              (click)="facade.changeColumnSort('ultimaTipificacion')"
-            >
-              <span>Última tipificación</span>
-              <i [class]="facade.sortIcon('ultimaTipificacion')" aria-hidden="true"></i>
-            </button>
-          </th>
-          <th class="daily-leads__actions-col">Historial</th>
+          <th class="daily-leads__actions-col">Acciones</th>
         </tr>
       </ng-template>
 
@@ -277,7 +338,7 @@
         @if (row.isPlaceholder) {
           <tr class="daily-leads__placeholder-row" aria-hidden="true">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="11"></td>
+            <td colspan="9"></td>
           </tr>
         } @else {
         <tr class="daily-leads__data-row">
@@ -292,12 +353,13 @@
                 [icon]="facade.isRegistrosExpanded(row.idLead) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
                 [title]="'Ver los otros ' + (row.totalRegistrosDia - 1) + ' registros del día'"
                 aria-label="Ver otros registros del día"
+                [disabled]="!facade.canDisplayOperationalData()"
                 (click)="facade.toggleRegistros(row)"
               ></button>
             }
           </td>
-          <td class="daily-leads__time">{{ row.hora }}</td>
-          <td>
+          <td class="daily-leads__time daily-leads__time-col">{{ row.hora }}</td>
+          <td class="daily-leads__lead-col">
             <span class="daily-leads__lead">
               <i class="pi pi-phone"></i>
               <strong>{{ row.leadDisplay }}</strong>
@@ -311,51 +373,119 @@
               }
             </span>
           </td>
-          <td class="daily-leads__person" [title]="row.asesor">{{ row.asesorDisplay }}</td>
-          <td class="daily-leads__person" [title]="row.ultimoAsesor">{{ row.ultimoAsesorDisplay }}</td>
-          <td class="daily-leads__person" [title]="row.ultimaAsignacion">{{ row.ultimaAsignacionDisplay }}</td>
-          <td>
+          <td class="daily-leads__person daily-leads__gtr-col" [title]="row.asesor">
+            <span class="daily-leads__name-stack">{{ row.asesorDisplay }}</span>
+          </td>
+          <td class="daily-leads__person daily-leads__last-manager-col" [title]="row.ultimoAsesor">
+            <span class="daily-leads__name-stack">{{ row.ultimoAsesorDisplay }}</span>
+          </td>
+          <td class="daily-leads__person daily-leads__last-assignment-col" [title]="row.ultimaAsignacion">
+            <span class="daily-leads__name-stack">{{ row.ultimaAsignacionDisplay }}</span>
+          </td>
+          <td class="daily-leads__assignments-col">
             <p-tag
               [value]="facade.display(row.totalAsignacionesHoyPreventa)"
               [severity]="row.totalAsignacionesHoyPreventa > 0 ? 'info' : 'secondary'"
               styleClass="daily-leads__assignments-tag"
             />
           </td>
-          <td class="daily-leads__campaign">{{ row.campana }}</td>
-          <td>
-            <app-tipification-stack
-              [codigoTipificacion]="row.primeraCodigoTipificacion"
-              [codigoSubtipificacion]="row.primeraCodigoSubtipificacion"
-              [paletteByCode]="facade.tipificationPaletteByCode()"
-            />
-          </td>
-          <td>
-            <app-tipification-stack
-              [codigoTipificacion]="row.mayorRangoCodigoTipificacion"
-              [codigoSubtipificacion]="row.mayorRangoCodigoSubtipificacion"
-              [paletteByCode]="facade.tipificationPaletteByCode()"
-            />
-          </td>
-          <td>
-            <app-tipification-stack
-              [codigoTipificacion]="row.codigoTipificacion"
-              [codigoSubtipificacion]="row.codigoSubtipificacion"
-              [paletteByCode]="facade.tipificationPaletteByCode()"
-            />
+          <td class="daily-leads__campaign daily-leads__campaign-col">{{ row.campana }}</td>
+          <td class="daily-leads__tipifications-col">
+            <div class="daily-leads__tip-view" tabindex="0">
+              <div
+                class="daily-leads__tip-view-item"
+                role="button"
+                tabindex="0"
+                title="Mostrar primera tipificación"
+                [class.daily-leads__tip-view-item--active]="visibleTipificationColumn === 'primera'"
+                (click)="setVisibleTipificationColumn('primera')"
+                (keydown.enter)="setVisibleTipificationColumn('primera')"
+                (keydown.space)="setVisibleTipificationColumn('primera')"
+              >
+                <span class="daily-leads__tip-view-label">Primera</span>
+                <app-tipification-stack
+                  [codigoTipificacion]="row.primeraCodigoTipificacion"
+                  [codigoSubtipificacion]="row.primeraCodigoSubtipificacion"
+                  [paletteByCode]="facade.tipificationPaletteByCode()"
+                />
+              </div>
+              <div
+                class="daily-leads__tip-view-item"
+                role="button"
+                tabindex="0"
+                title="Mostrar mayor tipificación"
+                [class.daily-leads__tip-view-item--active]="visibleTipificationColumn === 'mayor'"
+                (click)="setVisibleTipificationColumn('mayor')"
+                (keydown.enter)="setVisibleTipificationColumn('mayor')"
+                (keydown.space)="setVisibleTipificationColumn('mayor')"
+              >
+                <span class="daily-leads__tip-view-label">Mayor</span>
+                <app-tipification-stack
+                  [codigoTipificacion]="row.mayorRangoCodigoTipificacion"
+                  [codigoSubtipificacion]="row.mayorRangoCodigoSubtipificacion"
+                  [paletteByCode]="facade.tipificationPaletteByCode()"
+                />
+              </div>
+              <div
+                class="daily-leads__tip-view-item"
+                role="button"
+                tabindex="0"
+                title="Mostrar última tipificación"
+                [class.daily-leads__tip-view-item--active]="visibleTipificationColumn === 'ultima'"
+                (click)="setVisibleTipificationColumn('ultima')"
+                (keydown.enter)="setVisibleTipificationColumn('ultima')"
+                (keydown.space)="setVisibleTipificationColumn('ultima')"
+              >
+                <span class="daily-leads__tip-view-label">Última</span>
+                <app-tipification-stack
+                  [codigoTipificacion]="row.codigoTipificacion"
+                  [codigoSubtipificacion]="row.codigoSubtipificacion"
+                  [paletteByCode]="facade.tipificationPaletteByCode()"
+                />
+              </div>
+            </div>
           </td>
           <td class="daily-leads__actions-col">
-            <button
-              pButton
-              type="button"
-              icon="pi pi-history"
-              size="small"
-              severity="secondary"
-              [outlined]="true"
-              [disabled]="facade.isLoadingEvents()"
-              title="Ver historial del dia"
-              aria-label="Ver historial del dia"
-              (click)="facade.openEventHistory(row)"
-            ></button>
+            <div class="daily-leads__row-actions">
+              <button
+                pButton
+                type="button"
+                size="small"
+                class="daily-leads__assign-button"
+                [disabled]="!facade.canOpenPlatform(row)"
+                title="Asignar en Plataforma"
+                aria-label="Asignar en Plataforma"
+                (click)="facade.openPlatform(row)"
+              >
+                <span class="daily-leads__assign-action">
+                  <i class="pi pi-send" aria-hidden="true"></i>
+                  <span class="daily-leads__assign-label">Asignar</span>
+                </span>
+                <span class="daily-leads__assign-count">{{ facade.display(row.totalAsignacionesHoyPreventa) }}</span>
+              </button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-cog"
+                size="small"
+                severity="secondary"
+                [disabled]="!facade.canOpenPlatform(row)"
+                title="Gestionar en Plataforma"
+                aria-label="Gestionar en Plataforma"
+                (click)="facade.openPlatform(row)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-history"
+                size="small"
+                severity="secondary"
+                [disabled]="!facade.canDisplayOperationalData() || facade.isLoadingEvents()"
+                title="Ver historial del dia"
+                aria-label="Ver historial del dia"
+                (click)="facade.openEventHistory(row)"
+              ></button>
+            </div>
           </td>
         </tr>
         }
@@ -365,42 +495,40 @@
         @if (facade.loadingRegistrosLeadId() === row.idLead) {
           <tr class="daily-leads__registros-row">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="11" class="daily-leads__registros-note">Cargando registros...</td>
+            <td colspan="9" class="daily-leads__registros-note">Cargando registros...</td>
           </tr>
         } @else if (facade.registrosByLead()[row.idLead]?.length) {
           <tr class="daily-leads__registros-row daily-leads__registros-row--head">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="11" class="daily-leads__registros-note">Otros registros de hoy para este lead</td>
+            <td colspan="9" class="daily-leads__registros-note">Otros registros de hoy para este lead</td>
           </tr>
           @for (registro of facade.registrosByLead()[row.idLead]; track $index) {
             <tr class="daily-leads__registros-row">
               <td class="daily-leads__expander-col"></td>
-              <td class="daily-leads__registros-hora">{{ registro.hora }}</td>
+              <td class="daily-leads__registros-hora daily-leads__time-col">{{ registro.hora }}</td>
               <td class="daily-leads__registros-branch" aria-hidden="true">
                 <i class="pi pi-angle-right"></i>
               </td>
-              <td>{{ registro.asesor }}</td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td class="daily-leads__campaign">{{ registro.campana }}</td>
-              <td></td>
-              <td></td>
-              <td></td>
+              <td class="daily-leads__gtr-col">{{ registro.asesor }}</td>
+              <td class="daily-leads__last-manager-col"></td>
+              <td class="daily-leads__last-assignment-col"></td>
+              <td class="daily-leads__assignments-col"></td>
+              <td class="daily-leads__campaign daily-leads__campaign-col">{{ registro.campana }}</td>
+              <td class="daily-leads__tipifications-col"></td>
               <td></td>
             </tr>
           }
         } @else {
           <tr class="daily-leads__registros-row">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="11" class="daily-leads__registros-note">No hay registros adicionales.</td>
+            <td colspan="9" class="daily-leads__registros-note">No hay registros adicionales.</td>
           </tr>
         }
       </ng-template>
 
       <ng-template #emptymessage>
         <tr>
-          <td colspan="12">
+          <td colspan="10">
             @if (facade.isLoading()) {
               <div class="daily-leads__empty">Cargando...</div>
             } @else {

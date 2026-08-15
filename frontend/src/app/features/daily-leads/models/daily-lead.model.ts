@@ -42,6 +42,7 @@ export interface DailyLeadRegistroView {
 /** Modelo de vista listo para render: textos precomputados, sin lógica en el template. */
 export interface DailyLeadRowView {
   idLead: number;
+  idEquipo?: number | null;
   prefijo: string | null;
   lead: string | null;
   usermeta?: string | null;

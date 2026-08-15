@@ -12,6 +12,11 @@ import { LogoutRequest } from '../../../shared/models/auth/logout-request';
 import { RefreshRequest } from '../../../shared/models/auth/refresh-request';
 import { RefreshResponse } from '../../../shared/models/auth/refresh-response';
 
+interface AuthEquipoResponse {
+  id: number;
+  nombre: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -44,5 +49,9 @@ export class AuthService {
 
   getUsuarioPorEmpleadoId(empleadoId: number): Observable<UsuarioResponse> {
     return this.http.get<UsuarioResponse>(`${this.authUrl}/${empleadoId}/empleado`);
+  }
+
+  getMisEquipos(): Observable<AuthEquipoResponse[]> {
+    return this.http.get<AuthEquipoResponse[]>(`${this.authUrl}/equipos/mis-equipos`);
   }
 }

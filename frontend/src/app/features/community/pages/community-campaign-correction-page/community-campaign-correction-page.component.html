@@ -33,6 +33,9 @@
   @if (errorMessage()) {
     <p-message severity="error" [text]="errorMessage() ?? ''" />
   }
+  @if (!canDisplayOperationalData()) {
+    <p-message severity="warn" text="Marca ONLINE para buscar y corregir campañas." />
+  }
 
   <p-card styleClass="campaign-correction-card">
     <div class="search-row">
@@ -43,6 +46,7 @@
           type="text"
           maxlength="80"
           [ngModel]="leadQuery()"
+          [disabled]="!canDisplayOperationalData()"
           (ngModelChange)="updateLeadQuery($event)"
           (keydown.enter)="search()"
           placeholder="Ej. 916855497 o EfrainBay"
@@ -54,6 +58,7 @@
         icon="pi pi-search"
         label="Buscar"
         [loading]="isLoading()"
+        [disabled]="!canDisplayOperationalData()"
         (click)="search()"
       ></button>
     </div>
@@ -88,6 +93,7 @@
                 label="Elegir"
                 icon="pi pi-check"
                 severity="secondary"
+                [disabled]="!canDisplayOperationalData()"
                 (click)="selectCandidate(candidate)"
               ></button>
             </td>
@@ -145,7 +151,7 @@
             [ngModel]="selectedCampaignId()"
             (ngModelChange)="selectedCampaignId.set($event)"
             placeholder="Elige una campaña"
-            [disabled]="isLoadingCampaigns()"
+            [disabled]="!canDisplayOperationalData() || isLoadingCampaigns()"
             appendTo="body"
           />
         </label>
@@ -155,7 +161,7 @@
           icon="pi pi-save"
           label="Guardar corrección"
           [loading]="isSaving()"
-          [disabled]="isLoadingCampaigns()"
+          [disabled]="!canMutateOperationalData() || isLoadingCampaigns()"
           (click)="confirmCorrection()"
         ></button>
       </div>

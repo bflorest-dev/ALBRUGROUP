@@ -7,7 +7,6 @@ import { SessionService } from './session.service';
 const TEAM_SCOPED_DASHBOARD_ROLES = new Set([
   'ASESOR_GTR',
   'SUPERVISOR_GTR',
-  'COMMUNITY',
   'ASESOR_BACKOFFICE',
   'SUPERVISOR_BACKOFFICE',
   'SUPERVISOR_VENTAS',
@@ -49,9 +48,14 @@ export class CurrentUserTeamScopeService {
     }
 
     const request = firstValueFrom(
-      this.authService.getUsuarioPorEmpleadoId(empleadoId).pipe(
-        map((usuario) => usuario.equipoIds ?? []),
-        catchError(() => of([]))
+      this.authService.getMisEquipos().pipe(
+        map((equipos) => equipos.map((equipo) => equipo.id)),
+        catchError(() =>
+          this.authService.getUsuarioPorEmpleadoId(empleadoId).pipe(
+            map((usuario) => usuario.equipoIds ?? []),
+            catchError(() => of([]))
+          )
+        )
       )
     );
     this.equipoIdsByEmpleado.set(empleadoId, request);

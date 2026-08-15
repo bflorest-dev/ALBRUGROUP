@@ -57,8 +57,11 @@
   @if (pageMode() !== 'mantenimiento' && facade.errorMessage()) {
     <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
   }
+  @if (pageMode() !== 'finanzas' && !facade.canDisplayOperationalData()) {
+    <p-message severity="warn" text="Marca ONLINE para usar esta sección." />
+  }
 
-  @if (pageMode() === 'mantenimiento') {
+  @if (pageMode() === 'mantenimiento' && facade.canDisplayOperationalData()) {
     <app-catalog-maintenance-panel />
   } @else if (pageMode() === 'finanzas') {
     <app-campaign-finance-dashboard-panel
@@ -75,7 +78,7 @@
       [selectedCampaign]="facade.selectedExpenseCampaign()"
       [snapshotsVisible]="facade.expenseSnapshotsOpen()"
       [allowExpenseRegistration]="true"
-      [expenseRegistrationEnabled]="facade.canMutateOperationalData()"
+      [expenseRegistrationEnabled]="facade.canUseFinanceExpenses()"
       [expenseDialogVisible]="facade.expenseDialogOpen()"
       [expenseForm]="facade.expenseForm"
       [expenseErrorMessage]="facade.errorMessage()"
@@ -93,7 +96,7 @@
       (openSnapshots)="facade.openExpenseSnapshots($event)"
       (closeSnapshots)="facade.closeExpenseSnapshots()"
     />
-  } @else {
+  } @else if (facade.canDisplayOperationalData()) {
     <section class="metrics-empty">
       <p-card styleClass="community-info-card">
         <div class="metrics-empty__content">

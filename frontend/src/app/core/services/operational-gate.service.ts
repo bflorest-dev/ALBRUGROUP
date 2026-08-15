@@ -9,7 +9,7 @@ import { SessionService } from './session.service';
  * considerarlos operativos por definicion (si no, verian la vista bloqueada por una marcacion
  * que nunca hacen).
  */
-const ALWAYS_OPERATIONAL_ROLES = new Set(['ADMINISTRADOR', 'COMMUNITY']);
+const ALWAYS_OPERATIONAL_ROLES = new Set(['ADMINISTRADOR']);
 
 export interface OperationalGate {
   canActivateOperationalData: Signal<boolean>;

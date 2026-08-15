@@ -55,6 +55,16 @@ export class CommunityWorkspacePageComponent implements OnInit {
       });
       this.location.replaceState(this.router.serializeUrl(urlTree));
     });
+
+    effect(() => {
+      const mode = this.pageMode();
+      if (!this.facade.canDisplayOperationalData()) {
+        return;
+      }
+      if (mode === 'mantenimiento' && !this.facade.proveedores().length && !this.facade.isLoading()) {
+        void this.facade.loadAll();
+      }
+    });
   }
 
   ngOnInit(): void {

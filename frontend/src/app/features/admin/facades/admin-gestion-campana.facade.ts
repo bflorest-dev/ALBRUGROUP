@@ -2,6 +2,7 @@ import { Injectable, OnDestroy, computed, effect, inject, signal, untracked } fr
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Subscription, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { CatalogoResponse } from '../../../shared/models/preventa/preventa.models';
+import { SessionService } from '../../../core/services/session.service';
 import { esEquipoOperativo } from '../../../shared/utils/equipos-operativos';
 import { resolveMetricsRange } from '../../../shared/utils/metrics-period';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
@@ -179,6 +180,7 @@ export class AdminGestionCampanaFacade implements OnDestroy {
   private readonly service = inject(AdminGestionCampanaService);
   private readonly equipoService = inject(AdminEquipoService);
   private readonly realtimeService = inject(LeadRealtimeService);
+  private readonly sessionService = inject(SessionService);
   private readonly realtimeSubscription = new Subscription();
 
   private requestId = 0;
@@ -228,7 +230,7 @@ export class AdminGestionCampanaFacade implements OnDestroy {
         return forkJoin({
           celdas: this.service.obtenerGestionPorCampana(criteria.campo, criteria.modo, criteria.desde, criteria.hasta),
           catalogo: this.service.obtenerCatalogoAgregado(),
-          equipos: this.equipoService.listarEquipos()
+          equipos: this.shouldUseVisibleTeamsCatalog() ? this.equipoService.listarMisEquipos() : this.equipoService.listarEquipos()
         }).pipe(
           map(({ celdas, catalogo, equipos }): State => ({
             status: 'success',
@@ -489,6 +491,10 @@ export class AdminGestionCampanaFacade implements OnDestroy {
     this.aplicoEquipoPorDefecto = true;
     this.selectedEquipoId.set(idEquipo);
     this.selectedCampanaKeys.set([]);
+  }
+
+  private shouldUseVisibleTeamsCatalog(): boolean {
+    return this.isEquipoLocked() || this.sessionService.getPrimaryRole() === 'COMMUNITY';
   }
 
   clearCampanaFilter(): void {

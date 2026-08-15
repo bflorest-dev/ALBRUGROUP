@@ -47,6 +47,10 @@ export class AdminEquipoService {
     return this.http.get<EquipoResponse[]>(this.authEquiposUrl);
   }
 
+  listarMisEquipos(): Observable<EquipoResponse[]> {
+    return this.http.get<EquipoResponse[]>(`${this.authEquiposUrl}/mis-equipos`);
+  }
+
   crearEquipo(nombre: string, descripcion?: string, color?: string | null): Observable<EquipoResponse> {
     return this.http.post<EquipoResponse>(this.authEquiposUrl, { nombre, descripcion, color });
   }

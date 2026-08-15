@@ -1,5 +1,5 @@
 import { DatePipe, UpperCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, effect, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -46,12 +46,32 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
 })
 export class DailyLeadsPageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(DailyLeadsFacade);
+  protected readonly visibleTipificationColumnOptions: { label: string; value: 'primera' | 'mayor' | 'ultima' }[] = [
+    { label: 'Ultima', value: 'ultima' },
+    { label: 'Mayor', value: 'mayor' },
+    { label: 'Primera', value: 'primera' }
+  ];
+  protected visibleTipificationColumn: 'primera' | 'mayor' | 'ultima' = 'ultima';
   private organizeCloseTimeout: ReturnType<typeof setTimeout> | null = null;
   private pageSizeResizeTimeout: ReturnType<typeof setTimeout> | null = null;
+  private initializedAfterGate = false;
+
+  constructor() {
+    effect(() => {
+      if (!this.facade.canDisplayOperationalData()) {
+        this.initializedAfterGate = false;
+        return;
+      }
+      if (this.initializedAfterGate) {
+        return;
+      }
+      this.initializedAfterGate = true;
+      void this.facade.initialize();
+    });
+  }
 
   ngOnInit(): void {
     void this.updateAdaptivePageSize(false);
-    void this.facade.initialize();
   }
 
   ngOnDestroy(): void {
@@ -133,6 +153,10 @@ export class DailyLeadsPageComponent implements OnInit, OnDestroy {
   protected onLeadSearchClear(popover: { hide: () => void }): void {
     void this.facade.clearLeadSearch();
     popover.hide();
+  }
+
+  protected setVisibleTipificationColumn(value: 'primera' | 'mayor' | 'ultima'): void {
+    this.visibleTipificationColumn = value;
   }
 
   private scheduleAdaptivePageSizeUpdate(): void {

@@ -13,7 +13,6 @@ import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import type { OrigenTramo } from '../../../../../shared/models/schedule/cumplimiento-response';
-import { ScheduleAdjustmentDialogComponent } from '../../../../../shared/components/schedule-adjustment-dialog/schedule-adjustment-dialog.component';
 import { AttendanceFilterBarComponent } from '../../components/attendance-filter-bar/attendance-filter-bar.component';
 import { AttendanceMetricCardsComponent } from '../../components/attendance-metric-cards/attendance-metric-cards.component';
 import { AttendanceMonthHeatmapComponent } from '../../components/attendance-month-heatmap/attendance-month-heatmap.component';
@@ -51,7 +50,6 @@ type AdjustmentOp = 'extra' | 'compensacion' | 'corrimiento';
     InputTextModule,
     MessageModule,
     ProgressSpinnerModule,
-    ScheduleAdjustmentDialogComponent,
     AttendanceFilterBarComponent,
     AttendanceMetricCardsComponent,
     AttendanceMonthHeatmapComponent,

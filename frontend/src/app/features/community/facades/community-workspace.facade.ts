@@ -2,6 +2,7 @@ import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core'
 import { NonNullableFormBuilder, Validators, type FormControl } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
+import { OperationalGateService } from '../../../core/services/operational-gate.service';
 import {
   AdicionalResponse,
   CampanaGastoCampanaResumenResponse,
@@ -92,6 +93,8 @@ export class CommunityWorkspaceFacade {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly leadService = inject(CommunityLeadService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly operationalGateService = inject(OperationalGateService);
+  private readonly operationalGate = this.operationalGateService.createGate('community-workspace');
   private readonly ubigeoLabels = new Map<string, string>();
   private ubigeoDirectoryLoaded = false;
   private catalogLoadInFlight = false;
@@ -107,8 +110,9 @@ export class CommunityWorkspaceFacade {
   readonly isLoadingFinanceSnapshots = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
-  readonly canDisplayOperationalData = computed(() => true);
-  readonly canMutateOperationalData = computed(() => true);
+  readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
+  readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
+  readonly canUseFinanceExpenses = computed(() => true);
 
   readonly proveedores = signal<ProveedorResponse[]>([]);
   readonly proveedoresActivos = computed(() => this.proveedores().filter((proveedor) => proveedor.activo !== false));
@@ -474,6 +478,7 @@ export class CommunityWorkspaceFacade {
     this.currentMode.set(mode);
 
     if (mode === 'finanzas') {
+      await this.refreshCampaigns();
       if (this.canDisplayOperationalData()) {
         void this.loadAll();
       }
@@ -548,10 +553,6 @@ export class CommunityWorkspaceFacade {
   }
 
   openExpenseDialog(): void {
-    if (!this.ensureCanMutate()) {
-      return;
-    }
-
     this.expenseForm.reset({ idCampana: 0, leads: '', costoTotal: '' });
     this.clearExpenseRegistrationStatus();
     this.expenseDialogOpen.set(true);
@@ -601,20 +602,22 @@ export class CommunityWorkspaceFacade {
       return;
     }
 
-    const saved = await this.saveAction(
-      () =>
+    this.isSaving.set(true);
+    this.clearMessages();
+    try {
+      const saved = await firstValueFrom(
         this.leadService.registrarGastoCampana(raw.idCampana, {
           leads,
           costoTotal
-        }),
-      '',
-      async () => {
-        this.closeExpenseDialog();
-        await this.loadFinanceDashboard();
-      }
-    );
-    if (saved) {
-      this.successMessage.set(saved.cierreRetroactivo ? 'Gasto registrado como cierre del d�a anterior.' : 'Gasto de campa�a registrado.');
+        })
+      );
+      this.closeExpenseDialog();
+      await this.loadFinanceDashboard();
+      this.successMessage.set(saved.cierreRetroactivo ? 'Gasto registrado como cierre del día anterior.' : 'Gasto de campaña registrado.');
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo registrar el gasto de la campaña.'));
+    } finally {
+      this.isSaving.set(false);
     }
   }
 

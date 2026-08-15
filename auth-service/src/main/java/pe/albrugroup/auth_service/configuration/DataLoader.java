@@ -360,6 +360,8 @@ public class DataLoader {
                 getPermiso("DELETE_PROMOCIONES"),
                 getPermiso("READ_EVENTOS_LEADS"),
                 getPermiso("READ_LEADS_DIARIOS"),
+                getPermiso("READ_LEADS_GTR"),
+                getPermiso("READ_TIPIFICACIONES_PREVENTA"),
                 getPermiso("CORREGIR_CAMPANA_LEAD"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS"),
@@ -514,6 +516,7 @@ public class DataLoader {
         Set<Permiso> postventaPermisos = Set.of(
                 getPermiso("READ_LEADS_POSTVENTA"),
                 getPermiso("READ_POSTVENTA_FACTURACION"),
+                getPermiso("READ_POSTVENTA_GESTION_MENSUAL"),
                 getPermiso("UPDATE_POSTVENTA_FACTURACION"),
                 getPermiso("READ_POSTVENTA_PLATAFORMA_DIGITAL"),
                 getPermiso("UPDATE_POSTVENTA_PLATAFORMA_DIGITAL"),

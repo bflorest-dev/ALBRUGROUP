@@ -309,12 +309,6 @@
             <!-- ── Editor de horario ── -->
             <p-tabpanel value="horario">
               <div class="employee-schedule">
-                @if (facade.scheduleChangeSuccessMessage()) {
-                  <p-message severity="success" [text]="facade.scheduleChangeSuccessMessage()" />
-                }
-                @if (facade.scheduleChangeErrorMessage()) {
-                  <p-message severity="error" [text]="facade.scheduleChangeErrorMessage()" />
-                }
                 @if (!facade.canMutateOperationalData()) {
                   <p-message severity="info" text="Marca tu asistencia para modificar horarios." />
                 }
@@ -460,6 +454,13 @@
                       dateLabel="Fecha de inicio"
                     />
 
+                    @if (facade.scheduleChangeSuccessMessage()) {
+                      <p-message severity="success" [text]="facade.scheduleChangeSuccessMessage()" />
+                    }
+                    @if (facade.scheduleChangeErrorMessage()) {
+                      <p-message severity="error" [text]="facade.scheduleChangeErrorMessage()" />
+                    }
+
                     <div class="actions actions--end">
                       <button
                         pButton
@@ -580,21 +581,4 @@
     </div>
   </p-dialog>
 
-  <app-schedule-adjustment-dialog
-    [visible]="facade.isAdjustmentDialogVisible()"
-    [employeeName]="facade.adjustmentEmployeeName()"
-    [selectedDate]="facade.adjustmentDate()"
-    [allowDateChange]="true"
-    [jornada]="facade.adjustmentJornada()"
-    [preview]="facade.adjustmentPreview()"
-    [history]="facade.adjustmentHistory()"
-    [loading]="facade.isLoadingAdjustment()"
-    [saving]="facade.isSavingAdjustment()"
-    [error]="facade.adjustmentError()"
-    (closed)="facade.closeScheduleAdjustment()"
-    (dateChanged)="facade.changeScheduleAdjustmentDate($event)"
-    (previewRequested)="facade.previewScheduleAdjustment($event)"
-    (saveRequested)="facade.saveScheduleAdjustment($event)"
-    (cancelRequested)="facade.cancelScheduleAdjustment($event)"
-  />
 </section>

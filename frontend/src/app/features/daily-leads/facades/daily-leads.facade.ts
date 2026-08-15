@@ -1,10 +1,12 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom, Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 import type { TipificationPaletteByCode } from '../../../shared/components/tipification-stack/tipification-stack.component';
 import { EventoResponse } from '../../../shared/models/preventa/preventa.models';
 import { formatLabel } from '../../../shared/utils/display-label';
 import { SessionService } from '../../../core/services/session.service';
+import { OperationalGateService } from '../../../core/services/operational-gate.service';
 import { formatLeadIdentity } from '../../../shared/utils/phone-link';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import { DailyLeadsService } from '../services/daily-leads.service';
@@ -28,8 +30,12 @@ import {
 export class DailyLeadsFacade {
   private readonly service = inject(DailyLeadsService);
   private readonly session = inject(SessionService);
+  private readonly router = inject(Router);
   private readonly realtimeService = inject(LeadRealtimeService);
+  private readonly operationalGateService = inject(OperationalGateService);
+  private readonly operationalGate = this.operationalGateService.createGate('daily-leads');
   private readonly realtimeSubscription = new Subscription();
+  private realtimeStarted = false;
 
   /**
    * Roles con visibilidad global de equipos (backend: VER_TODOS_LOS_EQUIPOS) que llegan a esta
@@ -40,6 +46,8 @@ export class DailyLeadsFacade {
     const role = this.session.primaryRole();
     return !!role && DailyLeadsFacade.ROLES_VISIBILIDAD_GLOBAL.has(role);
   });
+  readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
+  readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
 
   private readonly timeFormatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Lima',
@@ -221,6 +229,10 @@ export class DailyLeadsFacade {
 
   async initialize(): Promise<void> {
     this.startRealtime();
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     await Promise.all([
       this.loadTipificationPalette(),
       this.loadEquipoCatalogo(),
@@ -252,6 +264,10 @@ export class DailyLeadsFacade {
   }
 
   async setFecha(value: string): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     const normalized = value || '';
     if (normalized === this.fecha()) {
       return;
@@ -265,6 +281,10 @@ export class DailyLeadsFacade {
   }
 
   async changePage(pageNumber: number): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (pageNumber === this.pageNumber()) {
       return;
     }
@@ -272,6 +292,10 @@ export class DailyLeadsFacade {
   }
 
   async refresh(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     await Promise.all([this.loadGroups(), this.loadMetricas(), this.load(this.pageNumber())]);
   }
 
@@ -284,6 +308,10 @@ export class DailyLeadsFacade {
   }
 
   async applyLeadSearch(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     const normalized = this.normalizeLeadSearch(this.leadSearchDraft());
     if (normalized === this.leadSearch()) {
       return;
@@ -294,6 +322,10 @@ export class DailyLeadsFacade {
   }
 
   async clearLeadSearch(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (!this.leadSearch() && !this.leadSearchDraft()) {
       return;
     }
@@ -303,6 +335,10 @@ export class DailyLeadsFacade {
   }
 
   async setGroupingMode(mode: DailyLeadGroupMode | null | undefined): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (!mode || mode === this.groupingMode()) {
       return;
     }
@@ -312,6 +348,10 @@ export class DailyLeadsFacade {
   }
 
   private startRealtime(): void {
+    if (this.realtimeStarted) {
+      return;
+    }
+    this.realtimeStarted = true;
     this.realtimeSubscription.add(
       this.realtimeService.watchTopic('/topic/leads').subscribe({
         next: (event) => {
@@ -325,6 +365,10 @@ export class DailyLeadsFacade {
   }
 
   async selectGroup(group: DailyLeadGroupItem | null | undefined): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (!group || this.isGroupSelected(group)) {
       return;
     }
@@ -333,6 +377,10 @@ export class DailyLeadsFacade {
   }
 
   async clearSelectedGroup(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (!this.selectedGroup()) {
       return;
     }
@@ -341,6 +389,10 @@ export class DailyLeadsFacade {
   }
 
   async setSortField(field: DailyLeadSortField | null | undefined): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (!field || field === this.sortField()) {
       return;
     }
@@ -350,6 +402,10 @@ export class DailyLeadsFacade {
   }
 
   async setSortDirection(direction: DailyLeadSortDirection | null | undefined): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     if (!direction || direction === this.sortDirection()) {
       return;
     }
@@ -358,6 +414,10 @@ export class DailyLeadsFacade {
   }
 
   async changeColumnSort(field: DailyLeadSortField): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     const defaultDirection = this.defaultSortDirection(field);
     if (this.sortField() !== field) {
       this.sortField.set(field);
@@ -408,6 +468,10 @@ export class DailyLeadsFacade {
   }
 
   async openEventHistory(row: DailyLeadRowView): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     this.activeHistoryLead.set(row);
     this.eventRows.set([]);
     this.isLoadingEvents.set(true);
@@ -429,6 +493,34 @@ export class DailyLeadsFacade {
     }
   }
 
+  canOpenPlatform(row: DailyLeadRowView): boolean {
+    const role = this.session.primaryRole();
+    if (!this.canDisplayOperationalData() || row.isPlaceholder) {
+      return false;
+    }
+    if (role === 'ASESOR_GTR' || role === 'SUPERVISOR_GTR') {
+      return true;
+    }
+    return role === 'ADMINISTRADOR' && row.idEquipo !== null && row.idEquipo !== undefined;
+  }
+
+  async openPlatform(row: DailyLeadRowView): Promise<void> {
+    if (!this.canOpenPlatform(row)) {
+      return;
+    }
+
+    const role = this.session.primaryRole();
+    const lead = row.lead?.trim() || row.usermeta?.trim() || row.leadDisplay;
+    const queryParams = lead ? { lead } : undefined;
+
+    if (role === 'ADMINISTRADOR' && row.idEquipo !== null && row.idEquipo !== undefined) {
+      await this.router.navigate(['/app/admin/plataformas/equipos', row.idEquipo, 'gtr', 'plataforma'], { queryParams });
+      return;
+    }
+
+    await this.router.navigate(['/app/gtr/plataforma'], { queryParams });
+  }
+
   closeEventHistory(): void {
     this.activeHistoryLead.set(null);
     this.eventRows.set([]);
@@ -441,6 +533,10 @@ export class DailyLeadsFacade {
 
   /** Despliega/colapsa los registros repetidos del lead (los que no son el registro inicial del día). */
   async toggleRegistros(row: DailyLeadRowView): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     const id = row.idLead;
     const keys = { ...this.expandedRowKeys() };
 
@@ -516,6 +612,10 @@ export class DailyLeadsFacade {
   }
 
   private async load(pageNumber: number): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.clearOperationalData();
+      return;
+    }
     this.isLoading.set(true);
     this.errorMessage.set('');
     try {
@@ -552,6 +652,11 @@ export class DailyLeadsFacade {
   }
 
   private async loadMetricas(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.metricas.set(null);
+      this.metricasPorEquipo.set([]);
+      return;
+    }
     try {
       const [metricas, metricasPorEquipo] = await Promise.all([
         firstValueFrom(this.service.obtenerMetricas(this.fecha() || undefined)),
@@ -593,7 +698,43 @@ export class DailyLeadsFacade {
     };
   }
 
+  private emptyGroups(): DailyLeadGroupsResponse {
+    return {
+      asesores: [],
+      campanas: [],
+      equipos: [],
+      primerasTipificaciones: [],
+      mayoresTipificaciones: [],
+      ultimasTipificaciones: []
+    };
+  }
+
+  private clearOperationalData(): void {
+    this.rows.set([]);
+    this.metricas.set(null);
+    this.metricasPorEquipo.set([]);
+    this.totalElements.set(0);
+    this.visibleTotalElements.set(0);
+    this.totalRegistros.set(0);
+    this.expandedRowKeys.set({});
+    this.registrosByLead.set({});
+    this.loadingRegistrosLeadId.set(null);
+    this.eventRows.set([]);
+    this.activeHistoryLead.set(null);
+    this.groups.set(this.emptyGroups());
+    this.isLoading.set(false);
+    this.isLoadingGroups.set(false);
+    this.isLoadingEvents.set(false);
+    this.errorMessage.set('');
+  }
+
   private async loadGroups(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.groups.set(this.emptyGroups());
+      this.totalElements.set(0);
+      this.totalRegistros.set(0);
+      return;
+    }
     this.isLoadingGroups.set(true);
     try {
       const groups = await firstValueFrom(
@@ -641,6 +782,7 @@ export class DailyLeadsFacade {
     const ultimaAsignacion = item.ultimoNombreAsesorAsignacion?.trim() || 'Sin asignacion';
     return {
       idLead: item.idLead,
+      idEquipo: item.idEquipo,
       prefijo: item.prefijo,
       lead: item.lead,
       usermeta: item.usermeta,
@@ -693,6 +835,7 @@ export class DailyLeadsFacade {
   private placeholderRow(index: number): DailyLeadRowView {
     return {
       idLead: -(index + 1),
+      idEquipo: null,
       prefijo: null,
       lead: null,
       usermeta: null,

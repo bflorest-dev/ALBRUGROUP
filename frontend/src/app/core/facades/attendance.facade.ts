@@ -366,9 +366,9 @@ export class AttendanceFacade {
         return;
       }
 
-      // ADMINISTRADOR y COMMUNITY no marcan asistencia; su badge es fijo ONLINE en el layout
+      // ADMINISTRADOR no marca asistencia; su badge es fijo ONLINE en el layout
       // (isAlwaysOnlineRole). Coherente con el guard de initialize() en private-layout.
-      if (session.primaryRole === 'ADMINISTRADOR' || session.primaryRole === 'COMMUNITY') {
+      if (session.primaryRole === 'ADMINISTRADOR') {
         return;
       }
 
