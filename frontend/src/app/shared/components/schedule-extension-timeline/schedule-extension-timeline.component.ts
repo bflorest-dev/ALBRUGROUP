@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { DatePickerModule } from 'primeng/datepicker';
 import { TextareaModule } from 'primeng/textarea';
 import { AjusteJornadaRequest, JornadaEfectivaResponse } from '../../models/schedule/jornada-efectiva-response';
 
@@ -24,7 +23,7 @@ export type ExtensionMode = 'extra' | 'compensacion';
  */
 @Component({
   selector: 'app-schedule-extension-timeline',
-  imports: [FormsModule, ButtonModule, DatePickerModule, TextareaModule],
+  imports: [FormsModule, ButtonModule, TextareaModule],
   templateUrl: './schedule-extension-timeline.component.html',
   styleUrl: './schedule-extension-timeline.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -48,8 +47,8 @@ export class ScheduleExtensionTimelineComponent {
   protected readonly before = signal(0);
   protected readonly after = signal(0);
   protected readonly detached = signal(false);
-  protected readonly detStart = signal('20:00');
-  protected readonly detEnd = signal('21:30');
+  protected readonly detStartMin = signal(20 * 60);
+  protected readonly detEndMin = signal(21 * 60 + 30);
   protected readonly motivo = signal('');
 
   constructor() {
@@ -102,6 +101,8 @@ export class ScheduleExtensionTimelineComponent {
   });
 
   protected readonly hasBase = computed(() => this.base() !== null);
+  protected readonly detStartLabel = computed(() => this.fmtHm(this.detStartMin()));
+  protected readonly detEndLabel = computed(() => this.fmtHm(this.detEndMin()));
   private readonly winStart = computed(() => { const b = this.base(); return b ? b.inicioMin - this.MAX : 0; });
   private readonly winEnd = computed(() => { const b = this.base(); return b ? b.finMin + this.MAX : 24 * 60; });
   protected readonly winStartHm = computed(() => this.fmtHm(this.winStart()));
@@ -222,9 +223,9 @@ export class ScheduleExtensionTimelineComponent {
 
   private detachedRange(): { start: number; end: number } | null {
     if (!this.detached()) return null;
-    const start = this.toMinHm(this.detStart());
-    const end = this.toMinHm(this.detEnd());
-    if (start === null || end === null || end <= start) return null;
+    const start = this.detStartMin();
+    const end = this.detEndMin();
+    if (end <= start) return null;
     return { start, end };
   }
 
@@ -264,6 +265,8 @@ export class ScheduleExtensionTimelineComponent {
   protected readonly totalExtraLabel = computed(() => this.fmtDur(this.totalExtra()));
   protected readonly beforeLabel = computed(() => this.fmtDur(this.before()));
   protected readonly afterLabel = computed(() => this.fmtDur(this.after()));
+  protected readonly detGrowDisabled = computed(() => this.maxTotal() !== null && this.remainingTotal() < this.STEP);
+  protected readonly canAddDetached = computed(() => this.maxTotal() === null || this.remainingTotal() >= this.STEP);
   protected readonly excedeTope = computed(() => {
     const cap = this.maxTotal();
     return cap !== null && this.totalExtra() > cap;
@@ -282,9 +285,16 @@ export class ScheduleExtensionTimelineComponent {
     this.detached.update((value) => !value);
   }
 
-  protected onInput(target: 'detStart' | 'detEnd' | 'motivo', event: Event): void {
-    const value = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
-    this[target].set(value);
+  protected onMotivo(event: Event): void {
+    this.motivo.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  protected adjustDet(target: 'start' | 'end', delta: number): void {
+    const sig = target === 'start' ? this.detStartMin : this.detEndMin;
+    const next = sig() + delta * this.STEP;
+    if (next >= 0 && next <= 24 * 60) {
+      sig.set(next);
+    }
   }
 
   protected emitCancel(): void {
@@ -313,8 +323,8 @@ export class ScheduleExtensionTimelineComponent {
     this.before.set(0);
     this.after.set(0);
     this.detached.set(false);
-    this.detStart.set('20:00');
-    this.detEnd.set('21:30');
+    this.detStartMin.set(20 * 60);
+    this.detEndMin.set(20 * 60 + 30);
     this.motivo.set('');
   }
 
@@ -325,11 +335,6 @@ export class ScheduleExtensionTimelineComponent {
   private toMin(iso: string): number {
     const match = /T(\d{2}):(\d{2})/.exec(iso);
     return match ? Number(match[1]) * 60 + Number(match[2]) : 0;
-  }
-
-  private toMinHm(value: string): number | null {
-    const match = /^(\d{2}):(\d{2})$/.exec(value);
-    return match ? Number(match[1]) * 60 + Number(match[2]) : null;
   }
 
   private fmtHm(min: number): string {

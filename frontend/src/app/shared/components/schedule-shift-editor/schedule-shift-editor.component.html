@@ -3,8 +3,8 @@
     <p class="shift__name">{{ employeeName() }}</p>
   }
   <p class="shift__sub">
-    Mueve la ventana del horario base de hoy. La duración se mantiene salvo que la ajustes; si acortas, el
-    tiempo se descuenta según el tipo de tardanza.
+    Mueve la ventana del horario base de hoy. Si mantiene la duración no queda nada por recuperar; si la
+    acorta, el tiempo se vuelve horas por compensar.
   </p>
 
   @if (loading()) {
@@ -39,46 +39,32 @@
     </div>
 
     <div class="shift__controls">
-      <label class="shift__field">
+      <div class="shift__field">
         <span>Nueva entrada</span>
-        <p-datepicker
-          [timeOnly]="true"
-          hourFormat="24"
-          dataType="string"
-          [stepMinute]="5"
-          appendTo="body"
-          styleClass="shift__picker"
-          [ngModel]="nuevaEntrada()"
-          [ngModelOptions]="{ standalone: true }"
-          (ngModelChange)="nuevaEntrada.set($event)"
-        />
-      </label>
+        <div class="shift__step">
+          <button type="button" (click)="adjustEntrada(-1)" [disabled]="nuevaEntradaMin() <= 0" aria-label="Menos">−</button>
+          <span class="shift__val">{{ nuevaEntradaLabel() }}</span>
+          <button type="button" (click)="adjustEntrada(1)" [disabled]="nuevaEntradaMin() >= 1410" aria-label="Más">+</button>
+        </div>
+      </div>
 
       <div class="shift__field">
-        <span>Salida</span>
-        <button
-          type="button"
-          class="shift__toggle"
-          [class.on]="mantenerDuracion()"
-          (click)="toggleMantenerDuracion()"
-        >
-          {{ mantenerDuracion() ? 'Mantiene la duración' : 'Ajustar salida' }}
-        </button>
-        @if (!mantenerDuracion()) {
-          <p-datepicker
-            [timeOnly]="true"
-            hourFormat="24"
-            dataType="string"
-            [stepMinute]="5"
-            appendTo="body"
-            styleClass="shift__picker"
-            [ngModel]="nuevaSalida()"
-            [ngModelOptions]="{ standalone: true }"
-            (ngModelChange)="nuevaSalida.set($event)"
-          />
-        }
+        <span>Nueva salida</span>
+        <div class="shift__step">
+          <button type="button" (click)="adjustSalida(-1)" [disabled]="mantenerDuracion()" aria-label="Menos">−</button>
+          <span class="shift__val">{{ nuevaSalidaLabel() }}</span>
+          <button type="button" (click)="adjustSalida(1)" [disabled]="mantenerDuracion()" aria-label="Más">+</button>
+        </div>
       </div>
     </div>
+
+    <button type="button" class="shift__dur-toggle" [class.on]="mantenerDuracion()" (click)="toggleMantenerDuracion()">
+      @if (mantenerDuracion()) {
+        <i class="pi pi-lock" aria-hidden="true"></i> Mantiene la duración
+      } @else {
+        <i class="pi pi-lock-open" aria-hidden="true"></i> Ajustar salida manualmente
+      }
+    </button>
 
     @if (showRazonToggle()) {
       <div class="shift__razon">
@@ -101,14 +87,14 @@
         </div>
         <p class="shift__razon-hint">
           @if (razon() === 'CORRIMIENTO_COMPENSABLE') {
-            El tiempo corrido queda debiendo: el empleado lo recupera después.
+            No avisó: cuenta como tardanza para el bono de puntualidad.
           } @else {
-            Tardanza disculpada: no genera horas por recuperar.
+            Avisó a RRHH: no cuenta como tardanza, conserva el bono de puntualidad.
           }
         </p>
       </div>
     } @else {
-      <p class="shift__razon-fixed"><i class="pi pi-check-circle" aria-hidden="true"></i> Tardanza justificada — sin horas por recuperar.</p>
+      <p class="shift__razon-fixed"><i class="pi pi-check-circle" aria-hidden="true"></i> Tardanza justificada — avisó a RRHH, conserva el bono de puntualidad.</p>
     }
 
     <label class="shift__motivo-l">Motivo
@@ -131,10 +117,7 @@
       } @else {
         <span>{{ desplazamientoLabel() }} · {{ nuevaVentanaLabel() }}</span>
         @if (recorteMin() > 0) {
-          <strong>
-            @if (razon() === 'CORRIMIENTO_COMPENSABLE') { Debe recuperar {{ recorteMin() }} min }
-            @else { Acorta {{ recorteMin() }} min }
-          </strong>
+          <strong>Debe recuperar {{ recorteMin() }} min</strong>
         }
       }
     </div>

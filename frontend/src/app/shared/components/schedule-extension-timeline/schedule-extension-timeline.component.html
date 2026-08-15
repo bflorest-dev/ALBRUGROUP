@@ -63,44 +63,30 @@
       <div class="ext__ctl">
         <p class="ext__ctl-t"><i class="pi pi-plus" aria-hidden="true"></i> Período aparte</p>
         <p class="ext__ctl-d">Un tramo separado del base</p>
-        <button type="button" class="ext__toggle" [class.on]="detached()" (click)="toggleDetached()">
+        <button type="button" class="ext__toggle" [class.on]="detached()" [disabled]="!detached() && !canAddDetached()" (click)="toggleDetached()">
           {{ detached() ? 'Quitar período' : 'Agregar período' }}
         </button>
 
         @if (detached()) {
           <div class="ext__det-times">
-            <label>
+            <div class="ext__det-field">
               <span>Desde</span>
-              <p-datepicker
-                [timeOnly]="true"
-                hourFormat="24"
-                dataType="string"
-                [stepMinute]="30"
-                appendTo="body"
-                styleClass="ext__det-picker"
-                [ngModel]="detStart()"
-                [ngModelOptions]="{ standalone: true }"
-                (ngModelChange)="detStart.set($event)"
-              />
-            </label>
-            <label>
+              <div class="ext__step">
+                <button type="button" (click)="adjustDet('start', -1)" [disabled]="detStartMin() <= 0 || detGrowDisabled()" aria-label="Menos">−</button>
+                <span class="ext__val">{{ detStartLabel() }}</span>
+                <button type="button" (click)="adjustDet('start', 1)" [disabled]="detStartMin() + 30 >= detEndMin()" aria-label="Más">+</button>
+              </div>
+            </div>
+            <div class="ext__det-field">
               <span>Hasta</span>
-              <p-datepicker
-                [timeOnly]="true"
-                hourFormat="24"
-                dataType="string"
-                [stepMinute]="30"
-                appendTo="body"
-                styleClass="ext__det-picker"
-                [ngModel]="detEnd()"
-                [ngModelOptions]="{ standalone: true }"
-                (ngModelChange)="detEnd.set($event)"
-              />
-            </label>
+              <div class="ext__step">
+                <button type="button" (click)="adjustDet('end', -1)" [disabled]="detEndMin() <= detStartMin() + 30" aria-label="Menos">−</button>
+                <span class="ext__val">{{ detEndLabel() }}</span>
+                <button type="button" (click)="adjustDet('end', 1)" [disabled]="detEndMin() >= 1440 || detGrowDisabled()" aria-label="Más">+</button>
+              </div>
+            </div>
             @if (detachedOverlaps()) {
               <span class="ext__hint-error">Se solapa con el horario o con otras horas extra.</span>
-            } @else if (detachedRangeInvalid()) {
-              <span class="ext__hint-error">Fin debe ser posterior al inicio.</span>
             }
           </div>
         }
@@ -115,7 +101,7 @@
         maxlength="300"
         placeholder="Indica por qué se necesita este tiempo"
         [value]="motivo()"
-        (input)="onInput('motivo', $event)"
+        (input)="onMotivo($event)"
       ></textarea>
     </label>
 

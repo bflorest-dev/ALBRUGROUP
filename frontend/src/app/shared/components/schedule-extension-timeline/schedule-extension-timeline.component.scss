@@ -218,33 +218,23 @@
 }
 
 .ext__det-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.ext__det-field {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.5rem;
-
-  label {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.15rem;
-    width: 100%;
-    font-size: 0.68rem;
-    color: var(--app-text-muted);
-  }
-}
-
-:host ::ng-deep .ext__det-picker {
-  width: 100%;
-
-  input {
-    width: 100%;
-    text-align: center;
-  }
+  gap: 0.25rem;
+  font-size: 0.68rem;
+  color: var(--app-text-muted);
 }
 
 .ext__hint-error {
+  grid-column: 1 / -1;
   color: var(--app-danger);
   font-size: 0.72rem;
   text-align: center;

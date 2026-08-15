@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { DatePickerModule } from 'primeng/datepicker';
 import { TextareaModule } from 'primeng/textarea';
 import {
   JornadaEfectivaResponse,
@@ -17,19 +16,11 @@ type ShiftBlock = {
   title: string;
 };
 
-/** Las dos razones de corrimiento (mover el base por una tardanza). */
 export type CorrimientoRazon = Extract<RazonAjuste, 'CORRIMIENTO_COMPENSABLE' | 'CORRIMIENTO_JUSTIFICADA'>;
 
-/**
- * Editor de corrimiento (presentacional, sin diálogo): mueve la ventana del horario base del día como una
- * unidad — el bloque base queda de fantasma y el nuevo se dibuja desplazado. A diferencia del timeline aditivo
- * (horas extra / compensación), aquí se REEMPLAZA el base (backend → REEMPLAZO_BASE). La razón la decide el rol:
- * `canCompensable` (ADMIN) habilita el toggle compensable/justificada; RRHH solo justificada (fija). Emite el
- * request v2 completo (con razón); el padre hace la llamada.
- */
 @Component({
   selector: 'app-schedule-shift-editor',
-  imports: [FormsModule, ButtonModule, DatePickerModule, TextareaModule],
+  imports: [FormsModule, ButtonModule, TextareaModule],
   templateUrl: './schedule-shift-editor.component.html',
   styleUrl: './schedule-shift-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -40,24 +31,22 @@ export class ScheduleShiftEditorComponent {
   readonly loading = input(false);
   readonly saving = input(false);
   readonly error = input<string | null>(null);
-  /** ADMIN puede aplicar tardanza compensable (genera déficit). Habilita el toggle. */
   readonly canCompensable = input(false);
-  /** ADMIN y RRHH pueden aplicar tardanza justificada (sin déficit). */
   readonly canJustificada = input(true);
 
   readonly saveRequested = output<RegistrarAjusteV2Request>();
   readonly cancel = output<void>();
 
-  private readonly MAX = 240; // ventana visible: base ± 4 h
+  private readonly STEP = 30;
+  private readonly MAX = 240;
 
-  protected readonly nuevaEntrada = signal('09:00');
-  protected readonly nuevaSalida = signal('18:00');
+  protected readonly nuevaEntradaMin = signal(540);
+  protected readonly nuevaSalidaMin = signal(1080);
   protected readonly mantenerDuracion = signal(true);
   protected readonly motivo = signal('');
   protected readonly razon = signal<CorrimientoRazon>('CORRIMIENTO_JUSTIFICADA');
 
   constructor() {
-    // Al cambiar la jornada (nuevo empleado/día) o los permisos de rol, re-sincronizar el formulario.
     effect(() => {
       this.jornada();
       this.canCompensable();
@@ -70,9 +59,7 @@ export class ScheduleShiftEditorComponent {
   private readonly base = computed(() => {
     const jornada = this.jornada();
     const tramo = jornada?.tramos.find((item) => item.base) ?? null;
-    if (!jornada || !tramo) {
-      return null;
-    }
+    if (!jornada || !tramo) return null;
     return { fecha: jornada.fecha, inicioMin: this.toMin(tramo.inicio), finMin: this.toMin(tramo.fin) };
   });
 
@@ -87,18 +74,16 @@ export class ScheduleShiftEditorComponent {
     return b ? `${this.fmtHm(b.inicioMin)}–${this.fmtHm(b.finMin)}` : '';
   });
 
-  private readonly newStart = computed(() => this.toMinHm(this.nuevaEntrada()));
+  private readonly newStart = computed(() => this.nuevaEntradaMin());
   private readonly newEnd = computed(() => {
     const start = this.newStart();
-    if (start === null) return null;
-    return this.mantenerDuracion() ? start + this.duracionBase() : this.toMinHm(this.nuevaSalida());
+    return this.mantenerDuracion() ? start + this.duracionBase() : this.nuevaSalidaMin();
   });
 
-  protected readonly rangoInvalido = computed(() => {
-    const start = this.newStart();
-    const end = this.newEnd();
-    return start === null || end === null || end <= start;
-  });
+  protected readonly nuevaEntradaLabel = computed(() => this.fmtHm(this.nuevaEntradaMin()));
+  protected readonly nuevaSalidaLabel = computed(() => this.fmtHm(this.newEnd()));
+
+  protected readonly rangoInvalido = computed(() => this.newEnd() <= this.newStart());
 
   protected readonly sinCambio = computed(() => {
     const b = this.base();
@@ -107,8 +92,7 @@ export class ScheduleShiftEditorComponent {
 
   protected readonly desplazamiento = computed(() => {
     const b = this.base();
-    const start = this.newStart();
-    return b && start !== null ? start - b.inicioMin : 0;
+    return b ? this.newStart() - b.inicioMin : 0;
   });
 
   protected readonly desplazamientoLabel = computed(() => {
@@ -118,19 +102,17 @@ export class ScheduleShiftEditorComponent {
   });
 
   private readonly duracionNueva = computed(() => {
-    const start = this.newStart();
     const end = this.newEnd();
-    return start !== null && end !== null && end > start ? end - start : 0;
+    const start = this.newStart();
+    return end > start ? end - start : 0;
   });
 
-  /** Minutos que se pierden respecto al base (jornada acortada). 0 si mantiene o alarga. */
   protected readonly recorteMin = computed(() => Math.max(0, this.duracionBase() - this.duracionNueva()));
 
   protected readonly nuevaVentanaLabel = computed(() => {
     const start = this.newStart();
     const end = this.newEnd();
-    if (start === null || end === null || end <= start) return '';
-    return `${this.fmtHm(start)}–${this.fmtHm(end)}`;
+    return end > start ? `${this.fmtHm(start)}–${this.fmtHm(end)}` : '';
   });
 
   private readonly winStart = computed(() => {
@@ -161,7 +143,7 @@ export class ScheduleShiftEditorComponent {
     ];
     const start = this.newStart();
     const end = this.newEnd();
-    if (start !== null && end !== null && end > start) {
+    if (end > start) {
       out.push({
         leftPct: pos(start),
         widthPct: width(start, end),
@@ -190,19 +172,31 @@ export class ScheduleShiftEditorComponent {
       !this.saving()
   );
 
+  protected adjustEntrada(delta: number): void {
+    const next = this.nuevaEntradaMin() + delta * this.STEP;
+    if (next >= 0 && next < 24 * 60) {
+      this.nuevaEntradaMin.set(next);
+    }
+  }
+
+  protected adjustSalida(delta: number): void {
+    if (this.mantenerDuracion()) return;
+    const next = this.nuevaSalidaMin() + delta * this.STEP;
+    if (next > 0 && next <= 24 * 60) {
+      this.nuevaSalidaMin.set(next);
+    }
+  }
+
   protected setRazon(razon: CorrimientoRazon): void {
     this.razon.set(razon);
   }
 
   protected toggleMantenerDuracion(): void {
     this.mantenerDuracion.update((value) => {
-      const next = !value;
-      // Al soltar la duración, arrancar la nueva salida donde termina la ventana vigente (sin salto).
-      if (!next) {
-        const end = this.newEnd();
-        if (end !== null) this.nuevaSalida.set(this.fmtHm(end));
+      if (value) {
+        this.nuevaSalidaMin.set(this.newEnd());
       }
-      return next;
+      return !value;
     });
   }
 
@@ -219,7 +213,6 @@ export class ScheduleShiftEditorComponent {
     if (!b || !this.canSave()) return;
     const start = this.newStart();
     const end = this.newEnd();
-    if (start === null || end === null) return;
     this.saveRequested.emit({
       inicio: `${b.fecha}T${this.fmtHm(start)}:00`,
       fin: `${b.fecha}T${this.fmtHm(end)}:00`,
@@ -230,8 +223,8 @@ export class ScheduleShiftEditorComponent {
 
   private reset(): void {
     const b = this.base();
-    this.nuevaEntrada.set(b ? this.fmtHm(b.inicioMin) : '09:00');
-    this.nuevaSalida.set(b ? this.fmtHm(b.finMin) : '18:00');
+    this.nuevaEntradaMin.set(b ? b.inicioMin : 540);
+    this.nuevaSalidaMin.set(b ? b.finMin : 1080);
     this.mantenerDuracion.set(true);
     this.motivo.set('');
     this.razon.set(this.canCompensable() ? 'CORRIMIENTO_COMPENSABLE' : 'CORRIMIENTO_JUSTIFICADA');
@@ -240,11 +233,6 @@ export class ScheduleShiftEditorComponent {
   private toMin(iso: string): number {
     const match = /T(\d{2}):(\d{2})/.exec(iso);
     return match ? Number(match[1]) * 60 + Number(match[2]) : 0;
-  }
-
-  private toMinHm(value: string): number | null {
-    const match = /^(\d{2}):(\d{2})$/.exec(value);
-    return match ? Number(match[1]) * 60 + Number(match[2]) : null;
   }
 
   private fmtHm(min: number): string {
