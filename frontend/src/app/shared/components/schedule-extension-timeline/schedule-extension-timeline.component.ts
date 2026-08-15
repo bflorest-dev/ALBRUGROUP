@@ -228,7 +228,32 @@ export class ScheduleExtensionTimelineComponent {
     return { start, end };
   }
 
-  protected readonly detachedInvalid = computed(() => this.detached() && this.detachedRange() === null);
+  /** Intervalos ya ocupados: el base + los extras registrados + los nuevos (antes/después). */
+  private readonly occupied = computed<{ start: number; end: number }[]>(() => {
+    const b = this.base();
+    const out: { start: number; end: number }[] = [];
+    if (b) out.push({ start: b.inicioMin, end: b.finMin });
+    for (const e of this.existing()) out.push({ start: e.inicioMin, end: e.finMin });
+    if (this.before() > 0) {
+      const a = this.beforeAnchor();
+      out.push({ start: a - this.before(), end: a });
+    }
+    if (this.after() > 0) {
+      const a = this.afterAnchor();
+      out.push({ start: a, end: a + this.after() });
+    }
+    return out;
+  });
+
+  /** El período aparte no puede montarse sobre el base ni sobre otras horas extra (debe ser disjunto). */
+  protected readonly detachedOverlaps = computed(() => {
+    const det = this.detachedRange();
+    if (!det) return false;
+    return this.occupied().some((iv) => det.start < iv.end && iv.start < det.end);
+  });
+
+  protected readonly detachedRangeInvalid = computed(() => this.detached() && this.detachedRange() === null);
+  protected readonly detachedInvalid = computed(() => this.detachedRangeInvalid() || this.detachedOverlaps());
 
   protected readonly totalExtra = computed(() => {
     let total = this.before() + this.after();

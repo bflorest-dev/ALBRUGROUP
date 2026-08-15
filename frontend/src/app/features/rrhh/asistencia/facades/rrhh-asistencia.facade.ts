@@ -18,7 +18,8 @@ import {
   AjusteJornadaResponse,
   JornadaEfectivaResponse,
   PreviewAjusteJornadaResponse,
-  RazonAjuste
+  RazonAjuste,
+  RegistrarAjusteV2Request
 } from '../../../../shared/models/schedule/jornada-efectiva-response';
 import { ReemplazarHorarioRequest } from '../../../../shared/models/schedule/reemplazar-horario-request';
 import { RegistrarExcepcionHorarioRequest } from '../../../../shared/models/schedule/registrar-excepcion-horario-request';
@@ -742,6 +743,35 @@ export class RrhhAsistenciaFacade {
     } catch (error) {
       const parcial = guardados > 0 ? ` (${guardados} de ${requests.length} guardados)` : '';
       this.adjustmentError.set(this.extractErrorMessage(error, 'No se pudo guardar el ajuste.') + parcial);
+      await this.loadScheduleAdjustment();
+      return false;
+    } finally {
+      this.isSavingAdjustment.set(false);
+    }
+  }
+
+  /**
+   * Corrimiento del horario base (v2, REEMPLAZO_BASE): una sola llamada con la razón que decidió el editor
+   * (compensable / justificada). La autorización fina y el déficit los valida el backend por rol + razón.
+   */
+  async submitCorrimiento(request: RegistrarAjusteV2Request): Promise<boolean> {
+    if (!this.ensureCanMutate()) return false;
+    const empleado = this.drawerEmpleado();
+    if (!empleado) return false;
+
+    this.isSavingAdjustment.set(true);
+    this.adjustmentError.set(null);
+    try {
+      await firstValueFrom(
+        this.scheduleAdjustmentService.registrarV2(empleado.idEmpleado, request).pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      this.scheduleChangeSuccessMessage.set('Horario corrido.');
+      await this.loadScheduleAdjustment();
+      await this.refreshDrawerAfterScheduleMutation(empleado.idEmpleado);
+      void this.recargar();
+      return true;
+    } catch (error) {
+      this.adjustmentError.set(this.extractErrorMessage(error, 'No se pudo correr el horario.'));
       await this.loadScheduleAdjustment();
       return false;
     } finally {

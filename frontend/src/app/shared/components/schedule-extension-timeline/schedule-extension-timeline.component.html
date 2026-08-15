@@ -97,7 +97,9 @@
                 (ngModelChange)="detEnd.set($event)"
               />
             </label>
-            @if (detachedInvalid()) {
+            @if (detachedOverlaps()) {
+              <span class="ext__hint-error">Se solapa con el horario o con otras horas extra.</span>
+            } @else if (detachedRangeInvalid()) {
               <span class="ext__hint-error">Fin debe ser posterior al inicio.</span>
             }
           </div>

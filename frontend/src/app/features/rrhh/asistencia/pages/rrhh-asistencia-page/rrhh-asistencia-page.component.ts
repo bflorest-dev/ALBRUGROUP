@@ -20,7 +20,9 @@ import { AttendanceMonthHeatmapComponent } from '../../components/attendance-mon
 import { AttendanceTrayComponent } from '../../components/attendance-tray/attendance-tray.component';
 import { ScheduleWeekEditorComponent } from '../../../../../shared/components/schedule-week-editor/schedule-week-editor.component';
 import { ScheduleExtensionTimelineComponent } from '../../../../../shared/components/schedule-extension-timeline/schedule-extension-timeline.component';
-import { AjusteJornadaRequest } from '../../../../../shared/models/schedule/jornada-efectiva-response';
+import { ScheduleShiftEditorComponent } from '../../../../../shared/components/schedule-shift-editor/schedule-shift-editor.component';
+import { SessionService } from '../../../../../core/services/session.service';
+import { AjusteJornadaRequest, RegistrarAjusteV2Request } from '../../../../../shared/models/schedule/jornada-efectiva-response';
 import {
   CumplimientoRow,
   DrawerTab,
@@ -56,6 +58,7 @@ type AdjustmentOp = 'extra' | 'compensacion' | 'corrimiento';
     AttendanceTrayComponent,
     ScheduleWeekEditorComponent,
     ScheduleExtensionTimelineComponent,
+    ScheduleShiftEditorComponent,
     SelectModule,
     TableModule,
     TabsModule,
@@ -68,6 +71,16 @@ type AdjustmentOp = 'extra' | 'compensacion' | 'corrimiento';
 })
 export class RrhhAsistenciaPageComponent implements OnInit {
   protected readonly facade = inject(RrhhAsistenciaFacade);
+  private readonly session = inject(SessionService);
+
+  /** ADMIN puede correr con déficit (compensable); ADMIN y RRHH pueden justificar. */
+  protected readonly canCorrimientoCompensable = computed(() =>
+    (this.session.session()?.roles ?? []).includes('ADMINISTRADOR')
+  );
+  protected readonly canCorrimientoJustificada = computed(() => {
+    const roles = this.session.session()?.roles ?? [];
+    return roles.includes('ADMINISTRADOR') || roles.includes('RRHH');
+  });
 
   // Caches para no devolver refs nuevas desde el template (primeng-loop-fix.md).
   private readonly monthChoicesCache = new Map<readonly MonthOption[], SelectChoice[]>();
@@ -364,21 +377,46 @@ export class RrhhAsistenciaPageComponent implements OnInit {
     return { min: `${this.facade.drawerSelectedMonth()}-01`, max: `${this.facade.drawerSelectedMonth()}-${String(last).padStart(2, '0')}` };
   });
 
+  /** Déficit del mes en minutos (positivo): tope del timeline de compensación. */
+  protected readonly deficitMin = computed(() => Math.abs(Math.min(this.facade.drawerKpis().balanceMin, 0)));
+
   protected openAdjustment(op: AdjustmentOp): void {
     this.activeAdjustment.set(op);
     if (op === 'extra' || op === 'compensacion') {
       void this.facade.openDayAdjustment(this.clampDayToMonth(this.adjustmentDay()));
+    } else {
+      // El corrimiento es solo para hoy (sin marca de ingreso); carga la jornada base de hoy para el editor.
+      void this.facade.openDayAdjustment(this.todayValue());
     }
   }
 
-  protected onAdjustmentDayChange(value: string): void {
-    if (!value) return;
-    this.adjustmentDay.set(value);
-    void this.facade.openDayAdjustment(value);
+  protected onAdjustmentDayChange(value: Date | string | null): void {
+    const iso = this.toBackendDate(value);
+    if (!iso) return;
+    this.adjustmentDay.set(iso);
+    void this.facade.openDayAdjustment(iso);
+  }
+
+  protected adjustmentDayMinDate(): Date | null {
+    return this.toPickerDate(this.adjustmentMonthBounds().min);
+  }
+
+  protected adjustmentDayMaxDate(): Date | null {
+    return this.toPickerDate(this.adjustmentMonthBounds().max);
   }
 
   protected async onSaveExtra(requests: AjusteJornadaRequest[]): Promise<void> {
     const ok = await this.facade.submitDayExtension(requests, 'AMPLIACION_OPERATIVA');
+    if (ok) this.closeAdjustment();
+  }
+
+  protected async onSaveCompensacion(requests: AjusteJornadaRequest[]): Promise<void> {
+    const ok = await this.facade.submitDayExtension(requests, 'COMPENSACION');
+    if (ok) this.closeAdjustment();
+  }
+
+  protected async onSaveCorrimiento(request: RegistrarAjusteV2Request): Promise<void> {
+    const ok = await this.facade.submitCorrimiento(request);
     if (ok) this.closeAdjustment();
   }
 

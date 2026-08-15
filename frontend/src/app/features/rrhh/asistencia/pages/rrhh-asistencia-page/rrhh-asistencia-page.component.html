@@ -321,24 +321,27 @@
 
                 @if (activeAdjustment(); as op) {
                   <section class="adjust-inline">
-                    <div class="adjust-inline__head">
+                    <div class="adjust-inline__bar">
                       <button type="button" class="adjust-inline__back" (click)="closeAdjustment()">
                         <i class="pi pi-arrow-left"></i> Volver
                       </button>
-                      <strong>{{ adjustmentTitle(op) }}</strong>
                       @if (op === 'extra' || op === 'compensacion') {
                         <label class="adjust-inline__day">
                           <span>Día</span>
-                          <input
-                            type="date"
-                            [value]="adjustmentDay()"
-                            [attr.min]="adjustmentMonthBounds().min"
-                            [attr.max]="adjustmentMonthBounds().max"
-                            (input)="onAdjustmentDayChange($any($event.target).value)"
+                          <p-datepicker
+                            [ngModel]="toPickerDate(adjustmentDay())"
+                            [ngModelOptions]="{ standalone: true }"
+                            dateFormat="dd/mm/yy"
+                            [minDate]="adjustmentDayMinDate()"
+                            [maxDate]="adjustmentDayMaxDate()"
+                            [showIcon]="true"
+                            appendTo="body"
+                            (ngModelChange)="onAdjustmentDayChange($event)"
                           />
                         </label>
                       }
                     </div>
+                    <h4 class="adjust-inline__title">{{ adjustmentTitle(op) }}</h4>
 
                     @if (op === 'extra') {
                       <app-schedule-extension-timeline
@@ -350,8 +353,28 @@
                         (cancel)="closeAdjustment()"
                         (saveRequested)="onSaveExtra($event)"
                       />
+                    } @else if (op === 'compensacion') {
+                      <app-schedule-extension-timeline
+                        [jornada]="facade.adjustmentJornada()"
+                        [loading]="facade.isLoadingAdjustment()"
+                        [saving]="facade.isSavingAdjustment()"
+                        [error]="facade.adjustmentError()"
+                        mode="compensacion"
+                        [maxTotal]="deficitMin()"
+                        (cancel)="closeAdjustment()"
+                        (saveRequested)="onSaveCompensacion($event)"
+                      />
                     } @else {
-                      <p class="adjust-inline__soon">Esta operación se integra en el Paso 3.</p>
+                      <app-schedule-shift-editor
+                        [jornada]="facade.adjustmentJornada()"
+                        [loading]="facade.isLoadingAdjustment()"
+                        [saving]="facade.isSavingAdjustment()"
+                        [error]="facade.adjustmentError()"
+                        [canCompensable]="canCorrimientoCompensable()"
+                        [canJustificada]="canCorrimientoJustificada()"
+                        (cancel)="closeAdjustment()"
+                        (saveRequested)="onSaveCorrimiento($event)"
+                      />
                     }
                   </section>
                 } @else {

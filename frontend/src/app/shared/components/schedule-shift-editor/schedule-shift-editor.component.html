@@ -1,0 +1,159 @@
+<div class="shift">
+  @if (employeeName()) {
+    <p class="shift__name">{{ employeeName() }}</p>
+  }
+  <p class="shift__sub">
+    Mueve la ventana del horario base de hoy. La duración se mantiene salvo que la ajustes; si acortas, el
+    tiempo se descuenta según el tipo de tardanza.
+  </p>
+
+  @if (loading()) {
+    <div class="shift__placeholder"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Cargando horario…</div>
+  } @else if (!hasBase()) {
+    <div class="shift__placeholder">Este empleado no tiene horario base laborable hoy.</div>
+  } @else {
+    <div class="shift__legend-row">
+      <span class="shift__lbl">Línea del día</span>
+      <span class="shift__legend">
+        <span><i class="shift__chip shift__chip--ghost"></i>Base</span>
+        <span><i class="shift__chip shift__chip--moved"></i>Nueva ventana</span>
+      </span>
+    </div>
+
+    <div class="shift__track">
+      @for (block of blocks(); track $index) {
+        <div
+          class="shift__block shift__block--{{ block.kind }}"
+          [style.left.%]="block.leftPct"
+          [style.width.%]="block.widthPct"
+          [attr.title]="block.title"
+        >
+          <span class="shift__block-label">{{ block.label }}</span>
+        </div>
+      }
+    </div>
+    <div class="shift__axis">
+      @for (tick of axis(); track $index) {
+        <span>{{ tick }}</span>
+      }
+    </div>
+
+    <div class="shift__controls">
+      <label class="shift__field">
+        <span>Nueva entrada</span>
+        <p-datepicker
+          [timeOnly]="true"
+          hourFormat="24"
+          dataType="string"
+          [stepMinute]="5"
+          appendTo="body"
+          styleClass="shift__picker"
+          [ngModel]="nuevaEntrada()"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="nuevaEntrada.set($event)"
+        />
+      </label>
+
+      <div class="shift__field">
+        <span>Salida</span>
+        <button
+          type="button"
+          class="shift__toggle"
+          [class.on]="mantenerDuracion()"
+          (click)="toggleMantenerDuracion()"
+        >
+          {{ mantenerDuracion() ? 'Mantiene la duración' : 'Ajustar salida' }}
+        </button>
+        @if (!mantenerDuracion()) {
+          <p-datepicker
+            [timeOnly]="true"
+            hourFormat="24"
+            dataType="string"
+            [stepMinute]="5"
+            appendTo="body"
+            styleClass="shift__picker"
+            [ngModel]="nuevaSalida()"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="nuevaSalida.set($event)"
+          />
+        }
+      </div>
+    </div>
+
+    @if (showRazonToggle()) {
+      <div class="shift__razon">
+        <span class="shift__razon-lbl">Tipo de tardanza</span>
+        <div class="shift__seg">
+          <button
+            type="button"
+            [class.on]="razon() === 'CORRIMIENTO_COMPENSABLE'"
+            (click)="setRazon('CORRIMIENTO_COMPENSABLE')"
+          >
+            Compensable
+          </button>
+          <button
+            type="button"
+            [class.on]="razon() === 'CORRIMIENTO_JUSTIFICADA'"
+            (click)="setRazon('CORRIMIENTO_JUSTIFICADA')"
+          >
+            Justificada
+          </button>
+        </div>
+        <p class="shift__razon-hint">
+          @if (razon() === 'CORRIMIENTO_COMPENSABLE') {
+            El tiempo corrido queda debiendo: el empleado lo recupera después.
+          } @else {
+            Tardanza disculpada: no genera horas por recuperar.
+          }
+        </p>
+      </div>
+    } @else {
+      <p class="shift__razon-fixed"><i class="pi pi-check-circle" aria-hidden="true"></i> Tardanza justificada — sin horas por recuperar.</p>
+    }
+
+    <label class="shift__motivo-l">Motivo
+      <textarea
+        pTextarea
+        class="shift__motivo"
+        rows="2"
+        maxlength="300"
+        placeholder="Indica por qué se corre el horario"
+        [value]="motivo()"
+        (input)="onMotivo($event)"
+      ></textarea>
+    </label>
+
+    <div class="shift__summary" [class.empty]="sinCambio() || rangoInvalido()">
+      @if (rangoInvalido()) {
+        <span>La salida debe ser posterior a la entrada.</span>
+      } @else if (sinCambio()) {
+        <span>Sin cambios respecto al horario base ({{ baseLabel() }}).</span>
+      } @else {
+        <span>{{ desplazamientoLabel() }} · {{ nuevaVentanaLabel() }}</span>
+        @if (recorteMin() > 0) {
+          <strong>
+            @if (razon() === 'CORRIMIENTO_COMPENSABLE') { Debe recuperar {{ recorteMin() }} min }
+            @else { Acorta {{ recorteMin() }} min }
+          </strong>
+        }
+      }
+    </div>
+
+    @if (error()) {
+      <p class="shift__error">{{ error() }}</p>
+    }
+  }
+
+  <div class="shift__foot">
+    <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="emitCancel()"></button>
+    <button
+      pButton
+      type="button"
+      label="Correr horario"
+      icon="pi pi-check"
+      [disabled]="!canSave()"
+      [loading]="saving()"
+      (click)="save()"
+    ></button>
+  </div>
+</div>
