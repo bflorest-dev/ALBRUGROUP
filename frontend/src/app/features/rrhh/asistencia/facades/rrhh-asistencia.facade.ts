@@ -17,7 +17,8 @@ import {
   AjusteJornadaRequest,
   AjusteJornadaResponse,
   JornadaEfectivaResponse,
-  PreviewAjusteJornadaResponse
+  PreviewAjusteJornadaResponse,
+  RazonAjuste
 } from '../../../../shared/models/schedule/jornada-efectiva-response';
 import { ReemplazarHorarioRequest } from '../../../../shared/models/schedule/reemplazar-horario-request';
 import { RegistrarExcepcionHorarioRequest } from '../../../../shared/models/schedule/registrar-excepcion-horario-request';
@@ -700,6 +701,49 @@ export class RrhhAsistenciaFacade {
       void this.recargar();
     } catch (error) {
       this.adjustmentError.set(this.extractErrorMessage(error, 'No se pudo cancelar el ajuste puntual.'));
+    } finally {
+      this.isSavingAdjustment.set(false);
+    }
+  }
+
+  /** Ajustes del día (v2): carga la jornada base del día para el editor inline (horas extra / compensación). */
+  async openDayAdjustment(fecha: string): Promise<void> {
+    if (!this.ensureCanMutate() || !this.drawerEmpleado()) return;
+    this.adjustmentDate.set(fecha);
+    this.adjustmentError.set(null);
+    await this.loadScheduleAdjustment();
+  }
+
+  /** Guarda una lista de tramos v2 con la razón dada (N llamadas secuenciales; reporta parciales). */
+  async submitDayExtension(requests: AjusteJornadaRequest[], razon: RazonAjuste): Promise<boolean> {
+    if (!this.ensureCanMutate()) return false;
+    const empleado = this.drawerEmpleado();
+    if (!empleado || requests.length === 0) return false;
+
+    this.isSavingAdjustment.set(true);
+    this.adjustmentError.set(null);
+    let guardados = 0;
+    try {
+      for (const req of requests) {
+        await firstValueFrom(
+          this.scheduleAdjustmentService
+            .registrarV2(empleado.idEmpleado, { ...req, razon })
+            .pipe(timeout(REQUEST_TIMEOUT_MS))
+        );
+        guardados += 1;
+      }
+      this.scheduleChangeSuccessMessage.set(
+        razon === 'COMPENSACION' ? 'Horas de compensación registradas.' : 'Horas extra registradas.'
+      );
+      await this.loadScheduleAdjustment();
+      await this.refreshDrawerAfterScheduleMutation(empleado.idEmpleado);
+      void this.recargar();
+      return true;
+    } catch (error) {
+      const parcial = guardados > 0 ? ` (${guardados} de ${requests.length} guardados)` : '';
+      this.adjustmentError.set(this.extractErrorMessage(error, 'No se pudo guardar el ajuste.') + parcial);
+      await this.loadScheduleAdjustment();
+      return false;
     } finally {
       this.isSavingAdjustment.set(false);
     }

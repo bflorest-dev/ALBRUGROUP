@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -18,7 +18,9 @@ import { AttendanceFilterBarComponent } from '../../components/attendance-filter
 import { AttendanceMetricCardsComponent } from '../../components/attendance-metric-cards/attendance-metric-cards.component';
 import { AttendanceMonthHeatmapComponent } from '../../components/attendance-month-heatmap/attendance-month-heatmap.component';
 import { AttendanceTrayComponent } from '../../components/attendance-tray/attendance-tray.component';
-import { ScheduleEditorPanelComponent } from '../../components/schedule-editor-panel/schedule-editor-panel.component';
+import { ScheduleWeekEditorComponent } from '../../../../../shared/components/schedule-week-editor/schedule-week-editor.component';
+import { ScheduleExtensionTimelineComponent } from '../../../../../shared/components/schedule-extension-timeline/schedule-extension-timeline.component';
+import { AjusteJornadaRequest } from '../../../../../shared/models/schedule/jornada-efectiva-response';
 import {
   CumplimientoRow,
   DrawerTab,
@@ -31,6 +33,9 @@ interface SelectChoice {
   label: string;
   value: string;
 }
+
+/** Operación de ajuste del día seleccionada para el editor inline. */
+type AdjustmentOp = 'extra' | 'compensacion' | 'corrimiento';
 
 @Component({
   selector: 'app-rrhh-asistencia-page',
@@ -49,7 +54,8 @@ interface SelectChoice {
     AttendanceMetricCardsComponent,
     AttendanceMonthHeatmapComponent,
     AttendanceTrayComponent,
-    ScheduleEditorPanelComponent,
+    ScheduleWeekEditorComponent,
+    ScheduleExtensionTimelineComponent,
     SelectModule,
     TableModule,
     TabsModule,
@@ -309,5 +315,87 @@ export class RrhhAsistenciaPageComponent implements OnInit {
     if (min <= 0) return 'secondary';
     if (min >= 60) return 'danger';
     return 'warn';
+  }
+
+  // ── Ajustes del día (horas extra / compensación / corrimiento)
+  /** Operación abierta como editor inline dentro del drawer (null = lista de accesos). */
+  protected readonly activeAdjustment = signal<AdjustmentOp | null>(null);
+
+  constructor() {
+    // Al cambiar de empleado (o cerrar el drawer) se vuelve a la lista de accesos, no al editor previo.
+    effect(() => {
+      this.facade.drawerEmpleado();
+      untracked(() => this.activeAdjustment.set(null));
+    });
+  }
+
+  protected usesLunchBreak(): boolean {
+    const modalidad = this.facade.drawerContrato()?.modalidad;
+    return modalidad !== 'PART_TIME' && modalidad !== 'SEMI_FULL';
+  }
+
+  /** El empleado debe horas este mes → habilita "Compensar". */
+  protected debeHoras(): boolean {
+    return this.facade.drawerKpis().balanceMin < 0;
+  }
+
+  /** Etiqueta del déficit para el badge de "Compensar" (p. ej. "Debe 51 min"). */
+  protected deficitBadge(): string {
+    const min = Math.abs(Math.min(this.facade.drawerKpis().balanceMin, 0));
+    if (min === 0) return '';
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    const t = h === 0 ? `${m} min` : m === 0 ? `${h} h` : `${h} h ${m} min`;
+    return `Debe ${t}`;
+  }
+
+  /** Hora de ingreso marcada HOY (o null). El corrimiento solo se permite antes de la marca. */
+  protected marcaIngresoHoy(): string | null {
+    const dia = this.facade.drawerDetalleDias().find((d) => d.fecha === this.todayValue());
+    return dia?.horaEntradaAsistencia ? dia.horaEntradaAsistencia.slice(0, 5) : null;
+  }
+
+  /** Día del ajuste (horas extra / compensación). Por defecto hoy; acotado al mes del drawer. */
+  protected readonly adjustmentDay = signal(this.todayValue());
+
+  protected readonly adjustmentMonthBounds = computed(() => {
+    const [y, mo] = this.facade.drawerSelectedMonth().split('-').map(Number);
+    const last = new Date(y, mo, 0).getDate();
+    return { min: `${this.facade.drawerSelectedMonth()}-01`, max: `${this.facade.drawerSelectedMonth()}-${String(last).padStart(2, '0')}` };
+  });
+
+  protected openAdjustment(op: AdjustmentOp): void {
+    this.activeAdjustment.set(op);
+    if (op === 'extra' || op === 'compensacion') {
+      void this.facade.openDayAdjustment(this.clampDayToMonth(this.adjustmentDay()));
+    }
+  }
+
+  protected onAdjustmentDayChange(value: string): void {
+    if (!value) return;
+    this.adjustmentDay.set(value);
+    void this.facade.openDayAdjustment(value);
+  }
+
+  protected async onSaveExtra(requests: AjusteJornadaRequest[]): Promise<void> {
+    const ok = await this.facade.submitDayExtension(requests, 'AMPLIACION_OPERATIVA');
+    if (ok) this.closeAdjustment();
+  }
+
+  private clampDayToMonth(day: string): string {
+    const bounds = this.adjustmentMonthBounds();
+    if (day < bounds.min) return bounds.min;
+    if (day > bounds.max) return bounds.max;
+    return day;
+  }
+
+  protected closeAdjustment(): void {
+    this.activeAdjustment.set(null);
+  }
+
+  protected adjustmentTitle(op: AdjustmentOp): string {
+    if (op === 'extra') return 'Agregar horas extra';
+    if (op === 'compensacion') return 'Compensar horas';
+    return 'Correr horario (tardanza)';
   }
 }

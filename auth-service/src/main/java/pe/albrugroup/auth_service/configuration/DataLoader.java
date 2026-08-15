@@ -169,6 +169,7 @@ public class DataLoader {
         savePermiso("CREATE_LEADS", "Puede registrar ingresos de leads", "LEAD", "CREATE");
         savePermiso("DELETE_LEADS", "Puede eliminar integralmente leads", "LEAD", "DELETE");
         savePermiso("CORREGIR_CAMPANA_LEAD", "Puede corregir la campana asociada a un lead y sus eventos", "LEAD", "UPDATE_CAMPAIGN");
+        savePermiso("CORREGIR_MERITO_PREVENTA", "Puede corregir el asesor de merito de una preventa", "LEAD_PREVENTA_MERITO", "CORRECT");
         savePermiso("ASSIGN_LEADS", "Puede asignar leads", "LEAD", "ASSIGN");
         savePermiso("READ_LEADS_ASESOR", "Puede ver bandeja y detalle de leads del asesor", "LEAD", "READ");
         savePermiso("UPDATE_LEADS_ASESOR", "Puede actualizar datos de gestion del lead", "LEAD", "UPDATE");
@@ -452,6 +453,7 @@ public class DataLoader {
                 getPermiso("READ_LEADS_GTR"),
                 getPermiso("READ_LEADS_SUPERVISOR_VENTAS_RESUMEN"),
                 getPermiso("READ_LEADS_SUPERVISOR_VENTAS_BANDEJA"),
+                getPermiso("CORREGIR_MERITO_PREVENTA"),
                 getPermiso("READ_EVENTOS_LEADS"),
                 getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),

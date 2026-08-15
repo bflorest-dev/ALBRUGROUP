@@ -5,7 +5,8 @@ import {
   AjusteJornadaRequest,
   AjusteJornadaResponse,
   JornadaEfectivaResponse,
-  PreviewAjusteJornadaResponse
+  PreviewAjusteJornadaResponse,
+  RegistrarAjusteV2Request
 } from '../../shared/models/schedule/jornada-efectiva-response';
 import { API_CONSTANTS } from '../constants/api.constants';
 
@@ -13,6 +14,7 @@ import { API_CONSTANTS } from '../constants/api.constants';
 export class ScheduleAdjustmentService {
   private readonly http = inject(HttpClient);
   private readonly scheduleUrl = `${API_CONSTANTS.gatewayBaseUrl}/schedule/horarios/empleados`;
+  private readonly asistenciaV2Url = `${API_CONSTANTS.gatewayBaseUrl}/schedule/asistencia/v2/empleados`;
   private readonly gtrUrl = `${API_CONSTANTS.gatewayBaseUrl}/monitor/gtr/asesores-ventas`;
 
   getJornada(idEmpleado: number, fecha?: string): Observable<JornadaEfectivaResponse> {
@@ -36,6 +38,14 @@ export class ScheduleAdjustmentService {
   registrar(idEmpleado: number, request: AjusteJornadaRequest): Observable<AjusteJornadaResponse> {
     return this.http.post<AjusteJornadaResponse>(
       `${this.scheduleUrl}/${idEmpleado}/ajustes`,
+      request
+    );
+  }
+
+  /** Ajuste v2 con RAZÓN (motor nuevo): ampliación operativa / compensación / corrimiento. */
+  registrarV2(idEmpleado: number, request: RegistrarAjusteV2Request): Observable<AjusteJornadaResponse> {
+    return this.http.post<AjusteJornadaResponse>(
+      `${this.asistenciaV2Url}/${idEmpleado}/ajustes`,
       request
     );
   }

@@ -18,5 +18,6 @@ public interface IEquipo {
     UsuarioResponse asignarEquipos(Long empleadoId, Set<Long> equipoIds);
     List<EquipoResponse> listarMisEquipos();
     List<UsuarioRolResponse> listarAsesoresPreventa(Long equipoId);
+    List<UsuarioRolResponse> listarAsesoresVentasMerito(Long equipoId);
     List<UsuarioRolResponse> listarMiembros(Long equipoId);
 }

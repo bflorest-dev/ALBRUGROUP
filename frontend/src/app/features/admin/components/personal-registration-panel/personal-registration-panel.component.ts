@@ -14,7 +14,7 @@ import { SelectModule } from 'primeng/select';
 import { StepperModule } from 'primeng/stepper';
 import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { ScheduleWeekEditorComponent } from '../schedule-week-editor/schedule-week-editor.component';
+import { ScheduleWeekEditorComponent } from '../../../../shared/components/schedule-week-editor/schedule-week-editor.component';
 
 type SelectOption = {
   label: string;

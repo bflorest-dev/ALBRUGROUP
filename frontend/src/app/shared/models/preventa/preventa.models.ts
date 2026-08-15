@@ -435,6 +435,45 @@ export interface MisPreventaResponse {
   codigoSubtipificacion?: string | null;
 }
 
+export interface LeadMeritoCorreccionCandidatoResponse {
+  idLead: number;
+  lead: string;
+  etapaActual: Etapa;
+  estadoActual: EstadoSeguimiento;
+  idEquipo?: number | null;
+  nombreCampana?: string | null;
+  nombreProveedorCampana?: string | null;
+  nombreProveedorEquipo?: string | null;
+  idAsesorMeritoActualPreventa?: number | null;
+  asesorMeritoActualPreventa?: string | null;
+  fechaMeritoPreventa?: string | null;
+  yaCorregido: boolean;
+  corregible: boolean;
+  motivoNoCorregible?: string | null;
+}
+
+export interface LeadMeritoCorreccionRequest {
+  idAsesorMerito: number;
+  motivo?: string | null;
+}
+
+export interface LeadMeritoCorreccionResponse {
+  idLead: number;
+  lead: string;
+  etapaActual: Etapa;
+  estadoActual: EstadoSeguimiento;
+  idAsesorAnterior: number;
+  nombreAsesorAnterior: string;
+  idAsesorNuevo: number;
+  nombreAsesorNuevo: string;
+  fechaMeritoPreventa?: string | null;
+  idActor: number;
+  nombreActor: string;
+  rolActor: string;
+  motivo?: string | null;
+  fechaCorreccion?: string | null;
+}
+
 export interface MisPreventasResumenResponse {
   cerradas: number;
   instaladas: number;

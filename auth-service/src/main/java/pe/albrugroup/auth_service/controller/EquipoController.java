@@ -61,10 +61,17 @@ public class EquipoController {
     }
 
     @GetMapping("/{id}/asesores-preventa")
-    @PreAuthorize("hasAnyAuthority('READ_LEADS_GTR', 'ASSIGN_LEADS', 'READ_EQUIPOS')")
+    @PreAuthorize("hasAnyAuthority('READ_LEADS_GTR', 'ASSIGN_LEADS', 'READ_EQUIPOS', 'CORREGIR_MERITO_PREVENTA')")
     @Operation(summary = "Asesores por equipo", description = "Lista asesores activos asignables para preventa en el equipo indicado.")
     public ResponseEntity<List<UsuarioRolResponse>> listarAsesoresPreventa(@PathVariable @Positive Long id) {
         return ResponseEntity.ok(equipoService.listarAsesoresPreventa(id));
+    }
+
+    @GetMapping("/{id}/asesores-ventas-merito")
+    @PreAuthorize("hasAuthority('CORREGIR_MERITO_PREVENTA')")
+    @Operation(summary = "Asesores de venta por equipo", description = "Lista asesores de venta del equipo indicado para correccion de merito, incluyendo inactivos.")
+    public ResponseEntity<List<UsuarioRolResponse>> listarAsesoresVentasMerito(@PathVariable @Positive Long id) {
+        return ResponseEntity.ok(equipoService.listarAsesoresVentasMerito(id));
     }
 
     @PatchMapping("/{id}")

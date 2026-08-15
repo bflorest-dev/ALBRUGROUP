@@ -3,6 +3,18 @@ export type OrigenAjusteJornada =
   | 'JORNADA_EXTRAORDINARIA'
   | 'TRAMO_ADICIONAL';
 
+/** Intención de un ajuste v2 (ver backend RazonAjuste). Decide status del día, balance y autorización. */
+export type RazonAjuste =
+  | 'AMPLIACION_OPERATIVA'
+  | 'CORRIMIENTO_COMPENSABLE'
+  | 'CORRIMIENTO_JUSTIFICADA'
+  | 'COMPENSACION';
+
+/** Request del ajuste v2 (con razón): mismo cuerpo del ajuste + la razón. */
+export interface RegistrarAjusteV2Request extends AjusteJornadaRequest {
+  razon: RazonAjuste;
+}
+
 export interface TramoJornadaResponse {
   idAjuste: number | null;
   inicio: string;

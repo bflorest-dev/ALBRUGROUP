@@ -1,0 +1,149 @@
+<div class="ext" [class.ext--comp]="mode() === 'compensacion'">
+  @if (employeeName()) {
+    <p class="ext__name">{{ employeeName() }}</p>
+  }
+  <p class="ext__sub">{{ descripcion() }}</p>
+
+  @if (loading()) {
+    <div class="ext__placeholder"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Cargando horario…</div>
+  } @else if (!hasBase()) {
+    <div class="ext__placeholder">Este empleado no tiene horario base laborable ese día.</div>
+  } @else {
+    <div class="ext__legend-row">
+      <span class="ext__lbl">Línea del día</span>
+      <span class="ext__legend">
+        <span><i class="ext__chip ext__chip--base"></i>Base</span>
+        <span><i class="ext__chip ext__chip--exist"></i>Registrado</span>
+        <span><i class="ext__chip ext__chip--new"></i>Nuevo</span>
+      </span>
+    </div>
+
+    <div class="ext__track">
+      @for (block of blocks(); track $index) {
+        <div
+          class="ext__block ext__block--{{ block.kind }}"
+          [style.left.%]="block.leftPct"
+          [style.width.%]="block.widthPct"
+          [attr.title]="block.title"
+        >
+          @if (block.kind === 'base') {
+            <i class="pi pi-lock ext__lock" aria-hidden="true"></i>
+          }
+          <span class="ext__block-label">{{ block.label }}</span>
+        </div>
+      }
+    </div>
+    <div class="ext__axis">
+      @for (tick of axis(); track $index) {
+        <span>{{ tick }}</span>
+      }
+    </div>
+
+    <div class="ext__controls">
+      <div class="ext__ctl">
+        <p class="ext__ctl-t"><i class="pi pi-arrow-left" aria-hidden="true"></i> Ingresar antes</p>
+        <p class="ext__ctl-d">Tiempo antes de su entrada</p>
+        <div class="ext__step">
+          <button type="button" (click)="adjust('before', -1)" [disabled]="before() === 0" aria-label="Menos">−</button>
+          <span class="ext__val">{{ beforeLabel() }}</span>
+          <button type="button" (click)="adjust('before', 1)" [disabled]="before() >= maxBefore()" aria-label="Más">+</button>
+        </div>
+      </div>
+
+      <div class="ext__ctl">
+        <p class="ext__ctl-t"><i class="pi pi-arrow-right" aria-hidden="true"></i> Quedarse más</p>
+        <p class="ext__ctl-d">Tiempo después de su salida</p>
+        <div class="ext__step">
+          <button type="button" (click)="adjust('after', -1)" [disabled]="after() === 0" aria-label="Menos">−</button>
+          <span class="ext__val">{{ afterLabel() }}</span>
+          <button type="button" (click)="adjust('after', 1)" [disabled]="after() >= maxAfter()" aria-label="Más">+</button>
+        </div>
+      </div>
+
+      <div class="ext__ctl">
+        <p class="ext__ctl-t"><i class="pi pi-plus" aria-hidden="true"></i> Período aparte</p>
+        <p class="ext__ctl-d">Un tramo separado del base</p>
+        <button type="button" class="ext__toggle" [class.on]="detached()" (click)="toggleDetached()">
+          {{ detached() ? 'Quitar período' : 'Agregar período' }}
+        </button>
+
+        @if (detached()) {
+          <div class="ext__det-times">
+            <label>
+              <span>Desde</span>
+              <p-datepicker
+                [timeOnly]="true"
+                hourFormat="24"
+                dataType="string"
+                [stepMinute]="30"
+                appendTo="body"
+                styleClass="ext__det-picker"
+                [ngModel]="detStart()"
+                [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="detStart.set($event)"
+              />
+            </label>
+            <label>
+              <span>Hasta</span>
+              <p-datepicker
+                [timeOnly]="true"
+                hourFormat="24"
+                dataType="string"
+                [stepMinute]="30"
+                appendTo="body"
+                styleClass="ext__det-picker"
+                [ngModel]="detEnd()"
+                [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="detEnd.set($event)"
+              />
+            </label>
+            @if (detachedInvalid()) {
+              <span class="ext__hint-error">Fin debe ser posterior al inicio.</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <label class="ext__motivo-l">Motivo
+      <textarea
+        pTextarea
+        class="ext__motivo"
+        rows="2"
+        maxlength="300"
+        placeholder="Indica por qué se necesita este tiempo"
+        [value]="motivo()"
+        (input)="onInput('motivo', $event)"
+      ></textarea>
+    </label>
+
+    <div class="ext__summary" [class.empty]="totalExtra() === 0">
+      @if (totalExtra() === 0) {
+        <span>Sin tiempo nuevo</span>
+      } @else {
+        <span>{{ summaryLabel() }}</span>
+        <strong>{{ totalExtraLabel() }} h</strong>
+      }
+    </div>
+
+    @if (excedeTope()) {
+      <p class="ext__error">Supera lo que el empleado debe este mes.</p>
+    }
+    @if (error()) {
+      <p class="ext__error">{{ error() }}</p>
+    }
+  }
+
+  <div class="ext__foot">
+    <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="emitCancel()"></button>
+    <button
+      pButton
+      type="button"
+      label="Guardar"
+      icon="pi pi-check"
+      [disabled]="!canSave()"
+      [loading]="saving()"
+      (click)="save()"
+    ></button>
+  </div>
+</div>

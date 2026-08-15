@@ -19,7 +19,7 @@ import { EmployeeAccessPanelComponent } from '../../components/employee-access-p
 import { PersonalRegistrationPanelComponent } from '../../components/personal-registration-panel/personal-registration-panel.component';
 import { AdminPersonalFacade } from '../../facades/admin-personal.facade';
 import { ScheduleAdjustmentDialogComponent } from '../../../../shared/components/schedule-adjustment-dialog/schedule-adjustment-dialog.component';
-import { ScheduleWeekEditorComponent } from '../../components/schedule-week-editor/schedule-week-editor.component';
+import { ScheduleWeekEditorComponent } from '../../../../shared/components/schedule-week-editor/schedule-week-editor.component';
 
 @Component({
   selector: 'app-admin-dashboard-page',

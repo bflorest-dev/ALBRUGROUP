@@ -16,6 +16,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuthEquipoClient {
 
+    private static final String ROL_ASESOR_VENTAS = "ASESOR_VENTAS";
+
     private final RestClient.Builder restClientBuilder;
     private final HttpServletRequest request;
 
@@ -30,7 +32,30 @@ public class AuthEquipoClient {
                 .anyMatch(asesor -> idAsesor.equals(asesor.empleadoId()));
     }
 
-    private List<UsuarioRolAuthResponse> listarAsesoresPreventa(Long idEquipo) {
+    public UsuarioRolAuthResponse obtenerAsesorVentasDelEquipo(Long idEquipo, Long idAsesor) {
+        if (idEquipo == null || idAsesor == null) {
+            return null;
+        }
+        return listarAsesoresVentasMerito(idEquipo).stream()
+                .filter(asesor -> idAsesor.equals(asesor.empleadoId()))
+                .filter(this::esAsesorVentas)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private boolean esAsesorVentas(UsuarioRolAuthResponse asesor) {
+        return asesor.roles() != null && asesor.roles().contains(ROL_ASESOR_VENTAS);
+    }
+
+    public List<UsuarioRolAuthResponse> listarAsesoresPreventa(Long idEquipo) {
+        return listarAsesores(idEquipo, "/equipos/{idEquipo}/asesores-preventa");
+    }
+
+    public List<UsuarioRolAuthResponse> listarAsesoresVentasMerito(Long idEquipo) {
+        return listarAsesores(idEquipo, "/equipos/{idEquipo}/asesores-ventas-merito");
+    }
+
+    private List<UsuarioRolAuthResponse> listarAsesores(Long idEquipo, String uri) {
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authorization == null || authorization.isBlank()) {
             throw new ForbiddenException("No se pudo validar el equipo del asesor seleccionado");
@@ -39,7 +64,7 @@ public class AuthEquipoClient {
                 .baseUrl(authBaseUrl)
                 .build()
                 .get()
-                .uri("/equipos/{idEquipo}/asesores-preventa", idEquipo)
+                .uri(uri, idEquipo)
                 .header(HttpHeaders.AUTHORIZATION, authorization)
                 .retrieve()
                 .body(new ParameterizedTypeReference<List<UsuarioRolAuthResponse>>() {});

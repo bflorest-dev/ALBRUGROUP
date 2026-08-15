@@ -28,6 +28,7 @@ import { AsesorVentasWorkspaceStateService } from '../../services/asesor-ventas-
 import { STORAGE_KEYS } from '../../constants/storage.constants';
 import { GtrAgendadosAlertFacade } from '../../../features/gtr/facades/gtr-agendados-alert.facade';
 import { EquiposNavService } from '../../services/equipos-nav.service';
+import { LeadMeritoCorreccionDrawerComponent } from '../../../shared/components/lead-merito-correccion-drawer/lead-merito-correccion-drawer.component';
 
 type SidebarItem = {
   label: string;
@@ -70,7 +71,8 @@ const ROLE_THEME_CLASS: Record<string, string> = {
     RouterLinkActive,
     AttendanceStatusPickerComponent,
     TopBannerComponent,
-    BadgeModule
+    BadgeModule,
+    LeadMeritoCorreccionDrawerComponent
   ],
   templateUrl: './private-layout.component.html',
   styleUrl: './private-layout.component.scss',
@@ -79,6 +81,7 @@ const ROLE_THEME_CLASS: Record<string, string> = {
 export class PrivateLayoutComponent implements AfterViewInit {
   @ViewChild('sidebar') private sidebar?: ElementRef<HTMLElement>;
   @ViewChild('sidebarMenu') private sidebarMenu?: ElementRef<HTMLElement>;
+  @ViewChild(LeadMeritoCorreccionDrawerComponent) private meritoDrawer?: LeadMeritoCorreccionDrawerComponent;
   protected readonly attendanceFacade = inject(AttendanceFacade);
   private readonly authSessionService = inject(AuthSessionService);
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
@@ -104,6 +107,10 @@ export class PrivateLayoutComponent implements AfterViewInit {
   private handledSalidaTick = this.attendanceFacade.salidaSuccessTick();
   protected readonly session = this.sessionService.session;
   protected readonly isAdmin = computed(() => this.session()?.primaryRole === 'ADMINISTRADOR');
+  protected readonly canCorrectMerito = computed(() => {
+    const primaryRole = this.session()?.primaryRole;
+    return primaryRole === 'ADMINISTRADOR' || primaryRole === 'SUPERVISOR_VENTAS';
+  });
   protected readonly isAlwaysOnlineRole = computed(() => {
     const primaryRole = this.session()?.primaryRole;
     return primaryRole === 'ADMINISTRADOR' || primaryRole === 'COMMUNITY';
@@ -594,6 +601,12 @@ export class PrivateLayoutComponent implements AfterViewInit {
       localStorage.setItem(STORAGE_KEYS.adminDeleteLeadsVisible, String(nextValue));
       return nextValue;
     });
+  }
+
+  protected openMeritoCorrection(): void {
+    this.profileMenuOpen.set(false);
+    this.mobileMenuOpen.set(false);
+    this.meritoDrawer?.open();
   }
 
   protected toggleMobileMenu(): void {

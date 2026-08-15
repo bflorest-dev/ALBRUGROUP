@@ -1,0 +1,176 @@
+<p-confirmDialog appendTo="body" />
+
+<p-drawer
+  [visible]="visible()"
+  (visibleChange)="onVisibleChange($event)"
+  position="right"
+  styleClass="merito-drawer"
+  [modal]="true"
+>
+  <ng-template #header>
+    <div class="drawer-title">
+      <span class="drawer-title__eyebrow">PREVENTA</span>
+      <strong>Correccion de merito</strong>
+    </div>
+  </ng-template>
+
+  <section class="merito-panel">
+    <div class="search-row">
+      <label class="field field--lead">
+        <span>Lead</span>
+        <input
+          pInputText
+          type="text"
+          [ngModel]="leadQuery()"
+          (ngModelChange)="leadQuery.set($event)"
+          (keydown.enter)="search()"
+          placeholder="989383554"
+        />
+      </label>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-search"
+        label="Buscar"
+        [loading]="isSearching()"
+        (click)="search()"
+      ></button>
+    </div>
+
+    @if (successMessage()) {
+      <p-message severity="success" [text]="successMessage() ?? ''" />
+    }
+    @if (errorMessage()) {
+      <p-message severity="error" [text]="errorMessage() ?? ''" />
+    }
+
+    @if (candidates().length > 1) {
+      <div class="candidate-list">
+        <span class="section-label">Coincidencias</span>
+        @for (candidate of candidates(); track candidate.idLead) {
+          <button
+            type="button"
+            class="candidate-list__item"
+            [class.is-active]="selectedCandidate()?.idLead === candidate.idLead"
+            (click)="selectCandidate(candidate)"
+          >
+            <strong>{{ candidate.lead }}</strong>
+            <span>{{ etapaLabel(candidate.etapaActual) }}</span>
+          </button>
+        }
+      </div>
+    }
+
+    @if (selectedCandidate(); as candidate) {
+      <div class="result-card">
+        <div class="result-card__header">
+          <span class="section-label">Resultado del lead</span>
+          <p-tag
+            [severity]="candidate.corregible ? 'success' : 'warn'"
+            [value]="candidate.corregible ? 'Corregible' : 'Bloqueado'"
+          />
+        </div>
+
+        <div class="result-table">
+          <div class="result-row">
+            <span>Lead</span>
+            <strong>{{ display(candidate.lead) }}</strong>
+          </div>
+          <div class="result-row">
+            <span>Origen</span>
+            <strong class="provider-value">
+              @if (providerLogo(); as logo) {
+                <img [src]="logo" [alt]="display(providerName())" />
+              }
+              {{ display(providerName()) }}
+            </strong>
+          </div>
+          <div class="result-row">
+            <span>Etapa</span>
+            <strong>{{ etapaLabel(candidate.etapaActual) }}</strong>
+          </div>
+          <div class="result-row">
+            <span>Estado</span>
+            <strong>
+              <p-tag [severity]="estadoSeverity(candidate.estadoActual)" [value]="display(candidate.estadoActual)" />
+            </strong>
+          </div>
+          <div class="result-row">
+            <span>Merito actual</span>
+            <strong>{{ display(candidate.asesorMeritoActualPreventa) }}</strong>
+          </div>
+          <div class="result-row">
+            <span>Fecha merito</span>
+            <strong>
+              {{ candidate.fechaMeritoPreventa ? (candidate.fechaMeritoPreventa | date: 'dd/MM/yyyy hh:mm a') : '-' }}
+            </strong>
+          </div>
+        </div>
+
+        @if (!candidate.corregible && candidate.motivoNoCorregible) {
+          <p-message severity="warn" [text]="candidate.motivoNoCorregible" />
+        }
+      </div>
+
+      <div class="correction-form" [class.is-disabled]="!candidate.corregible">
+        <label class="field">
+          <span>Asesor objetivo</span>
+          <p-autoComplete
+            [ngModel]="selectedAsesor()"
+            (ngModelChange)="selectedAsesor.set($event)"
+            [suggestions]="asesorSuggestions()"
+            (completeMethod)="completeAsesores($event)"
+            [optionLabel]="'nombreCompleto'"
+            [forceSelection]="true"
+            [dropdown]="true"
+            [disabled]="!candidate.corregible || isLoadingAsesores()"
+            appendTo="body"
+            placeholder="Escribe nombre, DNI o usuario"
+            styleClass="advisor-autocomplete"
+          >
+            <ng-template #item let-asesor>
+              <div class="advisor-option">
+                <strong>{{ asesor.nombreCompleto }}</strong>
+                <span>{{ asesor.username || asesor.dni || asesor.empleadoId }}</span>
+              </div>
+            </ng-template>
+          </p-autoComplete>
+        </label>
+
+        <label class="field">
+          <span>Motivo</span>
+          <input
+            pInputText
+            type="text"
+            [ngModel]="motivo()"
+            (ngModelChange)="motivo.set($event)"
+            [disabled]="!candidate.corregible"
+            maxlength="500"
+            placeholder="Venta subida por supervisor fuera de horario"
+          />
+        </label>
+
+        <p-message severity="warn" text="Esta correccion se registrara como auditoria y no se podra repetir para este lead." />
+      </div>
+    } @else if (!isSearching() && !errorMessage()) {
+      <div class="empty-state">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <strong>Busca un lead</strong>
+        <span>Veras su etapa, origen y merito actual antes de aplicar una correccion.</span>
+      </div>
+    }
+    <div class="drawer-actions">
+      <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" (click)="close()"></button>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-check"
+        label="Aplicar correccion"
+        severity="danger"
+        [disabled]="!canApply()"
+        [loading]="isSaving()"
+        (click)="applyCorrection()"
+      ></button>
+    </div>
+  </section>
+</p-drawer>

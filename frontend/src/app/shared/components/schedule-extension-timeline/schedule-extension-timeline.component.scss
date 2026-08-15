@@ -1,0 +1,297 @@
+:host {
+  display: block;
+}
+
+.ext {
+  display: flex;
+  flex-direction: column;
+
+  // Tokens de color de los tramos "extra/nuevo": amarillo por defecto, naranja en compensación.
+  --ext-fill: #fbeecb;
+  --ext-ink: #8a6d1a;
+  --ext-edge: #d9a93a;
+
+  &--comp {
+    --ext-fill: #ffe4cc;
+    --ext-ink: #9a3412;
+    --ext-edge: #ea7b27;
+  }
+}
+
+.ext__name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.ext__sub {
+  margin: 0.15rem 0 1rem;
+  font-size: 0.8rem;
+  color: var(--app-text-muted);
+  line-height: 1.5;
+}
+
+.ext__placeholder {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  justify-content: center;
+  color: var(--app-text-muted);
+  font-size: 0.85rem;
+  background: var(--app-surface-soft);
+  border-radius: 0.6rem;
+}
+
+.ext__legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.ext__lbl {
+  font-size: 0.78rem;
+  color: var(--app-text-muted);
+}
+
+.ext__legend {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--app-text-muted);
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+}
+
+.ext__chip {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 0.2rem;
+  display: inline-block;
+
+  &--base {
+    background: #e8eef7;
+  }
+  &--exist {
+    background: var(--ext-fill);
+  }
+  &--new {
+    background: var(--ext-fill);
+    border: 1.5px dashed var(--ext-edge);
+  }
+}
+
+.ext__track {
+  position: relative;
+  height: 3.4rem;
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.55rem;
+  overflow: hidden;
+}
+
+.ext__block {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  overflow: hidden;
+  padding: 0 0.15rem;
+  text-align: center;
+
+  &--base {
+    background: #e8eef7;
+    color: #2b5c94;
+  }
+  &--exist {
+    background: var(--ext-fill);
+    color: var(--ext-ink);
+  }
+  &--new {
+    background: var(--ext-fill);
+    color: var(--ext-ink);
+    border: 1.5px dashed var(--ext-edge);
+  }
+}
+
+.ext__block-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ext__lock {
+  font-size: 0.62rem;
+  opacity: 0.85;
+}
+
+.ext__axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  color: var(--app-text-muted);
+  margin-top: 0.2rem;
+}
+
+.ext__controls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 0.9rem 0 0.3rem;
+}
+
+.ext__ctl {
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.5rem;
+  text-align: center;
+}
+
+.ext__ctl-t {
+  margin: 0 0 0.1rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.ext__ctl-d {
+  margin: 0 0 0.45rem;
+  font-size: 0.66rem;
+  color: var(--app-text-muted);
+  line-height: 1.3;
+  min-height: 1.7rem;
+}
+
+.ext__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  button {
+    width: 1.6rem;
+    height: 1.6rem;
+    border: 1px solid var(--app-border-soft);
+    border-radius: 0.4rem;
+    background: var(--app-surface-raised);
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1;
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.ext__val {
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 2.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ext__toggle {
+  width: 100%;
+  font-size: 0.74rem;
+  padding: 0.35rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.4rem;
+  background: var(--app-surface-raised);
+  cursor: pointer;
+
+  &.on {
+    border-color: var(--ext-edge);
+    color: var(--ext-ink);
+    background: var(--ext-fill);
+  }
+}
+
+.ext__detached {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--app-text-muted);
+  }
+
+  input[type='time'] {
+    padding: 0.3rem 0.4rem;
+    border: 1px solid var(--app-border-soft);
+    border-radius: 0.4rem;
+    background: var(--app-surface-raised);
+    font: inherit;
+  }
+}
+
+.ext__hint-error {
+  color: var(--app-danger);
+  font-size: 0.72rem;
+}
+
+.ext__motivo-l {
+  display: block;
+  margin: 0.9rem 0 0;
+  font-size: 0.78rem;
+  color: var(--app-text-muted);
+}
+
+.ext__motivo {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.5rem;
+  background: var(--app-surface-raised);
+  font: inherit;
+  resize: vertical;
+}
+
+.ext__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.9rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--ext-fill);
+  color: var(--ext-ink);
+  font-size: 0.8rem;
+
+  &.empty {
+    background: var(--app-surface-soft);
+    color: var(--app-text-muted);
+  }
+}
+
+.ext__error {
+  margin: 0.6rem 0 0;
+  color: var(--app-danger);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.ext__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1.1rem;
+}

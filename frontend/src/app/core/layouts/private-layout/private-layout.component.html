@@ -243,6 +243,13 @@
             </button>
           }
 
+          @if (canCorrectMerito()) {
+            <button type="button" class="profile-menu__item" (click)="openMeritoCorrection()">
+              <i class="pi pi-user-edit" aria-hidden="true"></i>
+              <span>Correccion Merito</span>
+            </button>
+          }
+
           <button type="button" class="profile-menu__item" (click)="logout()">
             <i class="pi pi-sign-out" aria-hidden="true"></i>
             <span>Cerrar sesion</span>
@@ -295,4 +302,6 @@
 
     <router-outlet />
   </main>
+
+  <app-lead-merito-correccion-drawer />
 </div>

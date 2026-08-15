@@ -76,6 +76,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             LEFT JOIN FETCH l.campana c
             LEFT JOIN FETCH c.proveedor
+            WHERE l.lead = :lead
+            ORDER BY l.lastEntryAt DESC, l.id DESC
+            """)
+    List<Lead> buscarCorreccionMeritoPreventaPorLead(@Param("lead") String lead);
+
+    @Query("""
+            SELECT l
+            FROM Lead l
+            LEFT JOIN FETCH l.campana c
+            LEFT JOIN FETCH c.proveedor
             WHERE l.id = :idLead
             """)
     Optional<Lead> buscarParaCorreccionCampana(@Param("idLead") Long idLead);

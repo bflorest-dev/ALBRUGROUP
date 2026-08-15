@@ -200,10 +200,10 @@ export class ScheduleWeekEditorComponent implements OnChanges {
         dia,
         short: (DAY_LABELS[dia] ?? dia).slice(0, 3),
         laborable: ctrl.get('laborable')?.value === 'true',
-        e: String(ctrl.get('horaEntrada')?.value ?? ''),
-        s: String(ctrl.get('horaSalida')?.value ?? ''),
-        li: String(ctrl.get('inicioAlmuerzo')?.value ?? ''),
-        lf: String(ctrl.get('finAlmuerzo')?.value ?? '')
+        e: hhmm5(String(ctrl.get('horaEntrada')?.value ?? '')),
+        s: hhmm5(String(ctrl.get('horaSalida')?.value ?? '')),
+        li: hhmm5(String(ctrl.get('inicioAlmuerzo')?.value ?? '')),
+        lf: hhmm5(String(ctrl.get('finAlmuerzo')?.value ?? ''))
       } satisfies RawDay;
     });
     this.rows.set(rows);
@@ -338,8 +338,15 @@ function toIsoDate(value: string): string {
   return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
 }
 
+/** Normaliza HH:MM:SS → HH:MM (los horarios del backend traen segundos). */
+function hhmm5(value: string): string {
+  const m = /^(\d{1,2}):(\d{2})/.exec(value);
+  return m ? `${m[1].padStart(2, '0')}:${m[2]}` : value;
+}
+
 function toMin(value: string | null | undefined): number | null {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(value ?? '');
+  // Tolera HH:MM y HH:MM:SS (los horarios del backend traen segundos).
+  const m = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(value ?? '');
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
 

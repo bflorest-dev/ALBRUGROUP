@@ -35,6 +35,9 @@ import {
   LeadIntakeRequest,
   LeadIntakeRetroactivoRequest,
   LeadIntakeMasivoExcelResponse,
+  LeadMeritoCorreccionCandidatoResponse,
+  LeadMeritoCorreccionRequest,
+  LeadMeritoCorreccionResponse,
   LeadIdentidadRequest,
   LeadNumeroParaLlamarRequest,
   MasivoLeadFilters,
@@ -501,6 +504,28 @@ export class PreventaLeadService {
 
   listarAsesoresPreventaPorEquipo(idEquipo: number): Observable<UsuarioResponse[]> {
     return this.http.get<UsuarioResponse[]>(`${this.equiposUrl}/${idEquipo}/asesores-preventa`);
+  }
+
+  listarAsesoresVentasMeritoPorEquipo(idEquipo: number): Observable<UsuarioResponse[]> {
+    return this.http.get<UsuarioResponse[]>(`${this.equiposUrl}/${idEquipo}/asesores-ventas-merito`);
+  }
+
+  buscarCorreccionMeritoPreventa(lead: string): Observable<LeadMeritoCorreccionCandidatoResponse[]> {
+    const params = new HttpParams().set('lead', lead);
+    return this.http.get<LeadMeritoCorreccionCandidatoResponse[]>(
+      `${this.leadUrl}/preventa/correcciones/merito-preventa`,
+      { params }
+    );
+  }
+
+  corregirMeritoPreventa(
+    idLead: number,
+    request: LeadMeritoCorreccionRequest
+  ): Observable<LeadMeritoCorreccionResponse> {
+    return this.http.patch<LeadMeritoCorreccionResponse>(
+      `${this.leadUrl}/preventa/correcciones/merito-preventa/${idLead}`,
+      request
+    );
   }
 
   private pageParams(query: PageQuery): HttpParams {

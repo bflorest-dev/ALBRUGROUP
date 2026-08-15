@@ -10,7 +10,7 @@ import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
 import { formatLabel } from '../../../../shared/utils/display-label';
-import { ScheduleWeekEditorComponent } from '../schedule-week-editor/schedule-week-editor.component';
+import { ScheduleWeekEditorComponent } from '../../../../shared/components/schedule-week-editor/schedule-week-editor.component';
 
 type SelectOption = {
   label: string;

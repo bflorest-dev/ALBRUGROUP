@@ -319,68 +319,137 @@
                   <p-message severity="info" text="Marca tu asistencia para modificar horarios." />
                 }
 
-                <section class="schedule-action-block schedule-action-block--punctual">
-                  <div>
-                    <span class="schedule-action-block__eyebrow">Ajuste puntual</span>
-                    <h4>Permitir otro horario en un dia</h4>
-                    <p>
-                      Usa esta opcion para adelantar la entrada, extender la salida o agregar un tramo extra
-                      sin cambiar el horario base del empleado.
-                    </p>
-                  </div>
-                  <button
-                    pButton
-                    type="button"
-                    icon="pi pi-clock"
-                    label="Crear ajuste puntual"
-                    [outlined]="true"
-                    [disabled]="!facade.canMutateOperationalData()"
-                    (click)="facade.openScheduleAdjustment()"
-                  ></button>
-                </section>
+                @if (activeAdjustment(); as op) {
+                  <section class="adjust-inline">
+                    <div class="adjust-inline__head">
+                      <button type="button" class="adjust-inline__back" (click)="closeAdjustment()">
+                        <i class="pi pi-arrow-left"></i> Volver
+                      </button>
+                      <strong>{{ adjustmentTitle(op) }}</strong>
+                      @if (op === 'extra' || op === 'compensacion') {
+                        <label class="adjust-inline__day">
+                          <span>Día</span>
+                          <input
+                            type="date"
+                            [value]="adjustmentDay()"
+                            [attr.min]="adjustmentMonthBounds().min"
+                            [attr.max]="adjustmentMonthBounds().max"
+                            (input)="onAdjustmentDayChange($any($event.target).value)"
+                          />
+                        </label>
+                      }
+                    </div>
 
-                <section class="schedule-base-block">
-                  <div class="schedule-base-block__head">
-                    <span class="schedule-action-block__eyebrow">Horario base</span>
-                    <h4>Cambiar horario recurrente</h4>
-                    <p>Este cambio aplica desde la fecha de inicio y se mantiene para los dias siguientes.</p>
-                  </div>
+                    @if (op === 'extra') {
+                      <app-schedule-extension-timeline
+                        [jornada]="facade.adjustmentJornada()"
+                        [loading]="facade.isLoadingAdjustment()"
+                        [saving]="facade.isSavingAdjustment()"
+                        [error]="facade.adjustmentError()"
+                        mode="extra"
+                        (cancel)="closeAdjustment()"
+                        (saveRequested)="onSaveExtra($event)"
+                      />
+                    } @else {
+                      <p class="adjust-inline__soon">Esta operación se integra en el Paso 3.</p>
+                    }
+                  </section>
+                } @else {
+                  <section class="day-adjust">
+                    <span class="schedule-action-block__eyebrow">Ajustes del día</span>
 
-                <label class="field">
-                  <span>Fecha de inicio</span>
-                  <p-datepicker
-                    [ngModel]="toPickerDate(facade.horarioForm.controls.fechaInicio.getRawValue())"
-                    [ngModelOptions]="{ standalone: true }"
-                    dateFormat="dd/mm/yy"
-                    [showIcon]="true"
-                    [disabled]="!facade.canMutateOperationalData()"
-                    appendTo="body"
-                    (ngModelChange)="setScheduleStartDate($event)"
-                  />
-                  <small class="hint">
-                    Por defecto se aplicara desde manana. Si eliges la fecha actual, se intentara corregir el horario vigente.
-                  </small>
-                </label>
+                    <button
+                      type="button"
+                      class="adjust-row"
+                      [disabled]="!facade.canMutateOperationalData()"
+                      (click)="openAdjustment('extra')"
+                    >
+                      <span class="adjust-row__icon adjust-row__icon--extra"><i class="pi pi-plus-circle"></i></span>
+                      <span class="adjust-row__body">
+                        <strong>Agregar horas extra</strong>
+                        <small>Ingresar antes, quedarse más o un período aparte.</small>
+                      </span>
+                      <i class="pi pi-chevron-right adjust-row__chevron"></i>
+                    </button>
 
-                <app-schedule-editor-panel
-                  [horarioForm]="facade.horarioForm"
-                  [modalidad]="facade.drawerContrato()?.modalidad ?? 'FULL_TIME'"
-                  [diasSemanaOptions]="facade.diasSemanaOptions"
-                  (simpleChanged)="facade.applySimpleSchedule()"
-                />
+                    <button
+                      type="button"
+                      class="adjust-row"
+                      [disabled]="!debeHoras() || !facade.canMutateOperationalData()"
+                      (click)="openAdjustment('compensacion')"
+                    >
+                      <span class="adjust-row__icon adjust-row__icon--comp"><i class="pi pi-clock"></i></span>
+                      <span class="adjust-row__body">
+                        <strong>Compensar horas</strong>
+                        <small>
+                          @if (debeHoras()) {
+                            Recupera horas que quedaron debiendo.
+                          } @else {
+                            No debe horas este mes.
+                          }
+                        </small>
+                      </span>
+                      @if (debeHoras()) {
+                        <span class="adjust-row__badge">{{ deficitBadge() }}</span>
+                      } @else {
+                        <i class="pi pi-lock adjust-row__chevron"></i>
+                      }
+                    </button>
 
-                <div class="actions actions--end">
-                  <button
-                    pButton
-                    type="button"
-                    icon="pi pi-save"
-                    label="Guardar horario"
-                    [loading]="facade.isSubmittingHorario()"
-                    [disabled]="!facade.canMutateOperationalData()"
-                    (click)="facade.submitScheduleChange()"
-                  ></button>
-                </div>
-                </section>
+                    <button
+                      type="button"
+                      class="adjust-row"
+                      [disabled]="!!marcaIngresoHoy() || !facade.canMutateOperationalData()"
+                      (click)="openAdjustment('corrimiento')"
+                    >
+                      <span class="adjust-row__icon adjust-row__icon--shift"><i class="pi pi-arrows-h"></i></span>
+                      <span class="adjust-row__body">
+                        <strong>Correr horario (tardanza)</strong>
+                        <small>
+                          @if (marcaIngresoHoy(); as hora) {
+                            Ya marcó ingreso hoy ({{ hora }}). Solo antes de la marca.
+                          } @else {
+                            Mueve la ventana del día por una tardanza.
+                          }
+                        </small>
+                      </span>
+                      @if (marcaIngresoHoy()) {
+                        <i class="pi pi-lock adjust-row__chevron"></i>
+                      } @else {
+                        <i class="pi pi-chevron-right adjust-row__chevron"></i>
+                      }
+                    </button>
+                  </section>
+
+                  <section class="schedule-base-block">
+                    <div class="schedule-base-block__head">
+                      <span class="schedule-action-block__eyebrow">Horario base</span>
+                      <h4>Cambiar horario recurrente</h4>
+                      <p>Este cambio aplica desde la fecha de inicio y se mantiene para los días siguientes.</p>
+                    </div>
+
+                    <app-schedule-week-editor
+                      [horarioForm]="facade.horarioForm"
+                      [requiresLunch]="usesLunchBreak()"
+                      [lunchMinutes]="60"
+                      [showDate]="true"
+                      [showCompensable]="true"
+                      dateLabel="Fecha de inicio"
+                    />
+
+                    <div class="actions actions--end">
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-save"
+                        label="Guardar horario"
+                        [loading]="facade.isSubmittingHorario()"
+                        [disabled]="!facade.canMutateOperationalData()"
+                        (click)="facade.submitScheduleChange()"
+                      ></button>
+                    </div>
+                  </section>
+                }
               </div>
             </p-tabpanel>
           </p-tabpanels>

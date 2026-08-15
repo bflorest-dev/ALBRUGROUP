@@ -60,6 +60,7 @@ public class EquipoService implements IEquipo {
             "SUPERVISOR_VENTAS",
             "OJT"
     );
+    private static final String ROL_ASESOR_VENTAS = "ASESOR_VENTAS";
 
     @Override
     public EquipoResponse crear(EquipoRequest request) {
@@ -202,6 +203,33 @@ public class EquipoService implements IEquipo {
 
     // Normaliza el color de marca: cadena vacía/espacios -> null (sin color); en otro caso, hex en
     // mayúsculas. El formato ya fue validado en el DTO (@Pattern), aquí solo se estandariza.
+    @Override
+    @Transactional(readOnly = true)
+    public List<UsuarioRolResponse> listarAsesoresVentasMerito(Long equipoId) {
+        Equipo equipo = equipoRepository.findById(equipoId)
+                .orElseThrow(() -> new NotFoundException("Equipo no encontrado", equipoId));
+        if (!Boolean.TRUE.equals(equipo.getActivo())) {
+            throw new BadRequestException("El equipo seleccionado no esta activo");
+        }
+        validarEquipoVisible(equipoId);
+
+        return usuarioRepository.findByEquiposId(equipoId).stream()
+                .filter(usuario -> usuario.getRoles().stream()
+                        .map(Rol::getNombre)
+                        .anyMatch(ROL_ASESOR_VENTAS::equals))
+                .map(this::toUsuarioRolResponse)
+                .toList();
+    }
+
+    private UsuarioRolResponse toUsuarioRolResponse(Usuario usuario) {
+        return UsuarioRolResponse.builder()
+                .empleadoId(usuario.getEmpleadoId())
+                .nombreCompleto(usuario.getNombreCompleto())
+                .roles(usuario.getRoles().stream().map(Rol::getNombre).collect(Collectors.toSet()))
+                .equipoIds(usuario.getEquipos().stream().map(Equipo::getId).collect(Collectors.toSet()))
+                .build();
+    }
+
     private String normalizarColor(String color) {
         if (color == null || color.isBlank()) {
             return null;
