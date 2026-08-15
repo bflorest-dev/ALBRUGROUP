@@ -182,14 +182,14 @@ export class ScheduleExtensionTimelineComponent {
     for (const run of this.mergedExisting()) {
       out.push({
         leftPct: pos(run.inicioMin), widthPct: width(run.inicioMin, run.finMin), kind: 'exist',
-        label: '+' + this.fmtDur(run.finMin - run.inicioMin), title: 'Registrado ' + range(run.inicioMin, run.finMin)
+        label: this.extraLabel(run.finMin - run.inicioMin), title: 'Registrado ' + range(run.inicioMin, run.finMin)
       });
     }
     if (this.before() > 0) {
       const anchor = this.beforeAnchor();
       out.push({
         leftPct: pos(anchor - this.before()), widthPct: width(anchor - this.before(), anchor), kind: 'new',
-        label: '+' + this.fmtDur(this.before()), title: 'Nuevo ' + range(anchor - this.before(), anchor)
+        label: this.extraLabel(this.before()), title: 'Nuevo ' + range(anchor - this.before(), anchor)
       });
     }
     out.push({
@@ -200,14 +200,14 @@ export class ScheduleExtensionTimelineComponent {
       const anchor = this.afterAnchor();
       out.push({
         leftPct: pos(anchor), widthPct: width(anchor, anchor + this.after()), kind: 'new',
-        label: '+' + this.fmtDur(this.after()), title: 'Nuevo ' + range(anchor, anchor + this.after())
+        label: this.extraLabel(this.after()), title: 'Nuevo ' + range(anchor, anchor + this.after())
       });
     }
     const det = this.detachedRange();
     if (det) {
       out.push({
         leftPct: pos(det.start), widthPct: width(det.start, det.end), kind: 'new',
-        label: '+' + this.fmtDur(det.end - det.start), title: 'Nuevo ' + range(det.start, det.end)
+        label: this.extraLabel(det.end - det.start), title: 'Nuevo ' + range(det.start, det.end)
       });
     }
     return out;
@@ -347,5 +347,9 @@ export class ScheduleExtensionTimelineComponent {
     const hours = Math.floor(min / 60);
     const minutes = min % 60;
     return `${hours}:${String(minutes).padStart(2, '0')}`;
+  }
+
+  private extraLabel(min: number): string {
+    return min <= this.STEP ? '+' : '+' + this.fmtDur(min);
   }
 }
