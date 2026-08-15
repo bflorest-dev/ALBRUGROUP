@@ -45,6 +45,9 @@
     @if (facade.errorMessage()) {
       <p-message severity="error" [text]="facade.errorMessage()" styleClass="daily-leads__message" />
     }
+    @if (facade.successMessage()) {
+      <p-message severity="success" [text]="facade.successMessage() ?? ''" styleClass="daily-leads__message" />
+    }
     @if (!facade.canDisplayOperationalData()) {
       <p-message
         severity="warn"
@@ -452,10 +455,10 @@
                 type="button"
                 size="small"
                 class="daily-leads__assign-button"
-                [disabled]="!facade.canOpenPlatform(row)"
-                title="Asignar en Plataforma"
-                aria-label="Asignar en Plataforma"
-                (click)="facade.openPlatform(row)"
+                [disabled]="!facade.canUseRowActions(row)"
+                [title]="facade.canUseRowActions(row) ? 'Asignar lead' : facade.rowActionTooltip(row)"
+                aria-label="Asignar lead"
+                (click)="facade.openAssignment(row)"
               >
                 <span class="daily-leads__assign-action">
                   <i class="pi pi-send" aria-hidden="true"></i>
@@ -469,10 +472,10 @@
                 icon="pi pi-cog"
                 size="small"
                 severity="secondary"
-                [disabled]="!facade.canOpenPlatform(row)"
-                title="Gestionar en Plataforma"
-                aria-label="Gestionar en Plataforma"
-                (click)="facade.openPlatform(row)"
+                [disabled]="!facade.canUseRowActions(row)"
+                [title]="facade.canUseRowActions(row) ? 'Gestionar lead' : facade.rowActionTooltip(row)"
+                aria-label="Gestionar lead"
+                (click)="facade.openSnapshot(row)"
               ></button>
               <button
                 pButton
@@ -556,6 +559,194 @@
       />
     }
   </p-card>
+
+  <p-dialog
+    [visible]="facade.activeDialog() === 'assign'"
+    (visibleChange)="!$event && facade.closeDialog()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    appendTo="body"
+    styleClass="gtr-dialog"
+  >
+    <ng-template #header>
+      @if (facade.activeAssignmentLead(); as lead) {
+        <span><strong>Asignar Lead</strong> ({{ facade.leadIdentity(lead) }})</span>
+      } @else {
+        <span><strong>Asignar Lead</strong></span>
+      }
+    </ng-template>
+
+    @if (facade.activeAssignmentLead(); as lead) {
+      <form class="form-grid" [formGroup]="facade.assignmentForm" (ngSubmit)="facade.submitAssignment()">
+        <p class="wide helper">Elige al asesor de ventas disponible o requerido para gestionar el Lead.</p>
+
+        <label class="wide">
+          <span>Asesor ventas</span>
+          <p-select
+            formControlName="idAsesorAsignado"
+            [options]="facade.availableAssignmentAdvisors()"
+            optionLabel="nombreCompleto"
+            optionValue="empleadoId"
+            [placeholder]="facade.availableAssignmentAdvisors().length ? 'Seleccionar asesor por disponibilidad' : 'No hay asesores con estado operativo'"
+            appendTo="body"
+            [loading]="facade.isLoadingAdvisors()"
+            [disabled]="facade.isLoadingAdvisors() || facade.isSaving()"
+            (onChange)="facade.changeAssignmentAdvisor($event.value)"
+          >
+            <ng-template #selectedItem let-advisor>
+              @if (advisor) {
+                <span>{{ advisor.nombreCompleto | uppercase }}</span>
+              }
+            </ng-template>
+            <ng-template #item let-advisor>
+              <div class="select-item select-item--advisor">
+                <strong>{{ advisor.nombreCompleto | uppercase }}</strong>
+                <span class="select-item__tags">
+                  @if (facade.isOjtAdvisor(advisor)) {
+                    <p-tag severity="info" value="OJT" />
+                  }
+                  <p-tag
+                    [severity]="facade.advisorSeverity(advisor.disponibilidad)"
+                    [value]="facade.display(advisor.disponibilidad)"
+                  />
+                </span>
+              </div>
+            </ng-template>
+          </p-select>
+        </label>
+
+        <div class="dialog-actions">
+          <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeDialog()"></button>
+          <button
+            pButton
+            type="submit"
+            label="Asignar"
+            [loading]="facade.isSaving()"
+            [disabled]="!facade.canMutateOperationalData() || facade.isLoadingAdvisors()"
+          ></button>
+        </div>
+      </form>
+    }
+  </p-dialog>
+
+  <p-dialog
+    [visible]="facade.activeDialog() === 'snapshot'"
+    (visibleChange)="!$event && facade.closeDialog()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    appendTo="body"
+    styleClass="daily-leads-action-dialog daily-leads-action-dialog--wide"
+  >
+    <ng-template #header>
+      <span class="daily-leads__dialog-title">Gestionar</span>
+    </ng-template>
+
+    @if (facade.activeSnapshotLead(); as lead) {
+      <form class="daily-leads__dialog-form" [formGroup]="facade.snapshotForm" (ngSubmit)="facade.saveSnapshot()">
+        <div class="daily-leads__dialog-lead daily-leads__dialog-lead--split">
+          <div>
+            <span>Lead</span>
+            <strong>{{ facade.leadIdentity(lead) }}</strong>
+          </div>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-user-edit"
+            label="Tomar gestión"
+            severity="secondary"
+            [outlined]="true"
+            [loading]="facade.isSaving()"
+            (click)="facade.takeSnapshotLead()"
+          ></button>
+        </div>
+
+        <div class="daily-leads__snapshot-grid">
+          <label class="daily-leads__dialog-field daily-leads__prefix-field">
+            <span>Prefijo</span>
+            <input pInputText formControlName="prefijo" />
+          </label>
+          <label class="daily-leads__dialog-field">
+            <span>Lead</span>
+            <input pInputText formControlName="lead" />
+          </label>
+          <label class="daily-leads__dialog-field">
+            <span>Usermeta</span>
+            <input pInputText formControlName="usermeta" />
+          </label>
+          <label class="daily-leads__dialog-field">
+            <span>Documento</span>
+            <input pInputText formControlName="numeroDocumentoTitularServicio" />
+          </label>
+          <label class="daily-leads__dialog-field daily-leads__full-field">
+            <span>Dirección</span>
+            <input pInputText formControlName="direccion" />
+          </label>
+        </div>
+
+        <div class="daily-leads__dialog-actions">
+          <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" (click)="facade.closeDialog()"></button>
+          <button
+            pButton
+            type="submit"
+            label="Guardar"
+            icon="pi pi-save"
+            [loading]="facade.isSavingSnapshot()"
+            [disabled]="facade.snapshotForm.invalid"
+          ></button>
+        </div>
+      </form>
+    }
+  </p-dialog>
+
+  <p-dialog
+    [visible]="facade.activeDialog() === 'reassign-confirm'"
+    (visibleChange)="!$event && facade.cancelReassignment()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    appendTo="body"
+    styleClass="daily-leads-confirm-dialog"
+  >
+    <ng-template #header>
+      <span class="daily-leads__dialog-title">Confirmar asignación</span>
+    </ng-template>
+    @if (facade.pendingReassignment(); as pending) {
+      <div class="daily-leads__confirm-copy">
+        <p>El lead está asignado a {{ pending.currentAdvisorName }}.</p>
+        <p>Destino: <strong>{{ pending.advisor.nombreCompleto }}</strong></p>
+      </div>
+      <div class="daily-leads__dialog-actions">
+        <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" (click)="facade.cancelReassignment()"></button>
+        <button pButton type="button" label="Confirmar" icon="pi pi-check" [loading]="facade.isSaving()" (click)="facade.confirmReassignment()"></button>
+      </div>
+    }
+  </p-dialog>
+
+  <p-dialog
+    [visible]="facade.activeDialog() === 'takeover-confirm'"
+    (visibleChange)="!$event && facade.cancelTakeover()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    appendTo="body"
+    styleClass="daily-leads-confirm-dialog"
+  >
+    <ng-template #header>
+      <span class="daily-leads__dialog-title">Tomar gestión</span>
+    </ng-template>
+    @if (facade.pendingTakeover(); as pending) {
+      <div class="daily-leads__confirm-copy">
+        <p>El lead está en gestión con {{ pending.currentAdvisorName }}.</p>
+        <p>Confirma para tomar la gestión en esta vista.</p>
+      </div>
+      <div class="daily-leads__dialog-actions">
+        <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" (click)="facade.cancelTakeover()"></button>
+        <button pButton type="button" label="Tomar gestión" icon="pi pi-check" [loading]="facade.isSaving()" (click)="facade.confirmTakeover()"></button>
+      </div>
+    }
+  </p-dialog>
 
   <p-dialog
     [visible]="facade.activeHistoryLead() !== null"

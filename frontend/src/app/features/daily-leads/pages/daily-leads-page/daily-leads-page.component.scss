@@ -530,6 +530,7 @@
 :host ::ng-deep .daily-leads__table td.daily-leads__tipifications-col,
 :host ::ng-deep .daily-leads__table th.daily-leads__tipifications-col {
   overflow: visible;
+  position: relative;
 }
 
 :host ::ng-deep .daily-leads__table .p-datatable-tbody > tr.daily-leads__data-row,
@@ -759,6 +760,204 @@
     &__tip-view:focus-within {
       grid-template-columns: 1fr;
       width: min(13.5rem, calc(100vw - 6rem));
+    }
+  }
+}
+
+:host ::ng-deep {
+  .daily-leads-action-dialog {
+    width: min(34rem, calc(100vw - 2rem));
+
+    .p-dialog-content {
+      overflow: visible;
+    }
+  }
+
+  .daily-leads-action-dialog--wide {
+    width: min(44rem, calc(100vw - 2rem));
+  }
+
+  .daily-leads-confirm-dialog {
+    width: min(30rem, calc(100vw - 2rem));
+  }
+
+  .gtr-dialog {
+    width: min(34rem, calc(100vw - 1rem));
+  }
+
+  .p-select,
+  .p-inputtext {
+    width: 100%;
+  }
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid label {
+  color: var(--app-text-muted);
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.35rem;
+}
+
+.helper,
+.select-item small {
+  color: var(--app-text-muted);
+}
+
+.wide,
+.dialog-actions {
+  grid-column: 1 / -1;
+}
+
+.dialog-actions,
+.select-item--advisor {
+  align-items: center;
+  display: flex;
+}
+
+.dialog-actions {
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+
+.select-item--advisor {
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.select-item--advisor strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-item__tags {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.35rem;
+}
+
+.daily-leads {
+  &__dialog-title {
+    color: var(--app-text);
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  &__dialog-form {
+    display: grid;
+    gap: 1rem;
+  }
+
+  &__dialog-lead {
+    background: var(--app-surface-soft);
+    border: 1px solid var(--app-border-soft);
+    border-radius: 0.5rem;
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.75rem 0.85rem;
+
+    span {
+      color: var(--app-text-muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    strong {
+      color: var(--app-text);
+      font-size: 1rem;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  &__dialog-lead--split {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.85rem;
+  }
+
+  &__dialog-field {
+    display: grid;
+    gap: 0.38rem;
+
+    > span {
+      color: var(--app-text);
+      font-size: 0.8rem;
+      font-weight: 750;
+    }
+
+    input,
+    p-select {
+      width: 100%;
+    }
+  }
+
+  &__snapshot-grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: 0.45fr 1fr 1fr;
+  }
+
+  &__full-field {
+    grid-column: 1 / -1;
+  }
+
+  &__dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    justify-content: flex-end;
+  }
+
+  &__confirm-copy {
+    color: var(--app-text);
+    display: grid;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+@media (max-width: 40rem) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .daily-leads {
+    &__dialog-lead--split {
+      align-items: stretch;
+      display: grid;
+    }
+
+    &__snapshot-grid {
+      grid-template-columns: 1fr;
+    }
+
+    &__full-field {
+      grid-column: auto;
+    }
+
+    &__dialog-actions {
+      justify-content: stretch;
+
+      button {
+        flex: 1 1 9rem;
+      }
     }
   }
 }

@@ -51,6 +51,7 @@ export interface DailyLeadRowView {
   asesorDisplay: string;
   rolLabel: string;
   accionLabel: string;
+  createdAt: string;
   hora: string;
   campana: string;
   ultimoAsesor: string;
