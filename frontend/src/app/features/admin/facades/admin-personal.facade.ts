@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormBuilder, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormBuilder, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Subscription, catchError, filter, firstValueFrom, map, of, startWith, switchMap, timeout } from 'rxjs';
 import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
@@ -1765,10 +1765,24 @@ export class AdminPersonalFacade implements OnDestroy {
       return;
     }
 
-    this.syncLunchBreakControls();
-    this.horarioForm.updateValueAndValidity({ emitEvent: false });
-    if (this.horarioForm.invalid) {
-      this.horarioForm.markAllAsTouched();
+    const todayDay = this.getTodayScheduleDay();
+    const detalles = this.horarioForm.get('detalles') as FormArray | null;
+    const todayDetail = detalles?.controls.find((ctrl) => ctrl.get('dia')?.value === todayDay);
+    if (!todayDetail) {
+      this.scheduleChangeErrorMessage.set('No se encontró el detalle del día de hoy en el horario.');
+      return;
+    }
+
+    const laborable = todayDetail.get('laborable')?.value === 'true';
+    if (!laborable) {
+      this.scheduleChangeErrorMessage.set('Primero marca el día de hoy como laborable y define un horario.');
+      return;
+    }
+
+    const horaEntrada = todayDetail.get('horaEntrada')?.value;
+    const horaSalida = todayDetail.get('horaSalida')?.value;
+    if (!horaEntrada || !horaSalida) {
+      this.scheduleChangeErrorMessage.set('Define la hora de entrada y salida para el día de hoy.');
       return;
     }
 
@@ -1776,8 +1790,24 @@ export class AdminPersonalFacade implements OnDestroy {
     this.scheduleChangeSuccessMessage.set('');
     this.isSubmittingScheduleChange.set(true);
     try {
-      const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
-      const excepcion = await this.crearExcepcionDelDia(horario, this.getToday(), baseRequest);
+      const requiereAlmuerzo = this.requiresLunchBreak(contrato.modalidad);
+      const excepcionRequest: RegistrarExcepcionHorarioRequest = {
+        fecha: this.getToday(),
+        tipo: 'CAMBIO_COMPLETO',
+        horaEntrada,
+        horaSalida,
+        inicioAlmuerzo: requiereAlmuerzo ? todayDetail.get('inicioAlmuerzo')?.value || null : null,
+        finAlmuerzo: requiereAlmuerzo ? todayDetail.get('finAlmuerzo')?.value || null : null,
+        laborable: true,
+        motivo: 'Jornada extraordinaria'
+      };
+      const existente = horario.excepciones?.find((exc) => exc.fecha === this.getToday());
+      const excepcion = await firstValueFrom(
+        (existente
+          ? this.adminRrhhService.actualizarExcepcionHorario(horario.id, existente.id, excepcionRequest)
+          : this.adminRrhhService.registrarExcepcionHorario(horario.id, excepcionRequest)
+        ).pipe(timeout(this.requestTimeoutMs))
+      );
       this.currentScheduleForChange.update((current) =>
         current
           ? {
@@ -2678,22 +2708,40 @@ export class AdminPersonalFacade implements OnDestroy {
     });
 
     this.resetScheduleRows();
+    const todayDay = this.getTodayScheduleDay();
+    const todayException = horario.excepciones?.find(
+      (exc) => exc.fecha === this.getToday() && exc.laborable === true
+    );
     for (const row of this.horarioForm.controls.detalles.controls) {
-      const detalle = horario.detalles.find((item) => item.dia === row.controls.dia.getRawValue());
+      const dia = row.controls.dia.getRawValue();
+      const detalle = horario.detalles.find((item) => item.dia === dia);
       if (!detalle) {
         continue;
       }
 
-      row.patchValue(
-        {
-          horaEntrada: detalle.horaEntrada?.slice(0, 5) ?? '09:00',
-          horaSalida: detalle.horaSalida?.slice(0, 5) ?? '18:00',
-          inicioAlmuerzo: detalle.inicioAlmuerzo?.slice(0, 5) ?? '',
-          finAlmuerzo: detalle.finAlmuerzo?.slice(0, 5) ?? '',
-          laborable: String(detalle.laborable)
-        },
-        { emitEvent: false }
-      );
+      if (dia === todayDay && todayException) {
+        row.patchValue(
+          {
+            horaEntrada: todayException.horaEntrada?.slice(0, 5) ?? '09:00',
+            horaSalida: todayException.horaSalida?.slice(0, 5) ?? '18:00',
+            inicioAlmuerzo: todayException.inicioAlmuerzo?.slice(0, 5) ?? '',
+            finAlmuerzo: todayException.finAlmuerzo?.slice(0, 5) ?? '',
+            laborable: 'true'
+          },
+          { emitEvent: false }
+        );
+      } else {
+        row.patchValue(
+          {
+            horaEntrada: detalle.horaEntrada?.slice(0, 5) ?? '09:00',
+            horaSalida: detalle.horaSalida?.slice(0, 5) ?? '18:00',
+            inicioAlmuerzo: detalle.inicioAlmuerzo?.slice(0, 5) ?? '',
+            finAlmuerzo: detalle.finAlmuerzo?.slice(0, 5) ?? '',
+            laborable: String(detalle.laborable)
+          },
+          { emitEvent: false }
+        );
+      }
     }
 
     this.syncLunchBreakControls();
