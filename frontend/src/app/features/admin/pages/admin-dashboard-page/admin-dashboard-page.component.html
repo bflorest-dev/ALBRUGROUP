@@ -305,6 +305,18 @@
             [disabled]="facade.isLoadingScheduleChange()"
             (click)="facade.openScheduleAdjustment()"
           ></button>
+          @if (facade.isTodayRestDay()) {
+            <button
+              pButton
+              type="button"
+              severity="warn"
+              icon="pi pi-calendar-plus"
+              label="Habilitar solo hoy"
+              [loading]="facade.isSubmittingScheduleChange()"
+              [disabled]="facade.isLoadingScheduleChange()"
+              (click)="facade.enableTodayAsWorkday()"
+            ></button>
+          }
           <button
             pButton
             type="button"
