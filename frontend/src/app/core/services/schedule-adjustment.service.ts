@@ -8,6 +8,7 @@ import {
   PreviewAjusteJornadaResponse,
   RegistrarAjusteV2Request
 } from '../../shared/models/schedule/jornada-efectiva-response';
+import { DeclararDiaNoLaborableRequest } from '../../shared/models/schedule/dia-no-laborable-request';
 import { API_CONSTANTS } from '../constants/api.constants';
 
 @Injectable({ providedIn: 'root' })
@@ -82,6 +83,13 @@ export class ScheduleAdjustmentService {
   registrarGtr(idEmpleado: number, request: AjusteJornadaRequest): Observable<AjusteJornadaResponse> {
     return this.http.post<AjusteJornadaResponse>(
       `${this.gtrUrl}/${idEmpleado}/ajustes`,
+      request
+    );
+  }
+
+  declararDiaNoLaborable(request: DeclararDiaNoLaborableRequest): Observable<unknown> {
+    return this.http.post(
+      `${API_CONSTANTS.gatewayBaseUrl}/schedule/asistencia/v2/dias-no-laborables`,
       request
     );
   }

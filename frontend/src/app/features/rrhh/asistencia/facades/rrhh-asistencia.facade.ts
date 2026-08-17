@@ -19,6 +19,7 @@ import {
   RazonAjuste,
   RegistrarAjusteV2Request
 } from '../../../../shared/models/schedule/jornada-efectiva-response';
+import { DeclararDiaNoLaborableRequest, TipoDiaNoLaborable } from '../../../../shared/models/schedule/dia-no-laborable-request';
 import { ReemplazarHorarioRequest } from '../../../../shared/models/schedule/reemplazar-horario-request';
 import { RegistrarExcepcionHorarioRequest } from '../../../../shared/models/schedule/registrar-excepcion-horario-request';
 import { RrhhAsistenciaService } from '../services/rrhh-asistencia.service';
@@ -672,6 +673,68 @@ export class RrhhAsistenciaFacade {
     } catch (error) {
       this.adjustmentError.set(this.extractErrorMessage(error, 'No se pudo correr el horario.'));
       await this.loadScheduleAdjustment();
+      return false;
+    } finally {
+      this.isSavingAdjustment.set(false);
+    }
+  }
+
+  async submitJornadaExtraordinaria(fecha: string, inicio: string, fin: string, motivo: string, razon: RazonAjuste): Promise<boolean> {
+    if (!this.ensureCanMutate()) return false;
+    const empleado = this.drawerEmpleado();
+    if (!empleado) return false;
+
+    this.isSavingAdjustment.set(true);
+    this.adjustmentError.set(null);
+    try {
+      const request: RegistrarAjusteV2Request = {
+        inicio: `${fecha}T${inicio}`,
+        fin: `${fecha}T${fin}`,
+        motivo,
+        razon
+      };
+      await firstValueFrom(
+        this.scheduleAdjustmentService.registrarV2(empleado.idEmpleado, request).pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      const msg = razon === 'COMPENSACION' ? 'Jornada de compensación registrada.' : 'Jornada extraordinaria registrada.';
+      this.scheduleChangeSuccessMessage.set(msg);
+      await this.refreshDrawerAfterScheduleMutation(empleado.idEmpleado);
+      void this.recargar();
+      return true;
+    } catch (error) {
+      this.adjustmentError.set(this.extractErrorMessage(error, 'No se pudo registrar la jornada.'));
+      return false;
+    } finally {
+      this.isSavingAdjustment.set(false);
+    }
+  }
+
+  async submitDiaLibre(fecha: string, tipo: TipoDiaNoLaborable, motivo: string, global: boolean): Promise<boolean> {
+    if (!this.ensureCanMutate()) return false;
+    const empleado = this.drawerEmpleado();
+    if (!empleado) return false;
+
+    this.isSavingAdjustment.set(true);
+    this.adjustmentError.set(null);
+    try {
+      const request: DeclararDiaNoLaborableRequest = {
+        fecha,
+        tipo,
+        motivo,
+        laborable: false,
+        empleadoIds: global ? undefined : [empleado.idEmpleado]
+      };
+      await firstValueFrom(
+        this.scheduleAdjustmentService.declararDiaNoLaborable(request).pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      this.scheduleChangeSuccessMessage.set(
+        global ? 'Día libre declarado para todos.' : 'Día libre declarado para este empleado.'
+      );
+      await this.refreshDrawerAfterScheduleMutation(empleado.idEmpleado);
+      void this.recargar();
+      return true;
+    } catch (error) {
+      this.adjustmentError.set(this.extractErrorMessage(error, 'No se pudo declarar el día libre.'));
       return false;
     } finally {
       this.isSavingAdjustment.set(false);

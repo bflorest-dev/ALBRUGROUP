@@ -13,6 +13,8 @@ import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import type { OrigenTramo } from '../../../../../shared/models/schedule/cumplimiento-response';
+import type { TipoDiaNoLaborable } from '../../../../../shared/models/schedule/dia-no-laborable-request';
+import type { RazonAjuste } from '../../../../../shared/models/schedule/jornada-efectiva-response';
 import { AttendanceFilterBarComponent } from '../../components/attendance-filter-bar/attendance-filter-bar.component';
 import { AttendanceMetricCardsComponent } from '../../components/attendance-metric-cards/attendance-metric-cards.component';
 import { AttendanceMonthHeatmapComponent } from '../../components/attendance-month-heatmap/attendance-month-heatmap.component';
@@ -36,7 +38,7 @@ interface SelectChoice {
 }
 
 /** Operación de ajuste del día seleccionada para el editor inline. */
-type AdjustmentOp = 'extra' | 'compensacion' | 'corrimiento';
+type AdjustmentOp = 'extra' | 'compensacion' | 'corrimiento' | 'jornada-extra' | 'compensar-falta' | 'dia-libre';
 
 @Component({
   selector: 'app-rrhh-asistencia-page',
@@ -281,6 +283,9 @@ export class RrhhAsistenciaPageComponent implements OnInit {
     return typeof value === 'string' ? value : '';
   }
 
+  private readonly todayDateCached = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  protected todayDate(): Date { return this.todayDateCached; }
+
   private todayValue(): string {
     const now = new Date();
     const month = `${now.getMonth() + 1}`.padStart(2, '0');
@@ -378,12 +383,100 @@ export class RrhhAsistenciaPageComponent implements OnInit {
   /** Déficit del mes en minutos (positivo): tope del timeline de compensación. */
   protected readonly deficitMin = computed(() => Math.abs(Math.min(this.facade.drawerKpis().balanceMin, 0)));
 
+  /** Hoy es un día libre para el empleado (descanso/feriado). */
+  protected readonly hoyEsDiaLibre = computed(() => {
+    const dia = this.facade.drawerDetalleDias().find((d) => d.fecha === this.todayValue());
+    return dia ? !dia.laborable : false;
+  });
+
+  /** El empleado tiene faltas registradas este mes. */
+  protected readonly tieneFaltas = computed(() => this.facade.drawerKpis().faltas > 0);
+
+  /** Fechas de faltas del mes (dd/MM). */
+  protected readonly faltasDates = computed(() => {
+    const hoy = this.todayValue();
+    return this.facade.drawerDetalleDias()
+      .filter((d) => d.laborable && !d.horaEntradaAsistencia && d.fecha < hoy)
+      .map((d) => {
+        const [, m, day] = d.fecha.split('-');
+        return `${day}/${m}`;
+      });
+  });
+
+  private static readonly DAY_NAME_TO_JS: Record<string, number> = {
+    DOMINGO: 0, LUNES: 1, MARTES: 2, MIERCOLES: 3, JUEVES: 4, VIERNES: 5, SABADO: 6
+  };
+
+  /** Días de la semana laborables (JS number: 0=Dom..6=Sáb) — para deshabilitar en el datepicker de compensar-falta. */
+  protected readonly diasLaborablesSemana = computed<number[]>(() => {
+    const h = this.facade.drawerHorario();
+    if (!h) return [1, 2, 3, 4, 5, 6];
+    return h.detalles
+      .filter((d) => d.laborable)
+      .map((d) => RrhhAsistenciaPageComponent.DAY_NAME_TO_JS[d.dia] ?? -1)
+      .filter((n) => n >= 0);
+  });
+
+  /** Hora de entrada/salida base del horario (primer día laborable). */
+  protected readonly horarioBaseHoras = computed(() => {
+    const h = this.facade.drawerHorario();
+    if (!h) return { entrada: '09:00', salida: '18:00' };
+    const labor = h.detalles.find((d) => d.laborable);
+    return {
+      entrada: labor?.horaEntrada ?? '09:00',
+      salida: labor?.horaSalida ?? '18:00'
+    };
+  });
+
+  // Signals para el editor de jornada extraordinaria
+  protected readonly jornadaExtraEntrada = signal('09:00');
+  protected readonly jornadaExtraSalida = signal('18:00');
+  protected readonly jornadaExtraMotivo = signal('');
+
+  // Signal para el datepicker de compensar-falta (Date porque PrimeNG lo requiere)
+  protected readonly compensarFaltaFecha = signal<Date | null>(null);
+
+  // Signals para el editor de día libre
+  protected readonly diaLibreFecha = signal('');
+  protected readonly diaLibreGlobal = signal(false);
+  protected readonly diaLibreTipo = signal<TipoDiaNoLaborable>('FERIADO');
+  protected readonly diaLibreMotivo = signal('');
+
+  protected readonly tipoDiaNoLaborableOptions: { label: string; value: TipoDiaNoLaborable }[] = [
+    { label: 'Feriado', value: 'FERIADO' },
+    { label: 'Vacaciones', value: 'VACACIONES' },
+    { label: 'Permiso', value: 'PERMISO' },
+    { label: 'Descanso', value: 'DESCANSO_EQUIPO' }
+  ];
+
+  protected readonly alcanceOptions: { label: string; value: boolean }[] = [
+    { label: 'Solo este empleado', value: false },
+    { label: 'Para todos', value: true }
+  ];
+
   protected openAdjustment(op: AdjustmentOp): void {
     this.activeAdjustment.set(op);
     if (op === 'extra' || op === 'compensacion') {
       void this.facade.openDayAdjustment(this.clampDayToMonth(this.adjustmentDay()));
+    } else if (op === 'jornada-extra') {
+      const base = this.horarioBaseHoras();
+      this.jornadaExtraEntrada.set(base.entrada);
+      this.jornadaExtraSalida.set(base.salida);
+      this.jornadaExtraMotivo.set('');
+      void this.facade.openDayAdjustment(this.clampDayToMonth(this.adjustmentDay()));
+    } else if (op === 'compensar-falta') {
+      const base = this.horarioBaseHoras();
+      this.jornadaExtraEntrada.set(base.entrada);
+      this.jornadaExtraSalida.set(base.salida);
+      this.jornadaExtraMotivo.set('Compensación de falta');
+      this.compensarFaltaFecha.set(null);
+      void this.facade.openDayAdjustment(this.clampDayToMonth(this.adjustmentDay()));
+    } else if (op === 'dia-libre') {
+      this.diaLibreFecha.set(this.todayValue());
+      this.diaLibreGlobal.set(false);
+      this.diaLibreTipo.set('FERIADO');
+      this.diaLibreMotivo.set('');
     } else {
-      // El corrimiento es solo para hoy (sin marca de ingreso); carga la jornada base de hoy para el editor.
       void this.facade.openDayAdjustment(this.todayValue());
     }
   }
@@ -432,6 +525,48 @@ export class RrhhAsistenciaPageComponent implements OnInit {
   protected adjustmentTitle(op: AdjustmentOp): string {
     if (op === 'extra') return 'Agregar horas extra';
     if (op === 'compensacion') return 'Compensar horas';
+    if (op === 'jornada-extra') return 'Habilitar jornada en día libre';
+    if (op === 'compensar-falta') return 'Compensar falta con día libre';
+    if (op === 'dia-libre') return 'Declarar día libre';
     return 'Correr horario (tardanza)';
+  }
+
+  protected async onSaveJornadaExtra(razon: RazonAjuste): Promise<void> {
+    const fecha = this.adjustmentDay();
+    const ok = await this.facade.submitJornadaExtraordinaria(
+      fecha, this.jornadaExtraEntrada(), this.jornadaExtraSalida(),
+      this.jornadaExtraMotivo() || 'Jornada extraordinaria', razon
+    );
+    if (ok) this.closeAdjustment();
+  }
+
+  protected async onSaveDiaLibre(): Promise<void> {
+    const ok = await this.facade.submitDiaLibre(
+      this.diaLibreFecha(), this.diaLibreTipo(),
+      this.diaLibreMotivo() || 'Día libre declarado', this.diaLibreGlobal()
+    );
+    if (ok) this.closeAdjustment();
+  }
+
+  protected onCompensarFaltaFechaChange(value: Date | null): void {
+    this.compensarFaltaFecha.set(value);
+    if (value) {
+      this.adjustmentDay.set(this.toBackendDate(value));
+      void this.facade.openDayAdjustment(this.toBackendDate(value));
+    }
+  }
+
+  protected async onSaveCompensarFalta(): Promise<void> {
+    const fecha = this.toBackendDate(this.compensarFaltaFecha());
+    if (!fecha) return;
+    const ok = await this.facade.submitJornadaExtraordinaria(
+      fecha, this.jornadaExtraEntrada(), this.jornadaExtraSalida(),
+      this.jornadaExtraMotivo() || 'Compensación de falta', 'COMPENSACION'
+    );
+    if (ok) this.closeAdjustment();
+  }
+
+  protected onDiaLibreFechaChange(value: Date | string | null): void {
+    this.diaLibreFecha.set(this.toBackendDate(value));
   }
 }

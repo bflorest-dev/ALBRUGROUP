@@ -358,7 +358,7 @@
                         (cancel)="closeAdjustment()"
                         (saveRequested)="onSaveCompensacion($event)"
                       />
-                    } @else {
+                    } @else if (op === 'corrimiento') {
                       <app-schedule-shift-editor
                         [jornada]="facade.adjustmentJornada()"
                         [loading]="facade.isLoadingAdjustment()"
@@ -369,6 +369,229 @@
                         (cancel)="closeAdjustment()"
                         (saveRequested)="onSaveCorrimiento($event)"
                       />
+                    } @else if (op === 'jornada-extra') {
+                      <div class="adjust-inline__form">
+                        <label class="adjust-inline__day">
+                          <span>Día libre a habilitar</span>
+                          <p-datepicker
+                            [ngModel]="toPickerDate(adjustmentDay())"
+                            [ngModelOptions]="{ standalone: true }"
+                            dateFormat="dd/mm/yy"
+                            [minDate]="todayDate()"
+                            [maxDate]="adjustmentDayMaxDate()"
+                            [disabledDays]="diasLaborablesSemana()"
+                            [showIcon]="true"
+                            appendTo="body"
+                            (ngModelChange)="onAdjustmentDayChange($event)"
+                          />
+                        </label>
+
+                        <div class="adjust-inline__row">
+                          <label class="adjust-inline__field">
+                            <span>Entrada</span>
+                            <input
+                              pInputText
+                              type="time"
+                              [ngModel]="jornadaExtraEntrada()"
+                              [ngModelOptions]="{ standalone: true }"
+                              (ngModelChange)="jornadaExtraEntrada.set($event)"
+                            />
+                          </label>
+                          <label class="adjust-inline__field">
+                            <span>Salida</span>
+                            <input
+                              pInputText
+                              type="time"
+                              [ngModel]="jornadaExtraSalida()"
+                              [ngModelOptions]="{ standalone: true }"
+                              (ngModelChange)="jornadaExtraSalida.set($event)"
+                            />
+                          </label>
+                        </div>
+
+                        <label class="adjust-inline__field">
+                          <span>Motivo</span>
+                          <input
+                            pInputText
+                            type="text"
+                            placeholder="Ej: Cierre de mes"
+                            [ngModel]="jornadaExtraMotivo()"
+                            [ngModelOptions]="{ standalone: true }"
+                            (ngModelChange)="jornadaExtraMotivo.set($event)"
+                          />
+                        </label>
+
+                        @if (facade.adjustmentError()) {
+                          <p-message severity="error" [text]="facade.adjustmentError()!" />
+                        }
+
+                        <div class="actions actions--end" style="gap: 0.5rem">
+                          @if (debeHoras()) {
+                            <button
+                              pButton
+                              type="button"
+                              icon="pi pi-replay"
+                              label="Compensar falta"
+                              severity="warn"
+                              [loading]="facade.isSavingAdjustment()"
+                              (click)="onSaveJornadaExtra('COMPENSACION')"
+                            ></button>
+                          }
+                          <button
+                            pButton
+                            type="button"
+                            icon="pi pi-calendar-plus"
+                            label="Habilitar jornada"
+                            [loading]="facade.isSavingAdjustment()"
+                            (click)="onSaveJornadaExtra('AMPLIACION_OPERATIVA')"
+                          ></button>
+                        </div>
+                      </div>
+                    } @else if (op === 'compensar-falta') {
+                      <div class="adjust-inline__form">
+                        <div class="adjust-inline__falta-dates">
+                          <span class="adjust-inline__falta-label">Faltas registradas:</span>
+                          <div class="adjust-inline__falta-chips">
+                            @for (f of faltasDates(); track f) {
+                              <span class="adjust-inline__falta-chip">{{ f }}</span>
+                            }
+                          </div>
+                        </div>
+
+                        <label class="adjust-inline__day">
+                          <span>Día libre a habilitar</span>
+                          <p-datepicker
+                            [ngModel]="compensarFaltaFecha()"
+                            [ngModelOptions]="{ standalone: true }"
+                            dateFormat="dd/mm/yy"
+                            [minDate]="todayDate()"
+                            [maxDate]="adjustmentDayMaxDate()"
+                            [disabledDays]="diasLaborablesSemana()"
+                            [showIcon]="true"
+                            appendTo="body"
+                            (ngModelChange)="onCompensarFaltaFechaChange($event)"
+                          />
+                        </label>
+
+                        <div class="adjust-inline__row">
+                          <label class="adjust-inline__field">
+                            <span>Entrada</span>
+                            <input
+                              pInputText
+                              type="time"
+                              [ngModel]="jornadaExtraEntrada()"
+                              [ngModelOptions]="{ standalone: true }"
+                              (ngModelChange)="jornadaExtraEntrada.set($event)"
+                            />
+                          </label>
+                          <label class="adjust-inline__field">
+                            <span>Salida</span>
+                            <input
+                              pInputText
+                              type="time"
+                              [ngModel]="jornadaExtraSalida()"
+                              [ngModelOptions]="{ standalone: true }"
+                              (ngModelChange)="jornadaExtraSalida.set($event)"
+                            />
+                          </label>
+                        </div>
+
+                        <label class="adjust-inline__field">
+                          <span>Motivo</span>
+                          <input
+                            pInputText
+                            type="text"
+                            placeholder="Ej: Compensación de falta"
+                            [ngModel]="jornadaExtraMotivo()"
+                            [ngModelOptions]="{ standalone: true }"
+                            (ngModelChange)="jornadaExtraMotivo.set($event)"
+                          />
+                        </label>
+
+                        @if (facade.adjustmentError()) {
+                          <p-message severity="error" [text]="facade.adjustmentError()!" />
+                        }
+
+                        <div class="actions actions--end">
+                          <button
+                            pButton
+                            type="button"
+                            icon="pi pi-replay"
+                            label="Compensar falta"
+                            severity="warn"
+                            [loading]="facade.isSavingAdjustment()"
+                            [disabled]="!compensarFaltaFecha()"
+                            (click)="onSaveCompensarFalta()"
+                          ></button>
+                        </div>
+                      </div>
+                    } @else if (op === 'dia-libre') {
+                      <div class="adjust-inline__form">
+                        <label class="adjust-inline__day">
+                          <span>Fecha</span>
+                          <p-datepicker
+                            [ngModel]="toPickerDate(diaLibreFecha())"
+                            [ngModelOptions]="{ standalone: true }"
+                            dateFormat="dd/mm/yy"
+                            [showIcon]="true"
+                            appendTo="body"
+                            (ngModelChange)="onDiaLibreFechaChange($event)"
+                          />
+                        </label>
+
+                        <label class="adjust-inline__field">
+                          <span>Alcance</span>
+                          <p-select
+                            [options]="alcanceOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            [ngModel]="diaLibreGlobal()"
+                            [ngModelOptions]="{ standalone: true }"
+                            (ngModelChange)="diaLibreGlobal.set($event)"
+                          />
+                        </label>
+
+                        <label class="adjust-inline__field">
+                          <span>Tipo</span>
+                          <p-select
+                            [options]="tipoDiaNoLaborableOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            [ngModel]="diaLibreTipo()"
+                            [ngModelOptions]="{ standalone: true }"
+                            (ngModelChange)="diaLibreTipo.set($event)"
+                          />
+                        </label>
+
+                        <label class="adjust-inline__field">
+                          <span>Motivo</span>
+                          <input
+                            pInputText
+                            type="text"
+                            placeholder="Ej: Feriado nacional"
+                            [ngModel]="diaLibreMotivo()"
+                            [ngModelOptions]="{ standalone: true }"
+                            (ngModelChange)="diaLibreMotivo.set($event)"
+                          />
+                        </label>
+
+                        @if (facade.adjustmentError()) {
+                          <p-message severity="error" [text]="facade.adjustmentError()!" />
+                        }
+
+                        <div class="actions actions--end">
+                          <button
+                            pButton
+                            type="button"
+                            icon="pi pi-calendar-minus"
+                            label="Declarar día libre"
+                            severity="danger"
+                            [loading]="facade.isSavingAdjustment()"
+                            [disabled]="!diaLibreFecha()"
+                            (click)="onSaveDiaLibre()"
+                          ></button>
+                        </div>
+                      </div>
                     }
                   </section>
                 } @else {
@@ -435,6 +658,64 @@
                       } @else {
                         <i class="pi pi-chevron-right adjust-row__chevron"></i>
                       }
+                    </button>
+                  </section>
+
+                  <section class="day-adjust">
+                    <span class="schedule-action-block__eyebrow">Calendario</span>
+
+                    <button
+                      type="button"
+                      class="adjust-row"
+                      [disabled]="!facade.canMutateOperationalData()"
+                      (click)="openAdjustment('jornada-extra')"
+                    >
+                      <span class="adjust-row__icon adjust-row__icon--jornada"><i class="pi pi-calendar-plus"></i></span>
+                      <span class="adjust-row__body">
+                        <strong>Habilitar jornada en día libre</strong>
+                        <small>Permite trabajar un día de descanso o feriado.</small>
+                      </span>
+                      <i class="pi pi-chevron-right adjust-row__chevron"></i>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="adjust-row"
+                      [disabled]="!tieneFaltas() || !debeHoras() || !facade.canMutateOperationalData()"
+                      (click)="openAdjustment('compensar-falta')"
+                    >
+                      <span class="adjust-row__icon adjust-row__icon--comp-falta"><i class="pi pi-replay"></i></span>
+                      <span class="adjust-row__body">
+                        <strong>Compensar falta con día libre</strong>
+                        <small>
+                          @if (!tieneFaltas()) {
+                            Sin faltas registradas este mes.
+                          } @else if (debeHoras()) {
+                            Habilita un día libre para recuperar horas.
+                          } @else {
+                            No debe horas este mes.
+                          }
+                        </small>
+                      </span>
+                      @if (tieneFaltas() && debeHoras()) {
+                        <span class="adjust-row__badge">{{ facade.drawerKpis().faltas }} {{ facade.drawerKpis().faltas === 1 ? 'falta' : 'faltas' }}</span>
+                      } @else {
+                        <i class="pi pi-lock adjust-row__chevron"></i>
+                      }
+                    </button>
+
+                    <button
+                      type="button"
+                      class="adjust-row"
+                      [disabled]="!facade.canMutateOperationalData()"
+                      (click)="openAdjustment('dia-libre')"
+                    >
+                      <span class="adjust-row__icon adjust-row__icon--dia-libre"><i class="pi pi-calendar-minus"></i></span>
+                      <span class="adjust-row__body">
+                        <strong>Declarar día libre</strong>
+                        <small>Feriado, vacaciones o permiso para todos o un empleado.</small>
+                      </span>
+                      <i class="pi pi-chevron-right adjust-row__chevron"></i>
                     </button>
                   </section>
 
