@@ -3,6 +3,7 @@
 .search-form {
   align-items: flex-end;
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
@@ -36,5 +37,72 @@ label {
 }
 
 :host ::ng-deep .gtr-dialog--search {
-  width: min(82rem, calc(100vw - 1rem));
+  width: min(74rem, calc(100vw - 1.5rem));
+}
+
+:host ::ng-deep .gtr-dialog--search .p-dialog-content {
+  overflow-x: hidden;
+}
+
+:host ::ng-deep .gtr-search-table {
+  font-size: 0.82rem;
+}
+
+:host ::ng-deep .gtr-search-table th,
+:host ::ng-deep .gtr-search-table td {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .gtr-search-table .col-lead { width: 9rem; }
+:host ::ng-deep .gtr-search-table .col-document { width: 7.2rem; }
+:host ::ng-deep .gtr-search-table .col-provider { width: 4.8rem; }
+:host ::ng-deep .gtr-search-table .col-base { width: 8.4rem; }
+:host ::ng-deep .gtr-search-table .col-tipification { width: 14.5rem; }
+:host ::ng-deep .gtr-search-table .col-status { width: 7.4rem; }
+:host ::ng-deep .gtr-search-table .col-advisor { width: 7.2rem; }
+:host ::ng-deep .gtr-search-table .col-date { width: 5.6rem; }
+:host ::ng-deep .gtr-search-table .col-actions { width: 5.6rem; }
+
+:host ::ng-deep .gtr-search-table .provider-cell img {
+  max-width: 2.25rem;
+}
+
+:host ::ng-deep .gtr-search-table .tip-stack,
+:host ::ng-deep .gtr-search-table .datetime-stack {
+  margin-inline: auto;
+}
+
+:host ::ng-deep .gtr-search-table .p-tag {
+  max-width: 100%;
+}
+
+:host ::ng-deep .gtr-search-table .p-tag-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1280px) {
+  :host ::ng-deep .gtr-search-table .col-document,
+  :host ::ng-deep .gtr-search-table .col-base {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  :host ::ng-deep .gtr-search-table .col-advisor {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .search-form > button {
+    width: 100%;
+  }
+
+  :host ::ng-deep .gtr-search-table .col-date {
+    display: none;
+  }
 }

@@ -42,26 +42,37 @@
     dataKey="id"
     [loading]="facade.isSearching()"
     [rowHover]="true"
-    [tableStyle]="{ 'min-width': '880px' }"
-    styleClass="p-datatable-sm gtr-table"
+    [tableStyle]="{ width: '100%', 'table-layout': 'fixed' }"
+    styleClass="p-datatable-sm gtr-table gtr-search-table"
   >
+    <ng-template #colgroup>
+      <col class="col-lead" />
+      <col class="col-document" />
+      <col class="col-provider" />
+      <col class="col-base" />
+      <col class="col-tipification" />
+      <col class="col-status" />
+      <col class="col-advisor" />
+      <col class="col-date" />
+      <col class="col-actions" />
+    </ng-template>
     <ng-template #header>
       <tr>
-        <th>Lead</th>
-        <th>Documento</th>
-        <th>Proveedor</th>
-        <th>Base</th>
-        <th>Ultima tipificacion</th>
-        <th>Estado</th>
-        <th>Asesor</th>
-        <th>Ingreso</th>
+        <th class="col-lead">Lead</th>
+        <th class="col-document">Documento</th>
+        <th class="col-provider">Proveedor</th>
+        <th class="col-base">Base</th>
+        <th class="col-tipification">Ultima tipificacion</th>
+        <th class="col-status">Estado</th>
+        <th class="col-advisor">Asesor</th>
+        <th class="col-date">Ingreso</th>
         <th class="col-actions">Acciones</th>
       </tr>
     </ng-template>
     <ng-template #body let-row>
       <tr [class.row-priority-campaign]="facade.isPriorityCampaign(row)">
-        <td>
-          <strong>{{ facade.leadIdentity(row) }}</strong>
+        <td class="col-lead">
+          <strong class="lead-value">{{ facade.display(row.lead || row.usermeta) }}</strong>
           @if (facade.isPriorityCampaign(row)) {
             <span class="priority-campaign-chip" [title]="facade.priorityCampaignLabel()">
               <i class="pi pi-star-fill" aria-hidden="true"></i>
@@ -69,8 +80,8 @@
             </span>
           }
         </td>
-        <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
-        <td>
+        <td class="col-document">{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
+        <td class="col-provider">
           @if (facade.providerLogo(row.nombreProveedorCampana ?? row.nombreProveedorEquipo); as logo) {
             <div class="provider-cell">
               <img [src]="logo" [alt]="facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo)" />
@@ -79,8 +90,8 @@
             {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
           }
         </td>
-        <td>{{ facade.display(row.base) }}</td>
-        <td>
+        <td class="col-base">{{ facade.display(row.base) }}</td>
+        <td class="col-tipification">
           @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
             <div class="tip-stack">
               <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
@@ -92,16 +103,21 @@
             </div>
           }
         </td>
-        <td>
+        <td class="col-status">
           <p-tag
             [severity]="facade.estadoSeverity(row.estadoSeguimiento)"
             [value]="facade.display(row.estadoSeguimiento)"
           />
         </td>
-        <td [title]="facade.display(row.nombreAsesorAsignado)">
+        <td class="col-advisor" [title]="facade.display(row.nombreAsesorAsignado)">
           {{ facade.advisorShortName(row.nombreAsesorAsignado) | uppercase }}
         </td>
-        <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM hh:mm a' }}</td>
+        <td class="col-date">
+          <div class="datetime-stack">
+            <span>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM' }}</span>
+            <strong>{{ (row.lastEntryAt ?? row.createdAt) | date: 'hh:mm a' }}</strong>
+          </div>
+        </td>
         <td class="actions-cell">
           <div class="row-actions">
             <button
@@ -114,8 +130,8 @@
               (click)="facade.openAssignment(row)"
             >
               <span class="gtr-assign-button__action">
-                <i class="pi pi-user-plus" aria-hidden="true"></i>
-                <span>Asignar</span>
+                <i class="pi pi-send" aria-hidden="true"></i>
+                <span class="gtr-assign-button__label">Asignar</span>
               </span>
               <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignacionesHoyPreventa ?? 0) }}</span>
             </button>
