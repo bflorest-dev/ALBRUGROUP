@@ -31,7 +31,7 @@
   @if (!canDisplayOperationalData()) {
     <p-message
       severity="warn"
-      text="Marca ONLINE para ver el dashboard de preventa."
+      [text]="operationalGateMessage()"
       styleClass="metrics-message"
     />
   } @else {

@@ -34,7 +34,7 @@
     <p-message severity="error" [text]="errorMessage() ?? ''" />
   }
   @if (!canDisplayOperationalData()) {
-    <p-message severity="warn" text="Marca ONLINE para buscar y corregir campañas." />
+    <p-message severity="warn" [text]="operationalGateMessage()" />
   }
 
   <p-card styleClass="campaign-correction-card">

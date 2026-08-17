@@ -176,7 +176,13 @@ export class AttendanceFacade {
     return this.nowMinutes() > salidaMin;
   });
   readonly currentStatus = computed<EstadoAsistencia>(
-    () => this.rawStatus() === 'ONLINE' && !this.isOperational() ? 'OFFLINE' : this.rawStatus()
+    () => {
+      const raw = this.rawStatus();
+      if (this.sessionService.session()?.primaryRole === 'COMMUNITY') {
+        return raw;
+      }
+      return raw === 'ONLINE' && !this.isOperational() ? 'OFFLINE' : raw;
+    }
   );
   readonly isLoading = signal(false);
   readonly isInitializing = computed(() => {

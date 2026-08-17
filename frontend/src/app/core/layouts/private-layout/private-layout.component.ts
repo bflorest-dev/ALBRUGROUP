@@ -23,7 +23,7 @@ import { SessionService } from '../../services/session.service';
 import { AttendanceStatusPickerComponent } from '../../../shared/components/attendance-status-picker/attendance-status-picker.component';
 import { TopBannerComponent } from '../../../shared/components/top-banner/top-banner.component';
 import { formatLabel } from '../../../shared/utils/display-label';
-import { AttendanceActionId } from '../../../shared/models/schedule/estado-asistencia';
+import { ATTENDANCE_STATUS_META, AttendanceActionId } from '../../../shared/models/schedule/estado-asistencia';
 import { AsesorVentasWorkspaceStateService } from '../../services/asesor-ventas-workspace-state.service';
 import { STORAGE_KEYS } from '../../constants/storage.constants';
 import { GtrAgendadosAlertFacade } from '../../../features/gtr/facades/gtr-agendados-alert.facade';
@@ -121,12 +121,18 @@ export class PrivateLayoutComponent implements AfterViewInit {
     // defecto (que ademas dispararia el vaciado de la bandeja). Solo pintamos el estado real una vez
     // confirmado.
     if (!this.attendanceFacade.statusConfirmed()) return 'Verificando';
+    if (this.session()?.primaryRole === 'COMMUNITY') {
+      return ATTENDANCE_STATUS_META[this.attendanceFacade.rawStatus()].label;
+    }
     return this.attendanceFacade.currentStatusMeta().label;
   });
   protected readonly attendanceStatusColor = computed(() => {
     if (this.isAlwaysOnlineRole()) return '#37c676';
     // Gris neutro mientras no haya confirmacion (coherente con "Verificando").
     if (!this.attendanceFacade.statusConfirmed()) return '#8f96ad';
+    if (this.session()?.primaryRole === 'COMMUNITY') {
+      return ATTENDANCE_STATUS_META[this.attendanceFacade.rawStatus()].color;
+    }
     return this.attendanceFacade.currentStatusMeta().color;
   });
   protected readonly attendanceActions = computed(() =>
@@ -421,14 +427,17 @@ export class PrivateLayoutComponent implements AfterViewInit {
       }
     });
 
-    // Marcar OFFLINE = terminar la jornada: al registrarse la salida con exito, cerramos la sesion
-    // (logout completo, limpia token y envia al login) para que la marcacion sea coherente.
+    // Marcar OFFLINE = terminar la jornada para roles operativos de bandeja: al registrarse la salida
+    // con exito, cerramos la sesion. COMMUNITY conserva acceso despues de marcar salida.
     effect(() => {
       const tick = this.attendanceFacade.salidaSuccessTick();
       if (tick === this.handledSalidaTick) {
         return;
       }
       this.handledSalidaTick = tick;
+      if (this.session()?.primaryRole === 'COMMUNITY') {
+        return;
+      }
       untracked(() => void this.authSessionService.logout());
     });
 

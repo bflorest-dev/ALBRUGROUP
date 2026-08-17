@@ -4,18 +4,18 @@ import { SessionService } from './session.service';
 
 /**
  * Roles que no participan del flujo de asistencia: su badge es ONLINE fijo en el layout
- * (isAlwaysOnlineRole) y el AttendanceFacade nunca los inicializa. Al no tener detalle de
- * asistencia, isOperational() es siempre false para ellos; por eso la puerta operativa debe
- * considerarlos operativos por definicion (si no, verian la vista bloqueada por una marcacion
- * que nunca hacen).
+ * (isAlwaysOnlineRole) y el AttendanceFacade nunca los inicializa.
  */
 const ALWAYS_OPERATIONAL_ROLES = new Set(['ADMINISTRADOR']);
+const COMMUNITY_ROLE = 'COMMUNITY';
 
 export interface OperationalGate {
   canActivateOperationalData: Signal<boolean>;
   hasActivatedOperationalData: Signal<boolean>;
   canDisplayOperationalData: Signal<boolean>;
   canMutateOperationalData: Signal<boolean>;
+  canUseFinanceData: Signal<boolean>;
+  blockedMessage: Signal<string>;
   isOffline: Signal<boolean>;
   isOnline: Signal<boolean>;
   markActivated: () => void;
@@ -28,18 +28,46 @@ export class OperationalGateService {
   private readonly sessionService = inject(SessionService);
   private readonly activatedFlows = signal<Record<string, boolean>>({});
 
+  private readonly primaryRole = computed(() => this.sessionService.session()?.primaryRole ?? '');
+  private readonly attendanceDetail = computed(() => this.attendanceFacade.attendanceDetail());
+  private readonly isCommunityRole = computed(() => this.primaryRole() === COMMUNITY_ROLE);
   /** Rol siempre operativo (no marca asistencia): ver ALWAYS_OPERATIONAL_ROLES. */
   private readonly isAlwaysOperationalRole = computed(() =>
-    ALWAYS_OPERATIONAL_ROLES.has(this.sessionService.session()?.primaryRole ?? '')
+    ALWAYS_OPERATIONAL_ROLES.has(this.primaryRole())
+  );
+  private readonly communityHasScheduleToday = computed(
+    () => this.isCommunityRole() && this.attendanceFacade.statusConfirmed() && this.attendanceDetail()?.tieneHorario === true
+  );
+  private readonly communityWithoutScheduleToday = computed(
+    () => this.isCommunityRole() && this.attendanceFacade.statusConfirmed() && this.attendanceDetail()?.tieneHorario === false
+  );
+  private readonly communityCheckedInToday = computed(
+    () => this.isCommunityRole() && this.communityHasScheduleToday() && this.attendanceDetail()?.fechaHoraIngreso !== null
   );
 
   readonly currentStatus = computed(() => this.attendanceFacade.currentStatus());
-  readonly canActivateOperationalData = computed(
-    () => this.isAlwaysOperationalRole() || this.attendanceFacade.isOperational()
+  readonly canActivateOperationalData = computed(() => {
+    if (this.isAlwaysOperationalRole()) {
+      return true;
+    }
+    if (this.isCommunityRole()) {
+      return this.communityCheckedInToday();
+    }
+    return this.attendanceFacade.isOperational();
+  });
+  readonly canMutateOperationalData = this.canActivateOperationalData;
+  readonly canUseFinanceData = computed(
+    () => this.canActivateOperationalData() || this.communityWithoutScheduleToday()
   );
-  readonly canMutateOperationalData = computed(
-    () => this.isAlwaysOperationalRole() || this.attendanceFacade.isOperational()
-  );
+  readonly blockedMessage = computed(() => {
+    if (this.isCommunityRole()) {
+      if (this.communityWithoutScheduleToday()) {
+        return 'Hoy no tienes horario asignado. Solo Finanzas está disponible.';
+      }
+      return 'Marca ONLINE para comenzar tu día.';
+    }
+    return 'Marca ONLINE para continuar.';
+  });
   readonly shouldWarnBeforeUnload = computed(() => this.currentStatus() !== 'OFFLINE');
   /**
    * OFFLINE **confirmado por el backend**, no el OFFLINE por defecto de un estado aun sin cargar.
@@ -58,6 +86,8 @@ export class OperationalGateService {
       hasActivatedOperationalData,
       canDisplayOperationalData: computed(() => this.canActivateOperationalData() || hasActivatedOperationalData()),
       canMutateOperationalData: this.canMutateOperationalData,
+      canUseFinanceData: this.canUseFinanceData,
+      blockedMessage: this.blockedMessage,
       isOffline: computed(() => this.currentStatus() === 'OFFLINE'),
       isOnline: computed(() => this.currentStatus() === 'ONLINE'),
       markActivated: () => this.markActivated(flowKey),

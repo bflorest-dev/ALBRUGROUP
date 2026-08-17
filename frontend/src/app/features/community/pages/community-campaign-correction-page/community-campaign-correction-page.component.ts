@@ -72,6 +72,7 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   protected readonly correctionDialogMessage = signal<string | null>(null);
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
+  protected readonly operationalGateMessage = this.operationalGate.blockedMessage;
   protected readonly pageEyebrow = computed(() =>
     this.sessionService.primaryRole() === 'ADMINISTRADOR' ? 'ADMIN' : 'COMMUNITY'
   );
@@ -165,7 +166,7 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
 
   protected confirmCorrection(): void {
     if (!this.canMutateOperationalData()) {
-      this.errorMessage.set('Marca ONLINE para corregir la campaña.');
+      this.errorMessage.set(this.operationalGateMessage());
       return;
     }
     const candidate = this.selectedCandidate();
@@ -217,7 +218,7 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
 
   private async saveCorrection(candidate: LeadCampanaCorreccionCandidatoResponse): Promise<void> {
     if (!this.canMutateOperationalData()) {
-      this.errorMessage.set('Marca ONLINE para corregir la campaña.');
+      this.errorMessage.set(this.operationalGateMessage());
       return;
     }
     this.isSaving.set(true);

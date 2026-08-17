@@ -58,12 +58,15 @@
     <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
   }
   @if (pageMode() !== 'finanzas' && !facade.canDisplayOperationalData()) {
-    <p-message severity="warn" text="Marca ONLINE para usar esta sección." />
+    <p-message severity="warn" [text]="facade.operationalGateMessage()" />
+  }
+  @if (pageMode() === 'finanzas' && !facade.canUseFinanceExpenses()) {
+    <p-message severity="warn" [text]="facade.operationalGateMessage()" />
   }
 
   @if (pageMode() === 'mantenimiento' && facade.canDisplayOperationalData()) {
     <app-catalog-maintenance-panel />
-  } @else if (pageMode() === 'finanzas') {
+  } @else if (pageMode() === 'finanzas' && facade.canUseFinanceExpenses()) {
     <app-campaign-finance-dashboard-panel
       panelTitle="Finanzas de campanas"
       [subtitle]="display(facade.dailyExpenseSummary()?.fecha)"

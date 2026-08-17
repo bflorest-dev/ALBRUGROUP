@@ -51,7 +51,7 @@
     @if (!facade.canDisplayOperationalData()) {
       <p-message
         severity="warn"
-        text="Marca ONLINE para ver y gestionar los leads del día."
+        [text]="facade.operationalGateMessage()"
         styleClass="daily-leads__message"
       />
     }

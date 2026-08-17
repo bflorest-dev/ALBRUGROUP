@@ -109,6 +109,7 @@ export class DailyLeadsFacade {
   });
   readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
+  readonly operationalGateMessage = this.operationalGate.blockedMessage;
 
   private readonly timeFormatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Lima',

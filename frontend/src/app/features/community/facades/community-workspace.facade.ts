@@ -112,7 +112,8 @@ export class CommunityWorkspaceFacade {
   readonly errorMessage = signal<string | null>(null);
   readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
-  readonly canUseFinanceExpenses = computed(() => true);
+  readonly canUseFinanceExpenses = this.operationalGate.canUseFinanceData;
+  readonly operationalGateMessage = this.operationalGate.blockedMessage;
 
   readonly proveedores = signal<ProveedorResponse[]>([]);
   readonly proveedoresActivos = computed(() => this.proveedores().filter((proveedor) => proveedor.activo !== false));
@@ -478,6 +479,9 @@ export class CommunityWorkspaceFacade {
     this.currentMode.set(mode);
 
     if (mode === 'finanzas') {
+      if (!this.canUseFinanceExpenses()) {
+        return;
+      }
       await this.refreshCampaigns();
       if (this.canDisplayOperationalData()) {
         void this.loadAll();
@@ -536,6 +540,10 @@ export class CommunityWorkspaceFacade {
   }
 
   async loadFinanceDashboard(): Promise<void> {
+    if (!this.canUseFinanceExpenses()) {
+      this.errorMessage.set(this.operationalGateMessage());
+      return;
+    }
     this.isLoadingFinance.set(true);
     this.clearMessages();
     try {
@@ -553,6 +561,10 @@ export class CommunityWorkspaceFacade {
   }
 
   openExpenseDialog(): void {
+    if (!this.canUseFinanceExpenses()) {
+      this.errorMessage.set(this.operationalGateMessage());
+      return;
+    }
     this.expenseForm.reset({ idCampana: 0, leads: '', costoTotal: '' });
     this.clearExpenseRegistrationStatus();
     this.expenseDialogOpen.set(true);
@@ -588,6 +600,10 @@ export class CommunityWorkspaceFacade {
   }
 
   async submitExpense(): Promise<void> {
+    if (!this.canUseFinanceExpenses()) {
+      this.errorMessage.set(this.operationalGateMessage());
+      return;
+    }
     if (this.expenseForm.invalid) {
       this.errorMessage.set('Selecciona una campa�a e indica leads y costo acumulado.');
       return;

@@ -58,11 +58,17 @@ export class CommunityWorkspacePageComponent implements OnInit {
 
     effect(() => {
       const mode = this.pageMode();
-      if (!this.facade.canDisplayOperationalData()) {
-        return;
-      }
       if (mode === 'mantenimiento' && !this.facade.proveedores().length && !this.facade.isLoading()) {
+        if (!this.facade.canDisplayOperationalData()) {
+          return;
+        }
         void this.facade.loadAll();
+      }
+      if (mode === 'finanzas' && !this.facade.dailyExpenseSummary() && !this.facade.isLoadingFinance()) {
+        if (!this.facade.canUseFinanceExpenses()) {
+          return;
+        }
+        void this.facade.initialize('finanzas');
       }
     });
   }

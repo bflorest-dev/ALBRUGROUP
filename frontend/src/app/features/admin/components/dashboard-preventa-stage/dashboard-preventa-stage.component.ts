@@ -86,6 +86,7 @@ export class DashboardPreventaStageComponent implements OnInit {
   protected readonly errorMessage = signal('');
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
+  protected readonly operationalGateMessage = this.operationalGate.blockedMessage;
   protected readonly activeView = signal<PreventaDashboardView>('rendimiento');
   private readonly raw = signal<LeadsDiariosMetricasEquipo[]>([]);
   private readonly equipos = signal<Array<{ id: number; nombre: string; color?: string | null; activo: boolean }>>([]);
