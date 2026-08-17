@@ -96,10 +96,10 @@
   @if (facade.section() === 'plataforma') {
     <section class="metric-grid" aria-label="Metricas GTR">
       @for (metric of facade.metricCards(); track metric.label) {
-        <p-card styleClass="gtr-metric gtr-metric--{{ metric.tone }}">
-          <span>{{ metric.label }}</span>
-          <strong>{{ metric.value }}</strong>
-        </p-card>
+        <div class="gtr-metric gtr-metric--{{ metric.tone }}">
+          <span class="gtr-metric__label">{{ metric.label }}</span>
+          <strong class="gtr-metric__value">{{ metric.value }}</strong>
+        </div>
       }
     </section>
   }

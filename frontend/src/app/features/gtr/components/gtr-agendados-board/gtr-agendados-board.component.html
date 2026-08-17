@@ -21,6 +21,7 @@
       [value]="facade.agendadosView()"
       dataKey="id"
       [rowHover]="true"
+      [tableStyle]="{ 'min-width': '950px' }"
       styleClass="p-datatable-sm gtr-table"
     >
       <ng-template #header>
@@ -30,8 +31,6 @@
               type="button"
               class="sort-header"
               [class.sort-header--active]="facade.agendadoSortActive('programado')"
-              [attr.aria-label]="facade.agendadoSortLabel('programado', 'fecha agendada')"
-              [title]="facade.agendadoSortLabel('programado', 'fecha agendada')"
               (click)="facade.changeAgendadosSort('programado')"
             >
               <span>Fecha Agendada</span>
@@ -43,8 +42,6 @@
               type="button"
               class="sort-header"
               [class.sort-header--active]="facade.agendadoSortActive('agendado')"
-              [attr.aria-label]="facade.agendadoSortLabel('agendado', 'fecha gestion')"
-              [title]="facade.agendadoSortLabel('agendado', 'fecha gestion')"
               (click)="facade.changeAgendadosSort('agendado')"
             >
               <span>Fecha Gestion</span>
@@ -54,62 +51,20 @@
           <th>Lead</th>
           <th>Proveedor</th>
           <th>Base</th>
-          <th class="col-sortable">
-            <button
-              type="button"
-              class="sort-header"
-              [class.sort-header--active]="facade.agendadoSortActive('tipificacion')"
-              [attr.aria-label]="facade.agendadoSortLabel('tipificacion', 'tipificacion')"
-              [title]="facade.agendadoSortLabel('tipificacion', 'tipificacion')"
-              (click)="facade.changeAgendadosSort('tipificacion')"
-            >
-              <span>Tipificacion</span>
-              <i [class]="facade.agendadoSortIcon('tipificacion')" aria-hidden="true"></i>
-            </button>
-          </th>
+          <th>Tipificacion</th>
           <th>Asesor</th>
           <th>Comentario</th>
-          <th class="col-sortable">
-            <button
-              type="button"
-              class="sort-header"
-              [class.sort-header--active]="facade.agendadoSortActive('estado')"
-              [attr.aria-label]="facade.agendadoSortLabel('estado', 'estado')"
-              [title]="facade.agendadoSortLabel('estado', 'estado')"
-              (click)="facade.changeAgendadosSort('estado')"
-            >
-              <span>Estado</span>
-              <i [class]="facade.agendadoSortIcon('estado')" aria-hidden="true"></i>
-            </button>
-          </th>
+          <th>Estado</th>
           <th class="col-actions">Acciones</th>
         </tr>
       </ng-template>
 
       <ng-template #body let-row>
         <tr [class.row-new]="row.isNew" [class.row-priority-campaign]="facade.isPriorityCampaign(row)">
-          <td>
-            @if (dateTimeParts(facade.agendadoProgramadoLabel(row)); as scheduled) {
-              <div class="datetime-stack">
-                <span>{{ scheduled.date }}</span>
-                @if (scheduled.time) {
-                  <strong>{{ scheduled.time }}</strong>
-                }
-              </div>
-            }
-          </td>
-          <td>
-            @if (dateTimeParts(facade.agendadoTipificadoLabel(row)); as managed) {
-              <div class="datetime-stack">
-                <span>{{ managed.date }}</span>
-                @if (managed.time) {
-                  <strong>{{ managed.time }}</strong>
-                }
-              </div>
-            }
-          </td>
-          <td>
-            <strong class="lead-value">{{ facade.display(row.lead || row.usermeta) }}</strong>
+          <td><strong>{{ facade.agendadoProgramadoLabel(row) }}</strong></td>
+          <td>{{ facade.agendadoTipificadoLabel(row) }}</td>
+          <td class="col-lead">
+            <strong class="truncate-text" [title]="facade.leadIdentity(row)">{{ facade.leadIdentity(row) }}</strong>
             @if (facade.isPriorityCampaign(row)) {
               <span class="priority-campaign-chip" [title]="facade.priorityCampaignLabel()">
                 <i class="pi pi-star-fill" aria-hidden="true"></i>
@@ -117,43 +72,42 @@
               </span>
             }
           </td>
-          <td>
+          <td class="col-proveedor">
             @if (facade.providerLogo(row.nombreProveedorCampana ?? row.nombreProveedorEquipo); as logo) {
               <div class="provider-cell">
                 <img [src]="logo" [alt]="facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo)" />
               </div>
             } @else {
-              {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
+              <span class="truncate-text" [title]="facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo)">{{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}</span>
             }
           </td>
-          <td>{{ facade.display(row.base) }}</td>
+          <td class="col-base">
+            @if (row.base === 'WHATSAPP') {
+              <span class="base-icon" pTooltip="WhatsApp"><i class="pi pi-whatsapp"></i></span>
+            } @else if (row.base === 'MESSENGER') {
+              <span class="base-icon" pTooltip="Messenger"><i class="pi pi-comment"></i></span>
+            } @else {
+              <span class="truncate-text" [pTooltip]="facade.display(row.base)">{{ facade.display(row.base) }}</span>
+            }
+          </td>
           <td>
             @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
               <div class="tip-stack">
-                <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
+                <p-tag [value]="tip.tipificacion" [pTooltip]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
                 <span class="tip-stack__line"></span>
                 <p-tag
                   [value]="tip.subtipificacion"
+                  [pTooltip]="tip.subtipificacion"
                   [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)"
                 />
               </div>
             }
           </td>
-          <td [title]="facade.display(row.nombreAsesorTipifico ?? row.nombreAsesorAsignado)">
-            {{ facade.advisorShortName(row.nombreAsesorTipifico ?? row.nombreAsesorAsignado) | uppercase }}
+          <td class="col-asesor">
+            <span class="truncate-text" [pTooltip]="facade.display(row.nombreAsesorTipifico ?? row.nombreAsesorAsignado)">{{ facade.display(row.nombreAsesorTipifico ?? row.nombreAsesorAsignado) | uppercase }}</span>
           </td>
-          <td>
-            <button
-              type="button"
-              class="comment-trigger"
-              [class.comment-trigger--empty]="!row.comentario?.trim()"
-              [title]="row.comentario?.trim() || 'Sin comentario'"
-              [pTooltip]="row.comentario?.trim() || 'Sin comentario'"
-              tooltipPosition="left"
-              [attr.aria-label]="row.comentario?.trim() ? 'Ver comentario: ' + row.comentario.trim() : 'Sin comentario'"
-            >
-              <i class="pi pi-comment" aria-hidden="true"></i>
-            </button>
+          <td class="col-comentario">
+            <span class="truncate-text" [pTooltip]="facade.display(row.comentario)">{{ facade.display(row.comentario) }}</span>
           </td>
           <td>
             <p-tag
@@ -169,13 +123,12 @@
                 size="small"
                 class="gtr-assign-button"
                 [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
-                title="Asignaciones"
+                pTooltip="Asignaciones"
                 (click)="facade.openAgendadoAssignment(row)"
               >
-                <span class="gtr-assign-button__action">
-                  <i class="pi pi-send" aria-hidden="true"></i>
-                  <span class="gtr-assign-button__label">Asignar</span>
-                </span>
+              <span class="gtr-assign-button__action">
+                <i class="pi pi-user-plus" aria-hidden="true"></i>
+              </span>
                 <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
               </button>
               <button
@@ -184,9 +137,8 @@
                 icon="pi pi-history"
                 size="small"
                 severity="secondary"
-                class="history-trigger"
                 [disabled]="facade.isLoadingEvents()"
-                title="Ver historial"
+                pTooltip="Ver historial"
                 aria-label="Ver historial"
                 (click)="facade.openLeadHistory(row)"
               ></button>

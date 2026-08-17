@@ -7,6 +7,7 @@ import { MessageModule } from 'primeng/message';
 import { PaginatorModule } from 'primeng/paginator';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 
 @Component({
@@ -20,7 +21,8 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
     MessageModule,
     PaginatorModule,
     TableModule,
-    TagModule
+    TagModule,
+    TooltipModule
   ],
   templateUrl: './gtr-search-dialog.component.html',
   styleUrl: './gtr-search-dialog.component.scss',

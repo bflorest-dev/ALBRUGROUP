@@ -79,14 +79,15 @@
             {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
           }
         </td>
-        <td>{{ facade.display(row.base) }}</td>
+        <td [pTooltip]="facade.display(row.base)">{{ facade.display(row.base) }}</td>
         <td>
           @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
             <div class="tip-stack">
-              <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
+              <p-tag [value]="tip.tipificacion" [pTooltip]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
               <span class="tip-stack__line"></span>
               <p-tag
                 [value]="tip.subtipificacion"
+                [pTooltip]="tip.subtipificacion"
                 [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)"
               />
             </div>
@@ -98,7 +99,7 @@
             [value]="facade.display(row.estadoSeguimiento)"
           />
         </td>
-        <td [title]="facade.display(row.nombreAsesorAsignado)">
+        <td [pTooltip]="facade.display(row.nombreAsesorAsignado)">
           {{ facade.advisorShortName(row.nombreAsesorAsignado) | uppercase }}
         </td>
         <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM hh:mm a' }}</td>
@@ -110,7 +111,7 @@
               size="small"
               class="gtr-assign-button"
               [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
-              title="Asignar"
+              pTooltip="Asignar"
               (click)="facade.openAssignment(row)"
             >
               <span class="gtr-assign-button__action">
@@ -125,7 +126,7 @@
               icon="pi pi-cog"
               size="small"
               severity="secondary"
-              title="Gestionar"
+              pTooltip="Gestionar"
               aria-label="Gestionar"
               [disabled]="!facade.canMutateOperationalData()"
               (click)="facade.openSnapshot(row)"
@@ -136,7 +137,7 @@
               icon="pi pi-history"
               size="small"
               severity="secondary"
-              title="Ver historial"
+              pTooltip="Ver historial"
               aria-label="Historial"
               [disabled]="facade.isLoadingEvents()"
               (click)="facade.openLeadHistory(row)"

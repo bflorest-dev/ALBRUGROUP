@@ -6,14 +6,34 @@
     </span>
   </ng-template>
   <ng-template #subtitle>
-    {{
-      !facade.canDisplayOperationalData()
-        ? 'Marca ONLINE para recibir leads'
-        : facade.isReconciling()
-          ? 'Validando cambios del realtime'
-          : 'Leads listos para gestion'
-    }}
+    <span class="board-subtitle">
+      {{
+        !facade.canDisplayOperationalData()
+          ? 'Marca ONLINE para recibir leads'
+          : facade.isReconciling()
+            ? 'Validando cambios del realtime'
+            : 'Leads listos para gestion'
+      }}
+      @if (facade.canDisplayOperationalData() && facade.isReconciling()) {
+        <i class="pi pi-sync pi-spin board-subtitle__spinner" aria-hidden="true"></i>
+      }
+    </span>
   </ng-template>
+
+  @if (facade.canDisplayOperationalData() && facade.resumenEstados().length) {
+    <div class="board-summary" aria-label="Resumen de la bandeja">
+      <div class="board-summary__chips">
+        @for (item of facade.resumenEstados(); track item.estado) {
+          <p-tag [severity]="item.severity" [value]="item.estado + ' · ' + item.count" />
+        }
+      </div>
+      <p-tag
+        [severity]="facade.capGestionesAlcanzado() ? 'warn' : 'secondary'"
+        [value]="'Gestiones ' + facade.gestionesAbiertas() + '/' + facade.maxGestionesSimultaneas"
+        [title]="'Gestiones abiertas: ' + facade.gestionesAbiertas() + ' de ' + facade.maxGestionesSimultaneas"
+      />
+    </div>
+  }
 
   @if (!facade.canDisplayOperationalData()) {
     <div class="offline-state">
@@ -52,7 +72,14 @@
     </ng-template>
 
     <ng-template #body let-row>
-      <tr [class.row-new]="row.isNew" [class.row-priority-campaign]="facade.isPriorityCampaign(row)">
+      <tr
+        tabindex="0"
+        [class.row-new]="row.isNew"
+        [class.row-priority-campaign]="facade.isPriorityCampaign(row)"
+        [class.row-clickable]="!facade.isManageActionDisabledRow(row)"
+        (click)="onRowOpen(row)"
+        (keydown)="onRowKeydown($event, row)"
+      >
         <td>
           <strong>{{ facade.leadPhone(row) }}</strong>
           @if (facade.isPriorityCampaign(row)) {
@@ -83,7 +110,21 @@
         <td>
           <p-tag [severity]="facade.estadoSeverity(row.estadoSeguimiento)" [value]="facade.display(row.estadoSeguimiento)" />
         </td>
-        <td>{{ row.fechaAsignacion | date: 'dd/MM hh:mm a' }}</td>
+        <td class="col-asignacion">
+          <div class="assignment-stack">
+            <span class="assignment-stack__datetime">
+              {{ row.fechaAsignacion ? (row.fechaAsignacion | date: 'dd/MM hh:mm a') : '-' }}
+            </span>
+            @if (facade.asignacionAgeClass(row); as age) {
+              <span class="age-indicator" [class]="'age-indicator--' + age">
+                <span class="age-indicator__dot" aria-hidden="true"></span>
+                {{ facade.asignacionRelativeLabel(row) }}
+              </span>
+            } @else {
+              <span class="age-indicator age-indicator--none">{{ facade.asignacionRelativeLabel(row) }}</span>
+            }
+          </div>
+        </td>
         <td>
           <button
             pButton
@@ -94,7 +135,7 @@
             [severity]="facade.manageActionSeverity(row)"
             [disabled]="facade.isManageActionDisabledRow(row)"
             [title]="facade.manageActionTitle(row)"
-            (click)="facade.openDetail(row.id)"
+            (click)="facade.openDetail(row.id); $event.stopPropagation()"
           ></button>
         </td>
       </tr>
@@ -103,8 +144,10 @@
     <ng-template #emptymessage>
       <tr>
         <td colspan="7">
-          @if (facade.canDisplayOperationalData()) {
-            <div class="skeleton-table" aria-label="Esperando asignaciones">
+          @if (!facade.canDisplayOperationalData()) {
+            <span class="helper helper--centered">La bandeja se activara al marcar ONLINE.</span>
+          } @else if (facade.isLoading()) {
+            <div class="skeleton-table" aria-label="Cargando bandeja">
               @for (_ of facade.skeletonRows; track $index) {
                 <div class="skeleton-row">
                   <p-skeleton width="8rem" height="1.1rem" />
@@ -118,7 +161,11 @@
               }
             </div>
           } @else {
-            <span class="helper helper--centered">La bandeja se activara al marcar ONLINE.</span>
+            <div class="empty-state">
+              <span class="empty-state__icon"><i class="pi pi-check-circle" aria-hidden="true"></i></span>
+              <strong>¡Bandeja al dia!</strong>
+              <p>No tienes leads pendientes. Los nuevos apareceran aqui automaticamente.</p>
+            </div>
           }
         </td>
       </tr>

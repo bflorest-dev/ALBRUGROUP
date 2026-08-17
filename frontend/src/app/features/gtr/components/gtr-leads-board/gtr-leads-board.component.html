@@ -20,19 +20,6 @@
       (click)="facade.openAssignment()"
     ></button>
 
-    <label class="tip-view-select">
-      <span>Ver tipi</span>
-      <select
-        class="tip-view-select__control"
-        [ngModel]="visibleTipificationColumn"
-        (ngModelChange)="setVisibleTipificationColumn($any($event))"
-      >
-        @for (option of visibleTipificationColumnOptions; track option.value) {
-          <option [ngValue]="option.value">{{ option.label }}</option>
-        }
-      </select>
-    </label>
-
     <button
       pButton
       type="button"
@@ -70,50 +57,7 @@
           />
         </div>
 
-        @if (facade.isPlatformTipificationGrouping()) {
-          <div class="gtr-organize-field">
-            <label for="gtr-platform-tipification-group">Tipificación</label>
-            <p-select
-              inputId="gtr-platform-tipification-group"
-              [ngModel]="facade.platformSelectedTipificationGroup()"
-              [options]="facade.platformTipificationGroupOptions()"
-              optionLabel="etiqueta"
-              [showClear]="true"
-              emptyMessage="No hay opciones disponibles"
-              (onChange)="onTipificationGroupChange($event.value)"
-            >
-              <ng-template #item let-group>
-                <div class="gtr-group-option">
-                  <span>{{ group.etiqueta }}</span>
-                  <strong>{{ group.cantidad }}</strong>
-                </div>
-              </ng-template>
-            </p-select>
-          </div>
-
-          @if (facade.platformSelectedTipificationGroup() && !facade.platformSelectedTipificationGroup()?.sinValor) {
-            <div class="gtr-organize-field">
-              <label for="gtr-platform-subtipification-group">Subtipificación</label>
-              <p-select
-                inputId="gtr-platform-subtipification-group"
-                [ngModel]="facade.platformSelectedSubtipificationGroup()"
-                [options]="facade.platformSubtipificationGroupOptions()"
-                optionLabel="codigoSubtipificacion"
-                [showClear]="true"
-                emptyMessage="No hay opciones disponibles"
-                placeholder="Todas"
-                (onChange)="onSubtipificationGroupChange($event.value)"
-              >
-                <ng-template #item let-group>
-                  <div class="gtr-group-option">
-                    <span>{{ group.codigoSubtipificacion }}</span>
-                    <strong>{{ group.cantidad }}</strong>
-                  </div>
-                </ng-template>
-              </p-select>
-            </div>
-          }
-        } @else if (facade.platformGroupingMode() !== 'SIN_AGRUPAR') {
+        @if (facade.platformGroupingMode() !== 'SIN_AGRUPAR') {
           <div class="gtr-organize-field">
             <label for="gtr-platform-group">Filtrar grupo</label>
             <p-select
@@ -182,6 +126,7 @@
     [rowHover]="true"
     [scrollable]="true"
     scrollHeight="flex"
+    [tableStyle]="{ 'min-width': '1200px' }"
     styleClass="p-datatable-sm gtr-table"
   >
     <ng-template #header>
@@ -200,86 +145,13 @@
         <th>Proveedor</th>
         <th>Base</th>
         <th>Documento</th>
-        <th class="col-sortable col-tipifications">
-          <div class="tip-sort-group">
-            <span class="tip-sort-group__title">Tipificacion</span>
-            <span class="tip-sort-group__actions">
-              <button
-                type="button"
-                class="sort-header sort-header--tip"
-                [class.sort-header--active]="facade.platformSortActive('primeraTipificacion')"
-                [attr.aria-label]="facade.platformSortLabel('primeraTipificacion', 'tipificacion inicial')"
-                [title]="facade.platformSortLabel('primeraTipificacion', 'tipificacion inicial')"
-                (click)="facade.changePlatformColumnSort('primeraTipificacion')"
-              >
-                <span>Inicial</span>
-                <i [class]="facade.platformSortIcon('primeraTipificacion')" aria-hidden="true"></i>
-              </button>
-              <button
-                type="button"
-                class="sort-header sort-header--tip"
-                [class.sort-header--active]="facade.platformSortActive('mayorTipificacion')"
-                [attr.aria-label]="facade.platformSortLabel('mayorTipificacion', 'mayor tipificacion')"
-                [title]="facade.platformSortLabel('mayorTipificacion', 'mayor tipificacion')"
-                (click)="facade.changePlatformColumnSort('mayorTipificacion')"
-              >
-                <span>Mayor</span>
-                <i [class]="facade.platformSortIcon('mayorTipificacion')" aria-hidden="true"></i>
-              </button>
-              <button
-                type="button"
-                class="sort-header sort-header--tip"
-                [class.sort-header--active]="facade.platformSortActive('ultimaTipificacion')"
-                [attr.aria-label]="facade.platformSortLabel('ultimaTipificacion', 'ultima tipificacion')"
-                [title]="facade.platformSortLabel('ultimaTipificacion', 'ultima tipificacion')"
-                (click)="facade.changePlatformColumnSort('ultimaTipificacion')"
-              >
-                <span>Ultima</span>
-                <i [class]="facade.platformSortIcon('ultimaTipificacion')" aria-hidden="true"></i>
-              </button>
-            </span>
-          </div>
-        </th>
-        <th class="col-sortable col-status">
-          <button
-            type="button"
-            class="sort-header"
-            [class.sort-header--active]="facade.platformSortActive('estado')"
-            [attr.aria-label]="facade.platformSortLabel('estado', 'estado')"
-            [title]="facade.platformSortLabel('estado', 'estado')"
-            (click)="facade.changePlatformColumnSort('estado')"
-          >
-            <span>Estado</span>
-            <i [class]="facade.platformSortIcon('estado')" aria-hidden="true"></i>
-          </button>
-        </th>
+        <th>Primera tipificacion</th>
+        <th>Mayor tipificacion</th>
+        <th>Ultima tipificacion</th>
+        <th>Estado</th>
         <th>Asesor</th>
-        <th class="col-sortable">
-          <button
-            type="button"
-            class="sort-header"
-            [class.sort-header--active]="facade.platformSortActive('createdAt')"
-            [attr.aria-label]="facade.platformSortLabel('createdAt', 'ingreso')"
-            [title]="facade.platformSortLabel('createdAt', 'ingreso')"
-            (click)="facade.changePlatformColumnSort('createdAt')"
-          >
-            <span>Ingreso</span>
-            <i [class]="facade.platformSortIcon('createdAt')" aria-hidden="true"></i>
-          </button>
-        </th>
-        <th class="col-sortable">
-          <button
-            type="button"
-            class="sort-header"
-            [class.sort-header--active]="facade.platformSortActive('lastEntryAt')"
-            [attr.aria-label]="facade.platformSortLabel('lastEntryAt', 'ultima gestion')"
-            [title]="facade.platformSortLabel('lastEntryAt', 'ultima gestion')"
-            (click)="facade.changePlatformColumnSort('lastEntryAt')"
-          >
-            <span>Ultima Gestion</span>
-            <i [class]="facade.platformSortIcon('lastEntryAt')" aria-hidden="true"></i>
-          </button>
-        </th>
+        <th>Ingreso</th>
+        <th>Ultima Gestion</th>
         <th class="col-actions">Acciones</th>
       </tr>
     </ng-template>
@@ -298,8 +170,8 @@
             (selectionChange)="facade.toggleSelection(row.id, $event)"
           />
         </td>
-        <td>
-          <strong class="lead-value">{{ facade.display(row.lead || row.usermeta) }}</strong>
+        <td class="col-lead">
+          <strong class="truncate-text" [title]="facade.leadIdentity(row)">{{ facade.leadIdentity(row) }}</strong>
           @if (facade.isPriorityCampaign(row)) {
             <span class="priority-campaign-chip" [title]="facade.priorityCampaignLabel()">
               <i class="pi pi-star-fill" aria-hidden="true"></i>
@@ -314,95 +186,71 @@
             />
           }
         </td>
-        <td>
+        <td class="col-proveedor">
           @if (facade.providerLogo(row.nombreProveedorCampana ?? row.nombreProveedorEquipo); as logo) {
             <div class="provider-cell">
               <img [src]="logo" [alt]="facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo)" />
             </div>
           } @else {
-            {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
+            <span class="truncate-text" [title]="facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo)">{{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}</span>
           }
         </td>
-        <td>{{ facade.display(row.base) }}</td>
-        <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
-        <td class="col-tipifications">
-          <div class="tip-view" tabindex="0">
-            @if (facade.tipificacionParts(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion); as tip) {
-              <div
-                class="tip-view__item"
-                role="button"
-                tabindex="0"
-                title="Mostrar tipificacion inicial"
-                [class.tip-view__item--active]="visibleTipificationColumn === 'primera'"
-                (click)="setVisibleTipificationColumn('primera')"
-                (keydown.enter)="setVisibleTipificationColumn('primera')"
-                (keydown.space)="setVisibleTipificationColumn('primera')"
-              >
-                <span class="tip-view__label">Primera</span>
-                <div class="tip-stack">
-                  <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
-                  <span class="tip-stack__line"></span>
-                  <p-tag
-                    [value]="tip.subtipificacion"
-                    [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)"
-                  />
-                </div>
-              </div>
-            }
-            @if (facade.tipificacionParts(row.mayorRangoCodigoTipificacion, row.mayorRangoCodigoSubtipificacion); as tip) {
-              <div
-                class="tip-view__item"
-                role="button"
-                tabindex="0"
-                title="Mostrar mayor tipificacion"
-                [class.tip-view__item--active]="visibleTipificationColumn === 'mayor'"
-                (click)="setVisibleTipificationColumn('mayor')"
-                (keydown.enter)="setVisibleTipificationColumn('mayor')"
-                (keydown.space)="setVisibleTipificationColumn('mayor')"
-              >
-                <span class="tip-view__label">Mayor</span>
-                <div class="tip-stack">
-                  <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
-                  <span class="tip-stack__line"></span>
-                  <p-tag
-                    [value]="tip.subtipificacion"
-                    [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)"
-                  />
-                </div>
-              </div>
-            }
-            @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
-              <div
-                class="tip-view__item"
-                role="button"
-                tabindex="0"
-                title="Mostrar ultima tipificacion"
-                [class.tip-view__item--active]="visibleTipificationColumn === 'ultima'"
-                (click)="setVisibleTipificationColumn('ultima')"
-                (keydown.enter)="setVisibleTipificationColumn('ultima')"
-                (keydown.space)="setVisibleTipificationColumn('ultima')"
-              >
-                <span class="tip-view__label">Ultima</span>
-                <div class="tip-stack">
-                  <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
-                  <span class="tip-stack__line"></span>
-                  <p-tag
-                    [value]="tip.subtipificacion"
-                    [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)"
-                  />
-                </div>
-              </div>
-            }
-          </div>
+        <td class="col-base">
+          @if (row.base === 'WHATSAPP') {
+            <span class="base-icon" title="WhatsApp"><i class="pi pi-whatsapp"></i></span>
+          } @else if (row.base === 'MESSENGER') {
+            <span class="base-icon" title="Messenger"><i class="pi pi-comment"></i></span>
+          } @else {
+            <span class="truncate-text" [title]="facade.display(row.base)">{{ facade.display(row.base) }}</span>
+          }
         </td>
-        <td class="col-status">
+        <td class="col-documento">
+          <span class="truncate-text" [title]="facade.display(row.numeroDocumentoTitularServicio)">{{ facade.display(row.numeroDocumentoTitularServicio) }}</span>
+        </td>
+        <td>
+          @if (facade.tipificacionParts(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion); as tip) {
+            <div class="tip-stack">
+              <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
+              <span class="tip-stack__line"></span>
+              <p-tag
+                [value]="tip.subtipificacion"
+                [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)"
+              />
+            </div>
+          }
+        </td>
+        <td>
+          @if (facade.tipificacionParts(row.mayorRangoCodigoTipificacion, row.mayorRangoCodigoSubtipificacion); as tip) {
+            <div class="tip-stack">
+              <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
+              <span class="tip-stack__line"></span>
+              <p-tag
+                [value]="tip.subtipificacion"
+                [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)"
+              />
+            </div>
+          }
+        </td>
+        <td>
+          @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
+            <div class="tip-stack">
+              <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
+              <span class="tip-stack__line"></span>
+              <p-tag
+                [value]="tip.subtipificacion"
+                [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)"
+              />
+            </div>
+          }
+        </td>
+        <td>
           <p-tag
             [severity]="facade.estadoSeverity(row.estadoSeguimiento)"
             [value]="facade.display(row.estadoSeguimiento)"
           />
         </td>
-        <td [title]="facade.display(row.nombreAsesorAsignado)">
-          {{ facade.advisorShortName(row.nombreAsesorAsignado) | uppercase }}
+        <td class="col-asesor" [title]="facade.display(row.nombreAsesorAsignado)">
+          <span class="truncate-text">{{ facade.advisorShortName(row.nombreAsesorAsignado) | uppercase }}</span>
         </td>
         <td>
           <div class="datetime-stack">
@@ -432,8 +280,7 @@
               (click)="facade.openAssignment(row)"
             >
               <span class="gtr-assign-button__action">
-                <i class="pi pi-send" aria-hidden="true"></i>
-                <span class="gtr-assign-button__label">Asignar</span>
+                <i class="pi pi-send  " aria-hidden="true"></i>
               </span>
               <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
             </button>
@@ -444,7 +291,6 @@
               size="small"
               severity="secondary"
               title="Gestionar"
-              aria-label="Gestionar"
               [disabled]="!facade.canMutateOperationalData()"
               (click)="facade.openSnapshot(row)"
             ></button>
@@ -473,7 +319,7 @@
 
     <ng-template #emptymessage>
       <tr>
-          <td colspan="11" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
+          <td colspan="13" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
             {{
               !facade.canDisplayOperationalData()
                 ? 'Marca ONLINE para activar esta bandeja.'

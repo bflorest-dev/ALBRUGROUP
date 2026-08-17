@@ -121,14 +121,15 @@ const CAMPOS_CONFIGURABLES: Record<CampoCaptura, { tab: 'datos' | 'direccion'; c
   PLANO: { tab: 'direccion', control: 'plano', label: 'Plano' }
 };
 
-type AgendadosSortField = 'programado' | 'agendado' | 'tipificacion' | 'estado';
+type AgendadosSortField = 'programado' | 'agendado';
 type GtrPlatformSortField =
   | 'lastEntryAt'
   | 'createdAt'
-  | 'primeraTipificacion'
-  | 'mayorTipificacion'
-  | 'ultimaTipificacion'
-  | 'estado';
+  | 'campana'
+  | 'primeraCodigoTipificacion'
+  | 'codigoTipificacion'
+  | 'estado'
+  | 'nombreAsesorAsignado';
 type GtrHistoricosSortField = 'lastEntryAt' | 'codigoTipificacion' | 'estado' | 'nombreAsesorAsignado';
 type GtrPlatformSortDirection = 'asc' | 'desc';
 type GtrHistoricosGroupMode = 'SIN_AGRUPAR' | 'PRIMERA_TIPIFICACION' | 'MAYOR_TIPIFICACION' | 'ULTIMA_TIPIFICACION' | 'ESTADO' | 'INGRESO';
@@ -189,7 +190,7 @@ type AssignmentConflictDetails = {
 
 type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'typify' | 'assign' | 'reassign-confirm' | 'takeover-confirm' | 'events' | 'advisor-events' | 'search' | 'schedule-extension' | null;
 type EventAnomalyFilter = 'multiple-records' | 'same-campaign' | null;
-type LeadHistoryMode = 'eventos-dia' | 'tipificacion' | 'asesor';
+type LeadHistoryMode = 'eventos-dia' | 'historial';
 type IntakeMode = 'normal' | 'retroactivo';
 type TipificationHistoryGroupOption = {
   label: string;
@@ -775,13 +776,10 @@ export class GtrWorkspaceFacade {
     this.advisorEventsSortDirection() === null
   );
   readonly tipificationHistoryGroupOptions = computed<TipificationHistoryGroupOption[]>(() => {
-    const mode = this.leadHistoryMode();
     const counts = new Map<string, { label: string; count: number }>();
 
     for (const event of this.tipificationHistoryRows()) {
-      const label = mode === 'asesor'
-        ? this.tipificationHistoryAdvisor(event)
-        : this.display(event.tipificacion);
+      const label = this.display(event.tipificacion);
       const value = this.normalizeLookup(label);
       const current = counts.get(value);
       counts.set(value, {
@@ -800,11 +798,8 @@ export class GtrWorkspaceFacade {
       return this.tipificationHistoryRows();
     }
 
-    const mode = this.leadHistoryMode();
     return this.tipificationHistoryRows().filter((event) => {
-      const label = mode === 'asesor'
-        ? this.tipificationHistoryAdvisor(event)
-        : this.display(event.tipificacion);
+      const label = this.display(event.tipificacion);
       return this.normalizeLookup(label) === selected;
     });
   });
@@ -875,7 +870,7 @@ export class GtrWorkspaceFacade {
   readonly metricCards = computed(() => {
     const metrics = this.metrics();
     return [
-      { label: 'Ingresos', value: metrics.ingresos, tone: 'blue' },
+      { label: 'Ingresos', value: metrics.ingresos, tone: 'teal' },
       { label: 'Nuevos', value: metrics.nuevos, tone: 'blue' },
       { label: 'Sin Gestionar', value: metrics.sinGestionar, tone: 'amber' },
       { label: 'Gestionados', value: metrics.gestionados, tone: 'green' },
@@ -885,7 +880,7 @@ export class GtrWorkspaceFacade {
 
   readonly platformGroupingModeOptions: Array<{ label: string; value: LeadGtrGroupMode }> = [
     { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
-    { label: 'Campaña', value: 'CAMPANA' },
+    { label: 'Proveedor', value: 'CAMPANA' },
     { label: 'Primera tipificación', value: 'PRIMERA_TIPIFICACION' },
     { label: 'Mayor tipificación', value: 'MAYOR_TIPIFICACION' },
     { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' },
@@ -895,10 +890,11 @@ export class GtrWorkspaceFacade {
   readonly platformSortOptions: Array<{ label: string; value: GtrPlatformSortField }> = [
     { label: 'Última gestión', value: 'lastEntryAt' },
     { label: 'Ingreso', value: 'createdAt' },
-    { label: 'Primera tipificación', value: 'primeraTipificacion' },
-    { label: 'Mayor tipificación', value: 'mayorTipificacion' },
-    { label: 'Última tipificación', value: 'ultimaTipificacion' },
-    { label: 'Estado', value: 'estado' }
+    { label: 'Proveedor', value: 'campana' },
+    { label: 'Primera tipificación', value: 'primeraCodigoTipificacion' },
+    { label: 'Última tipificación', value: 'codigoTipificacion' },
+    { label: 'Estado', value: 'estado' },
+    { label: 'Asesor', value: 'nombreAsesorAsignado' }
   ];
   readonly platformSortDirectionOptions = computed<Array<{ label: string; value: GtrPlatformSortDirection }>>(() =>
     this.platformSortField() === 'lastEntryAt' || this.platformSortField() === 'createdAt'
@@ -936,83 +932,6 @@ export class GtrWorkspaceFacade {
         return [];
     }
   });
-  readonly isPlatformTipificationGrouping = computed(() =>
-    this.isPlatformTipificationGroupMode(this.platformGroupingMode())
-  );
-  readonly platformTipificationGroupOptions = computed<LeadGtrGroupItemResponse[]>(() => {
-    if (!this.isPlatformTipificationGrouping()) {
-      return [];
-    }
-
-    const quantities = new Map<string, number>();
-    const labels = new Map<string, string>();
-    let sinTipificar = 0;
-    for (const group of this.platformActiveGroupOptions()) {
-      if (group.sinValor) {
-        sinTipificar += group.cantidad;
-        continue;
-      }
-      const codigo = group.codigoTipificacion?.trim();
-      if (!codigo) {
-        continue;
-      }
-      quantities.set(codigo, (quantities.get(codigo) ?? 0) + group.cantidad);
-      labels.set(codigo, codigo);
-    }
-
-    const options: LeadGtrGroupItemResponse[] = [...quantities.entries()].map(([codigo, cantidad]) => ({
-      idGrupo: null,
-      codigoTipificacion: codigo,
-      codigoSubtipificacion: null,
-      etiqueta: labels.get(codigo) ?? codigo,
-      cantidad,
-      sinValor: false
-    }));
-    if (sinTipificar > 0) {
-      options.push({
-        idGrupo: null,
-        codigoTipificacion: null,
-        codigoSubtipificacion: null,
-        etiqueta: 'Sin tipificar',
-        cantidad: sinTipificar,
-        sinValor: true
-      });
-    }
-    return this.sortPlatformGroupOptions(options);
-  });
-  readonly platformSelectedTipificationGroup = computed<LeadGtrGroupItemResponse | null>(() => {
-    const selected = this.platformSelectedGroup();
-    if (!selected || !this.isPlatformTipificationGrouping()) {
-      return null;
-    }
-    return this.platformTipificationGroupOptions().find((option) =>
-      Boolean(option.sinValor) === Boolean(selected.sinValor)
-      && (option.codigoTipificacion ?? null) === (selected.codigoTipificacion ?? null)
-    ) ?? null;
-  });
-  readonly platformSubtipificationGroupOptions = computed<LeadGtrGroupItemResponse[]>(() => {
-    const selected = this.platformSelectedTipificationGroup();
-    if (!selected || selected.sinValor || !selected.codigoTipificacion) {
-      return [];
-    }
-    return this.sortPlatformGroupOptions(
-      this.platformActiveGroupOptions().filter((group) =>
-        !group.sinValor
-        && group.codigoTipificacion === selected.codigoTipificacion
-        && !!group.codigoSubtipificacion
-      )
-    );
-  });
-  readonly platformSelectedSubtipificationGroup = computed<LeadGtrGroupItemResponse | null>(() => {
-    const selected = this.platformSelectedGroup();
-    if (!selected?.codigoSubtipificacion || !this.isPlatformTipificationGrouping()) {
-      return null;
-    }
-    return this.platformSubtipificationGroupOptions().find((option) =>
-      option.codigoTipificacion === selected.codigoTipificacion
-      && option.codigoSubtipificacion === selected.codigoSubtipificacion
-    ) ?? null;
-  });
   readonly isPlatformOrganizationDefault = computed(() =>
     this.platformGroupingMode() === 'SIN_AGRUPAR' &&
     this.platformSelectedGroup() === null &&
@@ -1043,24 +962,17 @@ export class GtrWorkspaceFacade {
     { label: 'Estado', value: 'estado' },
     { label: 'Asesor', value: 'nombreAsesorAsignado' }
   ]);
-  readonly historicosSortDirectionOptions = computed<Array<{ label: string; value: GtrPlatformSortDirection }>>(() => {
-    if (this.historicosSortField() === 'lastEntryAt') {
-      return [
-        { label: 'Más antiguos', value: 'asc' },
-        { label: 'Más recientes', value: 'desc' }
-      ];
-    }
-    if (this.historicosSortField() === 'nombreAsesorAsignado') {
-      return [
-        { label: 'A-Z', value: 'asc' },
-        { label: 'Z-A', value: 'desc' }
-      ];
-    }
-    return [
-      { label: 'Orden natural', value: 'asc' },
-      { label: 'Orden inverso', value: 'desc' }
-    ];
-  });
+  readonly historicosSortDirectionOptions = computed<Array<{ label: string; value: GtrPlatformSortDirection }>>(() =>
+    this.historicosSortField() === 'lastEntryAt'
+      ? [
+          { label: 'Más antiguos', value: 'asc' },
+          { label: 'Más recientes', value: 'desc' }
+        ]
+      : [
+          { label: 'A-Z', value: 'asc' },
+          { label: 'Z-A', value: 'desc' }
+        ]
+  );
   readonly historicosActiveGroupOptions = computed<LeadGtrGroupItemResponse[]>(() => {
     const groups = this.historicosGroups();
     switch (this.historicosGroupingMode()) {
@@ -1442,7 +1354,7 @@ export class GtrWorkspaceFacade {
       );
       await Promise.all([
         this.reconcile(),
-        this.masivoSearched() && this.section() !== 'historicos' ? this.refreshMasivos() : Promise.resolve()
+        this.masivoSearched() ? this.refreshMasivos() : Promise.resolve()
       ]);
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo procesar el Excel.'));
@@ -2760,29 +2672,12 @@ export class GtrWorkspaceFacade {
     await this.refreshPage(false);
   }
 
-  async selectPlatformTipificationGroup(group: LeadGtrGroupItemResponse | null | undefined): Promise<void> {
-    this.platformSelectedGroup.set(group ? { ...group, codigoSubtipificacion: null } : null);
-    this.pageNumber.set(0);
-    await this.refreshPage(false);
-  }
-
-  async selectPlatformSubtipificationGroup(group: LeadGtrGroupItemResponse | null | undefined): Promise<void> {
-    if (group) {
-      this.platformSelectedGroup.set(group);
-    } else {
-      const selected = this.platformSelectedTipificationGroup();
-      this.platformSelectedGroup.set(selected ? { ...selected, codigoSubtipificacion: null } : null);
-    }
-    this.pageNumber.set(0);
-    await this.refreshPage(false);
-  }
-
   async setPlatformSortField(field: GtrPlatformSortField): Promise<void> {
     if (!field || field === this.platformSortField()) {
       return;
     }
     this.platformSortField.set(field);
-    this.platformSortDirection.set(this.defaultPlatformSortDirection(field));
+    this.platformSortDirection.set(field === 'lastEntryAt' || field === 'createdAt' ? 'desc' : 'asc');
     this.pageNumber.set(0);
     await this.refreshPage(false);
   }
@@ -2803,48 +2698,6 @@ export class GtrWorkspaceFacade {
     this.platformSortDirection.set('desc');
     this.pageNumber.set(0);
     await this.refreshPage(false);
-  }
-
-  async changePlatformColumnSort(field: GtrPlatformSortField): Promise<void> {
-    if (!this.canDisplayOperationalData()) {
-      return;
-    }
-
-    const defaultDirection = this.defaultPlatformSortDirection(field);
-
-    if (this.platformSortField() !== field) {
-      this.platformSortField.set(field);
-      this.platformSortDirection.set(defaultDirection);
-    } else if (this.platformSortDirection() === defaultDirection) {
-      this.platformSortDirection.set(defaultDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      this.platformSortField.set('lastEntryAt');
-      this.platformSortDirection.set('desc');
-    }
-
-    this.pageNumber.set(0);
-    await this.refreshPage(false);
-  }
-
-  platformSortActive(field: GtrPlatformSortField): boolean {
-    return this.platformSortField() === field;
-  }
-
-  platformSortIcon(field: GtrPlatformSortField): string {
-    if (this.platformSortField() !== field) {
-      return 'pi pi-sort-alt';
-    }
-    return this.platformSortDirection() === 'asc' ? 'pi pi-sort-amount-up-alt' : 'pi pi-sort-amount-down';
-  }
-
-  platformSortLabel(field: GtrPlatformSortField, label: string): string {
-    if (this.platformSortField() !== field) {
-      return `Ordenar por ${label}`;
-    }
-    if (this.platformSortDirection() === this.defaultPlatformSortDirection(field)) {
-      return `Orden activo por ${label}. Presiona para invertir.`;
-    }
-    return `Orden activo por ${label}. Presiona para volver al orden inicial.`;
   }
 
   async setHistoricosGroupingMode(mode: GtrHistoricosGroupMode): Promise<void> {
@@ -2890,7 +2743,7 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.historicosSortField.set(field);
-    this.historicosSortDirection.set(this.defaultHistoricosSortDirection(field));
+    this.historicosSortDirection.set(field === 'lastEntryAt' ? 'desc' : 'asc');
     this.masivoPageNumber.set(0);
     if (this.masivoSearched()) {
       await this.refreshMasivos();
@@ -2906,50 +2759,6 @@ export class GtrWorkspaceFacade {
     if (this.masivoSearched()) {
       await this.refreshMasivos();
     }
-  }
-
-  async changeHistoricosColumnSort(field: GtrHistoricosSortField): Promise<void> {
-    if (!this.canDisplayOperationalData()) {
-      return;
-    }
-
-    const defaultDirection = this.defaultHistoricosSortDirection(field);
-
-    if (this.historicosSortField() !== field) {
-      this.historicosSortField.set(field);
-      this.historicosSortDirection.set(defaultDirection);
-    } else if (this.historicosSortDirection() === defaultDirection) {
-      this.historicosSortDirection.set(defaultDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      this.historicosSortField.set('lastEntryAt');
-      this.historicosSortDirection.set('desc');
-    }
-
-    this.masivoPageNumber.set(0);
-    if (this.masivoSearched()) {
-      await this.refreshMasivos();
-    }
-  }
-
-  historicosSortActive(field: GtrHistoricosSortField): boolean {
-    return this.historicosSortField() === field;
-  }
-
-  historicosSortIcon(field: GtrHistoricosSortField): string {
-    if (this.historicosSortField() !== field) {
-      return 'pi pi-sort-alt';
-    }
-    return this.historicosSortDirection() === 'asc' ? 'pi pi-sort-amount-up-alt' : 'pi pi-sort-amount-down';
-  }
-
-  historicosSortLabel(field: GtrHistoricosSortField, label: string): string {
-    if (this.historicosSortField() !== field) {
-      return `Ordenar por ${label}`;
-    }
-    if (this.historicosSortDirection() === this.defaultHistoricosSortDirection(field)) {
-      return `Orden activo por ${label}. Presiona para invertir.`;
-    }
-    return `Orden activo por ${label}. Presiona para volver al orden inicial.`;
   }
 
   async clearHistoricosOrganization(): Promise<void> {
@@ -2997,15 +2806,11 @@ export class GtrWorkspaceFacade {
     if (!this.canDisplayOperationalData()) {
       return;
     }
-    const defaultDirection = this.defaultAgendadosSortDirection(field);
-    if (this.agendadosSortField() !== field) {
-      this.agendadosSortField.set(field);
-      this.agendadosSortDirection.set(defaultDirection);
-    } else if (this.agendadosSortDirection() === defaultDirection) {
-      this.agendadosSortDirection.set(defaultDirection === 'asc' ? 'desc' : 'asc');
+    if (this.agendadosSortField() === field) {
+      this.agendadosSortDirection.update((direction) => (direction === 'asc' ? 'desc' : 'asc'));
     } else {
-      this.agendadosSortField.set('programado');
-      this.agendadosSortDirection.set('desc');
+      this.agendadosSortField.set(field);
+      this.agendadosSortDirection.set('asc');
     }
     this.agendadosPageNumber.set(0);
     await this.refreshAgendados(false);
@@ -3020,16 +2825,6 @@ export class GtrWorkspaceFacade {
       return 'pi pi-sort-alt';
     }
     return this.agendadosSortDirection() === 'asc' ? 'pi pi-sort-amount-up-alt' : 'pi pi-sort-amount-down';
-  }
-
-  agendadoSortLabel(field: AgendadosSortField, label: string): string {
-    if (this.agendadosSortField() !== field) {
-      return `Ordenar por ${label}`;
-    }
-    if (this.agendadosSortDirection() === this.defaultAgendadosSortDirection(field)) {
-      return `Orden activo por ${label}. Presiona para invertir.`;
-    }
-    return `Orden activo por ${label}. Presiona para volver al orden inicial.`;
   }
 
   async buscarMasivos(): Promise<void> {
@@ -3946,7 +3741,7 @@ export class GtrWorkspaceFacade {
         section === 'plataforma' ? this.refreshMetrics() : Promise.resolve(),
         section === 'plataforma' ? this.refreshPlatformGroups() : Promise.resolve(),
         section === 'agendados' ? this.refreshAgendados(true) : Promise.resolve(),
-        section === 'historicos' && this.masivoSearched() ? this.refreshMasivos(true) : Promise.resolve(),
+        section === 'historicos' && this.masivoSearched() ? this.refreshMasivos() : Promise.resolve(),
         this.refreshAdvisors(),
         this.refreshPendientes()
       ]);
@@ -4013,15 +3808,13 @@ export class GtrWorkspaceFacade {
     }
   }
 
-  private async refreshMasivos(silent = false): Promise<void> {
+  private async refreshMasivos(): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       return;
     }
     const requestSeq = ++this.masivosRequestSeq;
     const requestKey = this.masivosRequestKey();
-    if (!silent) {
-      this.isLoadingMasivos.set(true);
-    }
+    this.isLoadingMasivos.set(true);
     try {
       const filters = this.getMasivoFilters();
       const query = {
@@ -4038,9 +3831,7 @@ export class GtrWorkspaceFacade {
       }
       this.masivoTotalElements.set(page.totalElements);
       this.masivoTotalPages.set(page.totalPages);
-      if (this.masivoRowsSignature(this.masivoRows()) !== this.masivoRowsSignature(page.content)) {
-        this.masivoRows.set(page.content);
-      }
+      this.masivoRows.set(page.content);
       this.lastMasivoSearchFiltersKey = this.historicosFiltersKey(this.currentHistoricosFiltersFormValue());
       this.saveHistoricosState();
     } catch (error) {
@@ -4048,7 +3839,7 @@ export class GtrWorkspaceFacade {
         this.errorMessage.set(this.getErrorMessage(error, 'No se pudo listar leads masivos.'));
       }
     } finally {
-      if (!silent && requestSeq === this.masivosRequestSeq) {
+      if (requestSeq === this.masivosRequestSeq) {
         this.isLoadingMasivos.set(false);
       }
     }
@@ -4570,18 +4361,6 @@ export class GtrWorkspaceFacade {
     };
   }
 
-  private defaultPlatformSortDirection(field: GtrPlatformSortField): GtrPlatformSortDirection {
-    return field === 'lastEntryAt' || field === 'createdAt' ? 'desc' : 'asc';
-  }
-
-  private defaultAgendadosSortDirection(field: AgendadosSortField): GtrPlatformSortDirection {
-    return field === 'programado' || field === 'agendado' ? 'desc' : 'asc';
-  }
-
-  private defaultHistoricosSortDirection(field: GtrHistoricosSortField): GtrPlatformSortDirection {
-    return field === 'lastEntryAt' ? 'desc' : 'asc';
-  }
-
   private platformRequestKey(): string {
     return JSON.stringify({
       section: this.section(),
@@ -4612,22 +4391,6 @@ export class GtrWorkspaceFacade {
       sortBy: this.historicosSortField(),
       direction: this.historicosSortDirection()
     });
-  }
-
-  private masivoRowsSignature(rows: LeadGtrResponse[]): string {
-    return rows
-      .map((row) => [
-        row.id,
-        row.estadoSeguimiento ?? '',
-        row.codigoTipificacion ?? '',
-        row.codigoSubtipificacion ?? '',
-        row.nombreAsesorAsignado ?? '',
-        row.totalAsignaciones ?? '',
-        row.numeroDocumentoTitularServicio ?? '',
-        row.lastEntryAt ?? '',
-        row.createdAt ?? ''
-      ].join(':'))
-      .join('|');
   }
 
   private shouldAnimatePlatformRefresh(silent: boolean, previous: VisualLeadGtr[]): boolean {
@@ -4665,25 +4428,7 @@ export class GtrWorkspaceFacade {
     return filter;
   }
 
-  private isPlatformTipificationGroupMode(mode: LeadGtrGroupMode): boolean {
-    return mode === 'PRIMERA_TIPIFICACION'
-      || mode === 'MAYOR_TIPIFICACION'
-      || mode === 'ULTIMA_TIPIFICACION';
-  }
-
-  private sortPlatformGroupOptions(groups: LeadGtrGroupItemResponse[]): LeadGtrGroupItemResponse[] {
-    return [...groups].sort((left, right) =>
-      right.cantidad - left.cantidad
-      || left.etiqueta.localeCompare(right.etiqueta, undefined, { sensitivity: 'base' })
-    );
-  }
-
   private samePlatformGroup(left: LeadGtrGroupItemResponse, right: LeadGtrGroupItemResponse): boolean {
-    if (this.isPlatformTipificationGroupMode(this.platformGroupingMode())
-        && right.codigoTipificacion
-        && !right.codigoSubtipificacion) {
-      return !left.sinValor && left.codigoTipificacion === right.codigoTipificacion;
-    }
     return Boolean(left.sinValor) === Boolean(right.sinValor)
       && (left.idGrupo ?? null) === (right.idGrupo ?? null)
       && (left.codigoTipificacion ?? null) === (right.codigoTipificacion ?? null)

@@ -44,6 +44,7 @@
           <label for="gtr-advisor-events-grouping">Agrupar por</label>
           <p-select
             inputId="gtr-advisor-events-grouping"
+            name="advisorEventsGrouping"
             [options]="facade.advisorEventsGroupOptions"
             [ngModel]="facade.advisorEventsGroupMode()"
             optionLabel="label"
@@ -70,81 +71,88 @@
     }
   </div>
 
-  <p-table
-    [value]="facade.advisorEventDisplayRows()"
-    [rowHover]="true"
-    [tableStyle]="{ 'min-width': '600px' }"
-    styleClass="p-datatable-sm gtr-table"
-  >
-    <ng-template #header>
-      <tr>
-        <th>
-          <button type="button" class="event-sort-button" (click)="facade.toggleAdvisorEventsSort('createdAt')">
-            <span>Hora</span>
-            <i [class]="facade.advisorEventsSortIcon('createdAt')" aria-hidden="true"></i>
-          </button>
-        </th>
-        <th>
-          <button type="button" class="event-sort-button" (click)="facade.toggleAdvisorEventsSort('accion')">
-            <span>Evento</span>
-            <i [class]="facade.advisorEventsSortIcon('accion')" aria-hidden="true"></i>
-          </button>
-        </th>
-        <th>
-          <button type="button" class="event-sort-button" (click)="facade.toggleAdvisorEventsSort('lead')">
-            <span>Lead</span>
-            <i [class]="facade.advisorEventsSortIcon('lead')" aria-hidden="true"></i>
-          </button>
-        </th>
-        <th>
-          <button type="button" class="event-sort-button" (click)="facade.toggleAdvisorEventsSort('detalle')">
-            <span>Detalle</span>
-            <i [class]="facade.advisorEventsSortIcon('detalle')" aria-hidden="true"></i>
-          </button>
-        </th>
-      </tr>
-    </ng-template>
+  @if (!facade.isLoadingAdvisorEvents() && !facade.advisorEventDisplayRows().length) {
+    <div class="empty-state">
+      <i class="pi pi-calendar-slash empty-state__icon"></i>
+      <span class="empty-state__text">
+        {{ facade.advisorEventsSearch() ? 'No hay eventos con esa busqueda.' : 'Este asesor no registra eventos hoy.' }}
+      </span>
+    </div>
+  } @else {
+    @for (group of advisorEventDateGroups(); track group.label) {
+      <div class="date-divider">
+        <span class="date-divider__line"></span>
+        <span class="date-divider__label">{{ group.label }}</span>
+        <span class="date-divider__line"></span>
+      </div>
 
-    <ng-template #body let-row>
-      @if (!facade.isLoadingAdvisorEvents()) {
-        @if (row.kind === 'group') {
-          <tr class="event-group-row">
-            <td colspan="4">
-              <span>{{ row.label }}</span>
-              <strong>{{ row.count }}</strong>
-            </td>
-          </tr>
-        } @else {
-          <tr>
-            <td>{{ row.event.createdAt | date: 'hh:mm a' }}</td>
-            <td><p-tag [value]="facade.display(row.event.accion)" severity="secondary" /></td>
-            <td>{{ facade.display(row.event.lead) }}</td>
-            <td>
-              <div class="event-detail">
-                <span class="event-detail__summary">{{ facade.eventSummary(row.event) }}</span>
-                <app-gtr-event-comment-popover [comment]="row.event.comentario" />
+      @for (evento of group.eventos; track evento.id) {
+        @if (!facade.isLoadingAdvisorEvents()) {
+          <div class="timeline-row">
+            <div class="timeline-row__time">
+              <span>{{ relativeTime(evento.createdAt) }}</span>
+              <div class="timeline-row__connector">
+                <span class="timeline-row__dot" [style.background-color]="evento.accion === 'TIPIFICACION' ? 'var(--app-success, #16a34a)' : evento.accion === 'REGISTRO' || evento.accion === 'REGISTRO_MASIVO' ? 'var(--app-info, #2563eb)' : 'var(--app-text-muted)'"></span>
+                <span class="timeline-row__line"></span>
               </div>
-            </td>
-          </tr>
-        }
-      }
-    </ng-template>
+            </div>
 
-    <ng-template #emptymessage>
-      @if (facade.isLoadingAdvisorEvents()) {
-        @for (row of [1, 2, 3, 4]; track row) {
-          <tr>
-            <td><p-skeleton width="4.25rem" height="1rem" /></td>
-            <td><p-skeleton width="6.5rem" height="1.5rem" borderRadius="999px" /></td>
-            <td><p-skeleton width="5rem" height="1rem" /></td>
-            <td><p-skeleton width="100%" height="1rem" /></td>
-          </tr>
+            <div
+              class="timeline-card-compact"
+              [style.--tl-color]="evento.accion === 'TIPIFICACION' ? 'var(--app-success, #16a34a)' : evento.accion === 'REGISTRO' || evento.accion === 'REGISTRO_MASIVO' ? 'var(--app-info, #2563eb)' : 'var(--app-text-muted)'"
+            >
+              <div class="timeline-card-compact__header">
+                <p-tag [value]="facade.display(evento.accion)" [severity]="eventSeverity(evento.accion)" />
+              </div>
+
+              @if (evento.accion === 'TIPIFICACION') {
+                @if (facade.tipificacionParts(evento.tipificacion, evento.subtipificacion); as tip) {
+                  <div class="tipificacion-stack">
+                    <p-tag [value]="tip.tipificacion" [pTooltip]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion')" />
+                    <p-tag [value]="tip.subtipificacion" [pTooltip]="tip.subtipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)" />
+                  </div>
+                }
+              } @else {
+                @if (evento.tipificacion) {
+                  @if (facade.tipificacionParts(evento.tipificacion, evento.subtipificacion); as tip) {
+                    <div class="tipificacion-stack">
+                      <p-tag [value]="tip.tipificacion" [pTooltip]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion')" />
+                      <p-tag [value]="tip.subtipificacion" [pTooltip]="tip.subtipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)" />
+                    </div>
+                  }
+                }
+              }
+
+              <div class="timeline-card-compact__footer">
+                <span class="timeline-card-compact__lead">{{ facade.display(evento.lead) }}</span>
+                <app-gtr-event-comment-popover [comment]="evento.comentario" />
+              </div>
+            </div>
+          </div>
         }
-      } @else {
-        <tr>
-          <td colspan="4">{{ facade.advisorEventsSearch() ? 'No hay eventos con esa busqueda.' : 'Este asesor no registra eventos hoy.' }}</td>
-        </tr>
       }
-    </ng-template>
-  </p-table>
+    }
+
+    @if (facade.isLoadingAdvisorEvents()) {
+      @for (row of [1, 2, 3, 4]; track row) {
+        <div class="timeline-row">
+          <div class="timeline-row__time">
+            <p-skeleton width="4rem" height="1rem" />
+            <div class="timeline-row__connector">
+              <span class="timeline-row__dot timeline-row__dot--skeleton"></span>
+              <span class="timeline-row__line"></span>
+            </div>
+          </div>
+          <div class="timeline-card-compact timeline-card-compact--skeleton">
+            <p-skeleton width="6.5rem" height="1.5rem" borderRadius="999px" />
+            <div class="tipificacion-stack">
+              <p-skeleton width="8rem" height="1.5rem" borderRadius="999px" />
+              <p-skeleton width="7rem" height="1rem" />
+            </div>
+            <p-skeleton width="8rem" height="1rem" />
+          </div>
+        </div>
+      }
+    }
+  }
 </p-dialog>

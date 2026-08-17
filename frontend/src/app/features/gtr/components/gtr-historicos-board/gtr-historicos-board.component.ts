@@ -10,6 +10,7 @@ import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { CampoTipificacion } from '../../../../shared/models/preventa/preventa.models';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
@@ -31,6 +32,7 @@ import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-le
     SelectButtonModule,
     TableModule,
     TagModule,
+    TooltipModule,
     DateFieldComponent,
     GtrLeadSelectControlComponent
   ],

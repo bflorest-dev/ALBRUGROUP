@@ -3,194 +3,262 @@
   (visibleChange)="!$event && facade.closeLeadHistory()"
   [modal]="true"
   [draggable]="false"
+  [closable]="false"
+  [showHeader]="false"
   styleClass="gtr-dialog gtr-dialog--events"
 >
-  <ng-template #header>
-    <span class="events-dialog-title">Historial del lead</span>
-  </ng-template>
-
-  @if (facade.activeEventsLead(); as lead) {
-    <p class="wide helper">Lead {{ facade.leadIdentity(lead) }}</p>
-  }
-
-  <div class="history-toolbar" aria-label="Tipo de historial">
-    <div class="history-mode-tags">
-      <button
-        type="button"
-        class="history-mode-tag"
-        [class.history-mode-tag--selected]="facade.leadHistoryModeSelected('eventos-dia')"
-        (click)="facade.setLeadHistoryMode('eventos-dia')"
-      >
-        <p-tag value="Eventos del dia" severity="secondary" />
-      </button>
-      <button
-        type="button"
-        class="history-mode-tag"
-        [class.history-mode-tag--selected]="facade.leadHistoryModeSelected('tipificacion')"
-        [disabled]="facade.isLoadingTipificationHistory()"
-        (click)="facade.setLeadHistoryMode('tipificacion')"
-      >
-        <p-tag value="Por tipificacion" severity="info" />
-      </button>
-      <button
-        type="button"
-        class="history-mode-tag"
-        [class.history-mode-tag--selected]="facade.leadHistoryModeSelected('asesor')"
-        [disabled]="facade.isLoadingTipificationHistory()"
-        (click)="facade.setLeadHistoryMode('asesor')"
-      >
-        <p-tag value="Por asesor" severity="info" />
-      </button>
-    </div>
-
-    @if (facade.leadHistoryMode() === 'eventos-dia' && facade.activeEventsLead(); as lead) {
-      @if (lead.tieneMultiplesRegistrosDia || lead.tieneRegistrosMismaCampanaDia) {
-        <div class="history-filter-tags" aria-label="Alertas del dia">
-          @if (lead.tieneMultiplesRegistrosDia) {
-            <button
-              type="button"
-              class="event-alert-button"
-              [class.event-alert-button--selected]="facade.selectedEventAnomalyFilter() === 'multiple-records'"
-              (click)="facade.toggleEventAnomalyFilter('multiple-records')"
-            >
-              <p-tag value="Multiples registros" [styleClass]="facade.eventAnomalyTagClass('multiple-records', 'danger')" />
-            </button>
-          }
-          @if (lead.tieneRegistrosMismaCampanaDia) {
-            <button
-              type="button"
-              class="event-alert-button"
-              [class.event-alert-button--selected]="facade.selectedEventAnomalyFilter() === 'same-campaign'"
-              (click)="facade.toggleEventAnomalyFilter('same-campaign')"
-            >
-              <p-tag value="Misma campana" [styleClass]="facade.eventAnomalyTagClass('same-campaign', 'violet')" />
-            </button>
-          }
-        </div>
+  <header class="events-banner">
+    <span class="events-banner__eyebrow">Historial del lead</span>
+    @if (facade.activeEventsLead(); as lead) {
+      <strong class="events-banner__lead">{{ facade.leadIdentity(lead) }}</strong>
+    }
+    <hr class="events-banner__divider" />
+    <div class="events-banner__meta">
+      @if (eventCampaign(); as campana) {
+        <span>{{ campana }}</span>
+        <span class="events-banner__sep">·</span>
       }
-    }
+      <span>{{ eventosDiaCount() }} eventos hoy</span>
+    </div>
+  </header>
 
-    @if (facade.leadHistoryMode() !== 'eventos-dia') {
-      <div class="history-filter-tags" aria-label="Filtros del historial">
-        <button
-          type="button"
-          class="history-filter-tag"
-          [class.history-filter-tag--selected]="!facade.selectedTipificationHistoryFilter()"
-          (click)="facade.toggleTipificationHistoryFilter(null)"
-        >
-          <p-tag value="Todos" severity="secondary" />
-        </button>
-        @for (option of facade.tipificationHistoryGroupOptions(); track option.value) {
-          <button
-            type="button"
-            class="history-filter-tag"
-            [class.history-filter-tag--selected]="facade.tipificationHistoryFilterSelected(option.value)"
-            (click)="facade.toggleTipificationHistoryFilter(option.value)"
-          >
-            <p-tag [value]="option.label + ' (' + option.count + ')'" severity="info" />
-          </button>
+  <p-tabs
+    [value]="facade.leadHistoryMode()"
+    (valueChange)="onTabChange($event)"
+    styleClass="events-tabs"
+  >
+    <p-tablist>
+      <p-tab value="eventos-dia">
+        <span class="tab-label">Eventos del dia</span>
+        <span class="tab-badge">{{ eventosDiaCount() }}</span>
+      </p-tab>
+      <p-tab value="historial">
+        <span class="tab-label">Historial de eventos</span>
+        <span class="tab-badge">{{ historialEventCount() }}</span>
+      </p-tab>
+    </p-tablist>
+
+    <p-tabpanels>
+      <!-- ===== EVENTOS DEL DIA ===== -->
+      <p-tabpanel value="eventos-dia">
+        @if (facade.activeEventsLead(); as lead) {
+          @if (lead.tieneMultiplesRegistrosDia || lead.tieneRegistrosMismaCampanaDia) {
+            <div class="anomaly-filters" aria-label="Alertas del dia">
+              @if (lead.tieneMultiplesRegistrosDia) {
+                <button
+                  type="button"
+                  class="anomaly-chip"
+                  [class.anomaly-chip--active]="facade.selectedEventAnomalyFilter() === 'multiple-records'"
+                  (click)="facade.toggleEventAnomalyFilter('multiple-records')"
+                >
+                  Multiples registros
+                </button>
+              }
+              @if (lead.tieneRegistrosMismaCampanaDia) {
+                <button
+                  type="button"
+                  class="anomaly-chip"
+                  [class.anomaly-chip--active]="facade.selectedEventAnomalyFilter() === 'same-campaign'"
+                  (click)="facade.toggleEventAnomalyFilter('same-campaign')"
+                >
+                  Misma campana
+                </button>
+              }
+            </div>
+          }
         }
-      </div>
-    }
-  </div>
 
-  @if (facade.leadHistoryMode() === 'eventos-dia') {
-    <p-table
-      [value]="facade.filteredEventRows()"
-      [rowHover]="true"
-      [tableStyle]="{ 'min-width': '680px' }"
-      styleClass="p-datatable-sm gtr-table"
-    >
-      <ng-template #header>
-        <tr>
-          <th>Hora</th>
-          <th>Evento</th>
-          <th>Responsable</th>
-          <th>Detalle</th>
-        </tr>
-      </ng-template>
-
-      <ng-template #body let-evento>
-        @if (!facade.isLoadingEvents()) {
-          <tr>
-            <td>{{ evento.createdAt | date: 'hh:mm a' }}</td>
-            <td><p-tag [value]="facade.display(evento.accion)" severity="secondary" /></td>
-            <td>{{ facade.display(evento.nombreActor) | uppercase }}</td>
-            <td>
-              <div class="event-detail">
-                <span class="event-detail__summary">{{ facade.eventSummary(evento) }}</span>
-                <app-gtr-event-comment-popover [comment]="evento.comentario" />
+        @if (!facade.isLoadingEvents() && !facade.filteredEventRows().length) {
+          <div class="empty-state">
+            <i class="pi pi-calendar-slash empty-state__icon"></i>
+            <span class="empty-state__text">Sin eventos registrados hoy</span>
+          </div>
+        } @else {
+          <div class="timeline">
+            @for (group of ['Mañana', 'Tarde', 'Noche']; track group) {
+              @if (facade.filteredEventRows().length) {
+                @let groupEvents = facade.filteredEventRows().filter(e => timeGroup(e.createdAt) === group);
+                @if (groupEvents.length) {
+                  <div class="timeline-group">
+                    <span class="timeline-group__label">{{ group }}</span>
+                    @for (evento of groupEvents; track evento.id) {
+                      @if (!facade.isLoadingEvents()) {
+                        <div
+                          class="timeline-card"
+                          [class.timeline-card--anomaly]="isAnomaly(evento)"
+                          [style.--tl-color]="evento.accion === 'TIPIFICACION' ? 'var(--app-success, #16a34a)' : evento.accion === 'REGISTRO' || evento.accion === 'REGISTRO_MASIVO' ? 'var(--app-info, #2563eb)' : 'var(--app-text-muted)'"
+                        >
+                          <span class="timeline-card__time">{{ eventTimeDisplay(evento.createdAt) }}</span>
+                          <div class="timeline-card__accion">
+                            <p-tag
+                              [value]="facade.display(evento.accion)"
+                              [severity]="eventSeverity(evento.accion)"
+                            />
+                          </div>
+                          @if (evento.accion === 'TIPIFICACION') {
+                            @if (facade.tipificacionParts(evento.tipificacion, evento.subtipificacion); as tip) {
+                              <div class="timeline-card__tip">
+                                <p-tag [value]="tip.tipificacion" [pTooltip]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion')" />
+                                <p-tag [value]="tip.subtipificacion" [pTooltip]="tip.subtipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)" />
+                              </div>
+                            } @else {
+                              <span class="timeline-card__summary">{{ facade.eventSummary(evento) }}</span>
+                            }
+                          } @else {
+                            <span class="timeline-card__summary">{{ facade.eventSummary(evento) }}</span>
+                          }
+                          <span class="timeline-card__actor">{{ facade.display(evento.nombreActor) | uppercase }}</span>
+                          <div class="timeline-card__meta">
+                            @if (isAnomaly(evento)) {
+                              <i
+                                class="pi pi-exclamation-triangle timeline-card__warning"
+                                title="Evento detectado como anomalo"
+                              ></i>
+                            }
+                            <app-gtr-event-comment-popover [comment]="evento.comentario" />
+                          </div>
+                        </div>
+                      }
+                    }
+                  </div>
+                }
+              }
+            }
+            @if (facade.isLoadingEvents()) {
+              <div class="timeline-group">
+                @for (row of [1, 2, 3, 4]; track row) {
+                  <div class="timeline-card timeline-card--skeleton">
+                    <p-skeleton width="4rem" height="1rem" />
+                    <p-skeleton width="7rem" height="1.5rem" borderRadius="999px" />
+                    <div class="timeline-card__tip">
+                      <p-skeleton width="100%" height="1.5rem" borderRadius="999px" />
+                      <p-skeleton width="100%" height="1.5rem" borderRadius="999px" />
+                    </div>
+                    <p-skeleton width="8rem" height="1rem" />
+                    <p-skeleton width="1.5rem" height="1.5rem" borderRadius="999px" />
+                  </div>
+                }
               </div>
-            </td>
-          </tr>
+            }
+          </div>
         }
-      </ng-template>
+      </p-tabpanel>
 
-      <ng-template #emptymessage>
-        @if (facade.isLoadingEvents()) {
-          @for (row of [1, 2, 3, 4]; track row) {
-            <tr>
-              <td><p-skeleton width="4.25rem" height="1rem" /></td>
-              <td><p-skeleton width="6.5rem" height="1.5rem" borderRadius="999px" /></td>
-              <td><p-skeleton width="8rem" height="1rem" /></td>
-              <td><p-skeleton width="100%" height="1rem" /></td>
-            </tr>
-          }
+      <!-- ===== HISTORIAL DE EVENTOS ===== -->
+      <p-tabpanel value="historial">
+        <div class="history-filters" aria-label="Filtros">
+          <div class="history-filters__selects">
+            <div class="history-filters__field">
+              <label class="history-filters__label" for="tipificacionFilter">Tipificación</label>
+              <p-select
+                inputId="tipificacionFilter"
+                name="tipificacionFilter"
+                [options]="tipificacionSelectOptions()"
+                [ngModel]="selectedTipificacionFilter()"
+                (ngModelChange)="onTipificacionFilterChange($event ?? '')"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar..."
+                [filter]="true"
+                filterBy="label"
+                [showClear]="true"
+                appendTo="body"
+              />
+            </div>
+            <div class="history-filters__field">
+              <label class="history-filters__label" for="subtipificacionFilter">Subtipificación</label>
+              <p-select
+                inputId="subtipificacionFilter"
+                name="subtipificacionFilter"
+                [options]="subtipificacionSelectOptions()"
+                [ngModel]="selectedSubtipificacionFilter()"
+                (ngModelChange)="selectedSubtipificacionFilter.set($event ?? '')"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar..."
+                [filter]="true"
+                filterBy="label"
+                [showClear]="true"
+                appendTo="body"
+              />
+            </div>
+            <div class="history-filters__field">
+              <label class="history-filters__label" for="asesorFilter">Asesor</label>
+              <p-select
+                inputId="asesorFilter"
+                name="asesorFilter"
+                [title]="advisorSelectedLabel()"
+                [options]="advisorSelectOptions()"
+                [ngModel]="selectedAdvisorFilter()"
+                (ngModelChange)="selectedAdvisorFilter.set($event ?? '')"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar..."
+                [filter]="true"
+                filterBy="label"
+                [showClear]="true"
+                appendTo="body"
+              />
+            </div>
+          </div>
+        </div>
+
+        @if (!facade.isLoadingTipificationHistory() && !filteredHistorialRows().length) {
+          <div class="empty-state">
+            <i class="pi pi-tag empty-state__icon"></i>
+            <span class="empty-state__text">Sin eventos registrados</span>
+          </div>
         } @else {
-          <tr>
-            <td colspan="4">No hay eventos para el dia.</td>
-          </tr>
-        }
-      </ng-template>
-    </p-table>
-  } @else {
-    <p-table
-      [value]="facade.filteredTipificationHistoryRows()"
-      [rowHover]="true"
-      [tableStyle]="{ 'min-width': '760px' }"
-      styleClass="p-datatable-sm gtr-table"
-    >
-      <ng-template #header>
-        <tr>
-          <th>Fecha</th>
-          <th>Tipificacion</th>
-          <th>Subtipificacion</th>
-          <th>Asesor</th>
-          <th>Comentario</th>
-        </tr>
-      </ng-template>
-
-      <ng-template #body let-evento>
-        @if (!facade.isLoadingTipificationHistory()) {
-          <tr>
-            <td>{{ evento.createdAt | date: 'dd/MM hh:mm a' }}</td>
-            <td>{{ facade.display(evento.tipificacion) }}</td>
-            <td>{{ facade.display(evento.subtipificacion) }}</td>
-            <td>{{ facade.tipificationHistoryAdvisor(evento) | uppercase }}</td>
-            <td>
-              <app-gtr-event-comment-popover [comment]="evento.comentario" />
-            </td>
-          </tr>
-        }
-      </ng-template>
-
-      <ng-template #emptymessage>
-        @if (facade.isLoadingTipificationHistory()) {
-          @for (row of [1, 2, 3, 4]; track row) {
-            <tr>
-              <td><p-skeleton width="5.5rem" height="1rem" /></td>
-              <td><p-skeleton width="8rem" height="1rem" /></td>
-              <td><p-skeleton width="8rem" height="1rem" /></td>
-              <td><p-skeleton width="9rem" height="1rem" /></td>
-              <td><p-skeleton width="2.5rem" height="1.5rem" borderRadius="999px" /></td>
-            </tr>
+          @for (group of dateGroups(filteredHistorialRows()); track group.label) {
+            <div class="date-divider">
+              <span class="date-divider__line"></span>
+              <span class="date-divider__label">{{ group.label }}</span>
+              <span class="date-divider__line"></span>
+            </div>
+            @for (evento of group.eventos; track evento.id) {
+              @if (!facade.isLoadingTipificationHistory()) {
+                <div
+                  class="event-pill"
+                  [style.--tl-color]="facade.tipificacionTagClass(facade.display(evento.tipificacion), 'tipificacion') ? 'var(--app-primary, #1f9d57)' : 'var(--app-text-muted)'"
+                >
+                  <span class="event-pill__time">{{ relativeTime(evento.createdAt) }}</span>
+                  <div class="tipificacion-stack">
+                    <p-tag
+                      [value]="facade.display(evento.tipificacion)"
+                      [pTooltip]="facade.display(evento.tipificacion)"
+                      [styleClass]="facade.tipificacionTagClass(facade.display(evento.tipificacion), 'tipificacion')"
+                    />
+                    <span class="subtipificacion-secondary" [pTooltip]="facade.display(evento.subtipificacion)">{{ facade.display(evento.subtipificacion) }}</span>
+                  </div>
+                  <span class="event-pill__actor">{{ facade.tipificationHistoryAdvisor(evento) | uppercase }}</span>
+                  <app-gtr-event-comment-popover [comment]="evento.comentario" />
+                </div>
+              }
+            }
           }
-        } @else {
-          <tr>
-            <td colspan="5">Este lead aun no tiene tipificaciones registradas.</td>
-          </tr>
+
+          @if (facade.isLoadingTipificationHistory()) {
+            <div class="event-pill event-pill--skeleton">
+              <p-skeleton width="5rem" height="1rem" />
+              <div class="tipificacion-stack">
+                <p-skeleton width="8rem" height="1.5rem" borderRadius="999px" />
+                <p-skeleton width="7rem" height="1rem" />
+              </div>
+              <p-skeleton width="7rem" height="1rem" />
+            </div>
+          }
         }
-      </ng-template>
-    </p-table>
-  }
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+
+  <ng-template #footer>
+    <button
+      pButton
+      type="button"
+      label="Cerrar"
+      severity="secondary"
+      (click)="facade.closeLeadHistory()"
+    ></button>
+  </ng-template>
 </p-dialog>

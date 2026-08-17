@@ -1,151 +1,551 @@
-.events-dialog-title {
-  align-items: center;
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+// ── Dialog ────────────────────────────────────────────────────
+:host ::ng-deep .gtr-dialog--events {
+  width: min(56rem, calc(100vw - 1rem));
+
+  .p-dialog-content {
+    padding-top: 0;
+  }
 }
 
-.helper {
+@media (min-width: 901px) {
+  :host ::ng-deep .gtr-dialog--events {
+    margin-left: 292px;
+    width: min(56rem, calc(100vw - 292px - 2rem));
+  }
+}
+
+// ── Banner header ─────────────────────────────────────────────
+.events-banner {
+  padding: 20px 0 0.25rem;
+}
+
+.events-banner__eyebrow {
+  color: var(--role-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.events-banner__lead {
+  color: var(--app-text);
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-top: 0.2rem;
+}
+
+.events-banner__divider {
+  border: 0;
+  border-top: 1px solid var(--app-border-soft);
+  margin: 0.55rem 0;
+}
+
+.events-banner__meta {
   color: var(--app-text-muted);
+  display: flex;
+  font-size: 0.82rem;
 }
 
-.wide {
-  grid-column: 1 / -1;
+.events-banner__sep {
+  color: var(--app-border-soft);
+  margin: 0 0.4rem;
 }
 
-.history-toolbar {
-  display: grid;
-  gap: 0.75rem;
-  margin-bottom: 0.9rem;
+// ── Tabs ──────────────────────────────────────────────────────
+:host ::ng-deep .events-tabs {
+  margin-top: 0.25rem;
+
+  .p-tab {
+    align-items: center;
+    display: flex;
+    gap: 0.38rem;
+    justify-content: center;
+  }
+
+  .p-tablist {
+    justify-content: center;
+  }
 }
 
-.history-mode-tags,
-.history-filter-tags {
+.tab-label {
+  line-height: 1.3rem;
+}
+
+.tab-badge {
   align-items: center;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.7rem;
+  font-weight: 700;
+  height: 1.3rem;
+  justify-content: center;
+  min-width: 1.3rem;
+  padding: 0 0.25rem;
+}
+
+// ── Anomaly chips ────────────────────────────────────────────
+.anomaly-filters {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.anomaly-chip {
+  background: transparent;
+  border: 1.5px solid var(--app-border-soft);
+  border-radius: 999px;
+  color: var(--app-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.2rem 0.75rem;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--role-accent) 40%, transparent);
+    color: var(--app-text);
+  }
+}
+
+.anomaly-chip--active {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: #dc2626;
+  color: #991b1b;
+}
+
+// ── Empty state ──────────────────────────────────────────────
+.empty-state {
+  align-items: center;
+  color: var(--app-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.empty-state__icon {
+  font-size: 2.5rem;
+  opacity: 0.4;
+}
+
+.empty-state__text {
+  font-size: 0.9rem;
+}
+
+// ── Timeline ─────────────────────────────────────────────────
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.timeline-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.timeline-group__label {
+  color: var(--app-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.5rem 0 0.3rem;
+  text-transform: uppercase;
+}
+
+.timeline-card {
+  background: var(--app-surface, #ffffff);
+  border: 1px solid var(--app-border-soft);
+  border-left: 3px solid var(--tl-color, var(--app-text-muted));
+  border-radius: 0.4rem;
+  display: grid;
+  grid-template-columns: 4.5rem 7.5rem 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  transition: border-color 0.18s ease;
+}
+
+.timeline-card--anomaly {
+  border-left-color: #d97706;
+}
+
+.timeline-card--skeleton {
+  border-left-color: transparent;
+  padding: 0.8rem 0.75rem;
+}
+
+.timeline-card__time {
+  color: var(--app-text-muted);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: center;
+}
+
+.timeline-card__accion ::ng-deep .p-tag {
+  width: 100%;
+  justify-content: center;
+}
+
+.timeline-card__tip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.timeline-card .timeline-card__tip ::ng-deep .p-tag {
+  width: 100%;
+}
+
+.timeline-card__summary {
+  color: var(--app-text);
+  font-size: 0.88rem;
+}
+
+.timeline-card__actor {
+  color: var(--app-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.timeline-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-self: end;
+}
+
+.timeline-card__warning {
+  color: #d97706;
+  font-size: 0.88rem;
+}
+
+// ── History filters ──────────────────────────────────────────
+.history-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.history-filters__selects {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.history-mode-tag,
-.history-filter-tag {
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-  max-width: 100%;
-  min-width: 0;
-  padding: 0;
+.history-filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 10rem;
 }
 
-.history-mode-tag:disabled {
-  cursor: wait;
-  opacity: 0.58;
+.history-filters__label {
+  color: var(--app-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.history-mode-tag:focus-visible,
-.history-filter-tag:focus-visible {
-  border-radius: 0.45rem;
-  outline: 2px solid var(--role-accent);
-  outline-offset: 2px;
-}
-
-:host ::ng-deep .history-mode-tag .p-tag,
-:host ::ng-deep .history-filter-tag .p-tag {
-  max-width: min(18rem, 100%);
-}
-
-:host ::ng-deep .history-mode-tag .p-tag-value,
-:host ::ng-deep .history-filter-tag .p-tag-value {
+.history-filters__field ::ng-deep .p-select-label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-:host ::ng-deep .history-mode-tag--selected .p-tag,
-:host ::ng-deep .history-filter-tag--selected .p-tag {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px color-mix(in srgb, var(--role-accent) 72%, transparent 28%);
-}
-
-.event-alert-button {
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-  padding: 0;
-}
-
-.event-alert-button:focus-visible {
-  border-radius: 0.45rem;
-  outline: 2px solid var(--role-accent);
-  outline-offset: 2px;
-}
-
-:host ::ng-deep .event-alert-tag {
-  border-radius: 0.35rem;
-  color: #ffffff;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0;
-  opacity: 0.72;
-  transition:
-    box-shadow 0.16s ease,
-    opacity 0.16s ease,
-    transform 0.16s ease;
-}
-
-:host ::ng-deep .event-alert-tag--danger {
-  background: #dc2626;
-}
-
-:host ::ng-deep .event-alert-tag--violet {
-  background: #7c3aed;
-}
-
-:host ::ng-deep .event-alert-tag--selected {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px color-mix(in srgb, var(--role-accent) 72%, transparent 28%);
-  opacity: 1;
-  transform: translateY(-1px);
-}
-
-.event-detail {
+// ── Date dividers ────────────────────────────────────────────
+.date-divider {
   align-items: center;
   display: flex;
-  gap: 0.4rem;
-  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 0.5rem 0 0.35rem;
+  padding: 0 0.15rem;
 }
 
-.event-detail__summary {
-  flex: 1 1 auto;
-  min-width: 0;
+.date-divider__label {
+  color: var(--app-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-// Tabla base (la tabla de eventos no usa tipificaciones)
-:host ::ng-deep .gtr-table td,
-:host ::ng-deep .gtr-table th {
+.date-divider__line {
+  background: var(--app-border-soft);
+  flex: 1;
+  height: 1px;
+}
+
+// ── Event pills ──────────────────────────────────────────────
+.event-pill {
+  align-items: center;
+  border: 1px solid var(--app-border-soft);
+  border-left: 3px solid var(--tl-color, var(--app-text-muted));
+  border-radius: 0.35rem;
+  display: grid;
+  grid-template-columns: 5.5rem 12rem auto auto;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  transition: border-color 0.18s ease;
+
+  + .event-pill {
+    margin-top: 0.3rem;
+  }
+}
+
+.event-pill--skeleton {
+  border-left-color: transparent;
+}
+
+.event-pill__time {
+  color: var(--app-text-muted);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
   text-align: center;
-  vertical-align: middle;
-  white-space: normal;
 }
 
-:host ::ng-deep .gtr-table th {
+.event-pill__actor {
+  color: var(--app-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding-inline: 13px;
+}
+
+.event-pill app-gtr-event-comment-popover {
+  justify-self: end;
+}
+
+// ── Tipificacion hierarchy ──────────────────────────────────
+.tipificacion-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  overflow: hidden;
+}
+
+.subtipificacion-secondary {
   color: var(--app-text-muted);
   font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// ── Tipificacion crystal tags ─────────────────────────────────
+:host ::ng-deep .gtr-tip-tag {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--tip-bg, #64748b) 6%, rgba(255, 255, 255, 0.94)),
+      color-mix(in srgb, var(--tip-bg, #64748b) 14%, rgba(255, 255, 255, 0.86))
+    );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 0.45rem;
+  border-top: 1px solid color-mix(in srgb, var(--tip-bg, #64748b) 22%, rgba(255, 255, 255, 0.75) 78%);
+  border-left: 1px solid color-mix(in srgb, var(--tip-bg, #64748b) 22%, rgba(255, 255, 255, 0.75) 78%);
+  border-bottom: 1px solid color-mix(in srgb, var(--tip-bg, #64748b) 32%, rgba(255, 255, 255, 0.55) 68%);
+  border-right: 1px solid color-mix(in srgb, var(--tip-bg, #64748b) 28%, rgba(255, 255, 255, 0.65) 72%);
+  box-shadow:
+    0 3px 8px color-mix(in srgb, var(--tip-bg, #64748b) 4%, transparent 96%),
+    0 2px 4px color-mix(in srgb, var(--tip-bg, #64748b) 7%, transparent 93%),
+    inset 0 0 1px rgba(255, 255, 255, 0.9),
+    inset 0 1px 2px color-mix(in srgb, var(--tip-bg, #64748b) 10%, transparent 90%);
+  color: var(--tip-fg, #334155);
+  font-size: 0.64rem;
   font-weight: 800;
+  justify-content: flex-start;
+  min-height: 1.5rem;
+  overflow: hidden;
+  position: relative;
+  text-align: left;
+  white-space: nowrap;
+  width: 9rem;
+
+  .p-tag-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &::before {
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.75) 0%,
+      rgba(255, 255, 255, 0.12) 25%,
+      transparent 35%
+    );
+    border-radius: inherit;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 1;
+  }
+
+  &::after {
+    background: linear-gradient(
+      105deg,
+      transparent 0%,
+      transparent 38%,
+      rgba(255, 255, 255, 0.45) 42%,
+      rgba(255, 255, 255, 0.6) 45%,
+      rgba(255, 255, 255, 0.45) 48%,
+      transparent 52%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: tip-glint 3s ease-in-out infinite;
+    border-radius: inherit;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 2;
+  }
 }
 
-:host ::ng-deep .gtr-table td {
-  color: var(--app-text);
+:host ::ng-deep .gtr-tip-tag--subtipificacion {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--tip-bg, #64748b) 2%, rgba(255, 255, 255, 0.98)),
+      color-mix(in srgb, var(--tip-bg, #64748b) 7%, rgba(255, 255, 255, 0.93))
+    );
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border-top-color: color-mix(in srgb, var(--tip-bg, #64748b) 11%, rgba(255, 255, 255, 0.8) 89%);
+  border-left-color: color-mix(in srgb, var(--tip-bg, #64748b) 11%, rgba(255, 255, 255, 0.8) 89%);
+  border-bottom-color: color-mix(in srgb, var(--tip-bg, #64748b) 18%, rgba(255, 255, 255, 0.6) 82%);
+  border-right-color: color-mix(in srgb, var(--tip-bg, #64748b) 15%, rgba(255, 255, 255, 0.7) 85%);
+  box-shadow:
+    0 2px 4px color-mix(in srgb, var(--tip-bg, #64748b) 3%, transparent 97%),
+    0 1px 2px color-mix(in srgb, var(--tip-bg, #64748b) 5%, transparent 95%),
+    inset 0 0 1px rgba(255, 255, 255, 0.7),
+    inset 0 1px 2px color-mix(in srgb, var(--tip-bg, #64748b) 5%, transparent 95%);
+  font-weight: 650;
+
+  &::before {
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(255, 255, 255, 0.05) 35%,
+      transparent 50%
+    );
+  }
+
+  &::after {
+    background: linear-gradient(
+      105deg,
+      transparent 0%,
+      transparent 42%,
+      rgba(255, 255, 255, 0.22) 45%,
+      rgba(255, 255, 255, 0.3) 47%,
+      rgba(255, 255, 255, 0.2) 49%,
+      transparent 52%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: tip-glint 5s ease-in-out infinite;
+    border-radius: inherit;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 2;
+  }
 }
 
-:host ::ng-deep .gtr-dialog {
-  width: min(34rem, calc(100vw - 1rem));
+:host ::ng-deep .gtr-tip-tag--neutral,
+:host ::ng-deep .gtr-tip-tag--palette-0 { --tip-bg: #475569; --tip-fg: #1e293b; }
+:host ::ng-deep .gtr-tip-tag--palette-1 { --tip-bg: #2563eb; --tip-fg: #1e3a8a; }
+:host ::ng-deep .gtr-tip-tag--palette-2 { --tip-bg: #7c3aed; --tip-fg: #4c1d95; }
+:host ::ng-deep .gtr-tip-tag--palette-3 { --tip-bg: #0891b2; --tip-fg: #164e63; }
+:host ::ng-deep .gtr-tip-tag--palette-4 { --tip-bg: #b45309; --tip-fg: #78350f; }
+:host ::ng-deep .gtr-tip-tag--palette-5 { --tip-bg: #16a34a; --tip-fg: #14532d; }
+:host ::ng-deep .gtr-tip-tag--palette-6 { --tip-bg: #db2777; --tip-fg: #831843; }
+:host ::ng-deep .gtr-tip-tag--palette-7 { --tip-bg: #dc2626; --tip-fg: #7f1d1d; }
+:host ::ng-deep .gtr-tip-tag--danger { --tip-bg: #dc2626; --tip-fg: #7f1d1d; }
+
+@keyframes tip-glint {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
-:host ::ng-deep .gtr-dialog--events {
-  width: min(62rem, calc(100vw - 1rem));
+// ── Responsive ───────────────────────────────────────────────
+@media (max-width: 768px) {
+  .history-filters__field {
+    flex: 1 1 100%;
+  }
+
+  .timeline-card {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .timeline-card__time {
+    grid-column: 1;
+    text-align: left;
+  }
+
+  .timeline-card__accion {
+    grid-column: 2;
+  }
+
+  .timeline-card__tip,
+  .timeline-card__summary {
+    grid-column: 1 / -1;
+  }
+
+  .timeline-card__actor {
+    grid-column: 1;
+  }
+
+  .timeline-card__meta {
+    grid-column: 2;
+  }
+
+  .event-pill {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .event-pill__time {
+    grid-column: 1;
+  }
+
+  .tipificacion-stack {
+    grid-column: 2;
+  }
+
+  .event-pill__actor {
+    grid-column: 1 / -1;
+  }
+
+  .event-pill app-gtr-event-comment-popover {
+    grid-column: auto;
+    justify-self: start;
+  }
+
+  :host ::ng-deep .gtr-dialog--events {
+    width: calc(100vw - 1rem);
+  }
 }

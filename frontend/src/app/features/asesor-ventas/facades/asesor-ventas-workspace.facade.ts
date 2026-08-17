@@ -1229,6 +1229,59 @@ export class AsesorVentasWorkspaceFacade {
     return formatLeadIdentity(row);
   }
 
+  // Tiempo transcurrido desde la asignacion en formato corto ("Ahora", "Hace 5 min", "Hace 2 h",
+  // "Ayer", "Hace 3 d", o fecha corta). Ayuda al asesor a priorizar por antiguedad de un vistazo.
+  asignacionRelativeLabel(row: LeadAsesorVentasResponse): string {
+    const date = this.asignacionDate(row);
+    if (!date) {
+      return '-';
+    }
+    const diffMin = Math.floor((Date.now() - date.getTime()) / 60000);
+    if (diffMin < 1) {
+      return 'Ahora';
+    }
+    if (diffMin < 60) {
+      return `Hace ${diffMin} min`;
+    }
+    const diffHrs = Math.floor(diffMin / 60);
+    if (diffHrs < 24) {
+      return `Hace ${diffHrs} h`;
+    }
+    const diffDays = Math.floor(diffHrs / 24);
+    if (diffDays === 1) {
+      return 'Ayer';
+    }
+    if (diffDays < 7) {
+      return `Hace ${diffDays} d`;
+    }
+    return date.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit' });
+  }
+
+  // Clase de urgencia por antiguedad de la asignacion: fresca (<10 min), envejeciendo (<3 h) o
+  // retrasada (>=3 h). Se refleja en el indicador de la columna Asignacion.
+  asignacionAgeClass(row: LeadAsesorVentasResponse): 'fresh' | 'aging' | 'stale' | '' {
+    const date = this.asignacionDate(row);
+    if (!date) {
+      return '';
+    }
+    const diffMin = Math.floor((Date.now() - date.getTime()) / 60000);
+    if (diffMin < 10) {
+      return 'fresh';
+    }
+    if (diffMin < 180) {
+      return 'aging';
+    }
+    return 'stale';
+  }
+
+  private asignacionDate(row: LeadAsesorVentasResponse): Date | null {
+    if (!row.fechaAsignacion) {
+      return null;
+    }
+    const date = new Date(row.fechaAsignacion);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
   hasLeadPhone(row: Pick<LeadAsesorVentasResponse, 'prefijo' | 'lead'>): boolean {
     return !!this.telUrl(row);
   }
@@ -1349,6 +1402,21 @@ export class AsesorVentasWorkspaceFacade {
     () => this.rows().filter((row) => row.estadoSeguimiento === 'EN_GESTION').length
   );
   readonly capGestionesAlcanzado = computed(() => this.gestionesAbiertas() >= this.maxGestionesSimultaneas);
+
+  // Desglose por estado para el resumen del header. Refleja la pagina actual (la API pagina en
+  // servidor), por eso acompaña al total y no pretende ser el desglose global de la bandeja.
+  readonly resumenEstados = computed<
+    { estado: string; count: number; severity: 'success' | 'info' | 'warn' | 'danger' | 'secondary' }[]
+  >(() => {
+    const counts = new Map<string, number>();
+    for (const row of this.rows()) {
+      const estado = row.estadoSeguimiento ?? 'SIN_ESTADO';
+      counts.set(estado, (counts.get(estado) ?? 0) + 1);
+    }
+    return (['NUEVO', 'EN_GESTION', 'AGENDADO', 'GESTIONADO'] as const)
+      .map((estado) => ({ estado, count: counts.get(estado) ?? 0, severity: this.estadoSeverity(estado) }))
+      .filter((item) => item.count > 0);
+  });
 
   manageActionLabel(row: LeadAsesorVentasResponse): string {
     return this.isRetomar(row) ? 'Retomar' : 'Gestionar';

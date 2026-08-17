@@ -2,7 +2,8 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "analytics": "a22c5558-a779-4ece-a6bf-4ba892b0f95e"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -66,6 +67,11 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "prebundle": {
+              "exclude": ["primeng"]
+            }
+          },
           "configurations": {
             "production": {
               "buildTarget": "frontend:build:production"

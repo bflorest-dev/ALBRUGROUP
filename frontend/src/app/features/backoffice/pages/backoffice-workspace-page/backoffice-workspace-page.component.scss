@@ -1,5 +1,4 @@
 .backoffice-page,
-.lead-workspace,
 .skeleton-table,
 .dialog-skeleton {
   display: grid;
@@ -12,34 +11,18 @@
   overflow-x: clip;
 }
 
-.lead-workspace {
-  height: calc(100dvh - 8rem);
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  max-height: calc(100dvh - 8rem);
-  min-height: 0;
-  overflow: hidden;
-}
-
 .hero-row,
 .hero-actions,
-.board-organization,
-.board-title,
-.lead-head,
-.lead-tags,
-.dialog-actions {
+.board-title {
   align-items: center;
   display: flex;
 }
 
-.hero-row,
-.lead-head {
+.hero-row {
   justify-content: space-between;
 }
 
-.hero-actions,
-.board-organization,
-.lead-tags,
-.dialog-actions {
+.hero-actions {
   flex-wrap: wrap;
   gap: 0.6rem;
 }
@@ -74,38 +57,6 @@ p,
 
 .board-title {
   gap: 0.55rem;
-}
-
-.board-organization {
-  background: color-mix(in srgb, var(--role-accent) 5%, #ffffff 95%);
-  border: 1px solid color-mix(in srgb, var(--role-accent) 14%, #ffffff 86%);
-  border-radius: 12px;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
-  padding: 0.75rem;
-}
-
-.board-organization-copy {
-  display: grid;
-  gap: 0.2rem;
-  min-width: 14rem;
-}
-
-.board-organization-copy strong {
-  color: var(--role-primary);
-  font-size: 0.9rem;
-}
-
-.board-organization-copy span {
-  color: var(--role-muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.board-organization-actions {
-  display: flex;
-  flex: 0 0 auto;
-  margin-left: auto;
 }
 
 .backoffice-organize-panel {
@@ -266,54 +217,8 @@ p,
   text-align: center;
 }
 
-.lead-head,
-.tipification-bar {
-  background: color-mix(in srgb, var(--role-accent) 6%, #ffffff 94%);
-  border: 1px solid color-mix(in srgb, var(--role-accent) 18%, #ffffff 82%);
-  border-radius: 12px;
-  padding: 1rem;
-}
-
-.tipification-bar,
-.tipification-main,
-.tipification-extra {
-  display: grid;
-}
-
-.tipification-bar {
-  gap: .9rem;
-}
-
-.tipification-main {
-  align-items: end;
-  gap: .8rem;
-  grid-template-columns: 10rem 1fr 1fr 10rem;
-}
-
-.tipification-extra {
-  align-items: end;
-  gap: .8rem;
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.tipification-comment-row {
-  align-items: end;
-  display: grid;
-  gap: .8rem;
-  grid-template-columns: 1fr 10rem;
-}
-
-.tipification-comment-row:not(.tipification-comment-row--open) > button {
-  grid-column: 2;
-}
-
 .tipification-field {
   min-width:0;
-}
-
-.tipification-main > button,
-.tipification-comment-row > button {
-  width: 100%;
 }
 
 .form-grid {
@@ -373,11 +278,6 @@ label {
   margin-left: auto;
   min-width: 10rem;
   text-align: right;
-}
-
-.dialog-actions {
-  justify-content: flex-end;
-  padding-top: 0.25rem;
 }
 
 app-lead-commercial-data-tabs {
@@ -584,9 +484,6 @@ app-lead-commercial-data-tabs {
     padding: 0;
   }
 
-  .tipification-bar .p-select,
-  .tipification-bar .p-inputtext,
-  .tipification-bar .p-datepicker,
   .drawer-tipification .p-select,
   .drawer-tipification .p-inputtext,
   .drawer-tipification .p-datepicker,
@@ -596,16 +493,12 @@ app-lead-commercial-data-tabs {
     width: 100%;
   }
 
-  .tipification-bar .p-select,
-  .tipification-bar .p-inputtext,
-  .tipification-bar .p-datepicker,
   .drawer-tipification .p-select,
   .drawer-tipification .p-inputtext,
   .drawer-tipification .p-datepicker {
     min-width: 0;
   }
 
-  .tipification-bar .p-select-label,
   .drawer-tipification .p-select-label {
     min-width: 0;
     overflow: hidden;
@@ -638,14 +531,11 @@ app-lead-commercial-data-tabs {
 }
 
 @media (max-width: 1100px) {
-  .hero-row,
-  .lead-head {
+  .hero-row {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .tipification-main,
-  .tipification-extra,
   .drawer-tipification__extras,
   .form-grid {
     grid-template-columns: 1fr 1fr;
@@ -665,11 +555,6 @@ app-lead-commercial-data-tabs {
 
   h2 {
     font-size: 1.12rem;
-  }
-
-  .lead-workspace {
-    height: calc(100dvh - 6rem);
-    max-height: calc(100dvh - 6rem);
   }
 
   .lead-search {
@@ -788,21 +673,12 @@ app-lead-commercial-data-tabs {
 @media (max-width: 720px) {
   .drawer-head,
   .drawer-tipification__main,
-  .tipification-main,
-  .tipification-comment-row,
-  .tipification-extra,
   .drawer-tipification__extras,
   .form-grid {
     grid-template-columns: 1fr;
   }
 
-  .tipification-comment-row:not(.tipification-comment-row--open) > button {
-    grid-column: 1;
-  }
-
   .hero-actions,
-  .board-organization,
-  .dialog-actions,
   .drawer-head__contact,
   .drawer-head__status,
   .drawer-head__actions,
@@ -819,15 +695,9 @@ app-lead-commercial-data-tabs {
   .drawer-head__contact app-phone-action-button,
   .drawer-head__contact button,
   .hero-actions button,
-  .board-organization button,
-  .dialog-actions button,
   .drawer-head__actions button,
   .drawer-actions button,
   .drawer-tipification__main > button {
-    width: 100%;
-  }
-
-  .board-organization-actions {
     width: 100%;
   }
 

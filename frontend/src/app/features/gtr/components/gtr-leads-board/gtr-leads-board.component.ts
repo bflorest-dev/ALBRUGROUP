@@ -8,6 +8,7 @@ import { PopoverModule } from 'primeng/popover';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-lead-select-control.component';
 
@@ -24,6 +25,7 @@ import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-le
     SelectModule,
     TableModule,
     TagModule,
+    TooltipModule,
     GtrLeadSelectControlComponent
   ],
   templateUrl: './gtr-leads-board.component.html',
@@ -32,12 +34,6 @@ import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-le
 })
 export class GtrLeadsBoardComponent {
   protected readonly facade = inject(GtrWorkspaceFacade);
-  protected readonly visibleTipificationColumnOptions: { label: string; value: 'primera' | 'mayor' | 'ultima' }[] = [
-    { label: 'Ultima', value: 'ultima' },
-    { label: 'Mayor', value: 'mayor' },
-    { label: 'Primera', value: 'primera' }
-  ];
-  protected visibleTipificationColumn: 'primera' | 'mayor' | 'ultima' = 'ultima';
   private organizeCloseTimeout: ReturnType<typeof setTimeout> | null = null;
 
   protected onOrganizeEnter(): void {
@@ -65,18 +61,6 @@ export class GtrLeadsBoardComponent {
     void this.facade.selectPlatformGroup(value as Parameters<GtrWorkspaceFacade['selectPlatformGroup']>[0]);
   }
 
-  protected onTipificationGroupChange(value: unknown): void {
-    void this.facade.selectPlatformTipificationGroup(
-      value as Parameters<GtrWorkspaceFacade['selectPlatformTipificationGroup']>[0]
-    );
-  }
-
-  protected onSubtipificationGroupChange(value: unknown): void {
-    void this.facade.selectPlatformSubtipificationGroup(
-      value as Parameters<GtrWorkspaceFacade['selectPlatformSubtipificationGroup']>[0]
-    );
-  }
-
   protected onSortFieldChange(
     value: Parameters<GtrWorkspaceFacade['setPlatformSortField']>[0]
   ): void {
@@ -91,9 +75,5 @@ export class GtrLeadsBoardComponent {
 
   protected onClearOrganization(): void {
     void this.facade.clearPlatformOrganization();
-  }
-
-  protected setVisibleTipificationColumn(value: 'primera' | 'mayor' | 'ultima'): void {
-    this.visibleTipificationColumn = value;
   }
 }

@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { PopoverModule } from 'primeng/popover';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-gtr-event-comment-popover',
-  imports: [ButtonModule, PopoverModule],
+  imports: [ButtonModule, PopoverModule, TooltipModule],
   templateUrl: './gtr-event-comment-popover.component.html',
   styleUrl: './gtr-event-comment-popover.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

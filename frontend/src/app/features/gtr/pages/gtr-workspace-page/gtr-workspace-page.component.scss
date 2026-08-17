@@ -1,13 +1,6 @@
 .gtr-page {
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1fr);
-  min-width: 0;
-}
-
-:host,
-.gtr-page > * {
-  min-width: 0;
 }
 
 // ── Hero / cabecera ──────────────────────────────────────────
@@ -54,8 +47,7 @@ h1 {
   color: var(--app-text-muted);
 }
 
-:host ::ng-deep .gtr-hero,
-:host ::ng-deep .gtr-metric {
+:host ::ng-deep .gtr-hero {
   border: 1px solid var(--app-border-soft);
   box-shadow: var(--app-shadow-soft);
 }
@@ -63,51 +55,48 @@ h1 {
 // ── Metricas ─────────────────────────────────────────────────
 .metric-grid {
   display: grid;
-  gap: 0.75rem;
+  gap: 1rem;
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-:host ::ng-deep .gtr-metric .p-card-body {
-  padding: 0.85rem 1rem 0.85rem 1.15rem;
-  position: relative;
+.gtr-metric {
+  border: 1px solid var(--app-border-soft);
+  border-radius: 10px;
+  border-top-width: 3px;
+  padding: 12px 16px;
+  height: 85px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.2rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-:host ::ng-deep .gtr-metric .p-card-body::before {
-  background: #2563eb;
-  border-radius: 999px;
-  content: '';
-  inset: 0.8rem auto 0.8rem 0.55rem;
-  position: absolute;
-  width: 0.24rem;
+.gtr-metric:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
-:host ::ng-deep .gtr-metric--amber .p-card-body::before {
-  background: #f59e0b;
-}
+.gtr-metric--teal { border-top-color: #20A99A; background: #F1F8F8; }
+.gtr-metric--blue { border-top-color: #3678E5; background: #F2F6FF; }
+.gtr-metric--amber { border-top-color: #E9A927; background: #FDF9F0; }
+.gtr-metric--green { border-top-color: #35A866; background: #F0FAF4; }
+.gtr-metric--violet { border-top-color: #8B4DE8; background: #F5F3FE; }
 
-:host ::ng-deep .gtr-metric--green .p-card-body::before {
-  background: #16a34a;
-}
-
-:host ::ng-deep .gtr-metric--violet .p-card-body::before {
-  background: #7c3aed;
-}
-
-:host ::ng-deep .gtr-metric .p-card-content {
-  display: grid;
-  gap: 0.12rem;
-  padding: 0;
-}
-
-.gtr-metric span {
+.gtr-metric__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
   color: var(--app-text-muted);
-  font-size: 0.78rem;
-  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
 }
 
-.gtr-metric strong {
-  color: var(--role-primary);
-  font-size: 1.55rem;
+.gtr-metric__value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #174A7C;
+  line-height: 1;
 }
 
 // ── Aviso de leads abandonados (trigger del hero) ────────────
@@ -437,6 +426,13 @@ label {
   width: 100%;
 }
 
+@media (min-width: 901px) {
+  :host ::ng-deep .gtr-dialog--events {
+    margin-left: 292px;
+    width: min(56rem, calc(100vw - 292px - 2rem));
+  }
+}
+
 @media (max-width: 900px) {
   .gtr-hero__content {
     align-items: flex-start;
@@ -447,12 +443,20 @@ label {
     flex-wrap: wrap;
   }
 
-  .metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .form-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

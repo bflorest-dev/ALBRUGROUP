@@ -4,8 +4,53 @@
   gap: 0.55rem;
 }
 
+.board-subtitle {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.45rem;
+}
+
+.board-subtitle__spinner {
+  color: #1c7d62;
+  font-size: 0.85rem;
+}
+
+.board-summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+}
+
+.board-summary__chips {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .col-actions {
   min-width: 10rem;
+}
+
+.col-asignacion {
+  white-space: nowrap;
+}
+
+.assignment-stack {
+  display: grid;
+  gap: 0.15rem;
+  justify-items: start;
+  line-height: 1.1;
+}
+
+.assignment-stack__datetime {
+  color: #41526b;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 // Direccion puede ser larga: se trunca con ellipsis para no empujar ni desbordar la fila. El texto
@@ -38,6 +83,50 @@
 
 .row-new td {
   background: #ecfdf5;
+}
+
+.row-clickable {
+  cursor: pointer;
+}
+
+.row-clickable:focus-visible {
+  outline: 2px solid #1c7d62;
+  outline-offset: -2px;
+}
+
+.age-indicator {
+  align-items: center;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 700;
+  gap: 0.38rem;
+  white-space: nowrap;
+}
+
+.age-indicator__dot {
+  background: currentColor;
+  border-radius: 999px;
+  display: inline-block;
+  flex: 0 0 auto;
+  height: 0.5rem;
+  width: 0.5rem;
+}
+
+.age-indicator--fresh {
+  color: #1c7d62;
+}
+
+.age-indicator--aging {
+  color: #b45309;
+}
+
+.age-indicator--stale {
+  color: #dc2626;
+}
+
+.age-indicator--none {
+  color: #94a3b8;
+  font-weight: 500;
 }
 
 .row-priority-campaign td {
@@ -135,6 +224,43 @@
   opacity: 0.72;
   padding: 1.5rem 0;
   text-align: center;
+}
+
+.empty-state {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+.empty-state__icon {
+  align-items: center;
+  background: rgba(28, 125, 98, 0.1);
+  border-radius: 999px;
+  color: #1c7d62;
+  display: inline-flex;
+  height: 3.25rem;
+  justify-content: center;
+  margin-bottom: 0.4rem;
+  width: 3.25rem;
+}
+
+.empty-state__icon i {
+  font-size: 1.6rem;
+}
+
+.empty-state strong {
+  color: #0f1f33;
+  font-size: 1.05rem;
+}
+
+.empty-state p {
+  color: #617187;
+  margin: 0;
+  max-width: 24rem;
 }
 
 :host ::ng-deep {

@@ -39,87 +39,80 @@
         (onChange)="onCampoTipificacionChange($any($event.value))"
       />
     </label>
-    <div
-      class="filter-action-row"
-      style="align-items: end; display: grid; gap: 0.85rem; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(11.8rem, auto)"
-    >
-      <label>
-        <span>Tipificaciones</span>
-        <p-multiselect
-          formControlName="tipificaciones"
-          styleClass="historicos-multiselect"
-          [options]="facade.catalogoTipificaciones()"
-          optionLabel="label"
-          optionValue="value"
-          display="chip"
-          [maxSelectedLabels]="1"
-          selectedItemsLabel="{0} seleccionadas"
-          [filter]="true"
-          filterBy="label,codigo,descripcion"
-          appendTo="body"
-          (onChange)="facade.onMasivoTipificacionesChange()"
-        >
-          <ng-template #item let-tipificacion>
-            <div class="catalog-option">
-              <strong>{{ tipificacion.codigo }}</strong>
-              <span>||</span>
-              <span>{{ tipificacion.descripcion }}</span>
-            </div>
-          </ng-template>
-        </p-multiselect>
-      </label>
-      <label>
-        <span>Subtipificaciones</span>
-        <p-multiselect
-          formControlName="subtipificaciones"
-          styleClass="historicos-multiselect"
-          [options]="facade.availableSubtipificaciones()"
-          optionLabel="label"
-          optionValue="value"
-          display="chip"
-          [maxSelectedLabels]="1"
-          selectedItemsLabel="{0} seleccionadas"
-          [filter]="true"
-          filterBy="label,codigo,descripcion"
-          appendTo="body"
-          emptyMessage="Selecciona una tipificacion o busca por codigo."
-          (onChange)="facade.onMasivoSubtipificacionesChange()"
-          (onFilter)="facade.onMasivoSubtipificacionesFilter($event.filter)"
-          (onPanelHide)="facade.clearMasivoSubtipificacionesFilter()"
-        >
-          <ng-template #item let-subtipificacion>
-            <div class="catalog-option">
-              <strong>{{ subtipificacion.codigo }}</strong>
-              <span>||</span>
-              <span>{{ subtipificacion.descripcion }}</span>
-            </div>
-          </ng-template>
-        </p-multiselect>
-      </label>
-      <div class="dialog-actions">
-        <button
-          pButton
-          type="button"
-          label="Limpiar"
-          severity="secondary"
-          style="flex: 1 1 0"
-          [disabled]="!facade.canMutateOperationalData()"
-          (click)="facade.clearMasivoFilters()"
-        ></button>
-        <button
-          pButton
-          type="submit"
-          label="Buscar"
-          icon="pi pi-search"
-          style="flex: 1 1 0"
-          [disabled]="!facade.canSearchHistoricos()"
-          [loading]="facade.isLoadingMasivos()"
-        ></button>
-      </div>
+    <label class="historicos-filter-half">
+      <span>Tipificaciones</span>
+      <p-multiselect
+        formControlName="tipificaciones"
+        styleClass="historicos-multiselect"
+        [options]="facade.catalogoTipificaciones()"
+        optionLabel="label"
+        optionValue="value"
+        display="chip"
+        [maxSelectedLabels]="1"
+        selectedItemsLabel="{0} seleccionadas"
+        [filter]="true"
+        filterBy="label,codigo,descripcion"
+        appendTo="body"
+        (onChange)="facade.onMasivoTipificacionesChange()"
+      >
+        <ng-template #item let-tipificacion>
+          <div class="catalog-option">
+            <strong>{{ tipificacion.codigo }}</strong>
+            <span>||</span>
+            <span>{{ tipificacion.descripcion }}</span>
+          </div>
+        </ng-template>
+      </p-multiselect>
+    </label>
+    <label class="historicos-filter-half">
+      <span>Subtipificaciones</span>
+      <p-multiselect
+        formControlName="subtipificaciones"
+        styleClass="historicos-multiselect"
+        [options]="facade.availableSubtipificaciones()"
+        optionLabel="label"
+        optionValue="value"
+        display="chip"
+        [maxSelectedLabels]="1"
+        selectedItemsLabel="{0} seleccionadas"
+        [filter]="true"
+        filterBy="label,codigo,descripcion"
+        appendTo="body"
+        emptyMessage="Selecciona una tipificacion o busca por codigo."
+        (onChange)="facade.onMasivoSubtipificacionesChange()"
+        (onFilter)="facade.onMasivoSubtipificacionesFilter($event.filter)"
+        (onPanelHide)="facade.clearMasivoSubtipificacionesFilter()"
+      >
+        <ng-template #item let-subtipificacion>
+          <div class="catalog-option">
+            <strong>{{ subtipificacion.codigo }}</strong>
+            <span>||</span>
+            <span>{{ subtipificacion.descripcion }}</span>
+          </div>
+        </ng-template>
+      </p-multiselect>
+    </label>
+    <div class="dialog-actions" style="grid-column: 1 / -1;">
+      <button
+        pButton
+        type="button"
+        label="Limpiar"
+        severity="secondary"
+        [disabled]="!facade.canMutateOperationalData()"
+        (click)="facade.clearMasivoFilters()"
+      ></button>
+      <button
+        pButton
+        type="submit"
+        label="Buscar"
+        icon="pi pi-search"
+        [disabled]="!facade.canSearchHistoricos()"
+        [loading]="facade.isLoadingMasivos()"
+      ></button>
     </div>
   </form>
 
-  <div class="board-toolbar" style="border-top: 1px solid var(--app-border-soft); padding-top: 0.9rem">
+  <div class="board-toolbar">
     <button
       pButton
       type="button"
@@ -129,18 +122,6 @@
       [disabled]="facade.isSaving() || facade.selectedCount() === 0 || !facade.canMutateOperationalData()"
       (click)="facade.openAssignment()"
     ></button>
-
-    <label class="page-size-select" style="align-items: center; display: inline-flex; gap: 0.45rem;">
-      <span>Filas</span>
-      <p-select
-        [options]="facade.historicosPageSizeOptions"
-        [ngModel]="facade.historicosPageSize()"
-        [ngModelOptions]="{ standalone: true }"
-        style="min-width: 6.4rem; width: 6.4rem;"
-        appendTo="body"
-        (onChange)="facade.changeMasivoPage(0, $any($event.value))"
-      />
-    </label>
 
     <button
       pButton
@@ -161,6 +142,7 @@
           <label for="gtr-historicos-grouping">Agrupar por</label>
           <p-select
             inputId="gtr-historicos-grouping"
+            name="historicosGrouping"
             [options]="facade.historicosGroupingModeOptions()"
             [ngModel]="facade.historicosGroupingMode()"
             optionLabel="label"
@@ -174,6 +156,7 @@
             <label for="gtr-historicos-group">Filtrar grupo</label>
             <p-select
               inputId="gtr-historicos-group"
+              name="historicosGroup"
               [ngModel]="facade.historicosSelectedGroup()"
               [options]="facade.historicosActiveGroupOptions()"
               optionLabel="etiqueta"
@@ -197,6 +180,7 @@
           <label for="gtr-historicos-sort">Ordenar por</label>
           <p-select
             inputId="gtr-historicos-sort"
+            name="historicosSort"
             [options]="facade.historicosSortOptions()"
             [ngModel]="facade.historicosSortField()"
             optionLabel="label"
@@ -209,6 +193,7 @@
           <label for="gtr-historicos-direction">Mostrar primero</label>
           <p-select
             inputId="gtr-historicos-direction"
+            name="historicosDirection"
             [options]="facade.historicosSortDirectionOptions()"
             [ngModel]="facade.historicosSortDirection()"
             optionLabel="label"
@@ -238,7 +223,7 @@
     [rowHover]="true"
     [scrollable]="true"
     scrollHeight="flex"
-    [tableStyle]="{ 'min-width': '100%', width: '100%' }"
+    [tableStyle]="{ 'min-width': '1150px' }"
     styleClass="p-datatable-sm gtr-table"
   >
     <ng-template #header>
@@ -257,46 +242,10 @@
         <th>Proveedor</th>
         <th>Base</th>
         <th>Documento</th>
-        <th class="col-sortable">
-          <button
-            type="button"
-            class="sort-header"
-            [class.sort-header--active]="facade.historicosSortActive('codigoTipificacion')"
-            [attr.aria-label]="facade.historicosSortLabel('codigoTipificacion', facade.historicosTipificacionColumnLabel())"
-            [title]="facade.historicosSortLabel('codigoTipificacion', facade.historicosTipificacionColumnLabel())"
-            (click)="facade.changeHistoricosColumnSort('codigoTipificacion')"
-          >
-            <span>{{ facade.historicosTipificacionColumnLabel() }}</span>
-            <i [class]="facade.historicosSortIcon('codigoTipificacion')" aria-hidden="true"></i>
-          </button>
-        </th>
-        <th class="col-sortable">
-          <button
-            type="button"
-            class="sort-header"
-            [class.sort-header--active]="facade.historicosSortActive('estado')"
-            [attr.aria-label]="facade.historicosSortLabel('estado', 'estado')"
-            [title]="facade.historicosSortLabel('estado', 'estado')"
-            (click)="facade.changeHistoricosColumnSort('estado')"
-          >
-            <span>Estado</span>
-            <i [class]="facade.historicosSortIcon('estado')" aria-hidden="true"></i>
-          </button>
-        </th>
+        <th>{{ facade.historicosTipificacionColumnLabel() }}</th>
+        <th>Estado</th>
         <th>Asesor</th>
-        <th class="col-sortable">
-          <button
-            type="button"
-            class="sort-header"
-            [class.sort-header--active]="facade.historicosSortActive('lastEntryAt')"
-            [attr.aria-label]="facade.historicosSortLabel('lastEntryAt', 'ingreso')"
-            [title]="facade.historicosSortLabel('lastEntryAt', 'ingreso')"
-            (click)="facade.changeHistoricosColumnSort('lastEntryAt')"
-          >
-            <span>Ingreso</span>
-            <i [class]="facade.historicosSortIcon('lastEntryAt')" aria-hidden="true"></i>
-          </button>
-        </th>
+        <th>Ingreso</th>
         <th class="col-actions">Acciones</th>
       </tr>
     </ng-template>
@@ -314,8 +263,8 @@
             (selectionChange)="facade.toggleSelection(row.id, $event)"
           />
         </td>
-        <td>
-          <strong class="lead-value">{{ facade.display(row.lead || row.usermeta) }}</strong>
+        <td class="col-lead">
+          <strong class="truncate-text" [title]="facade.leadIdentity(row)">{{ facade.leadIdentity(row) }}</strong>
           @if (facade.isPriorityCampaign(row)) {
             <span class="priority-campaign-chip" [title]="facade.priorityCampaignLabel()">
               <i class="pi pi-star-fill" aria-hidden="true"></i>
@@ -323,24 +272,35 @@
             </span>
           }
         </td>
-        <td>
+        <td class="col-proveedor">
           @if (facade.providerLogo(row.nombreProveedorCampana ?? row.nombreProveedorEquipo); as logo) {
             <div class="provider-cell">
               <img [src]="logo" [alt]="facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo)" />
             </div>
           } @else {
-            {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
+            <span class="truncate-text" [title]="facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo)">{{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}</span>
           }
         </td>
-        <td>{{ facade.display(row.base) }}</td>
-        <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
+        <td class="col-base">
+          @if (row.base === 'WHATSAPP') {
+            <span class="base-icon" pTooltip="WhatsApp"><i class="pi pi-whatsapp"></i></span>
+          } @else if (row.base === 'MESSENGER') {
+            <span class="base-icon" pTooltip="Messenger"><i class="pi pi-comment"></i></span>
+          } @else {
+            <span class="truncate-text" [pTooltip]="facade.display(row.base)">{{ facade.display(row.base) }}</span>
+          }
+        </td>
+        <td class="col-documento">
+          <span class="truncate-text" [title]="facade.display(row.numeroDocumentoTitularServicio)">{{ facade.display(row.numeroDocumentoTitularServicio) }}</span>
+        </td>
         <td>
           @if (facade.historicosTipificacionParts(row); as tip) {
             <div class="tip-stack">
-              <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
+              <p-tag [value]="tip.tipificacion" [pTooltip]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
               <span class="tip-stack__line"></span>
               <p-tag
                 [value]="tip.subtipificacion"
+                [pTooltip]="tip.subtipificacion"
                 [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)"
               />
             </div>
@@ -352,15 +312,10 @@
             [value]="facade.display(row.estadoSeguimiento)"
           />
         </td>
-        <td [title]="facade.display(row.nombreAsesorAsignado)">
-          {{ facade.advisorShortName(row.nombreAsesorAsignado) | uppercase }}
+        <td class="col-asesor" [pTooltip]="facade.display(row.nombreAsesorAsignado)">
+          <span class="truncate-text">{{ facade.advisorShortName(row.nombreAsesorAsignado) | uppercase }}</span>
         </td>
-        <td>
-          <span class="datetime-stack">
-            <span>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM' }}</span>
-            <strong>{{ (row.lastEntryAt ?? row.createdAt) | date: 'hh:mm a' }}</strong>
-          </span>
-        </td>
+        <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM hh:mm a' }}</td>
         <td>
           <div class="row-actions">
             <button
@@ -369,12 +324,11 @@
               size="small"
               class="gtr-assign-button"
               [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
-              title="Asignaciones"
+              pTooltip="Asignaciones"
               (click)="facade.openAssignment(row)"
             >
               <span class="gtr-assign-button__action">
-                <i class="pi pi-send" aria-hidden="true"></i>
-                <span class="gtr-assign-button__label">Asignar</span>
+                <i class="pi pi-user-plus" aria-hidden="true"></i>
               </span>
               <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
             </button>
@@ -384,7 +338,7 @@
               icon="pi pi-cog"
               size="small"
               severity="secondary"
-              title="Gestionar"
+              pTooltip="Gestionar"
               aria-label="Gestionar"
               [disabled]="!facade.canMutateOperationalData()"
               (click)="facade.openSnapshot(row)"
@@ -396,7 +350,7 @@
               size="small"
               severity="secondary"
               [disabled]="facade.isLoadingEvents()"
-              title="Ver historial"
+              pTooltip="Ver historial"
               aria-label="Ver historial"
               (click)="facade.openLeadHistory(row)"
             ></button>
@@ -407,7 +361,7 @@
 
     <ng-template #emptymessage>
       <tr>
-        <td colspan="10" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
+        <td colspan="11" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
           {{
             !facade.canDisplayOperationalData()
               ? 'Marca ONLINE para activar esta bandeja.'
@@ -423,6 +377,7 @@
   <p-paginator
     [first]="facade.masivoPageNumber() * facade.historicosPageSize()"
     [rows]="facade.historicosPageSize()"
+    [rowsPerPageOptions]="facade.historicosPageSizeOptions"
     [totalRecords]="facade.masivoTotalElements()"
     (onPageChange)="facade.changeMasivoPage($event.page ?? 0, $event.rows ?? facade.historicosPageSize())"
   />

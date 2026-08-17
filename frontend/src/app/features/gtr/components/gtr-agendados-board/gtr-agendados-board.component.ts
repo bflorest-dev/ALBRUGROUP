@@ -18,12 +18,4 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 })
 export class GtrAgendadosBoardComponent {
   protected readonly facade = inject(GtrWorkspaceFacade);
-
-  protected dateTimeParts(value: string): { date: string; time: string } {
-    if (!value || value === '-') {
-      return { date: '-', time: '' };
-    }
-    const [date, time] = value.split(/\s+/, 2);
-    return { date: date || '-', time: time || '' };
-  }
 }
