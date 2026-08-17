@@ -399,18 +399,18 @@ public class LeadService {
     }
 
     public LeadContextoLookupResponse buscarContextoLeadVenta(String lead) {
-        String numeroLead = normalizarLead(lead);
-        if (numeroLead == null || numeroLead.isBlank()) {
-            throw new BadRequestException("El numero del lead es obligatorio");
+        String criterio = normalizarLead(lead);
+        if (criterio == null || criterio.isBlank()) {
+            throw new BadRequestException("El numero del lead o documento es obligatorio");
         }
 
-        return leadRepository.findFirstByLeadOrderByLastEntryAtDescIdDesc(numeroLead)
+        return leadRepository.buscarPorLeadODocumento(criterio).stream().findFirst()
                 .map(this::mapearContextoLeadVenta)
                 .orElseGet(() -> new LeadContextoLookupResponse(
                         false,
                         null,
                         null,
-                        numeroLead,
+                        criterio,
                         null,
                         null,
                         false,
