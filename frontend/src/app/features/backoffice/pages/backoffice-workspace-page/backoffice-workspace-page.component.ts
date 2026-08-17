@@ -22,6 +22,7 @@ import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 import { SessionService } from '../../../../core/services/session.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
@@ -99,6 +100,7 @@ type AssignmentConflictDetails = {
     TabsModule,
     TagModule,
     ToastModule,
+    TooltipModule,
     LeadCommercialDataTabsComponent,
     LeadPlanSummaryComponent,
     PhoneActionButtonComponent,
@@ -198,6 +200,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly isSearching = signal(false);
   protected readonly searchLookup = signal<LeadContextoLookupResponse | null>(null);
   protected readonly todayDate = this.todayLocalDate();
+  // Reloj interno para recalcular el heatmap de antigüedad cada 30 segundos.
+  protected readonly now = signal(Date.now());
+  private ageUpdateInterval?: ReturnType<typeof setInterval>;
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly skeletonRows = Array.from({ length: 8 });
@@ -488,7 +493,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly showSecSotColumn = computed(() =>
     this.activeRows().some((row) => row.requiereSecSotVenta === true || !!row.sec || !!row.sot)
   );
-  protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 11 : 10);
+  protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 12 : 11);
   protected readonly activeTotal = computed(() => {
     switch (this.section()) {
       case 'programados': return this.totalProgramados();
@@ -566,12 +571,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       void this.initialize();
     }
     this.startRealtime();
+    this.ageUpdateInterval = window.setInterval(() => this.now.set(Date.now()), 30000);
   }
 
   ngOnDestroy(): void {
     this.realtimeSubscription.unsubscribe();
     if (this.organizeCloseTimeout !== null) {
       clearTimeout(this.organizeCloseTimeout);
+    }
+    if (this.ageUpdateInterval !== undefined) {
+      window.clearInterval(this.ageUpdateInterval);
     }
     for (const timerId of this.newRowTimers.values()) {
       window.clearTimeout(timerId);
@@ -1225,6 +1234,55 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return row.fechaUltimaGestion ?? row.ultimaTipificacionAt;
   }
 
+  /**
+   * Categoría de antigüedad del lead para el heatmap visual.
+   * Se mide en segundos desde `fechaIngresoEtapa` (fallback `lastEntryAt` y `createdAt`).
+   */
+  protected leadAgeCategory(row: LeadVentaResponse): 'fresh' | 'recent' | 'stale' | 'critical' | null {
+    const seconds = this.leadAgeInSeconds(row);
+    if (seconds === null) return null;
+    if (seconds < 60) return 'fresh';
+    if (seconds < 5 * 60) return 'recent';
+    if (seconds < 30 * 60) return 'stale';
+    return 'critical';
+  }
+
+  /**
+   * Tooltip que muestra la antigüedad relativa y la fecha exacta de ingreso.
+   */
+  protected ageTooltip(row: LeadVentaResponse): string {
+    const seconds = this.leadAgeInSeconds(row);
+    if (seconds === null) {
+      return 'Sin fecha de ingreso';
+    }
+    const ageText = this.formatAge(seconds);
+    const raw = this.fechaIngresoEtapaValue(row) ?? row.createdAt;
+    const dateText = raw ? this.formatDateTime(raw) : null;
+    return dateText ? `${ageText} · ${dateText}` : ageText;
+  }
+
+  private leadAgeInSeconds(row: LeadVentaResponse): number | null {
+    const raw = this.fechaIngresoEtapaValue(row) ?? row.createdAt;
+    if (!raw) return null;
+    const time = new Date(raw).getTime();
+    if (!Number.isFinite(time)) return null;
+    return Math.max(0, Math.floor((this.now() - time) / 1000));
+  }
+
+  private formatAge(totalSeconds: number): string {
+    if (totalSeconds < 60) {
+      return `Hace ${totalSeconds} seg`;
+    }
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    if (minutes < 60) {
+      return seconds > 0 ? `Hace ${minutes} min ${seconds} seg` : `Hace ${minutes} min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `Hace ${hours} h ${mins} min` : `Hace ${hours} h`;
+  }
+
   // Logo del proveedor del plan ofrecido (WIN/CLARO). Devuelve string estable (o null): seguro en template.
   protected providerLogo(nombreProveedor?: string | null): string | null {
     return resolveProviderLogo(nombreProveedor);
@@ -1243,6 +1301,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     const [year, month, day] = value.split('-');
     return year && month && day ? `${day}/${month}/${year}` : value;
+  }
+
+  private formatDateTime(value: string): string {
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) {
+      return value;
+    }
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
 
   protected programacionGroupTitle(row: LeadVentaResponse): string {

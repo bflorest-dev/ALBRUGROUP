@@ -195,6 +195,10 @@
     >
       <ng-template #header>
         <tr>
+          <th class="col-priority" pTooltip="Antiguedad" tooltipPosition="top">
+            <i class="pi pi-clock" aria-hidden="true"></i>
+            <span class="sr-only">Antiguedad</span>
+          </th>
           <th class="col-fecha">Fecha ingreso</th>
           <th class="col-lead">Lead</th>
           <th class="col-documento">Documento</th>
@@ -237,6 +241,11 @@
 
       <ng-template #body let-row>
         <tr [class.row-new]="row.isNew">
+          <td class="col-priority" [pTooltip]="ageTooltip(row)" tooltipPosition="top">
+            @if (leadAgeCategory(row); as age) {
+              <div class="priority-indicator priority-indicator--{{ age }}" aria-hidden="true"></div>
+            }
+          </td>
           <td class="col-fecha">
             <div class="date-stack">
               <span>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>

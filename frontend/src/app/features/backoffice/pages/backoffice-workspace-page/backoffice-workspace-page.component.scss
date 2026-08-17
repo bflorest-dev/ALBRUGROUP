@@ -74,6 +74,43 @@ p,
   min-width: 10rem;
 }
 
+.col-priority {
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+  text-align: center;
+  vertical-align: middle;
+  width: 0.75rem;
+}
+
+.col-priority i {
+  vertical-align: middle;
+}
+
+.priority-indicator {
+  background: var(--app-border-soft);
+  border-radius: 999px;
+  display: block;
+  height: 1.6rem;
+  margin: 0 auto;
+  width: 0.35rem;
+}
+
+.priority-indicator--fresh {
+  background: var(--app-age-fresh);
+}
+
+.priority-indicator--recent {
+  background: var(--app-age-recent);
+}
+
+.priority-indicator--stale {
+  background: var(--app-age-stale);
+}
+
+.priority-indicator--critical {
+  background: var(--app-age-critical);
+}
+
 .col-documento {
   white-space: nowrap;
   width: 8.5rem;
