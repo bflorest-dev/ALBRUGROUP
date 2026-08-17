@@ -63,6 +63,7 @@ class MarcacionServiceTest {
     @Mock pe.albrugroup.schedule_service.repository.DiaNoLaborableRepository diaNoLaborableRepository;
     @Mock ParametroAsistenciaResolver parametroAsistenciaResolver;
     @Mock CurrentUser currentUser;
+    @Mock PresenciaTramoService presenciaTramoService;
     @Mock AttendanceRealtimeNotifier notifier;
 
     private static final long EMP = 21L;
@@ -519,7 +520,7 @@ class MarcacionServiceTest {
                 horarioRepository, excepcionRepository, ajusteRepository, diaNoLaborableRepository, clock);
         service = new MarcacionService(asistenciaRepository, asistenciaTramoRepository, ajusteRepository,
                 sesionEstadoRepository, resolver, parametroAsistenciaResolver, horarioRepository,
-                currentUser, notifier);
+                presenciaTramoService, currentUser, notifier);
     }
 
     /** Reconfigura el horario base (sin almuerzo) y re-stubea los repos de horario para esa jornada. */

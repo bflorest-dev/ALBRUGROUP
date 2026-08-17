@@ -3,6 +3,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Inject, Injectable, effect, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { API_CONSTANTS } from '../constants/api.constants';
+import { OPERATIONAL_ROLES } from '../constants/operational-roles.constants';
+import { STORAGE_KEYS } from '../constants/storage.constants';
+import { AttendanceStatusState } from '../state/attendance-status.state';
 import { SessionService } from './session.service';
 import { TokenService } from './token.service';
 
@@ -74,9 +77,12 @@ export type DisponibilidadOperativa =
 
 @Injectable({ providedIn: 'root' })
 export class PresenceService {
+  private static readonly IDLE_THRESHOLD_MS = 15 * 60 * 1000;
+
   private readonly http = inject(HttpClient);
   private readonly sessionService = inject(SessionService);
   private readonly tokenService = inject(TokenService);
+  private readonly attendanceStatusState = inject(AttendanceStatusState);
   private readonly baseUrl = API_CONSTANTS.gatewayBaseUrl;
   private readonly heartbeatIntervalMs = 30000;
   private heartbeatId: number | null = null;
@@ -179,6 +185,9 @@ export class PresenceService {
     }
 
     this.heartbeatId = window.setInterval(() => {
+      if (this.shouldSuppressHeartbeat()) {
+        return;
+      }
       void this.sendHeartbeat();
     }, this.heartbeatIntervalMs);
   }
@@ -225,6 +234,22 @@ export class PresenceService {
       },
       keepalive: true
     });
+  }
+
+  private shouldSuppressHeartbeat(): boolean {
+    const role = this.sessionService.session()?.primaryRole;
+    if (!role || !OPERATIONAL_ROLES.has(role)) {
+      return false;
+    }
+    if (this.attendanceStatusState.status() !== 'ONLINE') {
+      return false;
+    }
+    const raw = localStorage.getItem(STORAGE_KEYS.lastActivityAt);
+    if (!raw) {
+      return true;
+    }
+    const lastActivity = Number(raw);
+    return Number.isFinite(lastActivity) && Date.now() - lastActivity >= PresenceService.IDLE_THRESHOLD_MS;
   }
 
   private isBrowser(): boolean {

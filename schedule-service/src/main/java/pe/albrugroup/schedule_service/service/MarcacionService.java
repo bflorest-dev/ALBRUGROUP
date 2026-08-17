@@ -58,6 +58,7 @@ public class MarcacionService {
     private final JornadaEfectivaResolver jornadaEfectivaResolver;
     private final ParametroAsistenciaResolver parametroAsistenciaResolver;
     private final HorarioRepository horarioRepository;
+    private final PresenciaTramoService presenciaTramoService;
     private final CurrentUser currentUser;
     private final AttendanceRealtimeNotifier attendanceRealtimeNotifier;
 
@@ -603,7 +604,9 @@ public class MarcacionService {
         int almuerzo = safe(a.getMinutosAlmuerzoTomados());
         int servicios = sumarSesionesCerradasDesde(a.getId(), TipoSesionEstado.SERVICIOS, a.getFechaHoraIngreso());
         int pausa = sumarPausaCapadaDesde(a.getId(), a.getFechaHoraIngreso());
-        return (int) Math.max(jornada - almuerzo - servicios - pausa, 0);
+        int brechaPresencia = presenciaTramoService.calcularMinutosBrechaPresencia(
+                a.getIdEmpleado(), a.getFecha(), entradaEfectiva, salidaEfectiva);
+        return (int) Math.max(jornada - almuerzo - servicios - pausa - brechaPresencia, 0);
     }
 
     /**

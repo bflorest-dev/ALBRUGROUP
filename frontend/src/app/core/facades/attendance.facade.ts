@@ -14,6 +14,7 @@ import {
 import { AttendanceService } from '../services/attendance.service';
 import { DisponibilidadOperativa, PresenceService } from '../services/presence.service';
 import { SessionService } from '../services/session.service';
+import { AttendanceStatusState } from '../state/attendance-status.state';
 
 type LoadRequest = {
   requestId: number;
@@ -44,6 +45,7 @@ export class AttendanceFacade {
   private readonly attendanceService = inject(AttendanceService);
   private readonly presenceService = inject(PresenceService);
   private readonly sessionService = inject(SessionService);
+  private readonly attendanceStatusState = inject(AttendanceStatusState);
   private readonly document = inject(DOCUMENT);
   private nextRequestId = 1;
   private initialized = false;
@@ -247,6 +249,7 @@ export class AttendanceFacade {
 
       if (state.status === 'success') {
         this.attendanceDetail.set(state.detail);
+        this.attendanceStatusState.update(state.detail?.estadoActual ?? 'OFFLINE');
         this.statusConfirmed.set(true);
         this.loadRetryCount = 0;
         this.clearLoadRetryTimer();
@@ -279,6 +282,7 @@ export class AttendanceFacade {
 
       if (state.status === 'success') {
         this.attendanceDetail.set(state.detail);
+        this.attendanceStatusState.update(state.detail.estadoActual);
         this.statusConfirmed.set(true);
         this.isLoading.set(false);
         this.errorMessage.set('');
@@ -431,6 +435,7 @@ export class AttendanceFacade {
     this.assignedLeadCount.set(0);
     this.isLoading.set(false);
     this.errorMessage.set('');
+    this.attendanceStatusState.update('OFFLINE');
   }
 
   private scheduleLoadRetry(): void {

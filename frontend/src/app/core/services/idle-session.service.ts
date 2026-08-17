@@ -8,7 +8,7 @@ import { SessionService } from './session.service';
   providedIn: 'root'
 })
 export class IdleSessionService {
-  private static readonly idleTimeoutMs = 90 * 60 * 1000;
+  private static readonly idleTimeoutMs = 15 * 60 * 1000;
   private readonly checkIntervalMs = 60 * 1000;
   private checkTimerId: number | null = null;
   private initialized = false;

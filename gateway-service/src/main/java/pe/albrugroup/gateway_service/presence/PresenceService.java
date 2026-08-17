@@ -10,6 +10,7 @@ import pe.albrugroup.gateway_service.entity.enums.Disponibilidad;
 import pe.albrugroup.gateway_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.gateway_service.entity.response.ConnectedStatusResponse;
 import pe.albrugroup.gateway_service.entity.response.ConnectedUserResponse;
+import pe.albrugroup.gateway_service.integration.schedule.ScheduleAttendanceClient;
 import pe.albrugroup.gateway_service.security.AuthenticatedUser;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -31,17 +32,20 @@ public class PresenceService {
     private final ReactiveRedisTemplate<String, EmployeePresence> presenceRedisTemplate;
     private final ReactiveStringRedisTemplate stringRedisTemplate;
     private final PresenceRealtimeBroadcaster broadcaster;
+    private final ScheduleAttendanceClient scheduleAttendanceClient;
     private final Duration ttl;
 
     public PresenceService(
             ReactiveRedisTemplate<String, EmployeePresence> presenceRedisTemplate,
             ReactiveStringRedisTemplate stringRedisTemplate,
             PresenceRealtimeBroadcaster broadcaster,
+            ScheduleAttendanceClient scheduleAttendanceClient,
             @Value("${presence.ttl:PT2M}") Duration ttl
     ) {
         this.presenceRedisTemplate = presenceRedisTemplate;
         this.stringRedisTemplate = stringRedisTemplate;
         this.broadcaster = broadcaster;
+        this.scheduleAttendanceClient = scheduleAttendanceClient;
         this.ttl = ttl;
     }
 
@@ -50,6 +54,9 @@ public class PresenceService {
                 .doOnNext(result -> {
                     if (!result.existed()) {
                         broadcaster.publish(buildEvent("PRESENCE_ONLINE", result.presence(), true, "ONLINE_ENDPOINT"));
+                        scheduleAttendanceClient.registrarPresenciaEvento(
+                                result.presence().getEmpleadoId(), "CONECTADO", Instant.now(), "ONLINE_ENDPOINT"
+                        ).subscribe();
                     }
                 })
                 .then();
@@ -60,6 +67,9 @@ public class PresenceService {
                 .doOnNext(result -> {
                     if (!result.existed()) {
                         broadcaster.publish(buildEvent("PRESENCE_ONLINE", result.presence(), true, "HEARTBEAT_RECOVERY"));
+                        scheduleAttendanceClient.registrarPresenciaEvento(
+                                result.presence().getEmpleadoId(), "CONECTADO", Instant.now(), "HEARTBEAT_RECOVERY"
+                        ).subscribe();
                     }
                 })
                 .then();
@@ -83,9 +93,12 @@ public class PresenceService {
                             .build();
 
                     return removePresence(employeeId, offlinePresence)
-                            .doOnSuccess(ignored ->
-                                    broadcaster.publish(buildEvent("PRESENCE_OFFLINE", offlinePresence, false, "OFFLINE_ENDPOINT"))
-                            );
+                            .doOnSuccess(ignored -> {
+                                    broadcaster.publish(buildEvent("PRESENCE_OFFLINE", offlinePresence, false, "OFFLINE_ENDPOINT"));
+                                    scheduleAttendanceClient.registrarPresenciaEvento(
+                                            offlinePresence.getEmpleadoId(), "DESCONECTADO", Instant.now(), "CIERRE_MANUAL"
+                                    ).subscribe();
+                            });
                 });
     }
 
@@ -192,12 +205,17 @@ public class PresenceService {
                     return presenceRedisTemplate.opsForValue()
                             .get(shadowKey)
                             .flatMap(shadowPresence -> removePresence(employeeId, shadowPresence)
-                                    .doOnSuccess(ignored -> broadcaster.publish(buildEvent(
-                                            "PRESENCE_EXPIRED",
-                                            shadowPresence,
-                                            false,
-                                            "REDIS_TTL"
-                                    ))))
+                                    .doOnSuccess(ignored -> {
+                                            broadcaster.publish(buildEvent(
+                                                    "PRESENCE_EXPIRED",
+                                                    shadowPresence,
+                                                    false,
+                                                    "REDIS_TTL"
+                                            ));
+                                            scheduleAttendanceClient.registrarPresenciaEvento(
+                                                    shadowPresence.getEmpleadoId(), "DESCONECTADO", Instant.now(), "INACTIVIDAD"
+                                            ).subscribe();
+                                    }))
                             .switchIfEmpty(stringRedisTemplate.opsForSet()
                                     .remove(PresenceKeys.employeeIndexKey(), employeeId)
                                     .then());
