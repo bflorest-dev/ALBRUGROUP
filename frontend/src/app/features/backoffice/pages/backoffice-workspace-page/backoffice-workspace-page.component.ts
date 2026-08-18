@@ -30,6 +30,7 @@ import { LeadCommercialDataTabsComponent } from '../../../../shared/components/l
 import { LeadPlanSummaryComponent } from '../../../../shared/components/lead-plan-summary/lead-plan-summary.component';
 import { PhoneActionButtonComponent } from '../../../../shared/components/phone-action-button/phone-action-button.component';
 import { TipificationStackComponent, TipificationPaletteByCode } from '../../../../shared/components/tipification-stack/tipification-stack.component';
+import { LiquidGlowDirective } from '../../../../shared/directives/liquid-glow.directive';
 import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
 import { buildWhatsAppUrl } from '../../../../shared/utils/phone-link';
 import {
@@ -104,7 +105,8 @@ type AssignmentConflictDetails = {
     LeadCommercialDataTabsComponent,
     LeadPlanSummaryComponent,
     PhoneActionButtonComponent,
-    TipificationStackComponent
+    TipificationStackComponent,
+    LiquidGlowDirective
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './backoffice-workspace-page.component.html',
@@ -190,6 +192,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly adicionalesDirty = signal(false);
   protected readonly detailDrawerOpen = signal(false);
   protected readonly activeDataTab = signal('datos');
+  protected readonly tipificationPanelOpen = signal(false);
   protected readonly tipificationFooterPinned = signal(false);
   protected readonly tipificationOverlayOpen = signal(false);
   protected readonly tipificationFooterExpanded = computed(() =>
@@ -493,7 +496,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly showSecSotColumn = computed(() =>
     this.activeRows().some((row) => row.requiereSecSotVenta === true || !!row.sec || !!row.sot)
   );
-  protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 12 : 11);
+  protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 11 : 10);
   protected readonly activeTotal = computed(() => {
     switch (this.section()) {
       case 'programados': return this.totalProgramados();
@@ -712,6 +715,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     await this.releaseCurrentLeadIfIdle();
     this.closeDetail();
+  }
+
+  protected toggleTipificationPanel(): void {
+    this.tipificationPanelOpen.update((value) => !value);
+  }
+
+  protected closeTipificationPanel(): void {
+    this.tipificationPanelOpen.set(false);
   }
 
   protected setTipificationFooterPinned(value: boolean): void {
@@ -2183,6 +2194,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.selectedLeadId.set(null);
     this.selectedTipificacionCode.set('');
     this.selectedSubtipificacionCode.set('');
+    this.tipificationPanelOpen.set(false);
     this.selectedOfertaProviderId.set(null);
     this.ofertaPlanes.set([]);
     this.adicionalesSeleccionados.set([]);

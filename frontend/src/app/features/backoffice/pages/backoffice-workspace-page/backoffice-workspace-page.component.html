@@ -199,9 +199,8 @@
             <i class="pi pi-clock" aria-hidden="true"></i>
             <span class="sr-only">Antiguedad</span>
           </th>
-          <th class="col-fecha">Fecha ingreso</th>
-          <th class="col-lead">Lead</th>
-          <th class="col-documento">Documento</th>
+          <th class="col-fecha">Ingreso</th>
+          <th class="col-lead">Lead / Documento</th>
           <th class="col-proveedor">Proveedor</th>
           <th class="col-estado">Estado</th>
           @if (section() === 'plataforma') {
@@ -258,7 +257,6 @@
               <span class="lead-cell__document">{{ display(row.numeroDocumentoTitularServicio) }}</span>
             </div>
           </td>
-          <td class="col-documento">{{ display(row.numeroDocumentoTitularServicio) }}</td>
           <td class="col-proveedor">
             @if (providerLogo(row.nombreProveedorSnapshot); as logo) {
               <div class="provider-cell">
@@ -344,14 +342,15 @@
               <div class="skeleton-table">
                 @for (_ of skeletonRows; track $index) {
                   <div class="skeleton-row">
-                    <p-skeleton width="8rem" height="1.1rem" />
-                    <p-skeleton width="6rem" height="1.6rem" borderRadius="999px" />
-                    <p-skeleton width="10rem" height="1.1rem" />
-                    <p-skeleton width="12rem" height="1.1rem" />
-                    <p-skeleton width="9rem" height="1.1rem" />
+                    <p-skeleton width="0.5rem" height="1.25rem" />
+                    <p-skeleton width="5rem" height="1.1rem" />
+                    <p-skeleton width="9rem" height="1.6rem" borderRadius="999px" />
+                    <p-skeleton width="5rem" height="1.1rem" />
                     <p-skeleton width="6rem" height="1.1rem" />
-                    <p-skeleton width="9rem" height="1.1rem" />
-                    <p-skeleton width="8rem" height="1.1rem" />
+                    <p-skeleton width="5rem" height="1.1rem" />
+                    <p-skeleton width="7rem" height="1.1rem" />
+                    <p-skeleton width="6rem" height="1.1rem" />
+                    <p-skeleton width="7rem" height="1.1rem" />
                   </div>
                 }
               </div>
@@ -390,136 +389,195 @@
     [dismissible]="false"
     [closeOnEscape]="false"
     [showCloseIcon]="false"
+    appendTo="self"
     styleClass="backoffice-drawer"
   >
     @if (detail(); as lead) {
       <ng-template #header>
         <header class="drawer-head">
-          <div class="drawer-head__main">
+          <div class="drawer-head__top">
             <span class="eyebrow">{{ leadProviderLabel(lead) }}</span>
-            <div class="drawer-head__identity">
-              <h2><span>{{ leadCountryCode(lead) }}</span> {{ lead.lead }}</h2>
-            </div>
-            <div class="drawer-head__meta">
-              <span>{{ display(lead.nombreTitular) }}</span>
-              <span>{{ leadDocumentLabel(lead) }}</span>
-              <span>{{ leadAddressSummary(lead) }}</span>
-            </div>
+            <button
+              pButton
+              type="button"
+              class="drawer-head__close"
+              size="small"
+              severity="secondary"
+              [text]="true"
+              icon="pi pi-times"
+              aria-label="Cerrar"
+              pTooltip="Cerrar"
+              tooltipPosition="bottom"
+              (click)="requestCloseDetail()"
+            ></button>
           </div>
 
-          <div class="drawer-head__actions">
-            <div class="drawer-head__contact">
-              <app-phone-action-button
-                [idLead]="lead.id"
-                [prefijo]="lead.prefijo"
-                [lead]="lead.lead"
-                size="small"
-                [buttonWidth]="'8.75rem'"
-                [disabled]="!canMutateOperationalData()"
-                [loading]="isSaving()"
-                (callStarted)="registrarLlamadaOperativa()"
-                (callError)="showCallError($event)"
-              />
-              <button
-                pButton
-                type="button"
-                class="drawer-head__chat"
-                icon="pi pi-whatsapp"
-                label="Chat"
-                severity="secondary"
-                size="small"
-                [disabled]="!hasLeadChat(lead) || !canMutateOperationalData()"
-                [loading]="isSaving()"
-                (click)="registrarChat()"
-              ></button>
+          <div class="drawer-head__body">
+            <div class="drawer-head__main">
+              <div class="drawer-head__identity">
+                <h2><span class="drawer-head__country">{{ leadCountryCode(lead) }}</span> {{ lead.lead }}</h2>
+              </div>
+              <div class="drawer-head__meta">
+                <span>{{ display(lead.nombreTitular) }}</span>
+                <span>{{ leadDocumentLabel(lead) }}</span>
+                <span>{{ leadAddressSummary(lead) }}</span>
+              </div>
             </div>
-            <div class="drawer-head__status">
-              <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="display(lead.estadoSeguimiento)" />
-              @if (hasUnsavedDataChanges()) {
-                <p-tag severity="warn" value="Datos sin guardar" />
-              }
+
+            <div class="drawer-head__actions">
+              <div class="drawer-head__left">
+                <div class="drawer-head__status">
+                  <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="display(lead.estadoSeguimiento)" />
+                  @if (hasUnsavedDataChanges()) {
+                    <p-tag severity="warn" value="Sin guardar" />
+                  }
+                </div>
+                <div class="drawer-head__contact">
+                  <app-phone-action-button
+                    [idLead]="lead.id"
+                    [prefijo]="lead.prefijo"
+                    [lead]="lead.lead"
+                    size="small"
+                    label=""
+                    [buttonWidth]="'4.5rem'"
+                    [disabled]="!canMutateOperationalData()"
+                    [loading]="isSaving()"
+                    (callStarted)="registrarLlamadaOperativa()"
+                    (callError)="showCallError($event)"
+                  />
+                  <button
+                    pButton
+                    type="button"
+                    class="drawer-head__chat"
+                    icon="pi pi-whatsapp"
+                    severity="secondary"
+                    size="small"
+                    aria-label="Abrir chat de WhatsApp"
+                    [pTooltip]="hasLeadChat(lead) ? 'Abrir chat' : 'Sin WhatsApp disponible'"
+                    tooltipPosition="bottom"
+                    [disabled]="!hasLeadChat(lead) || !canMutateOperationalData()"
+                    [loading]="isSaving()"
+                    (click)="registrarChat()"
+                  ></button>
+                </div>
+              </div>
+              <div class="drawer-head__save">
+                <button
+                  pButton
+                  type="button"
+                  class="drawer-head__save-btn"
+                  icon="pi pi-save"
+                  label="Guardar datos"
+                  size="small"
+                  [disabled]="!hasUnsavedDataChanges() || !canMutateOperationalData()"
+                  [loading]="isSaving()"
+                  (click)="guardarCambiosLead()"
+                ></button>
+              </div>
             </div>
           </div>
         </header>
       </ng-template>
 
-      <section class="drawer-workspace">
+      <section class="drawer-workspace" appLiquidGlow>
         <div class="drawer-scroll">
-          <app-lead-commercial-data-tabs
-          layoutMode="drawer"
-          [datosForm]="datosForm"
-          [direccionForm]="direccionForm"
-          [ofertaForm]="ofertaForm"
-          [camposVisibles]="camposVisibles()"
-          [activeTab]="$any(activeDataTab())"
-          [showHistorialTab]="true"
-          [tipoDocumentoOptions]="tipoDocumentoOptions"
-          [tipoDomicilioOptions]="tipoDomicilioOptions"
-          [tipoViaOptions]="tipoViaOptions"
-          [departamentos]="departamentos()"
-          [provinciasDomicilio]="provinciasDomicilio()"
-          [distritosDomicilio]="distritosDomicilio()"
-          [providerOptions]="ofertaProviderOptions()"
-          [selectedProviderId]="selectedOfertaProviderId()"
-          [planOptions]="planOptions()"
-          [promocionOptions]="promocionOptions()"
-          [adicionales]="adicionales()"
-          [selectedAdditionals]="adicionalesSeleccionadosView()"
-          [additionalsTotal]="ofertaAdditionalsTotal()"
-          [offerLocked]="ofertaBloqueada()"
-          [offerNoticeSeverity]="ofertaNoticeSeverity()"
-          [offerNoticeText]="ofertaNoticeText()"
-          (activeTabChange)="activeDataTab.set($event)"
-          (tipoDocumentoChange)="onTipoDocumentoChanged()"
-          (departamentoDomicilioChange)="onDepartamentoDomicilioChanged()"
-          (provinciaDomicilioChange)="onProvinciaDomicilioChanged()"
-          (distritoDomicilioChange)="onDistritoDomicilioChanged()"
-          (ofertaProviderChange)="onOfertaProviderChanged($event)"
-          (planChange)="onPlanChanged()"
-          (incrementarAdicional)="incrementarAdicional($event)"
-          (disminuirAdicional)="disminuirAdicional($event)"
-        >
-          <p-table lead-commercial-history [value]="eventos()" [rowHover]="true" styleClass="p-datatable-sm event-table">
-            <ng-template #header>
-              <tr>
-                <th>Fecha</th>
-                <th>Accion</th>
-                <th>Actor</th>
-                <th>Tipificacion</th>
-                <th>Programacion</th>
-                <th>Instalacion</th>
-                <th>Comentario</th>
-              </tr>
-            </ng-template>
-            <ng-template #body let-evento>
-              <tr>
-                <td>{{ evento.createdAt | date: 'dd/MM HH:mm' }}</td>
-                <td>{{ display(evento.accion) }}</td>
-                <td>{{ display(evento.nombreActor) }}</td>
-                <td>{{ display(evento.tipificacion || evento.subtipificacion) }}</td>
-                <td>{{ eventScheduleLabel(evento) }}</td>
-                <td>{{ formatDateOnly(evento.fechaInstalacion) }}</td>
-                <td>{{ display(evento.comentario) }}</td>
-              </tr>
-            </ng-template>
-            <ng-template #emptymessage>
-              <tr><td colspan="7">No hay eventos para el dia de hoy.</td></tr>
-            </ng-template>
-          </p-table>
-        </app-lead-commercial-data-tabs>
+          <div class="drawer-columns">
+            <div class="drawer-columns__form">
+              <app-lead-commercial-data-tabs
+                layoutMode="drawer"
+                [datosForm]="datosForm"
+                [direccionForm]="direccionForm"
+                [ofertaForm]="ofertaForm"
+                [camposVisibles]="camposVisibles()"
+                [activeTab]="$any(activeDataTab())"
+                [showHistorialTab]="false"
+                [tipoDocumentoOptions]="tipoDocumentoOptions"
+                [tipoDomicilioOptions]="tipoDomicilioOptions"
+                [tipoViaOptions]="tipoViaOptions"
+                [departamentos]="departamentos()"
+                [provinciasDomicilio]="provinciasDomicilio()"
+                [distritosDomicilio]="distritosDomicilio()"
+                [providerOptions]="ofertaProviderOptions()"
+                [selectedProviderId]="selectedOfertaProviderId()"
+                [planOptions]="planOptions()"
+                [promocionOptions]="promocionOptions()"
+                [adicionales]="adicionales()"
+                [selectedAdditionals]="adicionalesSeleccionadosView()"
+                [additionalsTotal]="ofertaAdditionalsTotal()"
+                [offerLocked]="ofertaBloqueada()"
+                [offerNoticeSeverity]="ofertaNoticeSeverity()"
+                [offerNoticeText]="ofertaNoticeText()"
+                (activeTabChange)="activeDataTab.set($event)"
+                (tipoDocumentoChange)="onTipoDocumentoChanged()"
+                (departamentoDomicilioChange)="onDepartamentoDomicilioChanged()"
+                (provinciaDomicilioChange)="onProvinciaDomicilioChanged()"
+                (distritoDomicilioChange)="onDistritoDomicilioChanged()"
+                (ofertaProviderChange)="onOfertaProviderChanged($event)"
+                (planChange)="onPlanChanged()"
+                (incrementarAdicional)="incrementarAdicional($event)"
+                (disminuirAdicional)="disminuirAdicional($event)"
+              ></app-lead-commercial-data-tabs>
+            </div>
 
+            <aside class="drawer-columns__history">
+              <h3 class="history-title">Historial</h3>
+              <div class="lead-timeline">
+                @if (eventos().length) {
+                  <div class="timeline">
+                    @for (evento of eventos(); track evento.id) {
+                      <article class="timeline-item">
+                        <div class="timeline-dot" [class.timeline-dot--system]="!evento.nombreActor"></div>
+                        <div class="timeline-content">
+                          <div class="timeline-header">
+                            <time>{{ evento.createdAt | date: 'dd/MM HH:mm' }}</time>
+                            <span class="timeline-actor">{{ display(evento.nombreActor) }}</span>
+                          </div>
+                          <strong class="timeline-action">{{ display(evento.accion) }}</strong>
+                          @if (evento.tipificacion || evento.subtipificacion) {
+                            <span class="timeline-tag">{{ display(evento.tipificacion || evento.subtipificacion) }}</span>
+                          }
+                          <div class="timeline-meta">
+                            @if (evento.fechaProgramacion || evento.horaProgramada) {
+                              <span>Programacion: {{ eventScheduleLabel(evento) }}</span>
+                            }
+                            @if (evento.fechaInstalacion) {
+                              <span>Instalacion: {{ formatDateOnly(evento.fechaInstalacion) }}</span>
+                            }
+                          </div>
+                          @if (evento.comentario) {
+                            <p class="timeline-comment">{{ display(evento.comentario) }}</p>
+                          }
+                        </div>
+                      </article>
+                    }
+                  </div>
+                } @else {
+                  <div class="empty-state">No hay eventos para el dia de hoy.</div>
+                }
+              </div>
+            </aside>
+          </div>
         </div>
 
-        <footer
-          #tipificationFooter
-          class="drawer-footer drawer-footer--adaptive"
-          [class.drawer-footer--expanded]="tipificationFooterExpanded()"
-          (mouseenter)="setTipificationFooterPinned(true)"
-          (mouseleave)="setTipificationFooterPinned(false)"
+        <footer class="drawer-footer">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-check"
+            label="Tipificar"
+            [disabled]="!canMutateOperationalData()"
+            [loading]="isSaving()"
+            (click)="toggleTipificationPanel()"
+          ></button>
+        </footer>
+
+        <div
+          class="tipification-panel"
+          [class.tipification-panel--open]="tipificationPanelOpen()"
         >
           <form class="drawer-tipification" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
             <div class="drawer-tipification__main">
-              <label class="tipification-field">
+              <label class="tipification-field tipification-field--primary">
                 <span>Tipificacion</span>
                 <p-select
                   formControlName="codigoTipificacion"
@@ -528,9 +586,7 @@
                   optionValue="codigo"
                   placeholder="Seleccionar"
                   appendTo="body"
-                  (onShow)="setTipificationOverlayOpen(true)"
-                  (onHide)="setTipificationOverlayOpen(false)"
-                  (onChange)="onTipificacionSelected($event.value); setTipificationOverlayOpen(false)"
+                  (onChange)="onTipificacionSelected($event.value)"
                 >
                   <ng-template #item let-tipificacion>
                     <div class="select-item">
@@ -541,7 +597,7 @@
                 </p-select>
               </label>
 
-              <label class="tipification-field">
+              <label class="tipification-field tipification-field--primary">
                 <span>Subtipificacion</span>
                 <p-select
                   formControlName="codigoSubtipificacion"
@@ -551,9 +607,7 @@
                   placeholder="Seleccionar"
                   appendTo="body"
                   [disabled]="!selectedTipificacionCode() || !subtipificaciones().length"
-                  (onShow)="setTipificationOverlayOpen(true)"
-                  (onHide)="setTipificationOverlayOpen(false)"
-                  (onChange)="onSubtipificacionSelected($event.value); setTipificationOverlayOpen(false)"
+                  (onChange)="onSubtipificacionSelected($event.value)"
                 >
                   <ng-template #item let-subtipificacion>
                     <div class="select-item">
@@ -569,91 +623,94 @@
                 type="submit"
                 icon="pi pi-check"
                 label="Tipificar"
+                size="small"
                 [disabled]="!canMutateOperationalData()"
                 [loading]="isSaving()"
               ></button>
             </div>
 
-            <div class="drawer-tipification__extras">
-              <label class="tipification-field">
-                <span>Fecha programacion</span>
-                <p-datepicker
-                  [ngModel]="toPickerDate(tipificacionForm.controls.fechaProgramacion.getRawValue())"
-                  [ngModelOptions]="{ standalone: true }"
-                  dateFormat="dd/mm/yy"
-                  [minDate]="null"
-                  [showIcon]="true"
-                  appendTo="body"
-                  [disabled]="!requiresProgramming() || !canMutateOperationalData()"
-                  (onShow)="setTipificationOverlayOpen(true)"
-                  (onHide)="setTipificationOverlayOpen(false)"
-                  (ngModelChange)="setDateControl('fechaProgramacion', $event); setTipificationOverlayOpen(false)"
-                />
-              </label>
+            @if (requiresProgramming() || requiresInstallDate() || requiresSecSot()) {
+              <div class="drawer-tipification__extras">
+                @if (requiresProgramming()) {
+                  <label class="tipification-field">
+                    <span>Fecha programacion</span>
+                    <p-datepicker
+                      [ngModel]="toPickerDate(tipificacionForm.controls.fechaProgramacion.getRawValue())"
+                      [ngModelOptions]="{ standalone: true }"
+                      dateFormat="dd/mm/yy"
+                      [minDate]="null"
+                      [showIcon]="true"
+                      appendTo="body"
+                      [disabled]="!canMutateOperationalData()"
+                      (ngModelChange)="setDateControl('fechaProgramacion', $event)"
+                    />
+                  </label>
 
-              <label class="tipification-field tipification-field--time">
-                <span>Hora programacion</span>
-                <p-datepicker
-                  formControlName="horaProgramada"
-                  dataType="string"
-                  [timeOnly]="true"
-                  hourFormat="24"
-                  [stepMinute]="15"
-                  [showIcon]="true"
-                  icon="pi pi-clock"
-                  appendTo="body"
-                  [disabled]="!requiresProgramming() || !canMutateOperationalData()"
-                  (onShow)="setTipificationOverlayOpen(true)"
-                  (onHide)="setTipificationOverlayOpen(false)"
-                  (onSelect)="normalizeScheduledTime(); setTipificationOverlayOpen(false)"
-                  (focusout)="normalizeScheduledTime()"
-                />
-              </label>
+                  <label class="tipification-field tipification-field--time">
+                    <span>Hora programacion</span>
+                    <p-datepicker
+                      formControlName="horaProgramada"
+                      dataType="string"
+                      [timeOnly]="true"
+                      hourFormat="24"
+                      [stepMinute]="15"
+                      [showIcon]="true"
+                      icon="pi pi-clock"
+                      appendTo="body"
+                      [disabled]="!canMutateOperationalData()"
+                      (onSelect)="normalizeScheduledTime()"
+                      (focusout)="normalizeScheduledTime()"
+                    />
+                  </label>
+                }
 
-              <label class="tipification-field">
-                <span>Fecha instalacion</span>
-                <p-datepicker
-                  [ngModel]="toPickerDate(tipificacionForm.controls.fechaInstalacion.getRawValue())"
-                  [ngModelOptions]="{ standalone: true }"
-                  dateFormat="dd/mm/yy"
-                  [minDate]="null"
-                  [showIcon]="true"
-                  appendTo="body"
-                  [disabled]="!requiresInstallDate() || !canMutateOperationalData()"
-                  (onShow)="setTipificationOverlayOpen(true)"
-                  (onHide)="setTipificationOverlayOpen(false)"
-                  (ngModelChange)="setDateControl('fechaInstalacion', $event); setTipificationOverlayOpen(false)"
-                />
-              </label>
+                @if (requiresInstallDate()) {
+                  <label class="tipification-field">
+                    <span>Fecha instalacion</span>
+                    <p-datepicker
+                      [ngModel]="toPickerDate(tipificacionForm.controls.fechaInstalacion.getRawValue())"
+                      [ngModelOptions]="{ standalone: true }"
+                      dateFormat="dd/mm/yy"
+                      [minDate]="null"
+                      [showIcon]="true"
+                      appendTo="body"
+                      [disabled]="!canMutateOperationalData()"
+                      (ngModelChange)="setDateControl('fechaInstalacion', $event)"
+                    />
+                  </label>
+                }
 
-              <label class="tipification-field tipification-field--code">
-                <span>SEC</span>
-                <input
-                  pInputText
-                  type="text"
-                  inputmode="numeric"
-                  maxlength="9"
-                  autocomplete="off"
-                  formControlName="sec"
-                  placeholder="9 digitos"
-                  (input)="setFixedDigits('sec', $any($event.target).value, 9)"
-                />
-              </label>
+                @if (requiresSecSot()) {
+                  <label class="tipification-field tipification-field--code">
+                    <span>SEC</span>
+                    <input
+                      pInputText
+                      type="text"
+                      inputmode="numeric"
+                      maxlength="9"
+                      autocomplete="off"
+                      formControlName="sec"
+                      placeholder="9 digitos"
+                      (input)="setFixedDigits('sec', $any($event.target).value, 9)"
+                    />
+                  </label>
 
-              <label class="tipification-field tipification-field--code">
-                <span>SOT</span>
-                <input
-                  pInputText
-                  type="text"
-                  inputmode="numeric"
-                  maxlength="8"
-                  autocomplete="off"
-                  formControlName="sot"
-                  placeholder="8 digitos"
-                  (input)="setFixedDigits('sot', $any($event.target).value, 8)"
-                />
-              </label>
-            </div>
+                  <label class="tipification-field tipification-field--code">
+                    <span>SOT</span>
+                    <input
+                      pInputText
+                      type="text"
+                      inputmode="numeric"
+                      maxlength="8"
+                      autocomplete="off"
+                      formControlName="sot"
+                      placeholder="8 digitos"
+                      (input)="setFixedDigits('sot', $any($event.target).value, 8)"
+                    />
+                  </label>
+                }
+              </div>
+            }
 
             <div class="drawer-tipification__comment">
               <label class="comment-field">
@@ -670,19 +727,17 @@
             </div>
           </form>
 
-          <div class="drawer-actions">
-          <button
-            pButton
-            type="button"
-            icon="pi pi-save"
-            label="Guardar datos"
-            [disabled]="!hasUnsavedDataChanges() || !canMutateOperationalData()"
-            [loading]="isSaving()"
-            (click)="guardarCambiosLead()"
-          ></button>
-          <button pButton type="button" label="Cerrar" severity="secondary" (click)="requestCloseDetail()"></button>
+          <div class="tipification-panel__actions">
+            <button
+              pButton
+              type="button"
+              label="Cancelar"
+              severity="secondary"
+              size="small"
+              (click)="closeTipificationPanel()"
+            ></button>
           </div>
-        </footer>
+        </div>
       </section>
     } @else {
       <div class="dialog-skeleton">

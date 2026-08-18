@@ -55,6 +55,7 @@ export class LeadCommercialDataTabsComponent {
   @Input() activeTab: LeadCommercialDataTab = 'datos';
   @Input() layoutMode: LeadCommercialDataTabsLayoutMode = 'default';
   @Input() showHistorialTab = false;
+  @Input() showTabList = true;
   @Input() tipoDocumentoOptions: string[] = [];
   @Input() tipoDomicilioOptions: string[] = [];
   @Input() tipoViaOptions: string[] = [];

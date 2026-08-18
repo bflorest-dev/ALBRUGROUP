@@ -1,13 +1,15 @@
 <div class="commercial-tabs" [class.commercial-tabs--drawer]="layoutMode === 'drawer'">
   <p-tabs [value]="activeTab" (valueChange)="activeTabChange.emit($any($event))">
-    <p-tablist>
-      <p-tab value="datos">{{ layoutMode === 'drawer' ? 'Datos' : 'Datos Preventa' }}</p-tab>
-      <p-tab value="direccion">Direccion</p-tab>
-      <p-tab value="oferta">{{ layoutMode === 'drawer' ? 'Plan' : 'Oferta Comercial' }}</p-tab>
-      @if (showHistorialTab) {
-        <p-tab value="historial">Historial</p-tab>
-      }
-    </p-tablist>
+    @if (showTabList) {
+      <p-tablist>
+        <p-tab value="datos">{{ layoutMode === 'drawer' ? 'Datos' : 'Datos Preventa' }}</p-tab>
+        <p-tab value="direccion">Direccion</p-tab>
+        <p-tab value="oferta">{{ layoutMode === 'drawer' ? 'Plan' : 'Oferta Comercial' }}</p-tab>
+        @if (showHistorialTab) {
+          <p-tab value="historial">Historial</p-tab>
+        }
+      </p-tablist>
+    }
     <div class="commercial-tabs__actions">
       <ng-content select="[lead-commercial-tabs-actions]" />
     </div>

@@ -120,6 +120,12 @@ app-employee-access-panel .row-actions {
   --app-age-stale: var(--app-warning);
   --app-age-critical: var(--app-danger);
 
+  /* Glow "liquid metal" con seguimiento del mouse en controles interactivos */
+  --liquid-glow-color: var(--role-accent);
+  --liquid-glow-radius: 180px;
+  --liquid-glow-radius-input: 110px;
+  --liquid-glow-border-width: 3px;
+
   --date-field-text: #143047;
   --date-field-icon: #476174;
   --date-field-icon-accent: #0f82a4;
