@@ -1713,6 +1713,12 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
+              AND (:soloIngresados = false
+                   OR EXISTS (SELECT 1 FROM Evento reg
+                              WHERE reg.idLead = e.idLead
+                                AND reg.accion = :accionRegistro
+                                AND reg.createdAt >= :fechaDesde
+                                AND reg.createdAt < :fechaHasta))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
@@ -1722,6 +1728,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             """)
     List<AsesorCantidadProjection> resumirTipificacionesPorAsesorGtr(
             @Param("accion") Accion accion,
+            @Param("soloIngresados") boolean soloIngresados,
+            @Param("accionRegistro") Accion accionRegistro,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("soloActivos") boolean soloActivos,
@@ -1738,8 +1746,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
-              AND l.createdAt >= :fechaDesde
-              AND l.createdAt < :fechaHasta
+              AND EXISTS (SELECT 1 FROM Evento reg
+                          WHERE reg.idLead = e.idLead
+                            AND reg.accion = :accionRegistro
+                            AND reg.createdAt >= :fechaDesde
+                            AND reg.createdAt < :fechaHasta)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
@@ -1749,6 +1760,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             """)
     List<AsesorCantidadProjection> resumirNuevosGestionadosPorAsesorGtr(
             @Param("accion") Accion accion,
+            @Param("accionRegistro") Accion accionRegistro,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("soloActivos") boolean soloActivos,
@@ -1766,6 +1778,12 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.idAsesorAsignado IS NOT NULL
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
+              AND (:soloIngresados = false
+                   OR EXISTS (SELECT 1 FROM Evento reg
+                              WHERE reg.idLead = e.idLead
+                                AND reg.accion = :accionRegistro
+                                AND reg.createdAt >= :fechaDesde
+                                AND reg.createdAt < :fechaHasta))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
@@ -1775,6 +1793,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             """)
     List<AsesorCantidadProjection> resumirAsignacionesPorAsesorDestinoGtr(
             @Param("accion") Accion accion,
+            @Param("soloIngresados") boolean soloIngresados,
+            @Param("accionRegistro") Accion accionRegistro,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("soloActivos") boolean soloActivos,
@@ -1791,6 +1811,12 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
+              AND (:soloIngresados = false
+                   OR EXISTS (SELECT 1 FROM Evento reg
+                              WHERE reg.idLead = e.idLead
+                                AND reg.accion = :accionRegistro
+                                AND reg.createdAt >= :fechaDesde
+                                AND reg.createdAt < :fechaHasta))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
@@ -1800,6 +1826,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             """)
     List<AsesorCantidadProjection> resumirNuevasOportunidadesPorAsesorGtr(
             @Param("accion") Accion accion,
+            @Param("soloIngresados") boolean soloIngresados,
+            @Param("accionRegistro") Accion accionRegistro,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("soloActivos") boolean soloActivos,

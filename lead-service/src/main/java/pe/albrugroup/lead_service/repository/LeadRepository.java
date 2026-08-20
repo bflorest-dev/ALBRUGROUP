@@ -2067,6 +2067,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE r.idAsesorMerito IS NOT NULL
               AND r.fechaMerito >= :fechaDesde
               AND r.fechaMerito < :fechaHasta
+              AND (:soloIngresados = false
+                   OR EXISTS (SELECT 1 FROM Evento reg
+                              WHERE reg.idLead = l.id
+                                AND reg.accion = :accionRegistro
+                                AND reg.createdAt >= :fechaDesde
+                                AND reg.createdAt < :fechaHasta))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
@@ -2075,6 +2081,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             GROUP BY r.idAsesorMerito
             """)
     List<AsesorPreventaCantidadProjection> resumirPreventasPorAsesorLeadGtr(
+            @Param("soloIngresados") boolean soloIngresados,
+            @Param("accionRegistro") Accion accionRegistro,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("soloActivos") boolean soloActivos,

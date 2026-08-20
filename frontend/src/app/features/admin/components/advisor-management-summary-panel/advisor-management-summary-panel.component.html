@@ -39,44 +39,40 @@
           <p-tag severity="info" [value]="facade.display(block.ranking.length)" />
         </header>
 
-        <div class="ams__ranking">
-          @for (row of block.ranking; track row.idAsesor; let rowIndex = $index) {
-            <div class="ams__row">
-              <span class="ams__rank">#{{ rowIndex + 1 }}</span>
-              <div class="ams__advisor">
-                <strong [title]="facade.display(row.nombreAsesor)">{{ shortAdvisorName(row.nombreAsesor) | uppercase }}</strong>
-                <span>{{ facade.percentage(row.conversion) }} conversión</span>
-              </div>
-              <div class="ams__metrics">
-                <span class="ams__metric">
-                  <small>1er contacto</small>
-                  <b>{{ facade.display(row.nuevosGestionadosPeriodo) }}</b>
-                </span>
-                <span class="ams__metric">
-                  <small>Asignados</small>
-                  <b>{{ facade.display(row.asignadosPeriodo) }}</b>
-                </span>
-                <span class="ams__metric">
-                  <small>Gestionados</small>
-                  <b>{{ facade.display(row.gestionadosPeriodo) }}</b>
-                </span>
-                <span class="ams__metric">
-                  <small>Oport.</small>
-                  <b>{{ facade.display(row.nuevasOportunidadesPeriodo) }}</b>
-                </span>
-                <span class="ams__metric">
-                  <small>Preventas</small>
-                  <b>{{ facade.display(row.preventasPeriodo) }}</b>
-                </span>
-                <span class="ams__metric">
-                  <small>Mes</small>
-                  <b>{{ facade.display(row.preventasMes) }}</b>
-                </span>
-              </div>
-            </div>
-          } @empty {
-            <p class="ams__state">Aún no hay datos para este período.</p>
-          }
+        <div class="ams__table-wrap">
+          <table class="ams__table">
+            <thead>
+              <tr>
+                <th class="ams__th--rank">#</th>
+                <th class="ams__th--advisor">Asesor</th>
+                <th class="ams__th--metric">1er contacto</th>
+                <th class="ams__th--metric">Asignados</th>
+                <th class="ams__th--metric">Gestionados</th>
+                <th class="ams__th--metric">Oport.</th>
+                <th class="ams__th--metric">Preventas</th>
+                <th class="ams__th--metric">Mes</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of block.ranking; track row.idAsesor; let rowIndex = $index) {
+                <tr class="ams__tr">
+                  <td class="ams__td--rank">{{ rowIndex + 1 }}</td>
+                  <td class="ams__td--advisor">
+                    <strong [title]="facade.display(row.nombreAsesor)">{{ shortAdvisorName(row.nombreAsesor) | uppercase }}</strong>
+                    <span>{{ facade.percentage(row.conversion) }} conversión</span>
+                  </td>
+                  <td class="ams__td--metric">{{ facade.display(row.nuevosGestionadosPeriodo) }}</td>
+                  <td class="ams__td--metric">{{ facade.display(row.asignadosPeriodo) }}</td>
+                  <td class="ams__td--metric">{{ facade.display(row.gestionadosPeriodo) }}</td>
+                  <td class="ams__td--metric">{{ facade.display(row.nuevasOportunidadesPeriodo) }}</td>
+                  <td class="ams__td--metric ams__td--highlight">{{ facade.display(row.preventasPeriodo) }}</td>
+                  <td class="ams__td--metric">{{ facade.display(row.preventasMes) }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="8" class="ams__state">Aún no hay datos para este período.</td></tr>
+              }
+            </tbody>
+          </table>
         </div>
       </article>
 

@@ -12,6 +12,7 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.CampoConfigurable;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.ModoConteo;
+import pe.albrugroup.lead_service.entity.enums.OrdenRankingAsesor;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.CriterioZona;
@@ -4433,11 +4434,13 @@ public class LeadService {
 
     public List<GtrRankingAsesorResponse> listarRankingGtr(
             LocalDate desde, LocalDate hasta, boolean soloActivos) {
-        return listarRankingGtr(desde, hasta, soloActivos, null);
+        return listarRankingGtr(desde, hasta, soloActivos, null,
+                ModoConteo.GESTIONADOS, OrdenRankingAsesor.PREVENTAS_PERIODO);
     }
 
     public List<GtrRankingAsesorResponse> listarRankingGtr(
-            LocalDate desde, LocalDate hasta, boolean soloActivos, Long idEquipo) {
+            LocalDate desde, LocalDate hasta, boolean soloActivos, Long idEquipo,
+            ModoConteo modo, OrdenRankingAsesor ordenarPor) {
 
         LocalDate desdeResuelta = OperationalDateTime.resolveDate(desde);
         LocalDate hastaResuelta = hasta == null ? OperationalDateTime.today() : hasta;
@@ -4450,10 +4453,12 @@ public class LeadService {
         OperationalDateTime.InstantRange rangoMes =
                 OperationalDateTime.monthRange(YearMonth.from(desdeResuelta));
 
+        boolean ingresados = modo == ModoConteo.INGRESADOS;
         Map<Long, GtrRankingAccumulator> acumulados = new HashMap<>();
 
         eventoRepository.resumirNuevosGestionadosPorAsesorGtr(
-                        Accion.TIPIFICACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
+                        Accion.TIPIFICACION, Accion.REGISTRO,
+                        rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
                         equipos.filtrar(), equipos.ids())
                 .forEach(row -> {
                     GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
@@ -4461,7 +4466,8 @@ public class LeadService {
                 });
 
         eventoRepository.resumirAsignacionesPorAsesorDestinoGtr(
-                        Accion.ASIGNACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
+                        Accion.ASIGNACION, ingresados, Accion.REGISTRO,
+                        rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
                         equipos.filtrar(), equipos.ids())
                 .forEach(row -> {
                     GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
@@ -4469,7 +4475,8 @@ public class LeadService {
                 });
 
         eventoRepository.resumirTipificacionesPorAsesorGtr(
-                        Accion.TIPIFICACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
+                        Accion.TIPIFICACION, ingresados, Accion.REGISTRO,
+                        rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
                         equipos.filtrar(), equipos.ids())
                 .forEach(row -> {
                     GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
@@ -4477,15 +4484,16 @@ public class LeadService {
                 });
 
         eventoRepository.resumirNuevasOportunidadesPorAsesorGtr(
-                        Accion.NUEVA_OPORTUNIDAD, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
+                        Accion.NUEVA_OPORTUNIDAD, ingresados, Accion.REGISTRO,
+                        rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
                         equipos.filtrar(), equipos.ids())
                 .forEach(row -> {
                     GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
                     item.nuevasOportunidadesPeriodo = row.getCantidad();
                 });
 
-        // Preventas concretadas: fuente de verdad = Lead (idAsesorPreventa/fechaPreventa), no eventos.
         leadRepository.resumirPreventasPorAsesorLeadGtr(
+                        ingresados, Accion.REGISTRO,
                         rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
                         equipos.filtrar(), equipos.ids())
                 .forEach(row -> {
@@ -4513,9 +4521,12 @@ public class LeadService {
 
         resolverNombresAsesoresFaltantes(acumulados);
 
+        Comparator<GtrRankingAccumulator> comparator = ordenarPor == OrdenRankingAsesor.PREVENTAS_MES
+                ? Comparator.comparingLong(GtrRankingAccumulator::preventasMes).reversed()
+                : Comparator.comparingLong(GtrRankingAccumulator::preventasPeriodo).reversed();
+
         return acumulados.values().stream()
-                .sorted(Comparator.comparingLong(GtrRankingAccumulator::gestionadosPeriodo).reversed()
-                        .thenComparing(GtrRankingAccumulator::nombreAsesorOrdenable))
+                .sorted(comparator.thenComparing(GtrRankingAccumulator::nombreAsesorOrdenable))
                 .map(GtrRankingAccumulator::toResponse)
                 .toList();
     }
@@ -4730,6 +4741,8 @@ public class LeadService {
         }
 
         private long gestionadosPeriodo() { return gestionadosPeriodo; }
+        private long preventasPeriodo() { return preventasPeriodo; }
+        private long preventasMes() { return preventasMes; }
         private String nombreAsesorOrdenable() { return nombreAsesor == null ? "" : nombreAsesor; }
 
         private GtrRankingAsesorResponse toResponse() {

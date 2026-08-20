@@ -185,9 +185,15 @@ export class PreventaLeadService {
     desde: string,
     hasta?: string,
     soloActivos = true,
-    idEquipo?: number | null
+    idEquipo?: number | null,
+    modo: 'GESTIONADOS' | 'INGRESADOS' = 'GESTIONADOS',
+    ordenarPor: 'PREVENTAS_PERIODO' | 'PREVENTAS_MES' = 'PREVENTAS_PERIODO'
   ): Observable<GtrRankingAsesorResponse[]> {
-    let params = new HttpParams().set('desde', desde).set('soloActivos', soloActivos);
+    let params = new HttpParams()
+      .set('desde', desde)
+      .set('soloActivos', soloActivos)
+      .set('modo', modo)
+      .set('ordenarPor', ordenarPor);
     if (hasta) params = params.set('hasta', hasta);
     if (idEquipo !== null && idEquipo !== undefined) params = params.set('idEquipo', idEquipo);
     return this.http.get<GtrRankingAsesorResponse[]>(`${this.leadUrl}/preventa/gtr/ranking`, { params });

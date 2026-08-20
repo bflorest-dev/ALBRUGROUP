@@ -19,6 +19,7 @@ export type RankingSortField =
   | 'gestionadosPeriodo'
   | 'nuevasOportunidadesPeriodo'
   | 'preventasPeriodo'
+  | 'preventasMes'
   | 'nombreAsesor';
 export type RankingSortDirection = 'asc' | 'desc';
 
@@ -49,12 +50,15 @@ type RankingBlockResponse = {
   tipificaciones: GtrTipificacionRankingResponse[];
 };
 
+type OrdenRankingAsesor = 'PREVENTAS_PERIODO' | 'PREVENTAS_MES';
+
 type RankingRequest = {
   requestId: number;
   desde: string;
   hasta: string;
   modo: RankingModo;
   campo: RankingCampo;
+  ordenarPor: OrdenRankingAsesor;
   silent: boolean;
   blocks: Array<{ idEquipo: number | null; nombreEquipo: string }>;
 };
@@ -121,7 +125,7 @@ export class RankingFacade {
   private readonly fixedTeamId = signal<number | null>(null);
   readonly groupingMode = signal<RankingGroupingMode>('SIN_AGRUPAR');
   readonly selectedTeamId = signal<number | null>(null);
-  readonly sortField = signal<RankingSortField>('conversion');
+  readonly sortField = signal<RankingSortField>('preventasPeriodo');
   readonly sortDirection = signal<RankingSortDirection>('desc');
   readonly teams = signal<EquipoResponse[]>([]);
   // Drill activo (una tipificación a la vez, por bloque): su donut muestra subtipificaciones.
@@ -147,7 +151,7 @@ export class RankingFacade {
         forkJoin(
           req.blocks.map((block) =>
             forkJoin({
-              ranking: this.preventaService.listarRankingGtr(req.desde, req.hasta, false, block.idEquipo),
+              ranking: this.preventaService.listarRankingGtr(req.desde, req.hasta, false, block.idEquipo, req.modo, req.ordenarPor),
               tipificaciones: this.preventaService.listarTipificacionesRankingGtr(
                 req.desde,
                 req.hasta,
@@ -259,12 +263,13 @@ export class RankingFacade {
     { label: 'Equipo', value: 'EQUIPO' }
   ];
   readonly sortOptions: Array<{ label: string; value: RankingSortField }> = [
+    { label: 'Preventas del período', value: 'preventasPeriodo' },
+    { label: 'Preventas del mes', value: 'preventasMes' },
     { label: 'Conversión', value: 'conversion' },
     { label: '1er contacto', value: 'nuevosGestionadosPeriodo' },
     { label: 'Asignados', value: 'asignadosPeriodo' },
     { label: 'Gestionados', value: 'gestionadosPeriodo' },
     { label: 'Nuevas oportunidades', value: 'nuevasOportunidadesPeriodo' },
-    { label: 'Preventas', value: 'preventasPeriodo' },
     { label: 'Asesor', value: 'nombreAsesor' }
   ];
   readonly sortDirectionOptions = computed<Array<{ label: string; value: RankingSortDirection }>>(() =>
@@ -378,8 +383,11 @@ export class RankingFacade {
 
   setSortField(field: RankingSortField | null | undefined): void {
     if (!field || this.sortField() === field) return;
+    const prev = this.sortField();
     this.sortField.set(field);
     this.sortDirection.set(field === 'nombreAsesor' ? 'asc' : 'desc');
+    const needsRefetch = (field === 'preventasMes') !== (prev === 'preventasMes');
+    if (needsRefetch && this.started) this.refresh(true);
   }
 
   setSortDirection(direction: RankingSortDirection | null | undefined): void {
@@ -396,6 +404,7 @@ export class RankingFacade {
       hasta: range.hasta,
       modo: this.modo(),
       campo: this.campo(),
+      ordenarPor: this.sortField() === 'preventasMes' ? 'PREVENTAS_MES' : 'PREVENTAS_PERIODO',
       silent,
       blocks: this.resolveBlocks()
     });

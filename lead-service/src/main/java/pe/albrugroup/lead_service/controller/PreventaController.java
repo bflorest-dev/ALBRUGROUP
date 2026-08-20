@@ -14,6 +14,7 @@ import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.ModoConteo;
+import pe.albrugroup.lead_service.entity.enums.OrdenRankingAsesor;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.response.*;
 import pe.albrugroup.lead_service.service.LeadCampanaCorreccionService;
@@ -181,9 +182,11 @@ public class PreventaController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
             @RequestParam(defaultValue = "true") boolean soloActivos,
-            @RequestParam(required = false) Long idEquipo
+            @RequestParam(required = false) Long idEquipo,
+            @RequestParam(defaultValue = "GESTIONADOS") ModoConteo modo,
+            @RequestParam(defaultValue = "PREVENTAS_PERIODO") OrdenRankingAsesor ordenarPor
     ) {
-        var ranking = leadService.listarRankingGtr(desde, hasta, soloActivos, idEquipo);
+        var ranking = leadService.listarRankingGtr(desde, hasta, soloActivos, idEquipo, modo, ordenarPor);
         return ResponseEntity.ok(ranking);
     }
 
