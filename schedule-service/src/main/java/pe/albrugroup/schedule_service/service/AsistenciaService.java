@@ -640,10 +640,22 @@ public class AsistenciaService implements IAsistencia {
                 .filter(asistencia -> asistencia.getEstadoActual() != EstadoAsistencia.OFFLINE)
                 .filter(asistencia -> {
                     LocalDateTime topeSalida = resolverTopeSalidaProgramada(asistencia.getIdEmpleado(), asistencia.getFecha());
-                    return topeSalida != null && ahora.isAfter(topeSalida);
+                    if (topeSalida == null || !ahora.isAfter(topeSalida)) {
+                        return false;
+                    }
+                    // No auto-cerrar si la jornada todavia tiene tramos futuros (dia con extras + base).
+                    // El tramo actual expiro pero el empleado aun tiene trabajo programado.
+                    return !tieneTramosFuturos(asistencia.getIdEmpleado(), hoy, ahora);
                 })
                 .map(Asistencia::getIdEmpleado)
                 .toList();
+    }
+
+    private boolean tieneTramosFuturos(Long idEmpleado, LocalDate fecha, LocalDateTime ahora) {
+        return jornadaEfectivaResolver.resolverSiExiste(idEmpleado, fecha)
+                .map(jornada -> jornada.getTramos().stream()
+                        .anyMatch(t -> t.getFin().isAfter(ahora)))
+                .orElse(false);
     }
 
     /**
@@ -668,6 +680,10 @@ public class AsistenciaService implements IAsistencia {
         LocalDateTime topeSalida = resolverTopeSalidaProgramada(idEmpleado, hoy);
         LocalDateTime ahora = OperationalDateTime.nowLocalDateTime();
         if (topeSalida == null || !ahora.isAfter(topeSalida)) {
+            return toDetalleOperativoResponse(asistencia);
+        }
+        // No auto-cerrar si la jornada tiene tramos futuros (dia con extras + base).
+        if (tieneTramosFuturos(idEmpleado, hoy, ahora)) {
             return toDetalleOperativoResponse(asistencia);
         }
 

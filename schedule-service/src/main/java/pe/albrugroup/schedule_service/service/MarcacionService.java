@@ -80,6 +80,12 @@ public class MarcacionService {
                 esOjt(currentUser.roles()));
 
         Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, hoy).orElse(null);
+        // Tramo expirado sin salida: el auto-cierre del gateway (o el asesor que no marco salida)
+        // dejo ingreso sin fecha_hora_salida. Forzar el cierre del tramo anterior para que el
+        // mecanismo de re-ingreso funcione normalmente.
+        if (asistencia != null) {
+            forzarCierreTramoExpirado(asistencia, ahora);
+        }
         if (asistencia == null) {
             asistencia = crearAsistencia(idEmpleado, hoy, tramo, jornada);
         } else if (asistencia.getFechaHoraSalida() != null) {
@@ -655,6 +661,30 @@ public class MarcacionService {
         return (int) Math.max(Duration.between(inicio, fin).toMinutes(), 0);
     }
 
+    // --- Cierre forzado de tramo expirado ---
+
+    /**
+     * Si el tramo actual ya expiro (pasada la salidaProgramada) y el empleado no marco salida
+     * (p. ej. auto-cierre del gateway puso OFFLINE sin estampar fechaHoraSalida, o simplemente
+     * se le paso), fuerza el cierre con salida = salidaProgramada. Despues de esto el flujo
+     * normal de re-ingreso funciona (fechaHoraSalida != null → esTramoReingreso → prepararReingreso).
+     */
+    private void forzarCierreTramoExpirado(Asistencia a, LocalDateTime ahora) {
+        if (a.getFechaHoraIngreso() == null
+                || a.getFechaHoraSalida() != null
+                || a.getSalidaProgramada() == null) {
+            return;
+        }
+        LocalDateTime salidaProg = LocalDateTime.of(a.getFecha(), a.getSalidaProgramada());
+        if (!ahora.isAfter(salidaProg)) {
+            return;
+        }
+        a.setFechaHoraSalida(salidaProg);
+        a.setEstadoActual(EstadoAsistencia.OFFLINE);
+        recalcularMinutos(a);
+        asistenciaRepository.save(a);
+    }
+
     // --- Re-ingreso (dia partido): archivar el segmento base y reabrir para el tramo extra ---
 
     private boolean esTramoReingreso(Asistencia a, TramoJornadaResponse tramo) {
@@ -925,7 +955,18 @@ public class MarcacionService {
         if (asistencia.getFechaHoraSalida() != null) {
             return esTramoReingreso(asistencia, tramo);
         }
-        return asistencia.getFechaHoraIngreso() == null;
+        if (asistencia.getFechaHoraIngreso() != null) {
+            // Tramo expirado sin salida: registrarIngreso forzara el cierre y hara re-ingreso.
+            if (asistencia.getSalidaProgramada() != null) {
+                LocalDateTime salidaProg = LocalDateTime.of(asistencia.getFecha(), asistencia.getSalidaProgramada());
+                if (OperationalDateTime.nowLocalDateTime().isAfter(salidaProg)
+                        && esTramoReingreso(asistencia, tramo)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
     }
 
     /** Predicado de la ventana de ingreso (mismos limites que validarVentanaIngreso, sin lanzar). */
