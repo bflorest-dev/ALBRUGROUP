@@ -195,12 +195,9 @@
     >
       <ng-template #header>
         <tr>
-          <th class="col-priority" pTooltip="Antiguedad" tooltipPosition="top">
-            <i class="pi pi-clock" aria-hidden="true"></i>
-            <span class="sr-only">Antiguedad</span>
-          </th>
+          <th class="col-priority">Tiempo</th>
           <th class="col-fecha">Ingreso</th>
-          <th class="col-lead">Lead / Documento</th>
+          <th class="col-lead">Documento / Lead</th>
           <th class="col-proveedor">Proveedor</th>
           <th class="col-estado">Estado</th>
           @if (section() === 'plataforma') {
@@ -241,9 +238,7 @@
       <ng-template #body let-row>
         <tr [class.row-new]="row.isNew">
           <td class="col-priority" [pTooltip]="ageTooltip(row)" tooltipPosition="top">
-            @if (leadAgeCategory(row); as age) {
-              <div class="priority-indicator priority-indicator--{{ age }}" aria-hidden="true"></div>
-            }
+            <span class="contador {{ estadoCounterClass(row) }}">{{ estadoCounterLabel(row) }}</span>
           </td>
           <td class="col-fecha">
             <div class="date-stack">
@@ -253,8 +248,8 @@
           </td>
           <td class="col-lead">
             <div class="lead-cell">
-              <strong><span class="lead-cell__prefix">{{ leadCountryCode(row) }}</span>{{ row.lead }}</strong>
-              <span class="lead-cell__document">{{ display(row.numeroDocumentoTitularServicio) }}</span>
+              <strong class="lead-cell__document">{{ display(row.numeroDocumentoTitularServicio) }}</strong>
+              <span class="lead-cell__lead"><span class="lead-cell__prefix">{{ leadCountryCode(row) }}</span>{{ row.lead }}</span>
             </div>
           </td>
           <td class="col-proveedor">
@@ -342,7 +337,7 @@
               <div class="skeleton-table">
                 @for (_ of skeletonRows; track $index) {
                   <div class="skeleton-row">
-                    <p-skeleton width="0.5rem" height="1.25rem" />
+                    <p-skeleton width="3.5rem" height="1.1rem" />
                     <p-skeleton width="5rem" height="1.1rem" />
                     <p-skeleton width="9rem" height="1.6rem" borderRadius="999px" />
                     <p-skeleton width="5rem" height="1.1rem" />

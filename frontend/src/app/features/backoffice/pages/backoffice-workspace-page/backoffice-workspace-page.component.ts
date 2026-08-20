@@ -574,7 +574,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       void this.initialize();
     }
     this.startRealtime();
-    this.ageUpdateInterval = window.setInterval(() => this.now.set(Date.now()), 30000);
+    this.ageUpdateInterval = window.setInterval(() => this.now.set(Date.now()), 1000);
   }
 
   ngOnDestroy(): void {
@@ -1246,38 +1246,68 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Categoría de antigüedad del lead para el heatmap visual.
-   * Se mide en segundos desde `fechaIngresoEtapa` (fallback `lastEntryAt` y `createdAt`).
+   * Timestamp de inicio del contador según el estado actual del lead.
    */
-  protected leadAgeCategory(row: LeadVentaResponse): 'fresh' | 'recent' | 'stale' | 'critical' | null {
-    const seconds = this.leadAgeInSeconds(row);
-    if (seconds === null) return null;
-    if (seconds < 60) return 'fresh';
-    if (seconds < 5 * 60) return 'recent';
-    if (seconds < 30 * 60) return 'stale';
-    return 'critical';
-  }
-
-  /**
-   * Tooltip que muestra la antigüedad relativa y la fecha exacta de ingreso.
-   */
-  protected ageTooltip(row: LeadVentaResponse): string {
-    const seconds = this.leadAgeInSeconds(row);
-    if (seconds === null) {
-      return 'Sin fecha de ingreso';
+  private estadoContadorTimestamp(row: LeadVentaResponse): string | null {
+    switch (row.estadoSeguimiento) {
+      case 'EN_GESTION':
+      case 'AGENDADO':
+        return row.fechaUltimaGestion ?? row.ultimaTipificacionAt ?? null;
+      case 'GESTIONADO':
+        return row.ultimaTipificacionAt ?? row.fechaUltimaGestion ?? null;
+      default:
+        return this.fechaIngresoEtapaValue(row) ?? row.createdAt ?? null;
     }
-    const ageText = this.formatAge(seconds);
-    const raw = this.fechaIngresoEtapaValue(row) ?? row.createdAt;
-    const dateText = raw ? this.formatDateTime(raw) : null;
-    return dateText ? `${ageText} · ${dateText}` : ageText;
   }
 
-  private leadAgeInSeconds(row: LeadVentaResponse): number | null {
-    const raw = this.fechaIngresoEtapaValue(row) ?? row.createdAt;
+  private estadoContadorSeconds(row: LeadVentaResponse): number | null {
+    const raw = this.estadoContadorTimestamp(row);
     if (!raw) return null;
     const time = new Date(raw).getTime();
     if (!Number.isFinite(time)) return null;
     return Math.max(0, Math.floor((this.now() - time) / 1000));
+  }
+
+  protected estadoCounterLabel(row: LeadVentaResponse): string {
+    const seconds = this.estadoContadorSeconds(row);
+    return seconds === null ? '-' : this.formatContador(seconds);
+  }
+
+  protected estadoCounterClass(row: LeadVentaResponse): string {
+    switch (row.estadoSeguimiento) {
+      case 'ASIGNADO': return 'contador--asignado';
+      case 'EN_GESTION': return 'contador--en-gestion';
+      case 'AGENDADO': return 'contador--agendado';
+      case 'GESTIONADO': return 'contador--gestionado';
+      default: return 'contador--nuevo';
+    }
+  }
+
+  /**
+   * Tooltip que muestra la antigüedad relativa y la fecha exacta de inicio del contador.
+   */
+  protected ageTooltip(row: LeadVentaResponse): string {
+    const seconds = this.estadoContadorSeconds(row);
+    if (seconds === null) {
+      return 'Sin fecha de inicio';
+    }
+    const ageText = this.formatAge(seconds);
+    const raw = this.estadoContadorTimestamp(row);
+    const dateText = raw ? this.formatDateTime(raw) : null;
+    return dateText ? `${ageText} · ${dateText}` : ageText;
+  }
+
+  private formatContador(totalSeconds: number): string {
+    if (totalSeconds < 3600) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}m ${seconds}s`;
+    }
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
   }
 
   private formatAge(totalSeconds: number): string {
