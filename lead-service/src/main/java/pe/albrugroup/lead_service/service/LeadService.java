@@ -400,18 +400,22 @@ public class LeadService {
     }
 
     public LeadContextoLookupResponse buscarContextoLeadVenta(String lead) {
-        String criterio = normalizarLead(lead);
-        if (criterio == null || criterio.isBlank()) {
-            throw new BadRequestException("El numero del lead o documento es obligatorio");
+        BusquedaVentaFiltro busqueda = resolverBusquedaVenta(lead);
+        if (!busqueda.buscando()) {
+            throw new BadRequestException("El lead, documento o usermeta es obligatorio");
         }
 
-        return leadRepository.buscarPorLeadODocumento(criterio).stream().findFirst()
+        List<Lead> encontrados = busqueda.buscarPorUsermeta()
+                ? leadRepository.buscarPorUsermeta(busqueda.valor())
+                : leadRepository.buscarPorLeadODocumento(busqueda.valor());
+
+        return encontrados.stream().findFirst()
                 .map(this::mapearContextoLeadVenta)
                 .orElseGet(() -> new LeadContextoLookupResponse(
                         false,
                         null,
                         null,
-                        criterio,
+                        busqueda.valor(),
                         null,
                         null,
                         false,
@@ -631,10 +635,8 @@ public class LeadService {
             Long idEquipo,
             PageRequest pageRequest
     ) {
-        String numeroLead = normalizarLead(lead);
-        boolean buscando = numeroLead != null && !numeroLead.isBlank();
-        String leadPattern = buscando ? numeroLead + "%" : "%";
-        boolean filtrarVentana = !buscando;
+        BusquedaVentaFiltro busqueda = resolverBusquedaVenta(lead);
+        boolean filtrarVentana = !busqueda.buscando();
         Instant inicioVentana = OperationalDateTime.now().minus(30, ChronoUnit.DAYS);
         GrupoVentaFiltro grupo = resolverFiltroGrupoVenta(tipoGrupo, valoresGrupo, sinValor);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
@@ -642,7 +644,8 @@ public class LeadService {
         // agregar un ORDER BY extra que descuadre el orden y la paginacion entre paginas.
         Page<LeadResponse> leads = leadRepository.listarBandejaVenta(
                 Etapa.VENTA,
-                leadPattern,
+                busqueda.searchPattern(),
+                busqueda.buscarPorUsermeta(),
                 filtrarVentana,
                 inicioVentana,
                 grupo.filtrar(),
@@ -659,13 +662,18 @@ public class LeadService {
     }
 
     public LeadVentaAgrupacionesResponse listarAgrupacionesBandejaVenta(String lead, Long idEquipo) {
-        String numeroLead = normalizarLead(lead);
-        boolean buscando = numeroLead != null && !numeroLead.isBlank();
-        String leadPattern = buscando ? numeroLead + "%" : "%";
-        boolean filtrarVentana = !buscando;
+        BusquedaVentaFiltro busqueda = resolverBusquedaVenta(lead);
+        boolean filtrarVentana = !busqueda.buscando();
         Instant inicioVentana = OperationalDateTime.now().minus(30, ChronoUnit.DAYS);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
-        return mapearAgrupacionesVenta(leadPattern, filtrarVentana, inicioVentana, null, equipos);
+        return mapearAgrupacionesVenta(
+                busqueda.searchPattern(),
+                busqueda.buscarPorUsermeta(),
+                filtrarVentana,
+                inicioVentana,
+                null,
+                equipos
+        );
     }
 
     public PageResponse<LeadResponse> listarLeadsVentaProgramadosAsignados(PageRequest pageRequest, Long idEquipo) {
@@ -3267,6 +3275,24 @@ public class LeadService {
         return normalizarLead(buscar);
     }
 
+    private BusquedaVentaFiltro resolverBusquedaVenta(String lead) {
+        String buscar = lead == null ? null : lead.trim();
+        if (buscar == null || buscar.isBlank()) {
+            return new BusquedaVentaFiltro(false, false, null, "%");
+        }
+        boolean buscarPorUsermeta = esBusquedaUsermeta(buscar);
+        String valor;
+        if (buscarPorUsermeta) {
+            valor = normalizarUsermeta(buscar);
+            if (valor == null || !USERMETA_PATTERN.matcher(valor).matches()) {
+                throw new BadRequestException("El usermeta solo puede contener letras, numeros, punto, guion o guion bajo");
+            }
+        } else {
+            valor = normalizarLead(buscar);
+        }
+        return new BusquedaVentaFiltro(true, buscarPorUsermeta, valor, valor + "%");
+    }
+
     private void validarFiltroAgrupacionGtr(
             TipoGrupoGtr tipoGrupo,
             Long idGrupo,
@@ -3408,6 +3434,7 @@ public class LeadService {
 
     private LeadVentaAgrupacionesResponse mapearAgrupacionesVenta(
             String searchPattern,
+            boolean buscarPorUsermeta,
             boolean filtrarVentana,
             Instant inicioVentana,
             Long idAsesor,
@@ -3417,31 +3444,31 @@ public class LeadService {
         return new LeadVentaAgrupacionesResponse(
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorEstado(
-                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                Etapa.VENTA, searchPattern, buscarPorUsermeta, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
                                 equipos.filtrar(), equipos.ids()),
                         "Sin estado"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorProveedor(
-                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                Etapa.VENTA, searchPattern, buscarPorUsermeta, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
                                 equipos.filtrar(), equipos.ids()),
                         "Sin proveedor"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorPlan(
-                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                Etapa.VENTA, searchPattern, buscarPorUsermeta, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
                                 equipos.filtrar(), equipos.ids()),
                         "Sin plan"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorUltimoGestor(
-                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                Etapa.VENTA, searchPattern, buscarPorUsermeta, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
                                 equipos.filtrar(), equipos.ids()),
                         "Sin gestor"
                 ),
                 mapearAgrupacionesVentaTipificacion(
                         leadRepository.agruparVentaPorTipificacion(
-                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                Etapa.VENTA, searchPattern, buscarPorUsermeta, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
                                 equipos.filtrar(), equipos.ids())
                 )
         );
@@ -3544,6 +3571,13 @@ public class LeadService {
             String tipo,
             List<String> valores,
             boolean sinValor
+    ) {}
+
+    private record BusquedaVentaFiltro(
+            boolean buscando,
+            boolean buscarPorUsermeta,
+            String valor,
+            String searchPattern
     ) {}
 
     private record LeadIdentidad(

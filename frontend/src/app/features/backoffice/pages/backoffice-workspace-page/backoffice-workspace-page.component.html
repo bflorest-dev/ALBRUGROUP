@@ -44,9 +44,9 @@
         <input
           pInputText
           type="text"
-          inputmode="numeric"
+          inputmode="text"
           class="lead-search-input"
-          placeholder="Buscar lead o documento"
+          placeholder="Buscar lead, documento o @usermeta"
           [ngModel]="searchInput()"
           (ngModelChange)="setSearchInput($event)"
           (keyup.enter)="buscarLead()"

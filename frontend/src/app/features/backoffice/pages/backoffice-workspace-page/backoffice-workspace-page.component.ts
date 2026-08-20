@@ -1029,16 +1029,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected setSearchInput(value: string): void {
-    this.searchInput.set(this.normalizeLeadNumber(value));
+    this.searchInput.set(this.normalizeSearchInput(value));
   }
 
   protected async buscarLead(): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       return;
     }
-    const term = this.normalizeLeadNumber(this.searchInput());
+    const term = this.normalizeSearchTerm(this.searchInput());
     if (!term) {
-      this.notify('warn', 'Escribe el lead o documento que quieres buscar.');
+      this.notify('warn', 'Escribe el lead, documento o @usermeta que quieres buscar.');
       return;
     }
 
@@ -1054,7 +1054,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.searchLookup.set(lookup.mensajeUsuario ? lookup : null);
       }
     } catch (error) {
-      this.notify('error', this.getErrorMessage(error, 'No se pudo buscar el lead.'));
+      this.notify('error', this.getErrorMessage(error, 'No se pudo buscar el dato ingresado.'));
     } finally {
       this.isSearching.set(false);
     }
@@ -2161,6 +2161,30 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return '';
     }
     return digits.length > 9 ? digits.slice(-9) : digits;
+  }
+
+  private normalizeSearchTerm(value?: string | null): string {
+    const raw = (value ?? '').trim();
+    if (!raw) {
+      return '';
+    }
+    if (raw.startsWith('@')) {
+      const usermeta = raw.replace(/\s+/g, '').replace(/^@+/, '');
+      return usermeta ? `@${usermeta}` : '';
+    }
+    return this.normalizeLeadNumber(raw);
+  }
+
+  private normalizeSearchInput(value?: string | null): string {
+    const raw = (value ?? '').trim();
+    if (!raw) {
+      return '';
+    }
+    if (raw.startsWith('@')) {
+      const usermeta = raw.replace(/\s+/g, '').replace(/^@+/, '');
+      return usermeta ? `@${usermeta}` : '@';
+    }
+    return this.normalizeLeadNumber(raw);
   }
 
   private documentoServicioMaxLength(): number {

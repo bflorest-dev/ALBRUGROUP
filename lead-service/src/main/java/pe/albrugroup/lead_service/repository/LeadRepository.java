@@ -63,6 +63,17 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT l
             FROM Lead l
+            LEFT JOIN FETCH l.datosPreventa dp
+            LEFT JOIN FETCH l.plan pl
+            LEFT JOIN FETCH pl.proveedor
+            WHERE LOWER(l.usermeta) = LOWER(:usermeta)
+            ORDER BY l.lastEntryAt DESC, l.id DESC
+            """)
+    List<Lead> buscarPorUsermeta(@Param("usermeta") String usermeta);
+
+    @Query("""
+            SELECT l
+            FROM Lead l
             LEFT JOIN FETCH l.campana c
             LEFT JOIN FETCH c.proveedor
             WHERE l.lead = :buscar
@@ -1327,9 +1338,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
               AND (
-                    :leadPattern = '%'
-                    OR l.lead LIKE :leadPattern
-                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :leadPattern
+                    :searchPattern = '%'
+                    OR (:buscarPorUsermeta = false AND (
+                        l.lead LIKE :searchPattern
+                        OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    ))
+                    OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
               AND (
                     :filtrarGrupo = false
@@ -1350,7 +1364,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             """)
     Page<LeadResponse> listarBandejaVenta(
             @Param("etapa") Etapa etapa,
-            @Param("leadPattern") String leadPattern,
+            @Param("searchPattern") String searchPattern,
+            @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
             @Param("filtrarGrupo") boolean filtrarGrupo,
@@ -1377,8 +1392,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
               AND (
                     :searchPattern = '%'
-                    OR l.lead LIKE :searchPattern
-                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    OR (:buscarPorUsermeta = false AND (
+                        l.lead LIKE :searchPattern
+                        OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    ))
+                    OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.estado
@@ -1386,6 +1404,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<LeadGtrAgrupacionProjection> agruparVentaPorEstado(
             @Param("etapa") Etapa etapa,
             @Param("searchPattern") String searchPattern,
+            @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
             @Param("filtrarAsesor") boolean filtrarAsesor,
@@ -1408,8 +1427,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
               AND (
                     :searchPattern = '%'
-                    OR l.lead LIKE :searchPattern
-                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    OR (:buscarPorUsermeta = false AND (
+                        l.lead LIKE :searchPattern
+                        OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    ))
+                    OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.nombreProveedorSnapshot
@@ -1417,6 +1439,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<LeadGtrAgrupacionProjection> agruparVentaPorProveedor(
             @Param("etapa") Etapa etapa,
             @Param("searchPattern") String searchPattern,
+            @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
             @Param("filtrarAsesor") boolean filtrarAsesor,
@@ -1439,8 +1462,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
               AND (
                     :searchPattern = '%'
-                    OR l.lead LIKE :searchPattern
-                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    OR (:buscarPorUsermeta = false AND (
+                        l.lead LIKE :searchPattern
+                        OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    ))
+                    OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.nombrePlanSnapshot
@@ -1448,6 +1474,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<LeadGtrAgrupacionProjection> agruparVentaPorPlan(
             @Param("etapa") Etapa etapa,
             @Param("searchPattern") String searchPattern,
+            @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
             @Param("filtrarAsesor") boolean filtrarAsesor,
@@ -1470,8 +1497,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
               AND (
                     :searchPattern = '%'
-                    OR l.lead LIKE :searchPattern
-                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    OR (:buscarPorUsermeta = false AND (
+                        l.lead LIKE :searchPattern
+                        OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    ))
+                    OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY r.nombreAsesorUltimaGestion
@@ -1479,6 +1509,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<LeadGtrAgrupacionProjection> agruparVentaPorUltimoGestor(
             @Param("etapa") Etapa etapa,
             @Param("searchPattern") String searchPattern,
+            @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
             @Param("filtrarAsesor") boolean filtrarAsesor,
@@ -1501,8 +1532,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
               AND (
                     :searchPattern = '%'
-                    OR l.lead LIKE :searchPattern
-                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    OR (:buscarPorUsermeta = false AND (
+                        l.lead LIKE :searchPattern
+                        OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    ))
+                    OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.codigoTipificacion
@@ -1510,6 +1544,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<LeadGtrAgrupacionProjection> agruparVentaPorTipificacion(
             @Param("etapa") Etapa etapa,
             @Param("searchPattern") String searchPattern,
+            @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
             @Param("filtrarAsesor") boolean filtrarAsesor,
