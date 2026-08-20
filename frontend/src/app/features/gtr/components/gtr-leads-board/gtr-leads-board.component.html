@@ -299,7 +299,14 @@
           />
         </td>
         <td>
-          <strong class="lead-value">{{ facade.display(row.lead || row.usermeta) }}</strong>
+          <div style="display: inline-grid; gap: 0.12rem; max-width: 9.8rem;">
+            <strong class="lead-value">{{ facade.display(row.lead || row.usermeta) }}</strong>
+            @if (row.lead && row.usermeta) {
+              <small style="font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [title]="facade.intakeUsermetaLabel(row.usermeta)">
+                {{ facade.intakeUsermetaLabel(row.usermeta) }}
+              </small>
+            }
+          </div>
           @if (facade.isPriorityCampaign(row)) {
             <span class="priority-campaign-chip" [title]="facade.priorityCampaignLabel()">
               <i class="pi pi-star-fill" aria-hidden="true"></i>
