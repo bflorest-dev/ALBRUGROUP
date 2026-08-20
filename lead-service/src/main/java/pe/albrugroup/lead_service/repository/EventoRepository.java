@@ -1672,18 +1672,29 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     // ── Queries específicos GTR (usan soloActivos con EXISTS para asesores) ────
 
-    // Ids de actores que actuaron con un rol de la operación (ventas/GTR) en el período y scope.
-    // Filtra el ranking de asesores para que NO aparezcan backoffice/migración/otros roles que hayan
-    // tocado leads de PREVENTA sin ser parte de la operación.
+    // Ids de actores que actuaron con un rol de la operación (ventas/GTR) en el período y scope,
+    // más asesores que recibieron asignaciones en el mismo scope (aparecen en el ranking aunque
+    // aún no hayan gestionado ningún lead).
     @Query("""
-            SELECT DISTINCT e.idActor
-            FROM Evento e
-            JOIN Lead l ON l.id = e.idLead
-            WHERE e.idActor IS NOT NULL
-              AND e.rolActor IN :rolesPermitidos
-              AND e.createdAt >= :fechaDesde
-              AND e.createdAt < :fechaHasta
-              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            SELECT DISTINCT id FROM (
+                SELECT e.idActor AS id
+                FROM Evento e
+                JOIN Lead l ON l.id = e.idLead
+                WHERE e.idActor IS NOT NULL
+                  AND e.rolActor IN :rolesPermitidos
+                  AND e.createdAt >= :fechaDesde
+                  AND e.createdAt < :fechaHasta
+                  AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+                UNION
+                SELECT e.idAsesorAsignado AS id
+                FROM Evento e
+                JOIN Lead l ON l.id = e.idLead
+                WHERE e.accion = 'ASIGNACION'
+                  AND e.idAsesorAsignado IS NOT NULL
+                  AND e.createdAt >= :fechaDesde
+                  AND e.createdAt < :fechaHasta
+                  AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            )
             """)
     List<Long> idsAsesoresRankingGtr(
             @Param("rolesPermitidos") Collection<String> rolesPermitidos,
