@@ -1,6 +1,7 @@
 import { Injectable, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Subscription, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
+import { CurrentUserTeamScopeService } from '../../../core/services/current-user-team-scope.service';
 import { SessionService } from '../../../core/services/session.service';
 import { esEquipoOperativo } from '../../../shared/utils/equipos-operativos';
 import { resolveMetricsRange } from '../../../shared/utils/metrics-period';
@@ -100,6 +101,7 @@ export class AdminAfluenciaHoraFacade implements OnDestroy {
   private readonly equipoService = inject(AdminEquipoService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly sessionService = inject(SessionService);
+  private readonly teamScope = inject(CurrentUserTeamScopeService);
   private readonly realtimeSubscription = new Subscription();
 
   private requestId = 0;
@@ -369,7 +371,7 @@ export class AdminAfluenciaHoraFacade implements OnDestroy {
   }
 
   private shouldUseVisibleTeamsCatalog(): boolean {
-    return this.isEquipoLocked() || this.sessionService.getPrimaryRole() === 'COMMUNITY';
+    return this.isEquipoLocked() || this.teamScope.isDashboardTeamScoped() || this.sessionService.getPrimaryRole() === 'COMMUNITY';
   }
 
   private campanaKey(idCampana: number | null): string {
