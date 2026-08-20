@@ -173,8 +173,16 @@ export class AdminAfluenciaHoraFacade implements OnDestroy {
       }
       const lockedEquipoId = this.lockedEquipoId();
       if (this.isEquipoLocked()) {
-        this.aplicoEquipoPorDefecto = true;
-        untracked(() => this.selectedEquipoId.set(lockedEquipoId));
+        if (lockedEquipoId !== null) {
+          this.aplicoEquipoPorDefecto = true;
+          untracked(() => this.selectedEquipoId.set(lockedEquipoId));
+          return;
+        }
+        const primerEquipo = options.find((opcion) => opcion.value !== null);
+        if (primerEquipo) {
+          this.aplicoEquipoPorDefecto = true;
+          untracked(() => this.selectedEquipoId.set(primerEquipo.value));
+        }
         return;
       }
       const primerEquipo = options.find((opcion) => opcion.value !== null);
@@ -326,7 +334,7 @@ export class AdminAfluenciaHoraFacade implements OnDestroy {
   lockEquipo(idEquipo: number | null): void {
     this.isEquipoLocked.set(true);
     this.lockedEquipoId.set(idEquipo);
-    this.aplicoEquipoPorDefecto = true;
+    this.aplicoEquipoPorDefecto = idEquipo !== null;
     this.selectedEquipoId.set(idEquipo);
     this.selectedCampanaKeys.set([]);
   }

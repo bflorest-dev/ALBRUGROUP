@@ -207,11 +207,6 @@ export class DashboardPreventaStageComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.isTeamScopedDashboard.set(this.teamScope.isDashboardTeamScoped());
-    const equipoId = await this.teamScope.getPrimaryEquipoId();
-    this.lockedEquipoId.set(equipoId);
-    if (this.isTeamScopedDashboard()) {
-      this.selectedEquipoId.set(equipoId);
-    }
     this.viewReady.set(true);
   }
 

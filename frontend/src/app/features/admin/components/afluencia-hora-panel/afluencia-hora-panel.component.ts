@@ -73,7 +73,7 @@ export class AfluenciaHoraPanelComponent implements OnInit {
     const isTeamScoped = this.teamScope.isDashboardTeamScoped();
     this.showEquipoSelector.set(!isTeamScoped);
     if (isTeamScoped) {
-      this.facade.lockEquipo(await this.teamScope.getPrimaryEquipoId());
+      this.facade.lockEquipo(null);
     }
     this.facade.start();
   }
