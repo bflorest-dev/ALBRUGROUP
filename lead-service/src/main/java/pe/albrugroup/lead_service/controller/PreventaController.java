@@ -66,9 +66,9 @@ public class PreventaController {
 
     @GetMapping("/correcciones/merito-preventa") @PreAuthorize("hasAuthority('CORREGIR_MERITO_PREVENTA')")
     public ResponseEntity<List<LeadMeritoCorreccionCandidatoResponse>> buscarCorreccionMeritoPreventa(
-            @RequestParam String lead
+            @RequestParam String buscar
     ) {
-        return ResponseEntity.ok(leadMeritoCorreccionService.buscarPorLead(lead));
+        return ResponseEntity.ok(leadMeritoCorreccionService.buscar(buscar));
     }
 
     @PatchMapping("/correcciones/merito-preventa/{idLead}") @PreAuthorize("hasAuthority('CORREGIR_MERITO_PREVENTA')")

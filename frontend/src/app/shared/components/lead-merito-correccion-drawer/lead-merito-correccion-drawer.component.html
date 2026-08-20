@@ -24,7 +24,7 @@
           [ngModel]="leadQuery()"
           (ngModelChange)="leadQuery.set($event)"
           (keydown.enter)="search()"
-          placeholder="989383554"
+          placeholder="Buscar lead, documento o @usermeta"
         />
       </label>
       <button
@@ -156,7 +156,7 @@
       <div class="empty-state">
         <i class="pi pi-search" aria-hidden="true"></i>
         <strong>Busca un lead</strong>
-        <span>Veras su etapa, origen y merito actual antes de aplicar una correccion.</span>
+        <span>Busca por lead, documento o @usermeta para revisar su etapa, origen y merito actual.</span>
       </div>
     }
     <div class="drawer-actions">

@@ -82,7 +82,7 @@ export class LeadMeritoCorreccionDrawerComponent {
   }
 
   protected async search(): Promise<void> {
-    const lead = this.normalizeLead(this.leadQuery());
+    const searchTerm = this.normalizeSearchTerm(this.leadQuery());
     this.clearMessages();
     this.lastResult.set(null);
     this.candidates.set([]);
@@ -91,17 +91,18 @@ export class LeadMeritoCorreccionDrawerComponent {
     this.asesores.set([]);
     this.asesorSuggestions.set([]);
 
-    if (!lead) {
-      this.errorMessage.set('Ingresa un numero de lead para buscar.');
+    if (!searchTerm) {
+      this.errorMessage.set('Ingresa el lead, documento o @usermeta que quieres buscar.');
       return;
     }
 
+    this.leadQuery.set(searchTerm);
     this.isSearching.set(true);
     try {
-      const results = await firstValueFrom(this.preventaLeadService.buscarCorreccionMeritoPreventa(lead));
+      const results = await firstValueFrom(this.preventaLeadService.buscarCorreccionMeritoPreventa(searchTerm));
       this.candidates.set(results);
       if (results.length === 0) {
-        this.errorMessage.set('No encontramos un lead con ese numero.');
+        this.errorMessage.set('No encontramos ese lead, documento o @usermeta.');
         return;
       }
       await this.selectCandidate(results[0]);
@@ -229,11 +230,11 @@ export class LeadMeritoCorreccionDrawerComponent {
   }
 
   private async refreshCurrentLead(): Promise<void> {
-    const lead = this.normalizeLead(this.leadQuery());
-    if (!lead) {
+    const searchTerm = this.normalizeSearchTerm(this.leadQuery());
+    if (!searchTerm) {
       return;
     }
-    const results = await firstValueFrom(this.preventaLeadService.buscarCorreccionMeritoPreventa(lead));
+    const results = await firstValueFrom(this.preventaLeadService.buscarCorreccionMeritoPreventa(searchTerm));
     this.candidates.set(results);
     const current = this.selectedCandidate();
     this.selectedCandidate.set(results.find((candidate) => candidate.idLead === current?.idLead) ?? results[0] ?? null);
@@ -244,8 +245,16 @@ export class LeadMeritoCorreccionDrawerComponent {
     this.errorMessage.set(null);
   }
 
-  private normalizeLead(value: string): string {
-    return (value ?? '').replace(/\D+/g, '');
+  private normalizeSearchTerm(value: string): string {
+    const raw = (value ?? '').trim();
+    if (!raw) {
+      return '';
+    }
+    if (raw.startsWith('@')) {
+      const usermeta = raw.replace(/\s+/g, '').replace(/^@+/, '');
+      return usermeta ? `@${usermeta}` : '';
+    }
+    return raw.replace(/\D+/g, '');
   }
 
   private normalizeOptionalText(value: string): string | null {

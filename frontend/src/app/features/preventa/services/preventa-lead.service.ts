@@ -516,8 +516,8 @@ export class PreventaLeadService {
     return this.http.get<UsuarioResponse[]>(`${this.equiposUrl}/${idEquipo}/asesores-ventas-merito`);
   }
 
-  buscarCorreccionMeritoPreventa(lead: string): Observable<LeadMeritoCorreccionCandidatoResponse[]> {
-    const params = new HttpParams().set('lead', lead);
+  buscarCorreccionMeritoPreventa(buscar: string): Observable<LeadMeritoCorreccionCandidatoResponse[]> {
+    const params = new HttpParams().set('buscar', buscar);
     return this.http.get<LeadMeritoCorreccionCandidatoResponse[]>(
       `${this.leadUrl}/preventa/correcciones/merito-preventa`,
       { params }

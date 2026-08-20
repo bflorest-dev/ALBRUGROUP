@@ -42,9 +42,17 @@ public class LeadMeritoCorreccionService {
     private final CurrentUser currentUser;
 
     @Transactional(readOnly = true)
-    public List<LeadMeritoCorreccionCandidatoResponse> buscarPorLead(String lead) {
-        String numeroLead = normalizarLead(lead);
-        return leadRepository.buscarCorreccionMeritoPreventaPorLead(numeroLead).stream()
+    public List<LeadMeritoCorreccionCandidatoResponse> buscar(String buscar) {
+        BusquedaMeritoFiltro busqueda = resolverBusquedaVenta(buscar);
+        if (!busqueda.buscando()) {
+            throw new BadRequestException("El lead, documento o usermeta es obligatorio");
+        }
+
+        List<Lead> leads = busqueda.buscarPorUsermeta()
+                ? leadRepository.buscarPorUsermeta(busqueda.valor())
+                : leadRepository.buscarPorLeadODocumento(busqueda.valor());
+
+        return leads.stream()
                 .map(this::toCandidatoResponse)
                 .toList();
     }
@@ -199,15 +207,36 @@ public class LeadMeritoCorreccionService {
                 .orElse(null);
     }
 
-    private String normalizarLead(String lead) {
-        if (lead == null || lead.isBlank()) {
-            throw new BadRequestException("Ingresa un numero de lead para buscar");
+    private BusquedaMeritoFiltro resolverBusquedaVenta(String buscar) {
+        String valor = buscar == null ? null : buscar.trim();
+        if (valor == null || valor.isBlank()) {
+            return new BusquedaMeritoFiltro(false, false, null);
         }
-        String normalizado = lead.replaceAll("\\D+", "");
+
+        boolean buscarPorUsermeta = valor.startsWith("@");
+        if (buscarPorUsermeta) {
+            String usermeta = valor.replaceAll("\\s+", "").replaceFirst("^@+", "");
+            if (usermeta.isBlank()) {
+                throw new BadRequestException("El usermeta es obligatorio");
+            }
+            if (!usermeta.matches("[A-Za-z0-9._-]+")) {
+                throw new BadRequestException("El usermeta solo puede contener letras, numeros, punto, guion o guion bajo");
+            }
+            return new BusquedaMeritoFiltro(true, true, usermeta);
+        }
+
+        String normalizado = valor.replaceAll("\\D+", "");
         if (normalizado.isBlank()) {
-            throw new BadRequestException("Ingresa un numero de lead para buscar");
+            throw new BadRequestException("El lead, documento o usermeta es obligatorio");
         }
-        return normalizado;
+        return new BusquedaMeritoFiltro(true, false, normalizado);
+    }
+
+    private record BusquedaMeritoFiltro(
+            boolean buscando,
+            boolean buscarPorUsermeta,
+            String valor
+    ) {
     }
 
     private String normalizarMotivo(String motivo) {

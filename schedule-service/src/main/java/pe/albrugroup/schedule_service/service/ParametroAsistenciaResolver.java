@@ -22,7 +22,7 @@ import java.util.function.Function;
 public class ParametroAsistenciaResolver {
 
     // Defaults de codigo (fallback si la tabla no tiene filas). Editables via parametro_asistencia.
-    private static final int DEFAULT_MARGEN_ADELANTO_MIN = 5;
+    private static final int DEFAULT_MARGEN_ADELANTO_MIN = 30;
     private static final int DEFAULT_TOLERANCIA_TARDANZA_MIN = 5;
     private static final int DEFAULT_BLOQUEO_TARDANZA_MIN = 20;
     private static final int DEFAULT_MAX_MINUTOS_PAUSA_ACTIVA = 5;

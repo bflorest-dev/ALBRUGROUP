@@ -296,7 +296,7 @@ export class PostventaWorkspaceFacade {
   async buscarRapido(term: string): Promise<void> {
     const buscar = this.normalizeSearch(term);
     if (!buscar) {
-      this.notify('warn', 'Escribe el numero de lead o documento que quieres buscar.');
+      this.notify('warn', 'Escribe el lead, documento o @usermeta que quieres buscar.');
       return;
     }
     this._loadingBoard.set(true);
@@ -759,7 +759,15 @@ export class PostventaWorkspaceFacade {
   }
 
   private normalizeSearch(value: string): string {
-    return (value ?? '').replace(/\D/g, '').trim();
+    const raw = (value ?? '').trim();
+    if (!raw) {
+      return '';
+    }
+    if (raw.startsWith('@')) {
+      const usermeta = raw.replace(/\s+/g, '').replace(/^@+/, '');
+      return usermeta ? `@${usermeta}` : '';
+    }
+    return raw.replace(/\D/g, '').trim();
   }
 
   private selectedCorteQuery(): { mesCorteBase?: string; numeroCorteBase?: number } {

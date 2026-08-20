@@ -26,6 +26,7 @@ import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaBandejaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaBusquedaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
+import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.repository.CalendarioFacturacionPostventaRepository;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EntregaCredencialPlataformaRepository;
@@ -41,11 +42,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class PostventaBandejaService {
+
+    private static final Pattern USERMETA_PATTERN = Pattern.compile("^[A-Za-z0-9._-]{1,255}$");
 
     private final CalendarioFacturacionPostventaRepository calendarioRepository;
     private final EncuestaPostventaRepository encuestaRepository;
@@ -105,19 +109,21 @@ public class PostventaBandejaService {
     }
 
     public LeadPostventaBusquedaResponse buscarLead(String buscar) {
-        String criterio = buscar == null ? null : buscar.trim();
-        if (criterio == null || criterio.isBlank()) {
+        BusquedaPostventaFiltro filtro = resolverBusquedaPostventa(buscar);
+        if (!filtro.buscando()) {
             return LeadPostventaBusquedaResponse.builder()
                     .existe(false)
-                    .mensajeUsuario("Escribe el numero de lead o documento que quieres buscar.")
+                    .mensajeUsuario("Escribe el lead, documento o @usermeta que quieres buscar.")
                     .build();
         }
 
-        Lead lead = leadRepository.buscarPorLeadODocumento(criterio).stream().findFirst().orElse(null);
+        Lead lead = filtro.buscarPorUsermeta()
+                ? leadRepository.buscarPorUsermeta(filtro.valor()).stream().findFirst().orElse(null)
+                : leadRepository.buscarPorLeadODocumento(filtro.valor()).stream().findFirst().orElse(null);
         if (lead == null) {
             return LeadPostventaBusquedaResponse.builder()
                     .existe(false)
-                    .mensajeUsuario("No encontramos ese lead o documento en el sistema.")
+                    .mensajeUsuario("No encontramos ese lead, documento o @usermeta en el sistema.")
                     .build();
         }
         if (lead.getEtapa() != Etapa.POSTVENTA && lead.getEtapa() != Etapa.COBRANZA) {
@@ -130,7 +136,7 @@ public class PostventaBandejaService {
         if (!postventaAsesorProveedorService.esLeadVisibleParaUsuarioActual(lead)) {
             return LeadPostventaBusquedaResponse.builder()
                     .existe(false)
-                    .mensajeUsuario("No encontramos ese lead o documento en tu alcance de Postventa.")
+                    .mensajeUsuario("No encontramos ese lead, documento o @usermeta en tu alcance de Postventa.")
                     .build();
         }
 
@@ -157,6 +163,38 @@ public class PostventaBandejaService {
                 .etapaActual(lead.getEtapa())
                 .lead(row)
                 .build();
+    }
+
+    private BusquedaPostventaFiltro resolverBusquedaPostventa(String buscar) {
+        String valor = buscar == null ? null : buscar.trim();
+        if (valor == null || valor.isBlank()) {
+            return new BusquedaPostventaFiltro(false, false, null);
+        }
+
+        boolean buscarPorUsermeta = valor.startsWith("@");
+        if (buscarPorUsermeta) {
+            String usermeta = valor.replaceAll("\\s+", "").replaceFirst("^@+", "");
+            if (usermeta.isBlank()) {
+                throw new BadRequestException("El usermeta es obligatorio");
+            }
+            if (!USERMETA_PATTERN.matcher(usermeta).matches()) {
+                throw new BadRequestException("El usermeta solo puede contener letras, numeros, punto, guion o guion bajo");
+            }
+            return new BusquedaPostventaFiltro(true, true, usermeta);
+        }
+
+        String normalizado = valor.replaceAll("\\D+", "");
+        if (normalizado.isBlank()) {
+            throw new BadRequestException("El lead, documento o usermeta es obligatorio");
+        }
+        return new BusquedaPostventaFiltro(true, false, normalizado);
+    }
+
+    private record BusquedaPostventaFiltro(
+            boolean buscando,
+            boolean buscarPorUsermeta,
+            String valor
+    ) {
     }
 
     private Page<CalendarioFacturacionPostventa> listarCalendarios(
