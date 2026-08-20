@@ -4624,9 +4624,16 @@ public class LeadService {
             case MAYOR -> leadRepository.resumirTipiRankingGtrMayor(
                     ingresados, Accion.REGISTRO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
         };
-        long total = rows.stream().mapToLong(TipificacionCantidadProjection::getCantidad).sum();
+        long tipificados = rows.stream().mapToLong(TipificacionCantidadProjection::getCantidad).sum();
+        long sinTipificar = 0;
+        if (ingresados) {
+            long totalLeads = eventoRepository.contarLeadsUnicosRegistrados(
+                    Accion.REGISTRO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            sinTipificar = totalLeads - tipificados;
+        }
+        long total = tipificados + Math.max(sinTipificar, 0);
 
-        return rows.stream()
+        List<GtrTipificacionRankingResponse> resultado = new ArrayList<>(rows.stream()
                 .map(row -> new GtrTipificacionRankingResponse(
                         row.getTipificacion(),
                         row.getCantidad(),
@@ -4635,7 +4642,12 @@ public class LeadService {
                 .sorted(Comparator.comparingLong(GtrTipificacionRankingResponse::getCantidad).reversed()
                         .thenComparing(GtrTipificacionRankingResponse::getCodigoTipificacion,
                                 Comparator.nullsLast(String::compareToIgnoreCase)))
-                .toList();
+                .toList());
+        if (sinTipificar > 0) {
+            resultado.add(new GtrTipificacionRankingResponse(
+                    "SIN_TIPIFICAR", sinTipificar, calcularPorcentajeRanking(sinTipificar, total)));
+        }
+        return resultado;
     }
 
     public List<GtrSubtipificacionRankingResponse> listarSubtipificacionesRankingGtr(

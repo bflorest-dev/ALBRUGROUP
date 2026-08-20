@@ -889,6 +889,23 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("lead") String lead
     );
 
+    @Query("""
+            SELECT COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            """)
+    long contarLeadsUnicosRegistrados(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
     // --- Métricas de "Leads del día" (día completo, scope por equipo vía JOIN Lead) ---
 
     // B: leads únicos registrados en el día.

@@ -58,6 +58,7 @@ export class RankingDonutComponent {
   );
 
   protected color(segment: RankingDonutSegment): string {
+    if (segment.codigo === 'SIN_TIPIFICAR') return '#94a3b8';
     const palette = PALETTE[this.level()];
     return palette[((segment.colorIndex % palette.length) + palette.length) % palette.length];
   }

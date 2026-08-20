@@ -411,7 +411,7 @@ export class RankingFacade {
   }
 
   openDrill(codigoTipificacion: string, idEquipo: number | null): void {
-    if (!codigoTipificacion) return;
+    if (!codigoTipificacion || codigoTipificacion === 'SIN_TIPIFICAR') return;
     const range = this.resolveRange();
     this.activeDrill.set({ idEquipo, codigo: codigoTipificacion });
     this.detailSignal.set({
@@ -479,18 +479,25 @@ export class RankingFacade {
     const catalog = this.catalog();
     return rows
       .map((row) => {
-        const meta = catalog.get((row.codigoTipificacion ?? '').toUpperCase());
+        const code = (row.codigoTipificacion ?? '').toUpperCase();
+        const isSinTipificar = code === 'SIN_TIPIFICAR';
+        const meta = isSinTipificar ? undefined : catalog.get(code);
         const segment: RankingDonutSegment = {
           codigo: row.codigoTipificacion ?? '',
-          label: this.display(row.codigoTipificacion),
+          label: isSinTipificar ? 'Sin tipificar' : this.display(row.codigoTipificacion),
           cantidad: row.cantidad,
           porcentaje: row.porcentaje,
           colorIndex: 0
         };
-        return { segment, orden: meta?.orden ?? Number.MAX_SAFE_INTEGER };
+        return { segment, orden: isSinTipificar ? Number.MAX_SAFE_INTEGER : (meta?.orden ?? Number.MAX_SAFE_INTEGER - 1) };
       })
       .sort((a, b) => a.orden - b.orden || b.segment.cantidad - a.segment.cantidad)
-      .map((item, index) => ({ ...item.segment, colorIndex: this.paletteFromPosition(index) }));
+      .map((item, index, arr) => {
+        const paletteIndex = item.segment.codigo === 'SIN_TIPIFICAR'
+          ? -1
+          : arr.slice(0, index).filter((i) => i.segment.codigo !== 'SIN_TIPIFICAR').length;
+        return { ...item.segment, colorIndex: this.paletteFromPosition(paletteIndex) };
+      });
   }
 
   private buildSubtipiSegments(codigoTipi: string, rows: GtrSubtipificacionRankingResponse[]): RankingDonutSegment[] {
