@@ -1,0 +1,127 @@
+:host {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.afl {
+  --gxc-diagram-min-height: clamp(18rem, 40vh, 24rem);
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+  width: 100%;
+}
+
+.afl__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.afl__control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.afl__control--campaign {
+  flex: 1 1 18rem;
+  margin-right: auto;
+  max-width: 25rem;
+  min-width: min(18rem, 100%);
+}
+
+.afl__controls--external {
+  justify-content: flex-end;
+}
+
+:host ::ng-deep .afl__controls--external > .metrics-controls {
+  display: contents;
+}
+
+.afl__control-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+.afl__diagram {
+  display: grid;
+  gap: 1rem;
+  min-height: var(--gxc-diagram-min-height);
+  min-width: 0;
+}
+
+::ng-deep .afl__multiselect {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+::ng-deep .afl-campaign-panel {
+  width: min(42rem, calc(100vw - 2rem));
+}
+
+::ng-deep .afl-campaign-group,
+::ng-deep .afl-campaign-option {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  min-width: 0;
+  width: 100%;
+}
+
+::ng-deep .afl-campaign-group {
+  color: var(--app-text, #334155);
+  font-size: 0.82rem;
+}
+
+::ng-deep .afl-campaign-group span,
+::ng-deep .afl-campaign-option__meta {
+  color: var(--app-text-muted, #64748b);
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+::ng-deep .afl-campaign-option__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.afl__msg {
+  display: block;
+}
+
+.afl__state {
+  margin: 0.5rem 0;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+@media (max-width: 82rem) {
+  .afl__control--campaign {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 48rem) {
+  .afl__controls {
+    justify-content: stretch;
+  }
+
+  .afl__control {
+    width: 100%;
+  }
+}

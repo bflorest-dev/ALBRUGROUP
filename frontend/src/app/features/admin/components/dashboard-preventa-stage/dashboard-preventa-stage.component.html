@@ -168,6 +168,58 @@
         </app-gestion-campana-panel>
       </p-card>
     }
+    @case ('afluencia') {
+      <p-card styleClass="metrics-gxc-card">
+        <app-afluencia-hora-panel
+          [externalControls]="true"
+          [idEquipo]="selectedEquipoId()"
+          [teamScoped]="isTeamScopedDashboard()"
+          [periodo]="periodo()"
+          [dia]="dia()"
+          [modo]="modo()"
+        >
+          <div class="metrics-controls">
+            @if (showEquipoSelector()) {
+              <div class="metrics-control">
+                <span class="metrics-control-label">Equipo</span>
+                <p-selectButton
+                  [options]="equipoOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [ngModel]="selectedEquipoId()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (onChange)="onEquipoChange($event.value)"
+                />
+              </div>
+            }
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Modo</span>
+              <p-selectButton
+                [options]="modoOptions"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false"
+                [ngModel]="modo()"
+                [ngModelOptions]="{ standalone: true }"
+                (onChange)="onModoChange($event.value)"
+              />
+            </div>
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Período</span>
+              <app-period-selector
+                [periodo]="periodo()"
+                [dia]="dia()"
+                (periodoChange)="onPeriodoChange($event)"
+                (diaChange)="onDiaChange($event)"
+              />
+            </div>
+          </div>
+        </app-afluencia-hora-panel>
+      </p-card>
+    }
     @default {
       <p-card>
         <app-section-header

@@ -15,6 +15,7 @@ import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
+import pe.albrugroup.lead_service.entity.response.AfluenciaPorHoraCeldaResponse;
 import pe.albrugroup.lead_service.entity.response.GestionPorCampanaCeldaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasEquipoResponse;
@@ -596,6 +597,33 @@ public class EventoService {
                         (String) fila[2],
                         (String) fila[3],
                         (Long) fila[4]))
+                .toList();
+    }
+
+    public List<AfluenciaPorHoraCeldaResponse> obtenerAfluenciaPorHora(
+            ModoConteo modo, LocalDate desde, LocalDate hasta) {
+        LocalDate desdeResuelto = OperationalDateTime.resolveDate(desde);
+        LocalDate hastaResuelto = OperationalDateTime.resolveDate(hasta);
+        if (hastaResuelto.isBefore(desdeResuelto)) {
+            throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha final");
+        }
+        Instant inicio = OperationalDateTime.startOfDay(desdeResuelto);
+        Instant fin = OperationalDateTime.endExclusiveOfDay(hastaResuelto);
+
+        Accion accion = switch (modo) {
+            case INGRESADOS -> Accion.REGISTRO;
+            case GESTIONADOS -> Accion.ASIGNACION;
+        };
+
+        return eventoRepository.afluenciaPorHora(accion, Etapa.PREVENTA, inicio, fin)
+                .stream()
+                .map(fila -> new AfluenciaPorHoraCeldaResponse(
+                        (Long) fila[0],
+                        (Long) fila[1],
+                        (String) fila[2],
+                        ((Number) fila[3]).intValue(),
+                        ((Number) fila[4]).longValue(),
+                        ((Number) fila[5]).longValue()))
                 .toList();
     }
 

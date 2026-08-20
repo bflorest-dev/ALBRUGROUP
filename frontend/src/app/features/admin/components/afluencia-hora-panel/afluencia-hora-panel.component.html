@@ -1,0 +1,86 @@
+<section class="afl">
+  <app-section-header title="Afluencia por hora" [description]="facade.modoAyuda()">
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      severity="secondary"
+      [rounded]="true"
+      [outlined]="true"
+      [loading]="facade.isLoading()"
+      (click)="facade.reload()"
+      pTooltip="Actualizar"
+      tooltipPosition="top"
+      aria-label="Actualizar"
+    ></button>
+  </app-section-header>
+
+  @if (!showControls()) {
+    <div class="afl__controls afl__controls--external">
+      @if (facade.campanaOptions().length > 1) {
+        <div class="afl__control afl__control--campaign">
+          <span class="afl__control-label">Campañas</span>
+          <p-multiSelect
+            [options]="facade.campanaGroups()"
+            [group]="true"
+            optionGroupLabel="label"
+            optionGroupChildren="items"
+            optionLabel="nombre"
+            optionValue="key"
+            [ngModel]="facade.selectedCampanaKeys()"
+            [ngModelOptions]="{ standalone: true }"
+            (onChange)="facade.setSelectedCampanas($event.value)"
+            [filter]="true"
+            filterBy="nombre,nombreEquipo"
+            [showToggleAll]="true"
+            placeholder="Todas las campañas"
+            selectedItemsLabel="{0} campañas"
+            [maxSelectedLabels]="1"
+            appendTo="body"
+            styleClass="afl__multiselect"
+            panelStyleClass="afl-campaign-panel"
+          >
+            <ng-template #group let-group>
+              <div class="afl-campaign-group">
+                <strong>{{ group.label }}</strong>
+                <span>{{ group.total }} eventos</span>
+              </div>
+            </ng-template>
+
+            <ng-template #item let-campana>
+              <div class="afl-campaign-option">
+                <span class="afl-campaign-option__name">{{ campana.nombre }}</span>
+                <span class="afl-campaign-option__meta">{{ campana.total }} eventos</span>
+              </div>
+            </ng-template>
+          </p-multiSelect>
+        </div>
+      }
+
+      <ng-content />
+    </div>
+  }
+
+  @if (facade.hasError()) {
+    <p-message severity="error" text="No se pudo cargar el reporte de afluencia por hora." styleClass="afl__msg" />
+  }
+
+  @if (facade.isLoading()) {
+    <p class="afl__state">Cargando reporte...</p>
+  } @else if (facade.isEmpty()) {
+    @if (facade.hasActiveFilter()) {
+      <p class="afl__state">
+        Ninguna campaña seleccionada tuvo eventos en el período.
+        <button pButton type="button" label="Ver todas" link (click)="facade.clearCampanaFilter()"></button>
+      </p>
+    } @else {
+      <p class="afl__state">No hubo eventos en el período seleccionado.</p>
+    }
+  } @else {
+    <div class="afl__diagram">
+      @for (matriz of facade.matrices(); track $index) {
+        <app-afluencia-hora-matrix [matriz]="matriz" />
+      }
+    </div>
+  }
+</section>

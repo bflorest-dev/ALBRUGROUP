@@ -1,0 +1,87 @@
+<section class="mtx">
+  <header class="mtx__head">
+    <span class="mtx__team">
+      <span class="mtx__dot" [style.background]="matriz().accent" aria-hidden="true"></span>
+      {{ matriz().nombreEquipo }}
+    </span>
+    <span class="mtx__total">{{ matriz().totalEventos }} eventos · {{ matriz().totalUnicos }} únicos</span>
+  </header>
+
+  <div class="mtx__scroll">
+    <p-table [value]="matriz().filas" styleClass="p-datatable-sm mtx__table">
+      <ng-template #colgroup>
+        <col class="mtx-col-hora" />
+        <col class="mtx-col-total" />
+        <col class="mtx-col-unicos" />
+        <col class="mtx-col-repetidos" />
+        @for (campana of matriz().campanas; track $index) {
+          <col class="mtx-col-count" />
+        }
+      </ng-template>
+
+      <ng-template #header>
+        <tr>
+          <th class="mtx-col-hora mtx-freeze" rowspan="2">Hora</th>
+          <th class="mtx-total-head" colspan="3">Total</th>
+          @for (campana of matriz().campanas; track $index) {
+            <th class="mtx-camp" rowspan="2">
+              <span class="mtx-camp__name">{{ campana.nombre }}</span>
+              <span class="mtx-camp__total">{{ campana.total }}</span>
+            </th>
+          }
+        </tr>
+        <tr>
+          <th class="mtx-col-total mtx-sub">Total</th>
+          <th class="mtx-col-unicos mtx-sub">Ún.</th>
+          <th class="mtx-col-repetidos mtx-sub">Rep.</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-fila>
+        <tr>
+          <td class="mtx-col-hora mtx-freeze">
+            <strong>{{ fila.label }}</strong>
+          </td>
+          <td class="mtx-col-total"><strong>{{ fila.total }}</strong></td>
+          <td class="mtx-col-unicos">{{ fila.unicos }}</td>
+          <td class="mtx-col-repetidos">{{ fila.repetidos }}</td>
+          @for (celda of fila.celdas; track $index) {
+            <td
+              class="mtx-col-count mtx-heat"
+              [class.mtx-heat--claro]="tintaClara(celda)"
+              [style.background]="fondo(celda)"
+              [pTooltip]="tooltipCelda(celda)"
+              tooltipPosition="top"
+            >
+              {{ celda.total || '' }}
+            </td>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template #footer>
+        <tr class="mtx-footer">
+          <td class="mtx-col-hora mtx-freeze"><strong>Total</strong></td>
+          <td class="mtx-col-total"><strong>{{ matriz().totalEventos }}</strong></td>
+          <td class="mtx-col-unicos">{{ matriz().totalUnicos }}</td>
+          <td class="mtx-col-repetidos">{{ matriz().totalEventos - matriz().totalUnicos }}</td>
+          @for (colTotal of totalesPorCampana(); track $index) {
+            <td
+              class="mtx-col-count"
+              [pTooltip]="colTotal.unicos + ' únicos / ' + colTotal.repetidos + ' repetidos'"
+              tooltipPosition="top"
+            >
+              <strong>{{ colTotal.total }}</strong>
+            </td>
+          }
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td class="mtx-empty">Sin eventos para mostrar.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</section>

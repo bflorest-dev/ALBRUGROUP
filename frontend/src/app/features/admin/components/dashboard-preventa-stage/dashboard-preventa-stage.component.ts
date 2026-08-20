@@ -15,6 +15,7 @@ import { SessionService } from '../../../../core/services/session.service';
 import { esEquipoOperativo } from '../../../../shared/utils/equipos-operativos';
 import { resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { GestionCampoTipi } from '../../services/admin-gestion-campana.service';
+import { AfluenciaHoraPanelComponent } from '../afluencia-hora-panel/afluencia-hora-panel.component';
 import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
 import { AdvisorManagementSummaryPanelComponent } from '../advisor-management-summary-panel/advisor-management-summary-panel.component';
 import { TeamMetricGaugesComponent } from '../../components/team-metric-gauges/team-metric-gauges.component';
@@ -27,7 +28,7 @@ import {
 import { AdminEquipoService } from '../../services/admin-equipo.service';
 
 const SIN_EQUIPO = 'Sin equipo';
-type PreventaDashboardView = 'rendimiento' | 'asesores' | 'campanas';
+type PreventaDashboardView = 'rendimiento' | 'asesores' | 'campanas' | 'afluencia';
 
 interface DashboardMetricRow {
   idEquipo: number | null;
@@ -59,6 +60,7 @@ interface DashboardMetricRow {
     PageHeaderComponent,
     PeriodSelectorComponent,
     SectionHeaderComponent,
+    AfluenciaHoraPanelComponent,
     AdvisorManagementSummaryPanelComponent,
     GestionCampanaPanelComponent,
     TeamMetricGaugesComponent
@@ -122,7 +124,8 @@ export class DashboardPreventaStageComponent implements OnInit {
   protected readonly dashboardViewOptions: Array<{ label: string; value: PreventaDashboardView }> = [
     { label: 'Rendimiento', value: 'rendimiento' },
     { label: 'Asesores', value: 'asesores' },
-    { label: 'Campañas', value: 'campanas' }
+    { label: 'Campañas', value: 'campanas' },
+    { label: 'Afluencia', value: 'afluencia' }
   ];
 
   protected readonly rows = computed<DashboardMetricRow[]>(() => {

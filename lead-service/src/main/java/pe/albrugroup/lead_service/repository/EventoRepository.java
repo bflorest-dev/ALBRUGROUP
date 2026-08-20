@@ -1863,4 +1863,27 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     // Los rankings de tipificaciones/subtipificaciones GTR se mudaron a LeadRepository: ahora cuentan
     // LEADS distintos por su Tipificacion de Mayor Rango (LeadEtapaResumen), no eventos TIPIFICACION.
+
+    @Query("""
+            SELECT l.idEquipo, c.id, c.nombre,
+                   FUNCTION('date_part', 'hour',
+                            FUNCTION('timezone', 'America/Lima', e.createdAt)),
+                   COUNT(e), COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.campana c
+            WHERE e.accion = :accion
+              AND e.etapa = :etapa
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY l.idEquipo, c.id, c.nombre,
+                     FUNCTION('date_part', 'hour',
+                              FUNCTION('timezone', 'America/Lima', e.createdAt))
+            """)
+    List<Object[]> afluenciaPorHora(
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
 }

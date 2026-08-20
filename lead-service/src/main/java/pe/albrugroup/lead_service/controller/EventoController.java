@@ -19,6 +19,7 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.ModoConteo;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
+import pe.albrugroup.lead_service.entity.response.AfluenciaPorHoraCeldaResponse;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.GestionPorCampanaCeldaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
@@ -129,6 +130,15 @@ public class EventoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
         return ResponseEntity.ok(eventoService.obtenerGestionPorCampana(etapa, campo, modo, desde, hasta));
+    }
+
+    @GetMapping("/metricas/afluencia-por-hora") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
+    public ResponseEntity<List<AfluenciaPorHoraCeldaResponse>> obtenerAfluenciaPorHora(
+            @RequestParam(defaultValue = "INGRESADOS") ModoConteo modo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
+    ) {
+        return ResponseEntity.ok(eventoService.obtenerAfluenciaPorHora(modo, desde, hasta));
     }
 
     @GetMapping("/empleado/{idEmpleado}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")
