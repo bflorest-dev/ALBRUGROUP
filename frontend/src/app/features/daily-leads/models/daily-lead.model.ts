@@ -98,6 +98,7 @@ export interface DailyLeadGroupItem {
   etiqueta: string;
   cantidad: number;
   sinValor: boolean;
+  valor?: string | null;
 }
 
 export interface DailyLeadGroupsResponse {

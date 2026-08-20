@@ -256,15 +256,14 @@ export class DailyLeadsFacade {
   readonly headerTotalElements = computed(() =>
     this.selectedGroup() ? this.visibleTotalElements() : this.totalElements()
   );
-  /** Texto de la cabecera: "N leads" y, si hay repeticiones y sin grupo, "· M registros". */
   readonly headerCountLabel = computed(() => {
     const leads = this.headerTotalElements();
     const leadsLabel = `${leads} ${leads === 1 ? 'lead' : 'leads'}`;
-    if (this.selectedGroup()) {
-      return leadsLabel;
-    }
-    const registros = this.totalRegistros();
-    if (registros <= leads) {
+    const group = this.selectedGroup();
+    const registros = group
+      ? (group.valor ? parseInt(group.valor, 10) : 0)
+      : this.totalRegistros();
+    if (!registros || registros <= leads) {
       return leadsLabel;
     }
     return `${leadsLabel} · ${registros} ${registros === 1 ? 'registro' : 'registros'}`;

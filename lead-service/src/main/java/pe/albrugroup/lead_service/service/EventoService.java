@@ -329,8 +329,15 @@ public class EventoService {
                         ),
                         "Sin campaña"
                 ),
-                mapearAgrupaciones(
+                mapearAgrupacionesEquipo(
                         eventoRepository.agruparRegistrosDiariosPorEquipo(
+                                Accion.REGISTRO,
+                                rango.inicio(),
+                                rango.fin(),
+                                leadNormalizado != null,
+                                leadNormalizado
+                        ),
+                        eventoRepository.contarRegistrosDiariosPorEquipo(
                                 Accion.REGISTRO,
                                 rango.inicio(),
                                 rango.fin(),
@@ -708,6 +715,26 @@ public class EventoService {
             ));
         }
         return ordenarAgrupaciones(grupos);
+    }
+
+    private List<LeadGtrAgrupacionItemResponse> mapearAgrupacionesEquipo(
+            List<LeadGtrAgrupacionProjection> rows,
+            List<Object[]> registrosPorEquipo,
+            String etiquetaSinValor
+    ) {
+        Map<Long, Long> registrosMap = registrosPorEquipo.stream()
+                .collect(Collectors.toMap(
+                        fila -> (Long) fila[0],
+                        fila -> (Long) fila[1],
+                        Long::sum
+                ));
+        List<LeadGtrAgrupacionItemResponse> items = mapearAgrupaciones(rows, etiquetaSinValor);
+        for (LeadGtrAgrupacionItemResponse item : items) {
+            if (item.getIdGrupo() != null) {
+                item.setValor(String.valueOf(registrosMap.getOrDefault(item.getIdGrupo(), item.getCantidad())));
+            }
+        }
+        return items;
     }
 
     private List<LeadGtrAgrupacionItemResponse> mapearAgrupacionesTipificacion(

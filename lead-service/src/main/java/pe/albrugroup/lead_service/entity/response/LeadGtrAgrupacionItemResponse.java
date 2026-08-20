@@ -2,8 +2,9 @@ package pe.albrugroup.lead_service.entity.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
-@Getter
+@Getter @Setter
 @AllArgsConstructor
 public class LeadGtrAgrupacionItemResponse {
 
