@@ -1751,6 +1751,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                             AND reg.accion = :accionRegistro
                             AND reg.createdAt >= :fechaDesde
                             AND reg.createdAt < :fechaHasta)
+              AND NOT EXISTS (SELECT 1 FROM Evento ant
+                              WHERE ant.idLead = e.idLead
+                                AND ant.accion = :accion
+                                AND ant.createdAt >= :fechaDesde
+                                AND ant.createdAt < e.createdAt)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
