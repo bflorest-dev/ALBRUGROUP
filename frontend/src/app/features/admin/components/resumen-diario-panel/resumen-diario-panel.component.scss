@@ -107,6 +107,44 @@ th.n {
   gap: 7px;
 }
 
+.refreshing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+}
+
+.refreshing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--team-accent);
+  animation: resumen-pulse 1s ease-in-out infinite;
+}
+
+@keyframes resumen-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .refreshing-dot {
+    animation: none;
+  }
+}
+
+/* La recarga es en segundo plano: el poster sigue mostrando el reporte anterior sin bloquear. */
+.poster.is-refreshing {
+  cursor: progress;
+}
+
 .chip {
   font-size: 12px;
   font-weight: 600;

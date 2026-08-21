@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
@@ -91,7 +91,7 @@ export class DashboardPreventaStageComponent implements OnInit {
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly operationalGateMessage = this.operationalGate.blockedMessage;
-  protected readonly activeView = signal<PreventaDashboardView>('rendimiento');
+  protected readonly activeView = signal<PreventaDashboardView>('resumen');
   private readonly raw = signal<LeadsDiariosMetricasEquipo[]>([]);
   private readonly equipos = signal<Array<{ id: number; nombre: string; color?: string | null; activo: boolean }>>([]);
   private readonly equipoNombreById = signal<Map<number, string>>(new Map());
@@ -199,6 +199,18 @@ export class DashboardPreventaStageComponent implements OnInit {
   });
 
   constructor() {
+    // El RESUMEN es por equipo (no admite "Todos"): en cuanto la vista está activa y hay equipos,
+    // se elige el primero si el ADMIN venía sin equipo. Reactivo, así cubre el default de entrada.
+    effect(() => {
+      if (this.activeView() !== 'resumen' || this.isTeamScopedDashboard() || this.selectedEquipoId() !== null) {
+        return;
+      }
+      const primerEquipo = this.equipoOptionsResumen()[0]?.value ?? null;
+      if (primerEquipo !== null) {
+        untracked(() => this.selectedEquipoId.set(primerEquipo));
+      }
+    });
+
     effect(() => {
       if (!this.viewReady()) {
         return;
@@ -288,16 +300,8 @@ export class DashboardPreventaStageComponent implements OnInit {
   }
 
   protected onViewChange(value: PreventaDashboardView | null): void {
-    if (!value) {
-      return;
-    }
-    this.activeView.set(value);
-    // El RESUMEN es por equipo: si el ADMIN venía en "Todos", se elige el primer equipo disponible.
-    if (value === 'resumen' && !this.isTeamScopedDashboard() && this.selectedEquipoId() === null) {
-      const primerEquipo = this.equipoOptionsResumen()[0]?.value ?? null;
-      if (primerEquipo !== null) {
-        this.selectedEquipoId.set(primerEquipo);
-      }
+    if (value) {
+      this.activeView.set(value);
     }
   }
 

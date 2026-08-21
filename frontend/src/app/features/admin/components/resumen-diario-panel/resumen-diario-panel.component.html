@@ -2,14 +2,18 @@
   <ng-content></ng-content>
 </div>
 
-@if (facade.hasError()) {
+@if (facade.showErrorPlaceholder()) {
   <p-message severity="error" text="No se pudo cargar el resumen diario." styleClass="resumen-message" />
-} @else if (facade.isLoading()) {
+} @else if (facade.isInitialLoading()) {
   <div class="resumen-empty">Cargando resumen...</div>
 } @else if (facade.isEmpty()) {
   <div class="resumen-empty">No hubo actividad en el período seleccionado.</div>
 } @else {
-  <article class="poster" [style.--team-accent]="facade.equipoInfo()?.color || '#64748b'">
+  <article
+    class="poster"
+    [class.is-refreshing]="facade.isRefreshing()"
+    [style.--team-accent]="facade.equipoInfo()?.color || '#64748b'"
+  >
     <header class="poster-head">
       <div class="poster-head__left">
         <p class="eyebrow">Dashboard · Preventa</p>
@@ -24,6 +28,9 @@
           <span class="chip">{{ modoLabel() }}</span>
           <span class="chip">{{ campoLabel() }}</span>
         </span>
+        @if (facade.isRefreshing()) {
+          <span class="refreshing" aria-live="polite"><span class="refreshing-dot"></span>Actualizando</span>
+        }
       </div>
     </header>
 

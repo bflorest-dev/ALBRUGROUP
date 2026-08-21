@@ -1,6 +1,6 @@
-import { Injectable, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Injectable, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { Subscription, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
+import { Subscription, catchError, forkJoin, map, of, startWith, switchMap, throttleTime } from 'rxjs';
 import { CurrentUserTeamScopeService } from '../../../core/services/current-user-team-scope.service';
 import { SessionService } from '../../../core/services/session.service';
 import { resolveMetricsRange } from '../../../shared/utils/metrics-period';
@@ -156,16 +156,26 @@ export class ResumenDiarioFacade implements OnDestroy {
     { initialValue: { status: 'idle' } as State }
   );
 
-  readonly isLoading = computed(() => {
-    const status = this.state().status;
-    return status === 'loading' || status === 'idle';
-  });
-  readonly hasError = computed(() => this.state().status === 'error');
+  /**
+   * Último resultado exitoso. Persiste entre recargas para que el poster nunca quede en blanco:
+   * mientras se busca el nuevo resumen se sigue mostrando el anterior, y se intercambia recién
+   * cuando llega el nuevo (stale-while-revalidate). Vale también al alternar de equipo.
+   */
+  private readonly lastData = signal<LoadResult | null>(null);
 
-  private readonly data = computed<LoadResult | null>(() => {
-    const state = this.state();
-    return state.status === 'success' ? state.data : null;
+  private readonly data = computed<LoadResult | null>(() => this.lastData());
+
+  /** Placeholder de carga solo en la PRIMERA carga (sin datos previos). */
+  readonly isInitialLoading = computed(() => {
+    const status = this.state().status;
+    return this.lastData() === null && (status === 'loading' || status === 'idle');
   });
+
+  /** Recarga en segundo plano: hay datos previos y se está buscando el nuevo resumen. */
+  readonly isRefreshing = computed(() => this.state().status === 'loading' && this.lastData() !== null);
+
+  /** Error a pantalla completa solo si aún no hay ningún reporte que preservar. */
+  readonly showErrorPlaceholder = computed(() => this.state().status === 'error' && this.lastData() === null);
 
   readonly equipoInfo = computed<ResumenEquipoInfo | null>(() => this.data()?.equipoInfo ?? null);
 
@@ -249,6 +259,13 @@ export class ResumenDiarioFacade implements OnDestroy {
   });
 
   constructor() {
+    // Fija el último resultado exitoso; los view models leen de aquí, no del estado en vuelo.
+    effect(() => {
+      const state = this.state();
+      if (state.status === 'success') {
+        untracked(() => this.lastData.set(state.data));
+      }
+    });
     this.startRealtime();
   }
 
@@ -328,16 +345,24 @@ export class ResumenDiarioFacade implements OnDestroy {
     return this.teamScope.isDashboardTeamScoped() || this.sessionService.getPrimaryRole() === 'COMMUNITY';
   }
 
+  /**
+   * En producción los leads cambian de continuo. En vez de recargar en cada evento (machacaría al
+   * backend), se refresca como mucho una vez cada 20 s. La recarga es en segundo plano y preserva el
+   * reporte anterior (ver {@link lastData}), así que el usuario nunca ve un estado de carga.
+   */
   private startRealtime(): void {
     this.realtimeSubscription.add(
-      this.realtimeService.watchTopic('/topic/leads').subscribe({
-        next: () => {
-          if (this.started) {
-            this.reload();
-          }
-        },
-        error: () => undefined
-      })
+      this.realtimeService
+        .watchTopic('/topic/leads')
+        .pipe(throttleTime(20000, undefined, { leading: false, trailing: true }))
+        .subscribe({
+          next: () => {
+            if (this.started) {
+              this.reload();
+            }
+          },
+          error: () => undefined
+        })
     );
   }
 
