@@ -43,9 +43,12 @@
             <div class="kpi-div"></div>
             <div class="stat win"><span class="v">{{ ig.ingresosPreventas }}</span><span class="c">Preventas</span></div>
           </div>
-          <div class="kpi-bottom">
-            <span class="bar"><span [style.width.%]="ig.ingresosPct"></span></span>
-            <span class="pct">{{ ig.ingresosPct | number: '1.1-1' }}%</span>
+          <div class="split">
+            <div class="split-bar"><span class="seg-prev" [style.width.%]="ig.ingresosPct"></span></div>
+            <div class="split-legend">
+              <span class="lg"><i class="sw sw-prev"></i><b>{{ ig.ingresosPreventas }}</b>&nbsp;preventas&nbsp;·&nbsp;<span class="pct-in">{{ ig.ingresosPct | number: '1.1-1' }}%</span></span>
+              <span class="lg"><i class="sw sw-rest"></i><b>{{ ig.ingresosTotal - ig.ingresosPreventas }}</b>&nbsp;otros leads</span>
+            </div>
           </div>
         </div>
         <div class="kpi">
@@ -55,9 +58,12 @@
             <div class="kpi-div"></div>
             <div class="stat win"><span class="v">{{ ig.gestionPreventas }}</span><span class="c">Preventas</span></div>
           </div>
-          <div class="kpi-bottom">
-            <span class="bar"><span [style.width.%]="ig.gestionPct"></span></span>
-            <span class="pct">{{ ig.gestionPct | number: '1.1-1' }}%</span>
+          <div class="split">
+            <div class="split-bar"><span class="seg-prev" [style.width.%]="ig.gestionPct"></span></div>
+            <div class="split-legend">
+              <span class="lg"><i class="sw sw-prev"></i><b>{{ ig.gestionPreventas }}</b>&nbsp;preventas&nbsp;·&nbsp;<span class="pct-in">{{ ig.gestionPct | number: '1.1-1' }}%</span></span>
+              <span class="lg"><i class="sw sw-rest"></i><b>{{ ig.gestionTotal - ig.gestionPreventas }}</b>&nbsp;otros leads</span>
+            </div>
           </div>
         </div>
       }

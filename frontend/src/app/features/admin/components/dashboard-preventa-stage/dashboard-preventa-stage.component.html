@@ -38,7 +38,7 @@
 
   @switch (activeView()) {
     @case ('resumen') {
-      <p-card styleClass="metrics-gxc-card">
+      <div class="resumen-view">
         <app-resumen-diario-panel
           [externalControls]="true"
           [idEquipo]="selectedEquipoId()"
@@ -101,7 +101,7 @@
             </div>
           </div>
         </app-resumen-diario-panel>
-      </p-card>
+      </div>
     }
     @case ('asesores') {
       <p-card>

@@ -2,6 +2,7 @@
   display: block;
 }
 
+/* Controles y estados: siguen el tema de la app (viven fuera del poster). */
 .resumen-controls {
   margin-bottom: 1.25rem;
 }
@@ -17,21 +18,33 @@
   margin: 1rem 0;
 }
 
+/*
+ * El poster tiene IDENTIDAD PROPIA: siempre oscuro, sin importar el tema de la app. Texto claro
+ * sobre fondo oscuro = máxima legibilidad y un pantallazo consistente. Paleta local (no --app-*),
+ * salvo el acento del equipo que entra por --team-accent inline.
+ */
 .poster {
-  --win: var(--app-success);
-  --line: var(--app-border-soft);
-  --faint: var(--app-text-muted);
-  background: var(--app-surface);
-  border: 1px solid var(--app-border-soft);
+  --ink: #f5f1ea;
+  --muted: #b9b1a6;
+  --faint: #968d82;
+  --card: #1e1a15;
+  --deep: #14110d;
+  --line: #332c23;
+  --line-soft: #26211a;
+  --win: #3fd199;
+  --win-soft: #16311f;
+  --rest: #e8a857;
+
+  background: var(--deep);
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 22px 24px;
-  color: var(--app-text);
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 
-.num,
 .v,
-.pct,
+.pct-in,
 td.n,
 th.n {
   font-variant-numeric: tabular-nums;
@@ -44,7 +57,7 @@ th.n {
   align-items: flex-end;
   gap: 24px;
   padding-bottom: 16px;
-  border-bottom: 2px solid var(--app-border-soft);
+  border-bottom: 2px solid var(--line);
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
@@ -59,11 +72,11 @@ th.n {
 }
 
 .poster-title {
-  font-size: 26px;
+  font-size: 27px;
   font-weight: 700;
   letter-spacing: -0.01em;
   margin: 0;
-  color: var(--app-text);
+  color: var(--ink);
 }
 
 .poster-head__right {
@@ -87,24 +100,34 @@ th.n {
   height: 12px;
   border-radius: 50%;
   background: var(--team-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--team-accent) 20%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--team-accent) 24%, transparent);
 }
 
 .date {
   font-size: 14px;
-  color: var(--app-text-muted);
+  color: var(--muted);
   font-weight: 500;
 }
 
 .sep {
   width: 1px;
   height: 20px;
-  background: var(--app-border-soft);
+  background: var(--line);
 }
 
 .chips {
   display: flex;
   gap: 7px;
+}
+
+.chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--muted);
 }
 
 .refreshing {
@@ -113,7 +136,7 @@ th.n {
   gap: 6px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--app-text-muted);
+  color: var(--muted);
 }
 
 .refreshing-dot {
@@ -140,19 +163,8 @@ th.n {
   }
 }
 
-/* La recarga es en segundo plano: el poster sigue mostrando el reporte anterior sin bloquear. */
 .poster.is-refreshing {
   cursor: progress;
-}
-
-.chip {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--app-surface-soft);
-  border: 1px solid var(--app-border-soft);
-  color: var(--app-text-muted);
 }
 
 /* KPIs */
@@ -164,13 +176,13 @@ th.n {
 }
 
 .kpi {
-  background: var(--app-surface-soft);
-  border: 1px solid var(--app-border-soft);
+  background: var(--card);
+  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 13px;
 }
 
 .kpi-label {
@@ -178,7 +190,7 @@ th.n {
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--app-text-muted);
+  color: var(--muted);
 }
 
 .kpi-stats {
@@ -197,7 +209,7 @@ th.n {
 
 .stat .v {
   font-weight: 700;
-  font-size: 34px;
+  font-size: 35px;
   line-height: 1;
   letter-spacing: -0.02em;
 }
@@ -222,36 +234,68 @@ th.n {
 .kpi-div {
   width: 1px;
   align-self: stretch;
-  background: var(--app-border-soft);
+  background: var(--line);
 }
 
-.kpi-bottom {
+/* Barra apilada: todo el ancho = total; verde = preventas, ámbar = otros leads. */
+.split {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 9px;
 }
 
-.bar {
-  flex: 1;
-  height: 8px;
+.split-bar {
+  display: flex;
+  height: 13px;
   border-radius: 999px;
-  background: var(--app-bg-raised);
   overflow: hidden;
+  background: var(--rest);
 }
 
-.bar > span {
-  display: block;
+.split-bar > .seg-prev {
   height: 100%;
-  border-radius: 999px;
   background: var(--win);
 }
 
-.pct {
-  font-weight: 700;
-  font-size: 15px;
+.split-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.lg b {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.lg .pct-in {
   color: var(--win);
-  min-width: 46px;
-  text-align: right;
+  font-weight: 700;
+}
+
+.sw {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.sw-prev {
+  background: var(--win);
+}
+
+.sw-rest {
+  background: var(--rest);
 }
 
 /* 3-panel grid */
@@ -263,8 +307,8 @@ th.n {
 }
 
 .panel {
-  background: var(--app-surface-soft);
-  border: 1px solid var(--app-border-soft);
+  background: var(--card);
+  border: 1px solid var(--line);
   border-radius: 14px;
   overflow: hidden;
 }
@@ -275,7 +319,7 @@ th.n {
   align-items: center;
   gap: 8px;
   padding: 13px 16px;
-  border-bottom: 1px solid var(--app-border-soft);
+  border-bottom: 1px solid var(--line);
 }
 
 .panel-head h4 {
@@ -284,14 +328,14 @@ th.n {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   margin: 0;
-  color: var(--app-text);
+  color: var(--ink);
 }
 
 .panel-head .tag {
   font-size: 12px;
   font-weight: 600;
   color: var(--win);
-  background: color-mix(in srgb, var(--app-success) 14%, transparent);
+  background: var(--win-soft);
   padding: 3px 9px;
   border-radius: 999px;
   white-space: nowrap;
@@ -308,28 +352,39 @@ table {
 
 th,
 td {
-  padding: 7px 8px;
+  padding: 8px 8px;
   text-align: left;
-  font-size: 14px;
+  font-size: 15px;
+  color: var(--ink);
 }
 
 thead th {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--faint);
-  border-bottom: 1px solid var(--app-border-soft);
-  padding-bottom: 6px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 7px;
 }
 
 tbody tr + tr td {
-  border-top: 1px solid var(--app-border-soft);
+  border-top: 1px solid var(--line-soft);
 }
 
 td.n,
 th.n {
   text-align: right;
+  font-weight: 600;
+}
+
+.ord {
+  display: inline-block;
+  min-width: 19px;
+  font-weight: 700;
+  color: var(--team-accent);
+  font-size: 13px;
+  margin-right: 8px;
 }
 
 /* Ranking */
@@ -338,7 +393,7 @@ th.n {
 }
 
 .rk-total {
-  color: var(--app-text-muted);
+  color: var(--ink);
 }
 
 .rk-prev {
@@ -348,7 +403,7 @@ th.n {
 
 .rk-prev.zero {
   color: var(--faint);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* Estado leads */
@@ -359,9 +414,9 @@ th.n {
 .minibar {
   height: 6px;
   border-radius: 999px;
-  background: var(--app-bg-raised);
+  background: var(--line-soft);
   overflow: hidden;
-  margin-top: 5px;
+  margin-top: 6px;
 }
 
 .minibar > span {
@@ -372,8 +427,9 @@ th.n {
 }
 
 .est-pct {
-  color: var(--app-text-muted);
-  font-size: 13px;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 500;
 }
 
 tr.is-win .minibar > span {
@@ -392,8 +448,8 @@ tr.is-win .est-name {
 
 .camp td,
 .camp th {
-  padding: 6px 8px;
-  font-size: 13.5px;
+  padding: 7px 8px;
+  font-size: 14px;
   white-space: nowrap;
 }
 
@@ -402,12 +458,13 @@ tr.is-win .est-name {
 }
 
 .camp .colgrp {
-  border-left: 1px solid var(--app-border-soft);
+  border-left: 1px solid var(--line);
 }
 
 .camp .c-pct {
-  color: var(--faint);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 500;
 }
 
 .poster-foot {
@@ -416,7 +473,7 @@ tr.is-win .est-name {
   justify-content: space-between;
   color: var(--faint);
   font-size: 12px;
-  border-top: 1px solid var(--app-border-soft);
+  border-top: 1px solid var(--line);
   padding-top: 10px;
   flex-wrap: wrap;
   gap: 8px;
