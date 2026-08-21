@@ -12,7 +12,8 @@
   <article
     class="poster"
     [class.is-refreshing]="facade.isRefreshing()"
-    [style.--team-accent]="facade.equipoInfo()?.color || '#64748b'"
+    [style.--team-accent]="teamAccent()"
+    [style.--team-on]="teamOn()"
   >
     <header class="poster-head">
       <div class="poster-head__left">

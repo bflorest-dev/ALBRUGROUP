@@ -33,6 +33,39 @@ export class ResumenDiarioPanelComponent implements OnInit {
     'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
   ];
 
+  private static readonly ACCENT_FALLBACK = '#64748b';
+
+  /** Color de marca del equipo (con fallback neutro si el equipo no tiene color). */
+  protected readonly teamAccent = computed(
+    () => this.facade.equipoInfo()?.color || ResumenDiarioPanelComponent.ACCENT_FALLBACK
+  );
+
+  /**
+   * Color de texto legible sobre la banda de color del equipo. Se decide por la luminancia percibida
+   * (fórmula YIQ): colores claros (naranja WinTeam) → texto oscuro; oscuros (rojo ClaroTeam) → blanco.
+   * Así funciona con cualquier color que se asigne a un equipo nuevo.
+   */
+  protected readonly teamOn = computed(() => {
+    const rgb = this.parseHex(this.teamAccent());
+    if (!rgb) {
+      return '#ffffff';
+    }
+    const yiq = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+    return yiq >= 150 ? '#1a1005' : '#ffffff';
+  });
+
+  private parseHex(hex: string): { r: number; g: number; b: number } | null {
+    const clean = hex.replace('#', '').trim();
+    if (clean.length !== 6) {
+      return null;
+    }
+    const value = Number.parseInt(clean, 16);
+    if (Number.isNaN(value)) {
+      return null;
+    }
+    return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
+  }
+
   protected readonly modoLabel = computed(() =>
     this.modo() === 'INGRESADOS' ? 'Ingresados' : 'Gestionados'
   );

@@ -41,6 +41,7 @@
   padding: 22px 24px;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  overflow: hidden;
 }
 
 .v,
@@ -51,15 +52,26 @@ th.n {
 }
 
 /* Header */
+/*
+ * Banda de identidad (variante B): el color del equipo entra pleno por la izquierda —donde va el
+ * título— y se funde con el oscuro hacia la derecha, donde el equipo/fecha/filtros quedan sobre el
+ * fondo oscuro. Los márgenes negativos rompen el padding del poster para llegar a los bordes.
+ */
 .poster-head {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   gap: 24px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--line);
-  margin-bottom: 20px;
   flex-wrap: wrap;
+  margin: -22px -24px 20px;
+  padding: 18px 24px;
+  background: linear-gradient(
+    100deg,
+    var(--team-accent) 0%,
+    var(--team-accent) 30%,
+    color-mix(in srgb, var(--team-accent) 30%, var(--deep)) 68%,
+    var(--deep) 100%
+  );
 }
 
 .eyebrow {
@@ -67,7 +79,8 @@ th.n {
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--team-accent);
+  color: var(--team-on);
+  opacity: 0.82;
   margin: 0 0 4px;
 }
 
@@ -76,7 +89,7 @@ th.n {
   font-weight: 700;
   letter-spacing: -0.01em;
   margin: 0;
-  color: var(--ink);
+  color: var(--team-on);
 }
 
 .poster-head__right {
@@ -99,8 +112,7 @@ th.n {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--team-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--team-accent) 24%, transparent);
+  background: var(--ink);
 }
 
 .date {
