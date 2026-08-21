@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { Subscription, catchError, forkJoin, map, of, startWith, switchMap, throttleTime } from 'rxjs';
+import { Subscription, catchError, filter, forkJoin, map, of, startWith, switchMap, throttleTime } from 'rxjs';
 import { CurrentUserTeamScopeService } from '../../../core/services/current-user-team-scope.service';
 import { SessionService } from '../../../core/services/session.service';
 import { resolveMetricsRange } from '../../../shared/utils/metrics-period';
@@ -15,6 +15,13 @@ import {
   ResumenIngresosGestion,
   ResumenSubtipCampanaCelda
 } from '../services/resumen-diario.service';
+
+/**
+ * Únicos tipos de evento que pueden mover los contadores del resumen: ingreso de leads, asignación a
+ * asesores y tipificación. El resto (actualizar datos, iniciar gestión, contacto, cerrar atención…)
+ * no cambia ningún agregado, así que no debe gatillar una recarga.
+ */
+const EVENTOS_RELEVANTES = new Set(['REGISTRO', 'REGISTRO_MASIVO', 'ASIGNACION', 'TIPIFICACION']);
 
 const SIN_TIPIFICAR_CODIGO = 'SIN_TIPIFICAR';
 const SIN_TIPIFICAR_LABEL = '0 - Sin tipificar';
@@ -286,7 +293,7 @@ export class ResumenDiarioFacade implements OnDestroy {
       return;
     }
     this.modo.set(modo);
-    this.reload();
+    this.reload(true);
   }
 
   setCampo(campo: GestionCampoTipi | null | undefined): void {
@@ -294,7 +301,7 @@ export class ResumenDiarioFacade implements OnDestroy {
       return;
     }
     this.campo.set(campo);
-    this.reload();
+    this.reload(true);
   }
 
   setPeriodo(periodo: MetricsPeriodo | null | undefined): void {
@@ -305,7 +312,7 @@ export class ResumenDiarioFacade implements OnDestroy {
     if (periodo !== 'dia') {
       this.diaSeleccionado.set(null);
     }
-    this.reload();
+    this.reload(true);
   }
 
   setDia(dia: string): void {
@@ -314,7 +321,7 @@ export class ResumenDiarioFacade implements OnDestroy {
     }
     this.diaSeleccionado.set(dia);
     this.periodo.set('dia');
-    this.reload();
+    this.reload(true);
   }
 
   setIdEquipo(idEquipo: number | null | undefined): void {
@@ -323,12 +330,20 @@ export class ResumenDiarioFacade implements OnDestroy {
       return;
     }
     this.idEquipo.set(normalized);
-    this.reload();
+    this.reload(true);
   }
 
-  reload(): void {
+  /**
+   * @param reset cuando la recarga la origina el usuario (cambió equipo/modo/campo/período) se limpia
+   *   el reporte anterior para mostrar el nuevo contexto de inmediato. En el refresco de fondo
+   *   (websocket) queda `false`, así se conserva el reporte previo mientras llega el nuevo.
+   */
+  reload(reset = false): void {
     if (!this.started) {
       return;
+    }
+    if (reset) {
+      this.lastData.set(null);
     }
     const range = resolveMetricsRange(this.periodo(), this.diaSeleccionado());
     this.criteria.set({
@@ -353,8 +368,14 @@ export class ResumenDiarioFacade implements OnDestroy {
   private startRealtime(): void {
     this.realtimeSubscription.add(
       this.realtimeService
-        .watchTopic('/topic/leads')
-        .pipe(throttleTime(20000, undefined, { leading: false, trailing: true }))
+        // Topic acotado a PREVENTA: la actividad de otras etapas (venta/postventa/cobranza) no puede
+        // mover este resumen, así que no debe gatillar recargas.
+        .watchTopic('/topic/leads/etapa/PREVENTA')
+        .pipe(
+          // Solo los eventos que realmente cambian contadores (ingreso/asignación/tipificación).
+          filter((event) => EVENTOS_RELEVANTES.has(event.tipo)),
+          throttleTime(20000, undefined, { leading: false, trailing: true })
+        )
         .subscribe({
           next: () => {
             if (this.started) {
