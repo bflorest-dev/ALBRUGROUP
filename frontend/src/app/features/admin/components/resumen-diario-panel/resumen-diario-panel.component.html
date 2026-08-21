@@ -1,0 +1,151 @@
+<div class="resumen-controls">
+  <ng-content></ng-content>
+</div>
+
+@if (facade.hasError()) {
+  <p-message severity="error" text="No se pudo cargar el resumen diario." styleClass="resumen-message" />
+} @else if (facade.isLoading()) {
+  <div class="resumen-empty">Cargando resumen...</div>
+} @else if (facade.isEmpty()) {
+  <div class="resumen-empty">No hubo actividad en el período seleccionado.</div>
+} @else {
+  <article class="poster" [style.--team-accent]="facade.equipoInfo()?.color || '#64748b'">
+    <header class="poster-head">
+      <div class="poster-head__left">
+        <p class="eyebrow">Dashboard · Preventa</p>
+        <h3 class="poster-title">Resumen diario</h3>
+      </div>
+      <div class="poster-head__right">
+        <span class="team"><span class="team-dot"></span>{{ facade.equipoInfo()?.nombre }}</span>
+        <span class="sep"></span>
+        <span class="date">{{ fechaLabel() }}</span>
+        <span class="sep"></span>
+        <span class="chips">
+          <span class="chip">{{ modoLabel() }}</span>
+          <span class="chip">{{ campoLabel() }}</span>
+        </span>
+      </div>
+    </header>
+
+    <section class="kpis">
+      @if (facade.ingresosGestion(); as ig) {
+        <div class="kpi">
+          <span class="kpi-label">Ingresos del día</span>
+          <div class="kpi-stats">
+            <div class="stat"><span class="v">{{ ig.ingresosTotal }}</span><span class="c">Total leads</span></div>
+            <div class="kpi-div"></div>
+            <div class="stat win"><span class="v">{{ ig.ingresosPreventas }}</span><span class="c">Preventas</span></div>
+          </div>
+          <div class="kpi-bottom">
+            <span class="bar"><span [style.width.%]="ig.ingresosPct"></span></span>
+            <span class="pct">{{ ig.ingresosPct | number: '1.1-1' }}%</span>
+          </div>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Gestión del día</span>
+          <div class="kpi-stats">
+            <div class="stat"><span class="v">{{ ig.gestionTotal }}</span><span class="c">Total leads</span></div>
+            <div class="kpi-div"></div>
+            <div class="stat win"><span class="v">{{ ig.gestionPreventas }}</span><span class="c">Preventas</span></div>
+          </div>
+          <div class="kpi-bottom">
+            <span class="bar"><span [style.width.%]="ig.gestionPct"></span></span>
+            <span class="pct">{{ ig.gestionPct | number: '1.1-1' }}%</span>
+          </div>
+        </div>
+      }
+    </section>
+
+    <section class="grid3">
+      <div class="panel">
+        <div class="panel-head">
+          <h4>Ranking asesores</h4>
+          <span class="tag">{{ facade.totalPreventas() }} preventas</span>
+        </div>
+        <div class="panel-body">
+          <table>
+            <thead>
+              <tr><th>Asesor</th><th class="n">Asign.</th><th class="n">Prev.</th></tr>
+            </thead>
+            <tbody>
+              @for (asesor of facade.ranking(); track asesor.key) {
+                <tr>
+                  <td class="rk-name">{{ asesor.nombreAsesor }}</td>
+                  <td class="n rk-total">{{ asesor.totalAsignaciones }}</td>
+                  <td class="n rk-prev" [class.zero]="asesor.preventas === 0">{{ asesor.preventas }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h4>Estado leads del día</h4>
+        </div>
+        <div class="panel-body">
+          <table>
+            <tbody>
+              @for (fila of facade.estadoLeads(); track fila.key) {
+                <tr class="est-row" [class.is-win]="fila.esPreventa">
+                  <td class="est-name">
+                    {{ fila.label }}
+                    <div class="minibar"><span [style.width.%]="(fila.cantidad / facade.maxEstadoCantidad()) * 100"></span></div>
+                  </td>
+                  <td class="n">{{ fila.cantidad }}</td>
+                  <td class="n est-pct">{{ fila.porcentaje | number: '1.1-1' }}%</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h4>Gestión × campaña · subtipificaciones</h4>
+        </div>
+        <div class="panel-body">
+          <div class="camp-scroll">
+            <table class="camp">
+              <thead>
+                <tr>
+                  <th>Subtipificación</th>
+                  <th class="n">Total</th>
+                  @for (col of facade.gestionCampana().columnas; track col.key) {
+                    <th class="n colgrp">{{ col.nombre }}</th>
+                    <th class="n">%</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of facade.gestionCampana().filas; track fila.key) {
+                  <tr>
+                    <td class="sub">{{ fila.label }}</td>
+                    <td class="n">{{ fila.total }}</td>
+                    @for (celda of fila.celdas; track celda.key) {
+                      <td class="n colgrp">{{ celda.cantidad }}</td>
+                      <td class="n c-pct">
+                        @if (celda.cantidad > 0) {
+                          {{ celda.porcentaje | number: '1.0-0' }}%
+                        } @else {
+                          —
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="poster-foot">
+      <span>Fuente: resumen histórico por etapa · atribución por equipo del lead</span>
+      <span>Modo {{ modoLabel() }} · tipificación {{ campoLabel() }} · {{ fechaLabel() }}</span>
+    </div>
+  </article>
+}

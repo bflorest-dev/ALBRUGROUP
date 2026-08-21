@@ -219,4 +219,124 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
     );
+
+    // ===== RESUMEN DIARIO tabla 4: subtipificación × campaña =====
+    // Igual que "gestión por campaña" pero un nivel más fino: agrupa por (equipo, campaña, código de
+    // tipificación, código de subtipificación). Se conserva la tipificación para poder anteponer su
+    // orden en la etiqueta. Filas [idEquipo, idCampana, nombreCampana, codigoTipificacion,
+    // codigoSubtipificacion, cantidad].
+
+    @Query("""
+            SELECT l.idEquipo, c.id, c.nombre,
+                   r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id
+            LEFT JOIN l.campana c
+            WHERE r.etapa = :etapa
+              AND r.primeraCodigoTipificacion IS NOT NULL
+              AND r.primeraTipificacionAt >= :inicio
+              AND r.primeraTipificacionAt < :fin
+            GROUP BY l.idEquipo, c.id, c.nombre, r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion
+            """)
+    List<Object[]> gestionSubtipPorCampanaPrimera(
+            @Param("etapa") Etapa etapa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT l.idEquipo, c.id, c.nombre,
+                   r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id
+            LEFT JOIN l.campana c
+            WHERE r.etapa = :etapa
+              AND r.ultimaCodigoTipificacion IS NOT NULL
+              AND r.ultimaTipificacionAt >= :inicio
+              AND r.ultimaTipificacionAt < :fin
+            GROUP BY l.idEquipo, c.id, c.nombre, r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
+            """)
+    List<Object[]> gestionSubtipPorCampanaUltima(
+            @Param("etapa") Etapa etapa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT l.idEquipo, c.id, c.nombre,
+                   r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id
+            LEFT JOIN l.campana c
+            WHERE r.etapa = :etapa
+              AND r.mayorRangoCodigoTipificacion IS NOT NULL
+              AND r.mayorRangoAt >= :inicio
+              AND r.mayorRangoAt < :fin
+            GROUP BY l.idEquipo, c.id, c.nombre, r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion
+            """)
+    List<Object[]> gestionSubtipPorCampanaMayor(
+            @Param("etapa") Etapa etapa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT l.idEquipo, c.id, c.nombre,
+                   r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion, COUNT(DISTINCT l.id)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            LEFT JOIN l.campana c
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.primeraCodigoTipificacion IS NOT NULL
+            GROUP BY l.idEquipo, c.id, c.nombre, r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion
+            """)
+    List<Object[]> ingresadosSubtipPorCampanaPrimera(
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT l.idEquipo, c.id, c.nombre,
+                   r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion, COUNT(DISTINCT l.id)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            LEFT JOIN l.campana c
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.ultimaCodigoTipificacion IS NOT NULL
+            GROUP BY l.idEquipo, c.id, c.nombre, r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
+            """)
+    List<Object[]> ingresadosSubtipPorCampanaUltima(
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT l.idEquipo, c.id, c.nombre,
+                   r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion, COUNT(DISTINCT l.id)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            LEFT JOIN l.campana c
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.mayorRangoCodigoTipificacion IS NOT NULL
+            GROUP BY l.idEquipo, c.id, c.nombre, r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion
+            """)
+    List<Object[]> ingresadosSubtipPorCampanaMayor(
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
 }

@@ -17,6 +17,7 @@ import { resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { GestionCampoTipi } from '../../services/admin-gestion-campana.service';
 import { AfluenciaHoraPanelComponent } from '../afluencia-hora-panel/afluencia-hora-panel.component';
 import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
+import { ResumenDiarioPanelComponent } from '../resumen-diario-panel/resumen-diario-panel.component';
 import { AdvisorManagementSummaryPanelComponent } from '../advisor-management-summary-panel/advisor-management-summary-panel.component';
 import { TeamMetricGaugesComponent } from '../../components/team-metric-gauges/team-metric-gauges.component';
 import { DashboardGaugeCard, resolveGaugeColors } from '../../models/dashboard-gauge.model';
@@ -28,7 +29,7 @@ import {
 import { AdminEquipoService } from '../../services/admin-equipo.service';
 
 const SIN_EQUIPO = 'Sin equipo';
-type PreventaDashboardView = 'rendimiento' | 'asesores' | 'campanas' | 'afluencia';
+type PreventaDashboardView = 'resumen' | 'rendimiento' | 'asesores' | 'campanas' | 'afluencia';
 
 interface DashboardMetricRow {
   idEquipo: number | null;
@@ -63,6 +64,7 @@ interface DashboardMetricRow {
     AfluenciaHoraPanelComponent,
     AdvisorManagementSummaryPanelComponent,
     GestionCampanaPanelComponent,
+    ResumenDiarioPanelComponent,
     TeamMetricGaugesComponent
   ],
   templateUrl: './dashboard-preventa-stage.component.html',
@@ -122,11 +124,20 @@ export class DashboardPreventaStageComponent implements OnInit {
     { label: 'Gestionados', value: 'GESTIONADOS' }
   ];
   protected readonly dashboardViewOptions: Array<{ label: string; value: PreventaDashboardView }> = [
+    { label: 'Resumen', value: 'resumen' },
     { label: 'Rendimiento', value: 'rendimiento' },
     { label: 'Asesores', value: 'asesores' },
     { label: 'Campañas', value: 'campanas' },
     { label: 'Afluencia', value: 'afluencia' }
   ];
+
+  /**
+   * El RESUMEN es un poster por equipo: no admite "Todos". Se muestran solo los equipos, y al entrar
+   * a la vista se elige el primero si el ADMIN venía en "Todos".
+   */
+  protected readonly equipoOptionsResumen = computed(() =>
+    this.equipoOptions().filter((opcion) => opcion.value !== null)
+  );
 
   protected readonly rows = computed<DashboardMetricRow[]>(() => {
     const nombres = this.equipoNombreById();
@@ -277,8 +288,16 @@ export class DashboardPreventaStageComponent implements OnInit {
   }
 
   protected onViewChange(value: PreventaDashboardView | null): void {
-    if (value) {
-      this.activeView.set(value);
+    if (!value) {
+      return;
+    }
+    this.activeView.set(value);
+    // El RESUMEN es por equipo: si el ADMIN venía en "Todos", se elige el primer equipo disponible.
+    if (value === 'resumen' && !this.isTeamScopedDashboard() && this.selectedEquipoId() === null) {
+      const primerEquipo = this.equipoOptionsResumen()[0]?.value ?? null;
+      if (primerEquipo !== null) {
+        this.selectedEquipoId.set(primerEquipo);
+      }
     }
   }
 

@@ -37,6 +37,72 @@
   } @else {
 
   @switch (activeView()) {
+    @case ('resumen') {
+      <p-card styleClass="metrics-gxc-card">
+        <app-resumen-diario-panel
+          [externalControls]="true"
+          [idEquipo]="selectedEquipoId()"
+          [teamScoped]="isTeamScopedDashboard()"
+          [periodo]="periodo()"
+          [dia]="dia()"
+          [modo]="modo()"
+          [campo]="campo()"
+        >
+          <div class="metrics-controls">
+            @if (showEquipoSelector()) {
+              <div class="metrics-control">
+                <span class="metrics-control-label">Equipo</span>
+                <p-selectButton
+                  [options]="equipoOptionsResumen()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [ngModel]="selectedEquipoId()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (onChange)="onEquipoChange($event.value)"
+                />
+              </div>
+            }
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Modo</span>
+              <p-selectButton
+                [options]="modoOptions"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false"
+                [ngModel]="modo()"
+                [ngModelOptions]="{ standalone: true }"
+                (onChange)="onModoChange($event.value)"
+              />
+            </div>
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Tipificación</span>
+              <p-selectButton
+                [options]="campoOptions"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false"
+                [ngModel]="campo()"
+                [ngModelOptions]="{ standalone: true }"
+                (onChange)="onCampoChange($event.value)"
+              />
+            </div>
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Período</span>
+              <app-period-selector
+                [periodo]="periodo()"
+                [dia]="dia()"
+                (periodoChange)="onPeriodoChange($event)"
+                (diaChange)="onDiaChange($event)"
+              />
+            </div>
+          </div>
+        </app-resumen-diario-panel>
+      </p-card>
+    }
     @case ('asesores') {
       <p-card>
         <app-advisor-management-summary-panel

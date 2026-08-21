@@ -1743,6 +1743,26 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("equipoIds") Collection<Long> equipoIds
     );
 
+    // Ids de actores que actuaron con un rol concreto (p. ej. OJT) en el período y scope. Se usa para
+    // colapsar en el RESUMEN DIARIO las filas del ranking cuyo actor no es un usuario individual.
+    @Query("""
+            SELECT DISTINCT e.idActor
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.idActor IS NOT NULL
+              AND e.rolActor = :rol
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            """)
+    List<Long> idsActoresPorRolGtr(
+            @Param("rol") String rol,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
     @Query("""
             SELECT e.idActor AS idAsesor,
                    e.nombreActor AS nombreAsesor,

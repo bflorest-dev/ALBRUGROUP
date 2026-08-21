@@ -74,6 +74,13 @@ import pe.albrugroup.lead_service.entity.response.GtrRankingAsesorResponse;
 import pe.albrugroup.lead_service.entity.response.GtrTipificacionCampanaResponse;
 import pe.albrugroup.lead_service.entity.response.GtrTipificacionRankingResponse;
 import pe.albrugroup.lead_service.entity.response.GtrSubtipificacionRankingResponse;
+import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasEquipoResponse;
+import pe.albrugroup.lead_service.entity.response.ResumenAsesorResponse;
+import pe.albrugroup.lead_service.entity.response.ResumenDiarioResponse;
+import pe.albrugroup.lead_service.entity.response.ResumenIngresosGestionResponse;
+import pe.albrugroup.lead_service.entity.response.ResumenRankingResponse;
+import pe.albrugroup.lead_service.entity.response.ResumenSubtipCampanaCeldaResponse;
+import pe.albrugroup.lead_service.entity.Tipificacion;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasProveedorResumenResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasResumenResponse;
 import pe.albrugroup.lead_service.repository.projection.CampanaTipificacionCantidadProjection;
@@ -4690,6 +4697,165 @@ public class LeadService {
                         .thenComparing(GtrSubtipificacionRankingResponse::getCodigoSubtipificacion,
                                 Comparator.nullsLast(String::compareToIgnoreCase)))
                 .toList();
+    }
+
+    /**
+     * RESUMEN DIARIO del DASHBOARD de PREVENTA: las 4 tablas del reporte diario en un solo payload.
+     * Reutiliza las métricas ya existentes (leads del día por equipo, ranking de asesores, ranking de
+     * tipificaciones) y añade el desglose subtipificación × campaña (tabla 4). Todo acotado al
+     * {@code idEquipo} pedido (o al scope del usuario si es null).
+     */
+    public ResumenDiarioResponse obtenerResumenDiario(
+            Long idEquipo, ModoConteo modo, CampoTipificacion campo, LocalDate desde, LocalDate hasta) {
+
+        ResumenIngresosGestionResponse ingresosGestion =
+                construirIngresosGestion(idEquipo, campo, desde, hasta);
+
+        ResumenRankingResponse ranking = construirRankingResumen(idEquipo, modo, desde, hasta);
+
+        List<GtrTipificacionRankingResponse> estadoLeads =
+                listarTipificacionesRankingGtr(desde, hasta, true, idEquipo, modo, campo);
+
+        List<ResumenSubtipCampanaCeldaResponse> gestionCampana =
+                construirGestionSubtipCampana(idEquipo, modo, campo, desde, hasta);
+
+        return new ResumenDiarioResponse(ingresosGestion, ranking, estadoLeads, gestionCampana);
+    }
+
+    /**
+     * Tabla 1: preventas vs ingresados y vs gestionados. Las dos filas se muestran siempre, así que se
+     * consultan ambos modos. Total ingresos = leads únicos; total gestión = leads gestionados;
+     * preventas = ventas cerradas de cada modo.
+     */
+    private ResumenIngresosGestionResponse construirIngresosGestion(
+            Long idEquipo, CampoTipificacion campo, LocalDate desde, LocalDate hasta) {
+        List<LeadsDiariosMetricasEquipoResponse> ingresados =
+                eventoService.obtenerMetricasRegistrosDiariosPorEquipo(desde, hasta, campo, ModoConteo.INGRESADOS);
+        List<LeadsDiariosMetricasEquipoResponse> gestionados =
+                eventoService.obtenerMetricasRegistrosDiariosPorEquipo(desde, hasta, campo, ModoConteo.GESTIONADOS);
+
+        long ingresosTotal = 0;
+        long ingresosPreventas = 0;
+        for (LeadsDiariosMetricasEquipoResponse m : ingresados) {
+            if (idEquipo == null || idEquipo.equals(m.idEquipo())) {
+                ingresosTotal += m.leadsUnicos();
+                ingresosPreventas += m.leadsVentaCerrada();
+            }
+        }
+        long gestionTotal = 0;
+        long gestionPreventas = 0;
+        for (LeadsDiariosMetricasEquipoResponse m : gestionados) {
+            if (idEquipo == null || idEquipo.equals(m.idEquipo())) {
+                gestionTotal += m.gestionados();
+                gestionPreventas += m.leadsVentaCerrada();
+            }
+        }
+        return new ResumenIngresosGestionResponse(
+                ingresosTotal, ingresosPreventas, gestionTotal, gestionPreventas);
+    }
+
+    /**
+     * Tabla 2: ranking acotado por asesor (total de asignaciones + preventas) con los actores OJT
+     * colapsados en una sola fila, ya que OJT no es un usuario individual.
+     */
+    private ResumenRankingResponse construirRankingResumen(
+            Long idEquipo, ModoConteo modo, LocalDate desde, LocalDate hasta) {
+        List<GtrRankingAsesorResponse> base = listarRankingGtr(
+                desde, hasta, true, idEquipo, modo, OrdenRankingAsesor.PREVENTAS_PERIODO);
+
+        OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        Set<Long> ojtIds = new HashSet<>(eventoRepository.idsActoresPorRolGtr(
+                "OJT", rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids()));
+
+        long totalPreventas = 0;
+        long ojtAsignaciones = 0;
+        long ojtPreventas = 0;
+        boolean hayOjt = false;
+        List<ResumenAsesorResponse> filas = new ArrayList<>();
+        for (GtrRankingAsesorResponse r : base) {
+            totalPreventas += r.getPreventasPeriodo();
+            if (r.getIdAsesor() != null && ojtIds.contains(r.getIdAsesor())) {
+                hayOjt = true;
+                ojtAsignaciones += r.getAsignadosPeriodo();
+                ojtPreventas += r.getPreventasPeriodo();
+            } else {
+                filas.add(new ResumenAsesorResponse(
+                        r.getIdAsesor(), r.getNombreAsesor(),
+                        r.getAsignadosPeriodo(), r.getPreventasPeriodo()));
+            }
+        }
+        if (hayOjt) {
+            filas.add(new ResumenAsesorResponse(null, "OJT", ojtAsignaciones, ojtPreventas));
+        }
+        filas.sort(Comparator.comparingLong(ResumenAsesorResponse::preventas).reversed()
+                .thenComparing(Comparator.comparingLong(ResumenAsesorResponse::totalAsignaciones).reversed())
+                .thenComparing(a -> a.nombreAsesor() == null ? "" : a.nombreAsesor(),
+                        String.CASE_INSENSITIVE_ORDER));
+        return new ResumenRankingResponse(totalPreventas, filas);
+    }
+
+    /**
+     * Tabla 4: subtipificación × campaña en PREVENTA (misma semántica de modo/campo que "gestión por
+     * campaña", pero a nivel de subtipificación). Devuelve celdas; el frontend pivota, ordena por más
+     * usada y deriva %. El orden de la tipificación se resuelve desde el catálogo del equipo.
+     */
+    private List<ResumenSubtipCampanaCeldaResponse> construirGestionSubtipCampana(
+            Long idEquipo, ModoConteo modo, CampoTipificacion campo, LocalDate desde, LocalDate hasta) {
+        LocalDate desdeResuelto = OperationalDateTime.resolveDate(desde);
+        LocalDate hastaResuelto = OperationalDateTime.resolveDate(hasta);
+        if (hastaResuelto.isBefore(desdeResuelto)) {
+            throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha final");
+        }
+        Instant inicio = OperationalDateTime.startOfDay(desdeResuelto);
+        Instant fin = OperationalDateTime.endExclusiveOfDay(hastaResuelto);
+        Etapa etapa = Etapa.PREVENTA;
+
+        List<Object[]> filas = switch (modo) {
+            case GESTIONADOS -> switch (campo) {
+                case PRIMERA -> leadEtapaResumenRepository.gestionSubtipPorCampanaPrimera(etapa, inicio, fin);
+                case ULTIMA -> leadEtapaResumenRepository.gestionSubtipPorCampanaUltima(etapa, inicio, fin);
+                case MAYOR -> leadEtapaResumenRepository.gestionSubtipPorCampanaMayor(etapa, inicio, fin);
+            };
+            case INGRESADOS -> switch (campo) {
+                case PRIMERA -> leadEtapaResumenRepository.ingresadosSubtipPorCampanaPrimera(
+                        Accion.REGISTRO, etapa, inicio, fin);
+                case ULTIMA -> leadEtapaResumenRepository.ingresadosSubtipPorCampanaUltima(
+                        Accion.REGISTRO, etapa, inicio, fin);
+                case MAYOR -> leadEtapaResumenRepository.ingresadosSubtipPorCampanaMayor(
+                        Accion.REGISTRO, etapa, inicio, fin);
+            };
+        };
+
+        Map<String, Integer> ordenPorTipi = ordenTipificacionesPreventa(idEquipo);
+
+        return filas.stream()
+                .filter(f -> idEquipo == null || idEquipo.equals((Long) f[0]))
+                .map(f -> {
+                    String codTipi = (String) f[3];
+                    return new ResumenSubtipCampanaCeldaResponse(
+                            (Long) f[0],
+                            (Long) f[1],
+                            (String) f[2],
+                            codTipi,
+                            codTipi == null ? null : ordenPorTipi.get(codTipi),
+                            (String) f[4],
+                            (Long) f[5]);
+                })
+                .toList();
+    }
+
+    /** Mapa código de tipificación → orden, del catálogo PREVENTA del equipo (vacío si no hay equipo). */
+    private Map<String, Integer> ordenTipificacionesPreventa(Long idEquipo) {
+        if (idEquipo == null) {
+            return Map.of();
+        }
+        Map<String, Integer> orden = new HashMap<>();
+        for (Tipificacion t : tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(
+                Etapa.PREVENTA, idEquipo)) {
+            orden.put(t.getCodigo(), t.getOrden());
+        }
+        return orden;
     }
 
     private OperationalDateTime.InstantRange resolverRangoRanking(LocalDate desde, LocalDate hasta) {

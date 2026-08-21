@@ -228,6 +228,18 @@ public class PreventaController {
                 codigoTipificacion, desde, hasta, soloActivos, idEquipo, modo, campo));
     }
 
+    // 2.5. RESUMEN DIARIO: las 4 tablas del reporte diario en un solo payload (DASHBOARD de PREVENTA)
+    @GetMapping("/resumen-diario") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<ResumenDiarioResponse> obtenerResumenDiario(
+            @RequestParam(required = false) Long idEquipo,
+            @RequestParam(defaultValue = "GESTIONADOS") ModoConteo modo,
+            @RequestParam(defaultValue = "MAYOR") CampoTipificacion campo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
+    ) {
+        return ResponseEntity.ok(leadService.obtenerResumenDiario(idEquipo, modo, campo, desde, hasta));
+    }
+
     @PostMapping("/gtr/{idLead}/tomar-gestion")
     @PreAuthorize("hasAuthority('READ_LEADS_GTR') and hasAuthority('UPDATE_LEADS_ASESOR')")
     public ResponseEntity<Void> tomarGestionGtr(
