@@ -169,6 +169,8 @@ export class ResumenDiarioFacade implements OnDestroy {
    * cuando llega el nuevo (stale-while-revalidate). Vale también al alternar de equipo.
    */
   private readonly lastData = signal<LoadResult | null>(null);
+  /** true mientras una recarga iniciada por el usuario (cambio de equipo/filtro) está en vuelo. */
+  private readonly switching = signal(false);
 
   private readonly data = computed<LoadResult | null>(() => this.lastData());
 
@@ -178,8 +180,16 @@ export class ResumenDiarioFacade implements OnDestroy {
     return this.lastData() === null && (status === 'loading' || status === 'idle');
   });
 
-  /** Recarga en segundo plano: hay datos previos y se está buscando el nuevo resumen. */
-  readonly isRefreshing = computed(() => this.state().status === 'loading' && this.lastData() !== null);
+  /**
+   * Cambio de contexto (equipo/filtro) en vuelo: se conserva el reporte anterior visible pero
+   * DIFUMINADO hasta que llega el nuevo, en vez de desaparecerlo con un "Cargando".
+   */
+  readonly isSwitching = computed(() => this.switching() && this.lastData() !== null);
+
+  /** Recarga de fondo (websocket): indicador sutil, sin difuminar. */
+  readonly isRefreshing = computed(
+    () => this.state().status === 'loading' && this.lastData() !== null && !this.switching()
+  );
 
   /** Error a pantalla completa solo si aún no hay ningún reporte que preservar. */
   readonly showErrorPlaceholder = computed(() => this.state().status === 'error' && this.lastData() === null);
@@ -270,7 +280,12 @@ export class ResumenDiarioFacade implements OnDestroy {
     effect(() => {
       const state = this.state();
       if (state.status === 'success') {
-        untracked(() => this.lastData.set(state.data));
+        untracked(() => {
+          this.lastData.set(state.data);
+          this.switching.set(false);
+        });
+      } else if (state.status === 'error') {
+        untracked(() => this.switching.set(false));
       }
     });
     this.startRealtime();
@@ -334,16 +349,16 @@ export class ResumenDiarioFacade implements OnDestroy {
   }
 
   /**
-   * @param reset cuando la recarga la origina el usuario (cambió equipo/modo/campo/período) se limpia
-   *   el reporte anterior para mostrar el nuevo contexto de inmediato. En el refresco de fondo
-   *   (websocket) queda `false`, así se conserva el reporte previo mientras llega el nuevo.
+   * @param userInitiated cuando la recarga la origina el usuario (cambió equipo/modo/campo/período)
+   *   se conserva el reporte anterior visible y se marca {@link switching} para difuminarlo hasta que
+   *   llegue el nuevo. El refresco de fondo (websocket) queda `false`: indicador sutil, sin difuminar.
    */
-  reload(reset = false): void {
+  reload(userInitiated = false): void {
     if (!this.started) {
       return;
     }
-    if (reset) {
-      this.lastData.set(null);
+    if (userInitiated) {
+      this.switching.set(true);
     }
     const range = resolveMetricsRange(this.periodo(), this.diaSeleccionado());
     this.criteria.set({
