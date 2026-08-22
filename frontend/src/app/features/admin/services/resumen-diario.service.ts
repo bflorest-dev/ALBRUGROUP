@@ -41,6 +41,22 @@ export interface ResumenSubtipCampanaCelda {
   cantidad: number;
 }
 
+/**
+ * Una fila del detalle de preventas detrás de un card. `lead` y `usermeta` vienen por separado; el
+ * modal los apila en una sola columna (lead con énfasis, usermeta debajo). En INGRESADOS `rolAsesor`
+ * llega nulo.
+ */
+export interface PreventaDetalle {
+  idLead: number;
+  lead: string | null;
+  usermeta: string | null;
+  nombreAsesor: string | null;
+  rolAsesor: string | null;
+  subtipificacion: string | null;
+  tipificadoAt: string | null;
+  nombreCampana: string | null;
+}
+
 /** Las 4 tablas del RESUMEN DIARIO en un solo payload (espejo del backend). */
 export interface ResumenDiarioResponse {
   ingresosGestion: ResumenIngresosGestion;
@@ -77,5 +93,33 @@ export class ResumenDiarioService {
       params = params.set('hasta', hasta);
     }
     return this.http.get<ResumenDiarioResponse>(`${this.leadsUrl}/preventa/resumen-diario`, { params });
+  }
+
+  /**
+   * Detalle de leads detrás del contador de preventas de un card. `modo` elige el card:
+   * GESTIONADOS (preventas ocurridas en el período) o INGRESADOS (cohorte de registro cuya
+   * tipificación del `campo` es preventa).
+   */
+  obtenerPreventasDetalle(
+    idEquipo: number | null,
+    modo: GestionModo,
+    campo: GestionCampoTipi,
+    desde?: string,
+    hasta?: string
+  ): Observable<PreventaDetalle[]> {
+    let params = new HttpParams().set('modo', modo).set('campo', campo);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    if (desde) {
+      params = params.set('desde', desde);
+    }
+    if (hasta) {
+      params = params.set('hasta', hasta);
+    }
+    return this.http.get<PreventaDetalle[]>(
+      `${this.leadsUrl}/preventa/resumen-diario/preventas-detalle`,
+      { params }
+    );
   }
 }

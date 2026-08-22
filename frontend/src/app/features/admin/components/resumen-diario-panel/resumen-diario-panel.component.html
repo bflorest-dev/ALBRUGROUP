@@ -42,7 +42,10 @@
           <div class="kpi-stats">
             <div class="stat"><span class="v">{{ ig.ingresosTotal }}</span><span class="c">Total leads</span></div>
             <div class="kpi-div"></div>
-            <div class="stat win"><span class="v">{{ ig.ingresosPreventas }}</span><span class="c">Preventas</span></div>
+            <button type="button" class="stat win clickable" (click)="abrirDetalle('INGRESADOS')"
+              title="Ver el detalle de estas preventas">
+              <span class="v">{{ ig.ingresosPreventas }}</span><span class="c">Preventas</span>
+            </button>
           </div>
           <div class="split">
             <div class="split-bar"><span class="seg-prev" [style.width.%]="ig.ingresosPct"></span></div>
@@ -57,7 +60,10 @@
           <div class="kpi-stats">
             <div class="stat"><span class="v">{{ ig.gestionTotal }}</span><span class="c">Total leads</span></div>
             <div class="kpi-div"></div>
-            <div class="stat win"><span class="v">{{ ig.gestionPreventas }}</span><span class="c">Preventas</span></div>
+            <button type="button" class="stat win clickable" (click)="abrirDetalle('GESTIONADOS')"
+              title="Ver el detalle de estas preventas">
+              <span class="v">{{ ig.gestionPreventas }}</span><span class="c">Preventas</span>
+            </button>
           </div>
           <div class="split">
             <div class="split-bar"><span class="seg-prev" [style.width.%]="ig.gestionPct"></span></div>
@@ -163,3 +169,72 @@
     </div>
   </article>
 }
+
+<p-dialog
+  [(visible)]="detalleVisible"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: '820px', maxWidth: '95vw' }"
+  styleClass="resumen-detalle-dialog"
+>
+  <ng-template pTemplate="header">
+    <div class="detalle-head">
+      <div class="detalle-title-row">
+        <span class="detalle-title">Preventas conseguidas</span>
+        @if (!detalleLoading() && !detalleError()) {
+          <span class="detalle-badge">{{ detalle().length }}</span>
+        }
+      </div>
+      <div class="detalle-sub">
+        <span class="detalle-dot" [style.background]="teamAccent()"></span>
+        <b>{{ facade.equipoInfo()?.nombre }}</b> · {{ detalleCard() }} · {{ fechaLabel() }} ·
+        tipificación {{ campoLabel() }}
+      </div>
+    </div>
+  </ng-template>
+
+  @if (detalleError()) {
+    <p class="detalle-empty">No se pudo cargar el detalle de preventas.</p>
+  } @else if (detalleLoading()) {
+    <p class="detalle-empty">Cargando detalle...</p>
+  } @else if (!detalle().length) {
+    <p class="detalle-empty">No hay preventas en este período.</p>
+  } @else {
+    <div class="detalle-scroll">
+      <table class="detalle">
+        <thead>
+          <tr>
+            <th class="n">#</th><th>Lead</th><th>Asesor</th><th>Rol</th>
+            <th>Subtip</th><th>Hora</th><th>Campaña</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of detalle(); track row.idLead; let i = $index) {
+            <tr>
+              <td class="n">{{ i + 1 }}</td>
+              <td class="lead-cell">
+                @if (row.lead) {
+                  <span class="lead-main">{{ row.lead }}</span>
+                  @if (row.usermeta) {
+                    <span class="lead-sub">&#64;{{ row.usermeta }}</span>
+                  }
+                } @else if (row.usermeta) {
+                  <span class="lead-main">&#64;{{ row.usermeta }}</span>
+                } @else {
+                  <span class="lead-main is-empty">—</span>
+                }
+              </td>
+              <td>{{ asesorCorto(row.nombreAsesor) }}</td>
+              <td>{{ rolCorto(row.rolAsesor) }}</td>
+              <td>{{ row.subtipificacion || '—' }}</td>
+              <td class="n">{{ hora(row.tipificadoAt) }}</td>
+              <td>{{ row.nombreCampana || 'Sin campaña' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="detalle-count">{{ detalle().length }} preventa(s)</p>
+  }
+</p-dialog>

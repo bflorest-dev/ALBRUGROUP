@@ -75,6 +75,7 @@ import pe.albrugroup.lead_service.entity.response.GtrTipificacionCampanaResponse
 import pe.albrugroup.lead_service.entity.response.GtrTipificacionRankingResponse;
 import pe.albrugroup.lead_service.entity.response.GtrSubtipificacionRankingResponse;
 import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasEquipoResponse;
+import pe.albrugroup.lead_service.entity.response.PreventaDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenAsesorResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenIngresosGestionResponse;
@@ -4720,6 +4721,47 @@ public class LeadService {
                 construirGestionSubtipCampana(idEquipo, modo, campo, desde, hasta);
 
         return new ResumenDiarioResponse(ingresosGestion, ranking, estadoLeads, gestionCampana);
+    }
+
+    /**
+     * Detalle de preventas detrás del contador de un card del RESUMEN DIARIO. {@code modo} elige el
+     * card: GESTIONADOS = preventas ocurridas en el período (por evento de tipificación); INGRESADOS =
+     * cohorte de registro del día cuya tipificación {@code campo} es PREVENTA. Cada fila es un lead
+     * (deduplicado). Ordenado por hora de la preventa.
+     */
+    public List<PreventaDetalleResponse> obtenerPreventasDetalle(
+            Long idEquipo, ModoConteo modo, CampoTipificacion campo, LocalDate desde, LocalDate hasta) {
+        OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+
+        List<Object[]> filas = modo == ModoConteo.GESTIONADOS
+                ? eventoRepository.preventasDetalleGestionadas(
+                        Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
+                        rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids())
+                : switch (campo) {
+                    case PRIMERA -> leadEtapaResumenRepository.preventasDetalleIngresadasPrimera(
+                            Accion.REGISTRO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
+                            rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+                    case ULTIMA -> leadEtapaResumenRepository.preventasDetalleIngresadasUltima(
+                            Accion.REGISTRO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
+                            rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+                    case MAYOR -> leadEtapaResumenRepository.preventasDetalleIngresadasMayor(
+                            Accion.REGISTRO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
+                            rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+                };
+
+        // Las filas vienen por createdAt DESC: la primera de cada lead es su preventa más reciente.
+        Map<Long, PreventaDetalleResponse> porLead = new LinkedHashMap<>();
+        for (Object[] fila : filas) {
+            Long idLead = (Long) fila[0];
+            porLead.putIfAbsent(idLead, new PreventaDetalleResponse(
+                    idLead, (String) fila[1], (String) fila[2], (String) fila[3], (String) fila[4],
+                    (String) fila[5], (Instant) fila[6], (String) fila[7]));
+        }
+        return porLead.values().stream()
+                .sorted(Comparator.comparing(PreventaDetalleResponse::tipificadoAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
     }
 
     /**

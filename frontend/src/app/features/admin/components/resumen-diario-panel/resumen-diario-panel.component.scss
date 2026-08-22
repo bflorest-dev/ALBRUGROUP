@@ -243,6 +243,33 @@ th.n {
   opacity: 0.85;
 }
 
+/* El número de preventas es un botón que abre el detalle. */
+button.stat.clickable {
+  appearance: none;
+  background: none;
+  border: none;
+  font: inherit;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+button.stat.clickable:hover {
+  background: var(--win-soft);
+}
+
+button.stat.clickable:hover .v {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+button.stat.clickable:focus-visible {
+  outline: 2px solid var(--win);
+  outline-offset: 2px;
+}
+
 .kpi-div {
   width: 1px;
   align-self: stretch;
@@ -497,5 +524,201 @@ tr.is-win .est-name {
   }
   .grid3 {
     grid-template-columns: 1fr;
+  }
+}
+
+/*
+ * Modal de detalle de preventas: se renderiza en overlay (fuera del poster). Tiene la MISMA identidad
+ * oscura que el poster (paleta local, no --app-*), así que se sobreescribe el chrome del p-dialog y
+ * se estila con ::ng-deep scopeado por su styleClass.
+ */
+::ng-deep .resumen-detalle-dialog {
+  --ink: #f5f1ea;
+  --muted: #b9b1a6;
+  --faint: #968d82;
+  --card: #1e1a15;
+  --line: #332c23;
+  --line-soft: #26211a;
+  --win: #3fd199;
+
+  &.p-dialog {
+    background: var(--card);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  }
+
+  .p-dialog-header {
+    background: var(--card);
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 20px;
+  }
+
+  .p-dialog-content {
+    background: var(--card);
+    color: var(--ink);
+    padding: 0 8px 8px;
+  }
+
+  .p-dialog-close-button {
+    color: var(--muted);
+
+    &:hover {
+      background: var(--line);
+      color: var(--ink);
+    }
+  }
+
+  /* Encabezado enriquecido */
+  .detalle-head {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .detalle-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .detalle-title {
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+
+  .detalle-badge {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--win);
+    background: color-mix(in srgb, var(--win) 16%, transparent);
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .detalle-sub {
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    b {
+      color: var(--ink);
+      font-weight: 600;
+    }
+  }
+
+  .detalle-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex: none;
+  }
+
+  /* Cuerpo */
+  .detalle-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .detalle-scroll {
+    overflow-x: auto;
+  }
+
+  /* Scrollbar sutil y oscura (el default blanco chocaba con el modal oscuro). Sigue funcionando. */
+  .p-dialog-content,
+  .detalle-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+
+    &::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--line);
+      border-radius: 999px;
+      border: 2px solid var(--card);
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: #4a4034;
+    }
+  }
+
+  table.detalle {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  table.detalle th,
+  table.detalle td {
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 14px;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+
+  table.detalle thead th {
+    position: sticky;
+    top: 0;
+    background: var(--card);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--faint);
+    border-bottom: 1px solid var(--line);
+  }
+
+  table.detalle tbody tr + tr td {
+    border-top: 1px solid var(--line-soft);
+  }
+
+  table.detalle tbody tr:hover td {
+    background: var(--line-soft);
+  }
+
+  table.detalle td.n,
+  table.detalle th.n {
+    text-align: right;
+  }
+
+  .lead-main {
+    display: block;
+    font-weight: 600;
+  }
+
+  .lead-main.is-empty {
+    color: var(--faint);
+    font-weight: 400;
+  }
+
+  .lead-sub {
+    display: block;
+    font-size: 12px;
+    color: var(--faint);
+  }
+
+  .detalle-count {
+    margin: 12px 12px 4px;
+    font-size: 12.5px;
+    color: var(--faint);
+    text-align: right;
   }
 }

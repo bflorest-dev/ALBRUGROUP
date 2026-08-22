@@ -339,4 +339,91 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
     );
+
+    // ===== Detalle de preventas INGRESADAS: cohorte de registro del día cuya tipificación <campo> es
+    // PREVENTA, unida a su evento de tipificación a PREVENTA (para traer actor, rol y subtip reales,
+    // igual que GESTIONADAS). Un lead puede tener varios eventos PREVENTA; el servicio se queda con el
+    // más reciente. Filas [idLead, lead, usermeta, nombreActor, rolActor, subtipificacion, createdAt,
+    // nombreCampana].
+
+    @Query("""
+            SELECT l.id, l.lead, l.usermeta, te.nombreActor, te.rolActor, te.subtipificacion,
+                   te.createdAt, c.nombre
+            FROM Evento re
+            JOIN Lead l ON l.id = re.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            JOIN Evento te ON te.idLead = l.id AND te.accion = :accionTipificacion
+                          AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
+            LEFT JOIN l.campana c
+            WHERE re.accion = :accionRegistro
+              AND re.createdAt >= :inicio
+              AND re.createdAt < :fin
+              AND r.primeraCodigoTipificacion = :codigoTipificacion
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            ORDER BY te.createdAt DESC
+            """)
+    List<Object[]> preventasDetalleIngresadasPrimera(
+            @Param("accionRegistro") Accion accionRegistro,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("etapa") Etapa etapa,
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") java.util.Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT l.id, l.lead, l.usermeta, te.nombreActor, te.rolActor, te.subtipificacion,
+                   te.createdAt, c.nombre
+            FROM Evento re
+            JOIN Lead l ON l.id = re.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            JOIN Evento te ON te.idLead = l.id AND te.accion = :accionTipificacion
+                          AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
+            LEFT JOIN l.campana c
+            WHERE re.accion = :accionRegistro
+              AND re.createdAt >= :inicio
+              AND re.createdAt < :fin
+              AND r.ultimaCodigoTipificacion = :codigoTipificacion
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            ORDER BY te.createdAt DESC
+            """)
+    List<Object[]> preventasDetalleIngresadasUltima(
+            @Param("accionRegistro") Accion accionRegistro,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("etapa") Etapa etapa,
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") java.util.Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT l.id, l.lead, l.usermeta, te.nombreActor, te.rolActor, te.subtipificacion,
+                   te.createdAt, c.nombre
+            FROM Evento re
+            JOIN Lead l ON l.id = re.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            JOIN Evento te ON te.idLead = l.id AND te.accion = :accionTipificacion
+                          AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
+            LEFT JOIN l.campana c
+            WHERE re.accion = :accionRegistro
+              AND re.createdAt >= :inicio
+              AND re.createdAt < :fin
+              AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            ORDER BY te.createdAt DESC
+            """)
+    List<Object[]> preventasDetalleIngresadasMayor(
+            @Param("accionRegistro") Accion accionRegistro,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("etapa") Etapa etapa,
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") java.util.Collection<Long> equipoIds
+    );
 }

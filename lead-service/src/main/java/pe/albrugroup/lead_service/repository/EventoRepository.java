@@ -1266,6 +1266,36 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("codigoTipificacion") String codigoTipificacion
     );
 
+    /**
+     * Detalle de preventas GESTIONADAS del período por equipo: cada evento de tipificación a PREVENTA
+     * en el rango, con el lead, su usermeta, el actor/rol que tipificó, la subtipificación y la campaña.
+     * Un lead puede tener más de un evento; el servicio se queda con el más reciente por lead.
+     * Filas [idLead, lead, usermeta, nombreActor, rolActor, subtipificacion, createdAt, nombreCampana].
+     */
+    @Query("""
+            SELECT l.id, l.lead, l.usermeta, e.nombreActor, e.rolActor, e.subtipificacion,
+                   e.createdAt, c.nombre
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.campana c
+            WHERE e.accion = :accion
+              AND e.etapa = :etapa
+              AND e.tipificacion = :codigoTipificacion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            ORDER BY e.createdAt DESC
+            """)
+    List<Object[]> preventasDetalleGestionadas(
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") java.util.Collection<Long> equipoIds
+    );
+
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);
 
     Optional<Evento> findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(Long idLead, Accion accion, String tipificacion);
