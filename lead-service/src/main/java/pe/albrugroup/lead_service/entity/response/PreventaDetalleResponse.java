@@ -8,16 +8,17 @@ import java.time.Instant;
  * separado; el frontend los apila en una sola columna (lead con énfasis, usermeta debajo). Algunos
  * leads no tienen número {@code lead} y solo traen {@code usermeta}.
  *
- * <p>En modo GESTIONADOS el asesor/rol/subtip/fecha salen del evento de tipificación a PREVENTA; en
- * INGRESADOS salen del resumen de la etapa ({@code <campo>...}) y {@code rolAsesor} queda nulo.
+ * <p>{@code numeroDocumento} y {@code nombreCompleto} son del titular del servicio (datos de
+ * preventa) y pueden venir nulos si aún no se cargaron. El asesor sale del evento de tipificación a
+ * PREVENTA (más reciente) en ambos modos.
  */
 public record PreventaDetalleResponse(
         Long idLead,
         String lead,
         String usermeta,
+        String numeroDocumento,
+        String nombreCompleto,
         String nombreAsesor,
-        String rolAsesor,
-        String subtipificacion,
         Instant tipificadoAt,
         String nombreCampana
 ) {

@@ -341,24 +341,26 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     );
 
     // ===== Detalle de preventas INGRESADAS: cohorte de registro del día cuya tipificación <campo> es
-    // PREVENTA, unida a su evento de tipificación a PREVENTA (para traer actor, rol y subtip reales,
-    // igual que GESTIONADAS). Un lead puede tener varios eventos PREVENTA; el servicio se queda con el
-    // más reciente. Filas [idLead, lead, usermeta, nombreActor, rolActor, subtipificacion, createdAt,
-    // nombreCampana].
+    // PREVENTA, unida a su evento de tipificación a PREVENTA (para traer el asesor real, igual que
+    // GESTIONADAS) y a los datos de preventa (documento y nombre del titular). Un lead puede tener
+    // varios eventos PREVENTA; el servicio se queda con el más reciente. Filas [idLead, lead, usermeta,
+    // numeroDocumento, nombreCompleto, nombreActor, createdAt, nombreCampana].
 
     @Query("""
-            SELECT l.id, l.lead, l.usermeta, te.nombreActor, te.rolActor, te.subtipificacion,
-                   te.createdAt, c.nombre
+            SELECT l.id, l.lead, l.usermeta, dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
+                   te.nombreActor, te.createdAt, c.nombre
             FROM Evento re
             JOIN Lead l ON l.id = re.idLead
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             JOIN Evento te ON te.idLead = l.id AND te.accion = :accionTipificacion
                           AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
+            LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.campana c
             WHERE re.accion = :accionRegistro
               AND re.createdAt >= :inicio
               AND re.createdAt < :fin
               AND r.primeraCodigoTipificacion = :codigoTipificacion
+              AND (r.primeraCodigoSubtipificacion IS NULL OR r.primeraCodigoSubtipificacion <> 'INCOMPLETA')
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY te.createdAt DESC
             """)
@@ -374,18 +376,20 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     );
 
     @Query("""
-            SELECT l.id, l.lead, l.usermeta, te.nombreActor, te.rolActor, te.subtipificacion,
-                   te.createdAt, c.nombre
+            SELECT l.id, l.lead, l.usermeta, dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
+                   te.nombreActor, te.createdAt, c.nombre
             FROM Evento re
             JOIN Lead l ON l.id = re.idLead
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             JOIN Evento te ON te.idLead = l.id AND te.accion = :accionTipificacion
                           AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
+            LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.campana c
             WHERE re.accion = :accionRegistro
               AND re.createdAt >= :inicio
               AND re.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
+              AND (r.ultimaCodigoSubtipificacion IS NULL OR r.ultimaCodigoSubtipificacion <> 'INCOMPLETA')
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY te.createdAt DESC
             """)
@@ -401,18 +405,20 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     );
 
     @Query("""
-            SELECT l.id, l.lead, l.usermeta, te.nombreActor, te.rolActor, te.subtipificacion,
-                   te.createdAt, c.nombre
+            SELECT l.id, l.lead, l.usermeta, dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
+                   te.nombreActor, te.createdAt, c.nombre
             FROM Evento re
             JOIN Lead l ON l.id = re.idLead
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             JOIN Evento te ON te.idLead = l.id AND te.accion = :accionTipificacion
                           AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
+            LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.campana c
             WHERE re.accion = :accionRegistro
               AND re.createdAt >= :inicio
               AND re.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
+              AND (r.mayorRangoCodigoSubtipificacion IS NULL OR r.mayorRangoCodigoSubtipificacion <> 'INCOMPLETA')
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY te.createdAt DESC
             """)

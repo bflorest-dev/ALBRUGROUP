@@ -977,8 +977,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fin") Instant fin
     );
 
-    // H: leads registrados hoy cuya última tipificación de la etapa es la preventa. La subtipi no
-    // discrimina: COMPLETA, INCOMPLETA, DESAPROBADA y los PENDIENTE son la misma preventa con matices.
+    // H: leads registrados hoy cuya última tipificación de la etapa es la preventa. Se EXCLUYE la
+    // subtipi INCOMPLETA (no pasa el lead de etapa, no es venta); COMPLETA/DESAPROBADA/PENDIENTE sí cuentan.
     @Query("""
             SELECT COUNT(DISTINCT e.idLead)
             FROM Evento e
@@ -988,6 +988,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
+              AND (r.ultimaCodigoSubtipificacion IS NULL OR r.ultimaCodigoSubtipificacion <> 'INCOMPLETA')
             """)
     long contarLeadsDiariosPorUltimaTipificacion(
             @Param("accion") Accion accion,
@@ -1154,6 +1155,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
+              AND (r.ultimaCodigoSubtipificacion IS NULL OR r.ultimaCodigoSubtipificacion <> 'INCOMPLETA')
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoUltima(
@@ -1173,6 +1175,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.primeraCodigoTipificacion = :codigoTipificacion
+              AND (r.primeraCodigoSubtipificacion IS NULL OR r.primeraCodigoSubtipificacion <> 'INCOMPLETA')
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoPrimera(
@@ -1192,6 +1195,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
+              AND (r.mayorRangoCodigoSubtipificacion IS NULL OR r.mayorRangoCodigoSubtipificacion <> 'INCOMPLETA')
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoMayor(
@@ -1254,6 +1258,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.etapa = :etapa
               AND e.tipificacion = :codigoTipificacion
+              AND (e.subtipificacion IS NULL OR e.subtipificacion <> 'INCOMPLETA')
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY l.idEquipo
@@ -1268,19 +1273,22 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     /**
      * Detalle de preventas GESTIONADAS del período por equipo: cada evento de tipificación a PREVENTA
-     * en el rango, con el lead, su usermeta, el actor/rol que tipificó, la subtipificación y la campaña.
-     * Un lead puede tener más de un evento; el servicio se queda con el más reciente por lead.
-     * Filas [idLead, lead, usermeta, nombreActor, rolActor, subtipificacion, createdAt, nombreCampana].
+     * en el rango, con el lead, su usermeta, el documento y nombre del titular (datos de preventa), el
+     * asesor que tipificó y la campaña. Un lead puede tener más de un evento; el servicio se queda con
+     * el más reciente por lead. Filas [idLead, lead, usermeta, numeroDocumento, nombreCompleto,
+     * nombreActor, createdAt, nombreCampana].
      */
     @Query("""
-            SELECT l.id, l.lead, l.usermeta, e.nombreActor, e.rolActor, e.subtipificacion,
-                   e.createdAt, c.nombre
+            SELECT l.id, l.lead, l.usermeta, dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
+                   e.nombreActor, e.createdAt, c.nombre
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.campana c
             WHERE e.accion = :accion
               AND e.etapa = :etapa
               AND e.tipificacion = :codigoTipificacion
+              AND (e.subtipificacion IS NULL OR e.subtipificacion <> 'INCOMPLETA')
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -1577,6 +1585,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
               )
+              AND (e.subtipificacion IS NULL OR e.subtipificacion <> 'INCOMPLETA')
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
               AND (:filtrarAsesores = false OR e.idActor IN :asesorIds)
@@ -1651,6 +1660,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
               )
+              AND (e.subtipificacion IS NULL OR e.subtipificacion <> 'INCOMPLETA')
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -1725,6 +1735,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
               )
+              AND (e.subtipificacion IS NULL OR e.subtipificacion <> 'INCOMPLETA')
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
               AND (:filtrarAsesores = false OR e.idActor IN :asesorIds)

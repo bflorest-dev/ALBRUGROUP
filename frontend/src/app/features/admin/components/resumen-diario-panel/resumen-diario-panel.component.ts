@@ -3,8 +3,9 @@ import { DecimalPipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
+import { TooltipModule } from 'primeng/tooltip';
 import { MetricsPeriodo } from '../../../../shared/components/period-selector/period-selector.component';
-import { resolveMetricsRange } from '../../../../shared/utils/metrics-period';
+import { localToday, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { GestionCampoTipi, GestionModo } from '../../services/admin-gestion-campana.service';
 import { PreventaDetalle, ResumenDiarioService } from '../../services/resumen-diario.service';
 import { ResumenDiarioFacade } from '../../facades/resumen-diario.facade';
@@ -16,7 +17,7 @@ import { ResumenDiarioFacade } from '../../facades/resumen-diario.facade';
  */
 @Component({
   selector: 'app-resumen-diario-panel',
-  imports: [DecimalPipe, DialogModule, MessageModule],
+  imports: [DecimalPipe, DialogModule, MessageModule, TooltipModule],
   providers: [ResumenDiarioFacade],
   templateUrl: './resumen-diario-panel.component.html',
   styleUrl: './resumen-diario-panel.component.scss',
@@ -117,6 +118,22 @@ export class ResumenDiarioPanelComponent implements OnInit {
     return `${dd} ${ResumenDiarioPanelComponent.MESES[mes - 1]} ${anio}`;
   });
 
+  /**
+   * true al consultar un día ANTERIOR al de hoy. Ahí la preventa de "Ingresos del día" es retroactiva
+   * (cuenta el estado ACTUAL de los leads registrados ese día), por eso muestra un aviso.
+   */
+  protected readonly esDiaPasado = computed(() => {
+    if (this.periodo() !== 'dia') {
+      return false;
+    }
+    const dia = this.dia();
+    return !!dia && dia < localToday();
+  });
+
+  protected readonly ingresosAviso =
+    'De los leads registrados este día, este número es cuántos ya son PREVENTA a la fecha de hoy. ' +
+    'Por eso puede ser mayor que "Gestión del día" y diferir de lo que se veía ese día.';
+
   constructor() {
     effect(() => {
       if (!this.externalControls()) {
@@ -202,22 +219,4 @@ export class ResumenDiarioPanelComponent implements OnInit {
     return nombre.trim().split(/\s+/).slice(0, 2).join(' ');
   }
 
-  /** Rol del actor en versión corta para la tabla. */
-  protected rolCorto(rol: string | null): string {
-    switch (rol) {
-      case 'ASESOR_VENTAS':
-        return 'Asesor';
-      case 'SUPERVISOR_VENTAS':
-        return 'Supervisor';
-      case 'ASESOR_GTR':
-      case 'SUPERVISOR_GTR':
-        return 'GTR';
-      case null:
-      case undefined:
-      case '':
-        return '—';
-      default:
-        return rol;
-    }
-  }
 }

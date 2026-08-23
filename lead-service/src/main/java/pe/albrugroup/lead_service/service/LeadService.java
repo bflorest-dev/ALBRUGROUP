@@ -4751,6 +4751,8 @@ public class LeadService {
                 };
 
         // Las filas vienen por createdAt DESC: la primera de cada lead es su preventa más reciente.
+        // Columnas: [idLead, lead, usermeta, numeroDocumento, nombreCompleto, nombreAsesor,
+        // tipificadoAt, nombreCampana]. Las filas vienen por createdAt DESC.
         Map<Long, PreventaDetalleResponse> porLead = new LinkedHashMap<>();
         for (Object[] fila : filas) {
             Long idLead = (Long) fila[0];

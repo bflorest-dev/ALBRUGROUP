@@ -288,6 +288,24 @@ button.stat.clickable:focus-visible {
   outline-offset: 2px;
 }
 
+/* Número de preventas + ícono de aviso (aparece al ver días pasados: dato retroactivo). */
+.v-line {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.ingresos-info {
+  font-size: 14px;
+  color: var(--rest);
+  cursor: help;
+  margin-top: 2px;
+
+  &:hover {
+    color: var(--ink);
+  }
+}
+
 .kpi-div {
   width: 1px;
   align-self: stretch;
@@ -731,6 +749,21 @@ tr.is-win .est-name {
     display: block;
     font-size: 12px;
     color: var(--faint);
+  }
+
+  /* Nombre del cliente: truncado con puntos suspensivos (no ensancha ni apila); el completo va en tooltip. */
+  table.detalle .nombre-cell {
+    max-width: 190px;
+  }
+
+  table.detalle .nombre-txt {
+    display: inline-block;
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+    cursor: help;
   }
 
   .detalle-count {

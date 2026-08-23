@@ -45,7 +45,14 @@
             <div class="kpi-div"></div>
             <button type="button" class="stat win clickable" (click)="abrirDetalle('INGRESADOS')"
               title="Ver el detalle de estas preventas">
-              <span class="v">{{ ig.ingresosPreventas }}</span><span class="c">Preventas</span>
+              <span class="v-line">
+                <span class="v">{{ ig.ingresosPreventas }}</span>
+                @if (esDiaPasado()) {
+                  <i class="pi pi-info-circle ingresos-info" [pTooltip]="ingresosAviso"
+                    tooltipPosition="top" (click)="$event.stopPropagation()"></i>
+                }
+              </span>
+              <span class="c">Preventas</span>
             </button>
           </div>
           <div class="split">
@@ -206,8 +213,8 @@
       <table class="detalle">
         <thead>
           <tr>
-            <th class="n">#</th><th>Lead</th><th>Asesor</th><th>Rol</th>
-            <th>Subtip</th><th>Hora</th><th>Campaña</th>
+            <th class="n">#</th><th>Lead</th><th>Documento</th><th>Nombre</th>
+            <th>Asesor</th><th>Hora</th><th>Campaña</th>
           </tr>
         </thead>
         <tbody>
@@ -226,9 +233,15 @@
                   <span class="lead-main is-empty">—</span>
                 }
               </td>
+              <td>{{ row.numeroDocumento || '—' }}</td>
+              <td class="nombre-cell">
+                @if (row.nombreCompleto) {
+                  <span class="nombre-txt" [pTooltip]="row.nombreCompleto" tooltipPosition="top">{{ row.nombreCompleto }}</span>
+                } @else {
+                  —
+                }
+              </td>
               <td>{{ asesorCorto(row.nombreAsesor) }}</td>
-              <td>{{ rolCorto(row.rolAsesor) }}</td>
-              <td>{{ row.subtipificacion || '—' }}</td>
               <td class="n">{{ hora(row.tipificadoAt) }}</td>
               <td>{{ row.nombreCampana || 'Sin campaña' }}</td>
             </tr>

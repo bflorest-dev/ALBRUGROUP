@@ -50,9 +50,9 @@ export interface PreventaDetalle {
   idLead: number;
   lead: string | null;
   usermeta: string | null;
+  numeroDocumento: string | null;
+  nombreCompleto: string | null;
   nombreAsesor: string | null;
-  rolAsesor: string | null;
-  subtipificacion: string | null;
   tipificadoAt: string | null;
   nombreCampana: string | null;
 }
