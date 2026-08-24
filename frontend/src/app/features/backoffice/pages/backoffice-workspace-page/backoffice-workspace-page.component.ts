@@ -79,6 +79,7 @@ type AssignmentConflictDetails = {
   requiereConfirmarReasignacion?: boolean;
   requiereConfirmarLeadEnGestion?: boolean;
 };
+const TIPIFICACIONES_RECHAZO_VENTA = new Set(['SUBSANABLE', 'NO RECUPERABLE']);
 
 @Component({
   selector: 'app-backoffice-workspace-page',
@@ -306,6 +307,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     comentario: [''],
     fechaInstalacion: [''],
     fechaProgramacion: [''],
+    fechaRechazo: [''],
     horaProgramada: [''],
     sec: [''],
     sot: ['']
@@ -329,6 +331,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly requiresProgramming = computed(
     () => this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_FECHA_PROGRAMACION') ?? false
   );
+  protected readonly requiresRejectionDate = computed(() => this.isRejectionTipification(this.selectedTipificacionCode()));
   protected readonly requiresSecSot = computed(() =>
     this.selectedSubtipificacionRequiresSecSot()
     && this.detail()?.requiereSecSotVenta === true
@@ -997,6 +1000,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       //   'La fecha de programacion no puede ser anterior a hoy.'
       // )) return;
     }
+    if (this.requiresRejectionDate() && !this.tipificacionForm.controls.fechaRechazo.value) {
+      this.notify('warn', 'Ingresa la fecha de rechazo.');
+      return;
+    }
     const raw = this.tipificacionForm.getRawValue();
     if (this.requiresSecSot()) {
       const sec = this.resolveSecForTipification(raw.sec, detail.sec);
@@ -1014,6 +1021,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
           comentario: raw.comentario || null,
           fechaInstalacion: this.requiresInstallDate() ? raw.fechaInstalacion || null : null,
           fechaProgramacion: this.requiresProgramming() ? raw.fechaProgramacion || null : null,
+          fechaRechazo: this.requiresRejectionDate() ? raw.fechaRechazo || null : null,
           horaProgramada: this.requiresProgramming() ? raw.horaProgramada || null : null,
           sec: this.requiresSecSot() ? this.resolveSecForTipification(raw.sec, detail.sec) : null,
           sot: this.requiresSecSot() ? this.resolveSotForTipification(raw.sot, detail.sot) : null
@@ -1302,7 +1310,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  protected setDateControl(controlName: 'fechaInstalacion' | 'fechaProgramacion', value: Date | string | null): void {
+  protected setDateControl(controlName: 'fechaInstalacion' | 'fechaProgramacion' | 'fechaRechazo', value: Date | string | null): void {
     const control = this.tipificacionForm.controls[controlName];
     control.setValue(this.toBackendDate(value));
     control.markAsTouched();
@@ -1414,6 +1422,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected onTipificacionSelected(codigo: string | null): void {
     this.selectedTipificacionCode.set(codigo ?? '');
     this.selectedSubtipificacionCode.set('');
+    const rechazo = this.isRejectionTipification(codigo);
+    const fechaRechazoActual = this.tipificacionForm.controls.fechaRechazo.value;
+    const fechaRechazoDetalle = this.detail()?.fechaRechazo ?? '';
     // Los campos de fecha/hora dependen del comportamiento de la SUBTIPI: al cambiar de tipi se limpian y
     // se pre-cargan al elegir la subtipi (ver onSubtipificacionSelected).
     this.tipificacionForm.patchValue(
@@ -1421,21 +1432,30 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         codigoSubtipificacion: '',
         fechaInstalacion: '',
         fechaProgramacion: '',
+        fechaRechazo: rechazo ? fechaRechazoActual || fechaRechazoDetalle : fechaRechazoDetalle,
         horaProgramada: ''
       },
       { emitEvent: false }
     );
   }
 
+  private isRejectionTipification(codigo: string | null | undefined): boolean {
+    return TIPIFICACIONES_RECHAZO_VENTA.has(String(codigo ?? '').trim().toUpperCase());
+  }
+
   protected onSubtipificacionSelected(codigo: string | null): void {
     this.selectedSubtipificacionCode.set(codigo ?? '');
     const detail = this.detail();
     const prog = this.requiresProgramming();
+    const rechazo = this.requiresRejectionDate();
     this.tipificacionForm.patchValue(
       {
         fechaInstalacion: '',
         fechaProgramacion: prog
           ? this.tipificacionForm.controls.fechaProgramacion.value || detail?.fechaProgramacion || ''
+          : '',
+        fechaRechazo: rechazo || detail?.fechaRechazo
+          ? this.tipificacionForm.controls.fechaRechazo.value || detail?.fechaRechazo || ''
           : '',
         horaProgramada: prog
           ? this.tipificacionForm.controls.horaProgramada.value || detail?.horaProgramada || this.defaultProgrammingTime()
@@ -2019,6 +2039,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       comentario: '',
       fechaInstalacion: '',
       fechaProgramacion: '',
+      fechaRechazo: detail.fechaRechazo ?? '',
       horaProgramada: '',
       sec: detail.sec ?? '',
       sot: detail.sot ?? ''
@@ -2510,8 +2531,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private getErrorMessage(error: unknown, fallback: string): string {
     if (typeof error === 'object' && error !== null && 'error' in error) {
       const responseError = (error as { error?: { message?: string; error?: string } }).error;
-      return responseError?.message ?? responseError?.error ?? fallback;
+      return this.humanizeApiMessage(responseError?.message ?? responseError?.error ?? fallback);
     }
     return fallback;
+  }
+
+  private humanizeApiMessage(message: string): string {
+    return message
+      .replaceAll('fechaRechazo', 'Fecha de rechazo')
+      .replaceAll('tipificacion', 'tipificación')
+      .replaceAll('instalacion', 'instalación')
+      .replaceAll('programacion', 'programación')
+      .replaceAll('digitos', 'dígitos');
   }
 }

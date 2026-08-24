@@ -399,6 +399,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   precioFinal?: number | null;
   adicionales?: LeadAdicionalDetalleResponse[] | null;
   fechaProgramacion?: string | null;
+  fechaRechazo?: string | null;
   horaProgramada?: string | null;
   // Config de campos de captura resuelta por el backend según el equipo del lead (no inferida en el
   // front): por cada campo configurable, si se muestra y si es obligatorio para cerrar la venta.

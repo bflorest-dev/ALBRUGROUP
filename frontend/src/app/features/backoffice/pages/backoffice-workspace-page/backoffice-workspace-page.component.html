@@ -630,19 +630,35 @@
               </label>
 
               <label class="tipification-field">
-                <span>Fecha instalacion</span>
-                <p-datepicker
-                  [ngModel]="toPickerDate(tipificacionForm.controls.fechaInstalacion.getRawValue())"
-                  [ngModelOptions]="{ standalone: true }"
-                  dateFormat="dd/mm/yy"
-                  [minDate]="null"
-                  [showIcon]="true"
-                  appendTo="body"
-                  [disabled]="!requiresInstallDate() || !canMutateOperationalData()"
-                  (onShow)="setTipificationOverlayOpen(true)"
-                  (onHide)="setTipificationOverlayOpen(false)"
-                  (ngModelChange)="setDateControl('fechaInstalacion', $event); setTipificationOverlayOpen(false)"
-                />
+                @if (requiresRejectionDate()) {
+                  <span>Fecha de rechazo</span>
+                  <p-datepicker
+                    [ngModel]="toPickerDate(tipificacionForm.controls.fechaRechazo.getRawValue())"
+                    [ngModelOptions]="{ standalone: true }"
+                    dateFormat="dd/mm/yy"
+                    [minDate]="null"
+                    [showIcon]="true"
+                    appendTo="body"
+                    [disabled]="!canMutateOperationalData()"
+                    (onShow)="setTipificationOverlayOpen(true)"
+                    (onHide)="setTipificationOverlayOpen(false)"
+                    (ngModelChange)="setDateControl('fechaRechazo', $event); setTipificationOverlayOpen(false)"
+                  />
+                } @else {
+                  <span>Fecha instalacion</span>
+                  <p-datepicker
+                    [ngModel]="toPickerDate(tipificacionForm.controls.fechaInstalacion.getRawValue())"
+                    [ngModelOptions]="{ standalone: true }"
+                    dateFormat="dd/mm/yy"
+                    [minDate]="null"
+                    [showIcon]="true"
+                    appendTo="body"
+                    [disabled]="!requiresInstallDate() || !canMutateOperationalData()"
+                    (onShow)="setTipificationOverlayOpen(true)"
+                    (onHide)="setTipificationOverlayOpen(false)"
+                    (ngModelChange)="setDateControl('fechaInstalacion', $event); setTipificationOverlayOpen(false)"
+                  />
+                }
               </label>
 
               <label class="tipification-field tipification-field--code">
