@@ -706,10 +706,14 @@ public class LeadService {
             ModoListadoVentaPlataforma modoListado
     ) {
         BusquedaVentaFiltro busqueda = resolverBusquedaVenta(lead);
-        RangoFechas rango = resolverRangoUltimosDias(fechaDesde, fechaHasta, 30);
-        Instant inicioRango = OperationalDateTime.startOfDay(rango.desde());
-        Instant finRango = OperationalDateTime.endExclusiveOfDay(rango.hasta());
-        GrupoVentaFiltro grupo = resolverFiltroGrupoVenta(tipoGrupo, valoresGrupo, sinValor);
+        boolean busquedaExplicita = busqueda.buscando();
+        RangoOperativoVenta rango = resolverRangoOperativoVenta(busquedaExplicita, fechaDesde, fechaHasta);
+        GrupoVentaFiltro grupo = busquedaExplicita
+                ? new GrupoVentaFiltro(false, "", List.of(), false)
+                : resolverFiltroGrupoVenta(tipoGrupo, valoresGrupo, sinValor);
+        ModoListadoVentaPlataforma modoEfectivo = busquedaExplicita
+                ? ModoListadoVentaPlataforma.HISTORICO
+                : modoListado;
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         // El orden lo fija la propia query (lastEntryAt DESC, id DESC): Pageable sin sort para no
         // agregar un ORDER BY extra que descuadre el orden y la paginacion entre paginas.
@@ -717,14 +721,14 @@ public class LeadService {
                 Etapa.VENTA,
                 busqueda.searchPattern(),
                 busqueda.buscarPorUsermeta(),
-                inicioRango,
-                finRango,
+                rango.inicio(),
+                rango.finExclusivo(),
                 grupo.filtrar(),
                 grupo.tipo(),
                 grupo.valores(),
                 grupo.sinValor(),
                 Accion.TIPIFICACION,
-                modoListado.excluirTipificacionesSeparadas(),
+                modoEfectivo.excluirTipificacionesSeparadas(),
                 TIPIFICACIONES_SEPARADAS_PLATAFORMA,
                 equipos.filtrar(),
                 equipos.ids(),
@@ -732,6 +736,21 @@ public class LeadService {
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
         return PageResponse.from(leads);
+    }
+
+    private RangoOperativoVenta resolverRangoOperativoVenta(
+            boolean busquedaExplicita,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta
+    ) {
+        if (busquedaExplicita) {
+            return new RangoOperativoVenta(Instant.EPOCH, Instant.parse("9999-12-31T00:00:00Z"));
+        }
+        RangoFechas rango = resolverRangoUltimosDias(fechaDesde, fechaHasta, 30);
+        return new RangoOperativoVenta(
+                OperationalDateTime.startOfDay(rango.desde()),
+                OperationalDateTime.endExclusiveOfDay(rango.hasta())
+        );
     }
 
     private RangoFechas resolverRangoUltimosDias(LocalDate fechaDesde, LocalDate fechaHasta, int dias) {
@@ -755,6 +774,9 @@ public class LeadService {
     }
 
     private record RangoFechas(LocalDate desde, LocalDate hasta) {
+    }
+
+    private record RangoOperativoVenta(Instant inicio, Instant finExclusivo) {
     }
 
     public LeadVentaAgrupacionesResponse listarAgrupacionesBandejaVenta(String lead, Long idEquipo) {

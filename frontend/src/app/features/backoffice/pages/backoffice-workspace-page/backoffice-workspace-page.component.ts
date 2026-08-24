@@ -214,6 +214,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly searchTermActive = signal('');
   protected readonly isSearching = signal(false);
   protected readonly searchLookup = signal<LeadContextoLookupResponse | null>(null);
+  // Busqueda GLOBAL de VENTA: es transversal a las 3 tabs. Con un termino activo, la tabla muestra los
+  // resultados de `/venta?lead=` (encuentra el lead en cualquier estado), no la bandeja de la tab.
+  private readonly searchRows = signal<VisualLeadVenta[]>([]);
+  private readonly searchTotal = signal(0);
+  private readonly searchPage = signal(0);
+  private searchRequestSeq = 0;
+  protected readonly isSearchMode = computed(() => this.searchTermActive().length > 0);
   protected readonly todayDate = this.todayLocalDate();
   // Periodo del `app-period-selector` por bandeja. Arranca en 'dia'/null en las 3: la carga inicial va
   // SIN fechaDesde/fechaHasta y el backend aplica sus defaults; recien al elegir dia/rango/semana/mes
@@ -474,13 +481,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     && this.plataformaSortDirection() === 'desc'
   );
   protected readonly activeRowGroupMode = computed(() =>
-    this.section() === 'programados'
-    || this.plataformaDateSeparation()
-    || (this.canOrganizeActiveSection() && this.activeGroupingMode() !== 'SIN_AGRUPAR')
+    !this.isSearchMode()
+    && (this.section() === 'programados'
+      || this.plataformaDateSeparation()
+      || (this.canOrganizeActiveSection() && this.activeGroupingMode() !== 'SIN_AGRUPAR'))
       ? 'subheader'
       : undefined
   );
   protected readonly activeGroupRowsBy = computed(() => {
+    if (this.isSearchMode()) {
+      return undefined;
+    }
     if (this.section() === 'programados') {
       return 'programacionGroupKey';
     }
@@ -505,6 +516,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.organizationGroupFilter().length === 0
   );
   protected readonly activeRows = computed(() => {
+    // Busqueda global: la tabla muestra los resultados transversales, sin agrupacion ni separacion.
+    if (this.isSearchMode()) {
+      return this.searchRows();
+    }
     if (this.plataformaDateSeparation()) {
       // PrimeNG pinta los separadores segun el orden visible. Ordenamos por bloque temporal para que
       // HOY y los meses recientes siempre queden arriba, aunque la pagina llegue mezclada por realtime.
@@ -529,6 +544,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   );
   protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 11 : 10);
   protected readonly activeTotal = computed(() => {
+    if (this.isSearchMode()) {
+      return this.searchTotal();
+    }
     switch (this.section()) {
       case 'programados': return this.totalProgramados();
       case 'rechazados': return this.totalRechazados();
@@ -536,6 +554,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   });
   protected readonly activePage = computed(() => {
+    if (this.isSearchMode()) {
+      return this.searchPage();
+    }
     switch (this.section()) {
       case 'programados': return this.pageProgramados();
       case 'rechazados': return this.pageRechazados();
@@ -687,7 +708,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.leadActionId.set(row.id);
     try {
       await firstValueFrom(this.leadService.tomarLead(row.id, { confirmarReasignacion }));
-      if (this.section() === 'programados') {
+      if (this.isSearchMode()) {
+        await this.refreshSearch();
+      } else if (this.section() === 'programados') {
         await this.refreshProgramados(true);
       } else if (this.section() === 'rechazados') {
         await this.refreshRechazados(true);
@@ -1091,6 +1114,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!this.canDisplayOperationalData()) {
       return;
     }
+    if (this.isSearchMode()) {
+      this.searchPage.set(pageNumber);
+      await this.refreshSearch();
+      return;
+    }
     if (this.section() === 'plataforma') {
       this.pagePlataforma.set(pageNumber);
       await this.refreshPlataforma(false);
@@ -1127,11 +1155,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.searchInput.set(term);
     this.searchLookup.set(null);
     this.searchTermActive.set(term);
-    this.pagePlataforma.set(0);
+    this.searchPage.set(0);
     this.isSearching.set(true);
     try {
-      await this.refreshPlataforma(false);
-      if (!this.plataformaRows().length) {
+      await this.refreshSearch();
+      if (!this.searchRows().length) {
         const lookup = await firstValueFrom(this.leadService.buscarContextoLead(term));
         this.searchLookup.set(lookup.mensajeUsuario ? lookup : null);
       }
@@ -1146,8 +1174,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.searchInput.set('');
     this.searchTermActive.set('');
     this.searchLookup.set(null);
-    this.pagePlataforma.set(0);
-    await this.refreshPlataforma(false);
+    this.searchRows.set([]);
+    this.searchTotal.set(0);
+    this.searchPage.set(0);
+    await this.refreshCurrent(false);
   }
 
   protected onOrganizeEnter(): void {
@@ -1333,12 +1363,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected leadPhone(row: LeadVentaResponse | LeadDetalleResponse): string {
-    return `${row.prefijo} ${row.lead}`.trim();
-  }
-
-  protected leadCountryCode(row: LeadVentaResponse | LeadDetalleResponse): string {
-    return row.prefijo === '+51' ? 'PE' : (row.prefijo ?? '').replace(/^\+/, '');
+  protected leadUsermeta(row: Pick<LeadVentaResponse, 'usermeta'> | Pick<LeadDetalleResponse, 'usermeta'>): string {
+    const usermeta = (row.usermeta ?? '').trim().replace(/^@+/, '');
+    return usermeta ? `@${usermeta}` : '';
   }
 
   protected assignedShortName(value?: string | null): string {
@@ -1650,7 +1677,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     this.isReconciling.set(true);
     try {
-      await Promise.all([this.refreshPlataforma(true), this.refreshProgramados(true), this.refreshRechazados(true)]);
+      await Promise.all([
+        this.refreshPlataforma(true),
+        this.refreshProgramados(true),
+        this.refreshRechazados(true),
+        this.isSearchMode() ? this.refreshSearch() : Promise.resolve()
+      ]);
       if (changedLeadId && this.selectedLeadId() === changedLeadId) {
         await this.refreshOpenDetail(changedLeadId);
       }
@@ -1688,14 +1720,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.refreshOrganizationGroups();
     }
     const previous = this.plataformaRows();
-    const term = this.searchTermActive();
     const query = this.currentQuery(this.pagePlataforma(), 'plataforma');
     const groupFilter = this.currentVentaGroupFilter();
     const adminEquipoId = this.adminEquipoId();
+    // La busqueda es un modo global aparte (ver refreshSearch); la bandeja Plataforma no filtra por termino.
     const page = await firstValueFrom(
       this.leadService.listarPlataforma(
         query,
-        term || undefined,
+        undefined,
         groupFilter,
         adminEquipoId,
         this.plataformaRange()
@@ -1756,10 +1788,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private async refreshOrganizationGroups(): Promise<void> {
-    const term = this.searchTermActive();
     try {
       const groups = await firstValueFrom(
-        this.leadService.listarAgrupacionesPlataforma(term || undefined, this.adminEquipoId(), this.plataformaRange())
+        this.leadService.listarAgrupacionesPlataforma(undefined, this.adminEquipoId(), this.plataformaRange())
       );
       if (this.section() === 'plataforma') {
         this.ventaGroups.set(groups);
@@ -1767,6 +1798,32 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     } catch {
       this.ventaGroups.set(null);
     }
+  }
+
+  /**
+   * Busqueda GLOBAL de VENTA (transversal a las 3 tabs). Usa `/venta?lead=`, que ahora encuentra el
+   * lead en cualquier estado; los resultados se muestran en la tabla unificada (ver activeRows).
+   */
+  private async refreshSearch(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    const requestSeq = ++this.searchRequestSeq;
+    const term = this.searchTermActive();
+    if (!term) {
+      this.searchRows.set([]);
+      this.searchTotal.set(0);
+      return;
+    }
+    const query = this.currentQuery(this.searchPage(), 'plataforma');
+    const page = await firstValueFrom(
+      this.leadService.listarPlataforma(query, term, undefined, this.adminEquipoId())
+    );
+    if (requestSeq !== this.searchRequestSeq || this.searchTermActive() !== term) {
+      return;
+    }
+    this.searchTotal.set(page.totalElements);
+    this.searchRows.set(page.content);
   }
 
   private currentVentaGroupFilter(): LeadVentaGroupFilter | undefined {
@@ -2023,7 +2080,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       equipo: this.adminEquipoId(),
       page: this.pagePlataforma(),
       query: this.currentQuery(this.pagePlataforma(), 'plataforma'),
-      term: this.searchTermActive(),
       group: this.currentVentaGroupFilter(),
       range: this.plataformaRange()
     });

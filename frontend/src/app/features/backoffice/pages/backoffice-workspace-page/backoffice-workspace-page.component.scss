@@ -152,7 +152,7 @@ p,
 }
 
 .col-lead {
-  white-space: nowrap;
+  min-width: 7.5rem;
 }
 
 .col-asignado {
@@ -183,11 +183,27 @@ p,
   font-weight: 900;
 }
 
-.lead-cell__prefix {
-  color: #10243f;
-  font-size: 0.72rem;
-  font-weight: 800;
-  margin-right: 0.28rem;
+.lead-cell {
+  display: grid;
+  gap: 0.12rem;
+  line-height: 1.08;
+  min-width: 0;
+}
+
+.lead-cell strong {
+  color: #071f3d;
+  font-size: 0.94rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.lead-cell span {
+  color: var(--role-muted);
+  font-size: 0.74rem;
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .col-proveedor {
@@ -463,23 +479,19 @@ app-lead-commercial-data-tabs {
 }
 
 .drawer-head__identity {
-  align-items: center;
-  display: flex;
+  display: grid;
+  gap: 0.12rem;
   min-width: 0;
 }
 
 .drawer-head__identity h2 {
-  align-items: baseline;
-  display: flex;
-  flex: 0 1 auto;
-  gap: 0.45rem;
   min-width: 0;
 }
 
-.drawer-head__identity h2 span {
-  color: #10243f;
-  font-size: 0.82rem;
-  font-weight: 900;
+.drawer-head__identity > span {
+  color: var(--role-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
 }
 
 .drawer-head__meta {

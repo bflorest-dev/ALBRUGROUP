@@ -13,6 +13,7 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
+import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
@@ -160,6 +161,66 @@ class LeadServiceGtrGroupingTest {
                 eq(false),
                 any(Instant.class),
                 any(Instant.class),
+                eq(false),
+                eq(""),
+                anyCollection(),
+                eq(false),
+                eq(Accion.TIPIFICACION),
+                eq(false),
+                argThat(values -> values.size() == 3
+                        && values.contains("PROGRAMADO")
+                        && values.contains("SUBSANABLE")
+                        && values.contains("NO RECUPERABLE")),
+                eq(false),
+                eq(List.of(-1L)),
+                any(Pageable.class)
+        );
+    }
+
+    @Test
+    void busquedaExplicitaVentaUsaHistoricoSinRangoOperativoNiGrupo() {
+        LocalDate desde = LocalDate.of(2026, 8, 1);
+        LocalDate hasta = LocalDate.of(2026, 8, 24);
+        PageRequest pageRequest = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(10)
+                .build();
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(leadRepository.listarBandejaVenta(
+                eq(Etapa.VENTA),
+                eq("970329171%"),
+                eq(false),
+                eq(Instant.EPOCH),
+                eq(Instant.parse("9999-12-31T00:00:00Z")),
+                eq(false),
+                eq(""),
+                anyCollection(),
+                eq(false),
+                eq(Accion.TIPIFICACION),
+                eq(false),
+                anyCollection(),
+                eq(false),
+                anyCollection(),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
+
+        leadService.listarBandejaVenta(
+                "970329171",
+                TipoGrupoVenta.TIPIFICACION,
+                List.of("NUEVO"),
+                false,
+                null,
+                desde,
+                hasta,
+                pageRequest
+        );
+
+        verify(leadRepository).listarBandejaVenta(
+                eq(Etapa.VENTA),
+                eq("970329171%"),
+                eq(false),
+                eq(Instant.EPOCH),
+                eq(Instant.parse("9999-12-31T00:00:00Z")),
                 eq(false),
                 eq(""),
                 anyCollection(),

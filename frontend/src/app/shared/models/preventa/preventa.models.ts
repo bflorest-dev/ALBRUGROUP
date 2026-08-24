@@ -250,6 +250,7 @@ export interface LeadVentaResponse {
   id: number;
   prefijo: string;
   lead: string;
+  usermeta?: string | null;
   etapa?: Etapa | string | null;
   estadoSeguimiento?: EstadoSeguimiento | string | null;
   idAsesorAsignado?: number | null;

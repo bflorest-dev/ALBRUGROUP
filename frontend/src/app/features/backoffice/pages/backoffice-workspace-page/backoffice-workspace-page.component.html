@@ -42,41 +42,40 @@
     -->
     <div class="board-controls">
       <div class="board-controls__left">
-        @if (section() === 'plataforma') {
-          <div class="lead-search">
-            <input
-              pInputText
-              type="text"
-              inputmode="text"
-              class="lead-search-input"
-              placeholder="Buscar lead, documento o @usermeta"
-              [ngModel]="searchInput()"
-              (ngModelChange)="setSearchInput($event)"
-              (keyup.enter)="buscarLead()"
-              [disabled]="!canDisplayOperationalData()"
-            />
+        <!-- Busqueda global de VENTA: transversal a las 3 tabs (encuentra el lead en cualquier estado). -->
+        <div class="lead-search">
+          <input
+            pInputText
+            type="text"
+            inputmode="text"
+            class="lead-search-input"
+            placeholder="Buscar lead, documento o @usermeta"
+            [ngModel]="searchInput()"
+            (ngModelChange)="setSearchInput($event)"
+            (keyup.enter)="buscarLead()"
+            [disabled]="!canDisplayOperationalData()"
+          />
+          <button
+            pButton
+            type="button"
+            icon="pi pi-search"
+            label="Buscar"
+            [loading]="isSearching()"
+            [disabled]="!canDisplayOperationalData()"
+            (click)="buscarLead()"
+          ></button>
+          @if (searchTermActive()) {
             <button
               pButton
               type="button"
-              icon="pi pi-search"
-              label="Buscar"
-              [loading]="isSearching()"
-              [disabled]="!canDisplayOperationalData()"
-              (click)="buscarLead()"
+              icon="pi pi-times"
+              label="Limpiar"
+              severity="secondary"
+              [disabled]="isSearching()"
+              (click)="limpiarBusqueda()"
             ></button>
-            @if (searchTermActive()) {
-              <button
-                pButton
-                type="button"
-                icon="pi pi-times"
-                label="Limpiar"
-                severity="secondary"
-                [disabled]="isSearching()"
-                (click)="limpiarBusqueda()"
-              ></button>
-            }
-          </div>
-        }
+          }
+        </div>
       </div>
 
       <div class="board-controls__right">
@@ -191,10 +190,8 @@
       </div>
     </div>
 
-    @if (section() === 'plataforma') {
-      @if (searchLookup(); as lookup) {
-        <p-message severity="warn" styleClass="lead-search-note" [text]="lookup.mensajeUsuario ?? ''" />
-      }
+    @if (searchLookup(); as lookup) {
+      <p-message severity="warn" styleClass="lead-search-note" [text]="lookup.mensajeUsuario ?? ''" />
     }
 
     <p-table
@@ -211,16 +208,12 @@
     >
       <ng-template #header>
         <tr>
-          <th class="col-fecha">{{ section() === 'rechazados' ? 'Fecha rechazo' : 'Fecha ingreso' }}</th>
+          <th class="col-fecha">{{ (section() === 'rechazados' && !isSearchMode()) ? 'Fecha rechazo' : 'Fecha ingreso' }}</th>
           <th class="col-lead">Lead</th>
           <th class="col-documento">Documento</th>
           <th class="col-proveedor">Proveedor</th>
           <th class="col-estado">Estado</th>
-          @if (section() === 'plataforma') {
-            <th class="col-asignado">Ultimo Gestor</th>
-          } @else if (section() === 'rechazados') {
-            <th class="col-asignado">Etapa</th>
-          }
+          <th class="col-asignado">Ultimo Gestor</th>
           <th class="col-plan">Plan</th>
           <th class="col-tipificacion">Tipificacion</th>
           @if (showSecSotColumn()) {
@@ -257,7 +250,7 @@
         <tr [class.row-new]="row.isNew">
           <td class="col-fecha">
             <div class="date-stack">
-              @if (section() === 'rechazados') {
+              @if (section() === 'rechazados' && !isSearchMode()) {
                 <span>{{ displayDateOnly(row.fechaRechazo) }}</span>
               } @else {
                 <span>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
@@ -267,8 +260,10 @@
           </td>
           <td class="col-lead">
             <div class="lead-cell">
-              <strong><span class="lead-cell__prefix">{{ leadCountryCode(row) }}</span>{{ row.lead }}</strong>
-              <span class="lead-cell__document">{{ display(row.numeroDocumentoTitularServicio) }}</span>
+              <strong>{{ row.lead }}</strong>
+              @if (leadUsermeta(row); as usermeta) {
+                <span>{{ usermeta }}</span>
+              }
             </div>
           </td>
           <td class="col-documento">{{ display(row.numeroDocumentoTitularServicio) }}</td>
@@ -282,11 +277,7 @@
             }
           </td>
           <td class="col-estado"><p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" /></td>
-          @if (section() === 'plataforma') {
-            <td class="col-asignado">{{ assignedShortName(row.nombreAsesorUltimaGestion) }}</td>
-          } @else if (section() === 'rechazados') {
-            <td class="col-asignado"><p-tag severity="secondary" [value]="display(row.etapa)" /></td>
-          }
+          <td class="col-asignado">{{ assignedShortName(row.nombreAsesorUltimaGestion) }}</td>
           <td class="col-plan">
             <app-lead-plan-summary
               [planName]="row.nombrePlanSnapshot"
@@ -322,7 +313,7 @@
             </div>
           </td>
           <td class="col-actions">
-            @if (section() === 'plataforma' || section() === 'programados') {
+            @if (isSearchMode() || section() === 'plataforma' || section() === 'programados') {
               <button
                 pButton
                 type="button"
@@ -386,12 +377,10 @@
               </div>
             } @else {
               <div class="empty-state">
-                @if (section() === 'plataforma') {
-                  @if (searchTermActive()) {
-                    Ese lead no esta disponible en tu Plataforma.
-                  } @else {
-                    No hay leads disponibles en VENTA.
-                  }
+                @if (isSearchMode()) {
+                  No se encontro ningun lead en VENTA para lo buscado.
+                } @else if (section() === 'plataforma') {
+                  No hay leads disponibles en VENTA.
                 } @else if (section() === 'programados') {
                   No hay leads programados pendientes.
                 } @else {
@@ -429,7 +418,10 @@
           <div class="drawer-head__main">
             <span class="eyebrow">{{ leadProviderLabel(lead) }}</span>
             <div class="drawer-head__identity">
-              <h2><span>{{ leadCountryCode(lead) }}</span> {{ lead.lead }}</h2>
+              <h2>{{ lead.lead }}</h2>
+              @if (leadUsermeta(lead); as usermeta) {
+                <span>{{ usermeta }}</span>
+              }
             </div>
             <div class="drawer-head__meta">
               <span>{{ display(lead.nombreTitular) }}</span>
