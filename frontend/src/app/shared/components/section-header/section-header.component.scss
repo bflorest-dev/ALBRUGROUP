@@ -48,6 +48,26 @@
   }
 }
 
+/*
+ * Contador (badge) entre el titulo y el icono de info. Tono de rol suave para leerse como
+ * metadato del titulo, no como una accion. Numerico tabular para que no "baile" al cambiar.
+ */
+.section-header__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--role-accent) 16%, transparent);
+  color: var(--role-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
 .section-header__info {
   display: inline-flex;
   align-items: center;

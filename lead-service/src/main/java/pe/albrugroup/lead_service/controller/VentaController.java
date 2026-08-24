@@ -33,6 +33,7 @@ import pe.albrugroup.lead_service.entity.response.PlanResponse;
 import pe.albrugroup.lead_service.service.EventoService;
 import pe.albrugroup.lead_service.service.LeadService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController @Validated
@@ -52,17 +53,23 @@ public class VentaController {
             @RequestParam(required = false) List<String> valorGrupo,
             @RequestParam(required = false, defaultValue = "false") boolean sinValor,
             @RequestParam(required = false) Long idEquipo,
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarBandejaVenta(lead, tipoGrupo, valorGrupo, sinValor, idEquipo, pageRequest);
+        var leads = leadService.listarBandejaVenta(
+                lead, tipoGrupo, valorGrupo, sinValor, idEquipo, fechaDesde, fechaHasta, pageRequest
+        );
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     @GetMapping("/agrupaciones") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
     public ResponseEntity<LeadVentaAgrupacionesResponse> listarAgrupacionesBandejaVenta(
             @RequestParam(required = false) String lead,
-            @RequestParam(required = false) Long idEquipo
+            @RequestParam(required = false) Long idEquipo,
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta
     ) {
-        var agrupaciones = leadService.listarAgrupacionesBandejaVenta(lead, idEquipo);
+        var agrupaciones = leadService.listarAgrupacionesBandejaVenta(lead, idEquipo, fechaDesde, fechaHasta);
         return ResponseEntity.status(HttpStatus.OK).body(agrupaciones);
     }
     // 1.1. Buscar el contexto de un lead por numero: indica si esta en VENTA y disponible,
@@ -78,9 +85,22 @@ public class VentaController {
     @GetMapping("/programados/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<PageResponse<LeadResponse>> listarLeadsVentaProgramadosAsignados(
             @RequestParam(required = false) Long idEquipo,
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarLeadsVentaProgramadosAsignados(pageRequest, idEquipo);
+        var leads = leadService.listarLeadsVentaProgramadosAsignados(pageRequest, idEquipo, fechaDesde, fechaHasta);
+        return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+    // 2.1. Listar rechazos de venta por fecha operativa, incluso si el lead retorno a PREVENTA.
+    @GetMapping("/rechazados") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<PageResponse<LeadResponse>> listarLeadsVentaRechazados(
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false) Long idEquipo,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = leadService.listarLeadsVentaRechazados(fechaDesde, fechaHasta, pageRequest, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     // 3. Asignarse el lead, ahora la diferencia seria que el mismo backoffice se asigna lead si mismo

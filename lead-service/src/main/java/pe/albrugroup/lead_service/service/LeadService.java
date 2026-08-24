@@ -120,7 +120,6 @@ import java.util.Map;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -181,6 +180,17 @@ public class LeadService {
     private static final ComportamientoTipificacion COMPORTAMIENTO_CIERRE_BAJA_POSTVENTA =
             ComportamientoTipificacion.CIERRA_PERIODO_BAJA;
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
+    private static final String TIPIFICACION_SUBSANABLE = "SUBSANABLE";
+    private static final String TIPIFICACION_NO_RECUPERABLE = "NO RECUPERABLE";
+    private static final Set<String> TIPIFICACIONES_RECHAZO_VENTA = Set.of(
+            TIPIFICACION_SUBSANABLE,
+            TIPIFICACION_NO_RECUPERABLE
+    );
+    private static final Set<String> TIPIFICACIONES_SEPARADAS_PLATAFORMA = Set.of(
+            TIPIFICACION_PROGRAMADO,
+            TIPIFICACION_SUBSANABLE,
+            TIPIFICACION_NO_RECUPERABLE
+    );
     private static final Pattern NUMERO_LLAMADA_PATTERN = Pattern.compile("^9\\d{8}$");
     private static final String SUBTIPIFICACION_PROGRAMACION_CANCELADA = "PROGRAMACION_CANCELADA";
     private static final String TIPIFICACION_RETORNO_VENTA_PREVENTA = "NO DESEA";
@@ -228,6 +238,9 @@ public class LeadService {
     );
     private static final Set<String> LEAD_ASESOR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "estado"
+    );
+    private static final Set<String> LEAD_RECHAZADOS_VENTA_SORT_FIELDS = Set.of(
+            "fechaRechazo", "lastEntryAt", "createdAt", "lead", "estado"
     );
     // Roles que pueden figurar en el ranking de asesores GTR. Se excluyen backoffice, migración y
     // cualquier otro rol que haya tocado leads de PREVENTA sin ser parte de la operación de ventas/GTR.
@@ -643,9 +656,59 @@ public class LeadService {
             Long idEquipo,
             PageRequest pageRequest
     ) {
+        return listarBandejaVenta(lead, tipoGrupo, valoresGrupo, sinValor, idEquipo, null, null, pageRequest);
+    }
+
+    public PageResponse<LeadResponse> listarBandejaVenta(
+            String lead,
+            TipoGrupoVenta tipoGrupo,
+            List<String> valoresGrupo,
+            boolean sinValor,
+            Long idEquipo,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            PageRequest pageRequest
+    ) {
+        return listarBandejaVenta(
+                lead,
+                tipoGrupo,
+                valoresGrupo,
+                sinValor,
+                idEquipo,
+                fechaDesde,
+                fechaHasta,
+                pageRequest,
+                ModoListadoVentaPlataforma.OPERATIVO
+        );
+    }
+
+    PageResponse<LeadResponse> listarBandejaVenta(
+            String lead,
+            TipoGrupoVenta tipoGrupo,
+            List<String> valoresGrupo,
+            boolean sinValor,
+            Long idEquipo,
+            PageRequest pageRequest,
+            ModoListadoVentaPlataforma modoListado
+    ) {
+        return listarBandejaVenta(lead, tipoGrupo, valoresGrupo, sinValor, idEquipo, null, null, pageRequest, modoListado);
+    }
+
+    PageResponse<LeadResponse> listarBandejaVenta(
+            String lead,
+            TipoGrupoVenta tipoGrupo,
+            List<String> valoresGrupo,
+            boolean sinValor,
+            Long idEquipo,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            PageRequest pageRequest,
+            ModoListadoVentaPlataforma modoListado
+    ) {
         BusquedaVentaFiltro busqueda = resolverBusquedaVenta(lead);
-        boolean filtrarVentana = !busqueda.buscando();
-        Instant inicioVentana = OperationalDateTime.now().minus(30, ChronoUnit.DAYS);
+        RangoFechas rango = resolverRangoUltimosDias(fechaDesde, fechaHasta, 30);
+        Instant inicioRango = OperationalDateTime.startOfDay(rango.desde());
+        Instant finRango = OperationalDateTime.endExclusiveOfDay(rango.hasta());
         GrupoVentaFiltro grupo = resolverFiltroGrupoVenta(tipoGrupo, valoresGrupo, sinValor);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         // El orden lo fija la propia query (lastEntryAt DESC, id DESC): Pageable sin sort para no
@@ -654,13 +717,15 @@ public class LeadService {
                 Etapa.VENTA,
                 busqueda.searchPattern(),
                 busqueda.buscarPorUsermeta(),
-                filtrarVentana,
-                inicioVentana,
+                inicioRango,
+                finRango,
                 grupo.filtrar(),
                 grupo.tipo(),
                 grupo.valores(),
                 grupo.sinValor(),
                 Accion.TIPIFICACION,
+                modoListado.excluirTipificacionesSeparadas(),
+                TIPIFICACIONES_SEPARADAS_PLATAFORMA,
                 equipos.filtrar(),
                 equipos.ids(),
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
@@ -669,32 +734,114 @@ public class LeadService {
         return PageResponse.from(leads);
     }
 
+    private RangoFechas resolverRangoUltimosDias(LocalDate fechaDesde, LocalDate fechaHasta, int dias) {
+        LocalDate hasta = fechaHasta == null ? OperationalDateTime.today() : fechaHasta;
+        LocalDate desde = fechaDesde == null ? hasta.minusDays(dias) : fechaDesde;
+        validarRangoFechas(desde, hasta);
+        return new RangoFechas(desde, hasta);
+    }
+
+    private RangoFechas resolverRangoFuturo(LocalDate fechaDesde, LocalDate fechaHasta, int dias) {
+        LocalDate desde = fechaDesde == null ? OperationalDateTime.today() : fechaDesde;
+        LocalDate hasta = fechaHasta == null ? desde.plusDays(dias) : fechaHasta;
+        validarRangoFechas(desde, hasta);
+        return new RangoFechas(desde, hasta);
+    }
+
+    private void validarRangoFechas(LocalDate desde, LocalDate hasta) {
+        if (desde.isAfter(hasta)) {
+            throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha final");
+        }
+    }
+
+    private record RangoFechas(LocalDate desde, LocalDate hasta) {
+    }
+
     public LeadVentaAgrupacionesResponse listarAgrupacionesBandejaVenta(String lead, Long idEquipo) {
+        return listarAgrupacionesBandejaVenta(lead, idEquipo, null, null);
+    }
+
+    public LeadVentaAgrupacionesResponse listarAgrupacionesBandejaVenta(
+            String lead,
+            Long idEquipo,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta
+    ) {
         BusquedaVentaFiltro busqueda = resolverBusquedaVenta(lead);
-        boolean filtrarVentana = !busqueda.buscando();
-        Instant inicioVentana = OperationalDateTime.now().minus(30, ChronoUnit.DAYS);
+        RangoFechas rango = resolverRangoUltimosDias(fechaDesde, fechaHasta, 30);
+        Instant inicioRango = OperationalDateTime.startOfDay(rango.desde());
+        Instant finRango = OperationalDateTime.endExclusiveOfDay(rango.hasta());
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         return mapearAgrupacionesVenta(
                 busqueda.searchPattern(),
                 busqueda.buscarPorUsermeta(),
-                filtrarVentana,
-                inicioVentana,
+                inicioRango,
+                finRango,
                 null,
-                equipos
+                equipos,
+                ModoListadoVentaPlataforma.OPERATIVO
         );
     }
 
     public PageResponse<LeadResponse> listarLeadsVentaProgramadosAsignados(PageRequest pageRequest, Long idEquipo) {
-        LocalDate hoy = OperationalDateTime.today();
+        return listarLeadsVentaProgramadosAsignados(pageRequest, idEquipo, null, null);
+    }
+
+    public PageResponse<LeadResponse> listarLeadsVentaProgramadosAsignados(
+            PageRequest pageRequest,
+            Long idEquipo,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta
+    ) {
+        RangoFechas rango = resolverRangoFuturo(fechaDesde, fechaHasta, 30);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         Page<LeadResponse> leads = leadRepository.listarLeadsProgramadosVentaAsignados(
                 Etapa.VENTA,
                 TIPIFICACION_PROGRAMADO,
                 SUBTIPIFICACION_PROGRAMACION_CANCELADA,
                 Accion.TIPIFICACION,
-                hoy,
+                rango.desde(),
+                rango.hasta(),
                 equipos.filtrar(),
                 equipos.ids(),
+                org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
+        );
+        aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
+        return PageResponse.from(leads);
+    }
+
+    public PageResponse<LeadResponse> listarLeadsVentaRechazados(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            PageRequest pageRequest,
+            Long idEquipo
+    ) {
+        LocalDate hasta = fechaHasta == null ? OperationalDateTime.today() : fechaHasta;
+        LocalDate desde = fechaDesde == null ? hasta.minusDays(30) : fechaDesde;
+        if (desde.isAfter(hasta)) {
+            throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha final");
+        }
+
+        String sortBy = "createdAt".equals(pageRequest.getSortBy()) ? "fechaRechazo" : pageRequest.getSortBy();
+        boolean sortDesc = "createdAt".equals(pageRequest.getSortBy())
+                && "asc".equalsIgnoreCase(pageRequest.getDirection())
+                || LeadOrderingRules.isDesc(pageRequest);
+        LeadOrderingRules.validarDirection(pageRequest.getDirection());
+        if (!LEAD_RECHAZADOS_VENTA_SORT_FIELDS.contains(sortBy)) {
+            throw new BadRequestException("Campo de ordenamiento no permitido: " + pageRequest.getSortBy());
+        }
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        Page<LeadResponse> leads = leadRepository.listarLeadsVentaRechazados(
+                Accion.TIPIFICACION,
+                Etapa.VENTA,
+                TIPIFICACIONES_RECHAZO_VENTA,
+                desde,
+                hasta,
+                List.of(Etapa.VENTA, Etapa.PREVENTA),
+                equipos.filtrar(),
+                equipos.ids(),
+                sortBy,
+                sortDesc,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
@@ -1588,6 +1735,7 @@ public class LeadService {
         boolean requiereProgramacion = subtipificacion.getComportamientos()
                 .contains(ComportamientoTipificacion.REQUIERE_FECHA_PROGRAMACION);
         validarProgramacionVenta(requiereProgramacion, request.getFechaProgramacion(), request.getHoraProgramada());
+        validarFechaRechazoVenta(tipificacion.getCodigo(), request.getFechaRechazo());
         aplicarSecSotVentaSiCorresponde(lead, tipificacion, subtipificacion, request.getSec(), request.getSot());
 
         // Atribucion de venta (merito de VENTA): el responsable es quien tipifica la subtipi marcada con
@@ -1657,7 +1805,8 @@ public class LeadService {
                 request.getComentario(),
                 etapaDestino == Etapa.POSTVENTA ? request.getFechaInstalacion() : null,
                 requiereProgramacion ? request.getFechaProgramacion() : null,
-                requiereProgramacion ? request.getHoraProgramada() : null
+                requiereProgramacion ? request.getHoraProgramada() : null,
+                esTipificacionRechazoVenta(tipificacion.getCodigo()) ? request.getFechaRechazo() : null
         );
         notificarCambioLead("TIPIFICACION", savedLead, etapaActual, idAsesorAnterior);
     }
@@ -3092,7 +3241,8 @@ public class LeadService {
             String comentario,
             java.time.LocalDate fechaInstalacion,
             java.time.LocalDate fechaProgramacion,
-            java.time.LocalTime horaProgramada
+            java.time.LocalTime horaProgramada,
+            java.time.LocalDate fechaRechazo
     ) {
         eventoService.registrarEvento(
                 RegistrarEventoRequest.builder()
@@ -3106,6 +3256,7 @@ public class LeadService {
                         .comentario(comentario)
                         .fechaInstalacion(fechaInstalacion)
                         .fechaProgramacion(fechaProgramacion)
+                        .fechaRechazo(fechaRechazo)
                         .horaProgramada(horaProgramada)
                         .build()
         );
@@ -3156,6 +3307,20 @@ public class LeadService {
 
         // TEMPORAL: regularizacion de leads antiguos. Descomentar al cerrar la regularizacion.
         // validarFechaNoAnteriorAHoy(fechaProgramacion, "La fecha de programacion no puede ser anterior a hoy");
+    }
+
+    private void validarFechaRechazoVenta(String codigoTipificacion, java.time.LocalDate fechaRechazo) {
+        boolean esRechazo = esTipificacionRechazoVenta(codigoTipificacion);
+        if (esRechazo && fechaRechazo == null) {
+            throw new BadRequestException("La fechaRechazo es obligatoria para esta tipificacion");
+        }
+        if (!esRechazo && fechaRechazo != null) {
+            throw new BadRequestException("La fechaRechazo solo se permite para tipificaciones de rechazo");
+        }
+    }
+
+    private boolean esTipificacionRechazoVenta(String codigoTipificacion) {
+        return codigoTipificacion != null && TIPIFICACIONES_RECHAZO_VENTA.contains(codigoTipificacion.trim().toUpperCase());
     }
 
     private void validarFechaInstalacionVenta(java.time.LocalDate fechaInstalacion) {
@@ -3443,40 +3608,46 @@ public class LeadService {
     private LeadVentaAgrupacionesResponse mapearAgrupacionesVenta(
             String searchPattern,
             boolean buscarPorUsermeta,
-            boolean filtrarVentana,
-            Instant inicioVentana,
+            Instant fechaDesde,
+            Instant fechaHasta,
             Long idAsesor,
-            RankingEquipoScope equipos
+            RankingEquipoScope equipos,
+            ModoListadoVentaPlataforma modoListado
     ) {
         boolean filtrarAsesor = idAsesor != null;
         return new LeadVentaAgrupacionesResponse(
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorEstado(
-                                Etapa.VENTA, searchPattern, buscarPorUsermeta, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                Etapa.VENTA, searchPattern, buscarPorUsermeta, fechaDesde, fechaHasta, filtrarAsesor, idAsesor,
+                                modoListado.excluirTipificacionesSeparadas(), TIPIFICACIONES_SEPARADAS_PLATAFORMA,
                                 equipos.filtrar(), equipos.ids()),
                         "Sin estado"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorProveedor(
-                                Etapa.VENTA, searchPattern, buscarPorUsermeta, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                Etapa.VENTA, searchPattern, buscarPorUsermeta, fechaDesde, fechaHasta, filtrarAsesor, idAsesor,
+                                modoListado.excluirTipificacionesSeparadas(), TIPIFICACIONES_SEPARADAS_PLATAFORMA,
                                 equipos.filtrar(), equipos.ids()),
                         "Sin proveedor"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorPlan(
-                                Etapa.VENTA, searchPattern, buscarPorUsermeta, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                Etapa.VENTA, searchPattern, buscarPorUsermeta, fechaDesde, fechaHasta, filtrarAsesor, idAsesor,
+                                modoListado.excluirTipificacionesSeparadas(), TIPIFICACIONES_SEPARADAS_PLATAFORMA,
                                 equipos.filtrar(), equipos.ids()),
                         "Sin plan"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorUltimoGestor(
-                                Etapa.VENTA, searchPattern, buscarPorUsermeta, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                Etapa.VENTA, searchPattern, buscarPorUsermeta, fechaDesde, fechaHasta, filtrarAsesor, idAsesor,
+                                modoListado.excluirTipificacionesSeparadas(), TIPIFICACIONES_SEPARADAS_PLATAFORMA,
                                 equipos.filtrar(), equipos.ids()),
                         "Sin gestor"
                 ),
                 mapearAgrupacionesVentaTipificacion(
                         leadRepository.agruparVentaPorTipificacion(
-                                Etapa.VENTA, searchPattern, buscarPorUsermeta, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                Etapa.VENTA, searchPattern, buscarPorUsermeta, fechaDesde, fechaHasta, filtrarAsesor, idAsesor,
+                                modoListado.excluirTipificacionesSeparadas(), TIPIFICACIONES_SEPARADAS_PLATAFORMA,
                                 equipos.filtrar(), equipos.ids())
                 )
         );

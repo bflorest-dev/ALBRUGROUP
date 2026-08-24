@@ -94,6 +94,7 @@ public class EventoService {
                 .subtipificacion(request.getSubtipificacion())
                 .fechaInstalacion(request.getFechaInstalacion())
                 .fechaProgramacion(request.getFechaProgramacion())
+                .fechaRechazo(request.getFechaRechazo())
                 .comentario(request.getComentario())
                 .horaProgramada(request.getHoraProgramada())
                 .createdAt(createdAt)

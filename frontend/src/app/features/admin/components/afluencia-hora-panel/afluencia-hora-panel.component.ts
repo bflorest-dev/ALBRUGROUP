@@ -37,6 +37,7 @@ export class AfluenciaHoraPanelComponent implements OnInit {
   readonly teamScoped = input(false);
   readonly periodo = input<MetricsPeriodo | null>(null);
   readonly dia = input<string | null>(null);
+  readonly hasta = input<string | null>(null);
   readonly modo = input<AfluenciaModo | null>(null);
 
   protected readonly showEquipoSelector = signal(true);
@@ -58,7 +59,7 @@ export class AfluenciaHoraPanelComponent implements OnInit {
       this.facade.setPeriodo(this.periodo());
       const dia = this.dia();
       if (dia) {
-        this.facade.setDia(dia);
+        this.facade.setRango(dia, this.hasta() || dia);
       }
     });
   }

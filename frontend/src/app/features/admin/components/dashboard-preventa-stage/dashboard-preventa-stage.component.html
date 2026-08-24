@@ -45,6 +45,7 @@
           [teamScoped]="isTeamScopedDashboard()"
           [periodo]="periodo()"
           [dia]="dia()"
+          [hasta]="hasta()"
           [modo]="modo()"
           [campo]="campo()"
         >
@@ -95,8 +96,9 @@
               <app-period-selector
                 [periodo]="periodo()"
                 [dia]="dia()"
+                [hasta]="hasta()"
                 (periodoChange)="onPeriodoChange($event)"
-                (diaChange)="onDiaChange($event)"
+                (rangoChange)="onRangoChange($event)"
               />
             </div>
           </div>
@@ -110,6 +112,7 @@
           [teamScoped]="isTeamScopedDashboard()"
           [periodo]="periodo()"
           [dia]="dia()"
+          [hasta]="hasta()"
           [modo]="modo()"
           [campo]="campo()"
         >
@@ -160,8 +163,9 @@
               <app-period-selector
                 [periodo]="periodo()"
                 [dia]="dia()"
+                [hasta]="hasta()"
                 (periodoChange)="onPeriodoChange($event)"
-                (diaChange)="onDiaChange($event)"
+                (rangoChange)="onRangoChange($event)"
               />
             </div>
           </div>
@@ -176,6 +180,7 @@
           [teamScoped]="isTeamScopedDashboard()"
           [periodo]="periodo()"
           [dia]="dia()"
+          [hasta]="hasta()"
           [modo]="modo()"
           [campo]="campo()"
         >
@@ -226,8 +231,9 @@
               <app-period-selector
                 [periodo]="periodo()"
                 [dia]="dia()"
+                [hasta]="hasta()"
                 (periodoChange)="onPeriodoChange($event)"
-                (diaChange)="onDiaChange($event)"
+                (rangoChange)="onRangoChange($event)"
               />
             </div>
           </div>
@@ -242,6 +248,7 @@
           [teamScoped]="isTeamScopedDashboard()"
           [periodo]="periodo()"
           [dia]="dia()"
+          [hasta]="hasta()"
           [modo]="modo()"
         >
           <div class="metrics-controls">
@@ -278,8 +285,9 @@
               <app-period-selector
                 [periodo]="periodo()"
                 [dia]="dia()"
+                [hasta]="hasta()"
                 (periodoChange)="onPeriodoChange($event)"
-                (diaChange)="onDiaChange($event)"
+                (rangoChange)="onRangoChange($event)"
               />
             </div>
           </div>
@@ -355,8 +363,9 @@
             <app-period-selector
               [periodo]="periodo()"
               [dia]="dia()"
+              [hasta]="hasta()"
               (periodoChange)="onPeriodoChange($event)"
-              (diaChange)="onDiaChange($event)"
+              (rangoChange)="onRangoChange($event)"
             />
           </div>
         </div>

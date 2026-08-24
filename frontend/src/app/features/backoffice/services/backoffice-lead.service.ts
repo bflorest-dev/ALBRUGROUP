@@ -23,6 +23,11 @@ import {
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 
+export interface LeadRechazadosFilters {
+  fechaDesde?: string | null;
+  fechaHasta?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class BackofficeLeadService {
   private readonly http = inject(HttpClient);
@@ -32,7 +37,8 @@ export class BackofficeLeadService {
     query: PageQuery,
     lead?: string,
     groupFilter?: LeadVentaGroupFilter,
-    idEquipo?: number | null
+    idEquipo?: number | null,
+    range?: LeadRechazadosFilters
   ): Observable<LeadPage<LeadVentaResponse>> {
     let params = this.groupParams(this.pageParams(query), groupFilter);
     if (lead) {
@@ -41,10 +47,15 @@ export class BackofficeLeadService {
     if (idEquipo !== null && idEquipo !== undefined) {
       params = params.set('idEquipo', idEquipo);
     }
+    params = this.rangeParams(params, range);
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta`, { params });
   }
 
-  listarAgrupacionesPlataforma(lead?: string, idEquipo?: number | null): Observable<LeadVentaGroupsResponse> {
+  listarAgrupacionesPlataforma(
+    lead?: string,
+    idEquipo?: number | null,
+    range?: LeadRechazadosFilters
+  ): Observable<LeadVentaGroupsResponse> {
     let params = new HttpParams();
     if (lead) {
       params = params.set('lead', lead);
@@ -52,6 +63,7 @@ export class BackofficeLeadService {
     if (idEquipo !== null && idEquipo !== undefined) {
       params = params.set('idEquipo', idEquipo);
     }
+    params = this.rangeParams(params, range);
     return this.http.get<LeadVentaGroupsResponse>(`${this.leadUrl}/venta/agrupaciones`, { params });
   }
 
@@ -61,12 +73,35 @@ export class BackofficeLeadService {
     });
   }
 
-  listarProgramados(query: PageQuery, idEquipo?: number | null): Observable<LeadPage<LeadVentaResponse>> {
+  listarProgramados(
+    query: PageQuery,
+    idEquipo?: number | null,
+    range?: LeadRechazadosFilters
+  ): Observable<LeadPage<LeadVentaResponse>> {
     let params = this.pageParams(query);
     if (idEquipo !== null && idEquipo !== undefined) {
       params = params.set('idEquipo', idEquipo);
     }
+    params = this.rangeParams(params, range);
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/programados/asignados`, { params });
+  }
+
+  listarRechazados(
+    query: PageQuery,
+    filters: LeadRechazadosFilters,
+    idEquipo?: number | null
+  ): Observable<LeadPage<LeadVentaResponse>> {
+    let params = this.pageParams(query);
+    if (filters.fechaDesde) {
+      params = params.set('fechaDesde', filters.fechaDesde);
+    }
+    if (filters.fechaHasta) {
+      params = params.set('fechaHasta', filters.fechaHasta);
+    }
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/rechazados`, { params });
   }
 
   tomarLead(idLead: number, request: LeadTomaVentaRequest = {}): Observable<void> {
@@ -167,6 +202,17 @@ export class BackofficeLeadService {
       .set('pageSize', query.pageSize)
       .set('sortBy', query.sortBy)
       .set('direction', query.direction);
+  }
+
+  private rangeParams(params: HttpParams, range?: LeadRechazadosFilters): HttpParams {
+    let next = params;
+    if (range?.fechaDesde) {
+      next = next.set('fechaDesde', range.fechaDesde);
+    }
+    if (range?.fechaHasta) {
+      next = next.set('fechaHasta', range.fechaHasta);
+    }
+    return next;
   }
 
   private groupParams(params: HttpParams, groupFilter?: LeadVentaGroupFilter): HttpParams {

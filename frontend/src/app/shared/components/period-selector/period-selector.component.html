@@ -10,14 +10,15 @@
   />
 </div>
 
-<p-popover #dayPopover appendTo="body" styleClass="period-day-popover">
+<p-popover #dayPopover appendTo="body" styleClass="period-day-popover" (onShow)="centrarFlecha()">
   <div class="period__calendar" (mouseenter)="cancelarCierre()" (mouseleave)="programarCierre()">
     <p-datepicker
       [inline]="true"
+      selectionMode="range"
       [maxDate]="maxDate()"
-      [ngModel]="selectedDate()"
+      [ngModel]="selectedDates()"
       [ngModelOptions]="{ standalone: true }"
-      (ngModelChange)="onPickDay($event)"
+      (ngModelChange)="onPickRange($event)"
     />
   </div>
 </p-popover>

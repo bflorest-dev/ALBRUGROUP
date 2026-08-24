@@ -192,8 +192,10 @@ export class AdminGestionCampanaFacade implements OnDestroy {
   readonly campo = signal<GestionCampoTipi>('MAYOR');
   readonly modo = signal<GestionModo>('INGRESADOS');
   readonly periodo = signal<GestionPeriodo>('dia');
-  /** Dia puntual elegido en el segmento "Hoy" (`YYYY-MM-DD`). `null` = hoy. */
+  /** Inicio del rango elegido en el segmento "Hoy" (`YYYY-MM-DD`). `null` = hoy. */
   readonly diaSeleccionado = signal<string | null>(null);
+  /** Fin del rango. `null` o igual a `diaSeleccionado` = dia suelto. */
+  readonly hastaSeleccionado = signal<string | null>(null);
   readonly selectedCampanaKeys = signal<string[]>([]);
   readonly selectedEquipoId = signal<number | null>(null);
   private readonly isEquipoLocked = signal(false);
@@ -460,16 +462,21 @@ export class AdminGestionCampanaFacade implements OnDestroy {
     // Salir de "dia" descarta el dia puntual: al volver, el segmento arranca de nuevo en "Hoy".
     if (periodo !== 'dia') {
       this.diaSeleccionado.set(null);
+      this.hastaSeleccionado.set(null);
     }
     this.reload();
   }
 
-  /** Dia puntual elegido en el calendario del segmento "Hoy". */
-  setDia(dia: string): void {
-    if (!dia || this.diaSeleccionado() === dia) {
+  /** Rango elegido en el calendario del segmento "Hoy". Un dia suelto llega como `desde === hasta`. */
+  setRango(desde: string, hasta: string): void {
+    if (!desde) {
       return;
     }
-    this.diaSeleccionado.set(dia);
+    if (this.diaSeleccionado() === desde && this.hastaSeleccionado() === hasta && this.periodo() === 'dia') {
+      return;
+    }
+    this.diaSeleccionado.set(desde);
+    this.hastaSeleccionado.set(hasta);
     this.periodo.set('dia');
     this.reload();
   }
@@ -539,7 +546,7 @@ export class AdminGestionCampanaFacade implements OnDestroy {
 
   /** Devuelve las cotas a enviar. `undefined` en una cota = el backend usa el día operativo de hoy. */
   private resolveRange(): { desde?: string; hasta?: string } {
-    return resolveMetricsRange(this.periodo(), this.diaSeleccionado());
+    return resolveMetricsRange(this.periodo(), this.diaSeleccionado(), this.hastaSeleccionado());
   }
 
   private campanaKey(idCampana: number | null): string {

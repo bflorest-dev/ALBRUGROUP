@@ -56,6 +56,7 @@ public class LeadResponse {
     private long totalAsignaciones;
     private LocalDate fechaProgramacion;
     private LocalTime horaProgramada;
+    private LocalDate fechaRechazo;
     // Enriquecimiento del plan ofrecido para la bandeja BackOffice: velocidad regular y promocional.
     private Integer internetVelocidad;
     private Unidad internetUnidad;

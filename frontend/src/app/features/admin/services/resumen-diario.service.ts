@@ -65,10 +65,31 @@ export interface ResumenDiarioResponse {
   gestionCampana: ResumenSubtipCampanaCelda[];
 }
 
+/**
+ * Lo que se cachea de un resumen ya consultado: el payload + el equipo resuelto (nombre/color) para
+ * poder pintar el header de inmediato. Vive en el servicio root, así sobrevive a la destrucción del
+ * panel al cambiar de tab.
+ */
+export interface ResumenDiarioCacheEntry {
+  resumen: ResumenDiarioResponse;
+  equipoInfo: { idEquipo: number | null; nombre: string; color: string | null };
+}
+
 @Injectable({ providedIn: 'root' })
 export class ResumenDiarioService {
   private readonly http = inject(HttpClient);
   private readonly leadsUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
+
+  /** Caché en memoria del último resumen por combinación de filtros (persiste toda la sesión). */
+  private readonly cache = new Map<string, ResumenDiarioCacheEntry>();
+
+  leerCache(clave: string): ResumenDiarioCacheEntry | null {
+    return this.cache.get(clave) ?? null;
+  }
+
+  guardarCache(clave: string, entrada: ResumenDiarioCacheEntry): void {
+    this.cache.set(clave, entrada);
+  }
 
   /**
    * RESUMEN DIARIO del DASHBOARD de PREVENTA para un equipo. Si se omiten `desde`/`hasta`, el backend

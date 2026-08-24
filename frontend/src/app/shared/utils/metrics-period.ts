@@ -6,6 +6,15 @@ export interface MetricsRange {
   hasta?: string;
 }
 
+/**
+ * Rango cerrado que emite el `app-period-selector` al elegir en el calendario. Siempre trae ambas
+ * cotas: un dia suelto llega como `desde === hasta`. El backend siempre pide desde/hasta.
+ */
+export interface MetricsRango {
+  desde: string;
+  hasta: string;
+}
+
 /** Fecha local en `YYYY-MM-DD`. Nunca `toISOString()`: convierte a UTC y puede cambiar el dia en Peru. */
 export function formatLocalDate(date: Date): string {
   const mes = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -34,13 +43,18 @@ export function monthStart(): string {
 }
 
 /**
- * Traduce el periodo elegido a las cotas del backend. `dia` solo aplica al periodo `dia`:
- * sin dia puntual se omiten las cotas y el backend resuelve "hoy".
+ * Traduce el periodo elegido a las cotas del backend. `desde`/`hasta` solo aplican al periodo `dia`:
+ * sin dia puntual se omiten las cotas y el backend resuelve "hoy". Un dia suelto es `hasta` ausente
+ * (equivale a `hasta === desde`); un rango trae ambas.
  */
-export function resolveMetricsRange(periodo: MetricsPeriodo, dia: string | null): MetricsRange {
+export function resolveMetricsRange(
+  periodo: MetricsPeriodo,
+  desde: string | null,
+  hasta?: string | null
+): MetricsRange {
   switch (periodo) {
     case 'dia':
-      return dia ? { desde: dia, hasta: dia } : {};
+      return desde ? { desde, hasta: hasta || desde } : {};
     case 'semana':
       return { desde: weekStart() };
     case 'mes':

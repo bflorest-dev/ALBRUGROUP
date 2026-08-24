@@ -275,6 +275,7 @@ export interface LeadVentaResponse {
   totalAsignaciones?: number | null;
   fechaProgramacion?: string | null;
   horaProgramada?: string | null;
+  fechaRechazo?: string | null;
   sec?: string | null;
   sot?: string | null;
   requiereSecSotVenta?: boolean | null;
@@ -663,6 +664,7 @@ export interface LeadTipificacionVentaRequest {
   comentario?: string | null;
   fechaInstalacion?: string | null;
   fechaProgramacion?: string | null;
+  fechaRechazo?: string | null;
   horaProgramada?: string | null;
   sec?: string | null;
   sot?: string | null;
@@ -686,6 +688,7 @@ export interface EventoResponse {
   subtipificacion?: string | null;
   fechaInstalacion?: string | null;
   fechaProgramacion?: string | null;
+  fechaRechazo?: string | null;
   comentario?: string | null;
   horaProgramada?: string | null;
   createdAt?: string | null;

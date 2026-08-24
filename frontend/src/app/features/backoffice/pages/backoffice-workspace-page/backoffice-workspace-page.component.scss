@@ -352,12 +352,49 @@ label {
   margin-left: 0.6rem;
 }
 
+/*
+ * Fila de controles unificada de las 3 tabs: izquierda = busqueda, derecha = periodo + Organizar.
+ * Mismo marco/altura/alineacion en todas para que cambiar de tab no desplace el layout.
+ */
+.board-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  justify-content: space-between;
+  margin: 0.85rem 0 0.75rem;
+}
+
+.board-controls__left,
+.board-controls__right {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.board-controls__left {
+  flex: 1 1 auto;
+}
+
+.board-controls__right {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
 .lead-search {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-bottom: 0.75rem;
+}
+
+/* Dentro de la fila unificada la busqueda ocupa la zona izquierda y no aporta su propio margen. */
+.board-controls .lead-search {
+  margin-bottom: 0;
+  width: 100%;
 }
 
 .lead-search-input {

@@ -138,7 +138,12 @@ Presentacional puro, `OnPush`.
 
 ```html
 <app-section-header title="Gestión por campaña" [description]="facade.campoAyuda()" />
+<!-- con contador (p. ej. filas listadas): Título · 73 · ⓘ -->
+<app-section-header title="Leads disponibles" [count]="total()" [description]="ayuda()" />
 ```
+
+- `count` (opcional): badge numérico entre el título y el ⓘ. Reemplaza el `<p-tag>` de conteo
+  suelto junto al título (patrón viejo del Backoffice). `null` = sin contador.
 
 **Regla de copy:** las descripciones/ayudas de sección van **siempre** dentro del tooltip del
 ícono, nunca como párrafo bajo el subtítulo. El subtítulo carga el énfasis; la ayuda es

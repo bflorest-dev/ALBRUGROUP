@@ -8,10 +8,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
+import pe.albrugroup.lead_service.configuration.OperationalDateTime;
+import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
+import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
@@ -37,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -65,6 +69,401 @@ class LeadServiceGtrGroupingTest {
     @Mock private LeadAsignacionCounterService leadAsignacionCounterService;
 
     @InjectMocks private LeadService leadService;
+
+    @Test
+    void listaBandejaVentaUsaModoOperativoPorDefecto() {
+        PageRequest pageRequest = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(10)
+                .build();
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(leadRepository.listarBandejaVenta(
+                eq(Etapa.VENTA),
+                eq("%"),
+                eq(false),
+                any(Instant.class),
+                any(Instant.class),
+                eq(false),
+                eq(""),
+                anyCollection(),
+                eq(false),
+                eq(Accion.TIPIFICACION),
+                eq(true),
+                anyCollection(),
+                eq(false),
+                anyCollection(),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
+
+        leadService.listarBandejaVenta(null, null, null, false, null, pageRequest);
+
+        verify(leadRepository).listarBandejaVenta(
+                eq(Etapa.VENTA),
+                eq("%"),
+                eq(false),
+                any(Instant.class),
+                any(Instant.class),
+                eq(false),
+                eq(""),
+                anyCollection(),
+                eq(false),
+                eq(Accion.TIPIFICACION),
+                eq(true),
+                argThat(values -> values.size() == 3
+                        && values.contains("PROGRAMADO")
+                        && values.contains("SUBSANABLE")
+                        && values.contains("NO RECUPERABLE")),
+                eq(false),
+                eq(List.of(-1L)),
+                any(Pageable.class)
+        );
+    }
+
+    @Test
+    void listaBandejaVentaHistoricaNoExcluyeTipificacionesSeparadas() {
+        PageRequest pageRequest = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(10)
+                .build();
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(leadRepository.listarBandejaVenta(
+                eq(Etapa.VENTA),
+                eq("%"),
+                eq(false),
+                any(Instant.class),
+                any(Instant.class),
+                eq(false),
+                eq(""),
+                anyCollection(),
+                eq(false),
+                eq(Accion.TIPIFICACION),
+                eq(false),
+                anyCollection(),
+                eq(false),
+                anyCollection(),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
+
+        leadService.listarBandejaVenta(
+                null,
+                null,
+                null,
+                false,
+                null,
+                pageRequest,
+                ModoListadoVentaPlataforma.HISTORICO
+        );
+
+        verify(leadRepository).listarBandejaVenta(
+                eq(Etapa.VENTA),
+                eq("%"),
+                eq(false),
+                any(Instant.class),
+                any(Instant.class),
+                eq(false),
+                eq(""),
+                anyCollection(),
+                eq(false),
+                eq(Accion.TIPIFICACION),
+                eq(false),
+                argThat(values -> values.size() == 3
+                        && values.contains("PROGRAMADO")
+                        && values.contains("SUBSANABLE")
+                        && values.contains("NO RECUPERABLE")),
+                eq(false),
+                eq(List.of(-1L)),
+                any(Pageable.class)
+        );
+    }
+
+    @Test
+    void agrupacionesVentaUsanModoOperativoPorDefecto() {
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(leadRepository.agruparVentaPorEstado(
+                eq(Etapa.VENTA), eq("%"), eq(false), any(Instant.class), any(Instant.class), eq(false), eq(null),
+                eq(true), anyCollection(), eq(false), anyCollection()))
+                .thenReturn(List.of());
+        when(leadRepository.agruparVentaPorProveedor(
+                eq(Etapa.VENTA), eq("%"), eq(false), any(Instant.class), any(Instant.class), eq(false), eq(null),
+                eq(true), anyCollection(), eq(false), anyCollection()))
+                .thenReturn(List.of());
+        when(leadRepository.agruparVentaPorPlan(
+                eq(Etapa.VENTA), eq("%"), eq(false), any(Instant.class), any(Instant.class), eq(false), eq(null),
+                eq(true), anyCollection(), eq(false), anyCollection()))
+                .thenReturn(List.of());
+        when(leadRepository.agruparVentaPorUltimoGestor(
+                eq(Etapa.VENTA), eq("%"), eq(false), any(Instant.class), any(Instant.class), eq(false), eq(null),
+                eq(true), anyCollection(), eq(false), anyCollection()))
+                .thenReturn(List.of());
+        when(leadRepository.agruparVentaPorTipificacion(
+                eq(Etapa.VENTA), eq("%"), eq(false), any(Instant.class), any(Instant.class), eq(false), eq(null),
+                eq(true), anyCollection(), eq(false), anyCollection()))
+                .thenReturn(List.of());
+
+        leadService.listarAgrupacionesBandejaVenta(null, null);
+
+        verify(leadRepository).agruparVentaPorTipificacion(
+                eq(Etapa.VENTA),
+                eq("%"),
+                eq(false),
+                any(Instant.class),
+                any(Instant.class),
+                eq(false),
+                eq(null),
+                eq(true),
+                argThat(values -> values.size() == 3
+                        && values.contains("PROGRAMADO")
+                        && values.contains("SUBSANABLE")
+                        && values.contains("NO RECUPERABLE")),
+                eq(false),
+                eq(List.of(-1L))
+        );
+    }
+
+    @Test
+    void listaBandejaVentaUsaRangoFechasSolicitado() {
+        LocalDate desde = LocalDate.of(2026, 8, 1);
+        LocalDate hasta = LocalDate.of(2026, 8, 24);
+        PageRequest pageRequest = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(10)
+                .build();
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(leadRepository.listarBandejaVenta(
+                eq(Etapa.VENTA),
+                eq("%"),
+                eq(false),
+                eq(OperationalDateTime.startOfDay(desde)),
+                eq(OperationalDateTime.endExclusiveOfDay(hasta)),
+                eq(false),
+                eq(""),
+                anyCollection(),
+                eq(false),
+                eq(Accion.TIPIFICACION),
+                eq(true),
+                anyCollection(),
+                eq(false),
+                anyCollection(),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
+
+        leadService.listarBandejaVenta(null, null, null, false, null, desde, hasta, pageRequest);
+
+        verify(leadRepository).listarBandejaVenta(
+                eq(Etapa.VENTA),
+                eq("%"),
+                eq(false),
+                eq(OperationalDateTime.startOfDay(desde)),
+                eq(OperationalDateTime.endExclusiveOfDay(hasta)),
+                eq(false),
+                eq(""),
+                anyCollection(),
+                eq(false),
+                eq(Accion.TIPIFICACION),
+                eq(true),
+                anyCollection(),
+                eq(false),
+                eq(List.of(-1L)),
+                any(Pageable.class)
+        );
+    }
+
+    @Test
+    void rechazaRangoInvalidoEnBandejaVenta() {
+        PageRequest pageRequest = PageRequest.builder().build();
+
+        assertThatThrownBy(() -> leadService.listarBandejaVenta(
+                null,
+                null,
+                null,
+                false,
+                null,
+                LocalDate.of(2026, 8, 24),
+                LocalDate.of(2026, 8, 1),
+                pageRequest
+        )).hasMessageContaining("fecha de inicio");
+    }
+
+    @Test
+    void listaProgramadosVentaUsaRangoFechasSolicitado() {
+        LocalDate desde = LocalDate.of(2026, 8, 1);
+        LocalDate hasta = LocalDate.of(2026, 8, 24);
+        PageRequest pageRequest = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(10)
+                .build();
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(leadRepository.listarLeadsProgramadosVentaAsignados(
+                eq(Etapa.VENTA),
+                eq("PROGRAMADO"),
+                eq("PROGRAMACION_CANCELADA"),
+                eq(Accion.TIPIFICACION),
+                eq(desde),
+                eq(hasta),
+                eq(false),
+                anyCollection(),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
+
+        leadService.listarLeadsVentaProgramadosAsignados(pageRequest, null, desde, hasta);
+
+        verify(leadRepository).listarLeadsProgramadosVentaAsignados(
+                eq(Etapa.VENTA),
+                eq("PROGRAMADO"),
+                eq("PROGRAMACION_CANCELADA"),
+                eq(Accion.TIPIFICACION),
+                eq(desde),
+                eq(hasta),
+                eq(false),
+                eq(List.of(-1L)),
+                any(Pageable.class)
+        );
+    }
+
+    @Test
+    void listaProgramadosVentaUsaProximosTreintaDiasPorDefecto() {
+        LocalDate hoy = OperationalDateTime.today();
+        PageRequest pageRequest = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(10)
+                .build();
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(leadRepository.listarLeadsProgramadosVentaAsignados(
+                eq(Etapa.VENTA),
+                eq("PROGRAMADO"),
+                eq("PROGRAMACION_CANCELADA"),
+                eq(Accion.TIPIFICACION),
+                eq(hoy),
+                eq(hoy.plusDays(30)),
+                eq(false),
+                anyCollection(),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
+
+        leadService.listarLeadsVentaProgramadosAsignados(pageRequest, null);
+
+        verify(leadRepository).listarLeadsProgramadosVentaAsignados(
+                eq(Etapa.VENTA),
+                eq("PROGRAMADO"),
+                eq("PROGRAMACION_CANCELADA"),
+                eq(Accion.TIPIFICACION),
+                eq(hoy),
+                eq(hoy.plusDays(30)),
+                eq(false),
+                eq(List.of(-1L)),
+                any(Pageable.class)
+        );
+    }
+
+    @Test
+    void listaRechazadosVentaConEventosDeVentaYEtapasActualesPermitidas() {
+        LocalDate desde = LocalDate.of(2026, 8, 1);
+        LocalDate hasta = LocalDate.of(2026, 8, 24);
+        PageRequest pageRequest = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(12)
+                .sortBy("fechaRechazo")
+                .direction("desc")
+                .build();
+        LeadResponse row = LeadResponse.builder()
+                .id(10L)
+                .codigoTipificacion("NO RECUPERABLE")
+                .fechaRechazo(hasta)
+                .build();
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(leadRepository.listarLeadsVentaRechazados(
+                eq(Accion.TIPIFICACION),
+                eq(Etapa.VENTA),
+                anyCollection(),
+                eq(desde),
+                eq(hasta),
+                anyCollection(),
+                eq(false),
+                anyCollection(),
+                eq("fechaRechazo"),
+                eq(true),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of(row)));
+
+        var response = leadService.listarLeadsVentaRechazados(desde, hasta, pageRequest, null);
+
+        assertThat(response.getContent())
+                .singleElement()
+                .satisfies(item -> {
+                    assertThat(item.getCodigoTipificacion()).isEqualTo("NO RECUPERABLE");
+                    assertThat(item.getFechaRechazo()).isEqualTo(hasta);
+                });
+        verify(leadRepository).listarLeadsVentaRechazados(
+                eq(Accion.TIPIFICACION),
+                eq(Etapa.VENTA),
+                argThat(values -> values.size() == 2
+                        && values.contains("SUBSANABLE")
+                        && values.contains("NO RECUPERABLE")),
+                eq(desde),
+                eq(hasta),
+                eq(List.of(Etapa.VENTA, Etapa.PREVENTA)),
+                eq(false),
+                eq(List.of(-1L)),
+                eq("fechaRechazo"),
+                eq(true),
+                any(Pageable.class)
+        );
+    }
+
+    @Test
+    void rechazaRangoInvalidoEnBandejaRechazadosVenta() {
+        PageRequest pageRequest = PageRequest.builder()
+                .sortBy("fechaRechazo")
+                .direction("desc")
+                .build();
+
+        assertThatThrownBy(() -> leadService.listarLeadsVentaRechazados(
+                LocalDate.of(2026, 8, 24),
+                LocalDate.of(2026, 8, 1),
+                pageRequest,
+                null
+        )).hasMessageContaining("fecha de inicio");
+    }
+
+    @Test
+    void listaRechazadosVentaUsaFechaRechazoDescComoOrdenPorDefecto() {
+        LocalDate desde = LocalDate.of(2026, 8, 1);
+        LocalDate hasta = LocalDate.of(2026, 8, 24);
+        PageRequest pageRequest = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(12)
+                .build();
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(leadRepository.listarLeadsVentaRechazados(
+                eq(Accion.TIPIFICACION),
+                eq(Etapa.VENTA),
+                anyCollection(),
+                eq(desde),
+                eq(hasta),
+                anyCollection(),
+                eq(false),
+                anyCollection(),
+                eq("fechaRechazo"),
+                eq(true),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
+
+        leadService.listarLeadsVentaRechazados(desde, hasta, pageRequest, null);
+
+        verify(leadRepository).listarLeadsVentaRechazados(
+                eq(Accion.TIPIFICACION),
+                eq(Etapa.VENTA),
+                anyCollection(),
+                eq(desde),
+                eq(hasta),
+                eq(List.of(Etapa.VENTA, Etapa.PREVENTA)),
+                eq(false),
+                eq(List.of(-1L)),
+                eq("fechaRechazo"),
+                eq(true),
+                any(Pageable.class)
+        );
+    }
 
     @Test
     void listaConteosGlobalesOrdenadosEIncluyeValoresPendientes() {

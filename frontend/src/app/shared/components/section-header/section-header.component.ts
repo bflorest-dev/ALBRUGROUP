@@ -21,4 +21,9 @@ export class SectionHeaderComponent {
   readonly title = input.required<string>();
   /** Descripcion/ayuda. Opcional: si viene, se muestra en el tooltip del icono de info. */
   readonly description = input<string | null>(null);
+  /**
+   * Contador opcional (p. ej. cantidad de filas listadas) como badge entre el titulo y el icono de
+   * info. `null` = sin contador. Acepta numero o texto ya formateado.
+   */
+  readonly count = input<number | string | null>(null);
 }

@@ -149,8 +149,9 @@
         <app-period-selector
           [periodo]="facade.periodo()"
           [dia]="facade.diaSeleccionado()"
+          [hasta]="facade.hastaSeleccionado()"
           (periodoChange)="facade.setPeriodo($event)"
-          (diaChange)="facade.setDia($event)"
+          (rangoChange)="facade.setRango($event.desde, $event.hasta)"
         />
       </div>
 

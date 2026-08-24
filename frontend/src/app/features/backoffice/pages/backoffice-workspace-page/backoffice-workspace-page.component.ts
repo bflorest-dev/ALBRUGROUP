@@ -28,6 +28,9 @@ import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asis
 import { LeadCommercialDataTabsComponent } from '../../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
 import { LeadPlanSummaryComponent } from '../../../../shared/components/lead-plan-summary/lead-plan-summary.component';
 import { PhoneActionButtonComponent } from '../../../../shared/components/phone-action-button/phone-action-button.component';
+import { SectionHeaderComponent } from '../../../../shared/components/section-header/section-header.component';
+import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
+import { MetricsRango, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { TipificationStackComponent, TipificationPaletteByCode } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
 import { buildWhatsAppUrl } from '../../../../shared/utils/phone-link';
@@ -48,11 +51,11 @@ import {
   UbigeoItem
 } from '../../../../shared/models/preventa/preventa.models';
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
-import { BackofficeLeadService } from '../../services/backoffice-lead.service';
+import { BackofficeLeadService, LeadRechazadosFilters } from '../../services/backoffice-lead.service';
 
-type BackofficeSection = 'plataforma' | 'programados';
+type BackofficeSection = 'plataforma' | 'programados' | 'rechazados';
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
-type BackofficeSortField = 'fechaIngresoEtapa' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado';
+type BackofficeSortField = 'fechaIngresoEtapa' | 'fechaRechazo' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado';
 type BackofficeSortDirection = 'asc' | 'desc';
 type OrganizationFilterOption = { label: string; value: string; codigo?: string; descripcion?: string; sinValor?: boolean; rawValue?: string | null };
 type VisualLeadVenta = LeadVentaResponse & {
@@ -102,6 +105,8 @@ type AssignmentConflictDetails = {
     LeadCommercialDataTabsComponent,
     LeadPlanSummaryComponent,
     PhoneActionButtonComponent,
+    SectionHeaderComponent,
+    PeriodSelectorComponent,
     TipificationStackComponent
   ],
   providers: [MessageService, ConfirmationService],
@@ -127,6 +132,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private organizeCloseTimeout: ReturnType<typeof setTimeout> | null = null;
   private plataformaRequestSeq = 0;
   private programadosRequestSeq = 0;
+  private rechazadosRequestSeq = 0;
   private initialized = false;
   private initializeInFlight = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
@@ -142,6 +148,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly leadActionId = signal<number | null>(null);
   protected readonly plataformaRows = signal<VisualLeadVenta[]>([]);
   protected readonly programadosRows = signal<VisualLeadVenta[]>([]);
+  protected readonly rechazadosRows = signal<VisualLeadVenta[]>([]);
   protected readonly plataformaGroupingMode = signal<BackofficeGroupMode>('SIN_AGRUPAR');
   protected readonly plataformaSortField = signal<BackofficeSortField>('fechaIngresoEtapa');
   protected readonly plataformaSortDirection = signal<BackofficeSortDirection>('desc');
@@ -157,8 +164,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly selectedLeadId = signal<number | null>(null);
   protected readonly totalPlataforma = signal(0);
   protected readonly totalProgramados = signal(0);
+  protected readonly totalRechazados = signal(0);
   protected readonly pagePlataforma = signal(0);
   protected readonly pageProgramados = signal(0);
+  protected readonly pageRechazados = signal(0);
   // Catálogo del modal de tipificación: es el del equipo del lead abierto (se trae por lead).
   protected readonly catalogo = signal<CatalogoResponse | null>(null);
   // Catálogo AGREGADO cross-equipo para la bandeja (paleta de color y filtro por código, ambos por
@@ -198,6 +207,18 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly isSearching = signal(false);
   protected readonly searchLookup = signal<LeadContextoLookupResponse | null>(null);
   protected readonly todayDate = this.todayLocalDate();
+  // Periodo del `app-period-selector` por bandeja. Arranca en 'dia'/null en las 3: la carga inicial va
+  // SIN fechaDesde/fechaHasta y el backend aplica sus defaults; recien al elegir dia/rango/semana/mes
+  // se envian las cotas (traducidas por resolveMetricsRange).
+  private readonly plataformaPeriodo = signal<MetricsPeriodo>('dia');
+  private readonly plataformaDia = signal<string | null>(null);
+  private readonly plataformaHasta = signal<string | null>(null);
+  private readonly programadosPeriodo = signal<MetricsPeriodo>('dia');
+  private readonly programadosDia = signal<string | null>(null);
+  private readonly programadosHasta = signal<string | null>(null);
+  private readonly rechazadosPeriodo = signal<MetricsPeriodo>('dia');
+  private readonly rechazadosDia = signal<string | null>(null);
+  private readonly rechazadosHasta = signal<string | null>(null);
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly skeletonRows = Array.from({ length: 8 });
@@ -396,12 +417,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly boardTitle = computed(() => {
     switch (this.section()) {
       case 'programados': return 'Leads programados';
+      case 'rechazados': return 'Leads rechazados';
       default: return 'Leads disponibles';
     }
   });
   protected readonly boardSubtitle = computed(() => {
     switch (this.section()) {
       case 'programados': return 'Gestiona leads programados por fecha y hora cercana.';
+      case 'rechazados': return 'Revisa leads rechazados por fecha de rechazo.';
       default: return 'Gestiona leads en venta y revisa quien los tiene asignados.';
     }
   });
@@ -413,13 +436,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return 'SIN_AGRUPAR';
   });
   protected readonly activeSortField = computed<BackofficeSortField>(() =>
-    this.section() === 'programados' ? 'lastEntryAt' : this.plataformaSortField()
+    this.section() === 'programados' ? 'lastEntryAt' : this.section() === 'rechazados' ? 'fechaRechazo' : this.plataformaSortField()
   );
   protected readonly activeSortDirection = computed<BackofficeSortDirection>(() =>
-    this.section() === 'programados' ? 'desc' : this.plataformaSortDirection()
+    this.section() === 'programados' || this.section() === 'rechazados' ? 'desc' : this.plataformaSortDirection()
   );
   protected readonly sortDirectionOptions = computed<Array<{ label: string; value: BackofficeSortDirection }>>(() =>
-    this.activeSortField() === 'fechaIngresoEtapa' || this.activeSortField() === 'lastEntryAt' || this.activeSortField() === 'createdAt'
+    this.activeSortField() === 'fechaIngresoEtapa'
+    || this.activeSortField() === 'fechaRechazo'
+    || this.activeSortField() === 'lastEntryAt'
+    || this.activeSortField() === 'createdAt'
       ? [
           { label: 'Mas antiguos', value: 'asc' },
           { label: 'Mas recientes', value: 'desc' }
@@ -479,6 +505,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'programados':
         rows = this.programadosRows();
         break;
+      case 'rechazados':
+        rows = this.rechazadosRows();
+        break;
       default:
         rows = this.plataformaRows().map((row) => this.withOrganizationGroup(row, this.plataformaGroupingMode()));
         break;
@@ -492,13 +521,38 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly activeTotal = computed(() => {
     switch (this.section()) {
       case 'programados': return this.totalProgramados();
+      case 'rechazados': return this.totalRechazados();
       default: return this.totalPlataforma();
     }
   });
   protected readonly activePage = computed(() => {
     switch (this.section()) {
       case 'programados': return this.pageProgramados();
+      case 'rechazados': return this.pageRechazados();
       default: return this.pagePlataforma();
+    }
+  });
+
+  // Estado del `app-period-selector` de la bandeja activa (una sola fila de controles, compartida).
+  protected readonly activePeriodo = computed<MetricsPeriodo>(() => {
+    switch (this.section()) {
+      case 'programados': return this.programadosPeriodo();
+      case 'rechazados': return this.rechazadosPeriodo();
+      default: return this.plataformaPeriodo();
+    }
+  });
+  protected readonly activeDia = computed<string | null>(() => {
+    switch (this.section()) {
+      case 'programados': return this.programadosDia();
+      case 'rechazados': return this.rechazadosDia();
+      default: return this.plataformaDia();
+    }
+  });
+  protected readonly activeHasta = computed<string | null>(() => {
+    switch (this.section()) {
+      case 'programados': return this.programadosHasta();
+      case 'rechazados': return this.rechazadosHasta();
+      default: return this.plataformaHasta();
     }
   });
 
@@ -542,8 +596,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.isSearching.set(false);
         this.plataformaRows.set([]);
         this.programadosRows.set([]);
+        this.rechazadosRows.set([]);
         this.totalPlataforma.set(0);
         this.totalProgramados.set(0);
+        this.totalRechazados.set(0);
+        this.pagePlataforma.set(0);
+        this.pageProgramados.set(0);
+        this.pageRechazados.set(0);
       }
       this.adminEquipoId.set(nextAdminEquipoId);
       this.section.set(nextSection);
@@ -593,7 +652,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         // La paleta y el filtro por código de la bandeja salen del catálogo agregado; si falla no bloquea.
         this.refreshTipificationCatalogAgregado().catch(() => undefined),
         this.refreshPlataforma(false),
-        this.refreshProgramados(false)
+        this.refreshProgramados(false),
+        this.refreshRechazados(false)
       ]);
       this.initialized = true;
       this.operationalGate.markActivated();
@@ -619,6 +679,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await firstValueFrom(this.leadService.tomarLead(row.id, { confirmarReasignacion }));
       if (this.section() === 'programados') {
         await this.refreshProgramados(true);
+      } else if (this.section() === 'rechazados') {
+        await this.refreshRechazados(true);
       } else {
         await this.refreshPlataforma(true);
       }
@@ -1024,6 +1086,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.refreshProgramados(false);
       return;
     }
+    if (this.section() === 'rechazados') {
+      this.pageRechazados.set(pageNumber);
+      await this.refreshRechazados(false);
+      return;
+    }
     this.pagePlataforma.set(pageNumber);
     await this.refreshPlataforma(false);
   }
@@ -1124,6 +1191,62 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     await this.refreshPlataforma(false);
   }
 
+  /** Cambio de segmento (Hoy/Semanal/Mensual) del selector de periodo de la bandeja activa. */
+  protected async onPeriodoChange(periodo: MetricsPeriodo | null | undefined): Promise<void> {
+    if (!periodo || !this.canDisplayOperationalData()) {
+      return;
+    }
+    if (this.activePeriodo() === periodo) {
+      return;
+    }
+    switch (this.section()) {
+      case 'programados':
+        this.programadosPeriodo.set(periodo);
+        if (periodo !== 'dia') { this.programadosDia.set(null); this.programadosHasta.set(null); }
+        this.pageProgramados.set(0);
+        break;
+      case 'rechazados':
+        this.rechazadosPeriodo.set(periodo);
+        if (periodo !== 'dia') { this.rechazadosDia.set(null); this.rechazadosHasta.set(null); }
+        this.pageRechazados.set(0);
+        break;
+      default:
+        this.plataformaPeriodo.set(periodo);
+        if (periodo !== 'dia') { this.plataformaDia.set(null); this.plataformaHasta.set(null); }
+        this.pagePlataforma.set(0);
+        break;
+    }
+    await this.refreshCurrent(false);
+  }
+
+  /** Rango elegido en el calendario del selector. Un dia suelto llega como `desde === hasta`. */
+  protected async onRangoChange(rango: MetricsRango): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    switch (this.section()) {
+      case 'programados':
+        this.programadosPeriodo.set('dia');
+        this.programadosDia.set(rango.desde);
+        this.programadosHasta.set(rango.hasta);
+        this.pageProgramados.set(0);
+        break;
+      case 'rechazados':
+        this.rechazadosPeriodo.set('dia');
+        this.rechazadosDia.set(rango.desde);
+        this.rechazadosHasta.set(rango.hasta);
+        this.pageRechazados.set(0);
+        break;
+      default:
+        this.plataformaPeriodo.set('dia');
+        this.plataformaDia.set(rango.desde);
+        this.plataformaHasta.set(rango.hasta);
+        this.pagePlataforma.set(0);
+        break;
+    }
+    await this.refreshCurrent(false);
+  }
+
   protected async setOrganizationGroupFilter(values: string[] | null | undefined): Promise<void> {
     this.setActiveOrganizationGroupFilter(values ?? []);
     if (this.section() === 'plataforma') {
@@ -1141,6 +1264,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return '-';
     }
     return String(value);
+  }
+
+  protected displayDateOnly(value?: string | null): string {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value ?? '');
+    if (!match) {
+      return '-';
+    }
+    return `${match[3]}/${match[2]}/${match[1]}`;
   }
 
   protected toPickerDate(value: unknown): Date | null {
@@ -1394,7 +1525,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private resolveSection(value: unknown): BackofficeSection {
-    return value === 'programados' ? value : 'plataforma';
+    return value === 'programados' || value === 'rechazados' ? value : 'plataforma';
   }
 
   private toBackendDate(value: Date | string | null): string {
@@ -1481,7 +1612,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     this.isReconciling.set(true);
     try {
-      await Promise.all([this.refreshPlataforma(true), this.refreshProgramados(true)]);
+      await Promise.all([this.refreshPlataforma(true), this.refreshProgramados(true), this.refreshRechazados(true)]);
       if (changedLeadId && this.selectedLeadId() === changedLeadId) {
         await this.refreshOpenDetail(changedLeadId);
       }
@@ -1500,6 +1631,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     if (this.section() === 'programados') {
       await this.refreshProgramados(silent);
+      return;
+    }
+    if (this.section() === 'rechazados') {
+      await this.refreshRechazados(silent);
       return;
     }
     await this.refreshPlataforma(silent);
@@ -1524,7 +1659,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         query,
         term || undefined,
         groupFilter,
-        adminEquipoId
+        adminEquipoId,
+        this.plataformaRange()
       )
     );
     if (requestSeq !== this.plataformaRequestSeq || requestKey !== this.plataformaRequestKey()) {
@@ -1544,7 +1680,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const query = this.currentQuery(this.pageProgramados(), 'programados');
     const adminEquipoId = this.adminEquipoId();
     const page = await firstValueFrom(
-      this.leadService.listarProgramados(query, adminEquipoId)
+      this.leadService.listarProgramados(query, adminEquipoId, this.programadosRange())
     );
     if (requestSeq !== this.programadosRequestSeq || requestKey !== this.programadosRequestKey()) {
       return;
@@ -1559,11 +1695,33 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     );
   }
 
+  private async refreshRechazados(silent: boolean): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    const requestSeq = ++this.rechazadosRequestSeq;
+    const requestKey = this.rechazadosRequestKey();
+    const previous = this.rechazadosRows();
+    const query = this.currentQuery(this.pageRechazados(), 'rechazados');
+    const filters = this.rechazadosFilters();
+    const adminEquipoId = this.adminEquipoId();
+    const page = await firstValueFrom(
+      this.leadService.listarRechazados(query, filters, adminEquipoId)
+    );
+    if (requestSeq !== this.rechazadosRequestSeq || requestKey !== this.rechazadosRequestKey()) {
+      return;
+    }
+    this.totalRechazados.set(page.totalElements);
+    this.rechazadosRows.set(
+      this.mergeVisualRows(previous, page.content, this.shouldAnimateRechazadosRefresh(silent, previous))
+    );
+  }
+
   private async refreshOrganizationGroups(): Promise<void> {
     const term = this.searchTermActive();
     try {
       const groups = await firstValueFrom(
-        this.leadService.listarAgrupacionesPlataforma(term || undefined, this.adminEquipoId())
+        this.leadService.listarAgrupacionesPlataforma(term || undefined, this.adminEquipoId(), this.plataformaRange())
       );
       if (this.section() === 'plataforma') {
         this.ventaGroups.set(groups);
@@ -1743,7 +1901,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return {
       pageNumber,
       pageSize: this.pageSize,
-      sortBy: section === 'plataforma' ? this.plataformaSortField() : 'lastEntryAt',
+      sortBy: section === 'plataforma' ? this.plataformaSortField() : section === 'rechazados' ? 'fechaRechazo' : 'lastEntryAt',
       direction: section === 'plataforma' ? this.plataformaSortDirection() : 'desc'
     };
   }
@@ -1755,7 +1913,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       page: this.pagePlataforma(),
       query: this.currentQuery(this.pagePlataforma(), 'plataforma'),
       term: this.searchTermActive(),
-      group: this.currentVentaGroupFilter()
+      group: this.currentVentaGroupFilter(),
+      range: this.plataformaRange()
     });
   }
 
@@ -1764,8 +1923,34 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       section: this.section(),
       equipo: this.adminEquipoId(),
       page: this.pageProgramados(),
-      query: this.currentQuery(this.pageProgramados(), 'programados')
+      query: this.currentQuery(this.pageProgramados(), 'programados'),
+      range: this.programadosRange()
     });
+  }
+
+  private rechazadosRequestKey(): string {
+    return JSON.stringify({
+      section: this.section(),
+      equipo: this.adminEquipoId(),
+      page: this.pageRechazados(),
+      query: this.currentQuery(this.pageRechazados(), 'rechazados'),
+      filters: this.rechazadosFilters()
+    });
+  }
+
+  private plataformaRange(): LeadRechazadosFilters {
+    const range = resolveMetricsRange(this.plataformaPeriodo(), this.plataformaDia(), this.plataformaHasta());
+    return { fechaDesde: range.desde ?? null, fechaHasta: range.hasta ?? null };
+  }
+
+  private programadosRange(): LeadRechazadosFilters {
+    const range = resolveMetricsRange(this.programadosPeriodo(), this.programadosDia(), this.programadosHasta());
+    return { fechaDesde: range.desde ?? null, fechaHasta: range.hasta ?? null };
+  }
+
+  private rechazadosFilters(): LeadRechazadosFilters {
+    const range = resolveMetricsRange(this.rechazadosPeriodo(), this.rechazadosDia(), this.rechazadosHasta());
+    return { fechaDesde: range.desde ?? null, fechaHasta: range.hasta ?? null };
   }
 
   private shouldAnimatePlataformaRefresh(silent: boolean, previous: VisualLeadVenta[]): boolean {
@@ -1774,6 +1959,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private shouldAnimateProgramadosRefresh(silent: boolean, previous: VisualLeadVenta[]): boolean {
     return silent && this.section() === 'programados' && this.pageProgramados() === 0 && previous.length > 0;
+  }
+
+  private shouldAnimateRechazadosRefresh(silent: boolean, previous: VisualLeadVenta[]): boolean {
+    return silent && this.section() === 'rechazados' && this.pageRechazados() === 0 && previous.length > 0;
   }
 
   private patchForms(detail: LeadDetalleResponse): void {
@@ -2040,13 +2229,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private compareRows(left: LeadVentaResponse, right: LeadVentaResponse, field: BackofficeSortField, direction: BackofficeSortDirection): number {
     const multiplier = direction === 'asc' ? 1 : -1;
-    if (field === 'fechaIngresoEtapa' || field === 'lastEntryAt' || field === 'createdAt') {
+    if (field === 'fechaIngresoEtapa' || field === 'fechaRechazo' || field === 'lastEntryAt' || field === 'createdAt') {
       return (this.rowDateValue(left, field) - this.rowDateValue(right, field)) * multiplier;
     }
     return this.rowTextValue(left, field).localeCompare(this.rowTextValue(right, field)) * multiplier;
   }
 
-  private rowDateValue(row: LeadVentaResponse, field: 'fechaIngresoEtapa' | 'lastEntryAt' | 'createdAt'): number {
+  private rowDateValue(row: LeadVentaResponse, field: 'fechaIngresoEtapa' | 'fechaRechazo' | 'lastEntryAt' | 'createdAt'): number {
     const raw = field === 'fechaIngresoEtapa' ? this.fechaIngresoEtapaValue(row) : row[field];
     const time = raw ? new Date(raw).getTime() : 0;
     return Number.isFinite(time) ? time : 0;
@@ -2084,6 +2273,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       const timerId = window.setTimeout(() => {
         this.plataformaRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
         this.programadosRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
+        this.rechazadosRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
         this.newRowTimers.delete(id);
       }, 3500);
       this.newRowTimers.set(id, timerId);
@@ -2294,13 +2484,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.isSaving.set(false);
     this.plataformaRows.set([]);
     this.programadosRows.set([]);
+    this.rechazadosRows.set([]);
     this.detail.set(null);
     this.eventos.set([]);
     this.selectedLeadId.set(null);
     this.totalPlataforma.set(0);
     this.totalProgramados.set(0);
+    this.totalRechazados.set(0);
     this.pagePlataforma.set(0);
     this.pageProgramados.set(0);
+    this.pageRechazados.set(0);
     this.detailDrawerOpen.set(false);
     this.selectedOfertaProviderId.set(null);
     this.adicionalesSeleccionados.set([]);

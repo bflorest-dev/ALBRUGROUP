@@ -38,6 +38,7 @@ export class AdvisorManagementSummaryPanelComponent implements OnInit {
   readonly teamScoped = input(false);
   readonly periodo = input.required<MetricsPeriodo>();
   readonly dia = input<string | null>(null);
+  readonly hasta = input<string | null>(null);
   readonly modo = input.required<GestionModoMetricas>();
   readonly campo = input.required<GestionCampoTipi>();
 
@@ -51,7 +52,7 @@ export class AdvisorManagementSummaryPanelComponent implements OnInit {
       this.facade.setModo(this.modo());
       this.facade.setCampo(this.campo());
       this.facade.setFixedTeamId(this.missingTeam() ? EMPTY_TEAM_ID : this.idEquipo());
-      const range = resolveMetricsRange(this.periodo(), this.dia());
+      const range = resolveMetricsRange(this.periodo(), this.dia(), this.hasta());
       const desde = range.desde ?? localToday();
       const hasta = range.hasta ?? localToday();
       this.facade.setRange(desde, hasta);

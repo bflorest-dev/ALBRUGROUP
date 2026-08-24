@@ -12,6 +12,19 @@
   display: block;
 }
 
-:host ::ng-deep .period-day-popover .p-datepicker {
+/*
+ * El popover se monta en `body` (appendTo), fuera del host: se estila con `::ng-deep` global, como el
+ * resto de overlays del proyecto (p. ej. `.gxc-campaign-panel`). Un `:host ::ng-deep` no lo alcanza.
+ */
+::ng-deep .period-day-popover .p-datepicker {
   border: none;
+
+  /*
+   * Dias intermedios de un rango. Por defecto Aura usa `{highlight.background}` (un tinte casi
+   * transparente): se ven demasiado suaves. Se sube a un verde translucido derivado del propio
+   * primario, con cuerpo suficiente para leerse como "seleccionado" sin competir con los extremos
+   * (que van en `{primary.color}` solido). Se redefine la var sobre `.p-datepicker` (mas especifico
+   * que el `:root` del tema), asi solo afecta a este calendario.
+   */
+  --p-datepicker-date-range-selected-background: color-mix(in srgb, var(--p-primary-color) 35%, transparent);
 }

@@ -256,6 +256,15 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'admin/plataformas/equipos/:idEquipo/backoffice/rechazados',
+    component: BackofficeWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      section: 'rechazados'
+    }
+  },
+  {
     path: 'rrhh',
     pathMatch: 'full',
     redirectTo: 'rrhh/asistencia'
@@ -417,6 +426,15 @@ export const PLATFORM_ROUTES: Routes = [
     data: {
       roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
       section: 'programados'
+    }
+  },
+  {
+    path: 'backoffice/rechazados',
+    component: BackofficeWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
+      section: 'rechazados'
     }
   },
   {

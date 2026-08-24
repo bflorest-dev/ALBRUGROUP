@@ -120,6 +120,7 @@ export class ResumenDiarioFacade implements OnDestroy {
   readonly modo = signal<GestionModo>('GESTIONADOS');
   readonly periodo = signal<MetricsPeriodo>('dia');
   readonly diaSeleccionado = signal<string | null>(null);
+  readonly hastaSeleccionado = signal<string | null>(null);
   readonly idEquipo = signal<number | null>(null);
 
   private readonly state = toSignal(
@@ -283,6 +284,8 @@ export class ResumenDiarioFacade implements OnDestroy {
         untracked(() => {
           this.lastData.set(state.data);
           this.switching.set(false);
+          // Persiste en la caché root para mostrarlo al instante al volver al tab.
+          this.service.guardarCache(this.cacheKey(), state.data);
         });
       } else if (state.status === 'error') {
         untracked(() => this.switching.set(false));
@@ -326,15 +329,21 @@ export class ResumenDiarioFacade implements OnDestroy {
     this.periodo.set(periodo);
     if (periodo !== 'dia') {
       this.diaSeleccionado.set(null);
+      this.hastaSeleccionado.set(null);
     }
     this.reload(true);
   }
 
-  setDia(dia: string): void {
-    if (!dia || this.diaSeleccionado() === dia) {
+  /** Un dia suelto llega como `desde === hasta`; un rango, con `hasta` distinto. */
+  setRango(desde: string, hasta: string): void {
+    if (!desde) {
       return;
     }
-    this.diaSeleccionado.set(dia);
+    if (this.diaSeleccionado() === desde && this.hastaSeleccionado() === hasta && this.periodo() === 'dia') {
+      return;
+    }
+    this.diaSeleccionado.set(desde);
+    this.hastaSeleccionado.set(hasta);
     this.periodo.set('dia');
     this.reload(true);
   }
@@ -357,10 +366,17 @@ export class ResumenDiarioFacade implements OnDestroy {
     if (!this.started) {
       return;
     }
-    if (userInitiated) {
+    const cacheado = this.service.leerCache(this.cacheKey());
+    if (cacheado) {
+      // Ya vimos esta combinación (p. ej. al volver de otro tab): se muestra al instante y se
+      // revalida en segundo plano, sin "Cargando" ni difuminado.
+      this.lastData.set(cacheado);
+      this.switching.set(false);
+    } else if (userInitiated) {
+      // Sin caché y el usuario cambió de contexto: se conserva el anterior difuminado hasta el nuevo.
       this.switching.set(true);
     }
-    const range = resolveMetricsRange(this.periodo(), this.diaSeleccionado());
+    const range = resolveMetricsRange(this.periodo(), this.diaSeleccionado(), this.hastaSeleccionado());
     this.criteria.set({
       requestId: ++this.requestId,
       idEquipo: this.idEquipo(),
@@ -369,6 +385,18 @@ export class ResumenDiarioFacade implements OnDestroy {
       desde: range.desde,
       hasta: range.hasta
     });
+  }
+
+  /** Clave de caché por combinación de filtros (equipo/modo/campo/período/día/hasta). */
+  private cacheKey(): string {
+    return [
+      this.idEquipo(),
+      this.modo(),
+      this.campo(),
+      this.periodo(),
+      this.diaSeleccionado() ?? '',
+      this.hastaSeleccionado() ?? ''
+    ].join('|');
   }
 
   private shouldUseVisibleTeamsCatalog(): boolean {

@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { DatePickerModule } from 'primeng/datepicker';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { MetricsRango } from '../../utils/metrics-period';
 
 export type MetricsPeriodo = 'dia' | 'semana' | 'mes';
 
@@ -16,10 +17,15 @@ const CIERRE_MS = 320;
  *
  * El primer segmento concentra la eleccion del dia: al hacer clic abre un calendario (sin icono,
  * para no romper la estetica del segmentado). Si se elige un dia distinto de hoy, el segmento pasa
- * a mostrar esa fecha, de modo que el control nunca miente sobre lo que se esta viendo.
+ * a mostrar esa fecha (o el rango), de modo que el control nunca miente sobre lo que se esta viendo.
  *
- * Cierre del calendario: al salir el mouse (con margen), al elegir un dia, y por clic fuera /
- * Escape que ya maneja el popover — necesario porque en tactil no existe `mouseleave`.
+ * Seleccion de rango (dos clics): el primer clic pinta el dia y carga ese dia, pero deja el
+ * calendario abierto; el segundo pinta todo el tramo entre ambos y carga el periodo. Como todos los
+ * endpoints piden desde/hasta, un dia suelto se emite como `desde === hasta`.
+ *
+ * Cierre del calendario: al salir el mouse (con margen), al cerrar un rango de dos dias, y por clic
+ * fuera / Escape que ya maneja el popover — necesario porque en tactil no existe `mouseleave`. El
+ * primer clic NO cierra: hay que dejar elegir el segundo dia.
  */
 @Component({
   selector: 'app-period-selector',
@@ -31,25 +37,33 @@ const CIERRE_MS = 320;
 })
 export class PeriodSelectorComponent implements OnDestroy {
   readonly periodo = input.required<MetricsPeriodo>();
-  /** Dia operativo elegido (`YYYY-MM-DD`). `null` = hoy. Solo aplica con periodo `dia`. */
+  /** Inicio del rango elegido (`YYYY-MM-DD`). `null` = hoy. Solo aplica con periodo `dia`. */
   readonly dia = input<string | null>(null);
+  /** Fin del rango (`YYYY-MM-DD`). `null` o igual a `dia` = dia suelto. Solo aplica con periodo `dia`. */
+  readonly hasta = input<string | null>(null);
 
   readonly periodoChange = output<MetricsPeriodo>();
-  readonly diaChange = output<string>();
+  /** Rango elegido en el calendario. Un dia suelto llega como `desde === hasta`. */
+  readonly rangoChange = output<MetricsRango>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly dayPopover = viewChild.required<Popover>('dayPopover');
   private cierreTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Segmento sobre el que se abrio el calendario; ancla de la flecha del popover. */
+  private botonAncla: HTMLElement | null = null;
 
   private readonly hoy = this.formatLocal(new Date());
 
   protected readonly diaLabel = computed(() => {
-    const dia = this.dia();
-    if (!dia || dia === this.hoy) {
+    const desde = this.dia();
+    const hasta = this.hasta();
+    if (!desde || (desde === this.hoy && (!hasta || hasta === this.hoy))) {
       return 'Hoy';
     }
-    const [, mes, numero] = dia.split('-');
-    return `${Number(numero)} ${MESES[Number(mes) - 1]}`;
+    if (!hasta || hasta === desde) {
+      return this.fechaCorta(desde);
+    }
+    return `${this.fechaCorta(desde)} – ${this.fechaCorta(hasta)}`;
   });
 
   // `computed` memoiza: la referencia se mantiene estable entre ciclos de deteccion, requisito de
@@ -62,9 +76,15 @@ export class PeriodSelectorComponent implements OnDestroy {
 
   protected readonly maxDate = computed(() => new Date());
 
-  protected readonly selectedDate = computed(() => {
-    const [anio, mes, numero] = (this.dia() || this.hoy).split('-').map(Number);
-    return new Date(anio, mes - 1, numero);
+  // `selectionMode="range"` espera un arreglo `[inicio, fin]`. Un dia suelto va como `[inicio, null]`
+  // para que el datepicker lo pinte sin cerrar el rango, y quede listo para elegir el segundo dia.
+  protected readonly selectedDates = computed<Array<Date | null>>(() => {
+    const desde = this.parse(this.dia() || this.hoy);
+    const hastaIso = this.hasta();
+    if (!hastaIso || hastaIso === (this.dia() || this.hoy)) {
+      return [desde, null];
+    }
+    return [desde, this.parse(hastaIso)];
   });
 
   ngOnDestroy(): void {
@@ -88,20 +108,74 @@ export class PeriodSelectorComponent implements OnDestroy {
       return;
     }
     if (clicked === this.host.nativeElement.querySelector('.p-togglebutton')) {
+      this.botonAncla = clicked as HTMLElement;
       this.dayPopover().show(event, clicked as HTMLElement);
     } else {
       this.cerrar();
     }
   }
 
-  protected onPickDay(date: Date | null): void {
-    if (!date) {
+  /**
+   * Centra la flecha del popover bajo el segmento "Hoy". PrimeNG la ancla al borde izquierdo del
+   * target y le resta `2 * border-radius`, con lo que termina saliendo del control; aqui se reubica al
+   * centro del boton. `onShow` corre despues del `align()` interno, asi que este override gana.
+   *
+   * OJO: la animacion de entrada del popover aplica `transform: scale(.93)`, asi que medir el panel
+   * con `getBoundingClientRect()` durante `onShow` da una caja encogida y descentra la flecha. Se usa
+   * geometria de layout (`offsetLeft`, ajeno al transform) para el panel; el boton no se anima, asi
+   * que su rect si es fiable (llevado a coordenadas de documento con el scroll).
+   */
+  protected centrarFlecha(): void {
+    const container = (this.dayPopover() as { container?: HTMLElement }).container;
+    const target = this.botonAncla;
+    if (!container || !target) {
+      return;
+    }
+    const boton = target.getBoundingClientRect();
+    const centroBotonDoc = boton.left + window.scrollX + boton.width / 2;
+    const left = centroBotonDoc - this.leftEnDocumento(container);
+    // El offset base ya lo absorbe `left`; la flecha se centra exactamente en ese punto (margin-left
+    // negativo del propio triangulo).
+    container.style.setProperty('--p-popover-arrow-offset', '0px');
+    container.style.setProperty('--p-popover-arrow-left', `${left}px`);
+  }
+
+  /** Posicion X del borde del elemento en coordenadas de documento, sumando `offsetLeft` (sin transform). */
+  private leftEnDocumento(el: HTMLElement): number {
+    let x = 0;
+    let node: HTMLElement | null = el;
+    while (node) {
+      x += node.offsetLeft;
+      node = node.offsetParent as HTMLElement | null;
+    }
+    return x;
+  }
+
+  /**
+   * Cada clic en el calendario (modo rango) llega aqui. El datepicker entrega `[inicio]` en el primer
+   * clic y `[inicio, fin]` en el segundo:
+   *  - Primer clic: se emite el dia suelto (`desde === hasta`) y se deja el calendario ABIERTO para
+   *    poder extenderlo a un rango.
+   *  - Segundo clic: se emite el rango normalizado (menor→mayor) y se cierra.
+   */
+  protected onPickRange(dates: Array<Date | null> | null): void {
+    const inicio = dates?.[0];
+    if (!inicio) {
       return;
     }
     if (this.periodo() !== 'dia') {
       this.periodoChange.emit('dia');
     }
-    this.diaChange.emit(this.formatLocal(date));
+
+    const fin = dates?.[1];
+    if (!fin) {
+      const dia = this.formatLocal(inicio);
+      this.rangoChange.emit({ desde: dia, hasta: dia });
+      return;
+    }
+
+    const [desde, hasta] = inicio <= fin ? [inicio, fin] : [fin, inicio];
+    this.rangoChange.emit({ desde: this.formatLocal(desde), hasta: this.formatLocal(hasta) });
     this.cerrar();
   }
 
@@ -126,5 +200,16 @@ export class PeriodSelectorComponent implements OnDestroy {
     const mes = `${date.getMonth() + 1}`.padStart(2, '0');
     const dia = `${date.getDate()}`.padStart(2, '0');
     return `${date.getFullYear()}-${mes}-${dia}`;
+  }
+
+  private parse(iso: string): Date {
+    const [anio, mes, numero] = iso.split('-').map(Number);
+    return new Date(anio, mes - 1, numero);
+  }
+
+  /** `2026-08-24` → `24 ago`. */
+  private fechaCorta(iso: string): string {
+    const [, mes, numero] = iso.split('-');
+    return `${Number(numero)} ${MESES[Number(mes) - 1]}`;
   }
 }

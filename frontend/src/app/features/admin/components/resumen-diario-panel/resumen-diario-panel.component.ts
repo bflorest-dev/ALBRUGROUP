@@ -44,6 +44,7 @@ export class ResumenDiarioPanelComponent implements OnInit {
   readonly teamScoped = input(false);
   readonly periodo = input<MetricsPeriodo | null>(null);
   readonly dia = input<string | null>(null);
+  readonly hasta = input<string | null>(null);
   readonly modo = input<GestionModo | null>(null);
   readonly campo = input<GestionCampoTipi | null>(null);
 
@@ -111,12 +112,21 @@ export class ResumenDiarioPanelComponent implements OnInit {
     if (!dia) {
       return 'Hoy';
     }
-    const [anio, mes, dd] = dia.split('-').map((parte) => Number(parte));
+    const hasta = this.hasta();
+    if (hasta && hasta !== dia) {
+      return `${this.fechaLarga(dia)} – ${this.fechaLarga(hasta)}`;
+    }
+    return this.fechaLarga(dia);
+  });
+
+  /** `2026-08-24` → `24 ago 2026` (o el ISO tal cual si no parsea). */
+  private fechaLarga(iso: string): string {
+    const [anio, mes, dd] = iso.split('-').map((parte) => Number(parte));
     if (!anio || !mes || !dd) {
-      return dia;
+      return iso;
     }
     return `${dd} ${ResumenDiarioPanelComponent.MESES[mes - 1]} ${anio}`;
-  });
+  }
 
   /**
    * true al consultar un día ANTERIOR al de hoy. Ahí la preventa de "Ingresos del día" es retroactiva
@@ -145,7 +155,7 @@ export class ResumenDiarioPanelComponent implements OnInit {
       this.facade.setPeriodo(this.periodo());
       const dia = this.dia();
       if (dia) {
-        this.facade.setDia(dia);
+        this.facade.setRango(dia, this.hasta() || dia);
       }
     });
   }
@@ -163,7 +173,7 @@ export class ResumenDiarioPanelComponent implements OnInit {
     }
     const dia = this.dia();
     if (dia) {
-      this.facade.setDia(dia);
+      this.facade.setRango(dia, this.hasta() || dia);
     }
     this.facade.start();
   }
@@ -176,7 +186,7 @@ export class ResumenDiarioPanelComponent implements OnInit {
     this.detalleError.set(false);
     this.detalle.set([]);
     try {
-      const range = resolveMetricsRange(this.periodo() ?? 'dia', this.dia());
+      const range = resolveMetricsRange(this.periodo() ?? 'dia', this.dia(), this.hasta());
       const filas = await firstValueFrom(
         this.detalleService.obtenerPreventasDetalle(
           this.idEquipo(),

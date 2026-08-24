@@ -241,6 +241,12 @@ export class PrivateLayoutComponent implements AfterViewInit {
                   route: `/app/admin/plataformas/equipos/${team.id}/backoffice/programados`,
                   icon: 'pi pi-calendar-clock',
                   exact: true
+                },
+                {
+                  label: 'Rechazados',
+                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/rechazados`,
+                  icon: 'pi pi-exclamation-triangle',
+                  exact: true
                 }
               ]
             }
@@ -347,6 +353,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
       return [
         { label: 'Plataforma', route: '/app/backoffice/plataforma', icon: 'pi pi-desktop', exact: true },
         { label: 'Programados', route: '/app/backoffice/programados', icon: 'pi pi-calendar-clock', exact: true },
+        { label: 'Rechazados', route: '/app/backoffice/rechazados', icon: 'pi pi-exclamation-triangle', exact: true },
         { label: 'Dashboard', route: '/app/backoffice/dashboard', icon: 'pi pi-chart-pie', exact: true }
       ];
     }

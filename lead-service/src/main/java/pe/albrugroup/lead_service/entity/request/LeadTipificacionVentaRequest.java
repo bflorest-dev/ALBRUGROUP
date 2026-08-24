@@ -17,6 +17,7 @@ public class LeadTipificacionVentaRequest {
     private String comentario;
     private LocalDate fechaInstalacion;
     private LocalDate fechaProgramacion;
+    private LocalDate fechaRechazo;
     private LocalTime horaProgramada;
     private String sec;
     private String sot;

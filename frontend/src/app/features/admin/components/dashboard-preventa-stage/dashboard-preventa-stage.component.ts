@@ -13,7 +13,7 @@ import { CurrentUserTeamScopeService } from '../../../../core/services/current-u
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { esEquipoOperativo } from '../../../../shared/utils/equipos-operativos';
-import { resolveMetricsRange } from '../../../../shared/utils/metrics-period';
+import { MetricsRango, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { GestionCampoTipi } from '../../services/admin-gestion-campana.service';
 import { AfluenciaHoraPanelComponent } from '../afluencia-hora-panel/afluencia-hora-panel.component';
 import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
@@ -80,8 +80,10 @@ export class DashboardPreventaStageComponent implements OnInit {
   private readonly operationalGate = this.operationalGateService.createGate('dashboard-preventa-stage');
 
   protected readonly periodo = signal<MetricsPeriodo>('dia');
-  /** Día puntual elegido en el segmento "Hoy" (`YYYY-MM-DD`). `null` = hoy. */
+  /** Inicio del rango elegido en el segmento "Hoy" (`YYYY-MM-DD`). `null` = hoy. */
   protected readonly dia = signal<string | null>(null);
+  /** Fin del rango. `null` o igual a `dia` = día suelto. */
+  protected readonly hasta = signal<string | null>(null);
   // Mismo default que Gestión por campaña: dos controles idénticos en la misma pantalla no pueden
   // arrancar en valores distintos.
   protected readonly campo = signal<GestionCampoTipi>('MAYOR');
@@ -242,22 +244,24 @@ export class DashboardPreventaStageComponent implements OnInit {
       return;
     }
     this.periodo.set(value);
-    // Salir de "día" descarta el día puntual: al volver, el segmento arranca de nuevo en "Hoy".
+    // Salir de "día" descarta el rango: al volver, el segmento arranca de nuevo en "Hoy".
     if (value !== 'dia') {
       this.dia.set(null);
+      this.hasta.set(null);
     }
     await this.load();
   }
 
-  protected async onDiaChange(value: string): Promise<void> {
+  protected async onRangoChange(rango: MetricsRango): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       this.clearOperationalData();
       return;
     }
-    if (this.dia() === value) {
+    if (this.dia() === rango.desde && this.hasta() === rango.hasta && this.periodo() === 'dia') {
       return;
     }
-    this.dia.set(value);
+    this.dia.set(rango.desde);
+    this.hasta.set(rango.hasta);
     this.periodo.set('dia');
     await this.load();
   }
@@ -314,7 +318,7 @@ export class DashboardPreventaStageComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
     try {
-      const rango = resolveMetricsRange(this.periodo(), this.dia());
+      const rango = resolveMetricsRange(this.periodo(), this.dia(), this.hasta());
       const [metricas, equipos] = await Promise.all([
         firstValueFrom(
           this.metricsService.obtenerPorEquipo(rango.desde, rango.hasta, this.campo(), this.modo())

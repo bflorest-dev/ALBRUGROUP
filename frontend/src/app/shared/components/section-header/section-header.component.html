@@ -2,6 +2,10 @@
   <span class="section-header__lead">
     <h2 class="section-header__title">{{ title() }}</h2>
 
+    @if (count() !== null && count() !== undefined) {
+      <span class="section-header__count">{{ count() }}</span>
+    }
+
     @if (description()) {
       <button
         type="button"

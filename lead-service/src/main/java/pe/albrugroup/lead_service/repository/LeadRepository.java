@@ -1315,6 +1315,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 0L,
                 null,
                 null,
+                null,
                 inter.velocidad,
                 inter.unidad,
                 pl.velocidadPromocional,
@@ -1336,7 +1337,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
-              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :fechaDesde
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) < :fechaHasta
               AND (
                     :searchPattern = '%'
                     OR (:buscarPorUsermeta = false AND (
@@ -1358,6 +1360,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:tipoGrupo = 'TIPIFICACION'
                         AND ((:sinValor = true AND COALESCE(l.codigoTipificacion, '') = '') OR l.codigoTipificacion IN :valoresGrupo))
               )
+              AND (:excluirTipificacionesSeparadas = false
+                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) DESC,
                      l.id DESC
@@ -1366,13 +1370,15 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa,
             @Param("searchPattern") String searchPattern,
             @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
-            @Param("filtrarVentana") boolean filtrarVentana,
-            @Param("inicioVentana") Instant inicioVentana,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarGrupo") boolean filtrarGrupo,
             @Param("tipoGrupo") String tipoGrupo,
             @Param("valoresGrupo") Collection<String> valoresGrupo,
             @Param("sinValor") boolean sinValor,
             @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
+            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
             Pageable pageable
@@ -1389,7 +1395,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             WHERE l.etapa = :etapa
               AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
-              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :fechaDesde
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) < :fechaHasta
               AND (
                     :searchPattern = '%'
                     OR (:buscarPorUsermeta = false AND (
@@ -1398,6 +1405,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     ))
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
+              AND (:excluirTipificacionesSeparadas = false
+                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.estado
             """)
@@ -1405,10 +1414,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa,
             @Param("searchPattern") String searchPattern,
             @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
-            @Param("filtrarVentana") boolean filtrarVentana,
-            @Param("inicioVentana") Instant inicioVentana,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarAsesor") boolean filtrarAsesor,
             @Param("idAsesor") Long idAsesor,
+            @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
+            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1424,7 +1435,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             WHERE l.etapa = :etapa
               AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
-              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :fechaDesde
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) < :fechaHasta
               AND (
                     :searchPattern = '%'
                     OR (:buscarPorUsermeta = false AND (
@@ -1433,6 +1445,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     ))
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
+              AND (:excluirTipificacionesSeparadas = false
+                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.nombreProveedorSnapshot
             """)
@@ -1440,10 +1454,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa,
             @Param("searchPattern") String searchPattern,
             @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
-            @Param("filtrarVentana") boolean filtrarVentana,
-            @Param("inicioVentana") Instant inicioVentana,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarAsesor") boolean filtrarAsesor,
             @Param("idAsesor") Long idAsesor,
+            @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
+            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1459,7 +1475,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             WHERE l.etapa = :etapa
               AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
-              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :fechaDesde
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) < :fechaHasta
               AND (
                     :searchPattern = '%'
                     OR (:buscarPorUsermeta = false AND (
@@ -1468,6 +1485,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     ))
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
+              AND (:excluirTipificacionesSeparadas = false
+                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.nombrePlanSnapshot
             """)
@@ -1475,10 +1494,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa,
             @Param("searchPattern") String searchPattern,
             @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
-            @Param("filtrarVentana") boolean filtrarVentana,
-            @Param("inicioVentana") Instant inicioVentana,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarAsesor") boolean filtrarAsesor,
             @Param("idAsesor") Long idAsesor,
+            @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
+            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1494,7 +1515,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             WHERE l.etapa = :etapa
               AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
-              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :fechaDesde
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) < :fechaHasta
               AND (
                     :searchPattern = '%'
                     OR (:buscarPorUsermeta = false AND (
@@ -1503,6 +1525,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     ))
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
+              AND (:excluirTipificacionesSeparadas = false
+                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY r.nombreAsesorUltimaGestion
             """)
@@ -1510,10 +1534,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa,
             @Param("searchPattern") String searchPattern,
             @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
-            @Param("filtrarVentana") boolean filtrarVentana,
-            @Param("inicioVentana") Instant inicioVentana,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarAsesor") boolean filtrarAsesor,
             @Param("idAsesor") Long idAsesor,
+            @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
+            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1529,7 +1555,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             WHERE l.etapa = :etapa
               AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
-              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :fechaDesde
+              AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) < :fechaHasta
               AND (
                     :searchPattern = '%'
                     OR (:buscarPorUsermeta = false AND (
@@ -1538,6 +1565,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     ))
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
+              AND (:excluirTipificacionesSeparadas = false
+                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.codigoTipificacion
             """)
@@ -1545,10 +1574,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa,
             @Param("searchPattern") String searchPattern,
             @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
-            @Param("filtrarVentana") boolean filtrarVentana,
-            @Param("inicioVentana") Instant inicioVentana,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarAsesor") boolean filtrarAsesor,
             @Param("idAsesor") Long idAsesor,
+            @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
+            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1589,6 +1620,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 0L,
                 e.fechaProgramacion,
                 e.horaProgramada,
+                null,
                 inter.velocidad,
                 inter.unidad,
                 pl.velocidadPromocional,
@@ -1617,7 +1649,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND e.tipificacion = :codigoProgramado
               AND e.fechaProgramacion IS NOT NULL
               AND e.horaProgramada IS NOT NULL
-              AND e.fechaProgramacion >= :fechaActual
+              AND e.fechaProgramacion BETWEEN :fechaDesde AND :fechaHasta
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
@@ -1636,9 +1668,110 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("codigoProgramado") String codigoProgramado,
             @Param("codigoProgramacionCancelada") String codigoProgramacionCancelada,
             @Param("accionTipificacion") Accion accionTipificacion,
-            @Param("fechaActual") java.time.LocalDate fechaActual,
+            @Param("fechaDesde") java.time.LocalDate fechaDesde,
+            @Param("fechaHasta") java.time.LocalDate fechaHasta,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadResponse(
+                l.id,
+                l.prefijo,
+                l.lead,
+                l.usermeta,
+                l.etapa,
+                l.estado,
+                l.idAsesorAsignado,
+                l.nombreAsesorAsignado,
+                COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
+                l.base,
+                l.idTipificacion,
+                e.tipificacion,
+                l.idSubtipificacion,
+                e.subtipificacion,
+                l.nombrePlanSnapshot,
+                l.nombreProveedorSnapshot,
+                l.precioPlanSnapshot,
+                l.nombrePromocionInternaSnapshot,
+                l.precioAdicionalesSnapshot,
+                l.precioFinal,
+                l.diaCorteFacturacion,
+                l.mesesPermanenciaSnapshot,
+                l.createdAt,
+                l.lastEntryAt,
+                r.fechaIngresoEtapa,
+                l.updatedAt,
+                l.sec,
+                l.sot,
+                COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
+                r.nombreAsesorUltimaGestion,
+                r.fechaUltimaGestion,
+                0L,
+                null,
+                null,
+                e.fechaRechazo,
+                inter.velocidad,
+                inter.unidad,
+                pl.velocidadPromocional,
+                pl.mesesPromocionVelocidad,
+                e.createdAt
+            )
+            FROM Lead l
+            JOIN Evento e ON e.idLead = l.id
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN pl.internet inter
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
+            WHERE e.accion = :accionTipificacion
+              AND e.etapa = :etapaVenta
+              AND e.tipificacion IN :tipificacionesRechazo
+              AND e.fechaRechazo IS NOT NULL
+              AND e.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta
+              AND l.etapa IN :etapasPermitidas
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND e.createdAt = (
+                  SELECT MAX(es.createdAt)
+                  FROM Evento es
+                  WHERE es.idLead = l.id
+                    AND es.accion = :accionTipificacion
+                    AND es.etapa = :etapaVenta
+                    AND es.tipificacion IN :tipificacionesRechazo
+                    AND es.fechaRechazo IS NOT NULL
+              )
+            ORDER BY
+              CASE WHEN :sortBy = 'fechaRechazo' AND :sortDesc = false THEN e.fechaRechazo END ASC,
+              CASE WHEN :sortBy = 'fechaRechazo' AND :sortDesc = true THEN e.fechaRechazo END DESC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = false THEN l.lead END ASC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = true THEN l.lead END DESC,
+              CASE WHEN :sortBy = 'createdAt' AND :sortDesc = false THEN l.createdAt END ASC,
+              CASE WHEN :sortBy = 'createdAt' AND :sortDesc = true THEN l.createdAt END DESC,
+              CASE WHEN :sortBy = 'lastEntryAt' AND :sortDesc = false THEN l.lastEntryAt END ASC,
+              CASE WHEN :sortBy = 'lastEntryAt' AND :sortDesc = true THEN l.lastEntryAt END DESC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = false THEN l.estado END ASC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = true THEN l.estado END DESC,
+              e.createdAt DESC,
+              l.id DESC
+            """)
+    Page<LeadResponse> listarLeadsVentaRechazados(
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("tipificacionesRechazo") Collection<String> tipificacionesRechazo,
+            @Param("fechaDesde") java.time.LocalDate fechaDesde,
+            @Param("fechaHasta") java.time.LocalDate fechaHasta,
+            @Param("etapasPermitidas") Collection<Etapa> etapasPermitidas,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("sortBy") String sortBy,
+            @Param("sortDesc") boolean sortDesc,
             Pageable pageable
     );
 

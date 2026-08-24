@@ -111,6 +111,7 @@ export class AdminAfluenciaHoraFacade implements OnDestroy {
   readonly modo = signal<AfluenciaModo>('INGRESADOS');
   readonly periodo = signal<AfluenciaPeriodo>('dia');
   readonly diaSeleccionado = signal<string | null>(null);
+  readonly hastaSeleccionado = signal<string | null>(null);
   readonly selectedCampanaKeys = signal<string[]>([]);
   readonly selectedEquipoId = signal<number | null>(null);
   private readonly isEquipoLocked = signal(false);
@@ -299,15 +300,21 @@ export class AdminAfluenciaHoraFacade implements OnDestroy {
     this.periodo.set(periodo);
     if (periodo !== 'dia') {
       this.diaSeleccionado.set(null);
+      this.hastaSeleccionado.set(null);
     }
     this.reload();
   }
 
-  setDia(dia: string): void {
-    if (!dia || this.diaSeleccionado() === dia) {
+  /** Rango elegido en el calendario del segmento "Hoy". Un dia suelto llega como `desde === hasta`. */
+  setRango(desde: string, hasta: string): void {
+    if (!desde) {
       return;
     }
-    this.diaSeleccionado.set(dia);
+    if (this.diaSeleccionado() === desde && this.hastaSeleccionado() === hasta && this.periodo() === 'dia') {
+      return;
+    }
+    this.diaSeleccionado.set(desde);
+    this.hastaSeleccionado.set(hasta);
     this.periodo.set('dia');
     this.reload();
   }
@@ -346,7 +353,7 @@ export class AdminAfluenciaHoraFacade implements OnDestroy {
   }
 
   reload(): void {
-    const range = resolveMetricsRange(this.periodo(), this.diaSeleccionado());
+    const range = resolveMetricsRange(this.periodo(), this.diaSeleccionado(), this.hastaSeleccionado());
     this.criteria.set({
       requestId: ++this.requestId,
       modo: this.modo(),

@@ -32,6 +32,7 @@ public class EventoResponse {
     private String subtipificacion;
     private LocalDate fechaInstalacion;
     private LocalDate fechaProgramacion;
+    private LocalDate fechaRechazo;
     private String comentario;
     private LocalTime horaProgramada;
     private Instant createdAt;
