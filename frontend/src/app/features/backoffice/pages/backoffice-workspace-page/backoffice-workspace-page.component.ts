@@ -2155,12 +2155,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
-  private normalizeLeadNumber(value?: string | null): string {
-    const digits = (value ?? '').replace(/\D/g, '');
-    if (!digits) {
-      return '';
-    }
-    return digits.length > 9 ? digits.slice(-9) : digits;
+  private normalizeLeadOrDocumentSearch(value?: string | null): string {
+    return (value ?? '').replace(/\D/g, '');
   }
 
   private normalizeSearchTerm(value?: string | null): string {
@@ -2172,7 +2168,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       const usermeta = raw.replace(/\s+/g, '').replace(/^@+/, '');
       return usermeta ? `@${usermeta}` : '';
     }
-    return this.normalizeLeadNumber(raw);
+    return this.normalizeLeadOrDocumentSearch(raw);
   }
 
   private normalizeSearchInput(value?: string | null): string {
@@ -2184,7 +2180,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       const usermeta = raw.replace(/\s+/g, '').replace(/^@+/, '');
       return usermeta ? `@${usermeta}` : '@';
     }
-    return this.normalizeLeadNumber(raw);
+    return this.normalizeLeadOrDocumentSearch(raw);
   }
 
   private documentoServicioMaxLength(): number {
