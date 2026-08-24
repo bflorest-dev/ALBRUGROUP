@@ -52,7 +52,8 @@ public class EquipoService implements IEquipo {
     // mantiene porque la partición de datos es por el equipo del lead, no por la membresía del asesor.
     private static final Set<String> ROLES_MULTIEQUIPO = Set.of(
             "ASESOR_GTR",
-            "ASESOR_VENTAS"
+            "ASESOR_VENTAS",
+            "ASESOR_BACKOFFICE"
     );
 
     private static final Set<String> ROLES_ASIGNABLES_PREVENTA = Set.of(
