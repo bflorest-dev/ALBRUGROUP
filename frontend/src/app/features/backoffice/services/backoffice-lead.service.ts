@@ -125,8 +125,8 @@ export class BackofficeLeadService {
   }
 
   listarEventos(idLead: number, query: PageQuery): Observable<LeadPage<EventoResponse>> {
-    return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/venta/${idLead}/eventos`, {
-      params: this.pageParams(query)
+    return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/eventos/lead/${idLead}`, {
+      params: this.pageParams(query).set('accion', 'TIPIFICACION')
     });
   }
 
