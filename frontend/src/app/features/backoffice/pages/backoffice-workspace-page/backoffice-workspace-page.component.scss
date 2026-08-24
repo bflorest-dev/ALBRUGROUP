@@ -119,6 +119,23 @@ p,
   height: 1px;
 }
 
+.comment-trigger {
+  align-items: center;
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.45rem;
+  color: var(--app-text-muted);
+  cursor: help;
+  display: inline-grid;
+  height: 2rem;
+  place-items: center;
+  width: 2rem;
+}
+
+.comment-trigger--empty {
+  opacity: 0.38;
+}
+
 .col-actions {
   min-width: 10rem;
 }

@@ -22,6 +22,7 @@ import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 import { SessionService } from '../../../../core/services/session.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
@@ -103,6 +104,7 @@ const TIPIFICACIONES_RECHAZO_VENTA = new Set(['SUBSANABLE', 'NO RECUPERABLE']);
     TabsModule,
     TagModule,
     ToastModule,
+    TooltipModule,
     LeadCommercialDataTabsComponent,
     LeadPlanSummaryComponent,
     PhoneActionButtonComponent,
@@ -130,10 +132,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
   private readonly pickerDateCache = new Map<string, Date | null>();
+  private readonly provinciasCache = new Map<number, UbigeoItem[]>();
+  private readonly distritosCache = new Map<number, UbigeoItem[]>();
   private organizeCloseTimeout: ReturnType<typeof setTimeout> | null = null;
   private plataformaRequestSeq = 0;
   private programadosRequestSeq = 0;
   private rechazadosRequestSeq = 0;
+  private domicilioResolveSeq = 0;
   private initialized = false;
   private initializeInFlight = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
@@ -195,6 +200,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly departamentos = signal<UbigeoItem[]>([]);
   protected readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
   protected readonly distritosDomicilio = signal<UbigeoItem[]>([]);
+  protected readonly ubigeoDomicilioLoading = signal(false);
+  protected readonly ubigeoDomicilioError = signal<string | null>(null);
   private readonly adicionalesDirty = signal(false);
   protected readonly detailDrawerOpen = signal(false);
   protected readonly activeDataTab = signal('datos');
@@ -1411,6 +1418,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return !!empleadoId && row.idAsesorAsignado === empleadoId;
   }
 
+  protected canManageRejectedLead(row: LeadVentaResponse): boolean {
+    return this.normalizedCode(row.codigoTipificacion) === 'SUBSANABLE'
+      && this.normalizedCode(row.etapa) === 'VENTA';
+  }
+
+  private normalizedCode(value: string | null | undefined): string {
+    return String(value ?? '').trim().toUpperCase();
+  }
+
   protected estadoSeverity(estado: string | null | undefined): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
     if (estado === 'GESTIONADO') return 'success';
     if (estado === 'EN_GESTION') return 'warn';
@@ -1505,6 +1521,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async onDepartamentoDomicilioChanged(): Promise<void> {
+    this.ubigeoDomicilioError.set(null);
     const idDepartamento = this.direccionForm.controls.idDepartamentoDomicilio.value;
     this.direccionForm.patchValue({
       idProvinciaDomicilio: 0,
@@ -1519,6 +1536,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async onProvinciaDomicilioChanged(): Promise<void> {
+    this.ubigeoDomicilioError.set(null);
     const idProvincia = this.direccionForm.controls.idProvinciaDomicilio.value;
     this.direccionForm.patchValue({
       idDistritoDomicilio: 0,
@@ -1792,14 +1810,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private async refreshEventos(idLead: number): Promise<void> {
     const page = await firstValueFrom(
-      this.leadService.listarEventos(idLead, this.todayDate, {
+      this.leadService.listarEventos(idLead, {
         pageNumber: 0,
-        pageSize: 20,
+        pageSize: 100,
         sortBy: 'createdAt',
         direction: 'desc'
       })
     );
-    this.eventos.set(page.content);
+    this.eventos.set(page.content.filter((evento) => this.normalizedCode(evento.etapa) === 'VENTA'));
   }
 
   private async refreshPlanes(): Promise<void> {
@@ -1856,7 +1874,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private async resolveDomicilioSelection(ubigeoDomicilio: string | null): Promise<void> {
+    const requestSeq = ++this.domicilioResolveSeq;
+    this.ubigeoDomicilioError.set(null);
     if (!ubigeoDomicilio) {
+      this.ubigeoDomicilioLoading.set(false);
       this.provinciasDomicilio.set([]);
       this.distritosDomicilio.set([]);
       this.direccionForm.patchValue({
@@ -1868,53 +1889,123 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const codigo = ubigeoDomicilio.replace(/\D/g, '');
+    if (codigo.length !== 6) {
+      this.provinciasDomicilio.set([]);
+      this.distritosDomicilio.set([]);
+      this.ubigeoDomicilioLoading.set(false);
+      this.ubigeoDomicilioError.set('No pudimos reconocer la ubicación guardada.');
+      return;
+    }
+
+    this.ubigeoDomicilioLoading.set(true);
     try {
       const departamentos = this.departamentos().length
         ? this.departamentos()
         : await firstValueFrom(this.leadService.listarDepartamentos());
+      if (requestSeq !== this.domicilioResolveSeq) {
+        return;
+      }
       if (!this.departamentos().length) {
         this.departamentos.set(departamentos);
       }
 
-      for (const departamento of departamentos) {
-        const provincias = await firstValueFrom(this.leadService.listarProvincias(departamento.id));
-        for (const provincia of provincias) {
-          const distritos = await firstValueFrom(this.leadService.listarDistritos(provincia.id));
-          const distrito = distritos.find((item) => item.codigo === ubigeoDomicilio);
-          if (distrito) {
-            this.provinciasDomicilio.set(provincias);
-            this.distritosDomicilio.set(distritos);
-            this.direccionForm.patchValue({
-              idDepartamentoDomicilio: departamento.id,
-              idProvinciaDomicilio: provincia.id,
-              idDistritoDomicilio: distrito.id,
-              ubigeoDomicilio
-            });
-            this.direccionForm.markAsPristine();
-            return;
-          }
-        }
+      const departamento = departamentos.find((item) => item.codigo === codigo.slice(0, 2));
+      if (!departamento) {
+        this.ubigeoDomicilioError.set('No encontramos el departamento guardado.');
+        return;
       }
-    } catch {
+
+      const provincias = await this.getProvinciasDomicilio(departamento.id);
+      if (requestSeq !== this.domicilioResolveSeq) {
+        return;
+      }
+      const provincia = provincias.find((item) => item.codigo === codigo.slice(0, 4));
+      if (!provincia) {
+        this.provinciasDomicilio.set(provincias);
+        this.distritosDomicilio.set([]);
+        this.ubigeoDomicilioError.set('No encontramos la provincia guardada.');
+        return;
+      }
+
+      const distritos = await this.getDistritosDomicilio(provincia.id);
+      if (requestSeq !== this.domicilioResolveSeq) {
+        return;
+      }
+      const distrito = distritos.find((item) => item.codigo === codigo);
+      if (!distrito) {
+        this.provinciasDomicilio.set(provincias);
+        this.distritosDomicilio.set(distritos);
+        this.ubigeoDomicilioError.set('No encontramos el distrito guardado.');
+        return;
+      }
+
+      this.provinciasDomicilio.set(provincias);
+      this.distritosDomicilio.set(distritos);
+      this.direccionForm.patchValue({
+        idDepartamentoDomicilio: departamento.id,
+        idProvinciaDomicilio: provincia.id,
+        idDistritoDomicilio: distrito.id,
+        ubigeoDomicilio: codigo
+      });
+      this.direccionForm.markAsPristine();
+    } catch (error) {
       this.provinciasDomicilio.set([]);
       this.distritosDomicilio.set([]);
+      this.ubigeoDomicilioError.set(this.getErrorMessage(error, 'No pudimos cargar la ubicación guardada.'));
+    } finally {
+      if (requestSeq === this.domicilioResolveSeq) {
+        this.ubigeoDomicilioLoading.set(false);
+      }
     }
   }
 
   private async loadProvinciasDomicilio(idDepartamento: number): Promise<void> {
+    this.ubigeoDomicilioLoading.set(true);
     try {
-      this.provinciasDomicilio.set(await firstValueFrom(this.leadService.listarProvincias(idDepartamento)));
+      this.ubigeoDomicilioError.set(null);
+      this.provinciasDomicilio.set(await this.getProvinciasDomicilio(idDepartamento));
     } catch (error) {
-      this.notify('warn', this.getErrorMessage(error, 'No se pudieron cargar las provincias.'));
+      const message = this.getErrorMessage(error, 'No se pudieron cargar las provincias.');
+      this.ubigeoDomicilioError.set(message);
+      this.notify('warn', message);
+    } finally {
+      this.ubigeoDomicilioLoading.set(false);
     }
   }
 
   private async loadDistritosDomicilio(idProvincia: number): Promise<void> {
+    this.ubigeoDomicilioLoading.set(true);
     try {
-      this.distritosDomicilio.set(await firstValueFrom(this.leadService.listarDistritos(idProvincia)));
+      this.ubigeoDomicilioError.set(null);
+      this.distritosDomicilio.set(await this.getDistritosDomicilio(idProvincia));
     } catch (error) {
-      this.notify('warn', this.getErrorMessage(error, 'No se pudieron cargar los distritos.'));
+      const message = this.getErrorMessage(error, 'No se pudieron cargar los distritos.');
+      this.ubigeoDomicilioError.set(message);
+      this.notify('warn', message);
+    } finally {
+      this.ubigeoDomicilioLoading.set(false);
     }
+  }
+
+  private async getProvinciasDomicilio(idDepartamento: number): Promise<UbigeoItem[]> {
+    const cached = this.provinciasCache.get(idDepartamento);
+    if (cached) {
+      return cached;
+    }
+    const provincias = await firstValueFrom(this.leadService.listarProvincias(idDepartamento));
+    this.provinciasCache.set(idDepartamento, provincias);
+    return provincias;
+  }
+
+  private async getDistritosDomicilio(idProvincia: number): Promise<UbigeoItem[]> {
+    const cached = this.distritosCache.get(idProvincia);
+    if (cached) {
+      return cached;
+    }
+    const distritos = await firstValueFrom(this.leadService.listarDistritos(idProvincia));
+    this.distritosCache.set(idProvincia, distritos);
+    return distritos;
   }
 
   private currentQuery(pageNumber: number, section = this.section()): PageQuery {
@@ -2334,6 +2425,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.detailHadOperationalAction = false;
     this.provinciasDomicilio.set([]);
     this.distritosDomicilio.set([]);
+    this.ubigeoDomicilioLoading.set(false);
+    this.ubigeoDomicilioError.set(null);
   }
 
   private markFormsPristine(): void {
@@ -2521,6 +2614,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.adicionalesDirty.set(false);
     this.provinciasDomicilio.set([]);
     this.distritosDomicilio.set([]);
+    this.ubigeoDomicilioLoading.set(false);
+    this.ubigeoDomicilioError.set(null);
     this.searchInput.set('');
     this.searchTermActive.set('');
     this.searchLookup.set(null);

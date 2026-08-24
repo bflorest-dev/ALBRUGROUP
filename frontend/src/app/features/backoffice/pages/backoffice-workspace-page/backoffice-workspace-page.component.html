@@ -334,6 +334,18 @@
                 [loading]="isLeadActionLoading(row.id)"
                 (click)="tomarLead(row)"
               ></button>
+            } @else if (section() === 'rechazados' && canManageRejectedLead(row)) {
+              <button
+                pButton
+                type="button"
+                [icon]="isLeadActionLoading(row.id) ? '' : 'pi pi-briefcase'"
+                label="Gestionar"
+                size="small"
+                [severity]="row.idAsesorAsignado && !isMine(row) ? 'warn' : undefined"
+                [disabled]="isSaving() || leadActionId() !== null || !canMutateOperationalData()"
+                [loading]="isLeadActionLoading(row.id)"
+                (click)="tomarLead(row)"
+              ></button>
             } @else if (section() === 'rechazados') {
               <p-tag severity="secondary" value="Solo consulta" />
             } @else {
@@ -478,6 +490,8 @@
           [departamentos]="departamentos()"
           [provinciasDomicilio]="provinciasDomicilio()"
           [distritosDomicilio]="distritosDomicilio()"
+          [ubigeoDomicilioLoading]="ubigeoDomicilioLoading()"
+          [ubigeoDomicilioError]="ubigeoDomicilioError()"
           [providerOptions]="ofertaProviderOptions()"
           [selectedProviderId]="selectedOfertaProviderId()"
           [planOptions]="planOptions()"
@@ -518,11 +532,23 @@
                 <td>{{ display(evento.tipificacion || evento.subtipificacion) }}</td>
                 <td>{{ eventScheduleLabel(evento) }}</td>
                 <td>{{ formatDateOnly(evento.fechaInstalacion) }}</td>
-                <td>{{ display(evento.comentario) }}</td>
+                <td>
+                  <button
+                    type="button"
+                    class="comment-trigger"
+                    [class.comment-trigger--empty]="!evento.comentario?.trim()"
+                    [title]="evento.comentario?.trim() || 'Sin comentario'"
+                    [pTooltip]="evento.comentario?.trim() || 'Sin comentario'"
+                    tooltipPosition="left"
+                    [attr.aria-label]="evento.comentario?.trim() ? 'Ver comentario: ' + evento.comentario.trim() : 'Sin comentario'"
+                  >
+                    <i class="pi pi-comment" aria-hidden="true"></i>
+                  </button>
+                </td>
               </tr>
             </ng-template>
             <ng-template #emptymessage>
-              <tr><td colspan="7">No hay eventos para el dia de hoy.</td></tr>
+              <tr><td colspan="7">No hay eventos de venta registrados.</td></tr>
             </ng-template>
           </p-table>
         </app-lead-commercial-data-tabs>

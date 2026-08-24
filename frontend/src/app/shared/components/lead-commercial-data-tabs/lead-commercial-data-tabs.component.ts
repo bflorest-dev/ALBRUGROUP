@@ -61,6 +61,8 @@ export class LeadCommercialDataTabsComponent {
   @Input() departamentos: UbigeoItem[] = [];
   @Input() provinciasDomicilio: UbigeoItem[] = [];
   @Input() distritosDomicilio: UbigeoItem[] = [];
+  @Input() ubigeoDomicilioLoading = false;
+  @Input() ubigeoDomicilioError: string | null = null;
   @Input() providerOptions: LeadCommercialProviderOption[] = [];
   @Input() selectedProviderId: number | null = null;
   @Input() planOptions: Array<Partial<PlanResponse> & { id: number; nombre: string }> = [];

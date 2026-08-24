@@ -121,8 +121,10 @@
             [options]="departamentos"
             optionLabel="nombre"
             optionValue="id"
-            placeholder="Seleccionar"
+            [placeholder]="ubigeoDomicilioLoading ? 'Cargando...' : 'Seleccionar'"
             appendTo="body"
+            [loading]="ubigeoDomicilioLoading"
+            [disabled]="ubigeoDomicilioLoading"
             (onChange)="departamentoDomicilioChange.emit()"
           />
         </label>
@@ -133,9 +135,10 @@
             [options]="provinciasDomicilio"
             optionLabel="nombre"
             optionValue="id"
-            placeholder="Seleccionar"
+            [placeholder]="ubigeoDomicilioLoading ? 'Cargando...' : 'Seleccionar'"
             appendTo="body"
-            [disabled]="!provinciasDomicilio.length"
+            [loading]="ubigeoDomicilioLoading"
+            [disabled]="ubigeoDomicilioLoading || !provinciasDomicilio.length"
             (onChange)="provinciaDomicilioChange.emit()"
           />
         </label>
@@ -146,12 +149,20 @@
             [options]="distritosDomicilio"
             optionLabel="nombre"
             optionValue="id"
-            placeholder="Seleccionar"
+            [placeholder]="ubigeoDomicilioLoading ? 'Cargando...' : 'Seleccionar'"
             appendTo="body"
-            [disabled]="!distritosDomicilio.length"
+            [loading]="ubigeoDomicilioLoading"
+            [disabled]="ubigeoDomicilioLoading || !distritosDomicilio.length"
             (onChange)="distritoDomicilioChange.emit()"
           />
         </label>
+        @if (ubigeoDomicilioLoading || ubigeoDomicilioError) {
+          <p-message
+            class="wide"
+            [severity]="ubigeoDomicilioError ? 'warn' : 'info'"
+            [text]="ubigeoDomicilioError || 'Cargando departamento, provincia y distrito...'"
+          />
+        }
         <label class="address-field address-field--home-type">
           <span>Tipo de Domicilio</span>
           <p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" placeholder="Seleccionar" appendTo="body" />
