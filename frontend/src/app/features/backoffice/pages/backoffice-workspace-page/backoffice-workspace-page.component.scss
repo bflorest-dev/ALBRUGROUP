@@ -168,8 +168,9 @@ p,
 
 .assigned-cell {
   align-items: center;
-  display: inline-flex;
-  gap: 0.35rem;
+  display: inline-grid;
+  gap: 0.3rem;
+  grid-template-columns: 0.95rem max-content;
   justify-content: center;
   max-width: 100%;
 }
@@ -187,11 +188,13 @@ p,
   border: 0;
   color: #26374d;
   cursor: help;
-  display: inline-grid;
+  display: grid;
   font: inherit;
-  min-height: 1.6rem;
-  padding: 0 0.55rem 0.2rem 0;
-  position: relative;
+  gap: 0.3rem;
+  grid-column: 1 / -1;
+  grid-template-columns: 0.95rem max-content;
+  min-height: 1.4rem;
+  padding: 0;
 }
 
 .assigned-comment span {
@@ -199,19 +202,17 @@ p,
 }
 
 .assigned-comment i {
-  align-items: center;
   background: #ffffff;
-  border: 1px solid var(--app-border-soft);
-  border-radius: 999px;
-  bottom: 0;
-  color: #48627f;
-  display: inline-flex;
-  font-size: 0.62rem;
-  height: 0.92rem;
-  justify-content: center;
-  position: absolute;
-  right: 0;
-  width: 0.92rem;
+  color: #2f6fed;
+  font-size: 0.72rem;
+  line-height: 1;
+  place-self: center;
+}
+
+.assigned-comment-placeholder {
+  display: inline-block;
+  height: 1px;
+  width: 0.95rem;
 }
 
 .assigned-comment:hover span,
