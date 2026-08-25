@@ -57,6 +57,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.lead = :buscar
                OR l.numeroDocumentoTitularServicioSnapshot = :buscar
                OR dp.numeroDocumentoTitularServicio = :buscar
+               OR l.sec = :buscar
+               OR l.sot = :buscar
             ORDER BY l.lastEntryAt DESC, l.id DESC
             """)
     List<Lead> buscarPorLeadODocumento(@Param("buscar") String buscar);
@@ -1350,6 +1352,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:buscarPorUsermeta = false AND (
                         l.lead LIKE :searchPattern
                         OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                        OR l.sec LIKE :searchPattern
+                        OR l.sot LIKE :searchPattern
                     ))
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
@@ -1408,6 +1412,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:buscarPorUsermeta = false AND (
                         l.lead LIKE :searchPattern
                         OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                        OR l.sec LIKE :searchPattern
+                        OR l.sot LIKE :searchPattern
                     ))
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
@@ -1448,6 +1454,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:buscarPorUsermeta = false AND (
                         l.lead LIKE :searchPattern
                         OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                        OR l.sec LIKE :searchPattern
+                        OR l.sot LIKE :searchPattern
                     ))
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
@@ -1488,6 +1496,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:buscarPorUsermeta = false AND (
                         l.lead LIKE :searchPattern
                         OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                        OR l.sec LIKE :searchPattern
+                        OR l.sot LIKE :searchPattern
                     ))
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
@@ -1528,6 +1538,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:buscarPorUsermeta = false AND (
                         l.lead LIKE :searchPattern
                         OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                        OR l.sec LIKE :searchPattern
+                        OR l.sot LIKE :searchPattern
                     ))
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
@@ -1568,6 +1580,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:buscarPorUsermeta = false AND (
                         l.lead LIKE :searchPattern
                         OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                        OR l.sec LIKE :searchPattern
+                        OR l.sot LIKE :searchPattern
                     ))
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
