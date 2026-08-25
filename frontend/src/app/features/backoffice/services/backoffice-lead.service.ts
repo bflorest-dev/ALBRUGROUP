@@ -104,6 +104,24 @@ export class BackofficeLeadService {
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/rechazados`, { params });
   }
 
+  listarSubsanables(
+    query: PageQuery,
+    filters: LeadRechazadosFilters,
+    idEquipo?: number | null
+  ): Observable<LeadPage<LeadVentaResponse>> {
+    let params = this.pageParams(query);
+    if (filters.fechaDesde) {
+      params = params.set('fechaDesde', filters.fechaDesde);
+    }
+    if (filters.fechaHasta) {
+      params = params.set('fechaHasta', filters.fechaHasta);
+    }
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/subsanables`, { params });
+  }
+
   tomarLead(idLead: number, request: LeadTomaVentaRequest = {}): Observable<void> {
     return this.http.patch<void>(`${this.leadUrl}/venta/${idLead}/asignacion`, request);
   }

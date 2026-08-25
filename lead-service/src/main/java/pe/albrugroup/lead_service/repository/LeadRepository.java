@@ -1737,6 +1737,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND e.fechaRechazo IS NOT NULL
               AND e.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta
               AND l.etapa IN :etapasPermitidas
+              AND (:exigirTipificacionActual = false OR l.codigoTipificacion IN :tipificacionesRechazo)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
@@ -1768,6 +1769,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaDesde") java.time.LocalDate fechaDesde,
             @Param("fechaHasta") java.time.LocalDate fechaHasta,
             @Param("etapasPermitidas") Collection<Etapa> etapasPermitidas,
+            @Param("exigirTipificacionActual") boolean exigirTipificacionActual,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
             @Param("sortBy") String sortBy,

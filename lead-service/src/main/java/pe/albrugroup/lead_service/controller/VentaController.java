@@ -103,6 +103,18 @@ public class VentaController {
         var leads = leadService.listarLeadsVentaRechazados(fechaDesde, fechaHasta, pageRequest, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
+
+    @GetMapping("/subsanables") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<PageResponse<LeadResponse>> listarLeadsVentaSubsanables(
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false) Long idEquipo,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = leadService.listarLeadsVentaSubsanables(fechaDesde, fechaHasta, pageRequest, idEquipo);
+        return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+
     // 3. Asignarse el lead, ahora la diferencia seria que el mismo backoffice se asigna lead si mismo
     // Una vez un backoffice se haga responsable de un lead, otro no podra hacerlo durante esa etapa.
     @PatchMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")

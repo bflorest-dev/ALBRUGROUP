@@ -440,6 +440,7 @@ class LeadServiceGtrGroupingTest {
                 eq(hasta),
                 anyCollection(),
                 eq(false),
+                eq(false),
                 anyCollection(),
                 eq("fechaRechazo"),
                 eq(true),
@@ -457,12 +458,66 @@ class LeadServiceGtrGroupingTest {
         verify(leadRepository).listarLeadsVentaRechazados(
                 eq(Accion.TIPIFICACION),
                 eq(Etapa.VENTA),
-                argThat(values -> values.size() == 2
-                        && values.contains("SUBSANABLE")
-                        && values.contains("NO RECUPERABLE")),
+                argThat(values -> values.size() == 1 && values.contains("NO RECUPERABLE")),
                 eq(desde),
                 eq(hasta),
                 eq(List.of(Etapa.VENTA, Etapa.PREVENTA)),
+                eq(false),
+                eq(false),
+                eq(List.of(-1L)),
+                eq("fechaRechazo"),
+                eq(true),
+                any(Pageable.class)
+        );
+    }
+
+    @Test
+    void listaSubsanablesVentaConLeadActualSubsanableYEventoDeVenta() {
+        LocalDate desde = LocalDate.of(2026, 8, 1);
+        LocalDate hasta = LocalDate.of(2026, 8, 24);
+        PageRequest pageRequest = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(12)
+                .sortBy("fechaRechazo")
+                .direction("desc")
+                .build();
+        LeadResponse row = LeadResponse.builder()
+                .id(11L)
+                .codigoTipificacion("SUBSANABLE")
+                .fechaRechazo(hasta)
+                .build();
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(leadRepository.listarLeadsVentaRechazados(
+                eq(Accion.TIPIFICACION),
+                eq(Etapa.VENTA),
+                anyCollection(),
+                eq(desde),
+                eq(hasta),
+                anyCollection(),
+                eq(true),
+                eq(false),
+                anyCollection(),
+                eq("fechaRechazo"),
+                eq(true),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of(row)));
+
+        var response = leadService.listarLeadsVentaSubsanables(desde, hasta, pageRequest, null);
+
+        assertThat(response.getContent())
+                .singleElement()
+                .satisfies(item -> {
+                    assertThat(item.getCodigoTipificacion()).isEqualTo("SUBSANABLE");
+                    assertThat(item.getFechaRechazo()).isEqualTo(hasta);
+                });
+        verify(leadRepository).listarLeadsVentaRechazados(
+                eq(Accion.TIPIFICACION),
+                eq(Etapa.VENTA),
+                argThat(values -> values.size() == 1 && values.contains("SUBSANABLE")),
+                eq(desde),
+                eq(hasta),
+                eq(List.of(Etapa.VENTA)),
+                eq(true),
                 eq(false),
                 eq(List.of(-1L)),
                 eq("fechaRechazo"),
@@ -503,6 +558,7 @@ class LeadServiceGtrGroupingTest {
                 eq(hasta),
                 anyCollection(),
                 eq(false),
+                eq(false),
                 anyCollection(),
                 eq("fechaRechazo"),
                 eq(true),
@@ -518,6 +574,7 @@ class LeadServiceGtrGroupingTest {
                 eq(desde),
                 eq(hasta),
                 eq(List.of(Etapa.VENTA, Etapa.PREVENTA)),
+                eq(false),
                 eq(false),
                 eq(List.of(-1L)),
                 eq("fechaRechazo"),

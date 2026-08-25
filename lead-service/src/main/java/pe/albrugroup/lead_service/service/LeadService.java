@@ -838,6 +838,43 @@ public class LeadService {
             PageRequest pageRequest,
             Long idEquipo
     ) {
+        return listarLeadsVentaPorFechaRechazo(
+                fechaDesde,
+                fechaHasta,
+                pageRequest,
+                idEquipo,
+                Set.of(TIPIFICACION_NO_RECUPERABLE),
+                List.of(Etapa.VENTA, Etapa.PREVENTA),
+                false
+        );
+    }
+
+    public PageResponse<LeadResponse> listarLeadsVentaSubsanables(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            PageRequest pageRequest,
+            Long idEquipo
+    ) {
+        return listarLeadsVentaPorFechaRechazo(
+                fechaDesde,
+                fechaHasta,
+                pageRequest,
+                idEquipo,
+                Set.of(TIPIFICACION_SUBSANABLE),
+                List.of(Etapa.VENTA),
+                true
+        );
+    }
+
+    private PageResponse<LeadResponse> listarLeadsVentaPorFechaRechazo(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            PageRequest pageRequest,
+            Long idEquipo,
+            Set<String> tipificaciones,
+            List<Etapa> etapasPermitidas,
+            boolean exigirTipificacionActual
+    ) {
         LocalDate hasta = fechaHasta == null ? OperationalDateTime.today() : fechaHasta;
         LocalDate desde = fechaDesde == null ? hasta.minusDays(30) : fechaDesde;
         if (desde.isAfter(hasta)) {
@@ -856,10 +893,11 @@ public class LeadService {
         Page<LeadResponse> leads = leadRepository.listarLeadsVentaRechazados(
                 Accion.TIPIFICACION,
                 Etapa.VENTA,
-                TIPIFICACIONES_RECHAZO_VENTA,
+                tipificaciones,
                 desde,
                 hasta,
-                List.of(Etapa.VENTA, Etapa.PREVENTA),
+                etapasPermitidas,
+                exigirTipificacionActual,
                 equipos.filtrar(),
                 equipos.ids(),
                 sortBy,

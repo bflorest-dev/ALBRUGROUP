@@ -6,7 +6,7 @@
     <div class="hero-row">
       <div>
         <span class="eyebrow">VENTA</span>
-        <h1>{{ section() === 'programados' ? 'Programados Backoffice' : section() === 'rechazados' ? 'Rechazados Backoffice' : 'Plataforma Backoffice' }}</h1>
+        <h1>{{ section() === 'programados' ? 'Programados Backoffice' : section() === 'subsanables' ? 'Subsanables Backoffice' : section() === 'rechazados' ? 'Rechazados Backoffice' : 'Plataforma Backoffice' }}</h1>
         <p>{{ isReconciling() ? 'Sincronizando cambios en tiempo real' : 'Bandeja operativa de leads en venta' }}</p>
       </div>
 
@@ -208,7 +208,7 @@
     >
       <ng-template #header>
         <tr>
-          <th class="col-fecha">{{ (section() === 'rechazados' && !isSearchMode()) ? 'Fecha rechazo' : 'Fecha ingreso' }}</th>
+          <th class="col-fecha">{{ (isFechaRechazoSection() && !isSearchMode()) ? 'Fecha rechazo' : 'Fecha ingreso' }}</th>
           <th class="col-lead">Lead</th>
           <th class="col-documento">Documento</th>
           <th class="col-proveedor">Proveedor</th>
@@ -250,7 +250,7 @@
         <tr [class.row-new]="row.isNew">
           <td class="col-fecha">
             <div class="date-stack">
-              @if (section() === 'rechazados' && !isSearchMode()) {
+              @if (isFechaRechazoSection() && !isSearchMode()) {
                 <span>{{ displayDateOnly(row.fechaRechazo) }}</span>
               } @else {
                 <span>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
@@ -313,19 +313,7 @@
             </div>
           </td>
           <td class="col-actions">
-            @if (isSearchMode() || section() === 'plataforma' || section() === 'programados') {
-              <button
-                pButton
-                type="button"
-                [icon]="isLeadActionLoading(row.id) ? '' : 'pi pi-briefcase'"
-                label="Gestionar"
-                size="small"
-                [severity]="row.idAsesorAsignado && !isMine(row) ? 'warn' : undefined"
-                [disabled]="isSaving() || leadActionId() !== null || !canMutateOperationalData()"
-                [loading]="isLeadActionLoading(row.id)"
-                (click)="tomarLead(row)"
-              ></button>
-            } @else if (section() === 'rechazados' && canManageRejectedLead(row)) {
+            @if (isSearchMode() || section() === 'plataforma' || section() === 'programados' || section() === 'subsanables') {
               <button
                 pButton
                 type="button"
@@ -383,6 +371,8 @@
                   No hay leads disponibles en VENTA.
                 } @else if (section() === 'programados') {
                   No hay leads programados pendientes.
+                } @else if (section() === 'subsanables') {
+                  No hay leads subsanables en este rango.
                 } @else {
                   No hay leads rechazados en este rango.
                 }

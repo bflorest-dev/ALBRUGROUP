@@ -256,6 +256,15 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'admin/plataformas/equipos/:idEquipo/backoffice/subsanables',
+    component: BackofficeWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      section: 'subsanables'
+    }
+  },
+  {
     path: 'admin/plataformas/equipos/:idEquipo/backoffice/rechazados',
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
@@ -426,6 +435,15 @@ export const PLATFORM_ROUTES: Routes = [
     data: {
       roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
       section: 'programados'
+    }
+  },
+  {
+    path: 'backoffice/subsanables',
+    component: BackofficeWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
+      section: 'subsanables'
     }
   },
   {
