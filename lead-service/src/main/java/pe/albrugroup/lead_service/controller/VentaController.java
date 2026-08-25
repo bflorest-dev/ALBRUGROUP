@@ -26,6 +26,7 @@ import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadVentaAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
@@ -112,6 +113,17 @@ public class VentaController {
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
         var leads = leadService.listarLeadsVentaSubsanables(fechaDesde, fechaHasta, pageRequest, idEquipo);
+        return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+
+    @GetMapping("/instalados") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<PageResponse<LeadInstaladoBackofficeResponse>> listarLeadsVentaInstalados(
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false) Long idEquipo,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = leadService.listarLeadsVentaInstalados(fechaDesde, fechaHasta, pageRequest, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 

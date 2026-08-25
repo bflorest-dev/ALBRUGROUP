@@ -6,7 +6,7 @@
     <div class="hero-row">
       <div>
         <span class="eyebrow">VENTA</span>
-        <h1>{{ section() === 'programados' ? 'Programados Backoffice' : section() === 'subsanables' ? 'Subsanables Backoffice' : section() === 'rechazados' ? 'Rechazados Backoffice' : 'Plataforma Backoffice' }}</h1>
+        <h1>{{ section() === 'programados' ? 'Programados Backoffice' : section() === 'subsanables' ? 'Subsanables Backoffice' : section() === 'rechazados' ? 'Rechazados Backoffice' : section() === 'instalados' ? 'Instalados Backoffice' : 'Plataforma Backoffice' }}</h1>
         <p>{{ isReconciling() ? 'Sincronizando cambios en tiempo real' : 'Bandeja operativa de leads en venta' }}</p>
       </div>
 
@@ -208,12 +208,12 @@
     >
       <ng-template #header>
         <tr>
-          <th class="col-fecha">{{ (isFechaRechazoSection() && !isSearchMode()) ? 'Fecha rechazo' : 'Fecha ingreso' }}</th>
+          <th class="col-fecha">{{ (isFechaInstalacionSection() && !isSearchMode()) ? 'Fecha instalacion' : (isFechaRechazoSection() && !isSearchMode()) ? 'Fecha rechazo' : 'Fecha ingreso' }}</th>
           <th class="col-lead">Lead</th>
           <th class="col-documento">Documento</th>
           <th class="col-proveedor">Proveedor</th>
           <th class="col-estado">Estado</th>
-          <th class="col-asignado">Ultimo Gestor</th>
+          <th class="col-asignado">{{ (isFechaInstalacionSection() && !isSearchMode()) ? 'Instalado por' : 'Ultimo Gestor' }}</th>
           <th class="col-plan">Plan</th>
           <th class="col-tipificacion">Tipificacion</th>
           @if (showSecSotColumn()) {
@@ -250,7 +250,9 @@
         <tr [class.row-new]="row.isNew">
           <td class="col-fecha">
             <div class="date-stack">
-              @if (isFechaRechazoSection() && !isSearchMode()) {
+              @if (isFechaInstalacionSection() && !isSearchMode()) {
+                <span>{{ displayDateOnly(row.fechaInstalacion) }}</span>
+              } @else if (isFechaRechazoSection() && !isSearchMode()) {
                 <span>{{ displayDateOnly(row.fechaRechazo) }}</span>
               } @else {
                 <span>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
@@ -276,8 +278,14 @@
               {{ display(row.nombreProveedorSnapshot) }}
             }
           </td>
-          <td class="col-estado"><p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" /></td>
-          <td class="col-asignado">{{ assignedShortName(row.nombreAsesorUltimaGestion) }}</td>
+          <td class="col-estado">
+            @if (isFechaInstalacionSection() && !isSearchMode()) {
+              <p-tag [severity]="postventaStatusSeverity(row.estadoClientePostventa)" [value]="display(row.estadoClientePostventa)" />
+            } @else {
+              <p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" />
+            }
+          </td>
+          <td class="col-asignado">{{ assignedShortName((isFechaInstalacionSection() && !isSearchMode()) ? row.nombreAsesorInstalador : row.nombreAsesorUltimaGestion) }}</td>
           <td class="col-plan">
             <app-lead-plan-summary
               [planName]="row.nombrePlanSnapshot"
@@ -325,7 +333,7 @@
                 [loading]="isLeadActionLoading(row.id)"
                 (click)="tomarLead(row)"
               ></button>
-            } @else if (section() === 'rechazados') {
+            } @else if (section() === 'rechazados' || section() === 'instalados') {
               <p-tag severity="secondary" value="Solo consulta" />
             } @else {
               <button
@@ -373,6 +381,8 @@
                   No hay leads programados pendientes.
                 } @else if (section() === 'subsanables') {
                   No hay leads subsanables en este rango.
+                } @else if (section() === 'instalados') {
+                  No hay leads instalados en este rango.
                 } @else {
                   No hay leads rechazados en este rango.
                 }

@@ -9,6 +9,7 @@ import {
   LeadContextoLookupResponse,
   LeadDatosPreventaRequest,
   LeadDetalleResponse,
+  LeadInstaladoBackofficeResponse,
   LeadDireccionRequest,
   LeadOfertaComercialRequest,
   LeadPage,
@@ -120,6 +121,24 @@ export class BackofficeLeadService {
       params = params.set('idEquipo', idEquipo);
     }
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/subsanables`, { params });
+  }
+
+  listarInstalados(
+    query: PageQuery,
+    filters: LeadRechazadosFilters,
+    idEquipo?: number | null
+  ): Observable<LeadPage<LeadInstaladoBackofficeResponse>> {
+    let params = this.pageParams(query);
+    if (filters.fechaDesde) {
+      params = params.set('fechaDesde', filters.fechaDesde);
+    }
+    if (filters.fechaHasta) {
+      params = params.set('fechaHasta', filters.fechaHasta);
+    }
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<LeadPage<LeadInstaladoBackofficeResponse>>(`${this.leadUrl}/venta/instalados`, { params });
   }
 
   tomarLead(idLead: number, request: LeadTomaVentaRequest = {}): Observable<void> {

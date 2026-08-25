@@ -10,11 +10,13 @@ import org.springframework.data.domain.Pageable;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
+import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
@@ -581,6 +583,81 @@ class LeadServiceGtrGroupingTest {
                 eq(true),
                 any(Pageable.class)
         );
+    }
+
+    @Test
+    void listaInstaladosVentaConEventoInstaladoYEstadoPostventa() {
+        LocalDate desde = LocalDate.of(2026, 8, 1);
+        LocalDate hasta = LocalDate.of(2026, 8, 24);
+        PageRequest pageRequest = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(12)
+                .sortBy("fechaInstalacion")
+                .direction("desc")
+                .build();
+        LeadInstaladoBackofficeResponse row = LeadInstaladoBackofficeResponse.builder()
+                .idLead(12L)
+                .lead("970329171")
+                .fechaInstalacion(hasta)
+                .fechaTipificacionInstalado(Instant.parse("2026-08-24T15:00:00Z"))
+                .idAsesorInstalador(90L)
+                .nombreAsesorInstalador("Backoffice Uno")
+                .estadoClientePostventa(EstadoClientePostventa.SUSPENDIDO)
+                .etapaActual(Etapa.POSTVENTA)
+                .build();
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(leadRepository.listarLeadsVentaInstalados(
+                eq(Accion.TIPIFICACION),
+                eq(Etapa.VENTA),
+                eq("INSTALADO"),
+                eq(desde),
+                eq(hasta),
+                anyCollection(),
+                eq(false),
+                anyCollection(),
+                eq("fechaInstalacion"),
+                eq(true),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of(row)));
+
+        var response = leadService.listarLeadsVentaInstalados(desde, hasta, pageRequest, null);
+
+        assertThat(response.getContent())
+                .singleElement()
+                .satisfies(item -> {
+                    assertThat(item.getFechaInstalacion()).isEqualTo(hasta);
+                    assertThat(item.getIdAsesorInstalador()).isEqualTo(90L);
+                    assertThat(item.getNombreAsesorInstalador()).isEqualTo("Backoffice Uno");
+                    assertThat(item.getEstadoClientePostventa()).isEqualTo(EstadoClientePostventa.SUSPENDIDO);
+                });
+        verify(leadRepository).listarLeadsVentaInstalados(
+                eq(Accion.TIPIFICACION),
+                eq(Etapa.VENTA),
+                eq("INSTALADO"),
+                eq(desde),
+                eq(hasta),
+                eq(List.of(Etapa.POSTVENTA, Etapa.COBRANZA)),
+                eq(false),
+                eq(List.of(-1L)),
+                eq("fechaInstalacion"),
+                eq(true),
+                any(Pageable.class)
+        );
+    }
+
+    @Test
+    void rechazaRangoInvalidoEnBandejaInstaladosVenta() {
+        PageRequest pageRequest = PageRequest.builder()
+                .sortBy("fechaInstalacion")
+                .direction("desc")
+                .build();
+
+        assertThatThrownBy(() -> leadService.listarLeadsVentaInstalados(
+                LocalDate.of(2026, 8, 24),
+                LocalDate.of(2026, 8, 1),
+                pageRequest,
+                null
+        )).hasMessageContaining("fecha de inicio");
     }
 
     @Test

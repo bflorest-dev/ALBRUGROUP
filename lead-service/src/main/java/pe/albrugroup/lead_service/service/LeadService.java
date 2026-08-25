@@ -48,6 +48,7 @@ import pe.albrugroup.lead_service.entity.response.LeadAsignacionMasivaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionResultadoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAdicionalDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPlanDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPromocionDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
@@ -180,6 +181,7 @@ public class LeadService {
     private static final ComportamientoTipificacion COMPORTAMIENTO_CIERRE_BAJA_POSTVENTA =
             ComportamientoTipificacion.CIERRA_PERIODO_BAJA;
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
+    private static final String TIPIFICACION_INSTALADO = "INSTALADO";
     private static final String TIPIFICACION_SUBSANABLE = "SUBSANABLE";
     private static final String TIPIFICACION_NO_RECUPERABLE = "NO RECUPERABLE";
     private static final Set<String> TIPIFICACIONES_RECHAZO_VENTA = Set.of(
@@ -241,6 +243,9 @@ public class LeadService {
     );
     private static final Set<String> LEAD_RECHAZADOS_VENTA_SORT_FIELDS = Set.of(
             "fechaRechazo", "lastEntryAt", "createdAt", "lead", "estado"
+    );
+    private static final Set<String> LEAD_INSTALADOS_VENTA_SORT_FIELDS = Set.of(
+            "fechaInstalacion", "fechaTipificacionInstalado", "createdAt", "lead", "estadoClientePostventa"
     );
     // Roles que pueden figurar en el ranking de asesores GTR. Se excluyen backoffice, migración y
     // cualquier otro rol que haya tocado leads de PREVENTA sin ser parte de la operación de ventas/GTR.
@@ -906,6 +911,51 @@ public class LeadService {
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
         return PageResponse.from(leads);
+    }
+
+    public PageResponse<LeadInstaladoBackofficeResponse> listarLeadsVentaInstalados(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            PageRequest pageRequest,
+            Long idEquipo
+    ) {
+        LocalDate hasta = fechaHasta == null ? OperationalDateTime.today() : fechaHasta;
+        LocalDate desde = fechaDesde == null ? hasta.minusDays(30) : fechaDesde;
+        if (desde.isAfter(hasta)) {
+            throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha final");
+        }
+
+        String sortBy = "createdAt".equals(pageRequest.getSortBy()) ? "fechaInstalacion" : pageRequest.getSortBy();
+        boolean sortDesc = "createdAt".equals(pageRequest.getSortBy())
+                && "asc".equalsIgnoreCase(pageRequest.getDirection())
+                || LeadOrderingRules.isDesc(pageRequest);
+        LeadOrderingRules.validarDirection(pageRequest.getDirection());
+        if (!LEAD_INSTALADOS_VENTA_SORT_FIELDS.contains(sortBy)) {
+            throw new BadRequestException("Campo de ordenamiento no permitido: " + pageRequest.getSortBy());
+        }
+
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        Page<LeadInstaladoBackofficeResponse> leads = leadRepository.listarLeadsVentaInstalados(
+                Accion.TIPIFICACION,
+                Etapa.VENTA,
+                TIPIFICACION_INSTALADO,
+                desde,
+                hasta,
+                List.of(Etapa.POSTVENTA, Etapa.COBRANZA),
+                equipos.filtrar(),
+                equipos.ids(),
+                sortBy,
+                sortDesc,
+                org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
+        );
+        leads.getContent().forEach(this::normalizarEstadoClienteInstalado);
+        return PageResponse.from(leads);
+    }
+
+    private void normalizarEstadoClienteInstalado(LeadInstaladoBackofficeResponse lead) {
+        if (lead.getEstadoClientePostventa() == null) {
+            lead.setEstadoClientePostventa(EstadoClientePostventa.ACTIVO);
+        }
     }
 
     public PageResponse<LeadAsesorVentasResponse> listarBandejaAsesorVentas(PageRequest pageRequest) {

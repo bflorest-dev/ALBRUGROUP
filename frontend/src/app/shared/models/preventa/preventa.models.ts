@@ -291,6 +291,23 @@ export interface LeadVentaResponse {
   ultimaTipificacionAt?: string | null;
 }
 
+export interface LeadInstaladoBackofficeResponse {
+  idLead: number;
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
+  numeroDocumento?: string | null;
+  nombreCliente?: string | null;
+  proveedor?: string | null;
+  plan?: string | null;
+  fechaInstalacion?: string | null;
+  fechaTipificacionInstalado?: string | null;
+  idAsesorInstalador?: number | null;
+  nombreAsesorInstalador?: string | null;
+  estadoClientePostventa?: string | null;
+  etapaActual?: Etapa | string | null;
+}
+
 export interface LeadGtrMetricasResponse {
   nuevos: number;
   sinGestionar: number;

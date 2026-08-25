@@ -42,6 +42,7 @@ import {
   LeadGtrGroupItemResponse,
   LeadContextoLookupResponse,
   LeadDetalleResponse,
+  LeadInstaladoBackofficeResponse,
   LeadVentaGroupFilter,
   LeadVentaGroupType,
   LeadVentaGroupsResponse,
@@ -54,9 +55,9 @@ import {
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { BackofficeLeadService, LeadRechazadosFilters } from '../../services/backoffice-lead.service';
 
-type BackofficeSection = 'plataforma' | 'programados' | 'subsanables' | 'rechazados';
+type BackofficeSection = 'plataforma' | 'programados' | 'subsanables' | 'rechazados' | 'instalados';
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
-type BackofficeSortField = 'fechaIngresoEtapa' | 'fechaRechazo' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado';
+type BackofficeSortField = 'fechaIngresoEtapa' | 'fechaRechazo' | 'fechaInstalacion' | 'fechaTipificacionInstalado' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado' | 'estadoClientePostventa';
 type BackofficeSortDirection = 'asc' | 'desc';
 type OrganizationFilterOption = { label: string; value: string; codigo?: string; descripcion?: string; sinValor?: boolean; rawValue?: string | null };
 type VisualLeadVenta = LeadVentaResponse & {
@@ -69,6 +70,12 @@ type VisualLeadVenta = LeadVentaResponse & {
   fechaGroupKey?: string;
   fechaGroupLabel?: string;
   fechaGroupSortKey?: string;
+  fechaInstalacion?: string | null;
+  fechaTipificacionInstalado?: string | null;
+  idAsesorInstalador?: number | null;
+  nombreAsesorInstalador?: string | null;
+  estadoClientePostventa?: string | null;
+  etapaActual?: string | null;
 };
 type AdicionalSeleccionado = { idAdicional: number; cantidad: number };
 type OfertaProviderOption = { id: number; nombre: string };
@@ -139,6 +146,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private programadosRequestSeq = 0;
   private subsanablesRequestSeq = 0;
   private rechazadosRequestSeq = 0;
+  private instaladosRequestSeq = 0;
   private domicilioResolveSeq = 0;
   private initialized = false;
   private initializeInFlight = false;
@@ -157,6 +165,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly programadosRows = signal<VisualLeadVenta[]>([]);
   protected readonly subsanablesRows = signal<VisualLeadVenta[]>([]);
   protected readonly rechazadosRows = signal<VisualLeadVenta[]>([]);
+  protected readonly instaladosRows = signal<VisualLeadVenta[]>([]);
   protected readonly plataformaGroupingMode = signal<BackofficeGroupMode>('SIN_AGRUPAR');
   protected readonly plataformaSortField = signal<BackofficeSortField>('fechaIngresoEtapa');
   protected readonly plataformaSortDirection = signal<BackofficeSortDirection>('desc');
@@ -174,10 +183,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly totalProgramados = signal(0);
   protected readonly totalSubsanables = signal(0);
   protected readonly totalRechazados = signal(0);
+  protected readonly totalInstalados = signal(0);
   protected readonly pagePlataforma = signal(0);
   protected readonly pageProgramados = signal(0);
   protected readonly pageSubsanables = signal(0);
   protected readonly pageRechazados = signal(0);
+  protected readonly pageInstalados = signal(0);
   // Catálogo del modal de tipificación: es el del equipo del lead abierto (se trae por lead).
   protected readonly catalogo = signal<CatalogoResponse | null>(null);
   // Catálogo AGREGADO cross-equipo para la bandeja (paleta de color y filtro por código, ambos por
@@ -241,6 +252,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly rechazadosPeriodo = signal<MetricsPeriodo>('dia');
   private readonly rechazadosDia = signal<string | null>(null);
   private readonly rechazadosHasta = signal<string | null>(null);
+  private readonly instaladosPeriodo = signal<MetricsPeriodo>('dia');
+  private readonly instaladosDia = signal<string | null>(null);
+  private readonly instaladosHasta = signal<string | null>(null);
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly skeletonRows = Array.from({ length: 8 });
@@ -443,6 +457,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'programados': return 'Leads programados';
       case 'subsanables': return 'Leads subsanables';
       case 'rechazados': return 'Leads rechazados';
+      case 'instalados': return 'Leads instalados';
       default: return 'Leads disponibles';
     }
   });
@@ -451,6 +466,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'programados': return 'Gestiona leads programados por fecha y hora cercana.';
       case 'subsanables': return 'Revisa leads subsanables por fecha de rechazo.';
       case 'rechazados': return 'Revisa leads rechazados por fecha de rechazo.';
+      case 'instalados': return 'Revisa leads instalados y su estado actual en Postventa.';
       default: return 'Gestiona leads en venta y revisa quien los tiene asignados.';
     }
   });
@@ -462,14 +478,24 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return 'SIN_AGRUPAR';
   });
   protected readonly activeSortField = computed<BackofficeSortField>(() =>
-    this.section() === 'programados' ? 'lastEntryAt' : this.isFechaRechazoSection() ? 'fechaRechazo' : this.plataformaSortField()
+    this.section() === 'programados'
+      ? 'lastEntryAt'
+      : this.isFechaRechazoSection()
+        ? 'fechaRechazo'
+        : this.isFechaInstalacionSection()
+          ? 'fechaInstalacion'
+          : this.plataformaSortField()
   );
   protected readonly activeSortDirection = computed<BackofficeSortDirection>(() =>
-    this.section() === 'programados' || this.isFechaRechazoSection() ? 'desc' : this.plataformaSortDirection()
+    this.section() === 'programados' || this.isFechaRechazoSection() || this.isFechaInstalacionSection()
+      ? 'desc'
+      : this.plataformaSortDirection()
   );
   protected readonly sortDirectionOptions = computed<Array<{ label: string; value: BackofficeSortDirection }>>(() =>
     this.activeSortField() === 'fechaIngresoEtapa'
     || this.activeSortField() === 'fechaRechazo'
+    || this.activeSortField() === 'fechaInstalacion'
+    || this.activeSortField() === 'fechaTipificacionInstalado'
     || this.activeSortField() === 'lastEntryAt'
     || this.activeSortField() === 'createdAt'
       ? [
@@ -545,6 +571,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'rechazados':
         rows = this.rechazadosRows();
         break;
+      case 'instalados':
+        rows = this.instaladosRows();
+        break;
       default:
         rows = this.plataformaRows().map((row) => this.withOrganizationGroup(row, this.plataformaGroupingMode()));
         break;
@@ -563,6 +592,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'programados': return this.totalProgramados();
       case 'subsanables': return this.totalSubsanables();
       case 'rechazados': return this.totalRechazados();
+      case 'instalados': return this.totalInstalados();
       default: return this.totalPlataforma();
     }
   });
@@ -574,6 +604,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'programados': return this.pageProgramados();
       case 'subsanables': return this.pageSubsanables();
       case 'rechazados': return this.pageRechazados();
+      case 'instalados': return this.pageInstalados();
       default: return this.pagePlataforma();
     }
   });
@@ -584,6 +615,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'programados': return this.programadosPeriodo();
       case 'subsanables': return this.subsanablesPeriodo();
       case 'rechazados': return this.rechazadosPeriodo();
+      case 'instalados': return this.instaladosPeriodo();
       default: return this.plataformaPeriodo();
     }
   });
@@ -592,6 +624,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'programados': return this.programadosDia();
       case 'subsanables': return this.subsanablesDia();
       case 'rechazados': return this.rechazadosDia();
+      case 'instalados': return this.instaladosDia();
       default: return this.plataformaDia();
     }
   });
@@ -600,6 +633,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'programados': return this.programadosHasta();
       case 'subsanables': return this.subsanablesHasta();
       case 'rechazados': return this.rechazadosHasta();
+      case 'instalados': return this.instaladosHasta();
       default: return this.plataformaHasta();
     }
   });
@@ -646,14 +680,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.programadosRows.set([]);
         this.subsanablesRows.set([]);
         this.rechazadosRows.set([]);
+        this.instaladosRows.set([]);
         this.totalPlataforma.set(0);
         this.totalProgramados.set(0);
         this.totalSubsanables.set(0);
         this.totalRechazados.set(0);
+        this.totalInstalados.set(0);
         this.pagePlataforma.set(0);
         this.pageProgramados.set(0);
         this.pageSubsanables.set(0);
         this.pageRechazados.set(0);
+        this.pageInstalados.set(0);
       }
       this.adminEquipoId.set(nextAdminEquipoId);
       this.section.set(nextSection);
@@ -705,7 +742,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.refreshPlataforma(false),
         this.refreshProgramados(false),
         this.refreshSubsanables(false),
-        this.refreshRechazados(false)
+        this.refreshRechazados(false),
+        this.refreshInstalados(false)
       ]);
       this.initialized = true;
       this.operationalGate.markActivated();
@@ -737,6 +775,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         await this.refreshSubsanables(true);
       } else if (this.section() === 'rechazados') {
         await this.refreshRechazados(true);
+      } else if (this.section() === 'instalados') {
+        await this.refreshInstalados(true);
       } else {
         await this.refreshPlataforma(true);
       }
@@ -1162,6 +1202,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.refreshRechazados(false);
       return;
     }
+    if (this.section() === 'instalados') {
+      this.pageInstalados.set(pageNumber);
+      await this.refreshInstalados(false);
+      return;
+    }
     this.pagePlataforma.set(pageNumber);
     await this.refreshPlataforma(false);
   }
@@ -1288,6 +1333,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         if (periodo !== 'dia') { this.rechazadosDia.set(null); this.rechazadosHasta.set(null); }
         this.pageRechazados.set(0);
         break;
+      case 'instalados':
+        this.instaladosPeriodo.set(periodo);
+        if (periodo !== 'dia') { this.instaladosDia.set(null); this.instaladosHasta.set(null); }
+        this.pageInstalados.set(0);
+        break;
       default:
         this.plataformaPeriodo.set(periodo);
         if (periodo !== 'dia') { this.plataformaDia.set(null); this.plataformaHasta.set(null); }
@@ -1320,6 +1370,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.rechazadosDia.set(rango.desde);
         this.rechazadosHasta.set(rango.hasta);
         this.pageRechazados.set(0);
+        break;
+      case 'instalados':
+        this.instaladosPeriodo.set('dia');
+        this.instaladosDia.set(rango.desde);
+        this.instaladosHasta.set(rango.hasta);
+        this.pageInstalados.set(0);
         break;
       default:
         this.plataformaPeriodo.set('dia');
@@ -1496,6 +1552,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return 'info';
   }
 
+  protected postventaStatusSeverity(estado: string | null | undefined): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+    const normalized = this.normalizedCode(estado);
+    if (normalized === 'ACTIVO') return 'success';
+    if (normalized === 'SUSPENDIDO') return 'warn';
+    if (normalized === 'BAJA') return 'danger';
+    return 'secondary';
+  }
+
   protected onTipificacionSelected(codigo: string | null): void {
     this.selectedTipificacionCode.set(codigo ?? '');
     this.selectedSubtipificacionCode.set('');
@@ -1624,7 +1688,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private resolveSection(value: unknown): BackofficeSection {
-    return value === 'programados' || value === 'subsanables' || value === 'rechazados' ? value : 'plataforma';
+    return value === 'programados' || value === 'subsanables' || value === 'rechazados' || value === 'instalados'
+      ? value
+      : 'plataforma';
   }
 
   private toBackendDate(value: Date | string | null): string {
@@ -1716,6 +1782,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.refreshProgramados(true),
         this.refreshSubsanables(true),
         this.refreshRechazados(true),
+        this.refreshInstalados(true),
         this.isSearchMode() ? this.refreshSearch() : Promise.resolve()
       ]);
       if (changedLeadId && this.selectedLeadId() === changedLeadId) {
@@ -1744,6 +1811,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     if (this.section() === 'rechazados') {
       await this.refreshRechazados(silent);
+      return;
+    }
+    if (this.section() === 'instalados') {
+      await this.refreshInstalados(silent);
       return;
     }
     await this.refreshPlataforma(silent);
@@ -1845,6 +1916,32 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.totalRechazados.set(page.totalElements);
     this.rechazadosRows.set(
       this.mergeVisualRows(previous, page.content, this.shouldAnimateRechazadosRefresh(silent, previous))
+    );
+  }
+
+  private async refreshInstalados(silent: boolean): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    const requestSeq = ++this.instaladosRequestSeq;
+    const requestKey = this.instaladosRequestKey();
+    const previous = this.instaladosRows();
+    const query = this.currentQuery(this.pageInstalados(), 'instalados');
+    const filters = this.instaladosFilters();
+    const adminEquipoId = this.adminEquipoId();
+    const page = await firstValueFrom(
+      this.leadService.listarInstalados(query, filters, adminEquipoId)
+    );
+    if (requestSeq !== this.instaladosRequestSeq || requestKey !== this.instaladosRequestKey()) {
+      return;
+    }
+    this.totalInstalados.set(page.totalElements);
+    this.instaladosRows.set(
+      this.mergeVisualRows(
+        previous,
+        page.content.map((row) => this.toInstaladoVisualRow(row)),
+        this.shouldAnimateInstaladosRefresh(silent, previous)
+      )
     );
   }
 
@@ -2130,13 +2227,23 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return {
       pageNumber,
       pageSize: this.pageSize,
-      sortBy: section === 'plataforma' ? this.plataformaSortField() : this.isFechaRechazoSection(section) ? 'fechaRechazo' : 'lastEntryAt',
+      sortBy: section === 'plataforma'
+        ? this.plataformaSortField()
+        : this.isFechaRechazoSection(section)
+          ? 'fechaRechazo'
+          : this.isFechaInstalacionSection(section)
+            ? 'fechaInstalacion'
+            : 'lastEntryAt',
       direction: section === 'plataforma' ? this.plataformaSortDirection() : 'desc'
     };
   }
 
   protected isFechaRechazoSection(section = this.section()): boolean {
     return section === 'subsanables' || section === 'rechazados';
+  }
+
+  protected isFechaInstalacionSection(section = this.section()): boolean {
+    return section === 'instalados';
   }
 
   private plataformaRequestKey(): string {
@@ -2180,6 +2287,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     });
   }
 
+  private instaladosRequestKey(): string {
+    return JSON.stringify({
+      section: this.section(),
+      equipo: this.adminEquipoId(),
+      page: this.pageInstalados(),
+      query: this.currentQuery(this.pageInstalados(), 'instalados'),
+      filters: this.instaladosFilters()
+    });
+  }
+
   private plataformaRange(): LeadRechazadosFilters {
     const range = resolveMetricsRange(this.plataformaPeriodo(), this.plataformaDia(), this.plataformaHasta());
     return { fechaDesde: range.desde ?? null, fechaHasta: range.hasta ?? null };
@@ -2200,6 +2317,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return { fechaDesde: range.desde ?? null, fechaHasta: range.hasta ?? null };
   }
 
+  private instaladosFilters(): LeadRechazadosFilters {
+    const range = resolveMetricsRange(this.instaladosPeriodo(), this.instaladosDia(), this.instaladosHasta());
+    return { fechaDesde: range.desde ?? null, fechaHasta: range.hasta ?? null };
+  }
+
   private shouldAnimatePlataformaRefresh(silent: boolean, previous: VisualLeadVenta[]): boolean {
     return silent && this.section() === 'plataforma' && this.pagePlataforma() === 0 && previous.length > 0;
   }
@@ -2214,6 +2336,35 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private shouldAnimateRechazadosRefresh(silent: boolean, previous: VisualLeadVenta[]): boolean {
     return silent && this.section() === 'rechazados' && this.pageRechazados() === 0 && previous.length > 0;
+  }
+
+  private shouldAnimateInstaladosRefresh(silent: boolean, previous: VisualLeadVenta[]): boolean {
+    return silent && this.section() === 'instalados' && this.pageInstalados() === 0 && previous.length > 0;
+  }
+
+  private toInstaladoVisualRow(row: LeadInstaladoBackofficeResponse): VisualLeadVenta {
+    return {
+      id: row.idLead,
+      prefijo: row.prefijo ?? '',
+      lead: row.lead ?? '',
+      usermeta: row.usermeta ?? null,
+      etapa: row.etapaActual ?? null,
+      etapaActual: row.etapaActual ?? null,
+      estadoSeguimiento: row.estadoClientePostventa ?? null,
+      numeroDocumentoTitularServicio: row.numeroDocumento ?? null,
+      nombreProveedorSnapshot: row.proveedor ?? null,
+      nombrePlanSnapshot: row.plan ?? null,
+      codigoTipificacion: 'INSTALADO',
+      fechaInstalacion: row.fechaInstalacion ?? null,
+      fechaTipificacionInstalado: row.fechaTipificacionInstalado ?? null,
+      idAsesorInstalador: row.idAsesorInstalador ?? null,
+      nombreAsesorInstalador: row.nombreAsesorInstalador ?? null,
+      estadoClientePostventa: row.estadoClientePostventa ?? null,
+      lastEntryAt: row.fechaTipificacionInstalado ?? null,
+      createdAt: row.fechaTipificacionInstalado ?? null,
+      fechaUltimaGestion: row.fechaTipificacionInstalado ?? null,
+      nombreAsesorUltimaGestion: row.nombreAsesorInstalador ?? null
+    };
   }
 
   private patchForms(detail: LeadDetalleResponse): void {
@@ -2479,15 +2630,25 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return -(year * 12 + month);
   }
 
-  private compareRows(left: LeadVentaResponse, right: LeadVentaResponse, field: BackofficeSortField, direction: BackofficeSortDirection): number {
+  private compareRows(left: VisualLeadVenta, right: VisualLeadVenta, field: BackofficeSortField, direction: BackofficeSortDirection): number {
     const multiplier = direction === 'asc' ? 1 : -1;
-    if (field === 'fechaIngresoEtapa' || field === 'fechaRechazo' || field === 'lastEntryAt' || field === 'createdAt') {
+    if (
+      field === 'fechaIngresoEtapa'
+      || field === 'fechaRechazo'
+      || field === 'fechaInstalacion'
+      || field === 'fechaTipificacionInstalado'
+      || field === 'lastEntryAt'
+      || field === 'createdAt'
+    ) {
       return (this.rowDateValue(left, field) - this.rowDateValue(right, field)) * multiplier;
     }
     return this.rowTextValue(left, field).localeCompare(this.rowTextValue(right, field)) * multiplier;
   }
 
-  private rowDateValue(row: LeadVentaResponse, field: 'fechaIngresoEtapa' | 'fechaRechazo' | 'lastEntryAt' | 'createdAt'): number {
+  private rowDateValue(
+    row: VisualLeadVenta,
+    field: 'fechaIngresoEtapa' | 'fechaRechazo' | 'fechaInstalacion' | 'fechaTipificacionInstalado' | 'lastEntryAt' | 'createdAt'
+  ): number {
     const raw = field === 'fechaIngresoEtapa' ? this.fechaIngresoEtapaValue(row) : row[field];
     const time = raw ? new Date(raw).getTime() : 0;
     return Number.isFinite(time) ? time : 0;
@@ -2511,7 +2672,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return codigo === 'SUBIDO' || codigo === 'INGRESADO';
   }
 
-  private rowTextValue(row: LeadVentaResponse, field: BackofficeSortField): string {
+  private rowTextValue(row: VisualLeadVenta, field: BackofficeSortField): string {
     if (field === 'estado') {
       return String(row.estadoSeguimiento ?? '');
     }
@@ -2527,6 +2688,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
           this.programadosRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
           this.subsanablesRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
           this.rechazadosRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
+          this.instaladosRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
           this.newRowTimers.delete(id);
       }, 3500);
       this.newRowTimers.set(id, timerId);
@@ -2741,6 +2903,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.programadosRows.set([]);
     this.subsanablesRows.set([]);
     this.rechazadosRows.set([]);
+    this.instaladosRows.set([]);
     this.detail.set(null);
     this.eventos.set([]);
     this.selectedLeadId.set(null);
@@ -2748,10 +2911,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.totalProgramados.set(0);
     this.totalSubsanables.set(0);
     this.totalRechazados.set(0);
+    this.totalInstalados.set(0);
     this.pagePlataforma.set(0);
     this.pageProgramados.set(0);
     this.pageSubsanables.set(0);
     this.pageRechazados.set(0);
+    this.pageInstalados.set(0);
     this.detailDrawerOpen.set(false);
     this.selectedOfertaProviderId.set(null);
     this.adicionalesSeleccionados.set([]);

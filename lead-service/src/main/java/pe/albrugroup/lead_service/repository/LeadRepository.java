@@ -16,6 +16,7 @@ import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
+import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorPreventaCantidadProjection;
@@ -1770,6 +1771,68 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaHasta") java.time.LocalDate fechaHasta,
             @Param("etapasPermitidas") Collection<Etapa> etapasPermitidas,
             @Param("exigirTipificacionActual") boolean exigirTipificacionActual,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("sortBy") String sortBy,
+            @Param("sortDesc") boolean sortDesc,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse(
+                l.id,
+                l.prefijo,
+                l.lead,
+                l.usermeta,
+                COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
+                dp.nombreTitularServicio,
+                l.nombreProveedorSnapshot,
+                l.nombrePlanSnapshot,
+                e.fechaInstalacion,
+                e.createdAt,
+                e.idActor,
+                e.nombreActor,
+                l.estadoClientePostventa,
+                l.etapa
+            )
+            FROM Lead l
+            JOIN Evento e ON e.idLead = l.id
+            LEFT JOIN l.datosPreventa dp
+            WHERE e.accion = :accionTipificacion
+              AND e.etapa = :etapaVenta
+              AND e.tipificacion = :codigoInstalado
+              AND e.fechaInstalacion IS NOT NULL
+              AND e.fechaInstalacion BETWEEN :fechaDesde AND :fechaHasta
+              AND l.etapa IN :etapasPermitidas
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND e.createdAt = (
+                  SELECT MAX(es.createdAt)
+                  FROM Evento es
+                  WHERE es.idLead = l.id
+                    AND es.accion = :accionTipificacion
+                    AND es.etapa = :etapaVenta
+                    AND es.tipificacion = :codigoInstalado
+                    AND es.fechaInstalacion IS NOT NULL
+              )
+            ORDER BY
+              CASE WHEN :sortBy = 'fechaInstalacion' AND :sortDesc = false THEN e.fechaInstalacion END ASC,
+              CASE WHEN :sortBy = 'fechaInstalacion' AND :sortDesc = true THEN e.fechaInstalacion END DESC,
+              CASE WHEN :sortBy = 'fechaTipificacionInstalado' AND :sortDesc = false THEN e.createdAt END ASC,
+              CASE WHEN :sortBy = 'fechaTipificacionInstalado' AND :sortDesc = true THEN e.createdAt END DESC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = false THEN l.lead END ASC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = true THEN l.lead END DESC,
+              CASE WHEN :sortBy = 'estadoClientePostventa' AND :sortDesc = false THEN l.estadoClientePostventa END ASC,
+              CASE WHEN :sortBy = 'estadoClientePostventa' AND :sortDesc = true THEN l.estadoClientePostventa END DESC,
+              e.createdAt DESC,
+              l.id DESC
+            """)
+    Page<LeadInstaladoBackofficeResponse> listarLeadsVentaInstalados(
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("codigoInstalado") String codigoInstalado,
+            @Param("fechaDesde") java.time.LocalDate fechaDesde,
+            @Param("fechaHasta") java.time.LocalDate fechaHasta,
+            @Param("etapasPermitidas") Collection<Etapa> etapasPermitidas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
             @Param("sortBy") String sortBy,
