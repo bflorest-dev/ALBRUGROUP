@@ -136,6 +136,12 @@ p,
   opacity: 0.38;
 }
 
+.comment-trigger--inline {
+  border-radius: 0.38rem;
+  height: 1.55rem;
+  width: 1.55rem;
+}
+
 .col-actions {
   min-width: 10rem;
 }
@@ -156,10 +162,66 @@ p,
 }
 
 .col-asignado {
-  max-width: 9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 7.4rem;
   white-space: nowrap;
+}
+
+.assigned-cell {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.35rem;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.assigned-cell span {
+  color: #26374d;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.assigned-comment {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #26374d;
+  cursor: help;
+  display: inline-grid;
+  font: inherit;
+  min-height: 1.6rem;
+  padding: 0 0.55rem 0.2rem 0;
+  position: relative;
+}
+
+.assigned-comment span {
+  line-height: 1;
+}
+
+.assigned-comment i {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 999px;
+  bottom: 0;
+  color: #48627f;
+  display: inline-flex;
+  font-size: 0.62rem;
+  height: 0.92rem;
+  justify-content: center;
+  position: absolute;
+  right: 0;
+  width: 0.92rem;
+}
+
+.assigned-comment:hover span,
+.assigned-comment:focus-visible span {
+  color: var(--role-accent);
+}
+
+.assigned-comment:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--role-accent) 42%, transparent);
+  outline-offset: 2px;
 }
 
 .date-stack {

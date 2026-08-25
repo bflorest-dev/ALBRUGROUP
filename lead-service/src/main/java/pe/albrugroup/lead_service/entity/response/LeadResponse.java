@@ -64,4 +64,5 @@ public class LeadResponse {
     private Integer mesesPromocionVelocidad;
     // Ultima vez que el lead fue tipificado (max createdAt de eventos de accion TIPIFICACION).
     private Instant ultimaTipificacionAt;
+    private String ultimoComentarioTipificacion;
 }

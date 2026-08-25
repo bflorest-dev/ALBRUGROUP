@@ -1464,8 +1464,22 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected assignedShortName(value?: string | null): string {
+    const words = (value ?? '').trim().split(/\s+/).filter(Boolean).slice(0, 2);
+    if (!words.length) {
+      return '-';
+    }
+    return words
+      .map((word) => word.normalize('NFD').replace(/[\u0300-\u036f]/g, '').slice(0, 3).toUpperCase())
+      .join('~');
+  }
+
+  protected personShortName(value?: string | null): string {
     const words = (value ?? '').trim().split(/\s+/).filter(Boolean);
     return words.length ? words.slice(0, 2).join(' ') : '-';
+  }
+
+  protected lastTipificationComment(row: LeadVentaResponse): string {
+    return (row.ultimoComentarioTipificacion ?? '').trim();
   }
 
   protected isLeadActionLoading(idLead: number): boolean {

@@ -1321,11 +1321,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 inter.unidad,
                 pl.velocidadPromocional,
                 pl.mesesPromocionVelocidad,
-                (SELECT MAX(ev.createdAt) FROM Evento ev
-                    WHERE ev.idLead = l.id
-                      AND ev.accion = :accionTipificacion)
+                ultTip.createdAt,
+                ultTip.comentario
             )
             FROM Lead l
+            LEFT JOIN Evento ultTip ON ultTip.id = (
+                SELECT MAX(ev.id)
+                FROM Evento ev
+                WHERE ev.idLead = l.id
+                  AND ev.accion = :accionTipificacion
+            )
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.plan pl
             LEFT JOIN pl.proveedor pp
@@ -1626,9 +1631,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 inter.unidad,
                 pl.velocidadPromocional,
                 pl.mesesPromocionVelocidad,
-                (SELECT MAX(ev.createdAt) FROM Evento ev
-                    WHERE ev.idLead = l.id
-                      AND ev.accion = :accionTipificacion)
+                e.createdAt,
+                e.comentario
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
@@ -1717,7 +1721,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 inter.unidad,
                 pl.velocidadPromocional,
                 pl.mesesPromocionVelocidad,
-                e.createdAt
+                e.createdAt,
+                e.comentario
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id

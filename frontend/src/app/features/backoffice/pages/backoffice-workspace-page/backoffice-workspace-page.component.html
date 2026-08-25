@@ -213,12 +213,12 @@
           <th class="col-documento">Documento</th>
           <th class="col-proveedor">Proveedor</th>
           <th class="col-estado">Estado</th>
-          <th class="col-asignado">{{ (isFechaInstalacionSection() && !isSearchMode()) ? 'Instalado por' : 'Ultimo Gestor' }}</th>
           <th class="col-plan">Plan</th>
           <th class="col-tipificacion">Tipificacion</th>
           @if (showSecSotColumn()) {
             <th class="col-sec-sot">SEC/SOT</th>
           }
+          <th class="col-asignado">{{ (isFechaInstalacionSection() && !isSearchMode()) ? 'Instalado por' : 'Ultimo Gestor' }}</th>
           <th class="col-gestion">Ultima gestion</th>
           <th class="col-actions">Acciones</th>
         </tr>
@@ -285,7 +285,6 @@
               <p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" />
             }
           </td>
-          <td class="col-asignado">{{ assignedShortName((isFechaInstalacionSection() && !isSearchMode()) ? row.nombreAsesorInstalador : row.nombreAsesorUltimaGestion) }}</td>
           <td class="col-plan">
             <app-lead-plan-summary
               [planName]="row.nombrePlanSnapshot"
@@ -314,6 +313,30 @@
               }
             </td>
           }
+          <td class="col-asignado">
+            <div class="assigned-cell">
+              @if (isFechaInstalacionSection() && !isSearchMode()) {
+                <span>{{ personShortName(row.nombreAsesorInstalador) }}</span>
+              } @else {
+                @if (lastTipificationComment(row); as comentario) {
+                  <button
+                    type="button"
+                    class="assigned-comment"
+                    [title]="comentario"
+                    [pTooltip]="comentario"
+                    tooltipPosition="left"
+                    appendTo="body"
+                    [attr.aria-label]="'Ver comentario de ' + assignedShortName(row.nombreAsesorUltimaGestion)"
+                  >
+                    <span>{{ assignedShortName(row.nombreAsesorUltimaGestion) }}</span>
+                    <i class="pi pi-comment" aria-hidden="true"></i>
+                  </button>
+                } @else {
+                  <span>{{ assignedShortName(row.nombreAsesorUltimaGestion) }}</span>
+                }
+              }
+            </div>
+          </td>
           <td class="col-gestion">
             <div class="date-stack">
               <span>{{ ultimaGestionValue(row) ? (ultimaGestionValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
