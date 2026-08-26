@@ -147,18 +147,14 @@ p,
 }
 
 .col-documento {
+  min-width: 7.5rem;
   white-space: nowrap;
-  width: 8.5rem;
 }
 
 .col-fecha,
 .col-gestion {
   white-space: nowrap;
   width: 7rem;
-}
-
-.col-lead {
-  min-width: 7.5rem;
 }
 
 .col-asignado {
@@ -247,21 +243,21 @@ p,
   font-weight: 900;
 }
 
-.lead-cell {
+.document-cell {
   display: grid;
   gap: 0.12rem;
   line-height: 1.08;
   min-width: 0;
 }
 
-.lead-cell strong {
+.document-cell strong {
   color: #071f3d;
   font-size: 0.94rem;
   font-weight: 900;
   white-space: nowrap;
 }
 
-.lead-cell span {
+.document-cell span {
   color: var(--role-muted);
   font-size: 0.74rem;
   font-weight: 750;

@@ -58,6 +58,9 @@ export class PeriodSelectorComponent implements OnDestroy {
   private readonly hoy = this.formatLocal(new Date());
 
   protected readonly diaLabel = computed(() => {
+    if (this.periodo() !== 'dia') {
+      return 'Hoy';
+    }
     const desde = this.dia();
     const hasta = this.hasta();
     if (!desde || (desde === this.hoy && (!hasta || hasta === this.hoy))) {
@@ -114,9 +117,13 @@ export class PeriodSelectorComponent implements OnDestroy {
       return;
     }
     if (clicked === this.host.nativeElement.querySelector('.p-togglebutton')) {
+      const debeVolverAHoy = this.periodo() !== 'dia';
       this.botonAncla = clicked as HTMLElement;
-      this.emitirHoy();
       this.dayPopover().show(event, clicked as HTMLElement);
+      if (debeVolverAHoy) {
+        this.emitirHoy();
+      }
+      this.ajustarPopoverDiferido();
     } else {
       this.cerrar();
     }
@@ -133,11 +140,20 @@ export class PeriodSelectorComponent implements OnDestroy {
    * que su rect si es fiable (llevado a coordenadas de documento con el scroll).
    */
   protected centrarFlecha(): void {
+    this.ajustarPopoverDiferido();
+  }
+
+  private ajustarPopoverDiferido(): void {
+    requestAnimationFrame(() => this.ajustarPopover());
+  }
+
+  private ajustarPopover(): void {
     const container = (this.dayPopover() as { container?: HTMLElement }).container;
-    const target = this.botonAncla;
+    const target = this.botonDia();
     if (!container || !target) {
       return;
     }
+    this.posicionarPopover(container, target);
     const boton = target.getBoundingClientRect();
     const centroBotonDoc = boton.left + window.scrollX + boton.width / 2;
     const left = centroBotonDoc - this.leftEnDocumento(container);
@@ -145,6 +161,31 @@ export class PeriodSelectorComponent implements OnDestroy {
     // negativo del propio triangulo).
     container.style.setProperty('--p-popover-arrow-offset', '0px');
     container.style.setProperty('--p-popover-arrow-left', `${left}px`);
+  }
+
+  private posicionarPopover(container: HTMLElement, target: HTMLElement): void {
+    const margen = 8;
+    const boton = target.getBoundingClientRect();
+    const ancho = container.offsetWidth;
+    const alto = container.offsetHeight;
+    const minLeft = window.scrollX + margen;
+    const maxLeft = window.scrollX + window.innerWidth - ancho - margen;
+    const left = this.clamp(boton.left + window.scrollX + boton.width / 2 - ancho / 2, minLeft, maxLeft);
+    const topAbajo = boton.bottom + window.scrollY + margen;
+    const topArriba = boton.top + window.scrollY - alto - margen;
+    const maxBottom = window.scrollY + window.innerHeight - margen;
+    const top = topAbajo + alto <= maxBottom ? topAbajo : Math.max(window.scrollY + margen, topArriba);
+    container.style.left = `${left}px`;
+    container.style.top = `${top}px`;
+  }
+
+  private botonDia(): HTMLElement | null {
+    if (this.botonAncla?.isConnected) {
+      return this.botonAncla;
+    }
+    const boton = this.host.nativeElement.querySelector('.p-togglebutton') as HTMLElement | null;
+    this.botonAncla = boton;
+    return boton;
   }
 
   /** Posicion X del borde del elemento en coordenadas de documento, sumando `offsetLeft` (sin transform). */
@@ -219,6 +260,13 @@ export class PeriodSelectorComponent implements OnDestroy {
   private parse(iso: string): Date {
     const [anio, mes, numero] = iso.split('-').map(Number);
     return new Date(anio, mes - 1, numero);
+  }
+
+  private clamp(value: number, min: number, max: number): number {
+    if (max < min) {
+      return min;
+    }
+    return Math.min(Math.max(value, min), max);
   }
 
   /** `2026-08-24` → `24 ago`. */

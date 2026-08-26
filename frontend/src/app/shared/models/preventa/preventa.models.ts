@@ -255,6 +255,7 @@ export interface LeadVentaResponse {
   estadoSeguimiento?: EstadoSeguimiento | string | null;
   idAsesorAsignado?: number | null;
   nombreAsesorAsignado?: string | null;
+  tipoDocumento?: string | null;
   numeroDocumentoTitularServicio?: string | null;
   base?: BaseLead | string | null;
   idTipificacion?: number | null;
@@ -297,6 +298,7 @@ export interface LeadInstaladoBackofficeResponse {
   prefijo?: string | null;
   lead?: string | null;
   usermeta?: string | null;
+  tipoDocumento?: string | null;
   numeroDocumento?: string | null;
   nombreCliente?: string | null;
   proveedor?: string | null;
@@ -733,7 +735,6 @@ export type ComportamientoTipificacion =
   | 'REQUIERE_FECHA_PROGRAMACION'
   | 'REQUIERE_FECHA_INSTALACION'
   | 'REQUIERE_SEC_SOT'
-  | 'RECIBE_MERITO'
   | 'ASIGNA_ASESOR_MERITO'
   | 'ASIGNA_FECHA_MERITO'
   | 'ANULA_ASESOR_MERITO'

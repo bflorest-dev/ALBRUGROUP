@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ public class LeadInstaladoBackofficeResponse {
     private String prefijo;
     private String lead;
     private String usermeta;
+    private TipoDocumento tipoDocumento;
     private String numeroDocumento;
     private String nombreCliente;
     private String proveedor;

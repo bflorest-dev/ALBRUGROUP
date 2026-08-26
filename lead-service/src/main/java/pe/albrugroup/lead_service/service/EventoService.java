@@ -147,6 +147,23 @@ public class EventoService {
         return PageResponse.from(eventos);
     }
 
+    public PageResponse<EventoResponse> listarTipificacionesVentaConsulta(Long idLead, PageRequest pageRequest) {
+        if (!leadRepository.existsById(idLead)) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+
+        EquipoScope equipoScope = equipoScopeActual();
+        var eventos = eventoRepository.listarEventosLeadVisiblesPorAccionYEtapa(
+                idLead,
+                Accion.TIPIFICACION,
+                Etapa.VENTA,
+                equipoScope.filtrar(),
+                equipoScope.ids(),
+                paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS)
+        ).map(eventoMapper::toResponse);
+        return PageResponse.from(eventos);
+    }
+
     public PageResponse<EventoResponse> listarPorEmpleado(
             Long idEmpleado,
             LocalDate fechaDesde,

@@ -8,6 +8,7 @@ import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 import pe.albrugroup.lead_service.entity.enums.Unidad;
 
 import java.math.BigDecimal;
@@ -30,6 +31,7 @@ public class LeadResponse {
     private EstadoSeguimiento estadoSeguimiento;
     private Long idAsesorAsignado;
     private String nombreAsesorAsignado;
+    private TipoDocumento tipoDocumento;
     private String numeroDocumentoTitularServicio;
     private Base base;
     private Long idTipificacion;

@@ -236,6 +236,33 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT e
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            WHERE e.idLead = :idLead
+              AND e.accion = :accion
+              AND e.etapa = :etapa
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            """,
+            countQuery = """
+            SELECT COUNT(e)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.idLead = :idLead
+              AND e.accion = :accion
+              AND e.etapa = :etapa
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            """)
+    Page<Evento> listarEventosLeadVisiblesPorAccionYEtapa(
+            @Param("idLead") Long idLead,
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
+            Pageable pageable
+    );
+
+    @Query(value = """
+            SELECT e
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
             WHERE e.idActor = :idActor
               AND (:filtrarFechaDesde = false OR e.createdAt >= :fechaDesde)
               AND (:filtrarFechaHasta = false OR e.createdAt < :fechaHasta)

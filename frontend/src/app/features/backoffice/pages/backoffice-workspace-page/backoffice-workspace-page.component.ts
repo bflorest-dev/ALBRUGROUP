@@ -59,6 +59,7 @@ type BackofficeSection = 'plataforma' | 'programados' | 'subsanables' | 'rechaza
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
 type BackofficeSortField = 'fechaIngresoEtapa' | 'fechaRechazo' | 'fechaInstalacion' | 'fechaTipificacionInstalado' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado' | 'estadoClientePostventa';
 type BackofficeSortDirection = 'asc' | 'desc';
+type DrawerMode = 'gestion' | 'consulta';
 type OrganizationFilterOption = { label: string; value: string; codigo?: string; descripcion?: string; sinValor?: boolean; rawValue?: string | null };
 type VisualLeadVenta = LeadVentaResponse & {
   isNew?: boolean;
@@ -219,11 +220,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly ubigeoDomicilioError = signal<string | null>(null);
   private readonly adicionalesDirty = signal(false);
   protected readonly detailDrawerOpen = signal(false);
+  protected readonly drawerMode = signal<DrawerMode>('gestion');
+  protected readonly detailReadOnly = computed(() => this.drawerMode() === 'consulta');
   protected readonly activeDataTab = signal('datos');
   protected readonly tipificationFooterPinned = signal(false);
   protected readonly tipificationOverlayOpen = signal(false);
   protected readonly tipificationFooterExpanded = computed(() =>
-    this.tipificationFooterPinned() || this.tipificationOverlayOpen()
+    !this.detailReadOnly() && (this.tipificationFooterPinned() || this.tipificationOverlayOpen())
   );
   protected readonly searchInput = signal('');
   protected readonly searchTermActive = signal('');
@@ -450,6 +453,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   // Metodo, no computed: `form.dirty` no es signal y un computed queda congelado con su primer valor.
   protected hasUnsavedDataChanges(): boolean {
+    if (this.detailReadOnly()) {
+      return false;
+    }
     return this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty || this.adicionalesDirty();
   }
   protected readonly boardTitle = computed(() => {
@@ -583,7 +589,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly showSecSotColumn = computed(() =>
     this.activeRows().some((row) => row.requiereSecSotVenta === true || !!row.sec || !!row.sot)
   );
-  protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 11 : 10);
+  protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 10 : 9);
   protected readonly activeTotal = computed(() => {
     if (this.isSearchMode()) {
       return this.searchTotal();
@@ -831,6 +837,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (shouldTrackAction) {
       this.leadActionId.set(idLead);
     }
+    this.drawerMode.set('gestion');
     this.selectedLeadId.set(idLead);
     try {
       const detail = await firstValueFrom(this.leadService.obtenerDetalle(idLead));
@@ -853,13 +860,38 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
+  protected async openConsultation(idLead: number): Promise<void> {
+    const shouldTrackAction = this.leadActionId() === null;
+    if (shouldTrackAction) {
+      this.leadActionId.set(idLead);
+    }
+    this.drawerMode.set('consulta');
+    this.selectedLeadId.set(idLead);
+    try {
+      const detail = await firstValueFrom(this.leadService.obtenerDetalleConsulta(idLead));
+      this.detail.set(detail);
+      this.detailHadOperationalAction = false;
+      this.patchForms(detail);
+      await this.refreshEventosConsulta(idLead);
+      this.detailDrawerOpen.set(true);
+    } catch (error) {
+      this.notify('error', this.getErrorMessage(error, 'No se pudo abrir la consulta.'));
+    } finally {
+      if (shouldTrackAction) {
+        this.leadActionId.set(null);
+      }
+    }
+  }
+
   protected async requestCloseDetail(): Promise<void> {
     if (this.hasUnsavedDataChanges()) {
       this.notify('warn', 'Hay datos sin guardar. Guarda los cambios antes de cerrar.');
       this.detailDrawerOpen.set(true);
       return;
     }
-    await this.releaseCurrentLeadIfIdle();
+    if (!this.detailReadOnly()) {
+      await this.releaseCurrentLeadIfIdle();
+    }
     this.closeDetail();
   }
 
@@ -2043,12 +2075,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private async refreshOpenDetail(idLead: number): Promise<void> {
     try {
-      const detail = await firstValueFrom(this.leadService.obtenerDetalle(idLead));
+      const detail = await firstValueFrom(
+        this.detailReadOnly()
+          ? this.leadService.obtenerDetalleConsulta(idLead)
+          : this.leadService.obtenerDetalle(idLead)
+      );
       this.detail.set(detail);
       if (!this.hasUnsavedDataChanges()) {
         this.patchForms(detail);
       }
-      await this.refreshEventos(idLead);
+      await (this.detailReadOnly() ? this.refreshEventosConsulta(idLead) : this.refreshEventos(idLead));
     } catch {
       this.closeDetail();
     }
@@ -2064,6 +2100,18 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       })
     );
     this.eventos.set(page.content.filter((evento) => this.normalizedCode(evento.etapa) === 'VENTA'));
+  }
+
+  private async refreshEventosConsulta(idLead: number): Promise<void> {
+    const page = await firstValueFrom(
+      this.leadService.listarEventosConsulta(idLead, {
+        pageNumber: 0,
+        pageSize: 100,
+        sortBy: 'createdAt',
+        direction: 'desc'
+      })
+    );
+    this.eventos.set(page.content);
   }
 
   private async refreshPlanes(): Promise<void> {
@@ -2382,6 +2430,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       etapa: row.etapaActual ?? null,
       etapaActual: row.etapaActual ?? null,
       estadoSeguimiento: row.estadoClientePostventa ?? null,
+      tipoDocumento: row.tipoDocumento ?? null,
       numeroDocumentoTitularServicio: row.numeroDocumento ?? null,
       nombreProveedorSnapshot: row.proveedor ?? null,
       nombrePlanSnapshot: row.plan ?? null,
@@ -2757,6 +2806,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.adicionalesSeleccionados.set([]);
     this.adicionalesDirty.set(false);
     this.detailHadOperationalAction = false;
+    this.drawerMode.set('gestion');
     this.provinciasDomicilio.set([]);
     this.distritosDomicilio.set([]);
     this.ubigeoDomicilioLoading.set(false);

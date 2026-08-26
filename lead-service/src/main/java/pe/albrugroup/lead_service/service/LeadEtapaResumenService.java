@@ -7,6 +7,7 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Escritura de la metadata historica por etapa ({@link LeadEtapaResumen}).
@@ -180,6 +181,27 @@ public class LeadEtapaResumenService {
         repository.save(resumen);
     }
 
+    /** Limpia asesor de merito en todas las etapas anteriores a la etapa tipificada. */
+    public void anularAsesorMeritoEtapasAnteriores(Long idLead, Etapa etapaActual) {
+        for (Etapa etapaAnterior : etapasAnteriores(etapaActual)) {
+            repository.findByIdLeadAndEtapa(idLead, etapaAnterior).ifPresent(resumen -> {
+                resumen.setIdAsesorMerito(null);
+                resumen.setNombreAsesorMerito(null);
+                repository.save(resumen);
+            });
+        }
+    }
+
+    /** Limpia fechaMerito en todas las etapas anteriores a la etapa tipificada. */
+    public void anularFechaMeritoEtapasAnteriores(Long idLead, Etapa etapaActual) {
+        for (Etapa etapaAnterior : etapasAnteriores(etapaActual)) {
+            repository.findByIdLeadAndEtapa(idLead, etapaAnterior).ifPresent(resumen -> {
+                resumen.setFechaMerito(null);
+                repository.save(resumen);
+            });
+        }
+    }
+
     /** ¿El asesor es el merito (quien concreto) de la etapa del lead? Autorizacion read-only. */
     public boolean esAsesorMeritoEtapa(Long idLead, Etapa etapa, Long idAsesor) {
         if (idAsesor == null) {
@@ -201,5 +223,14 @@ public class LeadEtapaResumenService {
 
     private static int nvl(Integer value, int fallback) {
         return value == null ? fallback : value;
+    }
+
+    private static List<Etapa> etapasAnteriores(Etapa etapaActual) {
+        return switch (etapaActual) {
+            case PREVENTA -> List.of();
+            case VENTA -> List.of(Etapa.PREVENTA);
+            case POSTVENTA -> List.of(Etapa.PREVENTA, Etapa.VENTA);
+            case COBRANZA -> List.of(Etapa.PREVENTA, Etapa.VENTA, Etapa.POSTVENTA);
+        };
     }
 }

@@ -157,6 +157,10 @@ export class BackofficeLeadService {
     return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/venta/${idLead}/detalle-asesor`);
   }
 
+  obtenerDetalleConsulta(idLead: number): Observable<LeadDetalleResponse> {
+    return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/venta/${idLead}/detalle-consulta`);
+  }
+
   listarPlanesOferta(idLead: number): Observable<PlanResponse[]> {
     return this.http.get<PlanResponse[]>(`${this.leadUrl}/venta/${idLead}/planes-oferta`);
   }
@@ -164,6 +168,12 @@ export class BackofficeLeadService {
   listarEventos(idLead: number, query: PageQuery): Observable<LeadPage<EventoResponse>> {
     return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/eventos/lead/${idLead}`, {
       params: this.pageParams(query).set('accion', 'TIPIFICACION')
+    });
+  }
+
+  listarEventosConsulta(idLead: number, query: PageQuery): Observable<LeadPage<EventoResponse>> {
+    return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/venta/${idLead}/eventos-consulta`, {
+      params: this.pageParams(query)
     });
   }
 

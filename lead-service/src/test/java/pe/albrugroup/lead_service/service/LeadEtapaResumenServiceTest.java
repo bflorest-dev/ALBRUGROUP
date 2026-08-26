@@ -15,6 +15,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
@@ -84,5 +85,49 @@ class LeadEtapaResumenServiceTest {
 
         assertNull(resumen.getFechaMerito());
         verify(repository, times(2)).save(resumen);
+    }
+
+    @Test
+    void anularAsesorMeritoEtapasAnterioresDesdeVentaSoloLimpiaPreventa() {
+        LeadEtapaResumen preventa = LeadEtapaResumen.builder()
+                .idLead(10L)
+                .etapa(Etapa.PREVENTA)
+                .idAsesorMerito(27L)
+                .nombreAsesorMerito("Asesor Preventa")
+                .build();
+        when(repository.findByIdLeadAndEtapa(10L, Etapa.PREVENTA)).thenReturn(Optional.of(preventa));
+
+        service.anularAsesorMeritoEtapasAnteriores(10L, Etapa.VENTA);
+
+        assertNull(preventa.getIdAsesorMerito());
+        assertNull(preventa.getNombreAsesorMerito());
+        verify(repository).save(preventa);
+        verify(repository, never()).findByIdLeadAndEtapa(10L, Etapa.VENTA);
+    }
+
+    @Test
+    void anularFechaMeritoEtapasAnterioresDesdePostventaLimpiaPreventaYVenta() {
+        Instant fechaPreventa = Instant.parse("2026-08-25T15:00:00Z");
+        Instant fechaVenta = Instant.parse("2026-08-26T15:00:00Z");
+        LeadEtapaResumen preventa = LeadEtapaResumen.builder()
+                .idLead(10L)
+                .etapa(Etapa.PREVENTA)
+                .fechaMerito(fechaPreventa)
+                .build();
+        LeadEtapaResumen venta = LeadEtapaResumen.builder()
+                .idLead(10L)
+                .etapa(Etapa.VENTA)
+                .fechaMerito(fechaVenta)
+                .build();
+        when(repository.findByIdLeadAndEtapa(10L, Etapa.PREVENTA)).thenReturn(Optional.of(preventa));
+        when(repository.findByIdLeadAndEtapa(10L, Etapa.VENTA)).thenReturn(Optional.of(venta));
+
+        service.anularFechaMeritoEtapasAnteriores(10L, Etapa.POSTVENTA);
+
+        assertNull(preventa.getFechaMerito());
+        assertNull(venta.getFechaMerito());
+        verify(repository).save(preventa);
+        verify(repository).save(venta);
+        verify(repository, never()).findByIdLeadAndEtapa(10L, Etapa.POSTVENTA);
     }
 }

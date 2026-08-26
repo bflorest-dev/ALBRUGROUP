@@ -47,7 +47,6 @@ export class AdminTipificacionFacade {
     REQUIERE_FECHA_PROGRAMACION: 'Requiere fecha de programación',
     REQUIERE_FECHA_INSTALACION: 'Requiere fecha de instalación',
     REQUIERE_SEC_SOT: 'Requiere SEC/SOT',
-    RECIBE_MERITO: 'Atribuye mérito completo (compatibilidad)',
     ASIGNA_ASESOR_MERITO: 'Asigna asesor de mérito',
     ASIGNA_FECHA_MERITO: 'Asigna fecha de mérito',
     ANULA_ASESOR_MERITO: 'Anula asesor de mérito',

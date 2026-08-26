@@ -1071,6 +1071,25 @@ public class LeadService {
         return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
     }
 
+    public LeadDetalleResponse obtenerDetalleLeadVentaConsulta(Long idLead) {
+        Lead lead = leadRepository.buscarDetalleCompletoPorId(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        validarLeadVisibleEnScopeActual(lead);
+
+        Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
+                .map(Evento::getCreatedAt)
+                .orElse(null);
+
+        return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
+    }
+
+    private void validarLeadVisibleEnScopeActual(Lead lead) {
+        RankingEquipoScope scope = resolverEquiposActuales();
+        if (scope.filtrar() && !scope.ids().contains(lead.getIdEquipo())) {
+            throw new NotFoundException(Lead.class, lead.getId());
+        }
+    }
+
     // El asesor de PREVENTA puede ver el detalle de cualquier lead que tenga asignado, sin importar
     // la etapa: para PREVENTA es su gestión normal; para otra etapa es una atención GTR (solo lectura).
     public LeadDetalleResponse obtenerDetalleLeadAsignado(Long idLead) {
@@ -2123,17 +2142,15 @@ public class LeadService {
     ) {
         Set<ComportamientoTipificacion> valores = comportamientos == null ? Set.of() : comportamientos;
         if (valores.contains(ComportamientoTipificacion.ANULA_ASESOR_MERITO)) {
-            leadEtapaResumenService.anularAsesorMerito(idLead, etapa, at);
+            leadEtapaResumenService.anularAsesorMeritoEtapasAnteriores(idLead, etapa);
         }
         if (valores.contains(ComportamientoTipificacion.ANULA_FECHA_MERITO)) {
-            leadEtapaResumenService.anularFechaMerito(idLead, etapa, at);
+            leadEtapaResumenService.anularFechaMeritoEtapasAnteriores(idLead, etapa);
         }
-        if (valores.contains(ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)
-                || valores.contains(ComportamientoTipificacion.RECIBE_MERITO)) {
+        if (valores.contains(ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)) {
             leadEtapaResumenService.asignarAsesorMerito(idLead, etapa, idAsesor, nombreAsesor, at);
         }
-        if (valores.contains(ComportamientoTipificacion.ASIGNA_FECHA_MERITO)
-                || valores.contains(ComportamientoTipificacion.RECIBE_MERITO)) {
+        if (valores.contains(ComportamientoTipificacion.ASIGNA_FECHA_MERITO)) {
             leadEtapaResumenService.asignarFechaMerito(idLead, etapa, at);
         }
     }

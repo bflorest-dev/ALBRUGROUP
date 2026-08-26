@@ -211,7 +211,6 @@
       <ng-template #header>
         <tr>
           <th class="col-fecha">{{ (section() === 'programados' && !isSearchMode()) ? 'Fecha programacion' : (isFechaInstalacionSection() && !isSearchMode()) ? 'Fecha instalacion' : (isFechaRechazoSection() && !isSearchMode()) ? 'Fecha rechazo' : 'Fecha ingreso' }}</th>
-          <th class="col-lead">Lead</th>
           <th class="col-documento">Documento</th>
           <th class="col-proveedor">Proveedor</th>
           <th class="col-estado">Estado</th>
@@ -220,7 +219,7 @@
           @if (showSecSotColumn()) {
             <th class="col-sec-sot">SEC/SOT</th>
           }
-          <th class="col-asignado">{{ (isFechaInstalacionSection() && !isSearchMode()) ? 'Instalado por' : 'Ultimo Gestor' }}</th>
+          <th class="col-asignado">Ultimo Gestor</th>
           <th class="col-gestion">Ultima gestion</th>
           <th class="col-actions">Acciones</th>
         </tr>
@@ -265,15 +264,14 @@
               }
             </div>
           </td>
-          <td class="col-lead">
-            <div class="lead-cell">
-              <strong>{{ row.lead }}</strong>
-              @if (leadUsermeta(row); as usermeta) {
-                <span>{{ usermeta }}</span>
+          <td class="col-documento">
+            <div class="document-cell">
+              <strong>{{ display(row.numeroDocumentoTitularServicio) }}</strong>
+              @if (row.tipoDocumento) {
+                <span>{{ display(row.tipoDocumento) }}</span>
               }
             </div>
           </td>
-          <td class="col-documento">{{ display(row.numeroDocumentoTitularServicio) }}</td>
           <td class="col-proveedor">
             @if (providerLogo(row.nombreProveedorSnapshot); as logo) {
               <div class="provider-cell">
@@ -363,7 +361,17 @@
                 (click)="tomarLead(row)"
               ></button>
             } @else if (section() === 'rechazados' || section() === 'instalados') {
-              <p-tag severity="secondary" value="Solo consulta" />
+              <button
+                pButton
+                type="button"
+                icon="pi pi-eye"
+                label="Consultar"
+                size="small"
+                severity="secondary"
+                [disabled]="isSaving() || leadActionId() !== null"
+                [loading]="isLeadActionLoading(row.id)"
+                (click)="openConsultation(row.id)"
+              ></button>
             } @else {
               <button
                 pButton
@@ -460,31 +468,33 @@
           </div>
 
           <div class="drawer-head__actions">
-            <div class="drawer-head__contact">
-              <app-phone-action-button
-                [idLead]="lead.id"
-                [prefijo]="lead.prefijo"
-                [lead]="lead.lead"
-                size="small"
-                [buttonWidth]="'8.75rem'"
-                [disabled]="!canMutateOperationalData()"
-                [loading]="isSaving()"
-                (callStarted)="registrarLlamadaOperativa()"
-                (callError)="showCallError($event)"
-              />
-              <button
-                pButton
-                type="button"
-                class="drawer-head__chat"
-                icon="pi pi-whatsapp"
-                label="Chat"
-                severity="secondary"
-                size="small"
-                [disabled]="!hasLeadChat(lead) || !canMutateOperationalData()"
-                [loading]="isSaving()"
-                (click)="registrarChat()"
-              ></button>
-            </div>
+            @if (!detailReadOnly()) {
+              <div class="drawer-head__contact">
+                <app-phone-action-button
+                  [idLead]="lead.id"
+                  [prefijo]="lead.prefijo"
+                  [lead]="lead.lead"
+                  size="small"
+                  [buttonWidth]="'8.75rem'"
+                  [disabled]="!canMutateOperationalData()"
+                  [loading]="isSaving()"
+                  (callStarted)="registrarLlamadaOperativa()"
+                  (callError)="showCallError($event)"
+                />
+                <button
+                  pButton
+                  type="button"
+                  class="drawer-head__chat"
+                  icon="pi pi-whatsapp"
+                  label="Chat"
+                  severity="secondary"
+                  size="small"
+                  [disabled]="!hasLeadChat(lead) || !canMutateOperationalData()"
+                  [loading]="isSaving()"
+                  (click)="registrarChat()"
+                ></button>
+              </div>
+            }
             <div class="drawer-head__status">
               <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="display(lead.estadoSeguimiento)" />
               @if (hasUnsavedDataChanges()) {
@@ -523,6 +533,7 @@
           [offerLocked]="ofertaBloqueada()"
           [offerNoticeSeverity]="ofertaNoticeSeverity()"
           [offerNoticeText]="ofertaNoticeText()"
+          [readonly]="detailReadOnly()"
           (activeTabChange)="activeDataTab.set($event)"
           (tipoDocumentoChange)="onTipoDocumentoChanged()"
           (departamentoDomicilioChange)="onDepartamentoDomicilioChanged()"
@@ -583,6 +594,11 @@
           (mouseenter)="setTipificationFooterPinned(true)"
           (mouseleave)="setTipificationFooterPinned(false)"
         >
+          @if (detailReadOnly()) {
+            <div class="drawer-actions drawer-actions--consultation">
+              <button pButton type="button" label="Cerrar" severity="secondary" (click)="requestCloseDetail()"></button>
+            </div>
+          } @else {
           <form class="drawer-tipification" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
             <div class="drawer-tipification__main">
               <label class="tipification-field">
@@ -764,6 +780,7 @@
           ></button>
           <button pButton type="button" label="Cerrar" severity="secondary" (click)="requestCloseDetail()"></button>
           </div>
+          }
         </footer>
       </section>
     } @else {

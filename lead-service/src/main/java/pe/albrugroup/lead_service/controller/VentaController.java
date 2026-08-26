@@ -157,6 +157,11 @@ public class VentaController {
         var lead = leadService.obtenerDetalleLeadAsignado(idLead, Etapa.VENTA);
         return ResponseEntity.status(HttpStatus.OK).body(lead);
     }
+    @GetMapping("/{idLead}/detalle-consulta") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<LeadDetalleResponse> obtenerDetalleLeadVentaConsulta(@PathVariable Long idLead) {
+        var lead = leadService.obtenerDetalleLeadVentaConsulta(idLead);
+        return ResponseEntity.status(HttpStatus.OK).body(lead);
+    }
     // 5.1. Planes comerciales del proveedor operativo del lead abierto.
     @GetMapping("/{idLead}/planes-oferta") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
     public ResponseEntity<List<PlanResponse>> listarPlanesOfertaVenta(@PathVariable Long idLead) {
@@ -169,6 +174,14 @@ public class VentaController {
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
         var eventos = eventoService.listarPorLeadAsignado(idLead, Etapa.VENTA, pageRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(eventos);
+    }
+    @GetMapping("/{idLead}/eventos-consulta") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<PageResponse<EventoResponse>> listarEventosLeadVentaConsulta(
+            @PathVariable Long idLead,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var eventos = eventoService.listarTipificacionesVentaConsulta(idLead, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(eventos);
     }
     // 7. Editar Lead. El Backoffice, solo puede actualizar la OfertaComercial 1 sola vez.

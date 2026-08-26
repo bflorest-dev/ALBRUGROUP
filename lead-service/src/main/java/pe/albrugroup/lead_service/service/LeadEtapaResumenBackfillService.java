@@ -200,17 +200,15 @@ public class LeadEtapaResumenBackfillService {
     ) {
         Set<ComportamientoTipificacion> valores = comportamientos == null ? Set.of() : comportamientos;
         if (valores.contains(ComportamientoTipificacion.ANULA_ASESOR_MERITO)) {
-            resumenService.anularAsesorMerito(idLead, etapa, at);
+            resumenService.anularAsesorMeritoEtapasAnteriores(idLead, etapa);
         }
         if (valores.contains(ComportamientoTipificacion.ANULA_FECHA_MERITO)) {
-            resumenService.anularFechaMerito(idLead, etapa, at);
+            resumenService.anularFechaMeritoEtapasAnteriores(idLead, etapa);
         }
-        if (valores.contains(ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)
-                || valores.contains(ComportamientoTipificacion.RECIBE_MERITO)) {
+        if (valores.contains(ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)) {
             resumenService.asignarAsesorMerito(idLead, etapa, idAsesor, nombreAsesor, at);
         }
-        if (valores.contains(ComportamientoTipificacion.ASIGNA_FECHA_MERITO)
-                || valores.contains(ComportamientoTipificacion.RECIBE_MERITO)) {
+        if (valores.contains(ComportamientoTipificacion.ASIGNA_FECHA_MERITO)) {
             resumenService.asignarFechaMerito(idLead, etapa, at);
         }
     }

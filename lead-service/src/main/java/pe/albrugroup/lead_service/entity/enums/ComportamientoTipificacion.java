@@ -15,19 +15,13 @@ public enum ComportamientoTipificacion {
     REQUIERE_FECHA_INSTALACION,
     /** El modal muestra los campos SEC/SOT (antes: tipi SUBIDO), sujeto a que el proveedor lo requiera. */
     REQUIERE_SEC_SOT,
-    /** Atribuye el mérito de su etapa al asesor que la usa (PREVENTA: cierre de venta; VENTA:
-     *  instalación). Varias subtipis de una misma etapa pueden llevarla: en PREVENTA la tienen todas
-     *  las que cierran hacia venta, incluidas las que quedan pendientes por causa del cliente, porque
-     *  el asesor ya hizo su parte. Compatibilidad temporal: equivale a ASIGNA_ASESOR_MERITO +
-     *  ASIGNA_FECHA_MERITO. */
-    RECIBE_MERITO,
     /** Asigna id/nombre del asesor de mérito en el resumen de la etapa tipificada. */
     ASIGNA_ASESOR_MERITO,
     /** Asigna fecha de mérito en el resumen de la etapa tipificada. */
     ASIGNA_FECHA_MERITO,
-    /** Limpia id/nombre del asesor de mérito en el resumen de la etapa tipificada. */
+    /** Limpia id/nombre del asesor de mérito en los resúmenes de etapas anteriores. */
     ANULA_ASESOR_MERITO,
-    /** Limpia fecha de mérito en el resumen de la etapa tipificada. */
+    /** Limpia fecha de mérito en los resúmenes de etapas anteriores. */
     ANULA_FECHA_MERITO,
     /** Cierra la preventa hacia venta / cuenta como preventa completa (antes: PREVENTA_COMPLETA + VENTA_CERRADA). */
     ES_CIERRE_PREVENTA,
