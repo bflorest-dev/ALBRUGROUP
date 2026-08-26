@@ -39,12 +39,11 @@ public class EquipoService implements IEquipo {
 
     // Roles operativos: su acceso a datos se particiona por equipo. Por defecto pertenecen a
     // exactamente un equipo (salvo los listados en ROLES_MULTIEQUIPO). ADMIN/COMMUNITY/MONITOR no
-    // son operativos (acceso global por permiso) y van sin equipo.
+    // son operativos (acceso global por permiso) y van sin equipo. BACKOFFICE y POSTVENTA ya NO se
+    // particionan por equipo sino por proveedor (ver ROLES_GESTIONADOS_POR_PROVEEDOR y lead-service).
     private static final Set<String> ROLES_OPERATIVOS = Set.of(
             "ASESOR_GTR", "SUPERVISOR_GTR",
-            "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "OJT",
-            "ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE",
-            "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA"
+            "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "OJT"
     );
 
     // Roles operativos que SÍ pueden pertenecer a varios equipos a la vez. El ASESOR_VENTAS se
@@ -52,8 +51,16 @@ public class EquipoService implements IEquipo {
     // mantiene porque la partición de datos es por el equipo del lead, no por la membresía del asesor.
     private static final Set<String> ROLES_MULTIEQUIPO = Set.of(
             "ASESOR_GTR",
-            "ASESOR_VENTAS",
-            "ASESOR_BACKOFFICE"
+            "ASESOR_VENTAS"
+    );
+
+    // Roles cuyo acceso se acota por PROVEEDOR, no por equipo. No se les asignan equipos: se gestionan
+    // en la vista de Proveedores (tabla usuario_proveedor en lead-service). Fase 2 no destructiva:
+    // se bloquean nuevas asignaciones a equipo, pero NO se vacían las membresías existentes (el
+    // fallback por equipo de lead-service sigue protegiendo a quien aún no tiene proveedor asignado).
+    private static final Set<String> ROLES_GESTIONADOS_POR_PROVEEDOR = Set.of(
+            "ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE",
+            "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA"
     );
 
     private static final Set<String> ROLES_ASIGNABLES_PREVENTA = Set.of(
@@ -239,6 +246,18 @@ public class EquipoService implements IEquipo {
     }
 
     private void validarMembresia(Usuario usuario, Set<Long> idsSolicitados) {
+        Set<String> roles = usuario.getRoles().stream().map(Rol::getNombre).collect(Collectors.toSet());
+
+        // Roles gestionados por proveedor: no se les asignan equipos. Si el usuario no tiene además un
+        // rol de equipo (caso normal), se rechaza cualquier asignación a equipo. Quitar (set vacío) sí
+        // se permite. No se tocan las membresías ya existentes: solo se bloquean asignaciones nuevas.
+        boolean gestionadoPorProveedor = roles.stream().anyMatch(ROLES_GESTIONADOS_POR_PROVEEDOR::contains);
+        boolean tieneRolDeEquipo = roles.stream().anyMatch(ROLES_OPERATIVOS::contains);
+        if (gestionadoPorProveedor && !tieneRolDeEquipo && !idsSolicitados.isEmpty()) {
+            throw new BadRequestException(
+                    "Este rol se gestiona por proveedor, no por equipo");
+        }
+
         // Un usuario queda limitado a un solo equipo si tiene algún rol operativo que NO admite
         // multi-equipo. Así un ASESOR_VENTAS "puro" puede pertenecer a varios equipos, pero si
         // además tuviera un rol operativo single-team (p. ej. GTR) prevalece la restricción a uno.
