@@ -18,6 +18,7 @@ import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.CriterioZona;
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
+import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
@@ -170,6 +171,7 @@ public class LeadService {
     private final CalendarioFacturacionPostventaService calendarioFacturacionPostventaService;
     private final FacturacionPostventaService facturacionPostventaService;
     private final PostventaAsesorProveedorService postventaAsesorProveedorService;
+    private final ProveedorScopeService proveedorScopeService;
     private final PlanService planService;
     private final AuthEquipoClient authEquipoClient;
 
@@ -5284,6 +5286,11 @@ public class LeadService {
                     ? new RankingEquipoScope(false, List.of(-1L))
                     : new RankingEquipoScope(true, List.of(idEquipoSolicitado));
         }
+        // BACKOFFICE acotado por proveedor: no se filtra por equipo (que estaría vacío); el proveedorFilter
+        // del interceptor ya acota los leads al proveedor activo.
+        if (esBackofficeAcotadoPorProveedor()) {
+            return new RankingEquipoScope(false, List.of(-1L));
+        }
 
         List<Long> equiposUsuario = currentUser.equipos();
         if (equiposUsuario == null || equiposUsuario.isEmpty()) {
@@ -5301,11 +5308,23 @@ public class LeadService {
         if (currentUser.tieneVisibilidadGlobalEquipos()) {
             return new RankingEquipoScope(false, List.of(-1L));
         }
+        // BACKOFFICE acotado por proveedor: el proveedorFilter ya acota; no se filtra por equipo.
+        if (esBackofficeAcotadoPorProveedor()) {
+            return new RankingEquipoScope(false, List.of(-1L));
+        }
         List<Long> equiposUsuario = currentUser.equipos();
         if (equiposUsuario == null || equiposUsuario.isEmpty()) {
             return new RankingEquipoScope(true, List.of(-1L));
         }
         return new RankingEquipoScope(true, equiposUsuario);
+    }
+
+    // Coincide con EquipoFilterInterceptor: un BACKOFFICE con proveedores asignados queda acotado por el
+    // proveedorFilter (Hibernate), por lo que las queries de bandeja NO deben filtrar además por equipo.
+    // Sin proveedores asignados (aún no migrado) devuelve false y se conserva el filtro por equipo (fallback).
+    private boolean esBackofficeAcotadoPorProveedor() {
+        return proveedorScopeService.ambitoActual() == AmbitoProveedor.BACKOFFICE
+                && !proveedorScopeService.resolverScope(AmbitoProveedor.BACKOFFICE).vacio();
     }
 
     private double calcularPorcentajeRanking(long cantidad, long total) {

@@ -22,11 +22,11 @@ import java.util.List;
  * Reglas:
  * - Sin usuario autenticado (público/health): no se filtra.
  * - Visibilidad global (permiso VER_TODOS_LOS_EQUIPOS): no se filtra (ve todo).
- * - Rol acotado por PROVEEDOR (BACKOFFICE) CON proveedores asignados: filtro `proveedorFilter` por sus
- *   proveedores (estrechado al proveedor activo del selector, header X-Proveedor-Id). Se usa
+ * - Rol acotado por PROVEEDOR (BACKOFFICE / POSTVENTA) CON proveedores asignados: filtro `proveedorFilter`
+ *   por sus proveedores (estrechado al proveedor activo del selector, header X-Proveedor-Id). Se usa
  *   proveedorFilter EN LUGAR de equipoFilter (nunca ambos) para evitar doble filtro.
- * - BACKOFFICE SIN proveedores asignados (aún no migrado): cae al filtro por equipo (dual-run: no se
- *   rompe a nadie; la migración es por-usuario a medida que ADMIN asigna proveedores).
+ * - SIN proveedores asignados (aún no migrado): cae al filtro por equipo (dual-run: no se rompe a
+ *   nadie; la migración es por-usuario a medida que ADMIN asigna proveedores).
  * - Resto (GTR/ventas): filtro `equipoFilter` por sus equipos; sin equipos → [-1] (fail-closed).
  */
 @Component
@@ -47,10 +47,13 @@ public class EquipoFilterInterceptor implements HandlerInterceptor {
         if (currentUser.tieneVisibilidadGlobalEquipos()) {
             return true;
         }
-        if (proveedorScopeService.ambitoActual() == AmbitoProveedor.BACKOFFICE) {
-            ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(AmbitoProveedor.BACKOFFICE);
+        AmbitoProveedor ambito = proveedorScopeService.ambitoActual();
+        if (ambito != null) {
+            ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(ambito);
             // Dual-run: solo si ya tiene proveedores asignados se migra a scope por proveedor.
             // Sin asignaciones cae al filtro por equipo de abajo (comportamiento previo intacto).
+            // Aplica a BACKOFFICE y POSTVENTA: la bandeja de postventa va por calendario (no por este
+            // filtro), pero las consultas de Lead (detalle, búsqueda) quedan acotadas por proveedor.
             if (!scope.vacio()) {
                 try {
                     entityManager.unwrap(Session.class)

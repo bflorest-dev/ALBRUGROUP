@@ -924,17 +924,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.drawerMode.set('gestion');
     this.selectedLeadId.set(idLead);
     try {
-      const resolvedSourceRow = this.findActiveVentaRow(idLead) ?? sourceRow;
+      const resolvedSourceRow = this.resolvePrefillSourceRow(idLead, sourceRow);
       const detail = await firstValueFrom(this.leadService.obtenerDetalle(idLead));
       this.detail.set(detail);
       this.detailHadOperationalAction = false;
-      this.patchForms(detail, resolvedSourceRow);
-      await Promise.all([this.refreshOfferCatalogs(detail.idPlan ?? 0), this.refreshEventos(idLead)]);
       try {
         await this.refreshTipificationCatalog(idLead);
       } catch {
         this.notify('warn', 'Detalle abierto, pero no se pudo cargar el catalogo de tipificaciones de VENTA.');
       }
+      this.patchForms(detail, resolvedSourceRow);
+      await Promise.all([this.refreshOfferCatalogs(detail.idPlan ?? 0), this.refreshEventos(idLead)]);
       this.detailDrawerOpen.set(true);
     } catch (error) {
       this.notify('error', this.getErrorMessage(error, 'No se pudo abrir el detalle.'));
@@ -2293,7 +2293,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       );
       this.detail.set(detail);
       if (!this.hasUnsavedDataChanges()) {
-        this.patchForms(detail);
+        this.patchForms(detail, this.resolvePrefillSourceRow(idLead));
       }
       await (this.detailReadOnly() ? this.refreshEventosConsulta(idLead) : this.refreshEventos(idLead));
     } catch {
@@ -3048,6 +3048,27 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       ?? this.subsanablesRows().find((row) => row.id === idLead)
       ?? this.rechazadosRows().find((row) => row.id === idLead)
       ?? this.instaladosRows().find((row) => row.id === idLead);
+  }
+
+  private resolvePrefillSourceRow(idLead: number, fallback?: LeadVentaResponse): VisualLeadVenta | LeadVentaResponse | undefined {
+    const current = this.findActiveVentaRow(idLead);
+    if (this.hasTipificationPrefillData(current) || !fallback) {
+      return current ?? fallback;
+    }
+    return this.hasTipificationPrefillData(fallback) ? fallback : current ?? fallback;
+  }
+
+  private hasTipificationPrefillData(row?: VisualLeadVenta | LeadVentaResponse): boolean {
+    const fechaInstalacion = row && 'fechaInstalacion' in row ? row.fechaInstalacion : null;
+    return Boolean(
+      row?.codigoTipificacion
+      || row?.codigoSubtipificacion
+      || row?.fechaProgramacion
+      || row?.horaProgramada
+      || row?.fechaRechazo
+      || fechaInstalacion
+      || row?.ultimoComentarioTipificacion
+    );
   }
 
   private markFormsPristine(): void {
