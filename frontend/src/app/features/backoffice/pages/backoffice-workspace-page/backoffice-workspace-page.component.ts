@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -25,6 +25,7 @@ import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { SessionService } from '../../../../core/services/session.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
+import { CurrentUserProviderScopeService } from '../../../../core/services/current-user-provider-scope.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
 import { LeadCommercialDataTabsComponent } from '../../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
 import { LeadPlanSummaryComponent } from '../../../../shared/components/lead-plan-summary/lead-plan-summary.component';
@@ -132,6 +133,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly operationalGateService = inject(OperationalGateService);
+  private readonly providerScope = inject(CurrentUserProviderScopeService);
+  private lastProviderId: number | null | undefined = undefined;
   private readonly sessionService = inject(SessionService);
   private readonly leadService = inject(BackofficeLeadService);
   private readonly realtimeService = inject(LeadRealtimeService);
@@ -669,6 +672,39 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       const enabled = this.requiresSecSot() && this.canMutateOperationalData();
       this.setControlEnabled(this.tipificacionForm.controls.sec, enabled);
       this.setControlEnabled(this.tipificacionForm.controls.sot, enabled);
+    });
+
+    // Cambio de proveedor activo (selector del sidebar): las bandejas no se mezclan, así que al
+    // cambiar limpiamos todo y recargamos con el nuevo proveedor (el header X-Proveedor-Id lo aplica
+    // el interceptor). La primera ejecución solo registra el valor inicial.
+    effect(() => {
+      const activeId = this.providerScope.activeId();
+      if (this.lastProviderId === undefined) {
+        this.lastProviderId = activeId;
+        return;
+      }
+      if (activeId === this.lastProviderId) {
+        return;
+      }
+      this.lastProviderId = activeId;
+      untracked(() => {
+        this.plataformaRows.set([]);
+        this.programadosRows.set([]);
+        this.subsanablesRows.set([]);
+        this.rechazadosRows.set([]);
+        this.instaladosRows.set([]);
+        this.totalPlataforma.set(0);
+        this.totalProgramados.set(0);
+        this.totalSubsanables.set(0);
+        this.totalRechazados.set(0);
+        this.totalInstalados.set(0);
+        this.pagePlataforma.set(0);
+        this.pageProgramados.set(0);
+        this.pageSubsanables.set(0);
+        this.pageRechazados.set(0);
+        this.pageInstalados.set(0);
+        void this.refreshCurrent(false);
+      });
     });
   }
 

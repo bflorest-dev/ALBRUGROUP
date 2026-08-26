@@ -33,6 +33,13 @@ import java.util.Set;
 // (ver EquipoFilterInterceptor). Usuarios con visibilidad global NO lo habilitan (ven todo).
 @FilterDef(name = "equipoFilter", parameters = @ParamDef(name = "equipos", type = Long.class))
 @Filter(name = "equipoFilter", condition = "id_equipo in (:equipos)")
+// Partición por proveedor: alternativa al filtro por equipo para roles acotados por proveedor
+// (BACKOFFICE). El proveedor relevante es el del PLAN vendido (plan.id_proveedor), no el de la
+// campaña de marketing por la que entró el lead (un lead puede venir por campaña WIN y venderse
+// un plan CLARO). Coincide con el criterio de POSTVENTA. Leads sin plan quedan fuera del scope.
+@FilterDef(name = "proveedorFilter", parameters = @ParamDef(name = "proveedores", type = Long.class))
+@Filter(name = "proveedorFilter",
+        condition = "id_plan in (select p.id from plan p where p.id_proveedor in (:proveedores))")
 public class Lead {
 
 

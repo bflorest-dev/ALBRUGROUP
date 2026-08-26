@@ -11,6 +11,7 @@ import Aura from '@primeuix/themes/aura';
 
 import { routes } from './app.routes';
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
+import { proveedorScopeInterceptor } from './core/interceptors/proveedor-scope.interceptor';
 import { AppVersionService } from './core/services/app-version.service';
 import { BrowserSessionService } from './core/services/browser-session.service';
 
@@ -28,7 +29,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideAnimationsAsync(),
-    provideHttpClient(withInterceptors([authTokenInterceptor])),
+    provideHttpClient(withInterceptors([authTokenInterceptor, proveedorScopeInterceptor])),
     providePrimeNG({
       ripple: true,
       inputVariant: 'filled',

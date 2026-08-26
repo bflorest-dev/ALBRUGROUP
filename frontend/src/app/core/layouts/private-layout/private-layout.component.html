@@ -250,6 +250,28 @@
             </button>
           }
 
+          @if (mostrarSelectorProveedor()) {
+            <div class="profile-menu__label">Proveedor</div>
+            @for (proveedor of proveedoresUsuario(); track proveedor.id) {
+              <button
+                type="button"
+                class="profile-menu__item profile-menu__item--proveedor"
+                [class.profile-menu__item--active]="proveedor.id === proveedorActivoId()"
+                [attr.aria-pressed]="proveedor.id === proveedorActivoId()"
+                (click)="seleccionarProveedor(proveedor.id)"
+              >
+                <i
+                  class="pi"
+                  [class.pi-check-circle]="proveedor.id === proveedorActivoId()"
+                  [class.pi-circle]="proveedor.id !== proveedorActivoId()"
+                  aria-hidden="true"
+                ></i>
+                <span>{{ proveedor.nombre }}</span>
+              </button>
+            }
+            <div class="profile-menu__separator" aria-hidden="true"></div>
+          }
+
           <button type="button" class="profile-menu__item" (click)="logout()">
             <i class="pi pi-sign-out" aria-hidden="true"></i>
             <span>Cerrar sesion</span>

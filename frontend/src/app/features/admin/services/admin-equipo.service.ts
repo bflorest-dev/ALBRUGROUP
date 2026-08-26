@@ -32,6 +32,13 @@ export interface EmpleadoLite {
   puestoTrabajo: string;
 }
 
+export type AmbitoProveedor = 'BACKOFFICE' | 'POSTVENTA';
+
+export interface AsignacionUsuarioProveedor {
+  idEmpleado: number;
+  proveedorIds: number[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminEquipoService {
   private readonly http = inject(HttpClient);
@@ -109,6 +116,29 @@ export class AdminEquipoService {
 
   asignarProveedoresPostventaAsesor(empleadoId: number, proveedorIds: number[]): Observable<ProveedorLite[]> {
     return this.http.put<ProveedorLite[]>(`${this.postventaAsesoresUrl}/${empleadoId}/proveedores`, { proveedorIds });
+  }
+
+  // --- Scope por proveedor unificado (BACKOFFICE / POSTVENTA) ---
+  private readonly usuariosProveedoresUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/usuarios`;
+
+  // Todas las asignaciones del ámbito, agrupadas por empleado (para el grid).
+  listarAsignacionesProveedor(ambito: AmbitoProveedor): Observable<AsignacionUsuarioProveedor[]> {
+    const params = new HttpParams().set('ambito', ambito);
+    return this.http.get<AsignacionUsuarioProveedor[]>(`${this.usuariosProveedoresUrl}/proveedores`, { params });
+  }
+
+  // Reemplaza el set de proveedores del empleado en el ámbito dado.
+  asignarProveedoresUsuario(
+    empleadoId: number,
+    ambito: AmbitoProveedor,
+    proveedorIds: number[]
+  ): Observable<ProveedorLite[]> {
+    const params = new HttpParams().set('ambito', ambito);
+    return this.http.put<ProveedorLite[]>(
+      `${this.usuariosProveedoresUrl}/${empleadoId}/proveedores`,
+      { proveedorIds },
+      { params }
+    );
   }
 
   backfillLeads(): Observable<{ leadsActualizados: number }> {

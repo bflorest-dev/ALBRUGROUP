@@ -28,6 +28,7 @@ import { AsesorVentasWorkspaceStateService } from '../../services/asesor-ventas-
 import { STORAGE_KEYS } from '../../constants/storage.constants';
 import { GtrAgendadosAlertFacade } from '../../../features/gtr/facades/gtr-agendados-alert.facade';
 import { EquiposNavService } from '../../services/equipos-nav.service';
+import { CurrentUserProviderScopeService } from '../../services/current-user-provider-scope.service';
 import { LeadMeritoCorreccionDrawerComponent } from '../../../shared/components/lead-merito-correccion-drawer/lead-merito-correccion-drawer.component';
 
 type SidebarItem = {
@@ -90,7 +91,12 @@ export class PrivateLayoutComponent implements AfterViewInit {
   private readonly sessionService = inject(SessionService);
   private readonly gtrAgendadosAlertFacade = inject(GtrAgendadosAlertFacade);
   private readonly equiposNav = inject(EquiposNavService);
+  private readonly providerScope = inject(CurrentUserProviderScopeService);
   private readonly router = inject(Router);
+  // Selector de proveedor (BACKOFFICE / POSTVENTA con más de un proveedor asignado).
+  protected readonly proveedoresUsuario = this.providerScope.proveedores;
+  protected readonly proveedorActivoId = this.providerScope.activeId;
+  protected readonly mostrarSelectorProveedor = this.providerScope.mostrarSelector;
   protected readonly profileMenuOpen = signal(false);
   protected readonly mobileMenuOpen = signal(false);
   // Grupos expandibles del sidebar (clave estable del grupo).
@@ -282,6 +288,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
         { label: 'Empleabilidad', route: '/app/admin/empleabilidad', icon: 'pi pi-briefcase' },
         { label: 'Tipificaciones', route: '/app/admin/tipificaciones', icon: 'pi pi-sitemap', exact: true },
         { label: 'Equipos', route: '/app/admin/equipos', icon: 'pi pi-th-large', exact: true },
+        { label: 'Proveedores', route: '/app/admin/proveedores', icon: 'pi pi-building', exact: true },
         { label: 'Mantenimiento', route: '/app/admin/mantenimiento', icon: 'pi pi-database', exact: true },
         { label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { label: 'CorrecciÃ³n de campaÃ±a', route: '/app/admin/correccion-campana', icon: 'pi pi-sync', exact: true },
@@ -402,6 +409,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ['/app/admin/mantenimiento', 8],
       ['/app/admin/tipificaciones', 9],
       ['/app/admin/equipos', 10],
+      ['/app/admin/proveedores', 10.5],
       ['/app/admin/operaciones', 11],
       ['/app/admin/personal', 12],
       ['/app/admin/empleabilidad', 13]
@@ -544,6 +552,13 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.scheduleMenuScrollStateUpdate();
+    // Carga perezosa de los proveedores del usuario (no-op salvo BACKOFFICE / POSTVENTA).
+    void this.providerScope.load();
+  }
+
+  protected seleccionarProveedor(idProveedor: number): void {
+    this.providerScope.setActive(idProveedor);
+    this.profileMenuOpen.set(false);
   }
 
   @HostListener('window:resize')
@@ -659,6 +674,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
   protected async logout(): Promise<void> {
     this.profileMenuOpen.set(false);
     this.mobileMenuOpen.set(false);
+    this.providerScope.clear();
     await this.authSessionService.logout();
   }
 

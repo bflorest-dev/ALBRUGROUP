@@ -4,6 +4,7 @@ import { AdminDashboardPageComponent } from '../admin/pages/admin-dashboard-page
 import { AdminDeleteLeadsPageComponent } from '../admin/pages/admin-delete-leads-page/admin-delete-leads-page.component';
 import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employability-page/admin-employability-page.component';
 import { AdminEquiposPageComponent } from '../admin/pages/admin-equipos-page/admin-equipos-page.component';
+import { AdminProveedoresPageComponent } from '../admin/pages/admin-proveedores-page/admin-proveedores-page.component';
 import { AdminFinancePageComponent } from '../admin/pages/admin-finance-page/admin-finance-page.component';
 import { AdminMaintenancePageComponent } from '../admin/pages/admin-maintenance-page/admin-maintenance-page.component';
 import { AdminMetricsPageComponent } from '../admin/pages/admin-metrics-page/admin-metrics-page.component';
@@ -152,6 +153,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin/equipos',
     component: AdminEquiposPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'admin/proveedores',
+    component: AdminProveedoresPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR']

@@ -1,0 +1,118 @@
+.proveedores-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.proveedores-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.proveedores-page__intro h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.proveedores-page__intro p {
+  margin: 0.25rem 0 0;
+  color: var(--text-color-secondary);
+}
+
+.proveedores-hint {
+  margin: 0 0 0.9rem;
+  color: var(--text-color-secondary);
+  font-size: 0.875rem;
+}
+
+.proveedores-hint--empty {
+  margin: 0.5rem 0;
+}
+
+.proveedores-matrix {
+  overflow-x: auto;
+  transition: opacity 0.15s ease;
+}
+
+.proveedores-matrix--busy {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.proveedores-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.proveedores-table th,
+.proveedores-table td {
+  border-bottom: 1px solid var(--app-border-soft);
+  padding: 0.55rem 0.75rem;
+}
+
+.proveedores-table__person-col {
+  text-align: left;
+  width: 60%;
+}
+
+.proveedores-table__prov-col {
+  text-align: center;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.proveedores-table__person {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.proveedores-table__name {
+  font-weight: 600;
+}
+
+.proveedores-table__role {
+  color: var(--text-color-secondary);
+  font-size: 0.78rem;
+}
+
+.proveedores-table__cell {
+  text-align: center;
+}
+
+.proveedores-check {
+  display: inline-grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 0.4rem;
+  border: 1.5px solid var(--app-border-soft);
+  background: transparent;
+  color: var(--primary-color, #10b981);
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+
+.proveedores-check:hover:not(:disabled) {
+  border-color: var(--primary-color, #10b981);
+}
+
+.proveedores-check--on {
+  background: var(--primary-color, #10b981);
+  border-color: var(--primary-color, #10b981);
+  color: #ffffff;
+}
+
+.proveedores-check:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.proveedores-check .pi {
+  font-size: 0.9rem;
+}

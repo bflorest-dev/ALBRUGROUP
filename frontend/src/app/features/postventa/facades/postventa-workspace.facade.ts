@@ -1,9 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { BrowserSessionService } from '../../../core/services/browser-session.service';
+import { CurrentUserProviderScopeService } from '../../../core/services/current-user-provider-scope.service';
 import { SessionService } from '../../../core/services/session.service';
 import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
@@ -68,7 +69,27 @@ export class PostventaWorkspaceFacade {
   private readonly realtime = inject(LeadRealtimeService);
   private readonly session = inject(SessionService);
   private readonly browserSession = inject(BrowserSessionService);
+  private readonly providerScope = inject(CurrentUserProviderScopeService);
   private readonly destroyRef = inject(DestroyRef);
+  private lastProviderId: number | null | undefined = undefined;
+
+  constructor() {
+    // Cambio de proveedor activo (selector del sidebar): recargar la bandeja desde la primera página
+    // con el nuevo proveedor (el header X-Proveedor-Id lo aplica el interceptor). Nunca se mezclan
+    // bandejas. La primera ejecución solo registra el valor inicial.
+    effect(() => {
+      const activeId = this.providerScope.activeId();
+      if (this.lastProviderId === undefined) {
+        this.lastProviderId = activeId;
+        return;
+      }
+      if (activeId === this.lastProviderId) {
+        return;
+      }
+      this.lastProviderId = activeId;
+      void this.loadBoard(0);
+    });
+  }
 
   readonly pageSize = 12;
 

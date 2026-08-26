@@ -76,7 +76,7 @@ public class PostventaBandejaService {
             Integer numeroCorteBase
     ) {
         Pageable pageable = paginationService.toPageable(normalizarOrden(pageRequest), BANDEJA_SORT_FIELDS);
-        PostventaAsesorProveedorService.Scope scope = postventaAsesorProveedorService.resolverScopeActual();
+        ProveedorScopeService.Scope scope = postventaAsesorProveedorService.resolverScopeActual();
         if (scope.vacio()) {
             return PageResponse.from(Page.empty(pageable));
         }
@@ -201,7 +201,7 @@ public class PostventaBandejaService {
             LocalDate mesCorteBase,
             Integer numeroCorteBase,
             Pageable pageable,
-            PostventaAsesorProveedorService.Scope scope
+            ProveedorScopeService.Scope scope
     ) {
         if (!scope.restringido()) {
             return mesCorteBase == null || numeroCorteBase == null

@@ -1,0 +1,78 @@
+<p-toast />
+
+<section class="proveedores-page">
+  <header class="proveedores-page__header">
+    <div class="proveedores-page__intro">
+      <h1>Proveedores</h1>
+      <p>Decide qué backoffice y postventa gestiona cada proveedor. Marca una celda para asignar.</p>
+    </div>
+    <p-selectButton
+      [options]="ambitoOptions"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="ambito()"
+      [allowEmpty]="false"
+      (onChange)="cambiarAmbito($event.value)"
+    />
+  </header>
+
+  <p-card>
+    @if (empleadosDelAmbito().length && proveedores().length) {
+      <p class="proveedores-hint">
+        Cada columna es un proveedor: marca quién lo gestiona. Un mismo empleado puede tener varios; en su
+        bandeja los verá por separado con el selector, nunca mezclados.
+      </p>
+      <div class="proveedores-matrix" [class.proveedores-matrix--busy]="cargando()">
+        <table class="proveedores-table">
+          <thead>
+            <tr>
+              <th class="proveedores-table__person-col">Empleado</th>
+              @for (proveedor of proveedores(); track proveedor.id) {
+                <th class="proveedores-table__prov-col">{{ proveedor.nombre }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (empleado of empleadosDelAmbito(); track empleado.idEmpleado) {
+              <tr>
+                <td class="proveedores-table__person">
+                  <span class="proveedores-table__name">{{ nombreEmpleado(empleado) }}</span>
+                  <small class="proveedores-table__role">{{ rolCorto(empleado.puestoTrabajo) }}</small>
+                </td>
+                @for (proveedor of proveedores(); track proveedor.id) {
+                  <td class="proveedores-table__cell">
+                    <button
+                      type="button"
+                      class="proveedores-check"
+                      [class.proveedores-check--on]="gestiona(empleado.idEmpleado, proveedor.id)"
+                      [disabled]="guardandoCelda(empleado.idEmpleado, proveedor.id)"
+                      [attr.aria-pressed]="gestiona(empleado.idEmpleado, proveedor.id)"
+                      [attr.aria-label]="nombreEmpleado(empleado) + ' gestiona ' + proveedor.nombre"
+                      (click)="toggle(empleado.idEmpleado, proveedor.id)"
+                    >
+                      <i
+                        class="pi"
+                        [class.pi-check]="gestiona(empleado.idEmpleado, proveedor.id) && !guardandoCelda(empleado.idEmpleado, proveedor.id)"
+                        [class.pi-spin]="guardandoCelda(empleado.idEmpleado, proveedor.id)"
+                        [class.pi-spinner]="guardandoCelda(empleado.idEmpleado, proveedor.id)"
+                        aria-hidden="true"
+                      ></i>
+                    </button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (!cargando()) {
+      <p class="proveedores-hint proveedores-hint--empty">
+        @if (!proveedores().length) {
+          No hay proveedores activos. Crea o activa proveedores primero.
+        } @else {
+          No hay empleados de {{ ambito() === 'BACKOFFICE' ? 'backoffice' : 'postventa' }} para asignar.
+        }
+      </p>
+    }
+  </p-card>
+</section>

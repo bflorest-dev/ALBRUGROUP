@@ -385,6 +385,40 @@
   background: var(--layout-sidebar-hover);
 }
 
+.profile-menu__label {
+  padding: 0.35rem 0.85rem 0.1rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.profile-menu__item--proveedor {
+  gap: 0.6rem;
+}
+
+.profile-menu__item--proveedor .pi {
+  font-size: 0.95rem;
+  opacity: 0.7;
+}
+
+.profile-menu__item--active {
+  background: var(--layout-sidebar-hover);
+  font-weight: 600;
+}
+
+.profile-menu__item--active .pi {
+  opacity: 1;
+  color: color-mix(in srgb, #ffffff 82%, transparent 18%);
+}
+
+.profile-menu__separator {
+  height: 1px;
+  margin: 0.25rem 0.4rem;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .profile-switch {
   width: 2.15rem;
   height: 1.18rem;

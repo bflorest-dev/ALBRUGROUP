@@ -32,6 +32,10 @@ interface GrupoEmpleados {
   items: OpcionEmpleado[];
 }
 
+// Roles que SÍ pertenecen a un equipo. Backoffice y postventa se gestionan por proveedor (tab Proveedores),
+// no aquí. Solo filtramos las OPCIONES: los miembros ya asignados de otros roles no se tocan (dual-run).
+const ROLES_DE_EQUIPO = new Set(['ASESOR_GTR', 'SUPERVISOR_GTR', 'ASESOR_VENTAS', 'SUPERVISOR_VENTAS', 'OJT']);
+
 @Component({
   selector: 'app-admin-equipos-page',
   imports: [
@@ -74,9 +78,13 @@ export class AdminEquiposPageComponent implements OnInit {
   private readonly teamIdsByEmployeeId = signal<Record<number, number[]>>({});
 
   // Empleados agrupados por rol (rol → lista de empleados), con búsqueda por nombre en el multiselect.
+  // Solo roles de equipo: backoffice/postventa se asignan en el tab Proveedores.
   protected readonly empleadoGrupos = computed<GrupoEmpleados[]>(() => {
     const grupos = new Map<string, OpcionEmpleado[]>();
     for (const e of this.empleados()) {
+      if (!ROLES_DE_EQUIPO.has(e.puestoTrabajo)) {
+        continue;
+      }
       const lista = grupos.get(e.puestoTrabajo) ?? [];
       lista.push({ label: `${e.nombres} ${e.apellidos}`, value: e.idEmpleado });
       grupos.set(e.puestoTrabajo, lista);
@@ -95,7 +103,6 @@ export class AdminEquiposPageComponent implements OnInit {
   protected formProveedorFallback: number | null = null;
   protected formProveedorFallbackOptions: ProveedorLite[] = [];
   protected formEmpleados: number[] = [];
-  protected postventaProveedorIdsByEmpleado: Record<number, number[]> = {};
 
   protected get tituloDialog(): string {
     return this.editandoId() ? 'Editar equipo' : 'Crear equipo';
@@ -153,7 +160,6 @@ export class AdminEquiposPageComponent implements OnInit {
     this.formProveedorFallback = null;
     this.formProveedorFallbackOptions = [];
     this.formEmpleados = [];
-    this.postventaProveedorIdsByEmpleado = {};
     this.dialogVisible.set(true);
   }
 
@@ -173,7 +179,6 @@ export class AdminEquiposPageComponent implements OnInit {
       const miembrosIds = (miembros ?? []).map((m) => m.empleadoId);
       this.formEmpleados = [...miembrosIds];
       this.miembrosOriginales.set(miembrosIds);
-      await this.cargarScopesPostventa(miembrosIds);
       this.dialogVisible.set(true);
     } catch {
       this.notify('error', 'No se pudo cargar el detalle del equipo.');
@@ -199,7 +204,6 @@ export class AdminEquiposPageComponent implements OnInit {
       const id = await this.guardarEquipoBase(nombre);
       await firstValueFrom(this.service.asignarProveedores(id, this.formProveedores, this.formProveedorFallback));
       await this.sincronizarMiembros(id);
-      await this.guardarScopesPostventa();
 
       this.dialogVisible.set(false);
       this.notify('success', this.editandoId() ? 'Equipo actualizado.' : 'Equipo creado.');
@@ -219,58 +223,6 @@ export class AdminEquiposPageComponent implements OnInit {
     if (!this.formProveedorFallback && this.formProveedores.length === 1) {
       this.formProveedorFallback = this.formProveedores[0];
     }
-  }
-
-  protected postventaEmpleadosSeleccionados(): EmpleadoLite[] {
-    const seleccionados = new Set(this.formEmpleados);
-    return this.empleados()
-      .filter((empleado) => seleccionados.has(empleado.idEmpleado) && this.esRolPostventa(empleado.puestoTrabajo))
-      .sort((a, b) => this.nombreEmpleado(a).localeCompare(this.nombreEmpleado(b)));
-  }
-
-  protected nombreEmpleado(empleado: EmpleadoLite): string {
-    return `${empleado.nombres} ${empleado.apellidos}`.trim();
-  }
-
-  protected async onEmpleadosChange(): Promise<void> {
-    await this.cargarScopesPostventa(this.formEmpleados);
-  }
-
-  private async cargarScopesPostventa(empleadoIds: number[]): Promise<void> {
-    const pendientes = this.empleados()
-      .filter((empleado) => empleadoIds.includes(empleado.idEmpleado) && this.esRolPostventa(empleado.puestoTrabajo))
-      .map((empleado) => empleado.idEmpleado)
-      .filter((empleadoId) => !(empleadoId in this.postventaProveedorIdsByEmpleado));
-    if (!pendientes.length) {
-      return;
-    }
-    const cargados = await Promise.all(
-      pendientes.map(async (empleadoId) => ({
-        empleadoId,
-        proveedores: await firstValueFrom(
-          this.service.listarProveedoresPostventaAsesor(empleadoId).pipe(catchError(() => of<ProveedorLite[]>([])))
-        )
-      }))
-    );
-    this.postventaProveedorIdsByEmpleado = {
-      ...this.postventaProveedorIdsByEmpleado,
-      ...Object.fromEntries(cargados.map((item) => [item.empleadoId, item.proveedores.map((p) => p.id)]))
-    };
-  }
-
-  private async guardarScopesPostventa(): Promise<void> {
-    for (const empleado of this.postventaEmpleadosSeleccionados()) {
-      await firstValueFrom(
-        this.service.asignarProveedoresPostventaAsesor(
-          empleado.idEmpleado,
-          this.postventaProveedorIdsByEmpleado[empleado.idEmpleado] ?? []
-        )
-      );
-    }
-  }
-
-  private esRolPostventa(rol?: string | null): boolean {
-    return rol === 'ASESOR_POSTVENTA' || rol === 'SUPERVISOR_POSTVENTA';
   }
 
   private syncProveedorFallbackOptions(): void {
