@@ -7,7 +7,7 @@
 }
 
 .backoffice-page {
-  --backoffice-table-min-width: 1320px;
+  --backoffice-table-min-width: 1390px;
   min-width: 0;
   overflow-x: clip;
 }
@@ -151,7 +151,8 @@ p,
   white-space: nowrap;
 }
 
-.col-fecha,
+.col-fecha-ingreso,
+.col-fecha-operativa,
 .col-gestion {
   white-space: nowrap;
   width: 7rem;
@@ -264,6 +265,58 @@ p,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.client-cell {
+  display: grid;
+  gap: 0.15rem;
+  line-height: 1.1;
+  min-width: 0;
+}
+
+.client-cell strong {
+  color: #10243f;
+  font-size: 0.86rem;
+  font-weight: 850;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-cell span {
+  color: var(--role-muted);
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.correction-value {
+  color: #26374d;
+  font-size: 0.82rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.correction-value--missing {
+  color: #b45309;
+}
+
+.correction-advisor {
+  color: #26374d;
+  font-size: 0.82rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.correction-form {
+  display: grid;
+  gap: 1rem;
+  padding: 0.25rem 1rem 1rem;
+}
+
+.correction-form small {
+  color: #b42318;
+  font-size: 0.74rem;
+  font-weight: 750;
 }
 
 .col-proveedor {
@@ -702,7 +755,12 @@ app-lead-commercial-data-tabs {
     width: min(58rem, 96vw);
   }
 
-  .backoffice-drawer .p-drawer-content {
+  .correction-drawer {
+    width: min(28rem, 94vw);
+  }
+
+  .backoffice-drawer .p-drawer-content,
+  .correction-drawer .p-drawer-content {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
@@ -710,6 +768,7 @@ app-lead-commercial-data-tabs {
     padding: 0;
   }
 
+  .correction-form .p-inputtext,
   .tipification-bar .p-select,
   .tipification-bar .p-inputtext,
   .tipification-bar .p-datepicker,
@@ -781,7 +840,7 @@ app-lead-commercial-data-tabs {
 
 @media (max-width: 1439px) {
   .backoffice-page {
-    --backoffice-table-min-width: 1120px;
+    --backoffice-table-min-width: 1190px;
     gap: 0.75rem;
   }
 
@@ -815,7 +874,8 @@ app-lead-commercial-data-tabs {
     width: 7rem;
   }
 
-  .col-fecha,
+  .col-fecha-ingreso,
+  .col-fecha-operativa,
   .col-gestion {
     width: 6.25rem;
   }
@@ -862,7 +922,7 @@ app-lead-commercial-data-tabs {
 
 @media (max-width: 1280px) and (min-width: 901px) {
   .backoffice-page {
-    --backoffice-table-min-width: 1040px;
+    --backoffice-table-min-width: 1110px;
   }
 
   .eyebrow {

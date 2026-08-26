@@ -19,6 +19,7 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
+import pe.albrugroup.lead_service.entity.request.LeadInstalacionCorreccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTomaVentaRequest;
@@ -26,12 +27,15 @@ import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse;
+import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadVentaAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanResponse;
 import pe.albrugroup.lead_service.service.EventoService;
+import pe.albrugroup.lead_service.service.LeadInstalacionCorreccionService;
 import pe.albrugroup.lead_service.service.LeadService;
 
 import java.time.LocalDate;
@@ -44,6 +48,7 @@ public class VentaController {
 
     private final LeadService leadService;
     private final EventoService eventoService;
+    private final LeadInstalacionCorreccionService leadInstalacionCorreccionService;
 
     // BackOffice
     // 1. Listar Leads que se encuentren en la etapa de Venta. Permite filtrar por numero de lead.
@@ -124,6 +129,16 @@ public class VentaController {
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
         var leads = leadService.listarLeadsVentaInstalados(fechaDesde, fechaHasta, pageRequest, idEquipo);
+        return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+
+    @GetMapping("/correcciones/instalacion") @PreAuthorize("hasAuthority('CORREGIR_INSTALACION_LEAD')")
+    public ResponseEntity<PageResponse<LeadInstalacionCorreccionCandidatoResponse>> listarCorreccionesInstalacionVenta(
+            @RequestParam(required = false) String buscar,
+            @RequestParam(required = false) Long idEquipo,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = leadService.listarCorreccionesInstalacionVenta(buscar, idEquipo, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
@@ -217,5 +232,14 @@ public class VentaController {
     ) {
         leadService.tipificarLeadVenta(idLead, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{idLead}/corregir-instalacion") @PreAuthorize("hasAuthority('CORREGIR_INSTALACION_LEAD')")
+    public ResponseEntity<LeadInstalacionCorreccionResponse> corregirInstalacionLeadVenta(
+            @PathVariable Long idLead,
+            @RequestBody LeadInstalacionCorreccionRequest request
+    ) {
+        var response = leadInstalacionCorreccionService.corregirInstalacion(idLead, request);
+        return ResponseEntity.ok(response);
     }
 }

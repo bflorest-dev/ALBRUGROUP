@@ -9,6 +9,9 @@ import {
   LeadContextoLookupResponse,
   LeadDatosPreventaRequest,
   LeadDetalleResponse,
+  LeadInstalacionCorreccionCandidatoResponse,
+  LeadInstalacionCorreccionRequest,
+  LeadInstalacionCorreccionResponse,
   LeadInstaladoBackofficeResponse,
   LeadDireccionRequest,
   LeadOfertaComercialRequest,
@@ -139,6 +142,34 @@ export class BackofficeLeadService {
       params = params.set('idEquipo', idEquipo);
     }
     return this.http.get<LeadPage<LeadInstaladoBackofficeResponse>>(`${this.leadUrl}/venta/instalados`, { params });
+  }
+
+  listarCorreccionesInstalacion(
+    query: PageQuery,
+    buscar?: string | null,
+    idEquipo?: number | null
+  ): Observable<LeadPage<LeadInstalacionCorreccionCandidatoResponse>> {
+    let params = this.pageParams(query);
+    if (buscar) {
+      params = params.set('buscar', buscar);
+    }
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<LeadPage<LeadInstalacionCorreccionCandidatoResponse>>(
+      `${this.leadUrl}/venta/correcciones/instalacion`,
+      { params }
+    );
+  }
+
+  corregirInstalacion(
+    idLead: number,
+    request: LeadInstalacionCorreccionRequest
+  ): Observable<LeadInstalacionCorreccionResponse> {
+    return this.http.patch<LeadInstalacionCorreccionResponse>(
+      `${this.leadUrl}/venta/${idLead}/corregir-instalacion`,
+      request
+    );
   }
 
   tomarLead(idLead: number, request: LeadTomaVentaRequest = {}): Observable<void> {

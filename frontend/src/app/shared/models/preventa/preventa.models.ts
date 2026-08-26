@@ -311,6 +311,45 @@ export interface LeadInstaladoBackofficeResponse {
   etapaActual?: Etapa | string | null;
 }
 
+export interface LeadInstalacionCorreccionCandidatoResponse {
+  idLead: number;
+  lead?: string | null;
+  usermeta?: string | null;
+  tipoDocumento?: string | null;
+  numeroDocumento?: string | null;
+  nombreCliente?: string | null;
+  proveedor?: string | null;
+  plan?: string | null;
+  etapa?: Etapa | string | null;
+  sec?: string | null;
+  sot?: string | null;
+  fechaInstalacion?: string | null;
+  fechaTipificacionInstalado?: string | null;
+  nombreAsesorInstalador?: string | null;
+  faltaSec: boolean;
+  faltaSot: boolean;
+  faltaFechaInstalacion: boolean;
+}
+
+export interface LeadInstalacionCorreccionRequest {
+  sec?: string | null;
+  sot?: string | null;
+  fechaInstalacion?: string | null;
+}
+
+export interface LeadInstalacionCorreccionResponse {
+  idLead: number;
+  lead?: string | null;
+  etapa?: Etapa | string | null;
+  secAnterior?: string | null;
+  secNuevo?: string | null;
+  sotAnterior?: string | null;
+  sotNuevo?: string | null;
+  fechaInstalacionAnterior?: string | null;
+  fechaInstalacionNueva?: string | null;
+  idEventoInstalado?: number | null;
+}
+
 export interface LeadGtrMetricasResponse {
   nuevos: number;
   sinGestionar: number;

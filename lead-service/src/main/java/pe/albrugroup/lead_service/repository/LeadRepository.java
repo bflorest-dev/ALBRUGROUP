@@ -16,6 +16,7 @@ import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
+import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
@@ -1858,6 +1859,89 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapasPermitidas") Collection<Etapa> etapasPermitidas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("sortBy") String sortBy,
+            @Param("sortDesc") boolean sortDesc,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse(
+                l.id,
+                l.lead,
+                l.usermeta,
+                dp.tipoDocumento,
+                COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
+                dp.nombreTitularServicio,
+                l.nombreProveedorSnapshot,
+                l.nombrePlanSnapshot,
+                l.etapa,
+                l.sec,
+                l.sot,
+                e.fechaInstalacion,
+                e.createdAt,
+                e.nombreActor,
+                CASE WHEN l.sec IS NULL OR TRIM(l.sec) = '' THEN true ELSE false END,
+                CASE WHEN l.sot IS NULL OR TRIM(l.sot) = '' THEN true ELSE false END,
+                CASE WHEN e.fechaInstalacion IS NULL THEN true ELSE false END
+            )
+            FROM Lead l
+            JOIN Evento e ON e.idLead = l.id
+            JOIN l.plan pl
+            JOIN pl.proveedor pp
+            LEFT JOIN l.datosPreventa dp
+            WHERE e.accion = :accionTipificacion
+              AND e.etapa = :etapaVenta
+              AND e.tipificacion = :codigoInstalado
+              AND l.etapa IN :etapasPermitidas
+              AND UPPER(TRIM(pp.nombre)) = :proveedorClaro
+              AND (
+                    l.sec IS NULL OR TRIM(l.sec) = ''
+                    OR l.sot IS NULL OR TRIM(l.sot) = ''
+                    OR e.fechaInstalacion IS NULL
+                  )
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND (
+                    :buscando = false
+                    OR l.lead LIKE :buscarPattern
+                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :buscarPattern
+                    OR LOWER(COALESCE(l.usermeta, '')) LIKE LOWER(:buscarPattern)
+                    OR l.sec LIKE :buscarPattern
+                    OR l.sot LIKE :buscarPattern
+                  )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM Evento es
+                  WHERE es.idLead = l.id
+                    AND es.accion = :accionTipificacion
+                    AND es.etapa = :etapaVenta
+                    AND es.tipificacion = :codigoInstalado
+                    AND (
+                        es.createdAt > e.createdAt
+                        OR (es.createdAt = e.createdAt AND es.id > e.id)
+                    )
+              )
+            ORDER BY
+              CASE WHEN :sortBy = 'fechaTipificacionInstalado' AND :sortDesc = false THEN e.createdAt END ASC,
+              CASE WHEN :sortBy = 'fechaTipificacionInstalado' AND :sortDesc = true THEN e.createdAt END DESC,
+              CASE WHEN :sortBy = 'fechaInstalacion' AND :sortDesc = false THEN e.fechaInstalacion END ASC,
+              CASE WHEN :sortBy = 'fechaInstalacion' AND :sortDesc = true THEN e.fechaInstalacion END DESC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = false THEN l.lead END ASC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = true THEN l.lead END DESC,
+              CASE WHEN :sortBy = 'numeroDocumento' AND :sortDesc = false THEN COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) END ASC,
+              CASE WHEN :sortBy = 'numeroDocumento' AND :sortDesc = true THEN COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) END DESC,
+              e.createdAt DESC,
+              l.id DESC
+            """)
+    Page<LeadInstalacionCorreccionCandidatoResponse> listarCorreccionesInstalacionVenta(
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("codigoInstalado") String codigoInstalado,
+            @Param("proveedorClaro") String proveedorClaro,
+            @Param("etapasPermitidas") Collection<Etapa> etapasPermitidas,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("buscando") boolean buscando,
+            @Param("buscarPattern") String buscarPattern,
             @Param("sortBy") String sortBy,
             @Param("sortDesc") boolean sortDesc,
             Pageable pageable

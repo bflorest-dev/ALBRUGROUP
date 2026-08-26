@@ -43,6 +43,7 @@ import {
   LeadGtrGroupItemResponse,
   LeadContextoLookupResponse,
   LeadDetalleResponse,
+  LeadInstalacionCorreccionCandidatoResponse,
   LeadInstaladoBackofficeResponse,
   LeadVentaGroupFilter,
   LeadVentaGroupType,
@@ -56,7 +57,7 @@ import {
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { BackofficeLeadService, LeadRechazadosFilters } from '../../services/backoffice-lead.service';
 
-type BackofficeSection = 'plataforma' | 'programados' | 'subsanables' | 'rechazados' | 'instalados';
+type BackofficeSection = 'plataforma' | 'programados' | 'subsanables' | 'rechazados' | 'instalados' | 'correccion-instalacion';
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
 type BackofficeSortField = 'fechaIngresoEtapa' | 'fechaRechazo' | 'fechaInstalacion' | 'fechaTipificacionInstalado' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado' | 'estadoClientePostventa';
 type BackofficeSortDirection = 'asc' | 'desc';
@@ -79,6 +80,7 @@ type VisualLeadVenta = LeadVentaResponse & {
   estadoClientePostventa?: string | null;
   etapaActual?: string | null;
 };
+type CorreccionInstalacionRow = LeadInstalacionCorreccionCandidatoResponse & { isNew?: boolean };
 type AdicionalSeleccionado = { idAdicional: number; cantidad: number };
 type OfertaProviderOption = { id: number; nombre: string };
 type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
@@ -151,6 +153,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private subsanablesRequestSeq = 0;
   private rechazadosRequestSeq = 0;
   private instaladosRequestSeq = 0;
+  private correccionInstalacionRequestSeq = 0;
   private domicilioResolveSeq = 0;
   private initialized = false;
   private initializeInFlight = false;
@@ -170,6 +173,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly subsanablesRows = signal<VisualLeadVenta[]>([]);
   protected readonly rechazadosRows = signal<VisualLeadVenta[]>([]);
   protected readonly instaladosRows = signal<VisualLeadVenta[]>([]);
+  protected readonly correccionInstalacionRows = signal<CorreccionInstalacionRow[]>([]);
   protected readonly plataformaGroupingMode = signal<BackofficeGroupMode>('SIN_AGRUPAR');
   protected readonly plataformaSortField = signal<BackofficeSortField>('fechaIngresoEtapa');
   protected readonly plataformaSortDirection = signal<BackofficeSortDirection>('desc');
@@ -188,11 +192,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly totalSubsanables = signal(0);
   protected readonly totalRechazados = signal(0);
   protected readonly totalInstalados = signal(0);
+  protected readonly totalCorreccionInstalacion = signal(0);
   protected readonly pagePlataforma = signal(0);
   protected readonly pageProgramados = signal(0);
   protected readonly pageSubsanables = signal(0);
   protected readonly pageRechazados = signal(0);
   protected readonly pageInstalados = signal(0);
+  protected readonly pageCorreccionInstalacion = signal(0);
   // Catálogo del modal de tipificación: es el del equipo del lead abierto (se trae por lead).
   protected readonly catalogo = signal<CatalogoResponse | null>(null);
   // Catálogo AGREGADO cross-equipo para la bandeja (paleta de color y filtro por código, ambos por
@@ -210,6 +216,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   });
   protected readonly selectedTipificacionCode = signal('');
   protected readonly selectedSubtipificacionCode = signal('');
+  protected readonly tipificacionCommentPlaceholder = signal('Agrega una nota si ayuda a la siguiente gestion');
   protected readonly planes = signal<PlanResponse[]>([]);
   protected readonly ofertaPlanes = signal<PlanResponse[]>([]);
   protected readonly promociones = signal<PromocionComercialResponse[]>([]);
@@ -223,6 +230,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly ubigeoDomicilioError = signal<string | null>(null);
   private readonly adicionalesDirty = signal(false);
   protected readonly detailDrawerOpen = signal(false);
+  protected readonly correctionDrawerOpen = signal(false);
+  protected readonly correctionTarget = signal<CorreccionInstalacionRow | null>(null);
   protected readonly drawerMode = signal<DrawerMode>('gestion');
   protected readonly detailReadOnly = computed(() => this.drawerMode() === 'consulta');
   protected readonly activeDataTab = signal('datos');
@@ -241,7 +250,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly searchTotal = signal(0);
   private readonly searchPage = signal(0);
   private searchRequestSeq = 0;
-  protected readonly isSearchMode = computed(() => this.searchTermActive().length > 0);
+  protected readonly isSearchMode = computed(() => this.section() !== 'correccion-instalacion' && this.searchTermActive().length > 0);
   protected readonly todayDate = this.todayLocalDate();
   // Periodo del `app-period-selector` por bandeja. Arranca en 'dia'/null en las 3: la carga inicial va
   // SIN fechaDesde/fechaHasta y el backend aplica sus defaults; recien al elegir dia/rango/semana/mes
@@ -352,6 +361,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     horaProgramada: [''],
     sec: [''],
     sot: ['']
+  });
+
+  protected readonly correctionForm = this.fb.group({
+    sec: ['', [Validators.required, Validators.pattern(/^\d{9}$/)]],
+    sot: ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
+    fechaInstalacion: ['', [Validators.required]]
   });
 
   protected readonly tipificaciones = computed(() => [...(this.catalogo()?.tipificaciones ?? [])].sort((a, b) => a.orden - b.orden));
@@ -467,6 +482,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'subsanables': return 'Leads subsanables';
       case 'rechazados': return 'Leads rechazados';
       case 'instalados': return 'Leads instalados';
+      case 'correccion-instalacion': return 'Instalaciones pendientes';
       default: return 'Leads disponibles';
     }
   });
@@ -476,6 +492,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'subsanables': return 'Revisa leads subsanables por fecha de rechazo.';
       case 'rechazados': return 'Revisa leads rechazados por fecha de rechazo.';
       case 'instalados': return 'Revisa leads instalados y su estado actual en Postventa.';
+      case 'correccion-instalacion': return 'Completa datos técnicos pendientes de leads instalados.';
       default: return 'Gestiona leads en venta y revisa quien los tiene asignados.';
     }
   });
@@ -544,6 +561,21 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     return this.canOrganizeActiveSection() && this.activeGroupingMode() !== 'SIN_AGRUPAR' ? 'organizationGroupKey' : undefined;
   });
+  protected readonly showOperationalDateColumn = computed(() =>
+    !this.isSearchMode() && this.section() !== 'plataforma'
+  );
+  protected readonly operationalDateColumnLabel = computed(() => {
+    if (this.section() === 'programados') {
+      return 'Fecha programacion';
+    }
+    if (this.isFechaInstalacionSection()) {
+      return 'Fecha instalacion';
+    }
+    if (this.isFechaRechazoSection()) {
+      return 'Fecha rechazo';
+    }
+    return 'Fecha relevante';
+  });
   protected readonly organizationSummary = computed(() => {
     const grouping = this.groupingModeOptions.find((option) => option.value === this.activeGroupingMode())?.label ?? 'Sin agrupar';
     const sorting = this.sortOptions.find((option) => option.value === this.activeSortField())?.label ?? 'Fecha ingreso';
@@ -592,7 +624,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly showSecSotColumn = computed(() =>
     this.activeRows().some((row) => row.requiereSecSotVenta === true || !!row.sec || !!row.sot)
   );
-  protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 10 : 9);
+  protected readonly tableColumnCount = computed(() =>
+    (this.showSecSotColumn() ? 10 : 9) + (this.showOperationalDateColumn() ? 1 : 0)
+  );
   protected readonly activeTotal = computed(() => {
     if (this.isSearchMode()) {
       return this.searchTotal();
@@ -602,6 +636,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'subsanables': return this.totalSubsanables();
       case 'rechazados': return this.totalRechazados();
       case 'instalados': return this.totalInstalados();
+      case 'correccion-instalacion': return this.totalCorreccionInstalacion();
       default: return this.totalPlataforma();
     }
   });
@@ -614,6 +649,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'subsanables': return this.pageSubsanables();
       case 'rechazados': return this.pageRechazados();
       case 'instalados': return this.pageInstalados();
+      case 'correccion-instalacion': return this.pageCorreccionInstalacion();
       default: return this.pagePlataforma();
     }
   });
@@ -625,6 +661,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'subsanables': return this.subsanablesPeriodo();
       case 'rechazados': return this.rechazadosPeriodo();
       case 'instalados': return this.instaladosPeriodo();
+      case 'correccion-instalacion': return 'dia';
       default: return this.plataformaPeriodo();
     }
   });
@@ -634,6 +671,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'subsanables': return this.subsanablesDia();
       case 'rechazados': return this.rechazadosDia();
       case 'instalados': return this.instaladosDia();
+      case 'correccion-instalacion': return null;
       default: return this.plataformaDia();
     }
   });
@@ -643,6 +681,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'subsanables': return this.subsanablesHasta();
       case 'rechazados': return this.rechazadosHasta();
       case 'instalados': return this.instaladosHasta();
+      case 'correccion-instalacion': return null;
       default: return this.plataformaHasta();
     }
   });
@@ -693,16 +732,19 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.subsanablesRows.set([]);
         this.rechazadosRows.set([]);
         this.instaladosRows.set([]);
+        this.correccionInstalacionRows.set([]);
         this.totalPlataforma.set(0);
         this.totalProgramados.set(0);
         this.totalSubsanables.set(0);
         this.totalRechazados.set(0);
         this.totalInstalados.set(0);
+        this.totalCorreccionInstalacion.set(0);
         this.pagePlataforma.set(0);
         this.pageProgramados.set(0);
         this.pageSubsanables.set(0);
         this.pageRechazados.set(0);
         this.pageInstalados.set(0);
+        this.pageCorreccionInstalacion.set(0);
         void this.refreshCurrent(false);
       });
     });
@@ -723,16 +765,19 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.subsanablesRows.set([]);
         this.rechazadosRows.set([]);
         this.instaladosRows.set([]);
+        this.correccionInstalacionRows.set([]);
         this.totalPlataforma.set(0);
         this.totalProgramados.set(0);
         this.totalSubsanables.set(0);
         this.totalRechazados.set(0);
         this.totalInstalados.set(0);
+        this.totalCorreccionInstalacion.set(0);
         this.pagePlataforma.set(0);
         this.pageProgramados.set(0);
         this.pageSubsanables.set(0);
         this.pageRechazados.set(0);
         this.pageInstalados.set(0);
+        this.pageCorreccionInstalacion.set(0);
       }
       this.adminEquipoId.set(nextAdminEquipoId);
       this.section.set(nextSection);
@@ -785,7 +830,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.refreshProgramados(false),
         this.refreshSubsanables(false),
         this.refreshRechazados(false),
-        this.refreshInstalados(false)
+        this.refreshInstalados(false),
+        this.section() === 'correccion-instalacion' ? this.refreshCorreccionInstalacion(false) : Promise.resolve()
       ]);
       this.initialized = true;
       this.operationalGate.markActivated();
@@ -819,10 +865,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         await this.refreshRechazados(true);
       } else if (this.section() === 'instalados') {
         await this.refreshInstalados(true);
+      } else if (this.section() === 'correccion-instalacion') {
+        await this.refreshCorreccionInstalacion(true);
       } else {
         await this.refreshPlataforma(true);
       }
-      await this.openDetail(row.id);
+      await this.openDetail(row.id, row);
     } catch (error) {
       if (!this.openTakeoverConfirmation(error, row)) {
         this.notify('error', this.getErrorMessage(error, 'No se pudo gestionar el lead.'));
@@ -861,7 +909,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  protected async openDetail(idLead: number): Promise<void> {
+  protected async openDetail(idLead: number, sourceRow?: LeadVentaResponse): Promise<void> {
     if (!this.ensureCanMutate()) {
       return;
     }
@@ -876,10 +924,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.drawerMode.set('gestion');
     this.selectedLeadId.set(idLead);
     try {
+      const resolvedSourceRow = this.findActiveVentaRow(idLead) ?? sourceRow;
       const detail = await firstValueFrom(this.leadService.obtenerDetalle(idLead));
       this.detail.set(detail);
       this.detailHadOperationalAction = false;
-      this.patchForms(detail);
+      this.patchForms(detail, resolvedSourceRow);
       await Promise.all([this.refreshOfferCatalogs(detail.idPlan ?? 0), this.refreshEventos(idLead)]);
       try {
         await this.refreshTipificationCatalog(idLead);
@@ -904,10 +953,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.drawerMode.set('consulta');
     this.selectedLeadId.set(idLead);
     try {
+      const sourceRow = this.findActiveVentaRow(idLead);
       const detail = await firstValueFrom(this.leadService.obtenerDetalleConsulta(idLead));
       this.detail.set(detail);
       this.detailHadOperationalAction = false;
-      this.patchForms(detail);
+      this.patchForms(detail, sourceRow);
       await this.refreshEventosConsulta(idLead);
       this.detailDrawerOpen.set(true);
     } catch (error) {
@@ -1275,6 +1325,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.refreshInstalados(false);
       return;
     }
+    if (this.section() === 'correccion-instalacion') {
+      this.pageCorreccionInstalacion.set(pageNumber);
+      await this.refreshCorreccionInstalacion(false);
+      return;
+    }
     this.pagePlataforma.set(pageNumber);
     await this.refreshPlataforma(false);
   }
@@ -1288,6 +1343,21 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
     const term = this.normalizeSearchTerm(this.searchInput());
+    if (this.section() === 'correccion-instalacion') {
+      this.searchInput.set(term);
+      this.searchLookup.set(null);
+      this.searchTermActive.set(term);
+      this.pageCorreccionInstalacion.set(0);
+      this.isSearching.set(true);
+      try {
+        await this.refreshCorreccionInstalacion(false);
+      } catch (error) {
+        this.notify('error', this.getErrorMessage(error, 'No se pudo buscar el dato ingresado.'));
+      } finally {
+        this.isSearching.set(false);
+      }
+      return;
+    }
     if (!term) {
       this.notify('warn', 'Escribe el lead, documento o @usermeta que quieres buscar.');
       return;
@@ -1319,6 +1389,82 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.searchTotal.set(0);
     this.searchPage.set(0);
     await this.refreshCurrent(false);
+  }
+
+  protected openCorrection(row: CorreccionInstalacionRow): void {
+    this.correctionTarget.set(row);
+    this.correctionForm.reset({
+      sec: row.sec ?? '',
+      sot: row.sot ?? '',
+      fechaInstalacion: row.fechaInstalacion ?? ''
+    });
+    this.correctionForm.markAsPristine();
+    this.correctionDrawerOpen.set(true);
+  }
+
+  protected closeCorrection(): void {
+    this.correctionDrawerOpen.set(false);
+    this.correctionTarget.set(null);
+    this.correctionForm.reset({ sec: '', sot: '', fechaInstalacion: '' });
+  }
+
+  protected onCorrectionSecInput(value: string): void {
+    this.setNumericDigits(this.correctionForm.controls.sec, value, 9);
+  }
+
+  protected onCorrectionSotInput(value: string): void {
+    this.setNumericDigits(this.correctionForm.controls.sot, value, 8);
+  }
+
+  protected async saveCorrection(): Promise<void> {
+    const target = this.correctionTarget();
+    if (!target || this.isSaving()) {
+      return;
+    }
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+    if (this.correctionForm.invalid) {
+      this.correctionForm.markAllAsTouched();
+      this.notify('warn', this.firstCorrectionFormError());
+      return;
+    }
+
+    const raw = this.correctionForm.getRawValue();
+    this.isSaving.set(true);
+    this.leadActionId.set(target.idLead);
+    try {
+      await firstValueFrom(this.leadService.corregirInstalacion(target.idLead, {
+        sec: raw.sec,
+        sot: raw.sot,
+        fechaInstalacion: raw.fechaInstalacion
+      }));
+      this.notify('success', 'Datos de instalación corregidos.');
+      this.closeCorrection();
+      await this.refreshCorreccionInstalacion(false);
+      await this.refreshInstalados(false);
+    } catch (error) {
+      this.notify('error', this.getErrorMessage(error, 'No se pudo corregir la instalación.'));
+    } finally {
+      this.isSaving.set(false);
+      this.leadActionId.set(null);
+    }
+  }
+
+  protected correctionFieldInvalid(field: 'sec' | 'sot' | 'fechaInstalacion'): boolean {
+    const control = this.correctionForm.controls[field];
+    return control.invalid && (control.touched || control.dirty);
+  }
+
+  private firstCorrectionFormError(): string {
+    const controls = this.correctionForm.controls;
+    if (controls.sec.invalid) {
+      return 'El SEC debe tener 9 dígitos.';
+    }
+    if (controls.sot.invalid) {
+      return 'El SOT debe tener 8 dígitos.';
+    }
+    return 'La fecha de instalación es obligatoria.';
   }
 
   protected onOrganizeEnter(): void {
@@ -1787,7 +1933,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private resolveSection(value: unknown): BackofficeSection {
-    return value === 'programados' || value === 'subsanables' || value === 'rechazados' || value === 'instalados'
+    return value === 'programados'
+      || value === 'subsanables'
+      || value === 'rechazados'
+      || value === 'instalados'
+      || value === 'correccion-instalacion'
       ? value
       : 'plataforma';
   }
@@ -1882,6 +2032,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.refreshSubsanables(true),
         this.refreshRechazados(true),
         this.refreshInstalados(true),
+        this.section() === 'correccion-instalacion' ? this.refreshCorreccionInstalacion(true) : Promise.resolve(),
         this.isSearchMode() ? this.refreshSearch() : Promise.resolve()
       ]);
       if (changedLeadId && this.selectedLeadId() === changedLeadId) {
@@ -1914,6 +2065,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     if (this.section() === 'instalados') {
       await this.refreshInstalados(silent);
+      return;
+    }
+    if (this.section() === 'correccion-instalacion') {
+      await this.refreshCorreccionInstalacion(silent);
       return;
     }
     await this.refreshPlataforma(silent);
@@ -2042,6 +2197,26 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.shouldAnimateInstaladosRefresh(silent, previous)
       )
     );
+  }
+
+  private async refreshCorreccionInstalacion(silent: boolean): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    const requestSeq = ++this.correccionInstalacionRequestSeq;
+    const requestKey = this.correccionInstalacionRequestKey();
+    const previous = this.correccionInstalacionRows();
+    const query = this.currentQuery(this.pageCorreccionInstalacion(), 'correccion-instalacion');
+    const page = await firstValueFrom(
+      this.leadService.listarCorreccionesInstalacion(query, this.searchTermActive() || null, this.adminEquipoId())
+    );
+    if (requestSeq !== this.correccionInstalacionRequestSeq || requestKey !== this.correccionInstalacionRequestKey()) {
+      return;
+    }
+    const previousById = new Map(previous.map((row) => [row.idLead, row]));
+    const rows = page.content.map((row) => ({ ...row, isNew: silent && !previousById.has(row.idLead) }));
+    this.totalCorreccionInstalacion.set(page.totalElements);
+    this.correccionInstalacionRows.set(rows);
   }
 
   private async refreshOrganizationGroups(): Promise<void> {
@@ -2344,7 +2519,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       pageSize: this.pageSize,
       sortBy: section === 'plataforma'
         ? this.plataformaSortField()
-        : this.isFechaRechazoSection(section)
+        : section === 'correccion-instalacion'
+          ? 'fechaTipificacionInstalado'
+          : this.isFechaRechazoSection(section)
           ? 'fechaRechazo'
           : this.isFechaInstalacionSection(section)
             ? 'fechaInstalacion'
@@ -2409,6 +2586,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       page: this.pageInstalados(),
       query: this.currentQuery(this.pageInstalados(), 'instalados'),
       filters: this.instaladosFilters()
+    });
+  }
+
+  private correccionInstalacionRequestKey(): string {
+    return JSON.stringify({
+      section: this.section(),
+      equipo: this.adminEquipoId(),
+      buscar: this.searchTermActive(),
+      page: this.pageCorreccionInstalacion(),
+      query: this.currentQuery(this.pageCorreccionInstalacion(), 'correccion-instalacion')
     });
   }
 
@@ -2483,7 +2670,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     };
   }
 
-  private patchForms(detail: LeadDetalleResponse): void {
+  private patchForms(detail: LeadDetalleResponse, sourceRow?: VisualLeadVenta): void {
     this.datosForm.patchValue({
       tipoDocumento: detail.tipoDocumento ?? 'DNI',
       numeroDocumentoTitularServicio: detail.numeroDocumentoTitularServicio ?? '',
@@ -2531,19 +2718,23 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     });
     this.adicionalesSeleccionados.set([]);
     this.adicionalesDirty.set(false);
+    const codigoTipificacion = sourceRow?.codigoTipificacion ?? '';
+    const codigoSubtipificacion = sourceRow?.codigoSubtipificacion ?? '';
+    const comentarioPrevio = (sourceRow?.ultimoComentarioTipificacion ?? '').trim();
+    this.tipificacionCommentPlaceholder.set(comentarioPrevio || 'Agrega una nota si ayuda a la siguiente gestion');
+    this.selectedTipificacionCode.set(codigoTipificacion);
+    this.selectedSubtipificacionCode.set(codigoSubtipificacion);
     this.tipificacionForm.reset({
-      codigoTipificacion: '',
-      codigoSubtipificacion: '',
+      codigoTipificacion,
+      codigoSubtipificacion,
       comentario: '',
-      fechaInstalacion: '',
-      fechaProgramacion: '',
-      fechaRechazo: detail.fechaRechazo ?? '',
-      horaProgramada: '',
+      fechaInstalacion: sourceRow?.fechaInstalacion ?? '',
+      fechaProgramacion: detail.fechaProgramacion ?? sourceRow?.fechaProgramacion ?? '',
+      fechaRechazo: detail.fechaRechazo ?? sourceRow?.fechaRechazo ?? '',
+      horaProgramada: detail.horaProgramada ?? sourceRow?.horaProgramada ?? '',
       sec: detail.sec ?? '',
       sot: detail.sot ?? ''
-    });
-    this.selectedTipificacionCode.set('');
-    this.selectedSubtipificacionCode.set('');
+    }, { emitEvent: false });
     this.activeDataTab.set('datos');
     this.markFormsPristine();
     void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
@@ -2837,6 +3028,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.selectedLeadId.set(null);
     this.selectedTipificacionCode.set('');
     this.selectedSubtipificacionCode.set('');
+    this.tipificacionCommentPlaceholder.set('Agrega una nota si ayuda a la siguiente gestion');
     this.selectedOfertaProviderId.set(null);
     this.ofertaPlanes.set([]);
     this.adicionalesSeleccionados.set([]);
@@ -2847,6 +3039,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.distritosDomicilio.set([]);
     this.ubigeoDomicilioLoading.set(false);
     this.ubigeoDomicilioError.set(null);
+  }
+
+  private findActiveVentaRow(idLead: number): VisualLeadVenta | undefined {
+    return this.activeRows().find((row) => row.id === idLead)
+      ?? this.plataformaRows().find((row) => row.id === idLead)
+      ?? this.programadosRows().find((row) => row.id === idLead)
+      ?? this.subsanablesRows().find((row) => row.id === idLead)
+      ?? this.rechazadosRows().find((row) => row.id === idLead)
+      ?? this.instaladosRows().find((row) => row.id === idLead);
   }
 
   private markFormsPristine(): void {
@@ -3021,6 +3222,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.subsanablesRows.set([]);
     this.rechazadosRows.set([]);
     this.instaladosRows.set([]);
+    this.correccionInstalacionRows.set([]);
     this.detail.set(null);
     this.eventos.set([]);
     this.selectedLeadId.set(null);
@@ -3029,12 +3231,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.totalSubsanables.set(0);
     this.totalRechazados.set(0);
     this.totalInstalados.set(0);
+    this.totalCorreccionInstalacion.set(0);
     this.pagePlataforma.set(0);
     this.pageProgramados.set(0);
     this.pageSubsanables.set(0);
     this.pageRechazados.set(0);
     this.pageInstalados.set(0);
+    this.pageCorreccionInstalacion.set(0);
     this.detailDrawerOpen.set(false);
+    this.correctionDrawerOpen.set(false);
+    this.correctionTarget.set(null);
     this.selectedOfertaProviderId.set(null);
     this.adicionalesSeleccionados.set([]);
     this.adicionalesDirty.set(false);

@@ -6,8 +6,8 @@
     <div class="hero-row">
       <div>
         <span class="eyebrow">VENTA</span>
-        <h1>{{ section() === 'programados' ? 'Programados Backoffice' : section() === 'subsanables' ? 'Subsanables Backoffice' : section() === 'rechazados' ? 'Rechazados Backoffice' : section() === 'instalados' ? 'Instalados Backoffice' : 'Plataforma Backoffice' }}</h1>
-        <p>{{ isReconciling() ? 'Sincronizando cambios en tiempo real' : 'Bandeja operativa de leads en venta' }}</p>
+        <h1>{{ section() === 'programados' ? 'Programados Backoffice' : section() === 'subsanables' ? 'Subsanables Backoffice' : section() === 'rechazados' ? 'Rechazados Backoffice' : section() === 'instalados' ? 'Instalados Backoffice' : section() === 'correccion-instalacion' ? 'Corrección de instalación' : 'Plataforma Backoffice' }}</h1>
+        <p>{{ isReconciling() ? 'Sincronizando cambios en tiempo real' : section() === 'correccion-instalacion' ? 'Completa datos técnicos pendientes' : 'Bandeja operativa de leads en venta' }}</p>
       </div>
 
       <div class="hero-actions">
@@ -79,15 +79,17 @@
       </div>
 
       <div class="board-controls__right">
-        <app-period-selector
-          [periodo]="activePeriodo()"
-          [dia]="activeDia()"
-          [hasta]="activeHasta()"
-          [allowFuture]="section() === 'programados'"
-          [disabled]="section() === 'instalados'"
-          (periodoChange)="onPeriodoChange($event)"
-          (rangoChange)="onRangoChange($event)"
-        />
+        @if (section() !== 'correccion-instalacion') {
+          <app-period-selector
+            [periodo]="activePeriodo()"
+            [dia]="activeDia()"
+            [hasta]="activeHasta()"
+            [allowFuture]="section() === 'programados'"
+            [disabled]="section() === 'instalados'"
+            (periodoChange)="onPeriodoChange($event)"
+            (rangoChange)="onRangoChange($event)"
+          />
+        }
 
         @if (section() === 'plataforma') {
           <button
@@ -196,6 +198,106 @@
       <p-message severity="warn" styleClass="lead-search-note" [text]="lookup.mensajeUsuario ?? ''" />
     }
 
+    @if (section() === 'correccion-instalacion') {
+      <p-table
+        [value]="correccionInstalacionRows()"
+        dataKey="idLead"
+        [loading]="canDisplayOperationalData() && isLoading()"
+        [rowHover]="true"
+        [scrollable]="true"
+        scrollHeight="flex"
+        [tableStyle]="{ 'min-width': '1100px' }"
+        styleClass="p-datatable-sm backoffice-table correction-table"
+      >
+        <ng-template #header>
+          <tr>
+            <th>Documento</th>
+            <th>Cliente</th>
+            <th>Plan</th>
+            <th>Etapa</th>
+            <th>SEC</th>
+            <th>SOT</th>
+            <th>Fecha instalación</th>
+            <th>Instalado por</th>
+            <th>Acción</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+          <tr [class.row-new]="row.isNew">
+            <td>
+              <div class="document-cell">
+                <strong>{{ display(row.numeroDocumento) }}</strong>
+                @if (row.tipoDocumento) {
+                  <span>{{ display(row.tipoDocumento) }}</span>
+                }
+              </div>
+            </td>
+            <td>
+              <div class="client-cell">
+                <strong>{{ display(row.nombreCliente) }}</strong>
+                @if (row.usermeta) {
+                  <span>{{ '@' + row.usermeta }}</span>
+                }
+              </div>
+            </td>
+            <td>
+              <app-lead-plan-summary [planName]="row.plan" />
+            </td>
+            <td>
+              <p-tag severity="secondary" [value]="display(row.etapa)" />
+            </td>
+            <td>
+              <span class="correction-value" [class.correction-value--missing]="row.faltaSec">{{ row.sec || 'Pendiente' }}</span>
+            </td>
+            <td>
+              <span class="correction-value" [class.correction-value--missing]="row.faltaSot">{{ row.sot || 'Pendiente' }}</span>
+            </td>
+            <td>
+              <span class="correction-value" [class.correction-value--missing]="row.faltaFechaInstalacion">{{ row.fechaInstalacion ? displayDateOnly(row.fechaInstalacion) : 'Pendiente' }}</span>
+            </td>
+            <td>
+              <span class="correction-advisor">{{ personShortName(row.nombreAsesorInstalador) }}</span>
+            </td>
+            <td>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-pen-to-square"
+                label="Corregir"
+                size="small"
+                [disabled]="isSaving() || leadActionId() !== null || !canMutateOperationalData()"
+                [loading]="leadActionId() === row.idLead"
+                (click)="openCorrection(row)"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="9">
+              @if (!canDisplayOperationalData()) {
+                <div class="empty-state">Marca ONLINE para activar esta bandeja.</div>
+              } @else if (isLoading()) {
+                <div class="skeleton-table">
+                  @for (_ of skeletonRows; track $index) {
+                    <div class="skeleton-row">
+                      <p-skeleton width="8rem" height="1.1rem" />
+                      <p-skeleton width="9rem" height="1.1rem" />
+                      <p-skeleton width="10rem" height="1.1rem" />
+                      <p-skeleton width="6rem" height="1.6rem" borderRadius="999px" />
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="empty-state">No hay instalaciones pendientes de corrección.</div>
+              }
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    } @else {
     <p-table
       [value]="activeRows()"
       dataKey="id"
@@ -210,7 +312,10 @@
     >
       <ng-template #header>
         <tr>
-          <th class="col-fecha">{{ (section() === 'programados' && !isSearchMode()) ? 'Fecha programacion' : (isFechaInstalacionSection() && !isSearchMode()) ? 'Fecha instalacion' : (isFechaRechazoSection() && !isSearchMode()) ? 'Fecha rechazo' : 'Fecha ingreso' }}</th>
+          <th class="col-fecha-ingreso">Fecha ingreso</th>
+          @if (showOperationalDateColumn()) {
+            <th class="col-fecha-operativa">{{ operationalDateColumnLabel() }}</th>
+          }
           <th class="col-documento">Documento</th>
           <th class="col-proveedor">Proveedor</th>
           <th class="col-estado">Estado</th>
@@ -249,21 +354,26 @@
 
       <ng-template #body let-row>
         <tr [class.row-new]="row.isNew">
-          <td class="col-fecha">
+          <td class="col-fecha-ingreso">
             <div class="date-stack">
-              @if (isFechaInstalacionSection() && !isSearchMode()) {
-                <span>{{ displayDateOnly(row.fechaInstalacion) }}</span>
-              } @else if (section() === 'programados' && !isSearchMode()) {
-                <span>{{ displayDateOnly(row.fechaProgramacion) }}</span>
-                <strong>{{ displayTimeOnly(row.horaProgramada) }}</strong>
-              } @else if (isFechaRechazoSection() && !isSearchMode()) {
-                <span>{{ displayDateOnly(row.fechaRechazo) }}</span>
-              } @else {
-                <span>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
-                <strong>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'hh:mm a') : '' }}</strong>
-              }
+              <span>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
+              <strong>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'hh:mm a') : '' }}</strong>
             </div>
           </td>
+          @if (showOperationalDateColumn()) {
+            <td class="col-fecha-operativa">
+              <div class="date-stack">
+                @if (section() === 'programados') {
+                <span>{{ displayDateOnly(row.fechaProgramacion) }}</span>
+                <strong>{{ displayTimeOnly(row.horaProgramada) }}</strong>
+                } @else if (isFechaInstalacionSection()) {
+                  <span>{{ displayDateOnly(row.fechaInstalacion) }}</span>
+                } @else if (isFechaRechazoSection()) {
+                  <span>{{ displayDateOnly(row.fechaRechazo) }}</span>
+                }
+              </div>
+            </td>
+          }
           <td class="col-documento">
             <div class="document-cell">
               <strong>{{ display(row.numeroDocumentoTitularServicio) }}</strong>
@@ -381,7 +491,7 @@
                 size="small"
                 [disabled]="isSaving() || leadActionId() !== null || !canMutateOperationalData()"
                 [loading]="isLeadActionLoading(row.id)"
-                (click)="openDetail(row.id)"
+                (click)="openDetail(row.id, row)"
               ></button>
             }
           </td>
@@ -429,6 +539,7 @@
         </tr>
       </ng-template>
     </p-table>
+    }
 
     <p-paginator
       [first]="activePage() * pageSize"
@@ -437,6 +548,96 @@
       (onPageChange)="changePage($event.page ?? 0)"
     />
   </p-card>
+
+  <p-drawer
+    [visible]="correctionDrawerOpen()"
+    (visibleChange)="!$event && closeCorrection()"
+    position="right"
+    [modal]="true"
+    [blockScroll]="true"
+    styleClass="correction-drawer"
+  >
+    @if (correctionTarget(); as row) {
+      <ng-template #header>
+        <header class="drawer-head">
+          <div class="drawer-head__main">
+            <span class="eyebrow">CORRECCIÓN</span>
+            <div class="drawer-head__identity">
+              <h2>{{ display(row.numeroDocumento) }}</h2>
+              @if (row.usermeta) {
+                <span>{{ '@' + row.usermeta }}</span>
+              }
+            </div>
+            <div class="drawer-head__meta">
+              <span>{{ display(row.nombreCliente) }}</span>
+              <span>{{ display(row.plan) }}</span>
+            </div>
+          </div>
+        </header>
+      </ng-template>
+
+      <form class="correction-form" [formGroup]="correctionForm" (ngSubmit)="saveCorrection()">
+        <label>
+          <span>SEC</span>
+          <input
+            pInputText
+            type="text"
+            inputmode="numeric"
+            maxlength="9"
+            formControlName="sec"
+            placeholder="9 dígitos"
+            (input)="onCorrectionSecInput($any($event.target).value)"
+          />
+          @if (correctionFieldInvalid('sec')) {
+            <small>El SEC debe tener 9 dígitos.</small>
+          }
+        </label>
+
+        <label>
+          <span>SOT</span>
+          <input
+            pInputText
+            type="text"
+            inputmode="numeric"
+            maxlength="8"
+            formControlName="sot"
+            placeholder="8 dígitos"
+            (input)="onCorrectionSotInput($any($event.target).value)"
+          />
+          @if (correctionFieldInvalid('sot')) {
+            <small>El SOT debe tener 8 dígitos.</small>
+          }
+        </label>
+
+        <label>
+          <span>Fecha instalación</span>
+          <input pInputText type="date" formControlName="fechaInstalacion" />
+          @if (correctionFieldInvalid('fechaInstalacion')) {
+            <small>La fecha de instalación es obligatoria.</small>
+          }
+        </label>
+
+        <div class="drawer-actions">
+          <button
+            pButton
+            type="submit"
+            icon="pi pi-save"
+            label="Guardar"
+            [loading]="isSaving()"
+            [disabled]="isSaving()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Cerrar"
+            severity="secondary"
+            [disabled]="isSaving()"
+            (click)="closeCorrection()"
+          ></button>
+        </div>
+      </form>
+    }
+  </p-drawer>
 
   <p-drawer
     [visible]="detailDrawerOpen()"
@@ -761,7 +962,7 @@
                   type="text"
                   formControlName="comentario"
                   autocomplete="off"
-                  placeholder="Agrega una nota si ayuda a la siguiente gestion"
+                  [placeholder]="tipificacionCommentPlaceholder()"
                   [disabled]="!canMutateOperationalData()"
                 />
               </label>

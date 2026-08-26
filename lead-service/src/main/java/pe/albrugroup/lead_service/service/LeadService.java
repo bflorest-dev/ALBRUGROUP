@@ -48,6 +48,7 @@ import pe.albrugroup.lead_service.entity.response.LeadAsignacionMasivaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionResultadoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAdicionalDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPlanDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPromocionDetalleResponse;
@@ -246,6 +247,9 @@ public class LeadService {
     );
     private static final Set<String> LEAD_INSTALADOS_VENTA_SORT_FIELDS = Set.of(
             "fechaInstalacion", "fechaTipificacionInstalado", "createdAt", "lead", "estadoClientePostventa"
+    );
+    private static final Set<String> LEAD_CORRECCION_INSTALACION_SORT_FIELDS = Set.of(
+            "fechaInstalacion", "fechaTipificacionInstalado", "createdAt", "lead", "numeroDocumento"
     );
     // Roles que pueden figurar en el ranking de asesores GTR. Se excluyen backoffice, migración y
     // cualquier otro rol que haya tocado leads de PREVENTA sin ser parte de la operación de ventas/GTR.
@@ -956,6 +960,47 @@ public class LeadService {
         if (lead.getEstadoClientePostventa() == null) {
             lead.setEstadoClientePostventa(EstadoClientePostventa.ACTIVO);
         }
+    }
+
+    public PageResponse<LeadInstalacionCorreccionCandidatoResponse> listarCorreccionesInstalacionVenta(
+            String buscar,
+            Long idEquipo,
+            PageRequest pageRequest
+    ) {
+        String sortBy = "createdAt".equals(pageRequest.getSortBy()) ? "fechaTipificacionInstalado" : pageRequest.getSortBy();
+        boolean sortDesc = "createdAt".equals(pageRequest.getSortBy())
+                && "asc".equalsIgnoreCase(pageRequest.getDirection())
+                || LeadOrderingRules.isDesc(pageRequest);
+        LeadOrderingRules.validarDirection(pageRequest.getDirection());
+        if (!LEAD_CORRECCION_INSTALACION_SORT_FIELDS.contains(sortBy)) {
+            throw new BadRequestException("Campo de ordenamiento no permitido: " + pageRequest.getSortBy());
+        }
+
+        String normalizado = normalizarBusquedaCorreccionInstalacion(buscar);
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        Page<LeadInstalacionCorreccionCandidatoResponse> leads = leadRepository.listarCorreccionesInstalacionVenta(
+                Accion.TIPIFICACION,
+                Etapa.VENTA,
+                TIPIFICACION_INSTALADO,
+                "CLARO",
+                List.of(Etapa.VENTA, Etapa.POSTVENTA),
+                equipos.filtrar(),
+                equipos.ids(),
+                !normalizado.isBlank(),
+                "%" + normalizado + "%",
+                sortBy,
+                sortDesc,
+                org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
+        );
+        return PageResponse.from(leads);
+    }
+
+    private String normalizarBusquedaCorreccionInstalacion(String buscar) {
+        String raw = buscar == null ? "" : buscar.trim();
+        if (raw.startsWith("@")) {
+            return raw.replaceAll("\\s+", "").replaceFirst("^@+", "");
+        }
+        return raw.replaceAll("\\s+", "");
     }
 
     public PageResponse<LeadAsesorVentasResponse> listarBandejaAsesorVentas(PageRequest pageRequest) {

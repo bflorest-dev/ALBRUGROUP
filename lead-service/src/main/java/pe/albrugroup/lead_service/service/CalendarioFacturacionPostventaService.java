@@ -48,6 +48,36 @@ public class CalendarioFacturacionPostventaService {
         encuestaRepository.save(crearEncuestaInicial(lead));
     }
 
+    @Transactional
+    public void sincronizarFechaInstalacionExistente(Lead lead, LocalDate fechaInstalacion) {
+        calendarioRepository.findByLeadId(lead.getId())
+                .ifPresent(calendario -> sincronizarCalendario(calendario, lead, fechaInstalacion));
+    }
+
+    private void sincronizarCalendario(
+            CalendarioFacturacionPostventa calendario,
+            Lead lead,
+            LocalDate fechaInstalacion
+    ) {
+        CalculadoraFacturacionPostventa calculadora = calculadoraResolver.resolver(lead.getNombreProveedorSnapshot());
+        CalendarioFacturacionPostventa recalculado = calculadora.crearCalendario(lead, fechaInstalacion);
+
+        calendario.setFechaInstalacion(recalculado.getFechaInstalacion());
+        calendario.setProveedorSnapshot(recalculado.getProveedorSnapshot());
+        calendario.setPlanSnapshot(recalculado.getPlanSnapshot());
+        calendario.setMesesPermanenciaSnapshot(recalculado.getMesesPermanenciaSnapshot());
+        calendario.setMontoPlanSnapshot(recalculado.getMontoPlanSnapshot());
+        calendario.setTipoReglaProveedor(recalculado.getTipoReglaProveedor());
+        calendario.setDiaCorte(recalculado.getDiaCorte());
+        calendario.setDiaEmisionEstimado(recalculado.getDiaEmisionEstimado());
+        calendario.setDiaVencimiento(recalculado.getDiaVencimiento());
+        calendario.setMesCorteBase(recalculado.getMesCorteBase());
+        calendario.setNumeroCorteBase(recalculado.getNumeroCorteBase());
+        calendario.setBloqueFacturacion(recalculado.getBloqueFacturacion());
+        calendario.setRequiereProrrateoInicial(recalculado.getRequiereProrrateoInicial());
+        calendarioRepository.save(calendario);
+    }
+
     private EncuestaPostventa crearEncuestaInicial(Lead lead) {
         LocalDateTime ahora = LocalDateTime.now(OperationalDateTime.ZONE);
         return EncuestaPostventa.builder()
