@@ -2962,7 +2962,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected fechaIngresoEtapaValue(row: LeadVentaResponse): string | null | undefined {
-    return row.fechaIngresoEtapa ?? row.lastEntryAt;
+    return row.fechaIngresoEtapa;
   }
 
   private fechaIngresoEtapaTime(row: LeadVentaResponse): number {
