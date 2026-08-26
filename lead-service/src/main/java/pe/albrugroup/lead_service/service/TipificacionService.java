@@ -390,7 +390,30 @@ public class TipificacionService {
                             )
                     );
                 }
+                validarComportamientosMerito(subtipificacion);
             }
+        }
+    }
+
+    private void validarComportamientosMerito(SubtipificacionCatalogoRequest subtipificacion) {
+        Set<ComportamientoTipificacion> comportamientos = Objects.requireNonNullElse(
+                subtipificacion.getComportamientos(),
+                Set.of());
+        if (comportamientos.contains(ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)
+                && comportamientos.contains(ComportamientoTipificacion.ANULA_ASESOR_MERITO)) {
+            throw new BadRequestException(
+                    "La subtipificacion no puede asignar y anular el asesor de merito a la vez",
+                    null,
+                    Map.of("subtipificacion", subtipificacion.getCodigo())
+            );
+        }
+        if (comportamientos.contains(ComportamientoTipificacion.ASIGNA_FECHA_MERITO)
+                && comportamientos.contains(ComportamientoTipificacion.ANULA_FECHA_MERITO)) {
+            throw new BadRequestException(
+                    "La subtipificacion no puede asignar y anular la fecha de merito a la vez",
+                    null,
+                    Map.of("subtipificacion", subtipificacion.getCodigo())
+            );
         }
     }
 

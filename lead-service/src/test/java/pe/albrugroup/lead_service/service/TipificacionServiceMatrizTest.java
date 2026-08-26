@@ -240,7 +240,7 @@ class TipificacionServiceMatrizTest {
                 .codigo("VENTA_CERRADA").descripcion("Venta cerrada").orden(1)
                 .etapaCambio(Etapa.VENTA)
                 .comportamientos(new java.util.HashSet<>(java.util.Set.of(
-                        ComportamientoTipificacion.ES_CIERRE_PREVENTA, ComportamientoTipificacion.RECIBE_MERITO)))
+                        ComportamientoTipificacion.ES_CIERRE_PREVENTA, ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)))
                 .build();
 
         service.guardarMatrizCatalogo(matriz(
@@ -250,7 +250,39 @@ class TipificacionServiceMatrizTest {
         verify(subtipificacionRepository).save(argThat(s ->
                 "VENTA_CERRADA".equals(s.getCodigo())
                         && s.getComportamientos().contains(ComportamientoTipificacion.ES_CIERRE_PREVENTA)
-                        && s.getComportamientos().contains(ComportamientoTipificacion.RECIBE_MERITO)));
+                        && s.getComportamientos().contains(ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)));
+    }
+
+    @Test
+    void rechazaComportamientosContradictoriosDeMerito() {
+        SubtipificacionCatalogoRequest asesorContradictorio = SubtipificacionCatalogoRequest.builder()
+                .codigo("ASESOR_CONFLICTO").descripcion("Asesor conflicto").orden(1)
+                .etapaCambio(Etapa.PREVENTA)
+                .comportamientos(new java.util.HashSet<>(java.util.Set.of(
+                        ComportamientoTipificacion.ASIGNA_ASESOR_MERITO,
+                        ComportamientoTipificacion.ANULA_ASESOR_MERITO)))
+                .build();
+
+        assertThatThrownBy(() -> service.guardarMatrizCatalogo(matriz(
+                tipRequest(null, "PREVENTA", "Preventa", List.of(asesorContradictorio))
+        ))).isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("asesor de merito");
+
+        SubtipificacionCatalogoRequest fechaContradictoria = SubtipificacionCatalogoRequest.builder()
+                .codigo("FECHA_CONFLICTO").descripcion("Fecha conflicto").orden(1)
+                .etapaCambio(Etapa.PREVENTA)
+                .comportamientos(new java.util.HashSet<>(java.util.Set.of(
+                        ComportamientoTipificacion.ASIGNA_FECHA_MERITO,
+                        ComportamientoTipificacion.ANULA_FECHA_MERITO)))
+                .build();
+
+        assertThatThrownBy(() -> service.guardarMatrizCatalogo(matriz(
+                tipRequest(null, "PREVENTA", "Preventa", List.of(fechaContradictoria))
+        ))).isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("fecha de merito");
+
+        verify(tipificacionRepository, never()).save(any());
+        verify(subtipificacionRepository, never()).save(any());
     }
 
     private MatrizCatalogoRequest matriz(TipificacionCatalogoRequest... tipificaciones) {

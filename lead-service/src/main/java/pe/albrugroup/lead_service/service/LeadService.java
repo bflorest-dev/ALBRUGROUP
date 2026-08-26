@@ -1735,7 +1735,7 @@ public class LeadService {
         Lead savedLead = leadRepository.save(lead);
         actualizarResumenEtapaTipificacion(
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
-                subtipificacion.getComportamientos().contains(ComportamientoTipificacion.RECIBE_MERITO));
+                subtipificacion.getComportamientos());
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         registrarEventoTipificacion(
                 savedLead.getId(),
@@ -1848,9 +1848,8 @@ public class LeadService {
         validarFechaRechazoVenta(tipificacion.getCodigo(), request.getFechaRechazo());
         aplicarSecSotVentaSiCorresponde(lead, tipificacion, subtipificacion, request.getSec(), request.getSot());
 
-        // Atribucion de venta (merito de VENTA): el responsable es quien tipifica la subtipi marcada con
-        // RECIBE_MERITO (hoy INSTALADO / SERVICIO INSTALADO), no quien cambia de etapa. La mantiene el
-        // resumen por etapa (esMerito mas abajo, resuelto por comportamiento).
+        // Atribucion de venta (merito de VENTA): el responsable y la fecha se resuelven por
+        // comportamientos de la subtipificacion; no por codigos de matriz.
 
         TipificacionRetornoPreventa tipificacionRetornoPreventa =
                 etapaActual == Etapa.VENTA && etapaDestino == Etapa.PREVENTA
@@ -1891,7 +1890,7 @@ public class LeadService {
         }
         actualizarResumenEtapaTipificacion(
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
-                subtipificacion.getComportamientos().contains(ComportamientoTipificacion.RECIBE_MERITO));
+                subtipificacion.getComportamientos());
         if (tipificacionRetornoPreventa != null) {
             leadEtapaResumenService.registrarRetornoVentaPreventa(
                     savedLead.getId(),
@@ -1990,10 +1989,9 @@ public class LeadService {
         }
 
         Lead savedLead = leadRepository.save(lead);
-        boolean esMeritoSeguimiento = etapaActual == Etapa.POSTVENTA && etapaDestino == Etapa.COBRANZA;
         actualizarResumenEtapaTipificacion(
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
-                esMeritoSeguimiento);
+                subtipificacion.getComportamientos());
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
         registrarEventoTipificacion(
@@ -2091,7 +2089,7 @@ public class LeadService {
 
     /**
      * Dual-write de la metadata por etapa en cada tipificacion: actualiza primera/ultima/mayor rango
-     * y el ultimo gestor de la etapa; marca el merito si esta tipificacion concreta la etapa; y
+     * y el ultimo gestor de la etapa; aplica comportamientos de merito de la etapa; y
      * registra salida/entrada cuando el lead avanza. No toca el estado operativo del Lead.
      */
     private void actualizarResumenEtapaTipificacion(
@@ -2102,18 +2100,41 @@ public class LeadService {
             Subtipificacion subtipificacion,
             Long idAsesor,
             String nombreAsesor,
-            boolean esMerito
+            Set<ComportamientoTipificacion> comportamientos
     ) {
         Instant ahora = OperationalDateTime.now();
         leadEtapaResumenService.registrarTipificacion(
                 lead.getId(), etapaActual, tipificacion.getCodigo(), subtipificacion.getCodigo(),
                 tipificacion.getOrden(), idAsesor, nombreAsesor, ahora);
-        if (esMerito) {
-            leadEtapaResumenService.registrarMerito(lead.getId(), etapaActual, idAsesor, nombreAsesor, ahora);
-        }
+        aplicarComportamientosMerito(lead.getId(), etapaActual, idAsesor, nombreAsesor, ahora, comportamientos);
         if (etapaDestino != null && etapaDestino != etapaActual) {
             leadEtapaResumenService.registrarSalidaEtapa(lead.getId(), etapaActual, ahora);
             leadEtapaResumenService.registrarEntradaEtapa(lead.getId(), etapaDestino, ahora);
+        }
+    }
+
+    private void aplicarComportamientosMerito(
+            Long idLead,
+            Etapa etapa,
+            Long idAsesor,
+            String nombreAsesor,
+            Instant at,
+            Set<ComportamientoTipificacion> comportamientos
+    ) {
+        Set<ComportamientoTipificacion> valores = comportamientos == null ? Set.of() : comportamientos;
+        if (valores.contains(ComportamientoTipificacion.ANULA_ASESOR_MERITO)) {
+            leadEtapaResumenService.anularAsesorMerito(idLead, etapa, at);
+        }
+        if (valores.contains(ComportamientoTipificacion.ANULA_FECHA_MERITO)) {
+            leadEtapaResumenService.anularFechaMerito(idLead, etapa, at);
+        }
+        if (valores.contains(ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)
+                || valores.contains(ComportamientoTipificacion.RECIBE_MERITO)) {
+            leadEtapaResumenService.asignarAsesorMerito(idLead, etapa, idAsesor, nombreAsesor, at);
+        }
+        if (valores.contains(ComportamientoTipificacion.ASIGNA_FECHA_MERITO)
+                || valores.contains(ComportamientoTipificacion.RECIBE_MERITO)) {
+            leadEtapaResumenService.asignarFechaMerito(idLead, etapa, at);
         }
     }
 

@@ -47,7 +47,11 @@ export class AdminTipificacionFacade {
     REQUIERE_FECHA_PROGRAMACION: 'Requiere fecha de programación',
     REQUIERE_FECHA_INSTALACION: 'Requiere fecha de instalación',
     REQUIERE_SEC_SOT: 'Requiere SEC/SOT',
-    RECIBE_MERITO: 'Atribuye el mérito de la venta',
+    RECIBE_MERITO: 'Atribuye mérito completo (compatibilidad)',
+    ASIGNA_ASESOR_MERITO: 'Asigna asesor de mérito',
+    ASIGNA_FECHA_MERITO: 'Asigna fecha de mérito',
+    ANULA_ASESOR_MERITO: 'Anula asesor de mérito',
+    ANULA_FECHA_MERITO: 'Anula fecha de mérito',
     ES_CIERRE_PREVENTA: 'Cierra la preventa',
     APARECE_EN_AGENDADOS_GTR: 'Aparece en Agendados (GTR)',
     ES_CANCELACION_PROGRAMACION: 'Es programación cancelada'
@@ -55,10 +59,13 @@ export class AdminTipificacionFacade {
 
   // Qué comportamientos tiene sentido ofrecer en cada etapa (curado).
   private readonly comportamientosPorEtapa: Record<EtapaCatalogo, ComportamientoTipificacion[]> = {
-    PREVENTA: ['REQUIERE_HORA_PROGRAMADA', 'APARECE_EN_AGENDADOS_GTR', 'ES_CIERRE_PREVENTA', 'RECIBE_MERITO'],
+    PREVENTA: ['REQUIERE_HORA_PROGRAMADA', 'APARECE_EN_AGENDADOS_GTR', 'ES_CIERRE_PREVENTA',
+               'ASIGNA_ASESOR_MERITO', 'ASIGNA_FECHA_MERITO', 'ANULA_ASESOR_MERITO', 'ANULA_FECHA_MERITO'],
     VENTA: ['REQUIERE_HORA_PROGRAMADA', 'REQUIERE_FECHA_PROGRAMACION', 'REQUIERE_FECHA_INSTALACION',
-            'REQUIERE_SEC_SOT', 'RECIBE_MERITO', 'ES_CANCELACION_PROGRAMACION'],
-    POSTVENTA: ['CIERRA_PERIODO_PAGO_CONFIRMADO', 'CIERRA_PERIODO_BAJA']
+            'REQUIERE_SEC_SOT', 'ASIGNA_ASESOR_MERITO', 'ASIGNA_FECHA_MERITO',
+            'ANULA_ASESOR_MERITO', 'ANULA_FECHA_MERITO', 'ES_CANCELACION_PROGRAMACION'],
+    POSTVENTA: ['ASIGNA_ASESOR_MERITO', 'ASIGNA_FECHA_MERITO', 'ANULA_ASESOR_MERITO', 'ANULA_FECHA_MERITO',
+                'CIERRA_PERIODO_PAGO_CONFIRMADO', 'CIERRA_PERIODO_BAJA']
   };
 
   readonly comportamientoOptions = computed(() =>

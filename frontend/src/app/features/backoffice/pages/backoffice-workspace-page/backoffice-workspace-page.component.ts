@@ -252,7 +252,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly rechazadosPeriodo = signal<MetricsPeriodo>('dia');
   private readonly rechazadosDia = signal<string | null>(null);
   private readonly rechazadosHasta = signal<string | null>(null);
-  private readonly instaladosPeriodo = signal<MetricsPeriodo>('dia');
+  private readonly instaladosPeriodo = signal<MetricsPeriodo>('mes');
   private readonly instaladosDia = signal<string | null>(null);
   private readonly instaladosHasta = signal<string | null>(null);
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
@@ -1314,6 +1314,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!periodo || !this.canDisplayOperationalData()) {
       return;
     }
+    if (this.section() === 'instalados') {
+      this.instaladosPeriodo.set('mes');
+      this.instaladosDia.set(null);
+      this.instaladosHasta.set(null);
+      return;
+    }
     if (this.activePeriodo() === periodo) {
       return;
     }
@@ -1350,6 +1356,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   /** Rango elegido en el calendario del selector. Un dia suelto llega como `desde === hasta`. */
   protected async onRangoChange(rango: MetricsRango): Promise<void> {
     if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    if (this.section() === 'instalados') {
+      this.instaladosPeriodo.set('mes');
+      this.instaladosDia.set(null);
+      this.instaladosHasta.set(null);
       return;
     }
     switch (this.section()) {
@@ -1412,6 +1424,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return '-';
     }
     return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+
+  protected displayTimeOnly(value?: string | null): string {
+    const match = /^(\d{2}):(\d{2})/.exec(value ?? '');
+    return match ? `${match[1]}:${match[2]}` : '';
   }
 
   protected toPickerDate(value: unknown): Date | null {

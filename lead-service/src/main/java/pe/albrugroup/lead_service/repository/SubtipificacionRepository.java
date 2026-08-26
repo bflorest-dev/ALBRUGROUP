@@ -18,6 +18,14 @@ public interface SubtipificacionRepository extends JpaRepository<Subtipificacion
     Optional<Subtipificacion> findByTipificacionIdAndCodigo(Long tipificacionId, String codigo);
     Optional<Subtipificacion> findByTipificacionIdAndCodigoAndActivoTrue(Long tipificacionId, String codigo);
 
+    @Query("""
+            SELECT DISTINCT s
+            FROM Subtipificacion s
+            JOIN FETCH s.tipificacion t
+            LEFT JOIN FETCH s.comportamientos
+            """)
+    List<Subtipificacion> listarParaBackfillResumenEtapa();
+
     // Catalogo plano para el backfill: la etapa de cambio reconstruye avances historicos.
     @Query("SELECT t.idEquipo, t.etapa, t.codigo, s.codigo, s.etapaCambio FROM Subtipificacion s JOIN s.tipificacion t")
     List<Object[]> listarCambiosEtapa();

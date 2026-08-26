@@ -4,6 +4,7 @@
     optionLabel="label"
     optionValue="value"
     [allowEmpty]="false"
+    [disabled]="disabled()"
     [ngModel]="periodo()"
     [ngModelOptions]="{ standalone: true }"
     (onChange)="onSegmentChange($event.value)"

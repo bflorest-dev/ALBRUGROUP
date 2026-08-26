@@ -144,12 +144,39 @@ public class LeadEtapaResumenService {
         repository.save(resumen);
     }
 
-    /** Merito de la etapa: quien la concreta/avanza (en VENTA, quien graba). Se sobrescribe. */
+    /** Merito de la etapa: compatibilidad para asignar asesor y fecha en bloque. */
     public void registrarMerito(Long idLead, Etapa etapa, Long idAsesorMerito, String nombreAsesorMerito, Instant at) {
+        asignarAsesorMerito(idLead, etapa, idAsesorMerito, nombreAsesorMerito, at);
+        asignarFechaMerito(idLead, etapa, at);
+    }
+
+    /** Asigna solo asesor de merito, sin tocar fechaMerito. */
+    public void asignarAsesorMerito(Long idLead, Etapa etapa, Long idAsesorMerito, String nombreAsesorMerito, Instant at) {
         LeadEtapaResumen resumen = obtenerOCrear(idLead, etapa, at);
         resumen.setIdAsesorMerito(idAsesorMerito);
         resumen.setNombreAsesorMerito(nombreAsesorMerito);
+        repository.save(resumen);
+    }
+
+    /** Asigna solo fechaMerito, sin tocar asesor de merito. */
+    public void asignarFechaMerito(Long idLead, Etapa etapa, Instant at) {
+        LeadEtapaResumen resumen = obtenerOCrear(idLead, etapa, at);
         resumen.setFechaMerito(at);
+        repository.save(resumen);
+    }
+
+    /** Limpia solo asesor de merito, sin tocar fechaMerito. */
+    public void anularAsesorMerito(Long idLead, Etapa etapa, Instant at) {
+        LeadEtapaResumen resumen = obtenerOCrear(idLead, etapa, at);
+        resumen.setIdAsesorMerito(null);
+        resumen.setNombreAsesorMerito(null);
+        repository.save(resumen);
+    }
+
+    /** Limpia solo fechaMerito, sin tocar asesor de merito. */
+    public void anularFechaMerito(Long idLead, Etapa etapa, Instant at) {
+        LeadEtapaResumen resumen = obtenerOCrear(idLead, etapa, at);
+        resumen.setFechaMerito(null);
         repository.save(resumen);
     }
 

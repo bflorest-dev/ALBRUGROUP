@@ -83,6 +83,8 @@
           [periodo]="activePeriodo()"
           [dia]="activeDia()"
           [hasta]="activeHasta()"
+          [allowFuture]="section() === 'programados'"
+          [disabled]="section() === 'instalados'"
           (periodoChange)="onPeriodoChange($event)"
           (rangoChange)="onRangoChange($event)"
         />
@@ -208,7 +210,7 @@
     >
       <ng-template #header>
         <tr>
-          <th class="col-fecha">{{ (isFechaInstalacionSection() && !isSearchMode()) ? 'Fecha instalacion' : (isFechaRechazoSection() && !isSearchMode()) ? 'Fecha rechazo' : 'Fecha ingreso' }}</th>
+          <th class="col-fecha">{{ (section() === 'programados' && !isSearchMode()) ? 'Fecha programacion' : (isFechaInstalacionSection() && !isSearchMode()) ? 'Fecha instalacion' : (isFechaRechazoSection() && !isSearchMode()) ? 'Fecha rechazo' : 'Fecha ingreso' }}</th>
           <th class="col-lead">Lead</th>
           <th class="col-documento">Documento</th>
           <th class="col-proveedor">Proveedor</th>
@@ -252,6 +254,9 @@
             <div class="date-stack">
               @if (isFechaInstalacionSection() && !isSearchMode()) {
                 <span>{{ displayDateOnly(row.fechaInstalacion) }}</span>
+              } @else if (section() === 'programados' && !isSearchMode()) {
+                <span>{{ displayDateOnly(row.fechaProgramacion) }}</span>
+                <strong>{{ displayTimeOnly(row.horaProgramada) }}</strong>
               } @else if (isFechaRechazoSection() && !isSearchMode()) {
                 <span>{{ displayDateOnly(row.fechaRechazo) }}</span>
               } @else {

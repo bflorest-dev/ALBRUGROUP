@@ -41,6 +41,9 @@ export class PeriodSelectorComponent implements OnDestroy {
   readonly dia = input<string | null>(null);
   /** Fin del rango (`YYYY-MM-DD`). `null` o igual a `dia` = dia suelto. Solo aplica con periodo `dia`. */
   readonly hasta = input<string | null>(null);
+  /** Algunas bandejas, como Programados, necesitan elegir fechas futuras. */
+  readonly allowFuture = input(false);
+  readonly disabled = input(false);
 
   readonly periodoChange = output<MetricsPeriodo>();
   /** Rango elegido en el calendario. Un dia suelto llega como `desde === hasta`. */
@@ -74,7 +77,7 @@ export class PeriodSelectorComponent implements OnDestroy {
     { label: 'Mensual', value: 'mes' as MetricsPeriodo }
   ]);
 
-  protected readonly maxDate = computed(() => new Date());
+  protected readonly maxDate = computed<Date | null>(() => this.allowFuture() ? null : new Date());
 
   // `selectionMode="range"` espera un arreglo `[inicio, fin]`. Un dia suelto va como `[inicio, null]`
   // para que el datepicker lo pinte sin cerrar el rango, y quede listo para elegir el segundo dia.
@@ -92,7 +95,7 @@ export class PeriodSelectorComponent implements OnDestroy {
   }
 
   protected onSegmentChange(value: MetricsPeriodo | null | undefined): void {
-    if (!value) {
+    if (!value || this.disabled()) {
       return;
     }
     this.periodoChange.emit(value);
@@ -103,12 +106,16 @@ export class PeriodSelectorComponent implements OnDestroy {
 
   /** Clic sobre el primer segmento: abre el calendario aunque ese segmento ya estuviera activo. */
   protected onClick(event: MouseEvent): void {
+    if (this.disabled()) {
+      return;
+    }
     const clicked = (event.target as HTMLElement | null)?.closest('.p-togglebutton');
     if (!clicked) {
       return;
     }
     if (clicked === this.host.nativeElement.querySelector('.p-togglebutton')) {
       this.botonAncla = clicked as HTMLElement;
+      this.emitirHoy();
       this.dayPopover().show(event, clicked as HTMLElement);
     } else {
       this.cerrar();
@@ -194,6 +201,13 @@ export class PeriodSelectorComponent implements OnDestroy {
   private cerrar(): void {
     this.cancelarCierre();
     this.dayPopover().hide();
+  }
+
+  private emitirHoy(): void {
+    if (this.periodo() !== 'dia') {
+      this.periodoChange.emit('dia');
+    }
+    this.rangoChange.emit({ desde: this.hoy, hasta: this.hoy });
   }
 
   private formatLocal(date: Date): string {
