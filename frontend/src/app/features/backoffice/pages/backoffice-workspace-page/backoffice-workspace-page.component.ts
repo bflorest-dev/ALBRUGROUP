@@ -67,6 +67,7 @@ type DrawerMode = 'gestion' | 'consulta';
 type OrganizationFilterOption = { label: string; value: string; codigo?: string; descripcion?: string; sinValor?: boolean; rawValue?: string | null };
 type VisualLeadVenta = LeadVentaResponse & {
   isNew?: boolean;
+  searchConsultationOnly?: boolean;
   organizationGroupHint?: string;
   organizationGroupKey?: string;
   organizationGroupLabel?: string;
@@ -1416,7 +1417,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.refreshSearch();
       if (!this.searchRows().length) {
         const lookup = await firstValueFrom(this.leadService.buscarContextoLead(term));
-        this.searchLookup.set(lookup.mensajeUsuario ? lookup : null);
+        if (this.searchTermActive() !== term) {
+          return;
+        }
+        const consultationRow = this.buildSearchConsultationRow(lookup, term);
+        if (consultationRow) {
+          this.searchRows.set([consultationRow]);
+          this.searchTotal.set(1);
+          this.searchLookup.set(this.withConsultationLookupMessage(lookup));
+        } else {
+          this.searchLookup.set(lookup.mensajeUsuario ? lookup : null);
+        }
       }
     } catch (error) {
       this.notify('error', this.getErrorMessage(error, 'No se pudo buscar el dato ingresado.'));
@@ -1433,6 +1444,60 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.searchTotal.set(0);
     this.searchPage.set(0);
     await this.refreshCurrent(false);
+  }
+
+  private buildSearchConsultationRow(lookup: LeadContextoLookupResponse, term: string): VisualLeadVenta | null {
+    if (!lookup.existe || !lookup.idLead || this.normalizedCode(lookup.etapaActual) === 'VENTA') {
+      return null;
+    }
+    return {
+      id: lookup.idLead,
+      prefijo: lookup.prefijo ?? '',
+      lead: lookup.lead ?? term,
+      usermeta: null,
+      etapa: lookup.etapaActual ?? null,
+      estadoSeguimiento: lookup.estadoActual ?? null,
+      idAsesorAsignado: null,
+      nombreAsesorAsignado: lookup.nombreAsesorAsignado ?? null,
+      tipoDocumento: null,
+      numeroDocumentoTitularServicio: null,
+      base: null,
+      idTipificacion: null,
+      codigoTipificacion: null,
+      idSubtipificacion: null,
+      codigoSubtipificacion: null,
+      nombrePlanSnapshot: null,
+      nombreProveedorSnapshot: null,
+      precioPlanSnapshot: null,
+      nombrePromocionInternaSnapshot: null,
+      precioAdicionalesSnapshot: null,
+      precioFinal: null,
+      diaCorteFacturacion: null,
+      mesesPermanenciaSnapshot: null,
+      createdAt: null,
+      lastEntryAt: null,
+      fechaIngresoEtapa: null,
+      updatedAt: null,
+      totalAsignaciones: null,
+      fechaProgramacion: null,
+      horaProgramada: null,
+      fechaRechazo: null,
+      sec: null,
+      sot: null,
+      requiereSecSotVenta: null,
+      nombreAsesorUltimaGestion: lookup.nombreAsesorAsignado ?? null,
+      fechaUltimaGestion: null,
+      ultimoComentarioTipificacion: null,
+      searchConsultationOnly: true
+    };
+  }
+
+  private withConsultationLookupMessage(lookup: LeadContextoLookupResponse): LeadContextoLookupResponse {
+    const etapa = this.displayLookupStage(lookup.etapaActual);
+    return {
+      ...lookup,
+      mensajeUsuario: `Este lead está en ${etapa}. Puedes revisarlo en modo consulta.`
+    };
   }
 
   protected openCorrection(row: CorreccionInstalacionRow): void {
@@ -1822,6 +1887,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return '-';
     }
     return String(value);
+  }
+
+  private displayLookupStage(value: string | null | undefined): string {
+    const stage = this.normalizedCode(value);
+    if (stage === 'PREVENTA') return 'Preventa';
+    if (stage === 'POSTVENTA') return 'Postventa';
+    if (stage === 'COBRANZA') return 'Cobranza';
+    return this.display(value);
   }
 
   protected displayDateOnly(value?: string | null): string {

@@ -485,7 +485,7 @@
       </ng-template>
 
       <ng-template #body let-row>
-        <tr [class.row-new]="row.isNew">
+        <tr [class.row-new]="row.isNew" [class.row-consultation-only]="row.searchConsultationOnly">
           <td class="col-fecha-ingreso">
             <div class="date-stack">
               <span>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
@@ -590,7 +590,19 @@
             </div>
           </td>
           <td class="col-actions">
-            @if (isSearchMode() || section() === 'plataforma' || section() === 'programados' || section() === 'subsanables') {
+            @if (row.searchConsultationOnly) {
+              <button
+                pButton
+                type="button"
+                icon="pi pi-eye"
+                label="Consultar"
+                size="small"
+                severity="secondary"
+                [disabled]="isSaving() || leadActionId() !== null"
+                [loading]="isLeadActionLoading(row.id)"
+                (click)="openConsultation(row.id)"
+              ></button>
+            } @else if (isSearchMode() || section() === 'plataforma' || section() === 'programados' || section() === 'subsanables') {
               <button
                 pButton
                 type="button"

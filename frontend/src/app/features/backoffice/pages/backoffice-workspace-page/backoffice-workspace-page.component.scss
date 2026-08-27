@@ -423,6 +423,14 @@ p,
   background: color-mix(in srgb, var(--role-accent) 12%, #ffffff 88%);
 }
 
+.row-consultation-only td {
+  background: color-mix(in srgb, var(--role-primary) 6%, #ffffff 94%);
+}
+
+.row-consultation-only .col-actions {
+  border-left: 3px solid color-mix(in srgb, var(--role-primary) 58%, #ffffff 42%);
+}
+
 .skeleton-row {
   align-items: center;
   display: grid;
