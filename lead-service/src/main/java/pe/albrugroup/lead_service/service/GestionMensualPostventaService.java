@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
+import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.entity.response.GestionMensualFilaResponse;
 import pe.albrugroup.lead_service.entity.response.GestionMensualPostventaResponse;
 import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
@@ -15,6 +16,7 @@ import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -27,10 +29,11 @@ public class GestionMensualPostventaService {
     private static final Locale ES = Locale.forLanguageTag("es");
 
     private final PeriodoFacturacionPostventaRepository periodoRepository;
+    private final ProveedorScopeService proveedorScopeService;
 
     public GestionMensualPostventaResponse obtenerGestionMensual(LocalDate mesGestionParam, String proveedorParam) {
         YearMonth mesGestion = resolverMesGestion(mesGestionParam, OperationalDateTime.today());
-        String proveedor = normalizarProveedor(proveedorParam);
+        String proveedor = resolverProveedor(proveedorParam);
         int anioMes = mesGestion.getYear() * 12 + mesGestion.getMonthValue();
 
         List<GestionMensualFilaResponse> filas = periodoRepository
@@ -75,6 +78,21 @@ public class GestionMensualPostventaService {
                 .impagos(p.getImpagos())
                 .bajas(p.getBajas())
                 .build();
+    }
+
+    /**
+     * Un usuario de POSTVENTA ve la gestión de SU proveedor activo (el del selector, vía header
+     * X-Proveedor-Id): así un postventa de CLARO no ve las cifras de WIN. Para ADMIN (u otros roles sin
+     * ámbito de proveedor) se respeta el parámetro recibido, con WIN por defecto (comportamiento previo).
+     */
+    private String resolverProveedor(String proveedorParam) {
+        if (proveedorScopeService.ambitoActual() == AmbitoProveedor.POSTVENTA) {
+            Set<String> nombres = proveedorScopeService.resolverScope(AmbitoProveedor.POSTVENTA).proveedorNombres();
+            if (nombres.size() == 1) {
+                return nombres.iterator().next();
+            }
+        }
+        return normalizarProveedor(proveedorParam);
     }
 
     private String normalizarProveedor(String proveedor) {
