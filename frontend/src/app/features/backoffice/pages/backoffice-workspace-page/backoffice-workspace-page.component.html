@@ -105,7 +105,7 @@
             (click)="onOrganizeEnter(); platformOrganizePopover.toggle($event)"
           ></button>
 
-          <p-popover #platformOrganizePopover appendTo="body" styleClass="backoffice-organize-popover">
+          <p-popover #platformOrganizePopover appendTo="body" styleClass="backoffice-organize-popover" (onShow)="recenterOrganizeArrow(platformOrganizePopover)">
             <div class="backoffice-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(platformOrganizePopover)">
               <label for="backoffice-platform-campo-fecha">
                 <span>Usar fecha de</span>
@@ -188,7 +188,7 @@
             (click)="onOrganizeEnter(); programadosOrganizePopover.toggle($event)"
           ></button>
 
-          <p-popover #programadosOrganizePopover appendTo="body" styleClass="backoffice-organize-popover">
+          <p-popover #programadosOrganizePopover appendTo="body" styleClass="backoffice-organize-popover" (onShow)="recenterOrganizeArrow(programadosOrganizePopover)">
             <div class="backoffice-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(programadosOrganizePopover)">
               <label for="backoffice-programados-campo-fecha">
                 <span>Usar fecha de</span>
@@ -271,7 +271,7 @@
             (click)="onOrganizeEnter(); rechazoOrganizePopover.toggle($event)"
           ></button>
 
-          <p-popover #rechazoOrganizePopover appendTo="body" styleClass="backoffice-organize-popover">
+          <p-popover #rechazoOrganizePopover appendTo="body" styleClass="backoffice-organize-popover" (onShow)="recenterOrganizeArrow(rechazoOrganizePopover)">
             <div class="backoffice-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(rechazoOrganizePopover)">
               <label for="backoffice-rechazo-campo-fecha">
                 <span>Usar fecha de</span>
@@ -354,7 +354,7 @@
             (click)="onOrganizeEnter(); instaladosOrganizePopover.toggle($event)"
           ></button>
 
-          <p-popover #instaladosOrganizePopover appendTo="body" styleClass="backoffice-organize-popover">
+          <p-popover #instaladosOrganizePopover appendTo="body" styleClass="backoffice-organize-popover" (onShow)="recenterOrganizeArrow(instaladosOrganizePopover)">
             <div class="backoffice-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(instaladosOrganizePopover)">
               <label for="backoffice-instalados-campo-fecha">
                 <span>Usar fecha de</span>
@@ -542,23 +542,25 @@
     >
       <ng-template #header>
         <tr>
-          <th class="col-fecha-ingreso" [class.col-sortable]="columnSortable('fechaIngresoEtapa')">
-            @if (columnSortable('fechaIngresoEtapa')) {
-              <button
-                type="button"
-                class="sort-header"
-                [class.sort-header--active]="columnSortActive('fechaIngresoEtapa')"
-                [attr.aria-label]="columnSortLabel('fechaIngresoEtapa', 'fecha de ingreso')"
-                [title]="columnSortLabel('fechaIngresoEtapa', 'fecha de ingreso')"
-                (click)="changeColumnSort('fechaIngresoEtapa')"
-              >
-                <span>Fecha ingreso</span>
-                <i [class]="columnSortIcon('fechaIngresoEtapa')" aria-hidden="true"></i>
-              </button>
-            } @else {
-              Fecha ingreso
-            }
-          </th>
+          @if (showFechaIngresoColumn()) {
+            <th class="col-fecha-ingreso" [class.col-sortable]="columnSortable('fechaIngresoEtapa')">
+              @if (columnSortable('fechaIngresoEtapa')) {
+                <button
+                  type="button"
+                  class="sort-header"
+                  [class.sort-header--active]="columnSortActive('fechaIngresoEtapa')"
+                  [attr.aria-label]="columnSortLabel('fechaIngresoEtapa', 'fecha de ingreso')"
+                  [title]="columnSortLabel('fechaIngresoEtapa', 'fecha de ingreso')"
+                  (click)="changeColumnSort('fechaIngresoEtapa')"
+                >
+                  <span>Fecha ingreso</span>
+                  <i [class]="columnSortIcon('fechaIngresoEtapa')" aria-hidden="true"></i>
+                </button>
+              } @else {
+                Fecha ingreso
+              }
+            </th>
+          }
           @if (showOperationalDateColumn()) {
             <th class="col-fecha-operativa" [class.col-sortable]="columnSortable(operationalDateSortField())">
               @if (columnSortable(operationalDateSortField())) {
@@ -659,12 +661,14 @@
 
       <ng-template #body let-row>
         <tr [class.row-new]="row.isNew" [class.row-consultation-only]="row.searchConsultationOnly">
-          <td class="col-fecha-ingreso">
-            <div class="date-stack">
-              <span>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
-              <strong>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'hh:mm a') : '' }}</strong>
-            </div>
-          </td>
+          @if (showFechaIngresoColumn()) {
+            <td class="col-fecha-ingreso">
+              <div class="date-stack">
+                <span>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
+                <strong>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'hh:mm a') : '' }}</strong>
+              </div>
+            </td>
+          }
           @if (showOperationalDateColumn()) {
             <td class="col-fecha-operativa">
               <div class="date-stack">
@@ -1243,17 +1247,31 @@
               </label>
 
               <label class="tipification-field tipification-field--code">
-                <span>SEC</span>
-                <input
-                  pInputText
-                  type="text"
-                  inputmode="numeric"
-                  maxlength="9"
-                  autocomplete="off"
-                  formControlName="sec"
-                  placeholder="9 digitos"
-                  (input)="setFixedDigits('sec', $any($event.target).value, 9)"
-                />
+                @if (requiresCustomerId()) {
+                  <span>Customer ID</span>
+                  <input
+                    pInputText
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="8"
+                    autocomplete="off"
+                    formControlName="customerId"
+                    placeholder="8 digitos"
+                    (input)="setFixedDigits('customerId', $any($event.target).value, 8)"
+                  />
+                } @else {
+                  <span>SEC</span>
+                  <input
+                    pInputText
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="9"
+                    autocomplete="off"
+                    formControlName="sec"
+                    placeholder="9 digitos"
+                    (input)="setFixedDigits('sec', $any($event.target).value, 9)"
+                  />
+                }
               </label>
 
               <label class="tipification-field tipification-field--code">

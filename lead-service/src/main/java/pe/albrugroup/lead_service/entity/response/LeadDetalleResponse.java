@@ -71,6 +71,7 @@ public class LeadDetalleResponse {
     private String interior;
     private String sec;
     private String sot;
+    private String customerId;
     private Boolean requiereSecSotVenta;
     private Long idPlan;
     private String nombrePlan;

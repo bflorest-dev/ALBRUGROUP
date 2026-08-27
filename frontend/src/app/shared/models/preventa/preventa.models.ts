@@ -280,6 +280,7 @@ export interface LeadVentaResponse {
   fechaRechazo?: string | null;
   sec?: string | null;
   sot?: string | null;
+  customerId?: string | null;
   requiereSecSotVenta?: boolean | null;
   nombreAsesorUltimaGestion?: string | null;
   fechaUltimaGestion?: string | null;
@@ -439,6 +440,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   longitud?: string | null;
   sec?: string | null;
   sot?: string | null;
+  customerId?: string | null;
   requiereSecSotVenta?: boolean | null;
   urbanizacion?: string | null;
   numero?: string | null;
@@ -732,6 +734,7 @@ export interface LeadTipificacionVentaRequest {
   horaProgramada?: string | null;
   sec?: string | null;
   sot?: string | null;
+  customerId?: string | null;
 }
 
 export interface EventoResponse {
@@ -777,6 +780,7 @@ export type ComportamientoTipificacion =
   | 'REQUIERE_FECHA_PROGRAMACION'
   | 'REQUIERE_FECHA_INSTALACION'
   | 'REQUIERE_SEC_SOT'
+  | 'REQUIERE_CUSTOMER_ID'
   | 'ASIGNA_ASESOR_MERITO'
   | 'ASIGNA_FECHA_MERITO'
   | 'ANULA_ASESOR_MERITO'

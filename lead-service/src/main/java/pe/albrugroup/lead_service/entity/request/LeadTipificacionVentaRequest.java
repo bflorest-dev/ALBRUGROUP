@@ -21,4 +21,5 @@ public class LeadTipificacionVentaRequest {
     private LocalTime horaProgramada;
     private String sec;
     private String sot;
+    private String customerId;
 }

@@ -2130,6 +2130,7 @@ public class LeadService {
         validarProgramacionVenta(requiereProgramacion, request.getFechaProgramacion(), request.getHoraProgramada());
         validarFechaRechazoVenta(tipificacion.getCodigo(), request.getFechaRechazo());
         aplicarSecSotVentaSiCorresponde(lead, tipificacion, subtipificacion, request.getSec(), request.getSot());
+        aplicarCustomerIdVentaSiCorresponde(lead, subtipificacion, request.getCustomerId());
 
         // Atribucion de venta (merito de VENTA): el responsable y la fecha se resuelven por
         // comportamientos de la subtipificacion; no por codigos de matriz.
@@ -2429,18 +2430,42 @@ public class LeadService {
             return;
         }
 
+        boolean reemplazaSecPorCustomerId = subtipificacion.getComportamientos()
+                .contains(ComportamientoTipificacion.REQUIERE_CUSTOMER_ID) && esProveedorPlanClaro(lead);
         String sec = normalizarCodigoNumerico(secRequest);
         String sot = normalizarCodigoNumerico(sotRequest);
-        if (sec == null) {
+        if (!reemplazaSecPorCustomerId && sec == null) {
             sec = normalizarCodigoNumerico(lead.getSec());
         }
         if (sot == null) {
             sot = normalizarCodigoNumerico(lead.getSot());
         }
-        validarCodigoExacto(sec, 9, "SEC");
+        if (!reemplazaSecPorCustomerId) {
+            validarCodigoExacto(sec, 9, "SEC");
+        }
         validarCodigoExacto(sot, 8, "SOT");
-        lead.setSec(sec);
+        if (!reemplazaSecPorCustomerId) {
+            lead.setSec(sec);
+        }
         lead.setSot(sot);
+    }
+
+    private void aplicarCustomerIdVentaSiCorresponde(Lead lead, Subtipificacion subtipificacion, String customerIdRequest) {
+        if (!subtipificacion.getComportamientos().contains(ComportamientoTipificacion.REQUIERE_CUSTOMER_ID)
+                || !esProveedorPlanClaro(lead)) {
+            return;
+        }
+        String customerId = normalizarCodigoNumerico(customerIdRequest);
+        if (customerId == null) {
+            customerId = normalizarCodigoNumerico(lead.getCustomerId());
+        }
+        validarCodigoExacto(customerId, 8, "Customer ID");
+        lead.setCustomerId(customerId);
+    }
+
+    private boolean esProveedorPlanClaro(Lead lead) {
+        Proveedor proveedor = lead.getPlan() == null ? null : lead.getPlan().getProveedor();
+        return proveedor != null && normalizarTexto(proveedor.getNombre()).equals("CLARO");
     }
 
     private boolean esTipificacionSubidaVenta(Tipificacion tipificacion) {
@@ -2472,6 +2497,10 @@ public class LeadService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizarTexto(String value) {
+        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
     }
 
     private void validarCodigoExacto(String value, int length, String label) {
@@ -4459,6 +4488,7 @@ public class LeadService {
                 direccion == null ? null : direccion.getInterior(),
                 lead.getSec(),
                 lead.getSot(),
+                lead.getCustomerId(),
                 requiereSecSotVenta(lead),
                 lead.getPlan() == null ? null : lead.getPlan().getId(),
                 lead.getNombrePlanSnapshot(),

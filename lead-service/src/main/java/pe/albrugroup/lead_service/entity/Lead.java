@@ -94,6 +94,8 @@ public class Lead {
     private String sec;
     @Column(length = 8)
     private String sot;
+    @Column(length = 8)
+    private String customerId;
 
     // ASESOR VENTAS
 

@@ -15,6 +15,8 @@ public enum ComportamientoTipificacion {
     REQUIERE_FECHA_INSTALACION,
     /** El modal muestra los campos SEC/SOT (antes: tipi SUBIDO), sujeto a que el proveedor lo requiera. */
     REQUIERE_SEC_SOT,
+    /** El modal exige Customer ID para instalaciones Claro. */
+    REQUIERE_CUSTOMER_ID,
     /** Asigna id/nombre del asesor de mérito en el resumen de la etapa tipificada. */
     ASIGNA_ASESOR_MERITO,
     /** Asigna fecha de mérito en el resumen de la etapa tipificada. */

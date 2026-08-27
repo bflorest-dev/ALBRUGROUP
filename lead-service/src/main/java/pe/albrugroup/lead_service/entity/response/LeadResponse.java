@@ -52,6 +52,7 @@ public class LeadResponse {
     private Instant updatedAt;
     private String sec;
     private String sot;
+    private String customerId;
     private Boolean requiereSecSotVenta;
     private String nombreAsesorUltimaGestion;
     private Instant fechaUltimaGestion;
