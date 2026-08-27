@@ -457,7 +457,10 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   nombrePromocionInterna?: string | null;
   precioAdicionales?: number | null;
   precioFinal?: number | null;
+  diaCorteFacturacion?: number | null;
+  mesesPermanenciaSnapshot?: number | null;
   adicionales?: LeadAdicionalDetalleResponse[] | null;
+  totalAsignaciones?: number | null;
   fechaProgramacion?: string | null;
   fechaRechazo?: string | null;
   horaProgramada?: string | null;

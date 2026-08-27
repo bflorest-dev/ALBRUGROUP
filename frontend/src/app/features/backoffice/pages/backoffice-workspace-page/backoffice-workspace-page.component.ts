@@ -1420,7 +1420,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         if (this.searchTermActive() !== term) {
           return;
         }
-        const consultationRow = this.buildSearchConsultationRow(lookup, term);
+        const consultationDetail = lookup.idLead ? await this.safeGetSearchConsultationDetail(lookup.idLead) : null;
+        const latestEvent = lookup.idLead ? await this.safeGetLatestSearchConsultationEvent(lookup.idLead) : null;
+        const consultationRow = this.buildSearchConsultationRow(lookup, term, consultationDetail, latestEvent);
         if (consultationRow) {
           this.searchRows.set([consultationRow]);
           this.searchTotal.set(1);
@@ -1446,48 +1448,80 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     await this.refreshCurrent(false);
   }
 
-  private buildSearchConsultationRow(lookup: LeadContextoLookupResponse, term: string): VisualLeadVenta | null {
+  private async safeGetSearchConsultationDetail(idLead: number): Promise<LeadDetalleResponse | null> {
+    try {
+      return await firstValueFrom(this.leadService.obtenerDetalleConsulta(idLead));
+    } catch {
+      return null;
+    }
+  }
+
+  private async safeGetLatestSearchConsultationEvent(idLead: number): Promise<EventoResponse | null> {
+    try {
+      const page = await firstValueFrom(this.leadService.listarEventosConsulta(idLead, {
+        pageNumber: 0,
+        pageSize: 1,
+        sortBy: 'createdAt',
+        direction: 'desc'
+      }));
+      return page.content[0] ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  private buildSearchConsultationRow(
+    lookup: LeadContextoLookupResponse,
+    term: string,
+    detail: LeadDetalleResponse | null,
+    latestEvent: EventoResponse | null
+  ): VisualLeadVenta | null {
     if (!lookup.existe || !lookup.idLead || this.normalizedCode(lookup.etapaActual) === 'VENTA') {
       return null;
     }
+    const provider = detail?.nombreProveedorPlan
+      ?? detail?.nombreProveedorCampana
+      ?? detail?.nombreProveedorEquipo
+      ?? detail?.nombreCampana
+      ?? null;
     return {
-      id: lookup.idLead,
-      prefijo: lookup.prefijo ?? '',
-      lead: lookup.lead ?? term,
-      usermeta: null,
-      etapa: lookup.etapaActual ?? null,
-      estadoSeguimiento: lookup.estadoActual ?? null,
-      idAsesorAsignado: null,
-      nombreAsesorAsignado: lookup.nombreAsesorAsignado ?? null,
-      tipoDocumento: null,
-      numeroDocumentoTitularServicio: null,
-      base: null,
+      id: detail?.id ?? lookup.idLead,
+      prefijo: detail?.prefijo ?? lookup.prefijo ?? '',
+      lead: detail?.lead ?? lookup.lead ?? term,
+      usermeta: detail?.usermeta ?? null,
+      etapa: detail?.etapa ?? lookup.etapaActual ?? null,
+      estadoSeguimiento: detail?.estadoSeguimiento ?? lookup.estadoActual ?? null,
+      idAsesorAsignado: detail?.idAsesorAsignado ?? null,
+      nombreAsesorAsignado: detail?.nombreAsesorAsignado ?? lookup.nombreAsesorAsignado ?? null,
+      tipoDocumento: detail?.tipoDocumento ?? null,
+      numeroDocumentoTitularServicio: detail?.numeroDocumentoTitularServicio ?? detail?.numeroDocumento ?? null,
+      base: detail?.base ?? null,
       idTipificacion: null,
-      codigoTipificacion: null,
+      codigoTipificacion: latestEvent?.tipificacion ?? null,
       idSubtipificacion: null,
-      codigoSubtipificacion: null,
-      nombrePlanSnapshot: null,
-      nombreProveedorSnapshot: null,
-      precioPlanSnapshot: null,
-      nombrePromocionInternaSnapshot: null,
-      precioAdicionalesSnapshot: null,
-      precioFinal: null,
-      diaCorteFacturacion: null,
-      mesesPermanenciaSnapshot: null,
+      codigoSubtipificacion: latestEvent?.subtipificacion ?? null,
+      nombrePlanSnapshot: detail?.nombrePlan ?? null,
+      nombreProveedorSnapshot: provider,
+      precioPlanSnapshot: detail?.precioPlan ?? null,
+      nombrePromocionInternaSnapshot: detail?.nombrePromocionInterna ?? null,
+      precioAdicionalesSnapshot: detail?.precioAdicionales ?? null,
+      precioFinal: detail?.precioFinal ?? null,
+      diaCorteFacturacion: detail?.diaCorteFacturacion ?? null,
+      mesesPermanenciaSnapshot: detail?.mesesPermanenciaSnapshot ?? null,
       createdAt: null,
-      lastEntryAt: null,
+      lastEntryAt: detail?.lastEntryAt ?? null,
       fechaIngresoEtapa: null,
       updatedAt: null,
-      totalAsignaciones: null,
-      fechaProgramacion: null,
-      horaProgramada: null,
-      fechaRechazo: null,
-      sec: null,
-      sot: null,
-      requiereSecSotVenta: null,
-      nombreAsesorUltimaGestion: lookup.nombreAsesorAsignado ?? null,
-      fechaUltimaGestion: null,
-      ultimoComentarioTipificacion: null,
+      totalAsignaciones: detail?.totalAsignaciones ?? null,
+      fechaProgramacion: detail?.fechaProgramacion ?? latestEvent?.fechaProgramacion ?? null,
+      horaProgramada: detail?.horaProgramada ?? latestEvent?.horaProgramada ?? null,
+      fechaRechazo: latestEvent?.fechaRechazo ?? null,
+      sec: detail?.sec ?? null,
+      sot: detail?.sot ?? null,
+      requiereSecSotVenta: detail?.requiereSecSotVenta ?? null,
+      nombreAsesorUltimaGestion: latestEvent?.nombreActor ?? detail?.nombreAsesorAsignado ?? lookup.nombreAsesorAsignado ?? null,
+      fechaUltimaGestion: latestEvent?.createdAt ?? null,
+      ultimoComentarioTipificacion: latestEvent?.comentario ?? null,
       searchConsultationOnly: true
     };
   }
