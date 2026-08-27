@@ -252,24 +252,23 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private searchRequestSeq = 0;
   protected readonly isSearchMode = computed(() => this.section() !== 'correccion-instalacion' && this.searchTermActive().length > 0);
   protected readonly todayDate = this.todayLocalDate();
-  // Periodo del `app-period-selector` por bandeja. Arranca en 'dia'/null en las 3: la carga inicial va
-  // SIN fechaDesde/fechaHasta y el backend aplica sus defaults; recien al elegir dia/rango/semana/mes
-  // se envian las cotas (traducidas por resolveMetricsRange).
+  // Periodo del `app-period-selector` por bandeja. Arranca en Hoy con fechas explicitas para que la
+  // primera carga no dependa de defaults del backend.
   private readonly plataformaPeriodo = signal<MetricsPeriodo>('dia');
-  private readonly plataformaDia = signal<string | null>(null);
-  private readonly plataformaHasta = signal<string | null>(null);
+  private readonly plataformaDia = signal<string | null>(this.todayDate);
+  private readonly plataformaHasta = signal<string | null>(this.todayDate);
   private readonly programadosPeriodo = signal<MetricsPeriodo>('dia');
-  private readonly programadosDia = signal<string | null>(null);
-  private readonly programadosHasta = signal<string | null>(null);
+  private readonly programadosDia = signal<string | null>(this.todayDate);
+  private readonly programadosHasta = signal<string | null>(this.todayDate);
   private readonly subsanablesPeriodo = signal<MetricsPeriodo>('dia');
-  private readonly subsanablesDia = signal<string | null>(null);
-  private readonly subsanablesHasta = signal<string | null>(null);
+  private readonly subsanablesDia = signal<string | null>(this.todayDate);
+  private readonly subsanablesHasta = signal<string | null>(this.todayDate);
   private readonly rechazadosPeriodo = signal<MetricsPeriodo>('dia');
-  private readonly rechazadosDia = signal<string | null>(null);
-  private readonly rechazadosHasta = signal<string | null>(null);
-  private readonly instaladosPeriodo = signal<MetricsPeriodo>('mes');
-  private readonly instaladosDia = signal<string | null>(null);
-  private readonly instaladosHasta = signal<string | null>(null);
+  private readonly rechazadosDia = signal<string | null>(this.todayDate);
+  private readonly rechazadosHasta = signal<string | null>(this.todayDate);
+  private readonly instaladosPeriodo = signal<MetricsPeriodo>('dia');
+  private readonly instaladosDia = signal<string | null>(this.todayDate);
+  private readonly instaladosHasta = signal<string | null>(this.todayDate);
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly skeletonRows = Array.from({ length: 8 });
@@ -755,6 +754,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       const nextSection = this.resolveSection(data['section']);
       const idEquipo = Number(params.get('idEquipo'));
       const nextAdminEquipoId = Number.isFinite(idEquipo) && idEquipo > 0 ? idEquipo : null;
+      const sectionChanged = nextSection !== this.section();
       if (nextSection !== this.section() || nextAdminEquipoId !== this.adminEquipoId()) {
         this.searchInput.set('');
         this.searchTermActive.set('');
@@ -778,6 +778,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.pageRechazados.set(0);
         this.pageInstalados.set(0);
         this.pageCorreccionInstalacion.set(0);
+      }
+      if (sectionChanged) {
+        this.resetSectionPeriodToToday(nextSection);
       }
       this.adminEquipoId.set(nextAdminEquipoId);
       this.section.set(nextSection);
@@ -1523,15 +1526,41 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     await this.refreshPlataforma(false);
   }
 
+  private resetSectionPeriodToToday(section: BackofficeSection): void {
+    switch (section) {
+      case 'programados':
+        this.programadosPeriodo.set('dia');
+        this.programadosDia.set(this.todayDate);
+        this.programadosHasta.set(this.todayDate);
+        break;
+      case 'subsanables':
+        this.subsanablesPeriodo.set('dia');
+        this.subsanablesDia.set(this.todayDate);
+        this.subsanablesHasta.set(this.todayDate);
+        break;
+      case 'rechazados':
+        this.rechazadosPeriodo.set('dia');
+        this.rechazadosDia.set(this.todayDate);
+        this.rechazadosHasta.set(this.todayDate);
+        break;
+      case 'instalados':
+        this.instaladosPeriodo.set('dia');
+        this.instaladosDia.set(this.todayDate);
+        this.instaladosHasta.set(this.todayDate);
+        break;
+      case 'correccion-instalacion':
+        break;
+      default:
+        this.plataformaPeriodo.set('dia');
+        this.plataformaDia.set(this.todayDate);
+        this.plataformaHasta.set(this.todayDate);
+        break;
+    }
+  }
+
   /** Cambio de segmento (Hoy/Semanal/Mensual) del selector de periodo de la bandeja activa. */
   protected async onPeriodoChange(periodo: MetricsPeriodo | null | undefined): Promise<void> {
     if (!periodo || !this.canDisplayOperationalData()) {
-      return;
-    }
-    if (this.section() === 'instalados') {
-      this.instaladosPeriodo.set('mes');
-      this.instaladosDia.set(null);
-      this.instaladosHasta.set(null);
       return;
     }
     if (this.activePeriodo() === periodo) {
@@ -1540,27 +1569,57 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     switch (this.section()) {
       case 'programados':
         this.programadosPeriodo.set(periodo);
-        if (periodo !== 'dia') { this.programadosDia.set(null); this.programadosHasta.set(null); }
+        if (periodo === 'dia') {
+          this.programadosDia.set(this.todayDate);
+          this.programadosHasta.set(this.todayDate);
+        } else {
+          this.programadosDia.set(null);
+          this.programadosHasta.set(null);
+        }
         this.pageProgramados.set(0);
         break;
       case 'subsanables':
         this.subsanablesPeriodo.set(periodo);
-        if (periodo !== 'dia') { this.subsanablesDia.set(null); this.subsanablesHasta.set(null); }
+        if (periodo === 'dia') {
+          this.subsanablesDia.set(this.todayDate);
+          this.subsanablesHasta.set(this.todayDate);
+        } else {
+          this.subsanablesDia.set(null);
+          this.subsanablesHasta.set(null);
+        }
         this.pageSubsanables.set(0);
         break;
       case 'rechazados':
         this.rechazadosPeriodo.set(periodo);
-        if (periodo !== 'dia') { this.rechazadosDia.set(null); this.rechazadosHasta.set(null); }
+        if (periodo === 'dia') {
+          this.rechazadosDia.set(this.todayDate);
+          this.rechazadosHasta.set(this.todayDate);
+        } else {
+          this.rechazadosDia.set(null);
+          this.rechazadosHasta.set(null);
+        }
         this.pageRechazados.set(0);
         break;
       case 'instalados':
         this.instaladosPeriodo.set(periodo);
-        if (periodo !== 'dia') { this.instaladosDia.set(null); this.instaladosHasta.set(null); }
+        if (periodo === 'dia') {
+          this.instaladosDia.set(this.todayDate);
+          this.instaladosHasta.set(this.todayDate);
+        } else {
+          this.instaladosDia.set(null);
+          this.instaladosHasta.set(null);
+        }
         this.pageInstalados.set(0);
         break;
       default:
         this.plataformaPeriodo.set(periodo);
-        if (periodo !== 'dia') { this.plataformaDia.set(null); this.plataformaHasta.set(null); }
+        if (periodo === 'dia') {
+          this.plataformaDia.set(this.todayDate);
+          this.plataformaHasta.set(this.todayDate);
+        } else {
+          this.plataformaDia.set(null);
+          this.plataformaHasta.set(null);
+        }
         this.pagePlataforma.set(0);
         break;
     }
@@ -1570,12 +1629,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   /** Rango elegido en el calendario del selector. Un dia suelto llega como `desde === hasta`. */
   protected async onRangoChange(rango: MetricsRango): Promise<void> {
     if (!this.canDisplayOperationalData()) {
-      return;
-    }
-    if (this.section() === 'instalados') {
-      this.instaladosPeriodo.set('mes');
-      this.instaladosDia.set(null);
-      this.instaladosHasta.set(null);
       return;
     }
     switch (this.section()) {

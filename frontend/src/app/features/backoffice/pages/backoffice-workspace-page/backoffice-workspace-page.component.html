@@ -85,7 +85,6 @@
             [dia]="activeDia()"
             [hasta]="activeHasta()"
             [allowFuture]="section() === 'programados'"
-            [disabled]="section() === 'instalados'"
             (periodoChange)="onPeriodoChange($event)"
             (rangoChange)="onRangoChange($event)"
           />
