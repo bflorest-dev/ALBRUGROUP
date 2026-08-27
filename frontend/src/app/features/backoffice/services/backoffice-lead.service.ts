@@ -153,7 +153,9 @@ export class BackofficeLeadService {
   listarInstalados(
     query: PageQuery,
     filters: LeadRechazadosFilters,
-    idEquipo?: number | null
+    idEquipo?: number | null,
+    campoFecha?: string | null,
+    groupBy?: string | null
   ): Observable<LeadPage<LeadInstaladoBackofficeResponse>> {
     let params = this.pageParams(query);
     if (filters.fechaDesde) {
@@ -164,6 +166,12 @@ export class BackofficeLeadService {
     }
     if (idEquipo !== null && idEquipo !== undefined) {
       params = params.set('idEquipo', idEquipo);
+    }
+    if (campoFecha) {
+      params = params.set('campoFecha', campoFecha);
+    }
+    if (groupBy) {
+      params = params.set('groupBy', groupBy);
     }
     return this.http.get<LeadPage<LeadInstaladoBackofficeResponse>>(`${this.leadUrl}/venta/instalados`, { params });
   }

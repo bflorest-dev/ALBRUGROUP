@@ -10,6 +10,7 @@ public enum CampoFechaListadoVenta {
     PROGRAMACION,
     RECHAZO,
     INSTALACION,
+    TIPIFICACION_INSTALADO,
     INGRESO,
     ULTIMA_GESTION
 }

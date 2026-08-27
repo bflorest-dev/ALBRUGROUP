@@ -62,7 +62,7 @@ type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVE
 type BackofficeSortField = 'fechaIngresoEtapa' | 'fechaRechazo' | 'fechaInstalacion' | 'fechaTipificacionInstalado' | 'fechaProgramacion' | 'fechaUltimaGestion' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado' | 'estadoClientePostventa' | 'tipificacion';
 type BackofficeSortDirection = 'asc' | 'desc';
 // Campo de fecha contra el que la bandeja filtra el periodo (mecanica "Usar fecha de").
-type BackofficeCampoFecha = 'PROGRAMACION' | 'RECHAZO' | 'INSTALACION' | 'INGRESO' | 'ULTIMA_GESTION';
+type BackofficeCampoFecha = 'PROGRAMACION' | 'RECHAZO' | 'INSTALACION' | 'TIPIFICACION_INSTALADO' | 'INGRESO' | 'ULTIMA_GESTION';
 type DrawerMode = 'gestion' | 'consulta';
 type OrganizationFilterOption = { label: string; value: string; codigo?: string; descripcion?: string; sinValor?: boolean; rawValue?: string | null };
 type VisualLeadVenta = LeadVentaResponse & {
@@ -274,6 +274,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly rechazoSortDirection = signal<BackofficeSortDirection>('desc');
   private readonly rechazoCampoFecha = signal<BackofficeCampoFecha>('RECHAZO');
   private readonly rechazoGroupBy = signal<BackofficeGroupMode>('SIN_AGRUPAR');
+  // Instalados: Estado = postventa; su "Ultima gestion" es la fecha de tipificacion (instalado).
+  private readonly instaladosSortField = signal<BackofficeSortField>('fechaInstalacion');
+  private readonly instaladosSortDirection = signal<BackofficeSortDirection>('desc');
+  private readonly instaladosCampoFecha = signal<BackofficeCampoFecha>('INSTALACION');
+  private readonly instaladosGroupBy = signal<BackofficeGroupMode>('SIN_AGRUPAR');
   private readonly subsanablesPeriodo = signal<MetricsPeriodo>('dia');
   private readonly subsanablesDia = signal<string | null>(this.todayDate);
   private readonly subsanablesHasta = signal<string | null>(this.todayDate);
@@ -348,6 +353,22 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     { label: 'Estado', value: 'ESTADO' },
     { label: 'Plan', value: 'PLAN' },
     { label: 'Tipificacion', value: 'TIPIFICACION' },
+    { label: 'Asesor', value: 'ASESOR' }
+  ];
+  // Instalados: la tipificacion es uniforme (INSTALADO) => no ordena/agrupa. Estado = postventa.
+  protected readonly instaladosSortOptions: Array<{ label: string; value: BackofficeSortField }> = [
+    { label: 'Fecha instalacion', value: 'fechaInstalacion' },
+    { label: 'Fecha tipificacion', value: 'fechaTipificacionInstalado' },
+    { label: 'Estado', value: 'estadoClientePostventa' }
+  ];
+  protected readonly instaladosCampoFechaOptions: Array<{ label: string; value: BackofficeCampoFecha }> = [
+    { label: 'Fecha instalacion', value: 'INSTALACION' },
+    { label: 'Fecha tipificacion', value: 'TIPIFICACION_INSTALADO' }
+  ];
+  protected readonly instaladosGroupOptions: Array<{ label: string; value: BackofficeGroupMode }> = [
+    { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
+    { label: 'Estado', value: 'ESTADO' },
+    { label: 'Plan', value: 'PLAN' },
     { label: 'Asesor', value: 'ASESOR' }
   ];
   protected readonly activeGroupFilterOptions = computed<OrganizationFilterOption[]>(() => {
@@ -553,6 +574,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.section() === 'plataforma'
     || this.section() === 'programados'
     || this.isFechaRechazoSection()
+    || this.isFechaInstalacionSection()
   );
   protected readonly activeGroupingMode = computed<BackofficeGroupMode>(() => {
     if (this.section() === 'plataforma') {
@@ -564,6 +586,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (this.isFechaRechazoSection()) {
       return this.rechazoGroupBy();
     }
+    if (this.isFechaInstalacionSection()) {
+      return this.instaladosGroupBy();
+    }
     return 'SIN_AGRUPAR';
   });
   protected readonly activeSortField = computed<BackofficeSortField>(() =>
@@ -572,7 +597,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       : this.isFechaRechazoSection()
         ? this.rechazoSortField()
         : this.isFechaInstalacionSection()
-          ? 'fechaInstalacion'
+          ? this.instaladosSortField()
           : this.plataformaSortField()
   );
   protected readonly activeSortDirection = computed<BackofficeSortDirection>(() =>
@@ -581,7 +606,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       : this.isFechaRechazoSection()
         ? this.rechazoSortDirection()
         : this.isFechaInstalacionSection()
-          ? 'desc'
+          ? this.instaladosSortDirection()
           : this.plataformaSortDirection()
   );
   // Campo de fecha activo (mecanica "Usar fecha de").
@@ -590,7 +615,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       ? this.programadosCampoFecha()
       : this.isFechaRechazoSection()
         ? this.rechazoCampoFecha()
-        : 'PROGRAMACION'
+        : this.isFechaInstalacionSection()
+          ? this.instaladosCampoFecha()
+          : 'PROGRAMACION'
   );
   protected readonly sortDirectionOptions = computed<Array<{ label: string; value: BackofficeSortDirection }>>(() =>
     this.activeSortField() === 'fechaIngresoEtapa'
@@ -670,6 +697,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     return 'fechaInstalacion';
   });
+  // La columna "Estado" ordena por el estado de seguimiento, salvo en Instalados (estado postventa).
+  protected readonly estadoSortField = computed<BackofficeSortField>(() =>
+    this.isFechaInstalacionSection() ? 'estadoClientePostventa' : 'estado'
+  );
+  // La columna "Ultima gestion" en Instalados es la fecha de tipificacion (instalado).
+  protected readonly ultimaGestionSortField = computed<BackofficeSortField>(() =>
+    this.isFechaInstalacionSection() ? 'fechaTipificacionInstalado' : 'fechaUltimaGestion'
+  );
   protected readonly organizationSummary = computed(() => {
     const grouping = this.groupingModeOptions.find((option) => option.value === this.activeGroupingMode())?.label ?? 'Sin agrupar';
     const sorting = this.sortOptions.find((option) => option.value === this.activeSortField())?.label ?? 'Fecha ingreso';
@@ -691,6 +726,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         && this.rechazoSortDirection() === 'desc'
         && this.rechazoCampoFecha() === 'RECHAZO'
         && this.rechazoGroupBy() === 'SIN_AGRUPAR';
+    }
+    if (this.isFechaInstalacionSection()) {
+      return this.instaladosSortField() === 'fechaInstalacion'
+        && this.instaladosSortDirection() === 'desc'
+        && this.instaladosCampoFecha() === 'INSTALACION'
+        && this.instaladosGroupBy() === 'SIN_AGRUPAR';
     }
     return this.activeGroupingMode() === 'SIN_AGRUPAR'
       && this.activeSortField() === (this.section() === 'plataforma' ? 'fechaIngresoEtapa' : 'lastEntryAt')
@@ -720,6 +761,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       const rows = this.section() === 'subsanables' ? this.subsanablesRows() : this.rechazadosRows();
       const groupBy = this.rechazoGroupBy();
       return groupBy === 'SIN_AGRUPAR' ? rows : rows.map((row) => this.withOrganizationGroup(row, groupBy));
+    }
+    if (this.isFechaInstalacionSection()) {
+      // Instalados: orden en servidor; subcabeceras solo si hay agrupador categorico.
+      const groupBy = this.instaladosGroupBy();
+      return groupBy === 'SIN_AGRUPAR'
+        ? this.instaladosRows()
+        : this.instaladosRows().map((row) => this.withOrganizationGroup(row, groupBy));
     }
     let rows: VisualLeadVenta[];
     switch (this.section()) {
@@ -1715,6 +1763,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
+  private async applyInstaladosOrganizeChange(): Promise<void> {
+    this.pageInstalados.set(0);
+    await this.refreshInstalados(false);
+  }
+
   protected async setActiveGroupingMode(mode: BackofficeGroupMode | null | undefined): Promise<void> {
     if (!mode) {
       return;
@@ -1734,6 +1787,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       }
       this.rechazoGroupBy.set(mode);
       await this.applyRechazoOrganizeChange();
+      return;
+    }
+    if (this.isFechaInstalacionSection()) {
+      if (mode === this.instaladosGroupBy()) {
+        return;
+      }
+      this.instaladosGroupBy.set(mode);
+      await this.applyInstaladosOrganizeChange();
       return;
     }
     if (mode !== this.activeGroupingMode()) {
@@ -1763,6 +1824,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.applyRechazoOrganizeChange();
       return;
     }
+    if (this.isFechaInstalacionSection()) {
+      this.instaladosSortField.set(field);
+      this.instaladosSortDirection.set(this.defaultSortDirection(field));
+      await this.applyInstaladosOrganizeChange();
+      return;
+    }
     this.plataformaSortField.set(field);
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
@@ -1781,6 +1848,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (this.isFechaRechazoSection()) {
       this.rechazoSortDirection.set(direction);
       await this.applyRechazoOrganizeChange();
+      return;
+    }
+    if (this.isFechaInstalacionSection()) {
+      this.instaladosSortDirection.set(direction);
+      await this.applyInstaladosOrganizeChange();
       return;
     }
     this.plataformaSortDirection.set(direction);
@@ -1808,6 +1880,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       }
       this.rechazoCampoFecha.set(campo);
       await this.applyRechazoOrganizeChange();
+      return;
+    }
+    if (this.isFechaInstalacionSection()) {
+      if (campo === this.instaladosCampoFecha()) {
+        return;
+      }
+      this.instaladosCampoFecha.set(campo);
+      await this.applyInstaladosOrganizeChange();
     }
   }
 
@@ -1827,6 +1907,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.rechazoCampoFecha.set('RECHAZO');
       this.rechazoGroupBy.set('SIN_AGRUPAR');
       await this.applyRechazoOrganizeChange();
+      return;
+    }
+    if (this.isFechaInstalacionSection()) {
+      this.instaladosSortField.set('fechaInstalacion');
+      this.instaladosSortDirection.set('desc');
+      this.instaladosCampoFecha.set('INSTALACION');
+      this.instaladosGroupBy.set('SIN_AGRUPAR');
+      await this.applyInstaladosOrganizeChange();
       return;
     }
     this.plataformaGroupingMode.set('SIN_AGRUPAR');
@@ -1862,6 +1950,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         || field === 'fechaUltimaGestion'
         || field === 'estado'
         || field === 'tipificacion';
+    }
+    if (this.isFechaInstalacionSection()) {
+      // Fecha ingreso no aplica (el lead ya salio de VENTA); tipificacion es uniforme (INSTALADO).
+      return field === 'fechaInstalacion'
+        || field === 'fechaTipificacionInstalado'
+        || field === 'estadoClientePostventa';
     }
     return false;
   }
@@ -1914,6 +2008,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.rechazoSortField.set(field);
       this.rechazoSortDirection.set(direction);
       await this.applyRechazoOrganizeChange();
+      return;
+    }
+    if (this.isFechaInstalacionSection()) {
+      this.instaladosSortField.set(field);
+      this.instaladosSortDirection.set(direction);
+      await this.applyInstaladosOrganizeChange();
     }
   }
 
@@ -2606,7 +2706,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const filters = this.instaladosFilters();
     const adminEquipoId = this.adminEquipoId();
     const page = await firstValueFrom(
-      this.leadService.listarInstalados(query, filters, adminEquipoId)
+      this.leadService.listarInstalados(query, filters, adminEquipoId, this.instaladosCampoFecha(), this.groupByParam(this.instaladosGroupBy()))
     );
     if (requestSeq !== this.instaladosRequestSeq || requestKey !== this.instaladosRequestKey()) {
       return;
@@ -2948,7 +3048,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
             : this.isFechaRechazoSection(section)
               ? this.rechazoSortField()
               : this.isFechaInstalacionSection(section)
-                ? 'fechaInstalacion'
+                ? this.instaladosSortField()
                 : 'lastEntryAt',
       direction: section === 'plataforma'
         ? this.plataformaSortDirection()
@@ -2956,7 +3056,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
           ? this.programadosSortDirection()
           : this.isFechaRechazoSection(section)
             ? this.rechazoSortDirection()
-            : 'desc'
+            : this.isFechaInstalacionSection(section)
+              ? this.instaladosSortDirection()
+              : 'desc'
     };
   }
 
@@ -3032,7 +3134,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       equipo: this.adminEquipoId(),
       page: this.pageInstalados(),
       query: this.currentQuery(this.pageInstalados(), 'instalados'),
-      filters: this.instaladosFilters()
+      filters: this.instaladosFilters(),
+      campoFecha: this.instaladosCampoFecha(),
+      groupBy: this.instaladosGroupBy()
     });
   }
 

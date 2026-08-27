@@ -268,6 +268,12 @@ public class LeadService {
     private static final Set<String> LEAD_INSTALADOS_VENTA_SORT_FIELDS = Set.of(
             "fechaInstalacion", "fechaTipificacionInstalado", "createdAt", "lead", "estadoClientePostventa"
     );
+    private static final Set<String> CAMPO_FECHA_INSTALADOS_PERMITIDOS = Set.of(
+            "INSTALACION", "TIPIFICACION_INSTALADO"
+    );
+    private static final Set<String> GROUP_BY_INSTALADOS_PERMITIDOS = Set.of(
+            "ESTADO", "PLAN", "ULTIMO_GESTOR"
+    );
     private static final Set<String> LEAD_CORRECCION_INSTALACION_SORT_FIELDS = Set.of(
             "fechaInstalacion", "fechaTipificacionInstalado", "createdAt", "lead", "numeroDocumento"
     );
@@ -1053,10 +1059,32 @@ public class LeadService {
             PageRequest pageRequest,
             Long idEquipo
     ) {
+        return listarLeadsVentaInstalados(fechaDesde, fechaHasta, pageRequest, idEquipo, CampoFechaListadoVenta.INSTALACION, null);
+    }
+
+    public PageResponse<LeadInstaladoBackofficeResponse> listarLeadsVentaInstalados(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            PageRequest pageRequest,
+            Long idEquipo,
+            CampoFechaListadoVenta campoFecha,
+            TipoGrupoVenta groupBy
+    ) {
         LocalDate hasta = fechaHasta == null ? OperationalDateTime.today() : fechaHasta;
         LocalDate desde = fechaDesde == null ? hasta.minusDays(30) : fechaDesde;
         if (desde.isAfter(hasta)) {
             throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha final");
+        }
+        Instant tsDesde = OperationalDateTime.startOfDay(desde);
+        Instant tsHasta = OperationalDateTime.endExclusiveOfDay(hasta);
+
+        CampoFechaListadoVenta campo = campoFecha == null ? CampoFechaListadoVenta.INSTALACION : campoFecha;
+        if (!CAMPO_FECHA_INSTALADOS_PERMITIDOS.contains(campo.name())) {
+            throw new BadRequestException("Campo de fecha no permitido para instalados: " + campo);
+        }
+        String groupByName = groupBy == null ? "SIN_AGRUPAR" : groupBy.name();
+        if (!"SIN_AGRUPAR".equals(groupByName) && !GROUP_BY_INSTALADOS_PERMITIDOS.contains(groupByName)) {
+            throw new BadRequestException("Agrupador no permitido para instalados: " + groupBy);
         }
 
         String sortBy = "createdAt".equals(pageRequest.getSortBy()) ? "fechaInstalacion" : pageRequest.getSortBy();
@@ -1073,11 +1101,15 @@ public class LeadService {
                 Accion.TIPIFICACION,
                 Etapa.VENTA,
                 TIPIFICACION_INSTALADO,
+                campo.name(),
                 desde,
                 hasta,
+                tsDesde,
+                tsHasta,
                 List.of(Etapa.POSTVENTA, Etapa.COBRANZA),
                 equipos.filtrar(),
                 equipos.ids(),
+                groupByName,
                 sortBy,
                 sortDesc,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())

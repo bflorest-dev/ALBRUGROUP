@@ -356,6 +356,89 @@
             </div>
           </p-popover>
         }
+
+        @if (isFechaInstalacionSection()) {
+          <button
+            pButton
+            type="button"
+            icon="pi pi-sliders-h"
+            label="Organizar"
+            severity="secondary"
+            [outlined]="true"
+            class="lead-search-organize"
+            [disabled]="!canDisplayOperationalData()"
+            (mouseenter)="onOrganizeEnter()"
+            (mouseleave)="onOrganizeLeave(instaladosOrganizePopover)"
+            (click)="onOrganizeEnter(); instaladosOrganizePopover.toggle($event)"
+          ></button>
+
+          <p-popover #instaladosOrganizePopover appendTo="body" styleClass="backoffice-organize-popover">
+            <div class="backoffice-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(instaladosOrganizePopover)">
+              <label for="backoffice-instalados-campo-fecha">
+                <span>Usar fecha de</span>
+                <p-select
+                  inputId="backoffice-instalados-campo-fecha"
+                  [options]="instaladosCampoFechaOptions"
+                  [ngModel]="activeCampoFecha()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveCampoFecha($any($event.value))"
+                />
+              </label>
+
+              <div class="backoffice-organize-divider"></div>
+
+              <label for="backoffice-instalados-group">
+                <span>Agrupar por</span>
+                <p-select
+                  inputId="backoffice-instalados-group"
+                  [options]="instaladosGroupOptions"
+                  [ngModel]="activeGroupingMode()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveGroupingMode($any($event.value))"
+                />
+              </label>
+
+              <div class="backoffice-organize-divider"></div>
+
+              <label for="backoffice-instalados-sort">
+                <span>Ordenar por</span>
+                <p-select
+                  inputId="backoffice-instalados-sort"
+                  [options]="instaladosSortOptions"
+                  [ngModel]="activeSortField()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveSortField($any($event.value))"
+                />
+              </label>
+
+              <label for="backoffice-instalados-direction">
+                <span>Mostrar primero</span>
+                <p-select
+                  inputId="backoffice-instalados-direction"
+                  [options]="sortDirectionOptions()"
+                  [ngModel]="activeSortDirection()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveSortDirection($any($event.value))"
+                />
+              </label>
+
+              <button
+                pButton
+                type="button"
+                icon="pi pi-filter-slash"
+                label="Limpiar"
+                severity="secondary"
+                [text]="true"
+                [disabled]="isOrganizationDefault()"
+                (click)="clearOrganization()"
+              ></button>
+            </div>
+          </p-popover>
+        }
       </div>
     </div>
 
@@ -515,18 +598,18 @@
           }
           <th class="col-documento">Documento</th>
           <th class="col-proveedor">Proveedor</th>
-          <th class="col-estado" [class.col-sortable]="columnSortable('estado')">
-            @if (columnSortable('estado')) {
+          <th class="col-estado" [class.col-sortable]="columnSortable(estadoSortField())">
+            @if (columnSortable(estadoSortField())) {
               <button
                 type="button"
                 class="sort-header"
-                [class.sort-header--active]="columnSortActive('estado')"
-                [attr.aria-label]="columnSortLabel('estado', 'estado')"
-                [title]="columnSortLabel('estado', 'estado')"
-                (click)="changeColumnSort('estado')"
+                [class.sort-header--active]="columnSortActive(estadoSortField())"
+                [attr.aria-label]="columnSortLabel(estadoSortField(), 'estado')"
+                [title]="columnSortLabel(estadoSortField(), 'estado')"
+                (click)="changeColumnSort(estadoSortField())"
               >
                 <span>Estado</span>
-                <i [class]="columnSortIcon('estado')" aria-hidden="true"></i>
+                <i [class]="columnSortIcon(estadoSortField())" aria-hidden="true"></i>
               </button>
             } @else {
               Estado
@@ -554,18 +637,18 @@
             <th class="col-sec-sot">SEC/SOT</th>
           }
           <th class="col-asignado">Ultimo Gestor</th>
-          <th class="col-gestion" [class.col-sortable]="columnSortable('fechaUltimaGestion')">
-            @if (columnSortable('fechaUltimaGestion')) {
+          <th class="col-gestion" [class.col-sortable]="columnSortable(ultimaGestionSortField())">
+            @if (columnSortable(ultimaGestionSortField())) {
               <button
                 type="button"
                 class="sort-header"
-                [class.sort-header--active]="columnSortActive('fechaUltimaGestion')"
-                [attr.aria-label]="columnSortLabel('fechaUltimaGestion', 'ultima gestion')"
-                [title]="columnSortLabel('fechaUltimaGestion', 'ultima gestion')"
-                (click)="changeColumnSort('fechaUltimaGestion')"
+                [class.sort-header--active]="columnSortActive(ultimaGestionSortField())"
+                [attr.aria-label]="columnSortLabel(ultimaGestionSortField(), 'ultima gestion')"
+                [title]="columnSortLabel(ultimaGestionSortField(), 'ultima gestion')"
+                (click)="changeColumnSort(ultimaGestionSortField())"
               >
                 <span>Ultima gestion</span>
-                <i [class]="columnSortIcon('fechaUltimaGestion')" aria-hidden="true"></i>
+                <i [class]="columnSortIcon(ultimaGestionSortField())" aria-hidden="true"></i>
               </button>
             } @else {
               Ultima gestion

@@ -135,9 +135,11 @@ public class VentaController {
             @RequestParam(required = false) LocalDate fechaDesde,
             @RequestParam(required = false) LocalDate fechaHasta,
             @RequestParam(required = false) Long idEquipo,
+            @RequestParam(required = false, defaultValue = "INSTALACION") CampoFechaListadoVenta campoFecha,
+            @RequestParam(required = false) TipoGrupoVenta groupBy,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarLeadsVentaInstalados(fechaDesde, fechaHasta, pageRequest, idEquipo);
+        var leads = leadService.listarLeadsVentaInstalados(fechaDesde, fechaHasta, pageRequest, idEquipo, campoFecha, groupBy);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 

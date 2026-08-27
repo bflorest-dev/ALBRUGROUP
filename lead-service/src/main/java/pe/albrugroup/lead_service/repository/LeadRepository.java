@@ -1926,7 +1926,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND e.etapa = :etapaVenta
               AND e.tipificacion = :codigoInstalado
               AND e.fechaInstalacion IS NOT NULL
-              AND e.fechaInstalacion BETWEEN :fechaDesde AND :fechaHasta
+              AND (
+                    (:campoFecha = 'INSTALACION' AND e.fechaInstalacion BETWEEN :fechaDesde AND :fechaHasta)
+                    OR (:campoFecha = 'TIPIFICACION_INSTALADO' AND e.createdAt >= :tsDesde AND e.createdAt < :tsHasta)
+              )
               AND l.etapa IN :etapasPermitidas
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.createdAt = (
@@ -1939,6 +1942,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     AND es.fechaInstalacion IS NOT NULL
               )
             ORDER BY
+              CASE WHEN :groupBy = 'ESTADO' THEN l.estadoClientePostventa END ASC,
+              CASE WHEN :groupBy = 'PLAN' THEN l.nombrePlanSnapshot END ASC,
+              CASE WHEN :groupBy = 'ULTIMO_GESTOR' THEN e.nombreActor END ASC,
               CASE WHEN :sortBy = 'fechaInstalacion' AND :sortDesc = false THEN e.fechaInstalacion END ASC,
               CASE WHEN :sortBy = 'fechaInstalacion' AND :sortDesc = true THEN e.fechaInstalacion END DESC,
               CASE WHEN :sortBy = 'fechaTipificacionInstalado' AND :sortDesc = false THEN e.createdAt END ASC,
@@ -1954,11 +1960,15 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("etapaVenta") Etapa etapaVenta,
             @Param("codigoInstalado") String codigoInstalado,
+            @Param("campoFecha") String campoFecha,
             @Param("fechaDesde") java.time.LocalDate fechaDesde,
             @Param("fechaHasta") java.time.LocalDate fechaHasta,
+            @Param("tsDesde") Instant tsDesde,
+            @Param("tsHasta") Instant tsHasta,
             @Param("etapasPermitidas") Collection<Etapa> etapasPermitidas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("groupBy") String groupBy,
             @Param("sortBy") String sortBy,
             @Param("sortDesc") boolean sortDesc,
             Pageable pageable
