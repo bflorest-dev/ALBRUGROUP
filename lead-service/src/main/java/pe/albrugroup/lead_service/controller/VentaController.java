@@ -62,10 +62,12 @@ public class VentaController {
             @RequestParam(required = false) Long idEquipo,
             @RequestParam(required = false) LocalDate fechaDesde,
             @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false, defaultValue = "INGRESO") CampoFechaListadoVenta campoFecha,
+            @RequestParam(required = false) TipoGrupoVenta groupBy,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
         var leads = leadService.listarBandejaVenta(
-                lead, tipoGrupo, valorGrupo, sinValor, idEquipo, fechaDesde, fechaHasta, pageRequest
+                lead, tipoGrupo, valorGrupo, sinValor, idEquipo, fechaDesde, fechaHasta, campoFecha, groupBy, pageRequest
         );
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }

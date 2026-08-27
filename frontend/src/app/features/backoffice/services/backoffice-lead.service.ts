@@ -40,11 +40,12 @@ export class BackofficeLeadService {
   listarPlataforma(
     query: PageQuery,
     lead?: string,
-    groupFilter?: LeadVentaGroupFilter,
     idEquipo?: number | null,
-    range?: LeadRechazadosFilters
+    range?: LeadRechazadosFilters,
+    campoFecha?: string | null,
+    groupBy?: string | null
   ): Observable<LeadPage<LeadVentaResponse>> {
-    let params = this.groupParams(this.pageParams(query), groupFilter);
+    let params = this.pageParams(query);
     if (lead) {
       params = params.set('lead', lead);
     }
@@ -52,6 +53,12 @@ export class BackofficeLeadService {
       params = params.set('idEquipo', idEquipo);
     }
     params = this.rangeParams(params, range);
+    if (campoFecha) {
+      params = params.set('campoFecha', campoFecha);
+    }
+    if (groupBy) {
+      params = params.set('groupBy', groupBy);
+    }
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta`, { params });
   }
 

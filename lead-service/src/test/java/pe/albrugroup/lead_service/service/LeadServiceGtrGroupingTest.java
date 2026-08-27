@@ -84,6 +84,7 @@ class LeadServiceGtrGroupingTest {
                 eq(Etapa.VENTA),
                 eq("%"),
                 eq(false),
+                eq("INGRESO"),
                 any(Instant.class),
                 any(Instant.class),
                 eq(false),
@@ -95,6 +96,13 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(false),
                 anyCollection(),
+                eq("SIN_AGRUPAR"),
+                eq("fechaIngresoEtapa"),
+                eq(true),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of()));
 
@@ -104,6 +112,7 @@ class LeadServiceGtrGroupingTest {
                 eq(Etapa.VENTA),
                 eq("%"),
                 eq(false),
+                eq("INGRESO"),
                 any(Instant.class),
                 any(Instant.class),
                 eq(false),
@@ -118,6 +127,13 @@ class LeadServiceGtrGroupingTest {
                         && values.contains("NO RECUPERABLE")),
                 eq(false),
                 eq(List.of(-1L)),
+                eq("SIN_AGRUPAR"),
+                eq("fechaIngresoEtapa"),
+                eq(true),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         );
     }
@@ -133,6 +149,7 @@ class LeadServiceGtrGroupingTest {
                 eq(Etapa.VENTA),
                 eq("%"),
                 eq(false),
+                eq("INGRESO"),
                 any(Instant.class),
                 any(Instant.class),
                 eq(false),
@@ -144,6 +161,13 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(false),
                 anyCollection(),
+                eq("SIN_AGRUPAR"),
+                eq("fechaIngresoEtapa"),
+                eq(true),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of()));
 
@@ -161,6 +185,7 @@ class LeadServiceGtrGroupingTest {
                 eq(Etapa.VENTA),
                 eq("%"),
                 eq(false),
+                eq("INGRESO"),
                 any(Instant.class),
                 any(Instant.class),
                 eq(false),
@@ -175,6 +200,13 @@ class LeadServiceGtrGroupingTest {
                         && values.contains("NO RECUPERABLE")),
                 eq(false),
                 eq(List.of(-1L)),
+                eq("SIN_AGRUPAR"),
+                eq("fechaIngresoEtapa"),
+                eq(true),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         );
     }
@@ -192,6 +224,7 @@ class LeadServiceGtrGroupingTest {
                 eq(Etapa.VENTA),
                 eq("970329171%"),
                 eq(false),
+                eq("INGRESO"),
                 eq(Instant.EPOCH),
                 eq(Instant.parse("9999-12-31T00:00:00Z")),
                 eq(false),
@@ -203,6 +236,13 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(false),
                 anyCollection(),
+                eq("SIN_AGRUPAR"),
+                eq("fechaIngresoEtapa"),
+                eq(true),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of()));
 
@@ -221,6 +261,7 @@ class LeadServiceGtrGroupingTest {
                 eq(Etapa.VENTA),
                 eq("970329171%"),
                 eq(false),
+                eq("INGRESO"),
                 eq(Instant.EPOCH),
                 eq(Instant.parse("9999-12-31T00:00:00Z")),
                 eq(false),
@@ -235,6 +276,13 @@ class LeadServiceGtrGroupingTest {
                         && values.contains("NO RECUPERABLE")),
                 eq(false),
                 eq(List.of(-1L)),
+                eq("SIN_AGRUPAR"),
+                eq("fechaIngresoEtapa"),
+                eq(true),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         );
     }
@@ -296,6 +344,7 @@ class LeadServiceGtrGroupingTest {
                 eq(Etapa.VENTA),
                 eq("%"),
                 eq(false),
+                eq("INGRESO"),
                 eq(OperationalDateTime.startOfDay(desde)),
                 eq(OperationalDateTime.endExclusiveOfDay(hasta)),
                 eq(false),
@@ -307,6 +356,13 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(false),
                 anyCollection(),
+                eq("SIN_AGRUPAR"),
+                eq("fechaIngresoEtapa"),
+                eq(true),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of()));
 
@@ -316,6 +372,7 @@ class LeadServiceGtrGroupingTest {
                 eq(Etapa.VENTA),
                 eq("%"),
                 eq(false),
+                eq("INGRESO"),
                 eq(OperationalDateTime.startOfDay(desde)),
                 eq(OperationalDateTime.endExclusiveOfDay(hasta)),
                 eq(false),
@@ -327,6 +384,13 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(false),
                 eq(List.of(-1L)),
+                eq("SIN_AGRUPAR"),
+                eq("fechaIngresoEtapa"),
+                eq(true),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         );
     }

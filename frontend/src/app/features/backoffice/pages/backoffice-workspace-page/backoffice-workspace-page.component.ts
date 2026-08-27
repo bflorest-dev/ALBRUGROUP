@@ -179,6 +179,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly plataformaGroupingMode = signal<BackofficeGroupMode>('SIN_AGRUPAR');
   protected readonly plataformaSortField = signal<BackofficeSortField>('fechaIngresoEtapa');
   protected readonly plataformaSortDirection = signal<BackofficeSortDirection>('desc');
+  protected readonly plataformaCampoFecha = signal<BackofficeCampoFecha>('INGRESO');
   protected readonly plataformaOrganizationGroupFilter = signal<string[]>([]);
   protected readonly organizationGroupFilter = computed(() => this.plataformaOrganizationGroupFilter());
   protected readonly ventaGroups = signal<LeadVentaGroupsResponse | null>(null);
@@ -369,6 +370,24 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
     { label: 'Estado', value: 'ESTADO' },
     { label: 'Plan', value: 'PLAN' },
+    { label: 'Asesor', value: 'ASESOR' }
+  ];
+  // Plataforma: orden en servidor + agrupado por subcabeceras (mismo patron que las demas tabs).
+  protected readonly plataformaSortOptions: Array<{ label: string; value: BackofficeSortField }> = [
+    { label: 'Fecha ingreso', value: 'fechaIngresoEtapa' },
+    { label: 'Ultima gestion', value: 'fechaUltimaGestion' },
+    { label: 'Estado', value: 'estado' },
+    { label: 'Tipificacion', value: 'tipificacion' }
+  ];
+  protected readonly plataformaCampoFechaOptions: Array<{ label: string; value: BackofficeCampoFecha }> = [
+    { label: 'Fecha ingreso', value: 'INGRESO' },
+    { label: 'Ultima gestion', value: 'ULTIMA_GESTION' }
+  ];
+  protected readonly plataformaGroupOptions: Array<{ label: string; value: BackofficeGroupMode }> = [
+    { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
+    { label: 'Estado', value: 'ESTADO' },
+    { label: 'Plan', value: 'PLAN' },
+    { label: 'Tipificacion', value: 'TIPIFICACION' },
     { label: 'Asesor', value: 'ASESOR' }
   ];
   protected readonly activeGroupFilterOptions = computed<OrganizationFilterOption[]>(() => {
@@ -617,7 +636,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         ? this.rechazoCampoFecha()
         : this.isFechaInstalacionSection()
           ? this.instaladosCampoFecha()
-          : 'PROGRAMACION'
+          : this.section() === 'plataforma'
+            ? this.plataformaCampoFecha()
+            : 'INGRESO'
   );
   protected readonly sortDirectionOptions = computed<Array<{ label: string; value: BackofficeSortDirection }>>(() =>
     this.activeSortField() === 'fechaIngresoEtapa'
@@ -645,18 +666,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     && this.plataformaSortField() === 'fechaIngresoEtapa'
     && this.plataformaSortDirection() === 'desc'
   );
-  // Agrupado categorico (Estado/Plan/Tipi/Asesor) activo en una tab operativa (no Plataforma):
-  // subcabeceras por valor sobre el orden que fija el backend.
+  // Agrupado categorico (Estado/Plan/Tipi/Asesor) activo: subcabeceras por valor sobre el orden
+  // que fija el backend. Aplica a cualquier tab organizable (incluida Plataforma).
   protected readonly activeCategoricalGrouping = computed(() =>
-    this.section() !== 'plataforma'
-    && this.canOrganizeActiveSection()
+    this.canOrganizeActiveSection()
     && this.activeGroupingMode() !== 'SIN_AGRUPAR'
   );
   protected readonly activeRowGroupMode = computed(() =>
     !this.isSearchMode()
-    && (this.activeCategoricalGrouping()
-      || this.plataformaDateSeparation()
-      || (this.section() === 'plataforma' && this.activeGroupingMode() !== 'SIN_AGRUPAR'))
+    && (this.activeCategoricalGrouping() || this.plataformaDateSeparation())
       ? 'subheader'
       : undefined
   );
@@ -670,7 +688,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (this.plataformaDateSeparation()) {
       return 'fechaGroupSortKey';
     }
-    return this.section() === 'plataforma' && this.activeGroupingMode() !== 'SIN_AGRUPAR' ? 'organizationGroupKey' : undefined;
+    return undefined;
   });
   protected readonly showOperationalDateColumn = computed(() =>
     !this.isSearchMode() && this.section() !== 'plataforma'
@@ -733,10 +751,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         && this.instaladosCampoFecha() === 'INSTALACION'
         && this.instaladosGroupBy() === 'SIN_AGRUPAR';
     }
-    return this.activeGroupingMode() === 'SIN_AGRUPAR'
-      && this.activeSortField() === (this.section() === 'plataforma' ? 'fechaIngresoEtapa' : 'lastEntryAt')
-      && this.activeSortDirection() === 'desc'
-      && this.organizationGroupFilter().length === 0;
+    // Plataforma.
+    return this.plataformaGroupingMode() === 'SIN_AGRUPAR'
+      && this.plataformaSortField() === 'fechaIngresoEtapa'
+      && this.plataformaSortDirection() === 'desc'
+      && this.plataformaCampoFecha() === 'INGRESO';
   });
   protected readonly activeRows = computed(() => {
     // Busqueda global: la tabla muestra los resultados transversales, sin agrupacion ni separacion.
@@ -769,25 +788,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         ? this.instaladosRows()
         : this.instaladosRows().map((row) => this.withOrganizationGroup(row, groupBy));
     }
-    let rows: VisualLeadVenta[];
-    switch (this.section()) {
-      case 'programados':
-        rows = this.programadosRows();
-        break;
-      case 'subsanables':
-        rows = this.subsanablesRows();
-        break;
-      case 'rechazados':
-        rows = this.rechazadosRows();
-        break;
-      case 'instalados':
-        rows = this.instaladosRows();
-        break;
-      default:
-        rows = this.plataformaRows().map((row) => this.withOrganizationGroup(row, this.plataformaGroupingMode()));
-        break;
-    }
-    return this.sortedRowsForGrouping(rows, this.activeGroupRowsBy(), this.activeSortField(), this.activeSortDirection());
+    // Plataforma: orden en servidor. Default = separacion HOY/mes (arriba); con agrupador categorico,
+    // subcabeceras por valor. Nunca reordenamos en cliente.
+    const grouping = this.plataformaGroupingMode();
+    return grouping === 'SIN_AGRUPAR'
+      ? this.plataformaRows()
+      : this.plataformaRows().map((row) => this.withOrganizationGroup(row, grouping));
   });
   protected readonly showSecSotColumn = computed(() =>
     this.activeRows().some((row) => row.requiereSecSotVenta === true || !!row.sec || !!row.sot)
@@ -1831,6 +1837,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
     this.plataformaSortField.set(field);
+    this.plataformaSortDirection.set(this.defaultSortDirection(field));
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
   }
@@ -1888,6 +1895,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       }
       this.instaladosCampoFecha.set(campo);
       await this.applyInstaladosOrganizeChange();
+      return;
+    }
+    if (this.section() === 'plataforma') {
+      if (campo === this.plataformaCampoFecha()) {
+        return;
+      }
+      this.plataformaCampoFecha.set(campo);
+      this.pagePlataforma.set(0);
+      await this.refreshPlataforma(false);
     }
   }
 
@@ -1920,6 +1936,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.plataformaGroupingMode.set('SIN_AGRUPAR');
     this.plataformaSortField.set('fechaIngresoEtapa');
     this.plataformaSortDirection.set('desc');
+    this.plataformaCampoFecha.set('INGRESO');
     this.plataformaOrganizationGroupFilter.set([]);
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
@@ -1956,6 +1973,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return field === 'fechaInstalacion'
         || field === 'fechaTipificacionInstalado'
         || field === 'estadoClientePostventa';
+    }
+    if (this.section() === 'plataforma') {
+      return field === 'fechaIngresoEtapa'
+        || field === 'fechaUltimaGestion'
+        || field === 'estado'
+        || field === 'tipificacion';
     }
     return false;
   }
@@ -2014,6 +2037,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.instaladosSortField.set(field);
       this.instaladosSortDirection.set(direction);
       await this.applyInstaladosOrganizeChange();
+      return;
+    }
+    if (this.section() === 'plataforma') {
+      this.plataformaSortField.set(field);
+      this.plataformaSortDirection.set(direction);
+      this.pagePlataforma.set(0);
+      await this.refreshPlataforma(false);
     }
   }
 
@@ -2600,21 +2630,18 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     const requestSeq = ++this.plataformaRequestSeq;
     const requestKey = this.plataformaRequestKey();
-    if (this.section() === 'plataforma') {
-      await this.refreshOrganizationGroups();
-    }
     const previous = this.plataformaRows();
     const query = this.currentQuery(this.pagePlataforma(), 'plataforma');
-    const groupFilter = this.currentVentaGroupFilter();
     const adminEquipoId = this.adminEquipoId();
     // La busqueda es un modo global aparte (ver refreshSearch); la bandeja Plataforma no filtra por termino.
     const page = await firstValueFrom(
       this.leadService.listarPlataforma(
         query,
         undefined,
-        groupFilter,
         adminEquipoId,
-        this.plataformaRange()
+        this.plataformaRange(),
+        this.plataformaCampoFecha(),
+        this.groupByParam(this.plataformaGroupingMode())
       )
     );
     if (requestSeq !== this.plataformaRequestSeq || requestKey !== this.plataformaRequestKey()) {
@@ -2771,7 +2798,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     const query = this.currentQuery(this.searchPage(), 'plataforma');
     const page = await firstValueFrom(
-      this.leadService.listarPlataforma(query, term, undefined, this.adminEquipoId())
+      this.leadService.listarPlataforma(query, term, this.adminEquipoId())
     );
     if (requestSeq !== this.searchRequestSeq || this.searchTermActive() !== term) {
       return;
@@ -3076,7 +3103,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       equipo: this.adminEquipoId(),
       page: this.pagePlataforma(),
       query: this.currentQuery(this.pagePlataforma(), 'plataforma'),
-      group: this.currentVentaGroupFilter(),
+      campoFecha: this.plataformaCampoFecha(),
+      groupBy: this.plataformaGroupingMode(),
       range: this.plataformaRange()
     });
   }

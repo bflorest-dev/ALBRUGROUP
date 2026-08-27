@@ -274,6 +274,15 @@ public class LeadService {
     private static final Set<String> GROUP_BY_INSTALADOS_PERMITIDOS = Set.of(
             "ESTADO", "PLAN", "ULTIMO_GESTOR"
     );
+    private static final Set<String> LEAD_PLATAFORMA_VENTA_SORT_FIELDS = Set.of(
+            "fechaIngresoEtapa", "fechaUltimaGestion", "estado", "tipificacion"
+    );
+    private static final Set<String> CAMPO_FECHA_PLATAFORMA_PERMITIDOS = Set.of(
+            "INGRESO", "ULTIMA_GESTION"
+    );
+    private static final Set<String> GROUP_BY_PLATAFORMA_PERMITIDOS = Set.of(
+            "ESTADO", "PLAN", "TIPIFICACION", "ULTIMO_GESTOR"
+    );
     private static final Set<String> LEAD_CORRECCION_INSTALACION_SORT_FIELDS = Set.of(
             "fechaInstalacion", "fechaTipificacionInstalado", "createdAt", "lead", "numeroDocumento"
     );
@@ -705,6 +714,23 @@ public class LeadService {
             PageRequest pageRequest
     ) {
         return listarBandejaVenta(
+                lead, tipoGrupo, valoresGrupo, sinValor, idEquipo, fechaDesde, fechaHasta, null, null, pageRequest
+        );
+    }
+
+    public PageResponse<LeadResponse> listarBandejaVenta(
+            String lead,
+            TipoGrupoVenta tipoGrupo,
+            List<String> valoresGrupo,
+            boolean sinValor,
+            Long idEquipo,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            CampoFechaListadoVenta campoFecha,
+            TipoGrupoVenta groupBy,
+            PageRequest pageRequest
+    ) {
+        return listarBandejaVenta(
                 lead,
                 tipoGrupo,
                 valoresGrupo,
@@ -712,6 +738,8 @@ public class LeadService {
                 idEquipo,
                 fechaDesde,
                 fechaHasta,
+                campoFecha,
+                groupBy,
                 pageRequest,
                 ModoListadoVentaPlataforma.OPERATIVO
         );
@@ -726,7 +754,7 @@ public class LeadService {
             PageRequest pageRequest,
             ModoListadoVentaPlataforma modoListado
     ) {
-        return listarBandejaVenta(lead, tipoGrupo, valoresGrupo, sinValor, idEquipo, null, null, pageRequest, modoListado);
+        return listarBandejaVenta(lead, tipoGrupo, valoresGrupo, sinValor, idEquipo, null, null, null, null, pageRequest, modoListado);
     }
 
     PageResponse<LeadResponse> listarBandejaVenta(
@@ -737,9 +765,30 @@ public class LeadService {
             Long idEquipo,
             LocalDate fechaDesde,
             LocalDate fechaHasta,
+            CampoFechaListadoVenta campoFecha,
+            TipoGrupoVenta groupBy,
             PageRequest pageRequest,
             ModoListadoVentaPlataforma modoListado
     ) {
+        CampoFechaListadoVenta campo = campoFecha == null ? CampoFechaListadoVenta.INGRESO : campoFecha;
+        if (!CAMPO_FECHA_PLATAFORMA_PERMITIDOS.contains(campo.name())) {
+            throw new BadRequestException("Campo de fecha no permitido para plataforma: " + campo);
+        }
+        String groupByName = groupBy == null ? "SIN_AGRUPAR" : groupBy.name();
+        if (!"SIN_AGRUPAR".equals(groupByName) && !GROUP_BY_PLATAFORMA_PERMITIDOS.contains(groupByName)) {
+            throw new BadRequestException("Agrupador no permitido para plataforma: " + groupBy);
+        }
+        // Orden. Los defaults historicos (createdAt/lastEntryAt) se mapean a fecha de ingreso desc.
+        String rawSort = pageRequest.getSortBy();
+        boolean sortLegacy = "createdAt".equals(rawSort) || "lastEntryAt".equals(rawSort);
+        String sortBy = sortLegacy ? "fechaIngresoEtapa" : rawSort;
+        LeadOrderingRules.validarDirection(pageRequest.getDirection());
+        if (!LEAD_PLATAFORMA_VENTA_SORT_FIELDS.contains(sortBy)) {
+            throw new BadRequestException("Campo de ordenamiento no permitido: " + rawSort);
+        }
+        boolean sortDesc = sortLegacy || LeadOrderingRules.isDesc(pageRequest);
+        var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
+
         BusquedaVentaFiltro busqueda = resolverBusquedaVenta(lead);
         boolean busquedaExplicita = busqueda.buscando();
         RangoOperativoVenta rango = resolverRangoOperativoVenta(busquedaExplicita, fechaDesde, fechaHasta);
@@ -750,12 +799,13 @@ public class LeadService {
                 ? ModoListadoVentaPlataforma.HISTORICO
                 : modoListado;
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
-        // El orden lo fija la propia query (lastEntryAt DESC, id DESC): Pageable sin sort para no
-        // agregar un ORDER BY extra que descuadre el orden y la paginacion entre paginas.
+        // El orden lo fija la query (groupBy primario + sortBy secundario, ver JPQL). Pageable sin
+        // sort para no agregar un ORDER BY extra que descuadre la paginacion entre paginas.
         Page<LeadResponse> leads = leadRepository.listarBandejaVenta(
                 Etapa.VENTA,
                 busqueda.searchPattern(),
                 busqueda.buscarPorUsermeta(),
+                campo.name(),
                 rango.inicio(),
                 rango.finExclusivo(),
                 grupo.filtrar(),
@@ -767,6 +817,13 @@ public class LeadService {
                 TIPIFICACIONES_SEPARADAS_PLATAFORMA,
                 equipos.filtrar(),
                 equipos.ids(),
+                groupByName,
+                sortBy,
+                sortDesc,
+                estadoOrden.nuevo(),
+                estadoOrden.enGestion(),
+                estadoOrden.asignado(),
+                estadoOrden.gestionado(),
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);

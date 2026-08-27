@@ -107,11 +107,25 @@
 
           <p-popover #platformOrganizePopover appendTo="body" styleClass="backoffice-organize-popover">
             <div class="backoffice-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(platformOrganizePopover)">
+              <label for="backoffice-platform-campo-fecha">
+                <span>Usar fecha de</span>
+                <p-select
+                  inputId="backoffice-platform-campo-fecha"
+                  [options]="plataformaCampoFechaOptions"
+                  [ngModel]="activeCampoFecha()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveCampoFecha($any($event.value))"
+                />
+              </label>
+
+              <div class="backoffice-organize-divider"></div>
+
               <label for="backoffice-platform-grouping">
                 <span>Agrupar por</span>
                 <p-select
                   inputId="backoffice-platform-grouping"
-                  [options]="groupingModeOptions"
+                  [options]="plataformaGroupOptions"
                   [ngModel]="activeGroupingMode()"
                   optionLabel="label"
                   optionValue="value"
@@ -121,43 +135,11 @@
 
               <div class="backoffice-organize-divider"></div>
 
-              @if (activeGroupingMode() !== 'SIN_AGRUPAR' && activeGroupFilterOptions().length) {
-                <label for="backoffice-group-filter">
-                  <span>Ver {{ activeGroupFilterLabel() }}</span>
-                  <p-multiselect
-                    inputId="backoffice-group-filter"
-                    styleClass="backoffice-tipification-filter"
-                    [options]="activeGroupFilterOptions()"
-                    [ngModel]="organizationGroupFilter()"
-                    optionLabel="label"
-                    optionValue="value"
-                    display="chip"
-                    [maxSelectedLabels]="1"
-                    selectedItemsLabel="{0} seleccionados"
-                    [filter]="true"
-                    filterBy="label,codigo,descripcion"
-                    appendTo="body"
-                    (onChange)="setOrganizationGroupFilter($any($event.value))"
-                  >
-                    <ng-template #item let-option>
-                      <div class="select-item">
-                        <strong>{{ option.codigo || option.label }}</strong>
-                        @if (option.descripcion) {
-                          <small>{{ option.descripcion }}</small>
-                        }
-                      </div>
-                    </ng-template>
-                  </p-multiselect>
-                </label>
-
-                <div class="backoffice-organize-divider"></div>
-              }
-
               <label for="backoffice-platform-sort">
                 <span>Ordenar por</span>
                 <p-select
                   inputId="backoffice-platform-sort"
-                  [options]="sortOptions"
+                  [options]="plataformaSortOptions"
                   [ngModel]="activeSortField()"
                   optionLabel="label"
                   optionValue="value"
