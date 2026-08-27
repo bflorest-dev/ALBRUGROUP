@@ -98,11 +98,15 @@ public class MarcacionService {
                     ? crearAsistencia(idEmpleado, hoy, tramo, jornada)
                     : crearAsistenciaOjtLibre(idEmpleado, hoy);
         } else if (asistencia.getFechaHoraSalida() != null) {
-            // Jornada cerrada: solo se re-ingresa si hay un tramo posterior (ampliacion) -> horas extra.
-            if (tramo == null || !esTramoReingreso(asistencia, tramo)) {
-                throw new BadRequestException("Tu jornada de hoy ya está cerrada");
+            if (ojt) {
+                prepararReingresoOjtLibre(asistencia);
+            } else {
+                // Jornada cerrada: solo se re-ingresa si hay un tramo posterior (ampliacion) -> horas extra.
+                if (tramo == null || !esTramoReingreso(asistencia, tramo)) {
+                    throw new BadRequestException("Tu jornada de hoy ya está cerrada");
+                }
+                prepararReingreso(asistencia, tramo);
             }
-            prepararReingreso(asistencia, tramo);
         } else if (asistencia.getFechaHoraIngreso() != null) {
             throw new BadRequestException("El ingreso ya fue registrado para hoy");
         }
@@ -729,6 +733,29 @@ public class MarcacionService {
         reiniciarParaTramo(a, tramo);
     }
 
+    private void prepararReingresoOjtLibre(Asistencia a) {
+        archivarSegmentoActual(a);
+        a.setEntradaProgramada(null);
+        a.setSalidaProgramada(null);
+        a.setInicioAlmuerzoProgramado(null);
+        a.setFinAlmuerzoProgramado(null);
+        a.setFechaHoraIngreso(null);
+        a.setFechaHoraSalida(null);
+        a.setAlmuerzoEstadoDesde(null);
+        a.setAlmuerzoRealInicio(null);
+        a.setAlmuerzoRealFin(null);
+        a.setOrigenAlmuerzo(null);
+        a.setMinutosAlmuerzoTomados(0);
+        a.setEstadoActual(EstadoAsistencia.OFFLINE);
+        a.setOrigenTramoActual(null);
+        a.setAjusteJornadaActual(null);
+        a.setMinutosObjetivoDia(0);
+        a.setMinutosTrabajados(0);
+        a.setMinutosBalance(0);
+        a.setMinutosExtra(0);
+        a.setMinutosCompensados(0);
+    }
+
     private void archivarSegmentoActual(Asistencia a) {
         List<AsistenciaTramo> previos = asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(a.getId());
         int previosObjetivo = previos.stream().mapToInt(AsistenciaTramo::getMinutosObjetivo).sum();
@@ -987,6 +1014,9 @@ public class MarcacionService {
             return true;
         }
         if (asistencia.getFechaHoraSalida() != null) {
+            if (ojt) {
+                return true;
+            }
             return tramo != null && esTramoReingreso(asistencia, tramo);
         }
         if (asistencia.getFechaHoraIngreso() != null) {

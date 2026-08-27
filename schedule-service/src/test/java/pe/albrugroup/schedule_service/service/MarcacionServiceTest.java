@@ -193,6 +193,26 @@ class MarcacionServiceTest {
     }
 
     @Test
+    void ojtPuedeVolverAOnlineDespuesDeMarcarOffline() {
+        when(currentUser.roles()).thenReturn(List.of("OJT"));
+        when(horarioRepository.findHorarioVigente(EMP, DIA)).thenReturn(Optional.empty());
+
+        reloj(18, 30);
+        service.registrarIngreso();
+
+        reloj(18, 40);
+        service.registrarSalida();
+        assertThat(almacen.get().getEstadoActual()).isEqualTo(EstadoAsistencia.OFFLINE);
+
+        reloj(18, 50);
+        DetalleDiaResponse dia = service.registrarIngreso();
+
+        assertThat(almacen.get().getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
+        assertThat(almacen.get().getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(2026, 8, 10, 18, 50));
+        assertThat(dia.getOperativo()).isTrue();
+    }
+
+    @Test
     void ingresoConTardanzaDentroDelBloqueoSePermite() {
         reloj(8, 14); // 14 min tarde (< 20): permitido, sera tardanza en el reporte
         service.registrarIngreso();
