@@ -1,12 +1,12 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
 import { AttendanceFacade } from '../facades/attendance.facade';
+import { ALWAYS_OPERATIONAL_ROLES } from '../constants/operational-roles.constants';
 import { SessionService } from './session.service';
 
 /**
  * Roles que no participan del flujo de asistencia: su badge es ONLINE fijo en el layout
  * (isAlwaysOnlineRole) y el AttendanceFacade nunca los inicializa.
  */
-const ALWAYS_OPERATIONAL_ROLES = new Set(['ADMINISTRADOR']);
 const COMMUNITY_ROLE = 'COMMUNITY';
 
 export interface OperationalGate {

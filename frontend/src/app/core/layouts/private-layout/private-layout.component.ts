@@ -26,6 +26,7 @@ import { formatLabel } from '../../../shared/utils/display-label';
 import { ATTENDANCE_STATUS_META, AttendanceActionId } from '../../../shared/models/schedule/estado-asistencia';
 import { AsesorVentasWorkspaceStateService } from '../../services/asesor-ventas-workspace-state.service';
 import { STORAGE_KEYS } from '../../constants/storage.constants';
+import { ALWAYS_OPERATIONAL_ROLES } from '../../constants/operational-roles.constants';
 import { GtrAgendadosAlertFacade } from '../../../features/gtr/facades/gtr-agendados-alert.facade';
 import { EquiposNavService } from '../../services/equipos-nav.service';
 import { CurrentUserProviderScopeService } from '../../services/current-user-provider-scope.service';
@@ -119,7 +120,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
   });
   protected readonly isAlwaysOnlineRole = computed(() => {
     const primaryRole = this.session()?.primaryRole;
-    return primaryRole === 'ADMINISTRADOR';
+    return Boolean(primaryRole && ALWAYS_OPERATIONAL_ROLES.has(primaryRole));
   });
   protected readonly attendanceStatusLabel = computed(() => {
     if (this.isAlwaysOnlineRole()) return 'ONLINE';
@@ -498,7 +499,11 @@ export class PrivateLayoutComponent implements AfterViewInit {
         this.gtrAgendadosAlertFacade.stop();
       }
 
-      if (!session || session.primaryRole === 'ADMINISTRADOR' || this.attendanceInitialized) {
+      if (
+        !session ||
+        Boolean(session.primaryRole && ALWAYS_OPERATIONAL_ROLES.has(session.primaryRole)) ||
+        this.attendanceInitialized
+      ) {
         return;
       }
 

@@ -15,6 +15,7 @@ import { AttendanceService } from '../services/attendance.service';
 import { DisponibilidadOperativa, PresenceService } from '../services/presence.service';
 import { SessionService } from '../services/session.service';
 import { AttendanceStatusState } from '../state/attendance-status.state';
+import { ALWAYS_OPERATIONAL_ROLES } from '../constants/operational-roles.constants';
 
 type LoadRequest = {
   requestId: number;
@@ -376,9 +377,9 @@ export class AttendanceFacade {
         return;
       }
 
-      // ADMINISTRADOR no marca asistencia; su badge es fijo ONLINE en el layout
+      // Roles siempre operativos no marcan asistencia; su badge es fijo ONLINE en el layout
       // (isAlwaysOnlineRole). Coherente con el guard de initialize() en private-layout.
-      if (session.primaryRole === 'ADMINISTRADOR') {
+      if (Boolean(session.primaryRole && ALWAYS_OPERATIONAL_ROLES.has(session.primaryRole))) {
         return;
       }
 

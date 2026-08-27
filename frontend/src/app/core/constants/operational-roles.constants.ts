@@ -8,3 +8,8 @@ export const OPERATIONAL_ROLES: ReadonlySet<string> = new Set([
   'SUPERVISOR_POSTVENTA',
   'OJT'
 ]);
+
+export const ALWAYS_OPERATIONAL_ROLES: ReadonlySet<string> = new Set([
+  'ADMINISTRADOR',
+  'OJT'
+]);
