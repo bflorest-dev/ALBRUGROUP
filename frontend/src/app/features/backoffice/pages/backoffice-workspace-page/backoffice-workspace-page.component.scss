@@ -144,6 +144,8 @@ p,
 
 .col-actions {
   min-width: 10rem;
+  position: relative;
+  z-index: 1;
 }
 
 .col-documento {
@@ -783,6 +785,35 @@ app-lead-commercial-data-tabs {
 
   .backoffice-table .p-datatable-tbody > tr > td.col-actions {
     text-align: center;
+  }
+
+  .backoffice-table .col-actions .p-button {
+    height: 2.1875rem;
+    justify-content: center;
+    min-width: 6.75rem;
+    position: relative;
+    transform: none;
+    white-space: nowrap;
+    z-index: 2;
+  }
+
+  .backoffice-table .col-actions .p-button .p-button-icon,
+  .backoffice-table .col-actions .p-button .p-button-label {
+    pointer-events: none;
+  }
+
+  .backoffice-table--admin .p-datatable-tbody > tr,
+  .backoffice-table--admin .p-datatable-tbody > tr > td,
+  .backoffice-table--admin .col-actions .p-button {
+    animation: none;
+    transition: none;
+  }
+
+  .backoffice-table--admin .col-actions .p-button:not(:disabled):hover,
+  .backoffice-table--admin .col-actions .p-button:not(:disabled):focus-visible {
+    background: var(--p-button-primary-background);
+    border-color: var(--p-button-primary-border-color);
+    color: var(--p-button-primary-color);
   }
 
   .backoffice-drawer {

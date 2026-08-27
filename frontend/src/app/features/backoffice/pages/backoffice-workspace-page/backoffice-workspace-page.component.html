@@ -532,11 +532,11 @@
       [value]="activeRows()"
       dataKey="id"
       [loading]="canDisplayOperationalData() && isLoading()"
-      [rowHover]="true"
+      [rowHover]="enableTableRowHover()"
       [scrollable]="true"
       scrollHeight="flex"
       [tableStyle]="{ 'min-width': 'var(--backoffice-table-min-width, 1320px)' }"
-      styleClass="p-datatable-sm backoffice-table"
+      [styleClass]="backofficeTableStyleClass()"
       [rowGroupMode]="activeRowGroupMode()"
       [groupRowsBy]="activeGroupRowsBy()"
     >

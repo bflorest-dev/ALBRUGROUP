@@ -24,6 +24,7 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { SessionService } from '../../../../core/services/session.service';
+import { PresenceService } from '../../../../core/services/presence.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { CurrentUserProviderScopeService } from '../../../../core/services/current-user-provider-scope.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
@@ -140,6 +141,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly providerScope = inject(CurrentUserProviderScopeService);
   private lastProviderId: number | null | undefined = undefined;
   private readonly sessionService = inject(SessionService);
+  private readonly presenceService = inject(PresenceService);
   private readonly leadService = inject(BackofficeLeadService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly messageService = inject(MessageService);
@@ -685,6 +687,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly showOperationalDateColumn = computed(() =>
     !this.isSearchMode() && this.section() !== 'plataforma'
   );
+  protected readonly enableTableRowHover = computed(() => this.adminEquipoId() === null);
+  protected readonly backofficeTableStyleClass = computed(() =>
+    this.adminEquipoId() === null
+      ? 'p-datatable-sm backoffice-table'
+      : 'p-datatable-sm backoffice-table backoffice-table--admin'
+  );
   // En Instalados el lead ya salio de VENTA: no hay "fecha de ingreso a la etapa", asi que se oculta.
   protected readonly showFechaIngresoColumn = computed(() => !this.isFechaInstalacionSection());
   protected readonly operationalDateColumnLabel = computed(() => {
@@ -971,6 +979,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.setBackofficeManagingPresence(false);
     this.realtimeSubscription.unsubscribe();
     if (this.organizeCloseTimeout !== null) {
       clearTimeout(this.organizeCloseTimeout);
@@ -1023,22 +1032,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.leadActionId.set(row.id);
     try {
       await firstValueFrom(this.leadService.tomarLead(row.id, { confirmarReasignacion }));
-      if (this.isSearchMode()) {
-        await this.refreshSearch();
-      } else if (this.section() === 'programados') {
-        await this.refreshProgramados(true);
-      } else if (this.section() === 'subsanables') {
-        await this.refreshSubsanables(true);
-      } else if (this.section() === 'rechazados') {
-        await this.refreshRechazados(true);
-      } else if (this.section() === 'instalados') {
-        await this.refreshInstalados(true);
-      } else if (this.section() === 'correccion-instalacion') {
-        await this.refreshCorreccionInstalacion(true);
-      } else {
-        await this.refreshPlataforma(true);
-      }
       await this.openDetail(row.id, row);
+      void this.refreshActiveRowsAfterLeadAction();
     } catch (error) {
       if (!this.openTakeoverConfirmation(error, row)) {
         this.notify('error', this.getErrorMessage(error, 'No se pudo gestionar el lead.'));
@@ -1047,6 +1042,18 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     } finally {
       this.isSaving.set(false);
       this.leadActionId.set(null);
+    }
+  }
+
+  private async refreshActiveRowsAfterLeadAction(): Promise<void> {
+    try {
+      if (this.isSearchMode()) {
+        await this.refreshSearch();
+        return;
+      }
+      await this.refreshCurrent(true);
+    } catch {
+      // El drawer ya esta abierto; el siguiente refresco/realtime conciliara la bandeja.
     }
   }
 
@@ -1104,6 +1111,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.patchForms(detail, resolvedSourceRow);
       await Promise.all([this.refreshOfferCatalogs(detail.idPlan ?? 0), this.refreshEventos(idLead)]);
       this.detailDrawerOpen.set(true);
+      this.setBackofficeManagingPresence(true);
     } catch (error) {
       this.notify('error', this.getErrorMessage(error, 'No se pudo abrir el detalle.'));
     } finally {
@@ -3496,6 +3504,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private closeDetail(): void {
+    this.setBackofficeManagingPresence(false);
     this.detailDrawerOpen.set(false);
     this.detail.set(null);
     this.eventos.set([]);
@@ -3513,6 +3522,18 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.distritosDomicilio.set([]);
     this.ubigeoDomicilioLoading.set(false);
     this.ubigeoDomicilioError.set(null);
+  }
+
+  private setBackofficeManagingPresence(active: boolean): void {
+    if (!this.isBackofficePresenceRole() || this.drawerMode() !== 'gestion') {
+      return;
+    }
+    void this.presenceService.actualizarDisponibilidad(active ? 'GESTIONANDO' : 'DISPONIBLE').catch(() => undefined);
+  }
+
+  private isBackofficePresenceRole(): boolean {
+    const role = this.sessionService.getPrimaryRole();
+    return role === 'ASESOR_BACKOFFICE' || role === 'SUPERVISOR_BACKOFFICE';
   }
 
   private findActiveVentaRow(idLead: number): VisualLeadVenta | undefined {
