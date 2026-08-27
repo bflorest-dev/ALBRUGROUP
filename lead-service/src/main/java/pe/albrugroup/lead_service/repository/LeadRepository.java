@@ -1687,6 +1687,15 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     AND es.tipificacion = :codigoProgramado
               )
             ORDER BY
+              CASE WHEN :groupBy = 'ESTADO' THEN
+                    CASE WHEN l.estado = :estadoNuevo THEN 0
+                         WHEN l.estado = :estadoEnGestion THEN 1
+                         WHEN l.estado = :estadoAsignado THEN 2
+                         WHEN l.estado = :estadoGestionado THEN 3
+                         ELSE 4 END
+              END ASC,
+              CASE WHEN :groupBy = 'PLAN' THEN l.nombrePlanSnapshot END ASC,
+              CASE WHEN :groupBy = 'ULTIMO_GESTOR' THEN r.nombreAsesorUltimaGestion END ASC,
               CASE WHEN :sortBy = 'fechaProgramacion' AND :sortDesc = false THEN e.fechaProgramacion END ASC,
               CASE WHEN :sortBy = 'fechaProgramacion' AND :sortDesc = true THEN e.fechaProgramacion END DESC,
               CASE WHEN :sortBy = 'fechaProgramacion' AND :sortDesc = false THEN e.horaProgramada END ASC,
@@ -1731,6 +1740,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("tsHasta") Instant tsHasta,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("groupBy") String groupBy,
             @Param("sortBy") String sortBy,
             @Param("sortDesc") boolean sortDesc,
             @Param("estadoNuevo") EstadoSeguimiento estadoNuevo,
@@ -1794,6 +1804,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = e.tipificacion AND tAct.etapa = :etapaVenta AND tAct.idEquipo = l.idEquipo
+            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = e.subtipificacion
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo
                AND epFallback.fallbackLeadSinCampana = true
@@ -1802,7 +1814,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND e.etapa = :etapaVenta
               AND e.tipificacion IN :tipificacionesRechazo
               AND e.fechaRechazo IS NOT NULL
-              AND e.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta
+              AND (
+                    (:campoFecha = 'RECHAZO' AND e.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta)
+                    OR (:campoFecha = 'INGRESO' AND r.fechaIngresoEtapa >= :tsDesde AND r.fechaIngresoEtapa < :tsHasta)
+                    OR (:campoFecha = 'ULTIMA_GESTION' AND r.fechaUltimaGestion >= :tsDesde AND r.fechaUltimaGestion < :tsHasta)
+              )
               AND l.etapa IN :etapasPermitidas
               AND (:exigirTipificacionActual = false OR l.codigoTipificacion IN :tipificacionesRechazo)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -1816,16 +1832,49 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     AND es.fechaRechazo IS NOT NULL
               )
             ORDER BY
+              CASE WHEN :groupBy = 'ESTADO' THEN
+                    CASE WHEN l.estado = :estadoNuevo THEN 0
+                         WHEN l.estado = :estadoEnGestion THEN 1
+                         WHEN l.estado = :estadoAsignado THEN 2
+                         WHEN l.estado = :estadoGestionado THEN 3
+                         ELSE 4 END
+              END ASC,
+              CASE WHEN :groupBy = 'PLAN' THEN l.nombrePlanSnapshot END ASC,
+              CASE WHEN :groupBy = 'ULTIMO_GESTOR' THEN r.nombreAsesorUltimaGestion END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN tAct.orden END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN sAct.orden END ASC,
               CASE WHEN :sortBy = 'fechaRechazo' AND :sortDesc = false THEN e.fechaRechazo END ASC,
               CASE WHEN :sortBy = 'fechaRechazo' AND :sortDesc = true THEN e.fechaRechazo END DESC,
+              CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = false THEN r.fechaIngresoEtapa END ASC,
+              CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = true THEN r.fechaIngresoEtapa END DESC,
+              CASE WHEN :sortBy = 'fechaUltimaGestion' AND :sortDesc = false THEN r.fechaUltimaGestion END ASC,
+              CASE WHEN :sortBy = 'fechaUltimaGestion' AND :sortDesc = true THEN r.fechaUltimaGestion END DESC,
               CASE WHEN :sortBy = 'lead' AND :sortDesc = false THEN l.lead END ASC,
               CASE WHEN :sortBy = 'lead' AND :sortDesc = true THEN l.lead END DESC,
               CASE WHEN :sortBy = 'createdAt' AND :sortDesc = false THEN l.createdAt END ASC,
               CASE WHEN :sortBy = 'createdAt' AND :sortDesc = true THEN l.createdAt END DESC,
               CASE WHEN :sortBy = 'lastEntryAt' AND :sortDesc = false THEN l.lastEntryAt END ASC,
               CASE WHEN :sortBy = 'lastEntryAt' AND :sortDesc = true THEN l.lastEntryAt END DESC,
-              CASE WHEN :sortBy = 'estado' AND :sortDesc = false THEN l.estado END ASC,
-              CASE WHEN :sortBy = 'estado' AND :sortDesc = true THEN l.estado END DESC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = false THEN
+                    CASE WHEN l.estado = :estadoNuevo THEN 0
+                         WHEN l.estado = :estadoEnGestion THEN 1
+                         WHEN l.estado = :estadoAsignado THEN 2
+                         WHEN l.estado = :estadoGestionado THEN 3
+                         ELSE 4 END
+              END ASC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = true THEN
+                    CASE WHEN l.estado = :estadoNuevo THEN 0
+                         WHEN l.estado = :estadoEnGestion THEN 1
+                         WHEN l.estado = :estadoAsignado THEN 2
+                         WHEN l.estado = :estadoGestionado THEN 3
+                         ELSE 4 END
+              END DESC,
+              CASE WHEN :sortBy = 'tipificacion' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END ELSE 0 END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN tAct.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN tAct.orden END DESC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN sAct.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN sAct.orden END DESC,
               e.createdAt DESC,
               l.id DESC
             """)
@@ -1833,14 +1882,22 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("etapaVenta") Etapa etapaVenta,
             @Param("tipificacionesRechazo") Collection<String> tipificacionesRechazo,
+            @Param("campoFecha") String campoFecha,
             @Param("fechaDesde") java.time.LocalDate fechaDesde,
             @Param("fechaHasta") java.time.LocalDate fechaHasta,
+            @Param("tsDesde") Instant tsDesde,
+            @Param("tsHasta") Instant tsHasta,
             @Param("etapasPermitidas") Collection<Etapa> etapasPermitidas,
             @Param("exigirTipificacionActual") boolean exigirTipificacionActual,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("groupBy") String groupBy,
             @Param("sortBy") String sortBy,
             @Param("sortDesc") boolean sortDesc,
+            @Param("estadoNuevo") EstadoSeguimiento estadoNuevo,
+            @Param("estadoEnGestion") EstadoSeguimiento estadoEnGestion,
+            @Param("estadoAsignado") EstadoSeguimiento estadoAsignado,
+            @Param("estadoGestionado") EstadoSeguimiento estadoGestionado,
             Pageable pageable
     );
 

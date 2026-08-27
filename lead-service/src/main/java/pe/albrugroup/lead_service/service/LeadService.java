@@ -251,8 +251,19 @@ public class LeadService {
     private static final Set<String> CAMPO_FECHA_PROGRAMADOS_PERMITIDOS = Set.of(
             "PROGRAMACION", "INGRESO", "ULTIMA_GESTION"
     );
+    // Agrupadores categoricos de Programados (las fechas no agrupan; eso lo cubre "Usar fecha de").
+    // TIPIFICACION se omite aqui porque en Programados todos los leads comparten tipificacion.
+    private static final Set<String> GROUP_BY_PROGRAMADOS_PERMITIDOS = Set.of(
+            "ESTADO", "PLAN", "ULTIMO_GESTOR"
+    );
     private static final Set<String> LEAD_RECHAZADOS_VENTA_SORT_FIELDS = Set.of(
-            "fechaRechazo", "lastEntryAt", "createdAt", "lead", "estado"
+            "fechaRechazo", "fechaIngresoEtapa", "fechaUltimaGestion", "lastEntryAt", "createdAt", "lead", "estado", "tipificacion"
+    );
+    private static final Set<String> CAMPO_FECHA_RECHAZADOS_PERMITIDOS = Set.of(
+            "RECHAZO", "INGRESO", "ULTIMA_GESTION"
+    );
+    private static final Set<String> GROUP_BY_RECHAZADOS_PERMITIDOS = Set.of(
+            "ESTADO", "PLAN", "TIPIFICACION", "ULTIMO_GESTOR"
     );
     private static final Set<String> LEAD_INSTALADOS_VENTA_SORT_FIELDS = Set.of(
             "fechaInstalacion", "fechaTipificacionInstalado", "createdAt", "lead", "estadoClientePostventa"
@@ -845,9 +856,25 @@ public class LeadService {
             LocalDate fechaHasta,
             CampoFechaListadoVenta campoFecha
     ) {
+        return listarLeadsVentaProgramadosAsignados(pageRequest, idEquipo, fechaDesde, fechaHasta, campoFecha, null);
+    }
+
+    public PageResponse<LeadResponse> listarLeadsVentaProgramadosAsignados(
+            PageRequest pageRequest,
+            Long idEquipo,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            CampoFechaListadoVenta campoFecha,
+            TipoGrupoVenta groupBy
+    ) {
         CampoFechaListadoVenta campo = campoFecha == null ? CampoFechaListadoVenta.PROGRAMACION : campoFecha;
         if (!CAMPO_FECHA_PROGRAMADOS_PERMITIDOS.contains(campo.name())) {
             throw new BadRequestException("Campo de fecha no permitido para programados: " + campo);
+        }
+        // Agrupador categorico opcional (null = sin agrupar). Fija el orden primario de la query.
+        String groupByName = groupBy == null ? "SIN_AGRUPAR" : groupBy.name();
+        if (!"SIN_AGRUPAR".equals(groupByName) && !GROUP_BY_PROGRAMADOS_PERMITIDOS.contains(groupByName)) {
+            throw new BadRequestException("Agrupador no permitido para programados: " + groupBy);
         }
 
         // Orden. Los defaults historicos (createdAt/lastEntryAt) se mapean al orden operativo por
@@ -883,6 +910,7 @@ public class LeadService {
                 tsHasta,
                 equipos.filtrar(),
                 equipos.ids(),
+                groupByName,
                 sortBy,
                 sortDesc,
                 estadoOrden.nuevo(),
@@ -901,6 +929,17 @@ public class LeadService {
             PageRequest pageRequest,
             Long idEquipo
     ) {
+        return listarLeadsVentaRechazados(fechaDesde, fechaHasta, pageRequest, idEquipo, CampoFechaListadoVenta.RECHAZO, null);
+    }
+
+    public PageResponse<LeadResponse> listarLeadsVentaRechazados(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            PageRequest pageRequest,
+            Long idEquipo,
+            CampoFechaListadoVenta campoFecha,
+            TipoGrupoVenta groupBy
+    ) {
         return listarLeadsVentaPorFechaRechazo(
                 fechaDesde,
                 fechaHasta,
@@ -908,7 +947,9 @@ public class LeadService {
                 idEquipo,
                 Set.of(TIPIFICACION_NO_RECUPERABLE),
                 List.of(Etapa.VENTA, Etapa.PREVENTA),
-                false
+                false,
+                campoFecha,
+                groupBy
         );
     }
 
@@ -918,6 +959,17 @@ public class LeadService {
             PageRequest pageRequest,
             Long idEquipo
     ) {
+        return listarLeadsVentaSubsanables(fechaDesde, fechaHasta, pageRequest, idEquipo, CampoFechaListadoVenta.RECHAZO, null);
+    }
+
+    public PageResponse<LeadResponse> listarLeadsVentaSubsanables(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            PageRequest pageRequest,
+            Long idEquipo,
+            CampoFechaListadoVenta campoFecha,
+            TipoGrupoVenta groupBy
+    ) {
         return listarLeadsVentaPorFechaRechazo(
                 fechaDesde,
                 fechaHasta,
@@ -925,7 +977,9 @@ public class LeadService {
                 idEquipo,
                 Set.of(TIPIFICACION_SUBSANABLE),
                 List.of(Etapa.VENTA),
-                true
+                true,
+                campoFecha,
+                groupBy
         );
     }
 
@@ -936,12 +990,25 @@ public class LeadService {
             Long idEquipo,
             Set<String> tipificaciones,
             List<Etapa> etapasPermitidas,
-            boolean exigirTipificacionActual
+            boolean exigirTipificacionActual,
+            CampoFechaListadoVenta campoFecha,
+            TipoGrupoVenta groupBy
     ) {
         LocalDate hasta = fechaHasta == null ? OperationalDateTime.today() : fechaHasta;
         LocalDate desde = fechaDesde == null ? hasta.minusDays(30) : fechaDesde;
         if (desde.isAfter(hasta)) {
             throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha final");
+        }
+        Instant tsDesde = OperationalDateTime.startOfDay(desde);
+        Instant tsHasta = OperationalDateTime.endExclusiveOfDay(hasta);
+
+        CampoFechaListadoVenta campo = campoFecha == null ? CampoFechaListadoVenta.RECHAZO : campoFecha;
+        if (!CAMPO_FECHA_RECHAZADOS_PERMITIDOS.contains(campo.name())) {
+            throw new BadRequestException("Campo de fecha no permitido para rechazados/subsanables: " + campo);
+        }
+        String groupByName = groupBy == null ? "SIN_AGRUPAR" : groupBy.name();
+        if (!"SIN_AGRUPAR".equals(groupByName) && !GROUP_BY_RECHAZADOS_PERMITIDOS.contains(groupByName)) {
+            throw new BadRequestException("Agrupador no permitido para rechazados/subsanables: " + groupBy);
         }
 
         String sortBy = "createdAt".equals(pageRequest.getSortBy()) ? "fechaRechazo" : pageRequest.getSortBy();
@@ -952,19 +1019,28 @@ public class LeadService {
         if (!LEAD_RECHAZADOS_VENTA_SORT_FIELDS.contains(sortBy)) {
             throw new BadRequestException("Campo de ordenamiento no permitido: " + pageRequest.getSortBy());
         }
+        var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         Page<LeadResponse> leads = leadRepository.listarLeadsVentaRechazados(
                 Accion.TIPIFICACION,
                 Etapa.VENTA,
                 tipificaciones,
+                campo.name(),
                 desde,
                 hasta,
+                tsDesde,
+                tsHasta,
                 etapasPermitidas,
                 exigirTipificacionActual,
                 equipos.filtrar(),
                 equipos.ids(),
+                groupByName,
                 sortBy,
                 sortDesc,
+                estadoOrden.nuevo(),
+                estadoOrden.enGestion(),
+                estadoOrden.asignado(),
+                estadoOrden.gestionado(),
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);

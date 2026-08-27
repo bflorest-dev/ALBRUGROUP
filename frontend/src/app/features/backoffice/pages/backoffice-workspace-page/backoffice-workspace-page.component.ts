@@ -59,7 +59,7 @@ import { BackofficeLeadService, LeadRechazadosFilters } from '../../services/bac
 
 type BackofficeSection = 'plataforma' | 'programados' | 'subsanables' | 'rechazados' | 'instalados' | 'correccion-instalacion';
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
-type BackofficeSortField = 'fechaIngresoEtapa' | 'fechaRechazo' | 'fechaInstalacion' | 'fechaTipificacionInstalado' | 'fechaProgramacion' | 'fechaUltimaGestion' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado' | 'estadoClientePostventa';
+type BackofficeSortField = 'fechaIngresoEtapa' | 'fechaRechazo' | 'fechaInstalacion' | 'fechaTipificacionInstalado' | 'fechaProgramacion' | 'fechaUltimaGestion' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado' | 'estadoClientePostventa' | 'tipificacion';
 type BackofficeSortDirection = 'asc' | 'desc';
 // Campo de fecha contra el que la bandeja filtra el periodo (mecanica "Usar fecha de").
 type BackofficeCampoFecha = 'PROGRAMACION' | 'RECHAZO' | 'INSTALACION' | 'INGRESO' | 'ULTIMA_GESTION';
@@ -71,7 +71,6 @@ type VisualLeadVenta = LeadVentaResponse & {
   organizationGroupHint?: string;
   organizationGroupKey?: string;
   organizationGroupLabel?: string;
-  programacionGroupKey?: string;
   // Separacion por fecha en Plataforma: etiqueta visible y clave estable para el orden interno de PrimeNG.
   fechaGroupKey?: string;
   fechaGroupLabel?: string;
@@ -268,6 +267,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly programadosSortField = signal<BackofficeSortField>('fechaProgramacion');
   private readonly programadosSortDirection = signal<BackofficeSortDirection>('asc');
   private readonly programadosCampoFecha = signal<BackofficeCampoFecha>('PROGRAMACION');
+  // Agrupar por (categorico): las fechas NO agrupan (eso lo cubre "Usar fecha de").
+  private readonly programadosGroupBy = signal<BackofficeGroupMode>('SIN_AGRUPAR');
+  // Subsanables y Rechazados comparten endpoint/columnas => comparten estado de organizacion.
+  private readonly rechazoSortField = signal<BackofficeSortField>('fechaRechazo');
+  private readonly rechazoSortDirection = signal<BackofficeSortDirection>('desc');
+  private readonly rechazoCampoFecha = signal<BackofficeCampoFecha>('RECHAZO');
+  private readonly rechazoGroupBy = signal<BackofficeGroupMode>('SIN_AGRUPAR');
   private readonly subsanablesPeriodo = signal<MetricsPeriodo>('dia');
   private readonly subsanablesDia = signal<string | null>(this.todayDate);
   private readonly subsanablesHasta = signal<string | null>(this.todayDate);
@@ -315,6 +321,34 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     { label: 'Fecha programacion', value: 'PROGRAMACION' },
     { label: 'Fecha ingreso', value: 'INGRESO' },
     { label: 'Ultima gestion', value: 'ULTIMA_GESTION' }
+  ];
+  // Solo categoricos (Tipificacion se omite: en Programados todos son PROGRAMADO).
+  protected readonly programadosGroupOptions: Array<{ label: string; value: BackofficeGroupMode }> = [
+    { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
+    { label: 'Estado', value: 'ESTADO' },
+    { label: 'Plan', value: 'PLAN' },
+    { label: 'Asesor', value: 'ASESOR' }
+  ];
+  // Subsanables / Rechazados: aqui la tipificacion es uniforme pero la subtipificacion varia, asi
+  // que ordenar/agrupar por Tipificacion si aporta.
+  protected readonly rechazoSortOptions: Array<{ label: string; value: BackofficeSortField }> = [
+    { label: 'Fecha rechazo', value: 'fechaRechazo' },
+    { label: 'Fecha ingreso', value: 'fechaIngresoEtapa' },
+    { label: 'Ultima gestion', value: 'fechaUltimaGestion' },
+    { label: 'Estado', value: 'estado' },
+    { label: 'Tipificacion', value: 'tipificacion' }
+  ];
+  protected readonly rechazoCampoFechaOptions: Array<{ label: string; value: BackofficeCampoFecha }> = [
+    { label: 'Fecha rechazo', value: 'RECHAZO' },
+    { label: 'Fecha ingreso', value: 'INGRESO' },
+    { label: 'Ultima gestion', value: 'ULTIMA_GESTION' }
+  ];
+  protected readonly rechazoGroupOptions: Array<{ label: string; value: BackofficeGroupMode }> = [
+    { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
+    { label: 'Estado', value: 'ESTADO' },
+    { label: 'Plan', value: 'PLAN' },
+    { label: 'Tipificacion', value: 'TIPIFICACION' },
+    { label: 'Asesor', value: 'ASESOR' }
   ];
   protected readonly activeGroupFilterOptions = computed<OrganizationFilterOption[]>(() => {
     const mode = this.activeGroupingMode();
@@ -515,10 +549,20 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       default: return 'Gestiona leads en venta y revisa quien los tiene asignados.';
     }
   });
-  protected readonly canOrganizeActiveSection = computed(() => this.section() === 'plataforma' || this.section() === 'programados');
+  protected readonly canOrganizeActiveSection = computed(() =>
+    this.section() === 'plataforma'
+    || this.section() === 'programados'
+    || this.isFechaRechazoSection()
+  );
   protected readonly activeGroupingMode = computed<BackofficeGroupMode>(() => {
     if (this.section() === 'plataforma') {
       return this.plataformaGroupingMode();
+    }
+    if (this.section() === 'programados') {
+      return this.programadosGroupBy();
+    }
+    if (this.isFechaRechazoSection()) {
+      return this.rechazoGroupBy();
     }
     return 'SIN_AGRUPAR';
   });
@@ -526,7 +570,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.section() === 'programados'
       ? this.programadosSortField()
       : this.isFechaRechazoSection()
-        ? 'fechaRechazo'
+        ? this.rechazoSortField()
         : this.isFechaInstalacionSection()
           ? 'fechaInstalacion'
           : this.plataformaSortField()
@@ -534,13 +578,19 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly activeSortDirection = computed<BackofficeSortDirection>(() =>
     this.section() === 'programados'
       ? this.programadosSortDirection()
-      : this.isFechaRechazoSection() || this.isFechaInstalacionSection()
-        ? 'desc'
-        : this.plataformaSortDirection()
+      : this.isFechaRechazoSection()
+        ? this.rechazoSortDirection()
+        : this.isFechaInstalacionSection()
+          ? 'desc'
+          : this.plataformaSortDirection()
   );
-  // Campo de fecha activo (mecanica "Usar fecha de"). Solo Programados es configurable en esta fase.
+  // Campo de fecha activo (mecanica "Usar fecha de").
   protected readonly activeCampoFecha = computed<BackofficeCampoFecha>(() =>
-    this.section() === 'programados' ? this.programadosCampoFecha() : 'PROGRAMACION'
+    this.section() === 'programados'
+      ? this.programadosCampoFecha()
+      : this.isFechaRechazoSection()
+        ? this.rechazoCampoFecha()
+        : 'PROGRAMACION'
   );
   protected readonly sortDirectionOptions = computed<Array<{ label: string; value: BackofficeSortDirection }>>(() =>
     this.activeSortField() === 'fechaIngresoEtapa'
@@ -568,14 +618,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     && this.plataformaSortField() === 'fechaIngresoEtapa'
     && this.plataformaSortDirection() === 'desc'
   );
-  // Las subcabeceras por bloque de programacion solo tienen sentido cuando la bandeja viene
-  // ordenada por fecha de programacion; con otro orden (fecha ingreso, estado, etc.) se muestra plano.
-  protected readonly programadosProgramacionSubheaders = computed(() =>
-    this.section() === 'programados' && this.programadosSortField() === 'fechaProgramacion'
+  // Agrupado categorico (Estado/Plan/Tipi/Asesor) activo en una tab operativa (no Plataforma):
+  // subcabeceras por valor sobre el orden que fija el backend.
+  protected readonly activeCategoricalGrouping = computed(() =>
+    this.section() !== 'plataforma'
+    && this.canOrganizeActiveSection()
+    && this.activeGroupingMode() !== 'SIN_AGRUPAR'
   );
   protected readonly activeRowGroupMode = computed(() =>
     !this.isSearchMode()
-    && (this.programadosProgramacionSubheaders()
+    && (this.activeCategoricalGrouping()
       || this.plataformaDateSeparation()
       || (this.section() === 'plataforma' && this.activeGroupingMode() !== 'SIN_AGRUPAR'))
       ? 'subheader'
@@ -585,8 +637,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (this.isSearchMode()) {
       return undefined;
     }
-    if (this.programadosProgramacionSubheaders()) {
-      return 'programacionGroupKey';
+    if (this.activeCategoricalGrouping()) {
+      return 'organizationGroupKey';
     }
     if (this.plataformaDateSeparation()) {
       return 'fechaGroupSortKey';
@@ -608,6 +660,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     return 'Fecha relevante';
   });
+  // Campo de orden que representa la columna de fecha operativa de la tab (para las cabeceras).
+  protected readonly operationalDateSortField = computed<BackofficeSortField>(() => {
+    if (this.section() === 'programados') {
+      return 'fechaProgramacion';
+    }
+    if (this.isFechaRechazoSection()) {
+      return 'fechaRechazo';
+    }
+    return 'fechaInstalacion';
+  });
   protected readonly organizationSummary = computed(() => {
     const grouping = this.groupingModeOptions.find((option) => option.value === this.activeGroupingMode())?.label ?? 'Sin agrupar';
     const sorting = this.sortOptions.find((option) => option.value === this.activeSortField())?.label ?? 'Fecha ingreso';
@@ -621,7 +683,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (this.section() === 'programados') {
       return this.programadosSortField() === 'fechaProgramacion'
         && this.programadosSortDirection() === 'asc'
-        && this.programadosCampoFecha() === 'PROGRAMACION';
+        && this.programadosCampoFecha() === 'PROGRAMACION'
+        && this.programadosGroupBy() === 'SIN_AGRUPAR';
+    }
+    if (this.isFechaRechazoSection()) {
+      return this.rechazoSortField() === 'fechaRechazo'
+        && this.rechazoSortDirection() === 'desc'
+        && this.rechazoCampoFecha() === 'RECHAZO'
+        && this.rechazoGroupBy() === 'SIN_AGRUPAR';
     }
     return this.activeGroupingMode() === 'SIN_AGRUPAR'
       && this.activeSortField() === (this.section() === 'plataforma' ? 'fechaIngresoEtapa' : 'lastEntryAt')
@@ -640,7 +709,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     if (this.section() === 'programados') {
       // Programados se ordena en servidor (fecha filtro + columna); no reordenamos en cliente.
-      return this.programadosRows();
+      // Con agrupador categorico, marcamos la clave/etiqueta de grupo para las subcabeceras.
+      const groupBy = this.programadosGroupBy();
+      return groupBy === 'SIN_AGRUPAR'
+        ? this.programadosRows()
+        : this.programadosRows().map((row) => this.withOrganizationGroup(row, groupBy));
+    }
+    if (this.isFechaRechazoSection()) {
+      // Subsanables/Rechazados: orden en servidor; subcabeceras solo si hay agrupador categorico.
+      const rows = this.section() === 'subsanables' ? this.subsanablesRows() : this.rechazadosRows();
+      const groupBy = this.rechazoGroupBy();
+      return groupBy === 'SIN_AGRUPAR' ? rows : rows.map((row) => this.withOrganizationGroup(row, groupBy));
     }
     let rows: VisualLeadVenta[];
     switch (this.section()) {
@@ -1625,8 +1704,36 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }, 180);
   }
 
+  // Resetea la pagina y recarga la bandeja rechazo/subsanable activa tras un cambio de organizacion.
+  private async applyRechazoOrganizeChange(): Promise<void> {
+    if (this.section() === 'subsanables') {
+      this.pageSubsanables.set(0);
+      await this.refreshSubsanables(false);
+    } else {
+      this.pageRechazados.set(0);
+      await this.refreshRechazados(false);
+    }
+  }
+
   protected async setActiveGroupingMode(mode: BackofficeGroupMode | null | undefined): Promise<void> {
     if (!mode) {
+      return;
+    }
+    if (this.section() === 'programados') {
+      if (mode === this.programadosGroupBy()) {
+        return;
+      }
+      this.programadosGroupBy.set(mode);
+      this.pageProgramados.set(0);
+      await this.refreshProgramados(false);
+      return;
+    }
+    if (this.isFechaRechazoSection()) {
+      if (mode === this.rechazoGroupBy()) {
+        return;
+      }
+      this.rechazoGroupBy.set(mode);
+      await this.applyRechazoOrganizeChange();
       return;
     }
     if (mode !== this.activeGroupingMode()) {
@@ -1650,6 +1757,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.refreshProgramados(false);
       return;
     }
+    if (this.isFechaRechazoSection()) {
+      this.rechazoSortField.set(field);
+      this.rechazoSortDirection.set(this.defaultSortDirection(field));
+      await this.applyRechazoOrganizeChange();
+      return;
+    }
     this.plataformaSortField.set(field);
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
@@ -1665,6 +1778,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.refreshProgramados(false);
       return;
     }
+    if (this.isFechaRechazoSection()) {
+      this.rechazoSortDirection.set(direction);
+      await this.applyRechazoOrganizeChange();
+      return;
+    }
     this.plataformaSortDirection.set(direction);
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
@@ -1672,12 +1790,25 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   /** Cambia el campo de fecha contra el que la bandeja filtra el periodo ("Usar fecha de"). */
   protected async setActiveCampoFecha(campo: BackofficeCampoFecha | null | undefined): Promise<void> {
-    if (!campo || this.section() !== 'programados' || campo === this.programadosCampoFecha()) {
+    if (!campo) {
       return;
     }
-    this.programadosCampoFecha.set(campo);
-    this.pageProgramados.set(0);
-    await this.refreshProgramados(false);
+    if (this.section() === 'programados') {
+      if (campo === this.programadosCampoFecha()) {
+        return;
+      }
+      this.programadosCampoFecha.set(campo);
+      this.pageProgramados.set(0);
+      await this.refreshProgramados(false);
+      return;
+    }
+    if (this.isFechaRechazoSection()) {
+      if (campo === this.rechazoCampoFecha()) {
+        return;
+      }
+      this.rechazoCampoFecha.set(campo);
+      await this.applyRechazoOrganizeChange();
+    }
   }
 
   protected async clearOrganization(): Promise<void> {
@@ -1685,8 +1816,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.programadosSortField.set('fechaProgramacion');
       this.programadosSortDirection.set('asc');
       this.programadosCampoFecha.set('PROGRAMACION');
+      this.programadosGroupBy.set('SIN_AGRUPAR');
       this.pageProgramados.set(0);
       await this.refreshProgramados(false);
+      return;
+    }
+    if (this.isFechaRechazoSection()) {
+      this.rechazoSortField.set('fechaRechazo');
+      this.rechazoSortDirection.set('desc');
+      this.rechazoCampoFecha.set('RECHAZO');
+      this.rechazoGroupBy.set('SIN_AGRUPAR');
+      await this.applyRechazoOrganizeChange();
       return;
     }
     this.plataformaGroupingMode.set('SIN_AGRUPAR');
@@ -1708,15 +1848,22 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return dateFields.includes(field) ? 'desc' : 'asc';
   }
 
-  /** Campos con cabecera ordenable en la seccion activa. En esta fase, solo Programados. */
+  /** Campos con cabecera ordenable en la seccion activa. */
   protected columnSortable(field: BackofficeSortField): boolean {
-    if (this.section() !== 'programados') {
-      return false;
+    if (this.section() === 'programados') {
+      return field === 'fechaIngresoEtapa'
+        || field === 'fechaProgramacion'
+        || field === 'fechaUltimaGestion'
+        || field === 'estado';
     }
-    return field === 'fechaIngresoEtapa'
-      || field === 'fechaProgramacion'
-      || field === 'fechaUltimaGestion'
-      || field === 'estado';
+    if (this.isFechaRechazoSection()) {
+      return field === 'fechaIngresoEtapa'
+        || field === 'fechaRechazo'
+        || field === 'fechaUltimaGestion'
+        || field === 'estado'
+        || field === 'tipificacion';
+    }
+    return false;
   }
 
   protected columnSortActive(field: BackofficeSortField): boolean {
@@ -1761,6 +1908,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.programadosSortDirection.set(direction);
       this.pageProgramados.set(0);
       await this.refreshProgramados(false);
+      return;
+    }
+    if (this.isFechaRechazoSection()) {
+      this.rechazoSortField.set(field);
+      this.rechazoSortDirection.set(direction);
+      await this.applyRechazoOrganizeChange();
     }
   }
 
@@ -1939,9 +2092,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return `${match[3]}/${match[2]}/${match[1]}`;
   }
 
+  // Hora en formato 12h con AM/PM (coherente con las otras columnas de hora, que usan `hh:mm a`).
   protected displayTimeOnly(value?: string | null): string {
     const match = /^(\d{2}):(\d{2})/.exec(value ?? '');
-    return match ? `${match[1]}:${match[2]}` : '';
+    if (!match) {
+      return '';
+    }
+    const hour24 = Number(match[1]);
+    const suffix = hour24 < 12 ? 'AM' : 'PM';
+    const hour12 = hour24 % 12 || 12;
+    return `${String(hour12).padStart(2, '0')}:${match[2]} ${suffix}`;
   }
 
   protected toPickerDate(value: unknown): Date | null {
@@ -2055,20 +2215,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     const [year, month, day] = value.split('-');
     return year && month && day ? `${day}/${month}/${year}` : value;
-  }
-
-  protected programacionGroupTitle(row: LeadVentaResponse): string {
-    const fecha = row.fechaProgramacion;
-    const hora = row.horaProgramada;
-    if (!fecha || !hora) {
-      return 'Sin programacion';
-    }
-    const block = this.formatHourBlock(hora);
-    return fecha === this.todayDate ? block : `${this.formatDateOnly(fecha)} || ${block}`;
-  }
-
-  protected programacionGroupHint(row: LeadVentaResponse): string {
-    return row.fechaProgramacion === this.todayDate ? 'Hoy' : 'Programado';
   }
 
   protected organizationGroupTitle(row: VisualLeadVenta): string {
@@ -2251,31 +2397,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return typeof value === 'string' ? value : '';
   }
 
-  private formatHourBlock(value?: string | null): string {
-    const hour = this.parseHour(value);
-    if (hour === null) {
-      return '-';
-    }
-    const blockStart = this.programacionBlockStart(hour);
-    return `${this.formatHourLabel(blockStart)} - ${this.formatHourLabel(blockStart + 2)}`;
-  }
-
-  private parseHour(value?: string | null): number | null {
-    const hour = Number(String(value ?? '').slice(0, 2));
-    return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : null;
-  }
-
-  private formatHourLabel(hour: number): string {
-    const normalized = ((hour % 24) + 24) % 24;
-    const suffix = normalized < 12 ? 'AM' : 'PM';
-    const displayHour = normalized % 12 || 12;
-    return `${displayHour}${suffix}`;
-  }
-
-  private programacionBlockStart(hour: number): number {
-    return Math.floor(hour / 2) * 2;
-  }
-
   private startRealtime(): void {
     this.realtimeSubscription.add(
       this.realtimeService.watchTopic('/topic/leads/etapa/VENTA').subscribe({
@@ -2413,7 +2534,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const query = this.currentQuery(this.pageProgramados(), 'programados');
     const adminEquipoId = this.adminEquipoId();
     const page = await firstValueFrom(
-      this.leadService.listarProgramados(query, adminEquipoId, this.programadosRange(), this.programadosCampoFecha())
+      this.leadService.listarProgramados(
+        query, adminEquipoId, this.programadosRange(), this.programadosCampoFecha(), this.groupByParam(this.programadosGroupBy())
+      )
     );
     if (requestSeq !== this.programadosRequestSeq || requestKey !== this.programadosRequestKey()) {
       return;
@@ -2422,7 +2545,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.programadosRows.set(
       this.mergeVisualRows(
         previous,
-        page.content.map((row) => this.withProgramacionGroup(row)),
+        page.content,
         this.shouldAnimateProgramadosRefresh(silent, previous)
       )
     );
@@ -2439,7 +2562,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const filters = this.subsanablesFilters();
     const adminEquipoId = this.adminEquipoId();
     const page = await firstValueFrom(
-      this.leadService.listarSubsanables(query, filters, adminEquipoId)
+      this.leadService.listarSubsanables(query, filters, adminEquipoId, this.rechazoCampoFecha(), this.groupByParam(this.rechazoGroupBy()))
     );
     if (requestSeq !== this.subsanablesRequestSeq || requestKey !== this.subsanablesRequestKey()) {
       return;
@@ -2461,7 +2584,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const filters = this.rechazadosFilters();
     const adminEquipoId = this.adminEquipoId();
     const page = await firstValueFrom(
-      this.leadService.listarRechazados(query, filters, adminEquipoId)
+      this.leadService.listarRechazados(query, filters, adminEquipoId, this.rechazoCampoFecha(), this.groupByParam(this.rechazoGroupBy()))
     );
     if (requestSeq !== this.rechazadosRequestSeq || requestKey !== this.rechazadosRequestKey()) {
       return;
@@ -2823,7 +2946,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
           : section === 'correccion-instalacion'
             ? 'fechaTipificacionInstalado'
             : this.isFechaRechazoSection(section)
-              ? 'fechaRechazo'
+              ? this.rechazoSortField()
               : this.isFechaInstalacionSection(section)
                 ? 'fechaInstalacion'
                 : 'lastEntryAt',
@@ -2831,7 +2954,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         ? this.plataformaSortDirection()
         : section === 'programados'
           ? this.programadosSortDirection()
-          : 'desc'
+          : this.isFechaRechazoSection(section)
+            ? this.rechazoSortDirection()
+            : 'desc'
     };
   }
 
@@ -2861,8 +2986,20 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       page: this.pageProgramados(),
       query: this.currentQuery(this.pageProgramados(), 'programados'),
       range: this.programadosRange(),
-      campoFecha: this.programadosCampoFecha()
+      campoFecha: this.programadosCampoFecha(),
+      groupBy: this.programadosGroupBy()
     });
+  }
+
+  // Mapea el modo de agrupado de la UI al parametro TipoGrupoVenta del backend (null = sin agrupar).
+  private groupByParam(mode: BackofficeGroupMode): string | null {
+    switch (mode) {
+      case 'ESTADO': return 'ESTADO';
+      case 'PLAN': return 'PLAN';
+      case 'TIPIFICACION': return 'TIPIFICACION';
+      case 'ASESOR': return 'ULTIMO_GESTOR';
+      default: return null;
+    }
   }
 
   private subsanablesRequestKey(): string {
@@ -2871,7 +3008,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       equipo: this.adminEquipoId(),
       page: this.pageSubsanables(),
       query: this.currentQuery(this.pageSubsanables(), 'subsanables'),
-      filters: this.subsanablesFilters()
+      filters: this.subsanablesFilters(),
+      campoFecha: this.rechazoCampoFecha(),
+      groupBy: this.rechazoGroupBy()
     });
   }
 
@@ -2881,7 +3020,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       equipo: this.adminEquipoId(),
       page: this.pageRechazados(),
       query: this.currentQuery(this.pageRechazados(), 'rechazados'),
-      filters: this.rechazadosFilters()
+      filters: this.rechazadosFilters(),
+      campoFecha: this.rechazoCampoFecha(),
+      groupBy: this.rechazoGroupBy()
     });
   }
 
@@ -3108,15 +3249,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return `100-${String(invertedMonthRank).padStart(6, '0')}`;
   }
 
-  private withProgramacionGroup(row: LeadVentaResponse): VisualLeadVenta {
-    const hour = this.parseHour(row.horaProgramada);
-    const blockStart = hour === null ? null : this.programacionBlockStart(hour);
-    return {
-      ...row,
-      programacionGroupKey: row.fechaProgramacion && blockStart !== null ? `${row.fechaProgramacion}-${blockStart}` : 'sin-programacion'
-    };
-  }
-
   private groupItemsForMode(groups: LeadVentaGroupsResponse, mode: BackofficeGroupMode): LeadGtrGroupItemResponse[] {
     switch (mode) {
       case 'ESTADO': return groups.estados;
@@ -3168,7 +3300,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'ESTADO':
         return this.groupValue('Estado', row.estadoSeguimiento, 'Sin estado');
       case 'ASESOR':
-        return this.groupValue('Asesor', row.nombreAsesorAsignado, 'Sin asesor');
+        // "Asesor" = ultimo gestor (mismo criterio que la columna y que el groupBy del backend).
+        return this.groupValue('Asesor', row.nombreAsesorUltimaGestion ?? row.nombreAsesorAsignado, 'Sin gestor');
       case 'PLAN':
         return this.groupValue('Plan', row.nombrePlanSnapshot, 'Sin plan');
       case 'PROVEEDOR':
@@ -3289,7 +3422,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (field === 'estado') {
       return String(row.estadoSeguimiento ?? '');
     }
-    return String(row[field] ?? '');
+    if (field === 'tipificacion') {
+      return String(row.codigoTipificacion ?? '');
+    }
+    return String((row as unknown as Record<string, unknown>)[field] ?? '');
   }
 
   private scheduleNewRowReset(ids: number[]): void {

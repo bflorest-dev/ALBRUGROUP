@@ -222,6 +222,20 @@
 
               <div class="backoffice-organize-divider"></div>
 
+              <label for="backoffice-programados-group">
+                <span>Agrupar por</span>
+                <p-select
+                  inputId="backoffice-programados-group"
+                  [options]="programadosGroupOptions"
+                  [ngModel]="activeGroupingMode()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveGroupingMode($any($event.value))"
+                />
+              </label>
+
+              <div class="backoffice-organize-divider"></div>
+
               <label for="backoffice-programados-sort">
                 <span>Ordenar por</span>
                 <p-select
@@ -238,6 +252,89 @@
                 <span>Mostrar primero</span>
                 <p-select
                   inputId="backoffice-programados-direction"
+                  [options]="sortDirectionOptions()"
+                  [ngModel]="activeSortDirection()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveSortDirection($any($event.value))"
+                />
+              </label>
+
+              <button
+                pButton
+                type="button"
+                icon="pi pi-filter-slash"
+                label="Limpiar"
+                severity="secondary"
+                [text]="true"
+                [disabled]="isOrganizationDefault()"
+                (click)="clearOrganization()"
+              ></button>
+            </div>
+          </p-popover>
+        }
+
+        @if (isFechaRechazoSection()) {
+          <button
+            pButton
+            type="button"
+            icon="pi pi-sliders-h"
+            label="Organizar"
+            severity="secondary"
+            [outlined]="true"
+            class="lead-search-organize"
+            [disabled]="!canDisplayOperationalData()"
+            (mouseenter)="onOrganizeEnter()"
+            (mouseleave)="onOrganizeLeave(rechazoOrganizePopover)"
+            (click)="onOrganizeEnter(); rechazoOrganizePopover.toggle($event)"
+          ></button>
+
+          <p-popover #rechazoOrganizePopover appendTo="body" styleClass="backoffice-organize-popover">
+            <div class="backoffice-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(rechazoOrganizePopover)">
+              <label for="backoffice-rechazo-campo-fecha">
+                <span>Usar fecha de</span>
+                <p-select
+                  inputId="backoffice-rechazo-campo-fecha"
+                  [options]="rechazoCampoFechaOptions"
+                  [ngModel]="activeCampoFecha()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveCampoFecha($any($event.value))"
+                />
+              </label>
+
+              <div class="backoffice-organize-divider"></div>
+
+              <label for="backoffice-rechazo-group">
+                <span>Agrupar por</span>
+                <p-select
+                  inputId="backoffice-rechazo-group"
+                  [options]="rechazoGroupOptions"
+                  [ngModel]="activeGroupingMode()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveGroupingMode($any($event.value))"
+                />
+              </label>
+
+              <div class="backoffice-organize-divider"></div>
+
+              <label for="backoffice-rechazo-sort">
+                <span>Ordenar por</span>
+                <p-select
+                  inputId="backoffice-rechazo-sort"
+                  [options]="rechazoSortOptions"
+                  [ngModel]="activeSortField()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveSortField($any($event.value))"
+                />
+              </label>
+
+              <label for="backoffice-rechazo-direction">
+                <span>Mostrar primero</span>
+                <p-select
+                  inputId="backoffice-rechazo-direction"
                   [options]="sortDirectionOptions()"
                   [ngModel]="activeSortDirection()"
                   optionLabel="label"
@@ -398,18 +495,18 @@
             }
           </th>
           @if (showOperationalDateColumn()) {
-            <th class="col-fecha-operativa" [class.col-sortable]="columnSortable('fechaProgramacion')">
-              @if (columnSortable('fechaProgramacion')) {
+            <th class="col-fecha-operativa" [class.col-sortable]="columnSortable(operationalDateSortField())">
+              @if (columnSortable(operationalDateSortField())) {
                 <button
                   type="button"
                   class="sort-header"
-                  [class.sort-header--active]="columnSortActive('fechaProgramacion')"
-                  [attr.aria-label]="columnSortLabel('fechaProgramacion', operationalDateColumnLabel())"
-                  [title]="columnSortLabel('fechaProgramacion', operationalDateColumnLabel())"
-                  (click)="changeColumnSort('fechaProgramacion')"
+                  [class.sort-header--active]="columnSortActive(operationalDateSortField())"
+                  [attr.aria-label]="columnSortLabel(operationalDateSortField(), operationalDateColumnLabel())"
+                  [title]="columnSortLabel(operationalDateSortField(), operationalDateColumnLabel())"
+                  (click)="changeColumnSort(operationalDateSortField())"
                 >
                   <span>{{ operationalDateColumnLabel() }}</span>
-                  <i [class]="columnSortIcon('fechaProgramacion')" aria-hidden="true"></i>
+                  <i [class]="columnSortIcon(operationalDateSortField())" aria-hidden="true"></i>
                 </button>
               } @else {
                 {{ operationalDateColumnLabel() }}
@@ -436,7 +533,23 @@
             }
           </th>
           <th class="col-plan">Plan</th>
-          <th class="col-tipificacion">Tipificacion</th>
+          <th class="col-tipificacion" [class.col-sortable]="columnSortable('tipificacion')">
+            @if (columnSortable('tipificacion')) {
+              <button
+                type="button"
+                class="sort-header"
+                [class.sort-header--active]="columnSortActive('tipificacion')"
+                [attr.aria-label]="columnSortLabel('tipificacion', 'tipificacion')"
+                [title]="columnSortLabel('tipificacion', 'tipificacion')"
+                (click)="changeColumnSort('tipificacion')"
+              >
+                <span>Tipificacion</span>
+                <i [class]="columnSortIcon('tipificacion')" aria-hidden="true"></i>
+              </button>
+            } @else {
+              Tipificacion
+            }
+          </th>
           @if (showSecSotColumn()) {
             <th class="col-sec-sot">SEC/SOT</th>
           }
@@ -472,13 +585,8 @@
         } @else {
           <tr class="group-row">
             <td [attr.colspan]="tableColumnCount()">
-              @if (section() === 'programados') {
-                <span class="group-title">{{ programacionGroupTitle(row) }}</span>
-                <span class="group-hint">{{ programacionGroupHint(row) }}</span>
-              } @else {
-                <span class="group-title">{{ organizationGroupTitle(row) }}</span>
-                <span class="group-hint">{{ organizationGroupHint(row) }}</span>
-              }
+              <span class="group-title">{{ organizationGroupTitle(row) }}</span>
+              <span class="group-hint">{{ organizationGroupHint(row) }}</span>
             </td>
           </tr>
         }

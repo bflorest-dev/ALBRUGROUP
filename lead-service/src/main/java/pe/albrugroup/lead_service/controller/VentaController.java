@@ -95,10 +95,11 @@ public class VentaController {
             @RequestParam(required = false) LocalDate fechaDesde,
             @RequestParam(required = false) LocalDate fechaHasta,
             @RequestParam(required = false, defaultValue = "PROGRAMACION") CampoFechaListadoVenta campoFecha,
+            @RequestParam(required = false) TipoGrupoVenta groupBy,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
         var leads = leadService.listarLeadsVentaProgramadosAsignados(
-                pageRequest, idEquipo, fechaDesde, fechaHasta, campoFecha
+                pageRequest, idEquipo, fechaDesde, fechaHasta, campoFecha, groupBy
         );
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
@@ -108,9 +109,11 @@ public class VentaController {
             @RequestParam(required = false) LocalDate fechaDesde,
             @RequestParam(required = false) LocalDate fechaHasta,
             @RequestParam(required = false) Long idEquipo,
+            @RequestParam(required = false, defaultValue = "RECHAZO") CampoFechaListadoVenta campoFecha,
+            @RequestParam(required = false) TipoGrupoVenta groupBy,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarLeadsVentaRechazados(fechaDesde, fechaHasta, pageRequest, idEquipo);
+        var leads = leadService.listarLeadsVentaRechazados(fechaDesde, fechaHasta, pageRequest, idEquipo, campoFecha, groupBy);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
@@ -119,9 +122,11 @@ public class VentaController {
             @RequestParam(required = false) LocalDate fechaDesde,
             @RequestParam(required = false) LocalDate fechaHasta,
             @RequestParam(required = false) Long idEquipo,
+            @RequestParam(required = false, defaultValue = "RECHAZO") CampoFechaListadoVenta campoFecha,
+            @RequestParam(required = false) TipoGrupoVenta groupBy,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarLeadsVentaSubsanables(fechaDesde, fechaHasta, pageRequest, idEquipo);
+        var leads = leadService.listarLeadsVentaSubsanables(fechaDesde, fechaHasta, pageRequest, idEquipo, campoFecha, groupBy);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
@@ -136,7 +141,7 @@ public class VentaController {
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
-    @GetMapping("/correcciones/instalacion") @PreAuthorize("hasAuthority('CORREGIR_INSTALACION_LEAD')")
+    @GetMapping("/correcciones/instalacion") @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<PageResponse<LeadInstalacionCorreccionCandidatoResponse>> listarCorreccionesInstalacionVenta(
             @RequestParam(required = false) String buscar,
             @RequestParam(required = false) Long idEquipo,
@@ -238,7 +243,7 @@ public class VentaController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{idLead}/corregir-instalacion") @PreAuthorize("hasAuthority('CORREGIR_INSTALACION_LEAD')")
+    @PatchMapping("/{idLead}/corregir-instalacion") @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<LeadInstalacionCorreccionResponse> corregirInstalacionLeadVenta(
             @PathVariable Long idLead,
             @RequestBody LeadInstalacionCorreccionRequest request

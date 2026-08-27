@@ -81,7 +81,8 @@ export class BackofficeLeadService {
     query: PageQuery,
     idEquipo?: number | null,
     range?: LeadRechazadosFilters,
-    campoFecha?: string | null
+    campoFecha?: string | null,
+    groupBy?: string | null
   ): Observable<LeadPage<LeadVentaResponse>> {
     let params = this.pageParams(query);
     if (idEquipo !== null && idEquipo !== undefined) {
@@ -91,13 +92,18 @@ export class BackofficeLeadService {
     if (campoFecha) {
       params = params.set('campoFecha', campoFecha);
     }
+    if (groupBy) {
+      params = params.set('groupBy', groupBy);
+    }
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/programados/asignados`, { params });
   }
 
   listarRechazados(
     query: PageQuery,
     filters: LeadRechazadosFilters,
-    idEquipo?: number | null
+    idEquipo?: number | null,
+    campoFecha?: string | null,
+    groupBy?: string | null
   ): Observable<LeadPage<LeadVentaResponse>> {
     let params = this.pageParams(query);
     if (filters.fechaDesde) {
@@ -108,6 +114,12 @@ export class BackofficeLeadService {
     }
     if (idEquipo !== null && idEquipo !== undefined) {
       params = params.set('idEquipo', idEquipo);
+    }
+    if (campoFecha) {
+      params = params.set('campoFecha', campoFecha);
+    }
+    if (groupBy) {
+      params = params.set('groupBy', groupBy);
     }
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/rechazados`, { params });
   }
@@ -115,7 +127,9 @@ export class BackofficeLeadService {
   listarSubsanables(
     query: PageQuery,
     filters: LeadRechazadosFilters,
-    idEquipo?: number | null
+    idEquipo?: number | null,
+    campoFecha?: string | null,
+    groupBy?: string | null
   ): Observable<LeadPage<LeadVentaResponse>> {
     let params = this.pageParams(query);
     if (filters.fechaDesde) {
@@ -126,6 +140,12 @@ export class BackofficeLeadService {
     }
     if (idEquipo !== null && idEquipo !== undefined) {
       params = params.set('idEquipo', idEquipo);
+    }
+    if (campoFecha) {
+      params = params.set('campoFecha', campoFecha);
+    }
+    if (groupBy) {
+      params = params.set('groupBy', groupBy);
     }
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/subsanables`, { params });
   }
