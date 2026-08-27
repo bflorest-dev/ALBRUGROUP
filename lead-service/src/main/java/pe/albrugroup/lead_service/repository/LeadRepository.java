@@ -1660,6 +1660,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.etapa = l.etapa AND tAct.idEquipo = l.idEquipo
+            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = l.codigoSubtipificacion
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo
                AND epFallback.fallbackLeadSinCampana = true
@@ -1671,7 +1673,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND e.tipificacion = :codigoProgramado
               AND e.fechaProgramacion IS NOT NULL
               AND e.horaProgramada IS NOT NULL
-              AND e.fechaProgramacion BETWEEN :fechaDesde AND :fechaHasta
+              AND (
+                    (:campoFecha = 'PROGRAMACION' AND e.fechaProgramacion BETWEEN :fechaDesde AND :fechaHasta)
+                    OR (:campoFecha = 'INGRESO' AND r.fechaIngresoEtapa >= :tsDesde AND r.fechaIngresoEtapa < :tsHasta)
+                    OR (:campoFecha = 'ULTIMA_GESTION' AND r.fechaUltimaGestion >= :tsDesde AND r.fechaUltimaGestion < :tsHasta)
+              )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
@@ -1680,20 +1686,57 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     AND es.accion = :accionTipificacion
                     AND es.tipificacion = :codigoProgramado
               )
-            ORDER BY e.fechaProgramacion ASC,
-                     e.horaProgramada ASC,
-                     e.createdAt ASC,
-                     l.id ASC
+            ORDER BY
+              CASE WHEN :sortBy = 'fechaProgramacion' AND :sortDesc = false THEN e.fechaProgramacion END ASC,
+              CASE WHEN :sortBy = 'fechaProgramacion' AND :sortDesc = true THEN e.fechaProgramacion END DESC,
+              CASE WHEN :sortBy = 'fechaProgramacion' AND :sortDesc = false THEN e.horaProgramada END ASC,
+              CASE WHEN :sortBy = 'fechaProgramacion' AND :sortDesc = true THEN e.horaProgramada END DESC,
+              CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = false THEN r.fechaIngresoEtapa END ASC,
+              CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = true THEN r.fechaIngresoEtapa END DESC,
+              CASE WHEN :sortBy = 'fechaUltimaGestion' AND :sortDesc = false THEN r.fechaUltimaGestion END ASC,
+              CASE WHEN :sortBy = 'fechaUltimaGestion' AND :sortDesc = true THEN r.fechaUltimaGestion END DESC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = false THEN
+                    CASE WHEN l.estado = :estadoNuevo THEN 0
+                         WHEN l.estado = :estadoEnGestion THEN 1
+                         WHEN l.estado = :estadoAsignado THEN 2
+                         WHEN l.estado = :estadoGestionado THEN 3
+                         ELSE 4 END
+              END ASC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = true THEN
+                    CASE WHEN l.estado = :estadoNuevo THEN 0
+                         WHEN l.estado = :estadoEnGestion THEN 1
+                         WHEN l.estado = :estadoAsignado THEN 2
+                         WHEN l.estado = :estadoGestionado THEN 3
+                         ELSE 4 END
+              END DESC,
+              CASE WHEN :sortBy = 'tipificacion' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END ELSE 0 END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN tAct.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN tAct.orden END DESC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN sAct.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN sAct.orden END DESC,
+              e.fechaProgramacion ASC,
+              e.horaProgramada ASC,
+              e.createdAt ASC,
+              l.id ASC
             """)
     Page<LeadResponse> listarLeadsProgramadosVentaAsignados(
             @Param("etapa") Etapa etapa,
             @Param("codigoProgramado") String codigoProgramado,
             @Param("codigoProgramacionCancelada") String codigoProgramacionCancelada,
             @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("campoFecha") String campoFecha,
             @Param("fechaDesde") java.time.LocalDate fechaDesde,
             @Param("fechaHasta") java.time.LocalDate fechaHasta,
+            @Param("tsDesde") Instant tsDesde,
+            @Param("tsHasta") Instant tsHasta,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("sortBy") String sortBy,
+            @Param("sortDesc") boolean sortDesc,
+            @Param("estadoNuevo") EstadoSeguimiento estadoNuevo,
+            @Param("estadoEnGestion") EstadoSeguimiento estadoEnGestion,
+            @Param("estadoAsignado") EstadoSeguimiento estadoAsignado,
+            @Param("estadoGestionado") EstadoSeguimiento estadoGestionado,
             Pageable pageable
     );
 

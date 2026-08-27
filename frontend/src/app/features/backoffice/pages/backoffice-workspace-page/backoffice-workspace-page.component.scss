@@ -158,6 +158,32 @@ p,
   width: 7rem;
 }
 
+// Cabecera ordenable (patron GTR): boton discreto con icono de estado de orden.
+.sort-header {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  gap: 0.35rem;
+  padding: 0;
+}
+
+.sort-header i {
+  font-size: 0.72rem;
+  opacity: 0.55;
+}
+
+.sort-header--active {
+  color: var(--role-accent);
+}
+
+.sort-header--active i {
+  opacity: 1;
+}
+
 .col-asignado {
   min-width: 7.4rem;
   white-space: nowrap;

@@ -361,10 +361,19 @@ class LeadServiceGtrGroupingTest {
                 eq("PROGRAMADO"),
                 eq("PROGRAMACION_CANCELADA"),
                 eq(Accion.TIPIFICACION),
+                eq("PROGRAMACION"),
                 eq(desde),
                 eq(hasta),
+                any(Instant.class),
+                any(Instant.class),
                 eq(false),
                 anyCollection(),
+                eq("fechaProgramacion"),
+                eq(false),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of()));
 
@@ -375,10 +384,19 @@ class LeadServiceGtrGroupingTest {
                 eq("PROGRAMADO"),
                 eq("PROGRAMACION_CANCELADA"),
                 eq(Accion.TIPIFICACION),
+                eq("PROGRAMACION"),
                 eq(desde),
                 eq(hasta),
+                any(Instant.class),
+                any(Instant.class),
                 eq(false),
                 eq(List.of(-1L)),
+                eq("fechaProgramacion"),
+                eq(false),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         );
     }
@@ -396,10 +414,19 @@ class LeadServiceGtrGroupingTest {
                 eq("PROGRAMADO"),
                 eq("PROGRAMACION_CANCELADA"),
                 eq(Accion.TIPIFICACION),
+                eq("PROGRAMACION"),
                 eq(hoy),
                 eq(hoy.plusDays(30)),
+                any(Instant.class),
+                any(Instant.class),
                 eq(false),
                 anyCollection(),
+                eq("fechaProgramacion"),
+                eq(false),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of()));
 
@@ -410,10 +437,19 @@ class LeadServiceGtrGroupingTest {
                 eq("PROGRAMADO"),
                 eq("PROGRAMACION_CANCELADA"),
                 eq(Accion.TIPIFICACION),
+                eq("PROGRAMACION"),
                 eq(hoy),
                 eq(hoy.plusDays(30)),
+                any(Instant.class),
+                any(Instant.class),
                 eq(false),
                 eq(List.of(-1L)),
+                eq("fechaProgramacion"),
+                eq(false),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
+                any(EstadoSeguimiento.class),
                 any(Pageable.class)
         );
     }

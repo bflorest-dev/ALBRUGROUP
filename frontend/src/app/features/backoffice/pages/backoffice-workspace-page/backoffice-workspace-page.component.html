@@ -190,6 +190,75 @@
             </div>
           </p-popover>
         }
+
+        @if (section() === 'programados') {
+          <button
+            pButton
+            type="button"
+            icon="pi pi-sliders-h"
+            label="Organizar"
+            severity="secondary"
+            [outlined]="true"
+            class="lead-search-organize"
+            [disabled]="!canDisplayOperationalData()"
+            (mouseenter)="onOrganizeEnter()"
+            (mouseleave)="onOrganizeLeave(programadosOrganizePopover)"
+            (click)="onOrganizeEnter(); programadosOrganizePopover.toggle($event)"
+          ></button>
+
+          <p-popover #programadosOrganizePopover appendTo="body" styleClass="backoffice-organize-popover">
+            <div class="backoffice-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(programadosOrganizePopover)">
+              <label for="backoffice-programados-campo-fecha">
+                <span>Usar fecha de</span>
+                <p-select
+                  inputId="backoffice-programados-campo-fecha"
+                  [options]="programadosCampoFechaOptions"
+                  [ngModel]="activeCampoFecha()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveCampoFecha($any($event.value))"
+                />
+              </label>
+
+              <div class="backoffice-organize-divider"></div>
+
+              <label for="backoffice-programados-sort">
+                <span>Ordenar por</span>
+                <p-select
+                  inputId="backoffice-programados-sort"
+                  [options]="programadosSortOptions"
+                  [ngModel]="activeSortField()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveSortField($any($event.value))"
+                />
+              </label>
+
+              <label for="backoffice-programados-direction">
+                <span>Mostrar primero</span>
+                <p-select
+                  inputId="backoffice-programados-direction"
+                  [options]="sortDirectionOptions()"
+                  [ngModel]="activeSortDirection()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveSortDirection($any($event.value))"
+                />
+              </label>
+
+              <button
+                pButton
+                type="button"
+                icon="pi pi-filter-slash"
+                label="Limpiar"
+                severity="secondary"
+                [text]="true"
+                [disabled]="isOrganizationDefault()"
+                (click)="clearOrganization()"
+              ></button>
+            </div>
+          </p-popover>
+        }
       </div>
     </div>
 
@@ -311,20 +380,84 @@
     >
       <ng-template #header>
         <tr>
-          <th class="col-fecha-ingreso">Fecha ingreso</th>
+          <th class="col-fecha-ingreso" [class.col-sortable]="columnSortable('fechaIngresoEtapa')">
+            @if (columnSortable('fechaIngresoEtapa')) {
+              <button
+                type="button"
+                class="sort-header"
+                [class.sort-header--active]="columnSortActive('fechaIngresoEtapa')"
+                [attr.aria-label]="columnSortLabel('fechaIngresoEtapa', 'fecha de ingreso')"
+                [title]="columnSortLabel('fechaIngresoEtapa', 'fecha de ingreso')"
+                (click)="changeColumnSort('fechaIngresoEtapa')"
+              >
+                <span>Fecha ingreso</span>
+                <i [class]="columnSortIcon('fechaIngresoEtapa')" aria-hidden="true"></i>
+              </button>
+            } @else {
+              Fecha ingreso
+            }
+          </th>
           @if (showOperationalDateColumn()) {
-            <th class="col-fecha-operativa">{{ operationalDateColumnLabel() }}</th>
+            <th class="col-fecha-operativa" [class.col-sortable]="columnSortable('fechaProgramacion')">
+              @if (columnSortable('fechaProgramacion')) {
+                <button
+                  type="button"
+                  class="sort-header"
+                  [class.sort-header--active]="columnSortActive('fechaProgramacion')"
+                  [attr.aria-label]="columnSortLabel('fechaProgramacion', operationalDateColumnLabel())"
+                  [title]="columnSortLabel('fechaProgramacion', operationalDateColumnLabel())"
+                  (click)="changeColumnSort('fechaProgramacion')"
+                >
+                  <span>{{ operationalDateColumnLabel() }}</span>
+                  <i [class]="columnSortIcon('fechaProgramacion')" aria-hidden="true"></i>
+                </button>
+              } @else {
+                {{ operationalDateColumnLabel() }}
+              }
+            </th>
           }
           <th class="col-documento">Documento</th>
           <th class="col-proveedor">Proveedor</th>
-          <th class="col-estado">Estado</th>
+          <th class="col-estado" [class.col-sortable]="columnSortable('estado')">
+            @if (columnSortable('estado')) {
+              <button
+                type="button"
+                class="sort-header"
+                [class.sort-header--active]="columnSortActive('estado')"
+                [attr.aria-label]="columnSortLabel('estado', 'estado')"
+                [title]="columnSortLabel('estado', 'estado')"
+                (click)="changeColumnSort('estado')"
+              >
+                <span>Estado</span>
+                <i [class]="columnSortIcon('estado')" aria-hidden="true"></i>
+              </button>
+            } @else {
+              Estado
+            }
+          </th>
           <th class="col-plan">Plan</th>
           <th class="col-tipificacion">Tipificacion</th>
           @if (showSecSotColumn()) {
             <th class="col-sec-sot">SEC/SOT</th>
           }
           <th class="col-asignado">Ultimo Gestor</th>
-          <th class="col-gestion">Ultima gestion</th>
+          <th class="col-gestion" [class.col-sortable]="columnSortable('fechaUltimaGestion')">
+            @if (columnSortable('fechaUltimaGestion')) {
+              <button
+                type="button"
+                class="sort-header"
+                [class.sort-header--active]="columnSortActive('fechaUltimaGestion')"
+                [attr.aria-label]="columnSortLabel('fechaUltimaGestion', 'ultima gestion')"
+                [title]="columnSortLabel('fechaUltimaGestion', 'ultima gestion')"
+                (click)="changeColumnSort('fechaUltimaGestion')"
+              >
+                <span>Ultima gestion</span>
+                <i [class]="columnSortIcon('fechaUltimaGestion')" aria-hidden="true"></i>
+              </button>
+            } @else {
+              Ultima gestion
+            }
+          </th>
           <th class="col-actions">Acciones</th>
         </tr>
       </ng-template>

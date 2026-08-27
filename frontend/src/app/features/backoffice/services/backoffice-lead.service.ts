@@ -80,13 +80,17 @@ export class BackofficeLeadService {
   listarProgramados(
     query: PageQuery,
     idEquipo?: number | null,
-    range?: LeadRechazadosFilters
+    range?: LeadRechazadosFilters,
+    campoFecha?: string | null
   ): Observable<LeadPage<LeadVentaResponse>> {
     let params = this.pageParams(query);
     if (idEquipo !== null && idEquipo !== undefined) {
       params = params.set('idEquipo', idEquipo);
     }
     params = this.rangeParams(params, range);
+    if (campoFecha) {
+      params = params.set('campoFecha', campoFecha);
+    }
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/programados/asignados`, { params });
   }
 

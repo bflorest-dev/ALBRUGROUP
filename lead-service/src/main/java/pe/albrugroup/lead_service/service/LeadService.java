@@ -15,6 +15,7 @@ import pe.albrugroup.lead_service.entity.enums.ModoConteo;
 import pe.albrugroup.lead_service.entity.enums.OrdenRankingAsesor;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
+import pe.albrugroup.lead_service.entity.enums.CampoFechaListadoVenta;
 import pe.albrugroup.lead_service.entity.enums.CriterioZona;
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
@@ -243,6 +244,12 @@ public class LeadService {
     );
     private static final Set<String> LEAD_ASESOR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "estado"
+    );
+    private static final Set<String> LEAD_PROGRAMADOS_VENTA_SORT_FIELDS = Set.of(
+            "fechaProgramacion", "fechaIngresoEtapa", "fechaUltimaGestion", "estado", "tipificacion"
+    );
+    private static final Set<String> CAMPO_FECHA_PROGRAMADOS_PERMITIDOS = Set.of(
+            "PROGRAMACION", "INGRESO", "ULTIMA_GESTION"
     );
     private static final Set<String> LEAD_RECHAZADOS_VENTA_SORT_FIELDS = Set.of(
             "fechaRechazo", "lastEntryAt", "createdAt", "lead", "estado"
@@ -826,17 +833,62 @@ public class LeadService {
             LocalDate fechaDesde,
             LocalDate fechaHasta
     ) {
-        RangoFechas rango = resolverRangoFuturo(fechaDesde, fechaHasta, 30);
+        return listarLeadsVentaProgramadosAsignados(
+                pageRequest, idEquipo, fechaDesde, fechaHasta, CampoFechaListadoVenta.PROGRAMACION
+        );
+    }
+
+    public PageResponse<LeadResponse> listarLeadsVentaProgramadosAsignados(
+            PageRequest pageRequest,
+            Long idEquipo,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            CampoFechaListadoVenta campoFecha
+    ) {
+        CampoFechaListadoVenta campo = campoFecha == null ? CampoFechaListadoVenta.PROGRAMACION : campoFecha;
+        if (!CAMPO_FECHA_PROGRAMADOS_PERMITIDOS.contains(campo.name())) {
+            throw new BadRequestException("Campo de fecha no permitido para programados: " + campo);
+        }
+
+        // Orden. Los defaults historicos (createdAt/lastEntryAt) se mapean al orden operativo por
+        // fecha de programacion ascendente, que es el que la bandeja usaba de forma fija.
+        String rawSort = pageRequest.getSortBy();
+        boolean sortLegacy = "createdAt".equals(rawSort) || "lastEntryAt".equals(rawSort);
+        String sortBy = sortLegacy ? "fechaProgramacion" : rawSort;
+        LeadOrderingRules.validarDirection(pageRequest.getDirection());
+        if (!LEAD_PROGRAMADOS_VENTA_SORT_FIELDS.contains(sortBy)) {
+            throw new BadRequestException("Campo de ordenamiento no permitido: " + rawSort);
+        }
+        boolean sortDesc = !sortLegacy && LeadOrderingRules.isDesc(pageRequest);
+        var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
+
+        // Rango operativo. PROGRAMACION mira al futuro (agenda proxima); ingreso / ultima gestion
+        // miran al pasado. La query filtra por dia operativo (Instant) o por LocalDate segun campo.
+        RangoFechas rango = campo == CampoFechaListadoVenta.PROGRAMACION
+                ? resolverRangoFuturo(fechaDesde, fechaHasta, 30)
+                : resolverRangoUltimosDias(fechaDesde, fechaHasta, 30);
+        Instant tsDesde = OperationalDateTime.startOfDay(rango.desde());
+        Instant tsHasta = OperationalDateTime.endExclusiveOfDay(rango.hasta());
+
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         Page<LeadResponse> leads = leadRepository.listarLeadsProgramadosVentaAsignados(
                 Etapa.VENTA,
                 TIPIFICACION_PROGRAMADO,
                 SUBTIPIFICACION_PROGRAMACION_CANCELADA,
                 Accion.TIPIFICACION,
+                campo.name(),
                 rango.desde(),
                 rango.hasta(),
+                tsDesde,
+                tsHasta,
                 equipos.filtrar(),
                 equipos.ids(),
+                sortBy,
+                sortDesc,
+                estadoOrden.nuevo(),
+                estadoOrden.enGestion(),
+                estadoOrden.asignado(),
+                estadoOrden.gestionado(),
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);

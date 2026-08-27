@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import pe.albrugroup.lead_service.entity.enums.CampoFechaListadoVenta;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
@@ -93,9 +94,12 @@ public class VentaController {
             @RequestParam(required = false) Long idEquipo,
             @RequestParam(required = false) LocalDate fechaDesde,
             @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false, defaultValue = "PROGRAMACION") CampoFechaListadoVenta campoFecha,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarLeadsVentaProgramadosAsignados(pageRequest, idEquipo, fechaDesde, fechaHasta);
+        var leads = leadService.listarLeadsVentaProgramadosAsignados(
+                pageRequest, idEquipo, fechaDesde, fechaHasta, campoFecha
+        );
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     // 2.1. Listar rechazos de venta por fecha operativa, incluso si el lead retorno a PREVENTA.
