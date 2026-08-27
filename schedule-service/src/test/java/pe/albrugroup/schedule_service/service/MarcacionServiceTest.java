@@ -154,13 +154,14 @@ class MarcacionServiceTest {
     }
 
     @Test
-    void ingresoOjtAntesDelMargenSeSigueBloqueando() {
+    void ingresoOjtFueraDelHorarioSePermite() {
         when(currentUser.roles()).thenReturn(List.of("OJT"));
         reloj(7, 50); // antes del margen de 5 min
 
-        assertThatThrownBy(() -> service.registrarIngreso())
-                .isInstanceOf(BadRequestException.class);
-        assertThat(almacen.get()).isNull();
+        service.registrarIngreso();
+
+        assertThat(almacen.get().getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
+        assertThat(almacen.get().getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(2026, 8, 10, 7, 50));
     }
 
     @Test
@@ -171,6 +172,24 @@ class MarcacionServiceTest {
         DetalleDiaResponse dia = service.getDia(EMP, DIA);
 
         assertThat(dia.getPuedeMarcarIngreso()).isTrue();
+    }
+
+    @Test
+    void ojtPuedeMarcarIngresoSinHorarioYQuedaOperativo() {
+        when(currentUser.roles()).thenReturn(List.of("OJT"));
+        when(horarioRepository.findHorarioVigente(EMP, DIA)).thenReturn(Optional.empty());
+        reloj(18, 30);
+
+        DetalleDiaResponse previo = service.getDia(EMP, DIA);
+        assertThat(previo.getTieneHorario()).isFalse();
+        assertThat(previo.getPuedeMarcarIngreso()).isTrue();
+
+        DetalleDiaResponse dia = service.registrarIngreso();
+
+        assertThat(almacen.get().getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
+        assertThat(dia.getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
+        assertThat(dia.getOperativo()).isTrue();
+        assertThat(dia.getPuedeMarcarSalida()).isTrue();
     }
 
     @Test

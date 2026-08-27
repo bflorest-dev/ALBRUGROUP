@@ -51,6 +51,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MarcacionService {
 
+    private static final String OJT_ROLE = "OJT";
+
     private final AsistenciaRepository asistenciaRepository;
     private final AsistenciaTramoRepository asistenciaTramoRepository;
     private final AjusteJornadaRepository ajusteJornadaRepository;
@@ -69,15 +71,20 @@ public class MarcacionService {
         Long idEmpleado = currentUser.empleadoID();
         LocalDate hoy = OperationalDateTime.today();
         LocalDateTime ahora = OperationalDateTime.nowLocalDateTime();
+        List<String> roles = currentUser.roles();
+        boolean ojt = esOjt(roles);
 
-        JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolver(idEmpleado, hoy);
+        JornadaEfectivaResponse jornada = ojt
+                ? jornadaEfectivaResolver.resolverSiExiste(idEmpleado, hoy).orElse(null)
+                : jornadaEfectivaResolver.resolver(idEmpleado, hoy);
         TramoJornadaResponse tramo = tramoParaIngreso(jornada);
-        if (tramo == null) {
+        if (tramo == null && !ojt) {
             throw new BadRequestException("No tienes un horario programado para ingresar en este momento");
         }
-        EffectiveParams params = parametroAsistenciaResolver.resolve(currentUser.roles());
-        validarVentanaIngreso(ahora, tramo.getInicio(), tramo.getFin(), params, Boolean.TRUE.equals(tramo.getBase()),
-                esOjt(currentUser.roles()));
+        EffectiveParams params = parametroAsistenciaResolver.resolve(roles);
+        if (tramo != null && !ojt) {
+            validarVentanaIngreso(ahora, tramo.getInicio(), tramo.getFin(), params, Boolean.TRUE.equals(tramo.getBase()), false);
+        }
 
         Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, hoy).orElse(null);
         // Tramo expirado sin salida: el auto-cierre del gateway (o el asesor que no marco salida)
@@ -87,10 +94,12 @@ public class MarcacionService {
             forzarCierreTramoExpirado(asistencia, ahora);
         }
         if (asistencia == null) {
-            asistencia = crearAsistencia(idEmpleado, hoy, tramo, jornada);
+            asistencia = tramo != null
+                    ? crearAsistencia(idEmpleado, hoy, tramo, jornada)
+                    : crearAsistenciaOjtLibre(idEmpleado, hoy);
         } else if (asistencia.getFechaHoraSalida() != null) {
             // Jornada cerrada: solo se re-ingresa si hay un tramo posterior (ampliacion) -> horas extra.
-            if (!esTramoReingreso(asistencia, tramo)) {
+            if (tramo == null || !esTramoReingreso(asistencia, tramo)) {
                 throw new BadRequestException("Tu jornada de hoy ya está cerrada");
             }
             prepararReingreso(asistencia, tramo);
@@ -509,6 +518,23 @@ public class MarcacionService {
                 .build());
     }
 
+    private Asistencia crearAsistenciaOjtLibre(Long idEmpleado, LocalDate fecha) {
+        return asistenciaRepository.save(Asistencia.builder()
+                .idEmpleado(idEmpleado)
+                .fecha(fecha)
+                .estadoActual(EstadoAsistencia.OFFLINE)
+                .minutosObjetivoDia(0)
+                .minutosTrabajados(0)
+                .minutosBalance(0)
+                .minutosExtra(0)
+                .minutosCompensados(0)
+                .minutosAlmuerzoTomados(0)
+                .minutosServiciosPermitidos(0)
+                .minutosServiciosAcumulados(0)
+                .excedioServicios(Boolean.FALSE)
+                .build());
+    }
+
     /**
      * Objetivo neto del BASE ORIGINAL del dia: ventana programada de {@link JornadaEfectivaResolver#resolverBase}
      * menos el almuerzo programado. Se usa como objetivo tanto para el base como para un CORRIMIENTO
@@ -602,6 +628,9 @@ public class MarcacionService {
 
     /** Minutos trabajados del segmento ACTUAL (con topes de entrada/salida), menos sus pausas. */
     private int trabajadoSegmentoActual(Asistencia a) {
+        if (a.getEntradaProgramada() == null || a.getSalidaProgramada() == null) {
+            return 0;
+        }
         LocalDateTime entradaProg = LocalDateTime.of(a.getFecha(), a.getEntradaProgramada());
         LocalDateTime topeSalida = topeSalida(a);
         LocalDateTime entradaEfectiva = a.getFechaHoraIngreso().isAfter(entradaProg) ? a.getFechaHoraIngreso() : entradaProg;
@@ -824,6 +853,9 @@ public class MarcacionService {
     }
 
     private LocalDateTime topeSalida(Asistencia asistencia) {
+        if (asistencia.getEntradaProgramada() == null || asistencia.getSalidaProgramada() == null) {
+            return null;
+        }
         LocalDateTime tope = LocalDateTime.of(asistencia.getFecha(), asistencia.getSalidaProgramada());
         // Turno que cruza medianoche (salida <= entrada): la salida cae al dia siguiente.
         if (!asistencia.getSalidaProgramada().isAfter(asistencia.getEntradaProgramada())) {
@@ -845,7 +877,9 @@ public class MarcacionService {
 
         boolean esHoy = fecha.equals(OperationalDateTime.today());
         boolean enTurnoActivo = esHoy && jornada != null && jornada.getTramoActual() != null;
-        EffectiveParams params = parametroAsistenciaResolver.resolve(currentUser.roles());
+        List<String> roles = currentUser.roles();
+        boolean ojt = esOjt(roles);
+        EffectiveParams params = parametroAsistenciaResolver.resolve(roles);
 
         DetalleDiaResponse.DetalleDiaResponseBuilder b = DetalleDiaResponse.builder()
                 .idEmpleado(idEmpleado)
@@ -853,7 +887,7 @@ public class MarcacionService {
                 .tieneHorario(jornada != null)
                 .enTurnoActivo(enTurnoActivo)
                 .maxMinutosPausaActiva(params.maxMinutosPausaActiva())
-                .puedeMarcarIngreso(puedeMarcarIngresoAhora(jornada, asistencia, esHoy, params));
+                .puedeMarcarIngreso(puedeMarcarIngresoAhora(jornada, asistencia, esHoy, params, ojt));
 
         if (asistencia != null) {
             SesionTotales tot = totales(asistencia.getId());
@@ -937,27 +971,27 @@ public class MarcacionService {
 
     /** Espeja la aceptacion de registrarIngreso: true sii marcar ingreso ahora seria aceptado. */
     private boolean puedeMarcarIngresoAhora(JornadaEfectivaResponse jornada, Asistencia asistencia,
-                                            boolean esHoy, EffectiveParams params) {
+                                            boolean esHoy, EffectiveParams params, boolean ojt) {
         if (!esHoy) {
             return false;
         }
         TramoJornadaResponse tramo = tramoParaIngreso(jornada);
-        if (tramo == null) {
+        if (tramo == null && !ojt) {
             return false;
         }
-        if (!ventanaIngresoAbierta(OperationalDateTime.nowLocalDateTime(), tramo.getInicio(), tramo.getFin(), params,
-                Boolean.TRUE.equals(tramo.getBase()), esOjt(currentUser.roles()))) {
+        if (!ojt && !ventanaIngresoAbierta(OperationalDateTime.nowLocalDateTime(), tramo.getInicio(), tramo.getFin(), params,
+                Boolean.TRUE.equals(tramo.getBase()), false)) {
             return false;
         }
         if (asistencia == null) {
             return true;
         }
         if (asistencia.getFechaHoraSalida() != null) {
-            return esTramoReingreso(asistencia, tramo);
+            return tramo != null && esTramoReingreso(asistencia, tramo);
         }
         if (asistencia.getFechaHoraIngreso() != null) {
             // Tramo expirado sin salida: registrarIngreso forzara el cierre y hara re-ingreso.
-            if (asistencia.getSalidaProgramada() != null) {
+            if (tramo != null && asistencia.getSalidaProgramada() != null) {
                 LocalDateTime salidaProg = LocalDateTime.of(asistencia.getFecha(), asistencia.getSalidaProgramada());
                 if (OperationalDateTime.nowLocalDateTime().isAfter(salidaProg)
                         && esTramoReingreso(asistencia, tramo)) {
@@ -983,7 +1017,7 @@ public class MarcacionService {
     }
 
     private boolean esOjt(List<String> roles) {
-        return roles != null && roles.stream().anyMatch(role -> "OJT".equalsIgnoreCase(role));
+        return roles != null && roles.stream().anyMatch(role -> OJT_ROLE.equalsIgnoreCase(role));
     }
 
     /** Ventana de marca de almuerzo: desde 15 min antes de la hora programada (sin ventana -> libre). */
