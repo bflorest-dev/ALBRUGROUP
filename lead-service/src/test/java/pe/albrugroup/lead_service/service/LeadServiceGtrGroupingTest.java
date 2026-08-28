@@ -70,6 +70,7 @@ class LeadServiceGtrGroupingTest {
     @Mock private org.springframework.transaction.support.TransactionTemplate transactionTemplate;
     @Mock private LeadRealtimeNotifier leadRealtimeNotifier;
     @Mock private LeadAsignacionCounterService leadAsignacionCounterService;
+    @Mock private ProveedorScopeService proveedorScopeService;
 
     @InjectMocks private LeadService leadService;
 
@@ -925,6 +926,63 @@ class LeadServiceGtrGroupingTest {
                 any(Instant.class),
                 anyBoolean(),
                 anyCollection(),
+                eq("lastEntryAt"),
+                eq(true),
+                eq(EstadoSeguimiento.NUEVO),
+                eq(EstadoSeguimiento.EN_GESTION),
+                eq(EstadoSeguimiento.ASIGNADO),
+                eq(EstadoSeguimiento.GESTIONADO),
+                eq(pageable)
+        );
+    }
+
+    @Test
+    void busquedaGtrPorLeadRespetaEquipoSolicitado() {
+        PageRequest request = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(12)
+                .sortBy("lastEntryAt")
+                .direction("desc")
+                .build();
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 12);
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(false);
+        when(currentUser.equipos()).thenReturn(List.of(10L));
+        when(leadRepository.listarBandejaGtr(
+                eq(Etapa.PREVENTA),
+                eq("987654321%"),
+                any(Instant.class),
+                any(Instant.class),
+                eq(true),
+                eq(List.of(10L)),
+                eq("lastEntryAt"),
+                eq(true),
+                eq(EstadoSeguimiento.NUEVO),
+                eq(EstadoSeguimiento.EN_GESTION),
+                eq(EstadoSeguimiento.ASIGNADO),
+                eq(EstadoSeguimiento.GESTIONADO),
+                eq(pageable)
+        )).thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        leadService.listarBandejaGtr(
+                LocalDate.of(2026, 6, 10),
+                "987654321",
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                10L,
+                request
+        );
+
+        verify(leadRepository).listarBandejaGtr(
+                eq(Etapa.PREVENTA),
+                eq("987654321%"),
+                any(Instant.class),
+                any(Instant.class),
+                eq(true),
+                eq(List.of(10L)),
                 eq("lastEntryAt"),
                 eq(true),
                 eq(EstadoSeguimiento.NUEVO),

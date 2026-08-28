@@ -135,6 +135,7 @@
     (visibleChange)="!$event && facade.closeAbandonedLeads()"
     [modal]="true"
     [draggable]="false"
+    [blockScroll]="true"
     appendTo="body"
     styleClass="gtr-dialog gtr-dialog--abandono"
   >
@@ -200,6 +201,7 @@
     (visibleChange)="!$event && facade.closeMasivoExcelResultsDialog()"
     [modal]="true"
     [draggable]="false"
+    [blockScroll]="true"
   styleClass="gtr-dialog gtr-dialog--events"
   >
     @if (facade.masivoExcelImport(); as importacion) {
@@ -302,6 +304,7 @@
     [modal]="true"
     [draggable]="false"
     [focusOnShow]="false"
+    [blockScroll]="true"
     styleClass="gtr-dialog"
   >
     <form class="form-grid" [formGroup]="facade.intakeForm" (ngSubmit)="facade.submitIntake()">
@@ -412,6 +415,7 @@
     (visibleChange)="!$event && facade.cancelIntakeConfirmation()"
     [modal]="true"
     [draggable]="false"
+    [blockScroll]="true"
     styleClass="gtr-dialog"
   >
     <div class="intake-confirmation">
@@ -456,6 +460,7 @@
     (visibleChange)="!$event && facade.closeDialog()"
     [modal]="true"
     [draggable]="false"
+    [blockScroll]="true"
     styleClass="gtr-dialog gtr-dialog--snapshot"
   >
     <ng-template #header>
@@ -578,6 +583,7 @@
     (visibleChange)="!$event && facade.closeDialog()"
     [modal]="true"
     [draggable]="false"
+    [blockScroll]="true"
     styleClass="gtr-dialog"
   >
     <ng-template #header>
@@ -651,6 +657,7 @@
     (visibleChange)="!$event && facade.closeDialog()"
     [modal]="true"
     [draggable]="false"
+    [blockScroll]="true"
     styleClass="gtr-dialog"
   >
     @if (facade.pendingReassignment(); as pending) {
@@ -709,6 +716,7 @@
     (visibleChange)="!$event && facade.cancelTakeover()"
     [modal]="true"
     [draggable]="false"
+    [blockScroll]="true"
     styleClass="gtr-dialog"
   >
     @if (facade.pendingTakeover(); as pending) {

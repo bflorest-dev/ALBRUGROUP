@@ -40,8 +40,15 @@ label {
   width: min(74rem, calc(100vw - 1.5rem));
 }
 
+:host ::ng-deep .gtr-dialog--search .p-dialog-header,
 :host ::ng-deep .gtr-dialog--search .p-dialog-content {
-  overflow-x: hidden;
+  min-width: 0;
+}
+
+:host ::ng-deep .gtr-dialog--search .p-dialog-content {
+  max-height: calc(100dvh - 7rem);
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 :host ::ng-deep .gtr-search-table {

@@ -156,9 +156,10 @@ public class PreventaController {
     }
     @GetMapping("/gtr/lookup") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
     public ResponseEntity<LeadGtrLookupResponse> buscarContextoLeadGtr(
-            @RequestParam String lead
+            @RequestParam String lead,
+            @RequestParam(required = false) Long idEquipo
     ) {
-        var response = leadService.buscarContextoLeadGtr(lead);
+        var response = leadService.buscarContextoLeadGtr(lead, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     // 2.0.1. Leads pendientes agrupados por asesor (para detectar abandonados cuando se desconectan)

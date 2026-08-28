@@ -41,6 +41,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     // (hermanas), trabaja sobre la activa (lastEntryAt más reciente). El @Filter lo acota al equipo.
     Optional<Lead> findFirstByPrefijoAndLeadOrderByLastEntryAtDescIdDesc(String prefijo, String lead);
     Optional<Lead> findFirstByUsermetaIgnoreCaseOrderByLastEntryAtDescIdDesc(String usermeta);
+    Optional<Lead> findFirstByUsermetaIgnoreCaseAndIdEquipoInOrderByLastEntryAtDescIdDesc(String usermeta, Collection<Long> idEquipos);
     // Intake: el lead PREVENTA del contacto (si existe) tiene prioridad para gestionarse;
     // si no hay PREVENTA, el más reciente en otra etapa se marca para atención GTR.
     Optional<Lead> findFirstByPrefijoAndLeadAndEtapaOrderByLastEntryAtDescIdDesc(String prefijo, String lead, Etapa etapa);
@@ -48,6 +49,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     // Oportunidades del mismo contacto (acotadas al equipo por @Filter): para multi-titular.
     List<Lead> findByContactoIdOrderByLastEntryAtDescIdDesc(Long idContacto);
     Optional<Lead> findFirstByLeadOrderByLastEntryAtDescIdDesc(String lead);
+    Optional<Lead> findFirstByLeadAndIdEquipoInOrderByLastEntryAtDescIdDesc(String lead, Collection<Long> idEquipos);
 
     @Query("""
             SELECT l

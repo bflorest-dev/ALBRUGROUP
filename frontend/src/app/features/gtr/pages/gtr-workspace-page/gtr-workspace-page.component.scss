@@ -428,6 +428,12 @@ label {
   width: min(34rem, calc(100vw - 1rem));
 }
 
+:host ::ng-deep .gtr-dialog .p-dialog-content {
+  max-height: calc(100dvh - 7rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
 :host ::ng-deep .gtr-dialog--events {
   width: min(56rem, calc(100vw - 1rem));
 }

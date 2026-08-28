@@ -1110,17 +1110,20 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     try {
       const resolvedSourceRow = this.resolvePrefillSourceRow(idLead, sourceRow);
       const detail = await firstValueFrom(this.leadService.obtenerDetalle(idLead));
+      if (this.selectedLeadId() !== idLead) {
+        return; // el usuario ya abrio/cerro otro lead mientras cargaba el detalle
+      }
       this.detail.set(detail);
       this.detailHadOperationalAction = false;
-      try {
-        await this.refreshTipificationCatalog(idLead);
-      } catch {
-        this.notify('warn', 'Detalle abierto, pero no se pudo cargar el catalogo de tipificaciones de VENTA.');
-      }
       this.patchForms(detail, resolvedSourceRow);
-      await Promise.all([this.refreshOfferCatalogs(detail.idPlan ?? 0), this.refreshEventos(idLead)]);
+      // Abrimos el drawer YA, con los datos iniciales del detalle. El catalogo de tipificaciones, los
+      // catalogos de oferta y los eventos NO son parte de la primera vista y son varias llamadas
+      // secuenciales al backend: en produccion (tras Cloudflare) sumaban ~1-2 s antes de abrir. Se
+      // cargan en segundo plano, con el drawer ya visible, y cada seccion muestra su propio contenido
+      // al llegar.
       this.detailDrawerOpen.set(true);
       this.setBackofficeManagingPresence(true);
+      void this.loadGestionDetailInBackground(idLead, detail.idPlan ?? 0);
     } catch (error) {
       this.notify('error', this.getErrorMessage(error, 'No se pudo abrir el detalle.'));
     } finally {
@@ -1128,6 +1131,22 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.leadActionId.set(null);
       }
     }
+  }
+
+  // Cargas que no bloquean la apertura del drawer (ver openDetail). Cada refresh valida internamente
+  // que el lead siga abierto antes de escribir su signal, para no pisar otro lead si el usuario cambia.
+  private async loadGestionDetailInBackground(idLead: number, idPlan: number): Promise<void> {
+    try {
+      await this.refreshTipificationCatalog(idLead);
+    } catch {
+      if (this.selectedLeadId() === idLead) {
+        this.notify('warn', 'Detalle abierto, pero no se pudo cargar el catalogo de tipificaciones de VENTA.');
+      }
+    }
+    await Promise.all([
+      this.refreshOfferCatalogs(idPlan).catch(() => undefined),
+      this.refreshEventos(idLead).catch(() => undefined)
+    ]);
   }
 
   protected async openConsultation(idLead: number): Promise<void> {
@@ -2855,6 +2874,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         direction: 'desc'
       })
     );
+    if (this.selectedLeadId() !== idLead) {
+      return; // llegada tardia de otro lead ya cerrado/cambiado
+    }
     this.eventos.set(page.content.filter((evento) => this.normalizedCode(evento.etapa) === 'VENTA'));
   }
 
@@ -2883,7 +2905,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   // Catálogo del modal: del equipo del lead abierto (lo resuelve el backend desde el lead). Se re-trae por
   // lead (sin cachear) porque distintos leads pueden ser de equipos con matrices distintas.
   private async refreshTipificationCatalog(idLead: number): Promise<void> {
-    this.catalogo.set(await firstValueFrom(this.leadService.getCatalogoTipificaciones(idLead)));
+    const catalogo = await firstValueFrom(this.leadService.getCatalogoTipificaciones(idLead));
+    if (this.selectedLeadId() !== idLead) {
+      return; // llegada tardia de otro lead ya cerrado/cambiado
+    }
+    this.catalogo.set(catalogo);
   }
 
   // Catálogo agregado cross-equipo para la bandeja (paleta + filtro por código).
@@ -2896,6 +2922,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const ofertaPlanes = idLead
       ? await firstValueFrom(this.leadService.listarPlanesOferta(idLead))
       : this.planes();
+    if (this.selectedLeadId() !== idLead) {
+      return; // llegada tardia de otro lead ya cerrado/cambiado
+    }
     this.ofertaPlanes.set(ofertaPlanes);
     const plan = ofertaPlanes.find((item) => item.id === idPlan);
     const idProveedor = plan?.idProveedor ?? null;
@@ -2905,6 +2934,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       firstValueFrom(this.leadService.listarPromociones(idPlan ? { idPlan } : {})),
       idProveedor ? firstValueFrom(this.leadService.listarAdicionales(idProveedor)) : Promise.resolve([])
     ]);
+    if (this.selectedLeadId() !== idLead) {
+      return; // llegada tardia de otro lead ya cerrado/cambiado
+    }
     this.promociones.set(promociones);
     this.adicionales.set(adicionales);
   }

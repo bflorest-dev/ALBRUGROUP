@@ -165,15 +165,23 @@ export class PreventaLeadService {
     });
   }
 
-  buscarLeadGtr(lead: string, query: PageQuery): Observable<LeadPage<LeadGtrResponse>> {
+  buscarLeadGtr(lead: string, query: PageQuery, idEquipo?: number | null): Observable<LeadPage<LeadGtrResponse>> {
+    let params = this.pageParams(query).set('lead', lead);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
     return this.http.get<LeadPage<LeadGtrResponse>>(`${this.leadUrl}/preventa/gtr`, {
-      params: this.pageParams(query).set('lead', lead)
+      params
     });
   }
 
-  buscarContextoLeadGtr(lead: string): Observable<LeadGtrLookupResponse> {
+  buscarContextoLeadGtr(lead: string, idEquipo?: number | null): Observable<LeadGtrLookupResponse> {
+    let params = new HttpParams().set('lead', lead);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
     return this.http.get<LeadGtrLookupResponse>(`${this.leadUrl}/preventa/gtr/lookup`, {
-      params: new HttpParams().set('lead', lead)
+      params
     });
   }
 

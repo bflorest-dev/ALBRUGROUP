@@ -149,3 +149,9 @@
 :host ::ng-deep .gtr-dialog--events {
   width: min(62rem, calc(100vw - 1rem));
 }
+
+:host ::ng-deep .gtr-dialog--events .p-dialog-content {
+  max-height: calc(100dvh - 7rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+}

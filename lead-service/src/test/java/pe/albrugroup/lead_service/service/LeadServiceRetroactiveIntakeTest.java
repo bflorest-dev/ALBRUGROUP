@@ -81,6 +81,7 @@ class LeadServiceRetroactiveIntakeTest {
     @Mock private LeadRealtimeNotifier leadRealtimeNotifier;
     @Mock private LeadAsignacionCounterService leadAsignacionCounterService;
     @Mock private LeadEtapaResumenService leadEtapaResumenService;
+    @Mock private ProveedorScopeService proveedorScopeService;
 
     @InjectMocks private LeadService leadService;
 
@@ -465,6 +466,40 @@ class LeadServiceRetroactiveIntakeTest {
 
         assertThat(response.isExiste()).isTrue();
         assertThat(response.getUsermeta()).isEqualTo("EfrainBay");
+    }
+
+    @Test
+    void lookupGtrConEquipoEncuentraSoloDentroDelEquipoPermitido() {
+        Lead lead = Lead.builder()
+                .id(25203L)
+                .idEquipo(10L)
+                .lead("987654321")
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .build();
+
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(false);
+        when(currentUser.equipos()).thenReturn(List.of(10L));
+        when(leadRepository.findFirstByLeadAndIdEquipoInOrderByLastEntryAtDescIdDesc("987654321", List.of(10L)))
+                .thenReturn(Optional.of(lead));
+
+        var response = leadService.buscarContextoLeadGtr("987654321", 10L);
+
+        assertThat(response.isExiste()).isTrue();
+        assertThat(response.getIdLead()).isEqualTo(25203L);
+    }
+
+    @Test
+    void lookupGtrConEquipoOcultaLeadsDeOtroEquipo() {
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(false);
+        when(currentUser.equipos()).thenReturn(List.of(10L));
+        when(leadRepository.findFirstByLeadAndIdEquipoInOrderByLastEntryAtDescIdDesc("987654321", List.of(10L)))
+                .thenReturn(Optional.empty());
+
+        var response = leadService.buscarContextoLeadGtr("987654321", 10L);
+
+        assertThat(response.isExiste()).isFalse();
+        assertThat(response.getMensajeUsuario()).isEqualTo("No encontramos ese lead en el sistema.");
     }
 
     @Test

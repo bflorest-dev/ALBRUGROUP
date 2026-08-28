@@ -430,6 +430,10 @@ public class LeadService {
     }
 
     public LeadGtrLookupResponse buscarContextoLeadGtr(String lead) {
+        return buscarContextoLeadGtr(lead, null);
+    }
+
+    public LeadGtrLookupResponse buscarContextoLeadGtr(String lead, Long idEquipo) {
         String buscar = lead == null ? null : lead.trim();
         if (buscar == null || buscar.isBlank()) {
             throw new BadRequestException("Ingresa un telefono o usermeta para buscar el lead");
@@ -444,24 +448,51 @@ public class LeadService {
             throw new BadRequestException("El lead debe contener solo digitos y tener entre 6 y 15 caracteres");
         }
 
-        Optional<Lead> leadEncontrado = buscarPorUsermeta
-                ? leadRepository.findFirstByUsermetaIgnoreCaseOrderByLastEntryAtDescIdDesc(usermeta)
-                : leadRepository.findFirstByLeadOrderByLastEntryAtDescIdDesc(numeroLead);
+        Optional<Lead> leadEncontrado;
+        if (idEquipo == null) {
+            leadEncontrado = buscarContextoLeadGtrSinScope(buscarPorUsermeta, numeroLead, usermeta);
+        } else {
+            RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+            leadEncontrado = equipos.filtrar()
+                    ? buscarContextoLeadGtrEnEquipos(buscarPorUsermeta, numeroLead, usermeta, equipos.ids())
+                    : buscarContextoLeadGtrSinScope(buscarPorUsermeta, numeroLead, usermeta);
+        }
 
         return leadEncontrado
                 .map(this::mapearContextoLeadGtr)
-                .orElseGet(() -> new LeadGtrLookupResponse(
-                        false,
-                        null,
-                        null,
-                        numeroLead,
-                        usermeta,
-                        null,
-                        null,
-                        false,
-                        false,
-                        "No encontramos ese lead en el sistema."
-                ));
+                .orElseGet(() -> leadGtrLookupNoEncontrado(numeroLead, usermeta));
+    }
+
+    private Optional<Lead> buscarContextoLeadGtrSinScope(boolean buscarPorUsermeta, String numeroLead, String usermeta) {
+        return buscarPorUsermeta
+                ? leadRepository.findFirstByUsermetaIgnoreCaseOrderByLastEntryAtDescIdDesc(usermeta)
+                : leadRepository.findFirstByLeadOrderByLastEntryAtDescIdDesc(numeroLead);
+    }
+
+    private Optional<Lead> buscarContextoLeadGtrEnEquipos(
+            boolean buscarPorUsermeta,
+            String numeroLead,
+            String usermeta,
+            List<Long> equipoIds
+    ) {
+        return buscarPorUsermeta
+                ? leadRepository.findFirstByUsermetaIgnoreCaseAndIdEquipoInOrderByLastEntryAtDescIdDesc(usermeta, equipoIds)
+                : leadRepository.findFirstByLeadAndIdEquipoInOrderByLastEntryAtDescIdDesc(numeroLead, equipoIds);
+    }
+
+    private LeadGtrLookupResponse leadGtrLookupNoEncontrado(String numeroLead, String usermeta) {
+        return new LeadGtrLookupResponse(
+                false,
+                null,
+                null,
+                numeroLead,
+                usermeta,
+                null,
+                null,
+                false,
+                false,
+                "No encontramos ese lead en el sistema."
+        );
     }
 
     public LeadContextoLookupResponse buscarContextoLeadVenta(String lead) {

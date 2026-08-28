@@ -9,6 +9,7 @@ import {
   PresenceService
 } from '../../../core/services/presence.service';
 import { BrowserSessionService } from '../../../core/services/browser-session.service';
+import { CurrentUserTeamScopeService } from '../../../core/services/current-user-team-scope.service';
 import { OperationalGateService } from '../../../core/services/operational-gate.service';
 import { EstadoAsistencia } from '../../../shared/models/schedule/estado-asistencia';
 import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
@@ -218,6 +219,7 @@ export class GtrWorkspaceFacade {
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
   private readonly operationalGateService = inject(OperationalGateService);
   private readonly browserSessionService = inject(BrowserSessionService);
+  private readonly currentUserTeamScopeService = inject(CurrentUserTeamScopeService);
 
   private static intakeIdentityValidator(control: AbstractControl): { identityRequired?: true; phoneIncomplete?: true } | null {
     const group = control as FormGroup;
@@ -2069,20 +2071,21 @@ export class GtrWorkspaceFacade {
     this.clearMessages();
     this.searchLookup.set(null);
     try {
+      const idEquipo = await this.resolveSearchEquipoId();
       const page = await firstValueFrom(
         this.preventaService.buscarLeadGtr(value, {
           pageNumber: this.searchPageNumber(),
           pageSize: this.pageSize,
           sortBy: 'lastEntryAt',
           direction: 'desc'
-        })
+        }, idEquipo)
       );
       this.searchResults.set(page.content);
       this.searchTotalElements.set(page.totalElements);
       this.searchTotalPages.set(page.totalPages);
       this.searchExecuted.set(true);
       if (page.content.length === 0 && this.searchPageNumber() === 0) {
-        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(value));
+        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(value, idEquipo));
         // Mostrar el aviso cuando el número existe pero su lead está en otra etapa (aunque ahora SÍ
         // pueda registrarse para atención): el GTR necesita saber que el número está en otra etapa.
         const enOtraEtapa = !!lookup.etapaActual && lookup.etapaActual !== 'PREVENTA';
@@ -2095,6 +2098,14 @@ export class GtrWorkspaceFacade {
     } finally {
       this.isSearching.set(false);
     }
+  }
+
+  private async resolveSearchEquipoId(): Promise<number | null> {
+    const adminEquipoId = this.adminEquipoId();
+    if (adminEquipoId !== null) {
+      return adminEquipoId;
+    }
+    return this.currentUserTeamScopeService.getPrimaryEquipoId();
   }
 
   openAgendadoAssignment(row: LeadAgendadoGtrResponse): void {

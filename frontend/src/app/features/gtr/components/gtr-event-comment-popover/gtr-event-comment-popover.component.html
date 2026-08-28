@@ -13,7 +13,7 @@
     (click)="commentPopover.toggle($event)"
   ></button>
 
-  <p-popover #commentPopover styleClass="gtr-comment-popover">
+  <p-popover #commentPopover appendTo="body" styleClass="gtr-comment-popover">
     <div class="comment-popover">
       <span class="comment-popover__title">Comentario</span>
       <p class="comment-popover__body">{{ normalizedComment() }}</p>
