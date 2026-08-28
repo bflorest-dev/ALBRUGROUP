@@ -247,6 +247,12 @@ export class BackofficeLeadService {
     });
   }
 
+  listarHistorialBackofficeVenta(idLead: number, query: PageQuery): Observable<LeadPage<EventoResponse>> {
+    return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/venta/${idLead}/historial-backoffice`, {
+      params: this.pageParams(query)
+    });
+  }
+
   actualizarDatosPreventa(idLead: number, request: LeadDatosPreventaRequest): Observable<void> {
     return this.http.patch<void>(`${this.leadUrl}/venta/${idLead}/datos-preventa`, request);
   }

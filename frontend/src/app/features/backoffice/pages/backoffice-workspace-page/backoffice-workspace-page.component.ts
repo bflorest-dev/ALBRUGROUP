@@ -1148,7 +1148,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     await Promise.all([
       this.refreshOfferCatalogs(idPlan).catch(() => undefined),
-      this.refreshEventos(idLead).catch(() => undefined)
+      this.refreshHistorialBackofficeVenta(idLead).catch(() => undefined)
     ]);
   }
 
@@ -1165,7 +1165,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.detail.set(detail);
       this.detailHadOperationalAction = false;
       this.patchForms(detail, sourceRow);
-      await this.refreshEventosConsulta(idLead);
+      await this.refreshHistorialBackofficeVenta(idLead);
       this.detailDrawerOpen.set(true);
     } catch (error) {
       this.notify('error', this.getErrorMessage(error, 'No se pudo abrir la consulta.'));
@@ -1635,7 +1635,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private async safeGetLatestSearchConsultationEvent(idLead: number): Promise<EventoResponse | null> {
     try {
-      const page = await firstValueFrom(this.leadService.listarEventosConsulta(idLead, {
+      const page = await firstValueFrom(this.leadService.listarHistorialBackofficeVenta(idLead, {
         pageNumber: 0,
         pageSize: 1,
         sortBy: 'createdAt',
@@ -2911,7 +2911,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       if (!this.hasUnsavedDataChanges()) {
         this.patchForms(detail, this.resolvePrefillSourceRow(idLead));
       }
-      await (this.detailReadOnly() ? this.refreshEventosConsulta(idLead) : this.refreshEventos(idLead));
+      await this.refreshHistorialBackofficeVenta(idLead);
     } catch {
       this.closeDetail();
     }
@@ -2932,15 +2932,18 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.eventos.set(page.content.filter((evento) => this.normalizedCode(evento.etapa) === 'VENTA'));
   }
 
-  private async refreshEventosConsulta(idLead: number): Promise<void> {
+  private async refreshHistorialBackofficeVenta(idLead: number): Promise<void> {
     const page = await firstValueFrom(
-      this.leadService.listarEventosConsulta(idLead, {
+      this.leadService.listarHistorialBackofficeVenta(idLead, {
         pageNumber: 0,
         pageSize: 100,
         sortBy: 'createdAt',
         direction: 'desc'
       })
     );
+    if (this.selectedLeadId() !== idLead) {
+      return;
+    }
     this.eventos.set(page.content);
   }
 

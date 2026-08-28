@@ -8,6 +8,7 @@ import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.ModoConteo;
@@ -57,6 +58,7 @@ public class EventoService {
     private final EventoMapper eventoMapper;
     private final PaginationService paginationService;
     private final LeadAsignacionCounterService leadAsignacionCounterService;
+    private final ProveedorScopeService proveedorScopeService;
 
     private static final Set<String> EVENTO_SORT_FIELDS = Set.of("createdAt", "accion", "etapa", "tipificacion", "subtipificacion");
     private static final Set<String> LEADS_DIARIOS_SORT_FIELDS = Set.of(
@@ -164,6 +166,23 @@ public class EventoService {
         return PageResponse.from(eventos);
     }
 
+    public PageResponse<EventoResponse> listarHistorialBackofficeVenta(Long idLead, PageRequest pageRequest) {
+        if (!leadRepository.existsById(idLead)) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+
+        EquipoScope equipoScope = equipoScopeBackofficeVenta();
+        var eventos = eventoRepository.listarEventosLeadVisiblesPorAccionYEtapa(
+                idLead,
+                Accion.TIPIFICACION,
+                Etapa.VENTA,
+                equipoScope.filtrar(),
+                equipoScope.ids(),
+                paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS)
+        ).map(eventoMapper::toResponse);
+        return PageResponse.from(eventos);
+    }
+
     public PageResponse<EventoResponse> listarPorEmpleado(
             Long idEmpleado,
             LocalDate fechaDesde,
@@ -196,6 +215,21 @@ public class EventoService {
 
     private EquipoScope equipoScopeActual() {
         if (currentUser.tieneVisibilidadGlobalEquipos()) {
+            return new EquipoScope(false, List.of(-1L));
+        }
+        List<Long> equipos = currentUser.equipos();
+        if (equipos == null || equipos.isEmpty()) {
+            return new EquipoScope(true, List.of(-1L));
+        }
+        return new EquipoScope(true, equipos);
+    }
+
+    private EquipoScope equipoScopeBackofficeVenta() {
+        if (currentUser.tieneVisibilidadGlobalEquipos()) {
+            return new EquipoScope(false, List.of(-1L));
+        }
+        if (proveedorScopeService.ambitoActual() == AmbitoProveedor.BACKOFFICE
+                && !proveedorScopeService.resolverScope(AmbitoProveedor.BACKOFFICE).vacio()) {
             return new EquipoScope(false, List.of(-1L));
         }
         List<Long> equipos = currentUser.equipos();

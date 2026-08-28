@@ -212,6 +212,14 @@ public class VentaController {
         var eventos = eventoService.listarTipificacionesVentaConsulta(idLead, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(eventos);
     }
+    @GetMapping("/{idLead}/historial-backoffice") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<PageResponse<EventoResponse>> listarHistorialBackofficeVenta(
+            @PathVariable Long idLead,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var eventos = eventoService.listarHistorialBackofficeVenta(idLead, pageRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(eventos);
+    }
     // 7. Editar Lead. El Backoffice, solo puede actualizar la OfertaComercial 1 sola vez.
     @PatchMapping("/{idLead}/datos-preventa") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
     public ResponseEntity<Void> actualizarDatosPreventaVenta(
