@@ -395,6 +395,17 @@ ese origen; parar el contenedor `frontend` primero).
 
 ---
 
-## Archivos modificados en el Caso 2
+## Alcance: mismo bug en varios componentes operativos
 
-- `frontend/src/app/features/backoffice/pages/backoffice-workspace-page/backoffice-workspace-page.component.ts`
+El patrón vivía duplicado en los facades/páginas operativos. **Al encontrarlo en uno, auditar todos**
+(el ADMIN reutiliza todos vía `admin/plataformas/*`):
+
+| Componente | Vista ADMIN | Estado |
+|---|---|---|
+| `backoffice-workspace-page.component.ts` | Plataformas › Backoffice | **Tenía el bug → corregido** (`untracked` en `initialize`/`reconcile`) |
+| `gtr-workspace.facade.ts` (~línea 1185) | Plataformas › GTR | **Tenía el bug → corregido** (`untracked` en `startRealtime`/`initialize`/`reconcile`) |
+| `postventa-workspace.facade.ts` | Plataformas › Postventa | **No afectado**: la bandeja se carga en `ngOnInit` (`loadBoard()`), sin `effect` de asistencia que dispare reconcile; sus effects hijos tienen guard de igualdad (`idLead === handledLeadId`) antes del efecto secundario; el realtime es por suscripción, no por effect. |
+
+Regla práctica: el `effect` es seguro **solo si** un guard de igualdad/estado retorna **antes** de tocar
+signals en la re-ejecución (como en postventa). Si el efecto secundario corre en cada ejecución del
+effect y escribe signals que el mismo effect lee, hay bucle → `untracked`.

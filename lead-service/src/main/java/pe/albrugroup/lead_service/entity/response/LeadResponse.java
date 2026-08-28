@@ -54,6 +54,7 @@ public class LeadResponse {
     private String sot;
     private String customerId;
     private Boolean requiereSecSotVenta;
+    private String nombreAsesorMeritoPreventa;
     private String nombreAsesorUltimaGestion;
     private Instant fechaUltimaGestion;
     private long totalAsignaciones;

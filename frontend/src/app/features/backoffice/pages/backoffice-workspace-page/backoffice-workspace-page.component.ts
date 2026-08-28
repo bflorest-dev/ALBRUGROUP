@@ -688,7 +688,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return undefined;
   });
   protected readonly showOperationalDateColumn = computed(() =>
-    !this.isSearchMode() && this.section() !== 'plataforma'
+    this.isSearchMode() || this.section() !== 'plataforma'
   );
   protected readonly enableTableRowHover = computed(() => this.adminEquipoId() === null);
   protected readonly backofficeTableStyleClass = computed(() =>
@@ -699,6 +699,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   // En Instalados el lead ya salio de VENTA: no hay "fecha de ingreso a la etapa", asi que se oculta.
   protected readonly showFechaIngresoColumn = computed(() => !this.isFechaInstalacionSection());
   protected readonly operationalDateColumnLabel = computed(() => {
+    if (this.isSearchMode()) {
+      return 'Fecha relevante';
+    }
     if (this.section() === 'programados') {
       return 'Fecha programacion';
     }
@@ -795,7 +798,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.activeRows().some((row) => row.requiereSecSotVenta === true || !!row.sec || !!row.sot)
   );
   protected readonly tableColumnCount = computed(() =>
-    (this.showSecSotColumn() ? 10 : 9)
+    (this.showSecSotColumn() ? 11 : 10)
     + (this.showOperationalDateColumn() ? 1 : 0)
     - (this.showFechaIngresoColumn() ? 0 : 1)
   );
@@ -1694,6 +1697,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       sot: detail?.sot ?? null,
       customerId: detail?.customerId ?? null,
       requiereSecSotVenta: detail?.requiereSecSotVenta ?? null,
+      nombreAsesorMeritoPreventa: detail?.nombreAsesorMeritoPreventa ?? null,
       nombreAsesorUltimaGestion: latestEvent?.nombreActor ?? detail?.nombreAsesorAsignado ?? lookup.nombreAsesorAsignado ?? null,
       fechaUltimaGestion: latestEvent?.createdAt ?? null,
       ultimoComentarioTipificacion: latestEvent?.comentario ?? null,
@@ -2356,6 +2360,54 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected personShortName(value?: string | null): string {
     const words = (value ?? '').trim().split(/\s+/).filter(Boolean);
     return words.length ? words.slice(0, 2).join(' ') : '-';
+  }
+
+  protected meritNameParts(value?: string | null): string[] {
+    return (value ?? '').trim().split(/\s+/).filter(Boolean).slice(0, 2);
+  }
+
+  protected operationalDateKind(row: VisualLeadVenta): 'programacion' | 'rechazo' | 'instalacion' | null {
+    const tipificacion = this.normalizedCode(row.codigoTipificacion);
+    if (row.fechaInstalacion || tipificacion === 'INSTALADO') {
+      return 'instalacion';
+    }
+    if (row.fechaRechazo || tipificacion === 'SUBSANABLE' || tipificacion === 'NO_RECUPERABLE') {
+      return 'rechazo';
+    }
+    if (row.fechaProgramacion || tipificacion === 'PROGRAMADO') {
+      return 'programacion';
+    }
+    return null;
+  }
+
+  protected operationalDateLabel(row: VisualLeadVenta): string {
+    switch (this.operationalDateKind(row)) {
+      case 'programacion':
+        return 'Programacion';
+      case 'rechazo':
+        return 'Rechazo';
+      case 'instalacion':
+        return 'Instalacion';
+      default:
+        return '';
+    }
+  }
+
+  protected operationalDateValue(row: VisualLeadVenta): string | null | undefined {
+    switch (this.operationalDateKind(row)) {
+      case 'programacion':
+        return row.fechaProgramacion;
+      case 'rechazo':
+        return row.fechaRechazo;
+      case 'instalacion':
+        return row.fechaInstalacion;
+      default:
+        return null;
+    }
+  }
+
+  protected operationalTimeValue(row: VisualLeadVenta): string | null | undefined {
+    return this.operationalDateKind(row) === 'programacion' ? row.horaProgramada : null;
   }
 
   protected lastTipificationComment(row: LeadVentaResponse): string {
@@ -3273,6 +3325,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       lastEntryAt: row.fechaTipificacionInstalado ?? null,
       createdAt: row.fechaTipificacionInstalado ?? null,
       fechaUltimaGestion: row.fechaTipificacionInstalado ?? null,
+      nombreAsesorMeritoPreventa: row.nombreAsesorMeritoPreventa ?? null,
       nombreAsesorUltimaGestion: row.nombreAsesorInstalador ?? null
     };
   }

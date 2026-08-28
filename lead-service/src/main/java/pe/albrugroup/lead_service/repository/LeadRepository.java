@@ -1318,12 +1318,13 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.sot,
                 l.customerId,
                 COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
+                rp.nombreAsesorMerito,
                 r.nombreAsesorUltimaGestion,
                 r.fechaUltimaGestion,
                 0L,
-                null,
-                null,
-                null,
+                prog.fechaProgramacion,
+                prog.horaProgramada,
+                rechazo.fechaRechazo,
                 inter.velocidad,
                 inter.unidad,
                 pl.velocidadPromocional,
@@ -1338,6 +1339,25 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 WHERE ev.idLead = l.id
                   AND ev.accion = :accionTipificacion
             )
+            LEFT JOIN Evento prog ON prog.id = (
+                SELECT MAX(ev.id)
+                FROM Evento ev
+                WHERE ev.idLead = l.id
+                  AND ev.accion = :accionTipificacion
+                  AND ev.etapa = :etapa
+                  AND ev.tipificacion = :codigoProgramado
+                  AND ev.fechaProgramacion IS NOT NULL
+                  AND ev.horaProgramada IS NOT NULL
+            )
+            LEFT JOIN Evento rechazo ON rechazo.id = (
+                SELECT MAX(ev.id)
+                FROM Evento ev
+                WHERE ev.idLead = l.id
+                  AND ev.accion = :accionTipificacion
+                  AND ev.etapa = :etapa
+                  AND ev.tipificacion IN :tipificacionesFechaRechazo
+                  AND ev.fechaRechazo IS NOT NULL
+            )
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.plan pl
             LEFT JOIN pl.proveedor pp
@@ -1345,6 +1365,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
             LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.etapa = l.etapa AND tAct.idEquipo = l.idEquipo
             LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = l.codigoSubtipificacion
             LEFT JOIN EquipoProveedor epFallback
@@ -1437,6 +1458,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("valoresGrupo") Collection<String> valoresGrupo,
             @Param("sinValor") boolean sinValor,
             @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("codigoProgramado") String codigoProgramado,
+            @Param("tipificacionesFechaRechazo") Collection<String> tipificacionesFechaRechazo,
+            @Param("etapaPreventa") Etapa etapaPreventa,
             @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
             @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
@@ -1694,6 +1718,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.sot,
                 l.customerId,
                 COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
+                rp.nombreAsesorMerito,
                 r.nombreAsesorUltimaGestion,
                 r.fechaUltimaGestion,
                 0L,
@@ -1716,6 +1741,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
             LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.etapa = l.etapa AND tAct.idEquipo = l.idEquipo
             LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = l.codigoSubtipificacion
             LEFT JOIN EquipoProveedor epFallback
@@ -1789,6 +1815,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("codigoProgramado") String codigoProgramado,
             @Param("codigoProgramacionCancelada") String codigoProgramacionCancelada,
             @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("etapaPreventa") Etapa etapaPreventa,
             @Param("campoFecha") String campoFecha,
             @Param("fechaDesde") java.time.LocalDate fechaDesde,
             @Param("fechaHasta") java.time.LocalDate fechaHasta,
@@ -1839,6 +1866,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.sot,
                 l.customerId,
                 COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
+                rp.nombreAsesorMerito,
                 r.nombreAsesorUltimaGestion,
                 r.fechaUltimaGestion,
                 0L,
@@ -1861,6 +1889,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
             LEFT JOIN Tipificacion tAct ON tAct.codigo = e.tipificacion AND tAct.etapa = :etapaVenta AND tAct.idEquipo = l.idEquipo
             LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = e.subtipificacion
             LEFT JOIN EquipoProveedor epFallback
@@ -1938,6 +1967,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Page<LeadResponse> listarLeadsVentaRechazados(
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
             @Param("tipificacionesRechazo") Collection<String> tipificacionesRechazo,
             @Param("campoFecha") String campoFecha,
             @Param("fechaDesde") java.time.LocalDate fechaDesde,
@@ -1969,6 +1999,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 dp.nombreTitularServicio,
                 l.nombreProveedorSnapshot,
                 l.nombrePlanSnapshot,
+                rp.nombreAsesorMerito,
                 e.fechaInstalacion,
                 e.createdAt,
                 e.idActor,
@@ -1979,6 +2010,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
             WHERE e.accion = :accionTipificacion
               AND e.etapa = :etapaVenta
               AND e.tipificacion = :codigoInstalado
@@ -2016,6 +2048,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Page<LeadInstaladoBackofficeResponse> listarLeadsVentaInstalados(
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
             @Param("codigoInstalado") String codigoInstalado,
             @Param("campoFecha") String campoFecha,
             @Param("fechaDesde") java.time.LocalDate fechaDesde,

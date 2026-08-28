@@ -7,7 +7,7 @@
 }
 
 .backoffice-page {
-  --backoffice-table-min-width: 1390px;
+  --backoffice-table-min-width: 1450px;
   min-width: 0;
   overflow-x: clip;
 }
@@ -189,6 +189,10 @@ p,
 .col-asignado {
   min-width: 7.4rem;
   white-space: nowrap;
+}
+
+.col-asesor-venta {
+  width: 6.2rem;
 }
 
 .assigned-cell {
@@ -905,7 +909,7 @@ app-lead-commercial-data-tabs {
 
 @media (max-width: 1439px) {
   .backoffice-page {
-    --backoffice-table-min-width: 1190px;
+    --backoffice-table-min-width: 1250px;
     gap: 0.75rem;
   }
 
@@ -987,7 +991,7 @@ app-lead-commercial-data-tabs {
 
 @media (max-width: 1280px) and (min-width: 901px) {
   .backoffice-page {
-    --backoffice-table-min-width: 1110px;
+    --backoffice-table-min-width: 1170px;
   }
 
   .eyebrow {

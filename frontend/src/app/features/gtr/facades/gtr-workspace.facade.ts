@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Inject, Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Inject, Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, NonNullableFormBuilder, Validators } from '@angular/forms';
 import { Subscription, firstValueFrom } from 'rxjs';
 import {
@@ -1198,14 +1198,20 @@ export class GtrWorkspaceFacade {
         return;
       }
 
+      // startRealtime()/initialize()/reconcile() leen Y escriben signals. Si se invocan dentro del
+      // tracking del effect, este pasa a depender de esas signals y su propia escritura lo re-dispara:
+      // bucle de change detection (NG0103) que satura la vista. Golpea sobre todo al ADMIN, cuyo estado
+      // de asistencia nunca es 'ONLINE' (rol ALWAYS_OPERATIONAL), asi que la rama de reconcile siempre
+      // se cumple. Con untracked el effect solo reacciona a los cambios de estado de asistencia.
+      // (Ver frontend/primeng-loop-fix.md, Caso 2.)
       if (this.canDisplayOperationalData()) {
-        this.startRealtime();
+        untracked(() => this.startRealtime());
       }
 
       if (this.operationalGate.canActivateOperationalData() && !this.startedInitialLoad()) {
-        void this.initialize();
+        untracked(() => void this.initialize());
       } else if (this.operationalGate.canActivateOperationalData() && this.lastAttendanceStatus !== 'ONLINE') {
-        void this.reconcile();
+        untracked(() => void this.reconcile());
       }
 
       this.lastAttendanceStatus = status;

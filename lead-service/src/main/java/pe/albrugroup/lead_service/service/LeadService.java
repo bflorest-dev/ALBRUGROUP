@@ -844,6 +844,9 @@ public class LeadService {
                 grupo.valores(),
                 grupo.sinValor(),
                 Accion.TIPIFICACION,
+                TIPIFICACION_PROGRAMADO,
+                Set.of(TIPIFICACION_SUBSANABLE, TIPIFICACION_NO_RECUPERABLE),
+                Etapa.PREVENTA,
                 modoEfectivo.excluirTipificacionesSeparadas(),
                 TIPIFICACIONES_SEPARADAS_PLATAFORMA,
                 equipos.filtrar(),
@@ -997,6 +1000,7 @@ public class LeadService {
                 TIPIFICACION_PROGRAMADO,
                 SUBTIPIFICACION_PROGRAMACION_CANCELADA,
                 Accion.TIPIFICACION,
+                Etapa.PREVENTA,
                 campo.name(),
                 rango.desde(),
                 rango.hasta(),
@@ -1118,6 +1122,7 @@ public class LeadService {
         Page<LeadResponse> leads = leadRepository.listarLeadsVentaRechazados(
                 Accion.TIPIFICACION,
                 Etapa.VENTA,
+                Etapa.PREVENTA,
                 tipificaciones,
                 campo.name(),
                 desde,
@@ -1188,6 +1193,7 @@ public class LeadService {
         Page<LeadInstaladoBackofficeResponse> leads = leadRepository.listarLeadsVentaInstalados(
                 Accion.TIPIFICACION,
                 Etapa.VENTA,
+                Etapa.PREVENTA,
                 TIPIFICACION_INSTALADO,
                 campo.name(),
                 desde,

@@ -600,6 +600,7 @@
             }
           </th>
           <th class="col-plan">Plan</th>
+          <th class="col-asesor-venta">Asesor venta</th>
           <th class="col-tipificacion" [class.col-sortable]="columnSortable('tipificacion')">
             @if (columnSortable('tipificacion')) {
               <button
@@ -672,9 +673,15 @@
           @if (showOperationalDateColumn()) {
             <td class="col-fecha-operativa">
               <div class="date-stack">
-                @if (section() === 'programados') {
-                <span>{{ displayDateOnly(row.fechaProgramacion) }}</span>
-                <strong>{{ displayTimeOnly(row.horaProgramada) }}</strong>
+                @if (isSearchMode()) {
+                  @if (operationalDateLabel(row)) {
+                    <small>{{ operationalDateLabel(row) }}</small>
+                  }
+                  <span>{{ displayDateOnly(operationalDateValue(row)) }}</span>
+                  <strong>{{ displayTimeOnly(operationalTimeValue(row)) }}</strong>
+                } @else if (section() === 'programados') {
+                  <span>{{ displayDateOnly(row.fechaProgramacion) }}</span>
+                  <strong>{{ displayTimeOnly(row.horaProgramada) }}</strong>
                 } @else if (isFechaInstalacionSection()) {
                   <span>{{ displayDateOnly(row.fechaInstalacion) }}</span>
                 } @else if (isFechaRechazoSection()) {
@@ -715,6 +722,17 @@
               [velocidadPromocional]="row.velocidadPromocional"
               [mesesPromocionVelocidad]="row.mesesPromocionVelocidad"
             />
+          </td>
+          <td class="col-asesor-venta">
+            @if (meritNameParts(row.nombreAsesorMeritoPreventa).length) {
+              <span class="merit-name" [title]="row.nombreAsesorMeritoPreventa" style="display: grid; max-width: 5.8rem">
+                @for (part of meritNameParts(row.nombreAsesorMeritoPreventa); track $index) {
+                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ part }}</span>
+                }
+              </span>
+            } @else {
+              -
+            }
           </td>
           <td class="col-tipificacion">
             <app-tipification-stack

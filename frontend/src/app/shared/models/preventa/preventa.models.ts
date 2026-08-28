@@ -282,6 +282,7 @@ export interface LeadVentaResponse {
   sot?: string | null;
   customerId?: string | null;
   requiereSecSotVenta?: boolean | null;
+  nombreAsesorMeritoPreventa?: string | null;
   nombreAsesorUltimaGestion?: string | null;
   fechaUltimaGestion?: string | null;
   ultimoComentarioTipificacion?: string | null;
@@ -304,6 +305,7 @@ export interface LeadInstaladoBackofficeResponse {
   nombreCliente?: string | null;
   proveedor?: string | null;
   plan?: string | null;
+  nombreAsesorMeritoPreventa?: string | null;
   fechaInstalacion?: string | null;
   fechaTipificacionInstalado?: string | null;
   idAsesorInstalador?: number | null;
@@ -442,6 +444,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   sot?: string | null;
   customerId?: string | null;
   requiereSecSotVenta?: boolean | null;
+  nombreAsesorMeritoPreventa?: string | null;
   urbanizacion?: string | null;
   numero?: string | null;
   manzana?: string | null;

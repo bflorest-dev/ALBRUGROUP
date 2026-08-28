@@ -1,5 +1,5 @@
-import { DatePipe, UpperCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { DOCUMENT, DatePipe, UpperCasePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, effect, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription, combineLatest } from 'rxjs';
@@ -67,7 +67,22 @@ export class GtrWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(GtrWorkspaceFacade);
   private readonly rankingFacade = inject(RankingFacade);
   private readonly route = inject(ActivatedRoute);
+  private readonly document = inject(DOCUMENT);
   private readonly routeSubscription = new Subscription();
+  private readonly modalScrollLockClass = 'gtr-modal-scroll-lock';
+  private modalScrollLocked = false;
+  private modalScrollTop = 0;
+
+  constructor() {
+    effect(() => {
+      const hasModalOpen =
+        this.facade.activeDialog() !== null ||
+        this.facade.abandonedTargetId() !== null ||
+        this.facade.masivoExcelResultsDialogOpen();
+
+      this.setModalScrollLock(hasModalOpen);
+    });
+  }
 
   ngOnInit(): void {
     this.routeSubscription.add(
@@ -88,5 +103,34 @@ export class GtrWorkspacePageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.routeSubscription.unsubscribe();
     this.facade.stop();
+    this.setModalScrollLock(false);
+  }
+
+  private setModalScrollLock(locked: boolean): void {
+    if (this.modalScrollLocked === locked) {
+      return;
+    }
+
+    const body = this.document.body;
+    const root = this.document.documentElement;
+    const view = this.document.defaultView;
+
+    if (!body || !root || !view) {
+      return;
+    }
+
+    this.modalScrollLocked = locked;
+    root.classList.toggle(this.modalScrollLockClass, locked);
+    body.classList.toggle(this.modalScrollLockClass, locked);
+
+    if (locked) {
+      this.modalScrollTop = view.scrollY || root.scrollTop || body.scrollTop || 0;
+      body.style.top = `-${this.modalScrollTop}px`;
+      return;
+    }
+
+    body.style.top = '';
+    view.scrollTo({ top: this.modalScrollTop, left: 0, behavior: 'auto' });
+    this.modalScrollTop = 0;
   }
 }

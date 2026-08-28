@@ -439,6 +439,21 @@ body {
   min-height: 100%;
 }
 
+html.gtr-modal-scroll-lock {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+body.gtr-modal-scroll-lock {
+  left: 0;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  position: fixed;
+  right: 0;
+  touch-action: none;
+  width: 100%;
+}
+
 body {
   min-height: 100vh;
   font-family:

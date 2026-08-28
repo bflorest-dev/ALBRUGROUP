@@ -28,6 +28,7 @@ public class LeadInstaladoBackofficeResponse {
     private String nombreCliente;
     private String proveedor;
     private String plan;
+    private String nombreAsesorMeritoPreventa;
     private LocalDate fechaInstalacion;
     private Instant fechaTipificacionInstalado;
     private Long idAsesorInstalador;
