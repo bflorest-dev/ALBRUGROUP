@@ -797,9 +797,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly showSecSotColumn = computed(() =>
     this.activeRows().some((row) => row.requiereSecSotVenta === true || !!row.sec || !!row.sot)
   );
+  protected readonly showElapsedDaysConnector = computed(() =>
+    this.showFechaIngresoColumn() && this.showOperationalDateColumn()
+  );
   protected readonly tableColumnCount = computed(() =>
     (this.showSecSotColumn() ? 11 : 10)
     + (this.showOperationalDateColumn() ? 1 : 0)
+    + (this.showElapsedDaysConnector() ? 1 : 0)
     - (this.showFechaIngresoColumn() ? 0 : 1)
   );
   protected readonly activeTotal = computed(() => {
@@ -2286,6 +2290,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return `${match[3]}/${match[2]}/${match[1]}`;
   }
 
+  private toCalendarDay(value?: string | null): number | null {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value ?? '');
+    if (!match) {
+      return null;
+    }
+    return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+
   // Hora en formato 12h con AM/PM (coherente con las otras columnas de hora, que usan `hh:mm a`).
   protected displayTimeOnly(value?: string | null): string {
     const match = /^(\d{2}):(\d{2})/.exec(value ?? '');
@@ -2408,6 +2420,31 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected operationalTimeValue(row: VisualLeadVenta): string | null | undefined {
     return this.operationalDateKind(row) === 'programacion' ? row.horaProgramada : null;
+  }
+
+  protected elapsedDaysBetweenDates(row: VisualLeadVenta): number | null {
+    const ingreso = this.toCalendarDay(row.fechaIngresoEtapa);
+    const operativo = this.toCalendarDay(this.operationalDateValue(row));
+    if (ingreso === null || operativo === null || operativo < ingreso) {
+      return null;
+    }
+    const dayMs = 24 * 60 * 60 * 1000;
+    return Math.round((operativo - ingreso) / dayMs);
+  }
+
+  protected elapsedDaysText(row: VisualLeadVenta): string {
+    const days = this.elapsedDaysBetweenDates(row);
+    return days === 1 ? 'dia' : 'dias';
+  }
+
+  protected elapsedDaysTooltip(row: VisualLeadVenta): string {
+    const days = this.elapsedDaysBetweenDates(row);
+    if (days === null) {
+      return 'No hay fechas suficientes para calcular los dias';
+    }
+    return days === 1
+      ? 'Paso 1 dia entre ambas fechas'
+      : `Pasaron ${days} dias entre ambas fechas`;
   }
 
   protected lastTipificationComment(row: LeadVentaResponse): string {

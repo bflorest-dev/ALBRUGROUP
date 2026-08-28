@@ -543,7 +543,11 @@
       <ng-template #header>
         <tr>
           @if (showFechaIngresoColumn()) {
-            <th class="col-fecha-ingreso" [class.col-sortable]="columnSortable('fechaIngresoEtapa')">
+            <th
+              class="col-fecha-ingreso"
+              style="width: 7rem; min-width: 7rem; max-width: 7rem"
+              [class.col-sortable]="columnSortable('fechaIngresoEtapa')"
+            >
               @if (columnSortable('fechaIngresoEtapa')) {
                 <button
                   type="button"
@@ -561,8 +565,21 @@
               }
             </th>
           }
+          @if (showElapsedDaysConnector()) {
+            <th
+              class="col-tiempo-transcurrido"
+              style="padding-left: 0.1rem; padding-right: 0.1rem; text-align: center; width: 2.9rem; min-width: 2.9rem; max-width: 2.9rem"
+              title="Dias entre fechas"
+              aria-label="Dias entre fechas"
+            >
+            </th>
+          }
           @if (showOperationalDateColumn()) {
-            <th class="col-fecha-operativa" [class.col-sortable]="columnSortable(operationalDateSortField())">
+            <th
+              class="col-fecha-operativa"
+              style="width: 7rem; min-width: 7rem; max-width: 7rem"
+              [class.col-sortable]="columnSortable(operationalDateSortField())"
+            >
               @if (columnSortable(operationalDateSortField())) {
                 <button
                   type="button"
@@ -663,15 +680,33 @@
       <ng-template #body let-row>
         <tr [class.row-new]="row.isNew" [class.row-consultation-only]="row.searchConsultationOnly">
           @if (showFechaIngresoColumn()) {
-            <td class="col-fecha-ingreso">
+            <td class="col-fecha-ingreso" style="width: 7rem; min-width: 7rem; max-width: 7rem">
               <div class="date-stack">
                 <span>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
                 <strong>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'hh:mm a') : '' }}</strong>
               </div>
             </td>
           }
+          @if (showElapsedDaysConnector()) {
+            <td class="col-tiempo-transcurrido" style="padding-left: 0.1rem; padding-right: 0.1rem; text-align: center; width: 2.9rem; min-width: 2.9rem; max-width: 2.9rem">
+              <div
+                class="elapsed-days"
+                style="align-items: center; color: #5f6f85; display: inline-grid; gap: 0.03rem; justify-items: center; line-height: 1; min-width: 2.3rem; text-align: center"
+                [title]="elapsedDaysTooltip(row)"
+                aria-label="Dias transcurridos entre fechas"
+              >
+                <i class="pi pi-arrows-h" style="color: color-mix(in srgb, var(--role-accent) 74%, #7f8ea3 26%); font-size: 0.76rem; line-height: 1" aria-hidden="true"></i>
+                @if (elapsedDaysBetweenDates(row) === null) {
+                  <strong style="color: #8a97aa; font-size: 0.78rem; font-weight: 900; line-height: 0.98">--</strong>
+                } @else {
+                  <strong style="color: #172b46; font-size: 0.9rem; font-weight: 900; line-height: 0.98">{{ elapsedDaysBetweenDates(row) }}</strong>
+                  <span style="color: #64748b; font-size: 0.62rem; font-weight: 800; letter-spacing: 0; line-height: 1">{{ elapsedDaysText(row) }}</span>
+                }
+              </div>
+            </td>
+          }
           @if (showOperationalDateColumn()) {
-            <td class="col-fecha-operativa">
+            <td class="col-fecha-operativa" style="width: 7rem; min-width: 7rem; max-width: 7rem">
               <div class="date-stack">
                 @if (isSearchMode()) {
                   @if (operationalDateLabel(row)) {
