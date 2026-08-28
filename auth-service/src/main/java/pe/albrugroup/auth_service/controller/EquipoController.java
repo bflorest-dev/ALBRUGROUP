@@ -69,7 +69,7 @@ public class EquipoController {
 
     @GetMapping("/{id}/asesores-ventas-merito")
     @PreAuthorize("hasAuthority('CORREGIR_MERITO_PREVENTA')")
-    @Operation(summary = "Asesores de venta por equipo", description = "Lista asesores de venta del equipo indicado para correccion de merito, incluyendo inactivos.")
+    @Operation(summary = "Asesores de venta por equipo", description = "Lista asesores de venta activos del equipo indicado para correccion de merito.")
     public ResponseEntity<List<UsuarioRolResponse>> listarAsesoresVentasMerito(@PathVariable @Positive Long id) {
         return ResponseEntity.ok(equipoService.listarAsesoresVentasMerito(id));
     }

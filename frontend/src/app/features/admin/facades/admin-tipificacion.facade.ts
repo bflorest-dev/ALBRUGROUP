@@ -73,7 +73,7 @@ export class AdminTipificacionFacade {
       .map((value) => ({ label: this.comportamientoLabels[value] ?? value, value }))
   );
 
-  readonly selectedEtapa = signal<EtapaCatalogo>('VENTA');
+  readonly selectedEtapa = signal<EtapaCatalogo>('PREVENTA');
   // Equipo seleccionado: cada equipo tiene su propia matriz por etapa.
   readonly equipos = signal<EquipoCatalogoItem[]>([]);
   readonly selectedEquipo = signal<number | null>(null);

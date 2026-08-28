@@ -439,12 +439,14 @@ body {
   min-height: 100%;
 }
 
-html.gtr-modal-scroll-lock {
+html.gtr-modal-scroll-lock,
+html.merito-drawer-scroll-lock {
   overflow: hidden !important;
   overscroll-behavior: none;
 }
 
-body.gtr-modal-scroll-lock {
+body.gtr-modal-scroll-lock,
+body.merito-drawer-scroll-lock {
   left: 0;
   overflow: hidden !important;
   overscroll-behavior: none;
@@ -495,6 +497,33 @@ select {
   white-space: normal;
   word-break: normal;
   writing-mode: horizontal-tb;
+}
+
+.advisor-autocomplete-panel {
+  border: 1px solid #d9e3ef;
+  border-radius: 0.55rem;
+  box-shadow: var(--app-shadow-popover);
+  overflow: hidden;
+}
+
+.advisor-autocomplete-panel .p-autocomplete-list {
+  gap: 0.15rem;
+  padding: 0.35rem;
+}
+
+.advisor-autocomplete-panel .p-autocomplete-option {
+  border-radius: 0.38rem;
+  color: #25364d;
+  padding: 0.6rem 0.75rem;
+}
+
+.advisor-autocomplete-panel .p-autocomplete-option:not(.p-autocomplete-option-selected):hover {
+  background: #eef4fb;
+}
+
+.advisor-autocomplete-panel .p-autocomplete-option-selected {
+  background: #e8f1ff;
+  color: #153e75;
 }
 
 .lead-cell__document {

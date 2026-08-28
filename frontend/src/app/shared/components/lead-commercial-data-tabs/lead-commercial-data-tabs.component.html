@@ -14,7 +14,7 @@
 
     <p-tabpanels>
     <p-tabpanel value="datos">
-      <form class="form-grid" [formGroup]="datosForm" [attr.inert]="readonly ? '' : null">
+      <form class="form-grid" [class.form-grid--readonly]="readonly" [formGroup]="datosForm">
         <label class="data-field data-field--document-type">
           <span>Documento</span>
           <p-select
@@ -22,6 +22,7 @@
             [options]="tipoDocumentoOptions"
             placeholder="Seleccionar"
             appendTo="body"
+            [disabled]="readonly"
             (onChange)="tipoDocumentoChange.emit()"
           />
         </label>
@@ -32,12 +33,13 @@
             type="text"
             inputmode="numeric"
             formControlName="numeroDocumentoTitularServicio"
+            [readonly]="readonly"
             (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularServicio'), $any($event.target).value, documentoServicioMaxLength())"
           />
         </label>
         <label class="data-field data-field--service-owner">
           <span>Titular del Servicio</span>
-          <input pInputText type="text" formControlName="nombreTitularServicio" />
+          <input pInputText type="text" formControlName="nombreTitularServicio" [readonly]="readonly" />
         </label>
         <label class="data-field data-field--phone">
           <span>Celular a registrar</span>
@@ -46,6 +48,7 @@
             type="text"
             inputmode="numeric"
             formControlName="celularRegistro"
+            [readonly]="readonly"
             (input)="setNumericDigits(datosForm.get('celularRegistro'), $any($event.target).value, 9)"
           />
         </label>
@@ -56,12 +59,13 @@
             type="text"
             inputmode="numeric"
             formControlName="celularReferencia"
+            [readonly]="readonly"
             (input)="setNumericDigits(datosForm.get('celularReferencia'), $any($event.target).value, 9)"
           />
         </label>
         <label class="data-field data-field--email">
           <span>Correo</span>
-          <input pInputText type="email" formControlName="correo" />
+          <input pInputText type="email" formControlName="correo" [readonly]="readonly" />
         </label>
         <label class="data-field data-field--ubigeo">
           <span>
@@ -78,6 +82,7 @@
             type="text"
             inputmode="numeric"
             formControlName="ubigeoNacimiento"
+            [readonly]="readonly"
             (input)="setNumericDigits(datosForm.get('ubigeoNacimiento'), $any($event.target).value, 6)"
           />
         </label>
@@ -113,7 +118,7 @@
     </p-tabpanel>
 
     <p-tabpanel value="direccion">
-      <form class="form-grid" [formGroup]="direccionForm" [attr.inert]="readonly ? '' : null">
+      <form class="form-grid" [class.form-grid--readonly]="readonly" [formGroup]="direccionForm">
         <label class="address-field address-field--location">
           <span>Departamento</span>
           <p-select
@@ -124,7 +129,7 @@
             [placeholder]="ubigeoDomicilioLoading ? 'Cargando...' : 'Seleccionar'"
             appendTo="body"
             [loading]="ubigeoDomicilioLoading"
-            [disabled]="ubigeoDomicilioLoading"
+            [disabled]="readonly || ubigeoDomicilioLoading"
             (onChange)="departamentoDomicilioChange.emit()"
           />
         </label>
@@ -138,7 +143,7 @@
             [placeholder]="ubigeoDomicilioLoading ? 'Cargando...' : 'Seleccionar'"
             appendTo="body"
             [loading]="ubigeoDomicilioLoading"
-            [disabled]="ubigeoDomicilioLoading || !provinciasDomicilio.length"
+            [disabled]="readonly || ubigeoDomicilioLoading || !provinciasDomicilio.length"
             (onChange)="provinciaDomicilioChange.emit()"
           />
         </label>
@@ -152,7 +157,7 @@
             [placeholder]="ubigeoDomicilioLoading ? 'Cargando...' : 'Seleccionar'"
             appendTo="body"
             [loading]="ubigeoDomicilioLoading"
-            [disabled]="ubigeoDomicilioLoading || !distritosDomicilio.length"
+            [disabled]="readonly || ubigeoDomicilioLoading || !distritosDomicilio.length"
             (onChange)="distritoDomicilioChange.emit()"
           />
         </label>
@@ -165,7 +170,7 @@
         }
         <label class="address-field address-field--home-type">
           <span>Tipo de Domicilio</span>
-          <p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" placeholder="Seleccionar" appendTo="body" />
+          <p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" placeholder="Seleccionar" appendTo="body" [disabled]="readonly" />
         </label>
         <label class="address-field address-field--street-type">
           <span>Tipo de Via</span>
@@ -175,18 +180,19 @@
             optionLabel="label"
             optionValue="value"
             appendTo="body"
+            [disabled]="readonly"
             (onChange)="onTipoViaChanged()"
           />
         </label>
         @if (direccionForm.get('tipoVia')?.value) {
           <label class="address-field address-field--street-name">
             <span>Nombre de la Via</span>
-            <input pInputText type="text" formControlName="via" />
+            <input pInputText type="text" formControlName="via" [readonly]="readonly" />
           </label>
         }
         <label class="address-field address-field--main-line">
           <span>Direccion</span>
-          <input pInputText type="text" formControlName="direccion" />
+          <input pInputText type="text" formControlName="direccion" [readonly]="readonly" />
         </label>
         <div class="coordinate-fields wide">
           <label>
@@ -230,12 +236,12 @@
         </div>
         <label class="address-field address-field--reference">
           <span>Referencia</span>
-          <input pInputText type="text" formControlName="referencia" />
+          <input pInputText type="text" formControlName="referencia" [readonly]="readonly" />
         </label>
         <div class="address-detail-grid wide">
           <label class="address-detail-grid__urbanization">
             <span>Urbanizacion</span>
-            <input pInputText type="text" formControlName="urbanizacion" />
+            <input pInputText type="text" formControlName="urbanizacion" [readonly]="readonly" />
           </label>
           <label class="address-detail-grid__number">
             <span>Numero</span>
@@ -244,16 +250,17 @@
               type="text"
               inputmode="numeric"
               formControlName="numero"
+              [readonly]="readonly"
               (input)="setNumericDigits(direccionForm.get('numero'), $any($event.target).value, 10)"
             />
           </label>
           <label class="address-detail-grid__block">
             <span>Manzana</span>
-            <input pInputText type="text" formControlName="manzana" />
+            <input pInputText type="text" formControlName="manzana" [readonly]="readonly" />
           </label>
           <label class="address-detail-grid__lot">
             <span>Lote</span>
-            <input pInputText type="text" formControlName="lote" />
+            <input pInputText type="text" formControlName="lote" [readonly]="readonly" />
           </label>
           <label class="address-detail-grid__plan" [class.form-field--readonly]="campoSoloLectura('PLANO')">
             <span>Plano</span>
@@ -261,19 +268,19 @@
           </label>
           <label class="address-detail-grid__building">
             <span>Edificio</span>
-            <input pInputText type="text" formControlName="nombreEdificio" />
+            <input pInputText type="text" formControlName="nombreEdificio" [readonly]="readonly" />
           </label>
           <label class="address-detail-grid__condo">
             <span>Condominio</span>
-            <input pInputText type="text" formControlName="nombreCondominio" />
+            <input pInputText type="text" formControlName="nombreCondominio" [readonly]="readonly" />
           </label>
           <label class="address-detail-grid__floor">
             <span>Piso</span>
-            <input pInputText type="text" formControlName="piso" />
+            <input pInputText type="text" formControlName="piso" [readonly]="readonly" />
           </label>
           <label class="address-detail-grid__interior">
             <span>Interior</span>
-            <input pInputText type="text" formControlName="interior" />
+            <input pInputText type="text" formControlName="interior" [readonly]="readonly" />
           </label>
         </div>
       </form>

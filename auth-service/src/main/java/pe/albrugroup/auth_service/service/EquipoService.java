@@ -221,7 +221,7 @@ public class EquipoService implements IEquipo {
         }
         validarEquipoVisible(equipoId);
 
-        return usuarioRepository.findByEquiposId(equipoId).stream()
+        return usuarioRepository.findDistinctByEquiposIdAndActivoTrueOrderByNombreCompletoAsc(equipoId).stream()
                 .filter(usuario -> usuario.getRoles().stream()
                         .map(Rol::getNombre)
                         .anyMatch(ROL_ASESOR_VENTAS::equals))

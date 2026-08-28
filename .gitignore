@@ -1,5 +1,7 @@
 docs/
 .claude/
+.agents/
+.codex/
 AlbruGroup.postman_collection.json
 ImplementacionAsteriskFases.md
 OLD/

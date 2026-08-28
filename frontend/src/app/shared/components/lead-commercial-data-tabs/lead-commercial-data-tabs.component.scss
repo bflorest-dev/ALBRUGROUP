@@ -155,6 +155,13 @@ label {
   cursor: not-allowed;
 }
 
+.form-grid--readonly input[readonly] {
+  background: #f5f7fa;
+  border-style: dashed;
+  color: #53657d;
+  cursor: text;
+}
+
 .helper {
   color: #617187;
   margin: 0;

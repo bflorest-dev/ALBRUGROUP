@@ -6,6 +6,7 @@
   position="right"
   styleClass="merito-drawer"
   [modal]="true"
+  [blockScroll]="true"
 >
   <ng-template #header>
     <div class="drawer-title">
@@ -125,13 +126,14 @@
             [dropdown]="true"
             [disabled]="!candidate.corregible || isLoadingAsesores()"
             appendTo="body"
-            placeholder="Escribe nombre, DNI o usuario"
+            placeholder="Buscar asesor"
             styleClass="advisor-autocomplete"
+            panelStyleClass="advisor-autocomplete-panel"
+            scrollHeight="18rem"
           >
             <ng-template #item let-asesor>
               <div class="advisor-option">
                 <strong>{{ asesor.nombreCompleto }}</strong>
-                <span>{{ asesor.username || asesor.dni || asesor.empleadoId }}</span>
               </div>
             </ng-template>
           </p-autoComplete>

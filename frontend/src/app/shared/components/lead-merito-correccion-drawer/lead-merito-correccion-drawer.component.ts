@@ -1,6 +1,6 @@
-import { DatePipe } from '@angular/common';
+import { DOCUMENT, DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ConfirmationService } from 'primeng/api';
@@ -38,9 +38,13 @@ import { PreventaLeadService } from '../../../features/preventa/services/prevent
   styleUrl: './lead-merito-correccion-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class LeadMeritoCorreccionDrawerComponent {
+export class LeadMeritoCorreccionDrawerComponent implements OnDestroy {
   private readonly preventaLeadService = inject(PreventaLeadService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly document = inject(DOCUMENT);
+  private readonly scrollLockClass = 'merito-drawer-scroll-lock';
+  private scrollLocked = false;
+  private scrollTop = 0;
 
   protected readonly visible = signal(false);
   protected readonly leadQuery = signal('');
@@ -69,6 +73,16 @@ export class LeadMeritoCorreccionDrawerComponent {
 
   protected readonly providerLogo = computed(() => providerLogo(this.providerName()));
 
+  constructor() {
+    effect(() => {
+      this.setScrollLock(this.visible());
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.setScrollLock(false);
+  }
+
   open(): void {
     this.visible.set(true);
   }
@@ -79,6 +93,34 @@ export class LeadMeritoCorreccionDrawerComponent {
 
   protected onVisibleChange(value: boolean): void {
     this.visible.set(value);
+  }
+
+  private setScrollLock(locked: boolean): void {
+    if (this.scrollLocked === locked) {
+      return;
+    }
+
+    const body = this.document.body;
+    const root = this.document.documentElement;
+    const view = this.document.defaultView;
+
+    if (!body || !root || !view) {
+      return;
+    }
+
+    this.scrollLocked = locked;
+    root.classList.toggle(this.scrollLockClass, locked);
+    body.classList.toggle(this.scrollLockClass, locked);
+
+    if (locked) {
+      this.scrollTop = view.scrollY || root.scrollTop || body.scrollTop || 0;
+      body.style.top = `-${this.scrollTop}px`;
+      return;
+    }
+
+    body.style.top = '';
+    view.scrollTo({ top: this.scrollTop, left: 0, behavior: 'auto' });
+    this.scrollTop = 0;
   }
 
   protected async search(): Promise<void> {
@@ -131,8 +173,7 @@ export class LeadMeritoCorreccionDrawerComponent {
     const matches = this.asesores()
       .filter((asesor) => asesor.empleadoId !== currentMerito)
       .filter((asesor) => this.isAsesorVentas(asesor))
-      .filter((asesor) => this.matchesAsesor(asesor, query))
-      .slice(0, 8);
+      .filter((asesor) => this.matchesAsesor(asesor, query));
     this.asesorSuggestions.set(matches);
   }
 
@@ -198,7 +239,7 @@ export class LeadMeritoCorreccionDrawerComponent {
         .filter((asesor) => this.isAsesorVentas(asesor))
         .filter((asesor) => asesor.empleadoId !== candidate.idAsesorMeritoActualPreventa);
       this.asesores.set(filtrados);
-      this.asesorSuggestions.set(filtrados.slice(0, 8));
+      this.asesorSuggestions.set(filtrados);
     } catch (error) {
       this.errorMessage.set(this.errorMessageFrom(error, 'No se pudo cargar la lista de asesores.'));
     } finally {
