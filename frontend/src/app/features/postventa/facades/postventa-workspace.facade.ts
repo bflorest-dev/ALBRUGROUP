@@ -5,6 +5,7 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { BrowserSessionService } from '../../../core/services/browser-session.service';
 import { CurrentUserProviderScopeService } from '../../../core/services/current-user-provider-scope.service';
+import { PresenceService } from '../../../core/services/presence.service';
 import { SessionService } from '../../../core/services/session.service';
 import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
@@ -70,6 +71,7 @@ export class PostventaWorkspaceFacade {
   private readonly session = inject(SessionService);
   private readonly browserSession = inject(BrowserSessionService);
   private readonly providerScope = inject(CurrentUserProviderScopeService);
+  private readonly presence = inject(PresenceService);
   private readonly destroyRef = inject(DestroyRef);
   private lastProviderId: number | null | undefined = undefined;
 
@@ -89,6 +91,8 @@ export class PostventaWorkspaceFacade {
       this.lastProviderId = activeId;
       void this.loadBoard(0);
     });
+
+    this.destroyRef.onDestroy(() => this.setPostventaManagingPresence(false));
   }
 
   readonly pageSize = 12;
@@ -395,6 +399,7 @@ export class PostventaWorkspaceFacade {
     this.resetContext();
     this._consultaOnly.set(consultaOnly);
     await this.loadContext(row, false, consultaOnly);
+    this.setPostventaManagingPresence(!consultaOnly);
   }
 
   // Cierre solicitado por el usuario (mask, icono X o boton): si hubo cambios sin tipificar, se
@@ -408,6 +413,7 @@ export class PostventaWorkspaceFacade {
   }
 
   closeDrawer(): void {
+    this.setPostventaManagingPresence(false);
     this._drawerOpen.set(false);
     this._selectedLead.set(null);
     this.resetContext();
@@ -877,6 +883,18 @@ export class PostventaWorkspaceFacade {
 
   private notify(severity: ToastSeverity, detail: string): void {
     this.messageService.add({ severity, summary: severity === 'error' ? 'Error' : 'Postventa', detail });
+  }
+
+  private setPostventaManagingPresence(active: boolean): void {
+    if (!this.isPostventaPresenceRole() || (active && this._consultaOnly())) {
+      return;
+    }
+    void this.presence.actualizarDisponibilidad(active ? 'GESTIONANDO' : 'DISPONIBLE').catch(() => undefined);
+  }
+
+  private isPostventaPresenceRole(): boolean {
+    const role = this.session.getPrimaryRole();
+    return role === 'ASESOR_POSTVENTA' || role === 'SUPERVISOR_POSTVENTA';
   }
 
   private errorMessage(error: unknown, fallback: string): string {

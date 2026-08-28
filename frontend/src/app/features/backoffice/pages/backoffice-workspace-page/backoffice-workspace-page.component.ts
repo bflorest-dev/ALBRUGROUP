@@ -4,7 +4,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListene
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, combineLatest, firstValueFrom } from 'rxjs';
+import { Subscription, combineLatest, firstValueFrom, merge } from 'rxjs';
+import { debounceTime, filter, map } from 'rxjs/operators';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -95,6 +96,8 @@ type AssignmentConflictDetails = {
   requiereConfirmarLeadEnGestion?: boolean;
 };
 const TIPIFICACIONES_RECHAZO_VENTA = new Set(['SUBSANABLE', 'NO RECUPERABLE']);
+// Ventana para agrupar la rafaga de eventos realtime en una sola reconciliacion (ver startRealtime).
+const REALTIME_RECONCILE_DEBOUNCE_MS = 600;
 
 @Component({
   selector: 'app-backoffice-workspace-page',
@@ -867,10 +870,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         return;
       }
 
+      // initialize()/reconcile() leen Y escriben signals (isReconciling, plataformaRows, ...). Si se
+      // invocan dentro del tracking del effect, este pasa a depender de esas signals y su propia
+      // escritura lo vuelve a disparar: bucle de change detection que Angular no estabiliza (NG0103)
+      // y que satura la bandeja con refrescos. Es un caso que golpea sobre todo al ADMIN, cuyo estado
+      // de asistencia nunca es 'ONLINE' (rol ALWAYS_OPERATIONAL), asi que la rama de reconcile siempre
+      // se cumple. Con untracked el effect solo reacciona a los cambios de estado de asistencia.
       if (this.operationalGate.canActivateOperationalData() && !this.initialized && !this.initializeInFlight) {
-        void this.initialize();
+        untracked(() => void this.initialize());
       } else if (this.operationalGate.canActivateOperationalData() && this.lastAttendanceStatus !== 'ONLINE') {
-        void this.reconcile();
+        untracked(() => void this.reconcile());
       }
 
       this.lastAttendanceStatus = status;
@@ -1476,6 +1485,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected async changePage(pageNumber: number): Promise<void> {
     if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    // El p-paginator reemite onPageChange durante el change detection cuando cambian sus inputs
+    // ([first]/[totalRecords], p.ej. al llegar el total tras un refresh). Si eso vuelve a llamar
+    // refreshX, se re-setea el total y el paginador vuelve a emitir: bucle sincrono que Angular no
+    // logra estabilizar (NG0103) y que satura red e hilo principal. Ignoramos la reemision cuando la
+    // pagina no cambia realmente: solo reaccionamos a un cambio de pagina del usuario.
+    if (pageNumber === this.activePage()) {
       return;
     }
     if (this.isSearchMode()) {
@@ -2552,34 +2569,33 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private startRealtime(): void {
-    this.realtimeSubscription.add(
-      this.realtimeService.watchTopic('/topic/leads/etapa/VENTA').subscribe({
-        next: (event) => {
-          if (this.isRelevantRealtime(event.tipo)) {
-            void this.reconcile(event.idLead);
-          }
-        },
-        error: () =>
-          this.notify(
-            'warn',
-            'Se perdio conexion con el sistema. Si estamos en una actualizacion, recarga la pagina en unos segundos.'
-          )
-      })
-    );
-
+    // El topic de etapa VENTA emite por cada evento de TODOS los equipos (firehose). Sin coalescing,
+    // cada evento dispara una reconciliacion y la tabla se repinta sin parar: en hover parpadea, el
+    // selector de fecha pierde clics y Gestionar no llega a abrir el drawer. Es especialmente severo en
+    // la vista ADMIN, donde cada bandeja trae el equipo completo. Agrupamos la rafaga con debounceTime:
+    // una tanda de eventos = una sola reconciliacion.
+    const streams = [this.realtimeService.watchTopic('/topic/leads/etapa/VENTA')];
     const empleadoId = this.sessionService.getSession()?.empleadoId;
     if (empleadoId) {
-      this.realtimeSubscription.add(
-        this.realtimeService.watchTopic(`/topic/leads/asesor/${empleadoId}`).subscribe({
-          next: (event) => {
-            if (this.isRelevantRealtime(event.tipo)) {
-              void this.reconcile(event.idLead);
-            }
-          },
-          error: () => undefined
-        })
-      );
+      streams.push(this.realtimeService.watchTopic(`/topic/leads/asesor/${empleadoId}`));
     }
+
+    this.realtimeSubscription.add(
+      merge(...streams)
+        .pipe(
+          filter((event) => this.isRelevantRealtime(event.tipo)),
+          map((event) => event.idLead),
+          debounceTime(REALTIME_RECONCILE_DEBOUNCE_MS)
+        )
+        .subscribe({
+          next: (idLead) => void this.reconcile(idLead),
+          error: () =>
+            this.notify(
+              'warn',
+              'Se perdio conexion con el sistema. Si estamos en una actualizacion, recarga la pagina en unos segundos.'
+            )
+        })
+    );
   }
 
   private isRelevantRealtime(tipo: string): boolean {
@@ -2600,15 +2616,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     this.isReconciling.set(true);
     try {
-      await Promise.all([
-        this.refreshPlataforma(true),
-        this.refreshProgramados(true),
-        this.refreshSubsanables(true),
-        this.refreshRechazados(true),
-        this.refreshInstalados(true),
-        this.section() === 'correccion-instalacion' ? this.refreshCorreccionInstalacion(true) : Promise.resolve(),
-        this.isSearchMode() ? this.refreshSearch() : Promise.resolve()
-      ]);
+      // Solo la bandeja visible. Repintar las 5 en cada evento saturaba el hilo principal (en ADMIN
+      // cada bandeja trae el equipo completo). Las demas se recargan al cambiar de tab (refreshCurrent
+      // corre en el cambio de ruta), asi que no quedan stale para el usuario.
+      await (this.isSearchMode() ? this.refreshSearch() : this.refreshCurrent(true));
       if (changedLeadId && this.selectedLeadId() === changedLeadId) {
         await this.refreshOpenDetail(changedLeadId);
       }
