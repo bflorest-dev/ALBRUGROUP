@@ -14,6 +14,7 @@ import {
   PromocionComercialResponse,
   UbigeoItem
 } from '../../models/preventa/preventa.models';
+import { normalizePersonNameFinal, normalizePersonNameInput } from '../../utils/person-name';
 
 export type LeadCommercialDataTab = 'datos' | 'direccion' | 'oferta' | 'historial';
 export type LeadCommercialDataTabsLayoutMode = 'default' | 'drawer';
@@ -162,6 +163,17 @@ export class LeadCommercialDataTabsComponent {
       return;
     }
     const normalized = value.replace(/\D/g, '').slice(0, maxLength);
+    if (control.value !== normalized) {
+      control.setValue(normalized);
+      control.markAsDirty();
+    }
+  }
+
+  protected setPersonNameValue(control: AbstractControl | null, value: string, trimEnd = false): void {
+    if (!control) {
+      return;
+    }
+    const normalized = trimEnd ? normalizePersonNameFinal(value) : normalizePersonNameInput(value);
     if (control.value !== normalized) {
       control.setValue(normalized);
       control.markAsDirty();

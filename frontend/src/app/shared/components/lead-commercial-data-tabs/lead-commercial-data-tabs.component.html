@@ -39,7 +39,14 @@
         </label>
         <label class="data-field data-field--service-owner">
           <span>Titular del Servicio</span>
-          <input pInputText type="text" formControlName="nombreTitularServicio" [readonly]="readonly" />
+          <input
+            pInputText
+            type="text"
+            formControlName="nombreTitularServicio"
+            [readonly]="readonly"
+            (input)="setPersonNameValue(datosForm.get('nombreTitularServicio'), $any($event.target).value)"
+            (blur)="setPersonNameValue(datosForm.get('nombreTitularServicio'), $any($event.target).value, true)"
+          />
         </label>
         <label class="data-field data-field--phone">
           <span>Celular a registrar</span>
@@ -88,11 +95,25 @@
         </label>
         <label class="data-field data-field--family" [class.form-field--readonly]="campoSoloLectura('NOMBRE_MADRE')">
           <span>Madre</span>
-          <input pInputText type="text" formControlName="nombreMadre" [readonly]="campoSoloLectura('NOMBRE_MADRE')" />
+          <input
+            pInputText
+            type="text"
+            formControlName="nombreMadre"
+            [readonly]="campoSoloLectura('NOMBRE_MADRE')"
+            (input)="setPersonNameValue(datosForm.get('nombreMadre'), $any($event.target).value)"
+            (blur)="setPersonNameValue(datosForm.get('nombreMadre'), $any($event.target).value, true)"
+          />
         </label>
         <label class="data-field data-field--family" [class.form-field--readonly]="campoSoloLectura('NOMBRE_PADRE')">
           <span>Padre</span>
-          <input pInputText type="text" formControlName="nombrePadre" [readonly]="campoSoloLectura('NOMBRE_PADRE')" />
+          <input
+            pInputText
+            type="text"
+            formControlName="nombrePadre"
+            [readonly]="campoSoloLectura('NOMBRE_PADRE')"
+            (input)="setPersonNameValue(datosForm.get('nombrePadre'), $any($event.target).value)"
+            (blur)="setPersonNameValue(datosForm.get('nombrePadre'), $any($event.target).value, true)"
+          />
         </label>
         <label class="data-field data-field--cell-owner-document" [class.form-field--readonly]="campoSoloLectura('DOC_TITULAR_CELULAR')">
           <span>Numero de Documento del Titular del Celular</span>
@@ -112,6 +133,8 @@
             type="text"
             formControlName="nombreTitularCelularRegistro"
             [readonly]="campoSoloLectura('NOMBRE_TITULAR_CELULAR')"
+            (input)="setPersonNameValue(datosForm.get('nombreTitularCelularRegistro'), $any($event.target).value)"
+            (blur)="setPersonNameValue(datosForm.get('nombreTitularCelularRegistro'), $any($event.target).value, true)"
           />
         </label>
       </form>

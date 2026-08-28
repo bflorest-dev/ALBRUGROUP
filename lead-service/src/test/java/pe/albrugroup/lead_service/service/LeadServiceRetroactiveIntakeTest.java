@@ -11,16 +11,25 @@ import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.Contacto;
+import pe.albrugroup.lead_service.entity.DatosPreventa;
+import pe.albrugroup.lead_service.entity.Direccion;
 import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.Plan;
+import pe.albrugroup.lead_service.entity.Subtipificacion;
+import pe.albrugroup.lead_service.entity.Tipificacion;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Base;
+import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
+import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoNumeroLlamada;
 import pe.albrugroup.lead_service.entity.request.LeadIdentidadRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
 import pe.albrugroup.lead_service.entity.request.LeadNumeroParaLlamarRequest;
+import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.NumeroLlamadaResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
@@ -46,6 +55,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -65,6 +75,7 @@ class LeadServiceRetroactiveIntakeTest {
     @Mock private CampanaRepository campanaRepository;
     @Mock private EventoRepository eventoRepository;
     @Mock private EventoService eventoService;
+    @Mock private EquipoCampoService equipoCampoService;
     @Mock private CurrentUser currentUser;
     @Mock private PlanRepository planRepository;
     @Mock private PagoPostventaRepository pagoPostventaRepository;
@@ -503,6 +514,61 @@ class LeadServiceRetroactiveIntakeTest {
     }
 
     @Test
+    void tipificarPreventaCompletaRechazaLeadSinNumero() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.setPrefijo(null);
+        lead.setLead(null);
+        LeadTipificacionRequest request = cierrePreventaRequest();
+        Tipificacion tipificacion = tipificacionPreventaCompleta();
+        Subtipificacion subtipificacion = subtipificacionCierrePreventa(tipificacion);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
+        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+                Etapa.PREVENTA,
+                10L,
+                "PREVENTA_COMPLETA"
+        )).thenReturn(Optional.of(tipificacion));
+        when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
+                80L,
+                "VENTA_CERRADA"
+        )).thenReturn(Optional.of(subtipificacion));
+
+        assertThatThrownBy(() -> leadService.tipificarLead(25202L, request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Falta numero de lead");
+
+        verify(leadRepository, never()).save(any());
+    }
+
+    @Test
+    void tipificarPreventaCompletaAceptaLeadConNumero() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        LeadTipificacionRequest request = cierrePreventaRequest();
+        Tipificacion tipificacion = tipificacionPreventaCompleta();
+        Subtipificacion subtipificacion = subtipificacionCierrePreventa(tipificacion);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
+        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+                Etapa.PREVENTA,
+                10L,
+                "PREVENTA_COMPLETA"
+        )).thenReturn(Optional.of(tipificacion));
+        when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
+                80L,
+                "VENTA_CERRADA"
+        )).thenReturn(Optional.of(subtipificacion));
+        when(equipoCampoService.resolverConfig(10L)).thenReturn(List.of());
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.tipificarLead(25202L, request);
+
+        assertThat(lead.getEtapa()).isEqualTo(Etapa.VENTA);
+        verify(leadRepository).save(lead);
+    }
+
+    @Test
     void aceptaLosLimitesDeHoraYRechazaValoresFueraDelRango() {
         assertThat(leadService.calcularRegistroRetroactivo(LocalDate.of(2026, 6, 10), LocalTime.of(18, 0)))
                 .isNotNull();
@@ -517,6 +583,63 @@ class LeadServiceRetroactiveIntakeTest {
                 leadService.calcularRegistroRetroactivo(LocalDate.of(2026, 6, 10), LocalTime.of(23, 59, 1)))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("23:59");
+    }
+
+    private Lead leadCompletoParaCierrePreventa() {
+        return Lead.builder()
+                .id(25202L)
+                .prefijo("+51")
+                .lead("987654321")
+                .idEquipo(10L)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.EN_GESTION)
+                .idAsesorAsignado(7L)
+                .nombreAsesorAsignado("Asesor Venta")
+                .datosPreventa(DatosPreventa.builder()
+                        .tipoDocumento(TipoDocumento.DNI)
+                        .numeroDocumentoTitularServicio("12345678")
+                        .nombreTitularServicio("Juan Perez")
+                        .celularRegistro("987654321")
+                        .correo("cliente@correo.com")
+                        .build())
+                .direccion(Direccion.builder()
+                        .ubigeoDomicilio("150101")
+                        .tipoDomicilio(TipoDomicilio.HOGAR)
+                        .direccion("Av Lima 123")
+                        .referencia("Frente al parque")
+                        .build())
+                .plan(Plan.builder().id(5L).build())
+                .build();
+    }
+
+    private LeadTipificacionRequest cierrePreventaRequest() {
+        LeadTipificacionRequest request = new LeadTipificacionRequest();
+        request.setCodigoTipificacion("PREVENTA_COMPLETA");
+        request.setCodigoSubtipificacion("VENTA_CERRADA");
+        return request;
+    }
+
+    private Tipificacion tipificacionPreventaCompleta() {
+        Tipificacion tipificacion = new Tipificacion();
+        tipificacion.setId(80L);
+        tipificacion.setIdEquipo(10L);
+        tipificacion.setEtapa(Etapa.PREVENTA);
+        tipificacion.setCodigo("PREVENTA_COMPLETA");
+        tipificacion.setOrden(8);
+        tipificacion.setActivo(true);
+        return tipificacion;
+    }
+
+    private Subtipificacion subtipificacionCierrePreventa(Tipificacion tipificacion) {
+        Subtipificacion subtipificacion = new Subtipificacion();
+        subtipificacion.setId(81L);
+        subtipificacion.setTipificacion(tipificacion);
+        subtipificacion.setCodigo("VENTA_CERRADA");
+        subtipificacion.setOrden(1);
+        subtipificacion.setEtapaCambio(Etapa.VENTA);
+        subtipificacion.setActivo(true);
+        subtipificacion.setComportamientos(Set.of(ComportamientoTipificacion.ES_CIERRE_PREVENTA));
+        return subtipificacion;
     }
 
     @Test

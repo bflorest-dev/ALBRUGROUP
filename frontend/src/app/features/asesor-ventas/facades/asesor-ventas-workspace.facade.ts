@@ -27,6 +27,7 @@ import {
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import { buildTelUrl, buildWhatsAppUrl, formatLeadIdentity } from '../../../shared/utils/phone-link';
+import { personNameValidator } from '../../../shared/utils/person-name';
 import { PRIORITY_CAMPAIGN_LABEL, isPriorityCampaignName } from '../../../shared/utils/priority-campaign';
 import { providerLogo as resolveProviderLogo } from '../../../shared/utils/provider-logo';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
@@ -198,14 +199,14 @@ export class AsesorVentasWorkspaceFacade {
     tipoDocumento: ['', [Validators.required]],
     numeroDocumentoTitularServicio: ['', [Validators.required]],
     ubigeoNacimiento: [''],
-    nombreTitularServicio: [''],
+    nombreTitularServicio: ['', [personNameValidator]],
     celularRegistro: [''],
     celularReferencia: [''],
     correo: [''],
-    nombreMadre: [''],
-    nombrePadre: [''],
+    nombreMadre: ['', [personNameValidator]],
+    nombrePadre: ['', [personNameValidator]],
     numeroDocumentoTitularCelularRegistro: [''],
-    nombreTitularCelularRegistro: ['']
+    nombreTitularCelularRegistro: ['', [personNameValidator]]
   });
 
   readonly direccionForm = this.fb.group({
@@ -834,6 +835,11 @@ export class AsesorVentasWorkspaceFacade {
     const esAtencion = this.atencionOtraEtapa();
 
     if (!esAtencion && this.requiresVentaCompleta()) {
+      const identidadMessage = this.getVentaCompletaIdentidadMessage(detail);
+      if (identidadMessage) {
+        this.errorMessage.set(identidadMessage);
+        return;
+      }
       const idProveedor = this.selectedOfertaProviderId();
       if (idProveedor) {
         await this.ensureProviderCamposConfig(idProveedor);
@@ -930,7 +936,7 @@ export class AsesorVentasWorkspaceFacade {
 
     if (forceFullSave || this.datosForm.dirty) {
       if (this.datosForm.invalid) {
-        this.errorMessage.set('Datos Preventa incompleto: tipo y numero de documento son obligatorios.');
+        this.errorMessage.set(this.getDatosValidationMessage());
         return false;
       }
       tasks.push({
@@ -1863,6 +1869,25 @@ export class AsesorVentasWorkspaceFacade {
     return { prefijo, lead };
   }
 
+  private getVentaCompletaIdentidadMessage(detail: LeadDetalleResponse): string | null {
+    if (this.hasLeadPhone(detail)) {
+      return null;
+    }
+
+    this.openIdentidadEditor();
+    this.identidadForm.markAllAsTouched();
+
+    if (this.identidadForm.controls.lead.hasError('required')) {
+      return 'Para cerrar la venta, completa el numero de lead.';
+    }
+
+    if (this.identidadForm.invalid) {
+      return this.identidadErrorMessage() ?? 'Completa un numero de lead valido.';
+    }
+
+    return null;
+  }
+
   private getOfertaRequest(): LeadOfertaComercialRequest {
     const raw = this.ofertaForm.getRawValue();
     const adicionales = this.selectedOfertaAdditionals()
@@ -1964,6 +1989,30 @@ export class AsesorVentasWorkspaceFacade {
     this.activeDataTab.set(faltantes[0].tab);
 
     return `Para cerrar la venta, completa estos datos. ${grupos.join('. ')}.`;
+  }
+
+  private getDatosValidationMessage(): string {
+    const camposConNumeros: string[] = [];
+    const controls = this.datosForm.controls;
+
+    if (controls.nombreTitularServicio.hasError('personName')) {
+      camposConNumeros.push('Titular del Servicio');
+    }
+    if (controls.nombreMadre.hasError('personName')) {
+      camposConNumeros.push('Madre');
+    }
+    if (controls.nombrePadre.hasError('personName')) {
+      camposConNumeros.push('Padre');
+    }
+    if (controls.nombreTitularCelularRegistro.hasError('personName')) {
+      camposConNumeros.push('Nombre del Titular del Celular');
+    }
+
+    if (camposConNumeros.length) {
+      return `Revisa estos nombres: ${camposConNumeros.join(', ')}. Usa solo letras y un espacio entre palabras.`;
+    }
+
+    return 'Datos Preventa incompleto: tipo y numero de documento son obligatorios.';
   }
 
   private toCoordinateValue(value: number | string | null | undefined): string {

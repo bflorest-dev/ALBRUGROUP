@@ -5047,6 +5047,9 @@ public class LeadService {
         DatosPreventa datosPreventa = lead.getDatosPreventa();
         Direccion direccion = lead.getDireccion();
 
+        validarTextoObligatorio(lead.getPrefijo(), "Falta numero de lead");
+        validarTextoObligatorio(lead.getLead(), "Falta numero de lead");
+
         if (datosPreventa == null) {
             throw new BadRequestException("Faltan datos de preventa");
         }
