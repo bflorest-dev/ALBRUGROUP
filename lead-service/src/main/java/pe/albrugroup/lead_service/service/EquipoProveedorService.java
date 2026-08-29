@@ -60,15 +60,6 @@ public class EquipoProveedorService {
                 .toList();
     }
 
-    /**
-     * Backfill de `id_equipo` en leads existentes según el mapping equipo_proveedor actual
-     * (campaña → proveedor → equipo). Idempotente: solo toca leads sin equipo. Se ejecuta
-     * después de asignar proveedores a los equipos. Retorna la cantidad de leads actualizados.
-     */
-    public int backfillIdEquipoLeads() {
-        return leadRepository.backfillIdEquipoDesdeMapping();
-    }
-
     /** Limpia los datos de lead-service asociados a un equipo (al eliminarlo en auth). */
     public void eliminarDatosDeEquipo(Long idEquipo) {
         equipoProveedorRepository.deleteByIdEquipo(idEquipo);

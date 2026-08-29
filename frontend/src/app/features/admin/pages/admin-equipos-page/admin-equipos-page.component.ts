@@ -67,7 +67,6 @@ export class AdminEquiposPageComponent implements OnInit {
   protected readonly empleados = signal<EmpleadoLite[]>([]);
   protected readonly cargando = signal(false);
   protected readonly guardando = signal(false);
-  protected readonly sincronizando = signal(false);
 
   // Estado del modal
   protected readonly dialogVisible = signal(false);
@@ -300,18 +299,6 @@ export class AdminEquiposPageComponent implements OnInit {
       this.notify('error', 'No se pudo eliminar el equipo.');
     } finally {
       this.guardando.set(false);
-    }
-  }
-
-  protected async sincronizarLeads(): Promise<void> {
-    this.sincronizando.set(true);
-    try {
-      const res = await firstValueFrom(this.service.backfillLeads());
-      this.notify('success', `Listo: ${res?.leadsActualizados ?? 0} leads alineados a su equipo.`);
-    } catch {
-      this.notify('error', 'No se pudieron sincronizar los leads.');
-    } finally {
-      this.sincronizando.set(false);
     }
   }
 

@@ -45,7 +45,6 @@ export class AdminEquipoService {
   private readonly authEquiposUrl = `${API_CONSTANTS.gatewayBaseUrl}/auth/equipos`;
   private readonly leadEquiposUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/equipos`;
   private readonly proveedoresUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/proveedores`;
-  private readonly backfillUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/equipos-backfill`;
   private readonly empleadosLightUrl = `${API_CONSTANTS.gatewayBaseUrl}/rrhh/empleados/light`;
 
   // --- Equipos (auth) ---
@@ -97,7 +96,7 @@ export class AdminEquipoService {
     return this.http.get<ProveedorLite[]>(`${this.leadEquiposUrl}/${idEquipo}/proveedores`);
   }
 
-  // Reemplaza el set de proveedores del equipo (move/exclusividad la aplica el backend).
+  // Reemplaza el set de proveedores del equipo.
   asignarProveedores(
     idEquipo: number,
     proveedorIds: number[],
@@ -130,10 +129,6 @@ export class AdminEquipoService {
       { proveedorIds },
       { params }
     );
-  }
-
-  backfillLeads(): Observable<{ leadsActualizados: number }> {
-    return this.http.post<{ leadsActualizados: number }>(this.backfillUrl, {});
   }
 
   // --- Empleados (rrhh) para elegir a quién asignar ---
