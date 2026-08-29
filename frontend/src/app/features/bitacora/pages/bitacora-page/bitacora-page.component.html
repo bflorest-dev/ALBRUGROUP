@@ -167,7 +167,31 @@
 
         <!-- DATOS -->
         @if (f.tab() === 'datos') {
-          <section class="panel" [formGroup]="f.datosForm">
+          <section class="panel">
+            <div [formGroup]="f.identidadForm">
+              <div class="grouptitle">Identidad del contacto</div>
+              <div class="idnote">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+                Corregir el teléfono o el usermeta afecta al <b>contacto completo</b>: se sincroniza en todas sus oportunidades. El teléfono no puede repetir el de otro contacto.
+              </div>
+              <div class="fgrid">
+                <div class="field" [class.dirty]="f.campoModificado('identidad','prefijo')">
+                  <label>Prefijo</label>
+                  <input class="mono" formControlName="prefijo" placeholder="+51" />
+                </div>
+                <div class="field" [class.dirty]="f.campoModificado('identidad','lead')">
+                  <label>Teléfono (lead)</label>
+                  <input class="mono" formControlName="lead" />
+                  @if (f.campoModificado('identidad','lead')) { <span class="was">antes <s>{{ f.valorOriginal('identidad','lead') || '—' }}</s></span> }
+                </div>
+                <div class="field col2" [class.dirty]="f.campoModificado('identidad','usermeta')">
+                  <label>Usermeta <span class="hint">(sin «&#64;»)</span></label>
+                  <input formControlName="usermeta" />
+                  @if (f.campoModificado('identidad','usermeta')) { <span class="was">antes <s>{{ f.valorOriginal('identidad','usermeta') || '—' }}</s></span> }
+                </div>
+              </div>
+            </div>
+            <div [formGroup]="f.datosForm">
             <div class="grouptitle">Titular del servicio</div>
             <div class="fgrid">
               <div class="field" [class.dirty]="f.campoModificado('datos','tipoDocumento')">
@@ -222,6 +246,7 @@
                 <label>Nombre del padre</label>
                 <input formControlName="nombrePadre" />
               </div>
+            </div>
             </div>
           </section>
         }

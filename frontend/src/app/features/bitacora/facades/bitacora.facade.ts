@@ -13,11 +13,18 @@ import {
 import {
   BitacoraAccion,
   BitacoraBusquedaResponse,
-  BitacoraFieldChange
+  BitacoraFieldChange,
+  BitacoraIdentidadRequest
 } from '../models/bitacora.models';
 import { BitacoraService } from '../services/bitacora.service';
 
 export type BitacoraTab = 'datos' | 'direccion' | 'oferta' | 'historial';
+
+const IDENTIDAD_LABELS: Record<string, string> = {
+  prefijo: 'Prefijo',
+  lead: 'Teléfono (lead)',
+  usermeta: 'Usermeta'
+};
 
 const DATOS_LABELS: Record<string, string> = {
   tipoDocumento: 'Tipo de documento',
@@ -82,6 +89,12 @@ export class BitacoraFacade {
   readonly guardadoOk = signal(false);
   readonly error = signal<string | null>(null);
 
+  readonly identidadForm: FormGroup = this.fb.group({
+    prefijo: [''],
+    lead: [''],
+    usermeta: ['']
+  });
+
   readonly datosForm: FormGroup = this.fb.group({
     tipoDocumento: [''],
     numeroDocumentoTitularServicio: [''],
@@ -116,6 +129,8 @@ export class BitacoraFacade {
     interior: ['']
   });
 
+  private readonly identidadOriginal = signal<Record<string, string>>({});
+  private readonly identidadValues = signal<Record<string, string>>({});
   private readonly datosOriginal = signal<Record<string, string>>({});
   private readonly direccionOriginal = signal<Record<string, string>>({});
   private readonly datosValues = signal<Record<string, string>>({});
@@ -131,6 +146,7 @@ export class BitacoraFacade {
 
   // ── Diffs / tally ─────────────────────────────────────
   readonly camposModificados = computed<BitacoraFieldChange[]>(() => [
+    ...this.diffGrupo(this.identidadOriginal(), this.identidadValues(), IDENTIDAD_LABELS),
     ...this.diffGrupo(this.datosOriginal(), this.datosValues(), DATOS_LABELS),
     ...this.diffGrupo(this.direccionOriginal(), this.direccionValues(), DIRECCION_LABELS)
   ]);
@@ -147,6 +163,9 @@ export class BitacoraFacade {
   });
 
   constructor() {
+    this.identidadForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => this.identidadValues.set(this.normalizeRecord(value)));
     this.datosForm.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => this.datosValues.set(this.normalizeRecord(value)));
@@ -275,9 +294,11 @@ export class BitacoraFacade {
       return;
     }
 
+    const identidadCambio = this.grupoTieneCambios(this.identidadOriginal(), this.identidadValues());
     const datosCambio = this.grupoTieneCambios(this.datosOriginal(), this.datosValues());
     const direccionCambio = this.grupoTieneCambios(this.direccionOriginal(), this.direccionValues());
 
+    const identidad = identidadCambio ? (this.identidadForm.getRawValue() as BitacoraIdentidadRequest) : null;
     const datosPreventa = datosCambio ? (this.datosForm.getRawValue() as LeadDatosPreventaRequest) : null;
     const direccion = direccionCambio ? (this.direccionForm.getRawValue() as LeadDireccionRequest) : null;
 
@@ -285,6 +306,7 @@ export class BitacoraFacade {
     this.error.set(null);
     this.service
       .aplicarCorreccion(detalle.id, {
+        identidad,
         datosPreventa,
         direccion,
         ofertaComercial: null,
@@ -319,6 +341,11 @@ export class BitacoraFacade {
 
   // ── Helpers de forms / diff ───────────────────────────
   private patchForms(detalle: LeadDetalleResponse): void {
+    const identidad = {
+      prefijo: detalle.prefijo ?? '',
+      lead: detalle.lead ?? '',
+      usermeta: detalle.usermeta ?? ''
+    };
     const datos = {
       tipoDocumento: detalle.tipoDocumento ?? '',
       numeroDocumentoTitularServicio: detalle.numeroDocumentoTitularServicio ?? '',
@@ -351,23 +378,33 @@ export class BitacoraFacade {
       piso: detalle.piso ?? '',
       interior: detalle.interior ?? ''
     };
+    this.identidadForm.reset(identidad, { emitEvent: false });
     this.datosForm.reset(datos, { emitEvent: false });
     this.direccionForm.reset(direccion, { emitEvent: false });
+    this.identidadOriginal.set(this.normalizeRecord(identidad));
     this.datosOriginal.set(this.normalizeRecord(datos));
     this.direccionOriginal.set(this.normalizeRecord(direccion));
+    this.identidadValues.set(this.normalizeRecord(identidad));
     this.datosValues.set(this.normalizeRecord(datos));
     this.direccionValues.set(this.normalizeRecord(direccion));
   }
 
-  campoModificado(grupo: 'datos' | 'direccion', control: string): boolean {
-    const original = grupo === 'datos' ? this.datosOriginal() : this.direccionOriginal();
-    const actual = grupo === 'datos' ? this.datosValues() : this.direccionValues();
-    return (original[control] ?? '') !== (actual[control] ?? '');
+  private originalDe(grupo: 'identidad' | 'datos' | 'direccion'): Record<string, string> {
+    if (grupo === 'identidad') return this.identidadOriginal();
+    return grupo === 'datos' ? this.datosOriginal() : this.direccionOriginal();
   }
 
-  valorOriginal(grupo: 'datos' | 'direccion', control: string): string {
-    const original = grupo === 'datos' ? this.datosOriginal() : this.direccionOriginal();
-    return original[control] ?? '';
+  private valuesDe(grupo: 'identidad' | 'datos' | 'direccion'): Record<string, string> {
+    if (grupo === 'identidad') return this.identidadValues();
+    return grupo === 'datos' ? this.datosValues() : this.direccionValues();
+  }
+
+  campoModificado(grupo: 'identidad' | 'datos' | 'direccion', control: string): boolean {
+    return (this.originalDe(grupo)[control] ?? '') !== (this.valuesDe(grupo)[control] ?? '');
+  }
+
+  valorOriginal(grupo: 'identidad' | 'datos' | 'direccion', control: string): string {
+    return this.originalDe(grupo)[control] ?? '';
   }
 
   private diffGrupo(
@@ -401,6 +438,8 @@ export class BitacoraFacade {
 
   private limpiarStaged(): void {
     this.marcadosEventos.set([]);
+    this.identidadOriginal.set({});
+    this.identidadValues.set({});
     this.datosOriginal.set({});
     this.direccionOriginal.set({});
     this.datosValues.set({});

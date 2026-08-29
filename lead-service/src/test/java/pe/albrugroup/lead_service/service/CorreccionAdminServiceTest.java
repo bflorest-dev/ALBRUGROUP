@@ -45,7 +45,7 @@ class CorreccionAdminServiceTest {
         assertThatThrownBy(() -> correccionAdminService.aplicarCorreccion(10L, request))
                 .isInstanceOf(BadRequestException.class);
 
-        verify(leadService, never()).aplicarCambiosCorreccion(anyLong(), any(), any(), any());
+        verify(leadService, never()).aplicarCambiosCorreccion(anyLong(), any(), any(), any(), any());
         verify(eventoRepository, never()).save(any());
     }
 
@@ -53,7 +53,7 @@ class CorreccionAdminServiceTest {
     void noSePuedeEliminarUnEventoCorreccion() {
         LeadCorreccionRequest request = new LeadCorreccionRequest();
         request.setIdsEventosAEliminar(List.of(5L));
-        when(leadService.aplicarCambiosCorreccion(anyLong(), any(), any(), any()))
+        when(leadService.aplicarCambiosCorreccion(anyLong(), any(), any(), any(), any()))
                 .thenReturn(Lead.builder().id(10L).etapa(Etapa.VENTA).build());
         when(eventoRepository.findByIdInAndIdLead(List.of(5L), 10L))
                 .thenReturn(List.of(Evento.builder().id(5L).idLead(10L).accion(Accion.CORRECCION).build()));
@@ -69,7 +69,7 @@ class CorreccionAdminServiceTest {
     void rechazaEventosQueNoPertenecenAlLead() {
         LeadCorreccionRequest request = new LeadCorreccionRequest();
         request.setIdsEventosAEliminar(List.of(5L, 6L));
-        when(leadService.aplicarCambiosCorreccion(anyLong(), any(), any(), any()))
+        when(leadService.aplicarCambiosCorreccion(anyLong(), any(), any(), any(), any()))
                 .thenReturn(Lead.builder().id(10L).etapa(Etapa.VENTA).build());
         // Solo uno de los dos ids pertenece al lead -> tamanos distintos -> se rechaza.
         when(eventoRepository.findByIdInAndIdLead(List.of(5L, 6L), 10L))
@@ -89,7 +89,7 @@ class CorreccionAdminServiceTest {
         request.setResumenCambios("Documento corregido");
         Evento registro = Evento.builder().id(5L).idLead(10L).accion(Accion.REGISTRO).build();
 
-        when(leadService.aplicarCambiosCorreccion(anyLong(), any(), any(), any()))
+        when(leadService.aplicarCambiosCorreccion(anyLong(), any(), any(), any(), any()))
                 .thenReturn(Lead.builder().id(10L).etapa(Etapa.VENTA).build());
         when(eventoRepository.findByIdInAndIdLead(List.of(5L), 10L)).thenReturn(List.of(registro));
         when(currentUser.empleadoID()).thenReturn(1L);

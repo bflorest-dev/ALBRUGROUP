@@ -22,12 +22,20 @@ export interface BitacoraBusquedaResponse {
   nombreProveedor?: string | null;
 }
 
+/** Corrección de identidad del contacto (teléfono + usermeta). Alcance CONTACTO: sincroniza hermanas. */
+export interface BitacoraIdentidadRequest {
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
+}
+
 /**
  * Payload de una gestión completa de corrección (submit atómico). Cada bloque es opcional: solo se
  * envía el que cambió. `resumenCambios` es el texto legible que arma el frontend y queda como
  * comentario del evento CORRECCION.
  */
 export interface BitacoraCorreccionRequest {
+  identidad?: BitacoraIdentidadRequest | null;
   datosPreventa?: LeadDatosPreventaRequest | null;
   direccion?: LeadDireccionRequest | null;
   ofertaComercial?: LeadOfertaComercialRequest | null;

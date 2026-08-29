@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "src/app/features/bitacora/pages/bitacora-page/bitacora-page.component.html"
+        ],
+        "createdAt": "2026-08-29T05:52:56.820Z",
+        "reason": "claude: provider-logo img only renders inside @if(logo()) guard; src is always a real /provider-logos path (dynamic binding the detector cannot resolve)"
+      }
+    ]
+  }
+}

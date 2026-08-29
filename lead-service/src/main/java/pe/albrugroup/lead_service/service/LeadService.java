@@ -27,7 +27,9 @@ import pe.albrugroup.lead_service.entity.enums.TipoNumeroLlamada;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionMasivaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
+import pe.albrugroup.lead_service.entity.Contacto;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
+import pe.albrugroup.lead_service.entity.request.LeadIdentidadCorreccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIdentidadRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
@@ -1423,6 +1425,7 @@ public class LeadService {
     @Transactional
     public Lead aplicarCambiosCorreccion(
             Long idLead,
+            LeadIdentidadCorreccionRequest identidad,
             LeadDatosPreventaRequest datosPreventa,
             LeadDireccionRequest direccion,
             LeadOfertaComercialRequest ofertaComercial
@@ -1430,6 +1433,10 @@ public class LeadService {
         Lead lead = leadRepository.buscarDetalleCompletoPorId(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         boolean huboCambios = false;
+        if (identidad != null) {
+            aplicarIdentidadContacto(lead, identidad);
+            huboCambios = true;
+        }
         if (datosPreventa != null) {
             actualizarDatosPreventaInterno(lead, datosPreventa);
             huboCambios = true;
@@ -1446,6 +1453,47 @@ public class LeadService {
             lead.setLastEntryAt(OperationalDateTime.now());
         }
         return leadRepository.save(lead);
+    }
+
+    // Corrección de identidad con alcance CONTACTO: corrige teléfono (prefijo+lead) y usermeta en el
+    // Contacto y sincroniza a todas las oportunidades hermanas (por el candado 1 contacto = N leads).
+    // El teléfono nuevo no puede colisionar con otro contacto (prefijo+lead es único).
+    private void aplicarIdentidadContacto(Lead lead, LeadIdentidadCorreccionRequest req) {
+        String nuevoPrefijo = leadMapper.trimToNull(req.getPrefijo());
+        String nuevoLead = leadMapper.trimToNull(req.getLead());
+        String nuevoUsermeta = leadMapper.trimToNull(req.getUsermeta());
+        if (nuevoLead == null) {
+            throw new BadRequestException("El telefono (lead) no puede quedar vacio");
+        }
+
+        Contacto contacto = lead.getContacto() == null
+                ? null
+                : contactoRepository.findById(lead.getContacto().getId()).orElse(null);
+
+        boolean telefonoCambia = contacto == null
+                || !java.util.Objects.equals(contacto.getPrefijo(), nuevoPrefijo)
+                || !java.util.Objects.equals(contacto.getLead(), nuevoLead);
+        if (telefonoCambia) {
+            contactoRepository.findByPrefijoAndLead(nuevoPrefijo, nuevoLead).ifPresent(existente -> {
+                if (contacto == null || !existente.getId().equals(contacto.getId())) {
+                    String quien = existente.getNombreConocido() == null ? "otro contacto" : existente.getNombreConocido();
+                    throw new BadRequestException("Ese telefono ya pertenece a otro contacto (" + quien + ")");
+                }
+            });
+        }
+
+        if (contacto != null) {
+            contacto.setPrefijo(nuevoPrefijo);
+            contacto.setLead(nuevoLead);
+            contacto.setUsermeta(nuevoUsermeta);
+            contactoRepository.save(contacto);
+            leadRepository.sincronizarIdentidadHermanas(contacto.getId(), lead.getId(), nuevoPrefijo, nuevoLead, nuevoUsermeta);
+        }
+
+        // El lead corregido (denormalizado) se persiste con el save(lead) del metodo llamador.
+        lead.setPrefijo(nuevoPrefijo);
+        lead.setLead(nuevoLead);
+        lead.setUsermeta(nuevoUsermeta);
     }
 
     // ── Mis preventas (read-only) ─────────────────────────────────────────────

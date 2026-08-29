@@ -72,7 +72,8 @@ public class CorreccionAdminService {
         List<Long> idsEventos = request.getIdsEventosAEliminar() == null
                 ? List.of()
                 : request.getIdsEventosAEliminar().stream().filter(Objects::nonNull).distinct().toList();
-        boolean hayCambiosDatos = request.getDatosPreventa() != null
+        boolean hayCambiosDatos = request.getIdentidad() != null
+                || request.getDatosPreventa() != null
                 || request.getDireccion() != null
                 || request.getOfertaComercial() != null;
         if (!hayCambiosDatos && idsEventos.isEmpty()) {
@@ -82,6 +83,7 @@ public class CorreccionAdminService {
         // Aplica las ediciones (si las hay) y valida que el lead exista; devuelve el Lead para su etapa.
         Lead lead = leadService.aplicarCambiosCorreccion(
                 idLead,
+                request.getIdentidad(),
                 request.getDatosPreventa(),
                 request.getDireccion(),
                 request.getOfertaComercial()

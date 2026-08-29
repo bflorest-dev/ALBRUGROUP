@@ -14,6 +14,10 @@ import java.util.List;
 @Setter
 public class LeadCorreccionRequest {
 
+    // Identidad del contacto (teléfono + usermeta). Alcance CONTACTO: sincroniza a las hermanas.
+    @Valid
+    private LeadIdentidadCorreccionRequest identidad;
+
     @Valid
     private LeadDatosPreventaRequest datosPreventa;
 

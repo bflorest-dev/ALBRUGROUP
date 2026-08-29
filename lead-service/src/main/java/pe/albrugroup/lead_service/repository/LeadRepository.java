@@ -96,6 +96,23 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             """)
     List<Lead> buscarParaCorreccionAdmin(@Param("patron") String patron, Pageable pageable);
 
+    // Corrección de identidad (Bitácora ADMIN): al corregir el teléfono/usermeta del contacto,
+    // sincroniza los campos denormalizados en las oportunidades HERMANAS (el lead corregido se
+    // actualiza aparte, ya gestionado en memoria). Devuelve cuántas hermanas se sincronizaron.
+    @Modifying
+    @Query("""
+            UPDATE Lead l
+            SET l.prefijo = :prefijo, l.lead = :lead, l.usermeta = :usermeta
+            WHERE l.contacto.id = :idContacto AND l.id <> :idLeadActual
+            """)
+    int sincronizarIdentidadHermanas(
+            @Param("idContacto") Long idContacto,
+            @Param("idLeadActual") Long idLeadActual,
+            @Param("prefijo") String prefijo,
+            @Param("lead") String lead,
+            @Param("usermeta") String usermeta
+    );
+
     @Query("""
             SELECT l
             FROM Lead l

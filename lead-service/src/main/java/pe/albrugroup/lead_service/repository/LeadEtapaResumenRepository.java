@@ -361,6 +361,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
               AND re.createdAt < :fin
               AND r.primeraCodigoTipificacion = :codigoTipificacion
               AND (r.primeraCodigoSubtipificacion IS NULL OR r.primeraCodigoSubtipificacion <> 'INCOMPLETA')
+              AND r.primeraTipificacionAt >= :inicio
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY te.createdAt DESC
             """)
@@ -390,6 +391,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
               AND re.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
               AND (r.ultimaCodigoSubtipificacion IS NULL OR r.ultimaCodigoSubtipificacion <> 'INCOMPLETA')
+              AND r.ultimaTipificacionAt >= :inicio
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY te.createdAt DESC
             """)
@@ -419,6 +421,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
               AND re.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
               AND (r.mayorRangoCodigoSubtipificacion IS NULL OR r.mayorRangoCodigoSubtipificacion <> 'INCOMPLETA')
+              AND r.mayorRangoAt >= :inicio
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY te.createdAt DESC
             """)

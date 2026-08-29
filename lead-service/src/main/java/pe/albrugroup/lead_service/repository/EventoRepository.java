@@ -1026,6 +1026,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
               AND (r.ultimaCodigoSubtipificacion IS NULL OR r.ultimaCodigoSubtipificacion <> 'INCOMPLETA')
+              AND r.ultimaTipificacionAt >= :inicio
             """)
     long contarLeadsDiariosPorUltimaTipificacion(
             @Param("accion") Accion accion,
@@ -1193,6 +1194,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
               AND (r.ultimaCodigoSubtipificacion IS NULL OR r.ultimaCodigoSubtipificacion <> 'INCOMPLETA')
+              AND r.ultimaTipificacionAt >= :inicio
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoUltima(
@@ -1213,6 +1215,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.createdAt < :fin
               AND r.primeraCodigoTipificacion = :codigoTipificacion
               AND (r.primeraCodigoSubtipificacion IS NULL OR r.primeraCodigoSubtipificacion <> 'INCOMPLETA')
+              AND r.primeraTipificacionAt >= :inicio
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoPrimera(
@@ -1233,6 +1236,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
               AND (r.mayorRangoCodigoSubtipificacion IS NULL OR r.mayorRangoCodigoSubtipificacion <> 'INCOMPLETA')
+              AND r.mayorRangoAt >= :inicio
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoMayor(

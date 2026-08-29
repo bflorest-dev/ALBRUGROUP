@@ -208,6 +208,12 @@ table.records {
   &.total { background: var(--ink); color: var(--ink-inv); border-color: var(--ink); .l { color: color-mix(in srgb, var(--ink-inv) 70%, transparent); } }
 }
 .oferta-note { margin-top: 16px; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.idnote {
+  display: flex; gap: 9px; align-items: flex-start; margin: 0 0 13px; padding: 9px 11px; border-radius: 8px;
+  background: var(--signal-wash); border: 1px solid var(--signal-line); color: var(--ink-2); font-size: 12px; line-height: 1.45;
+  b { color: var(--signal); }
+  svg { width: 15px; height: 15px; color: var(--signal); flex-shrink: 0; margin-top: 1px; }
+}
 
 .hfilter { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 18px; }
 .fchip {
