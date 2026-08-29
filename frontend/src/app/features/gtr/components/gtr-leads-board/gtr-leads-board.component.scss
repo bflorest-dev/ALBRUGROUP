@@ -224,6 +224,76 @@
 
 }
 
+// ── Origen del lead (icono + tooltip) ────────────────────────
+.base-badge {
+  align-items: center;
+  background: var(--app-surface-soft, #eef2f7);
+  border-radius: 0.6rem;
+  color: var(--app-text-muted);
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.base-badge i {
+  font-size: 1.02rem;
+}
+
+.base-badge[data-tone='whatsapp'] {
+  background: rgba(37, 211, 102, 0.16);
+  color: #128c4b;
+}
+
+.base-badge[data-tone='messenger'] {
+  background: rgba(0, 132, 255, 0.15);
+  color: #0068d6;
+}
+
+.base-badge[data-tone='predictivo'] {
+  background: rgba(13, 148, 136, 0.15);
+  color: #0f766e;
+}
+
+.base-badge[data-tone='recontacto'] {
+  background: rgba(124, 58, 237, 0.14);
+  color: #6d28d9;
+}
+
+.base-badge[data-tone='referido'] {
+  background: rgba(219, 39, 119, 0.14);
+  color: #be185d;
+}
+
+.base-badge[data-tone='masivo'] {
+  background: rgba(217, 119, 6, 0.16);
+  color: #b45309;
+}
+
+.base-badge[data-tone='desconocido'] {
+  background: var(--app-surface-soft, #eef2f7);
+  color: #64748b;
+}
+
+// ── Botones de acciones (solo bandeja diaria: mas amplios) ────
+:host ::ng-deep .row-actions {
+  gap: 0.45rem;
+  grid-template-columns: repeat(2, 2.55rem);
+  width: 5.55rem;
+}
+
+:host ::ng-deep .row-actions .p-button .p-button-icon {
+  font-size: 1rem;
+}
+
+@media (max-width: 1599px) {
+  :host ::ng-deep .row-actions {
+    gap: 0.4rem;
+    grid-template-columns: repeat(2, 2.3rem);
+    width: 5rem;
+  }
+}
+
 @media (max-width: 1280px) {
   .tip-view-select__control {
     min-width: 11.25rem;

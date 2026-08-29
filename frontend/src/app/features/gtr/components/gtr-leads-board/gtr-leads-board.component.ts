@@ -40,6 +40,26 @@ export class GtrLeadsBoardComponent {
   protected visibleTipificationColumn: 'primera' | 'mayor' | 'ultima' = 'ultima';
   private organizeCloseTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  // Origen del lead: cada base se muestra como un icono con el texto en tooltip.
+  // Referencias estables (cacheadas) para no romper el OnPush / PrimeNG.
+  private readonly baseVisualMap: Record<string, { icon: string; label: string; tone: string }> = {
+    WHATSAPP: { icon: 'pi pi-whatsapp', label: 'WhatsApp', tone: 'whatsapp' },
+    MESSENGER: { icon: 'pi pi-facebook', label: 'Messenger', tone: 'messenger' },
+    RECONTACTO: { icon: 'pi pi-replay', label: 'Recontacto', tone: 'recontacto' },
+    PREDICTIVO: { icon: 'pi pi-phone', label: 'Predictivo', tone: 'predictivo' },
+    REFERIDO: { icon: 'pi pi-share-alt', label: 'Referido', tone: 'referido' },
+    MASIVO: { icon: 'pi pi-megaphone', label: 'Masivo', tone: 'masivo' },
+    SIN_IDENTIFICAR: { icon: 'pi pi-question-circle', label: 'Sin identificar', tone: 'desconocido' }
+  };
+  private readonly baseVisualFallback = { icon: 'pi pi-question-circle', label: 'Sin identificar', tone: 'desconocido' };
+
+  protected baseVisual(base?: string | null): { icon: string; label: string; tone: string } {
+    if (!base) {
+      return this.baseVisualFallback;
+    }
+    return this.baseVisualMap[base] ?? this.baseVisualFallback;
+  }
+
   protected onOrganizeEnter(): void {
     if (this.organizeCloseTimeout !== null) {
       clearTimeout(this.organizeCloseTimeout);

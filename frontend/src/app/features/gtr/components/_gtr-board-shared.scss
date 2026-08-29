@@ -184,22 +184,26 @@ td small {
   white-space: nowrap;
 }
 
-/* El warning se ancla al espacio libre de la derecha de la celda, fuera del flujo,
-   para no reservar espacio ni empujar los botones de la columna de Acciones. */
-.actions-cell {
-  position: relative;
+/* La celda de acciones alinea el bloque de botones y reserva un hueco fijo a su
+   derecha para el aviso. Asi las columnas quedan alineadas haya o no alerta, y el
+   triangulo nunca se superpone a los botones (que antes se comprimian). */
+.actions-shell {
+  align-items: center;
+  display: flex;
+  gap: 0.3rem;
+  justify-content: center;
 }
 
-.actions-cell .lead-warning {
-  position: absolute;
-  right: 0.6rem;
-  top: 50%;
-  margin: 0;
-  pointer-events: none;
-  transform: translateY(-50%);
+.lead-warning-slot {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  width: 1.9rem;
 }
 
-.actions-cell .lead-warning * { pointer-events: none; }
+.lead-warning-slot .lead-warning { pointer-events: none; }
+.lead-warning-slot .lead-warning * { pointer-events: none; }
 
 .gtr-assign-button {
   gap: 0;
@@ -212,14 +216,15 @@ td small {
 .gtr-assign-button__action,
 .gtr-assign-button__count {
   align-items: center;
+  align-self: stretch;
   display: inline-flex;
   min-height: 2rem;
 }
 
 .gtr-assign-button__action {
+  flex: 1 1 auto;
   justify-content: center;
   padding: 0;
-  width: 2.85rem;
 }
 
 .gtr-assign-button__label {
@@ -242,8 +247,8 @@ td small {
   display: inline-flex;
   justify-content: center;
   line-height: 1;
-  min-height: 2.25rem;
-  min-width: 2.25rem;
+  min-height: 1.8rem;
+  min-width: 1.8rem;
 }
 
 .lead-warning__triangle {
@@ -251,10 +256,10 @@ td small {
   background: #111827;
   clip-path: polygon(50% 0, 100% 92%, 0 92%);
   display: inline-grid;
-  height: 2.15rem;
+  height: 1.65rem;
   place-items: center;
   position: relative;
-  width: 2.35rem;
+  width: 1.8rem;
 }
 
 .lead-warning__triangle::before {
@@ -267,10 +272,10 @@ td small {
 
 .lead-warning__triangle span {
   color: #111827;
-  font-size: 1.24rem;
+  font-size: 0.98rem;
   font-weight: 950;
   line-height: 1;
-  margin-top: 0.34rem;
+  margin-top: 0.26rem;
   position: relative;
   z-index: 1;
 }
@@ -326,7 +331,7 @@ td small {
 }
 
 .col-actions {
-  width: 5.6rem;
+  width: 8.8rem;
 }
 
 .lead-value {
@@ -388,7 +393,7 @@ td small {
 
 :host ::ng-deep .gtr-table th:nth-child(2),
 :host ::ng-deep .gtr-table td:nth-child(2) {
-  width: 7.4rem;
+  width: 7rem;
 }
 
 :host ::ng-deep .gtr-table th:nth-child(3),
@@ -398,7 +403,7 @@ td small {
 
 :host ::ng-deep .gtr-table th:nth-child(4),
 :host ::ng-deep .gtr-table td:nth-child(4) {
-  width: 9.2rem;
+  width: 3.6rem;
 }
 
 :host ::ng-deep .gtr-table th:nth-child(5),
@@ -413,12 +418,12 @@ td small {
 
 :host ::ng-deep .gtr-table th:nth-child(7),
 :host ::ng-deep .gtr-table td:nth-child(7) {
-  width: 7.4rem;
+  width: 6.8rem;
 }
 
 :host ::ng-deep .gtr-table th:nth-child(8),
 :host ::ng-deep .gtr-table td:nth-child(8) {
-  width: 7.2rem;
+  width: 6.6rem;
 }
 
 :host ::ng-deep .gtr-table th:nth-child(9),
@@ -430,7 +435,7 @@ td small {
 
 :host ::ng-deep .gtr-table th:nth-child(11),
 :host ::ng-deep .gtr-table td:nth-child(11) {
-  width: 5.8rem;
+  width: 8.8rem;
 }
 
 :host ::ng-deep .row-actions .p-button {
@@ -477,7 +482,7 @@ td small {
 
   :host ::ng-deep .gtr-table th:nth-child(4),
   :host ::ng-deep .gtr-table td:nth-child(4) {
-    width: 6.9rem;
+    width: 3.4rem;
   }
 
   :host ::ng-deep .gtr-table th:nth-child(5),
@@ -487,17 +492,17 @@ td small {
 
   :host ::ng-deep .gtr-table th:nth-child(6),
   :host ::ng-deep .gtr-table td:nth-child(6) {
-    width: 13.8rem;
+    width: 16.5rem;
   }
 
   :host ::ng-deep .gtr-table th:nth-child(7),
   :host ::ng-deep .gtr-table td:nth-child(7) {
-    width: 7.2rem;
+    width: 6.4rem;
   }
 
   :host ::ng-deep .gtr-table th:nth-child(8),
   :host ::ng-deep .gtr-table td:nth-child(8) {
-    width: 5.6rem;
+    width: 5.4rem;
   }
 
   :host ::ng-deep .gtr-table th:nth-child(9),
@@ -509,11 +514,11 @@ td small {
 
   :host ::ng-deep .gtr-table th:nth-child(11),
   :host ::ng-deep .gtr-table td:nth-child(11) {
-    width: 5.1rem;
+    width: 8.2rem;
   }
 
   .col-actions {
-    width: 5.1rem;
+    width: 8.2rem;
   }
 
   :host ::ng-deep .row-actions .p-button-label {

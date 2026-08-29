@@ -330,7 +330,13 @@
             {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
           }
         </td>
-        <td>{{ facade.display(row.base) }}</td>
+        <td>
+          @if (baseVisual(row.base); as bv) {
+            <span class="base-badge" [attr.data-tone]="bv.tone" [title]="bv.label" [attr.aria-label]="'Origen: ' + bv.label">
+              <i [class]="bv.icon" aria-hidden="true"></i>
+            </span>
+          }
+        </td>
         <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
         <td class="col-tipifications">
           <div class="tip-view" tabindex="0">
@@ -428,51 +434,55 @@
           }
         </td>
         <td class="actions-cell">
-          <div class="row-actions">
-            <button
-              pButton
-              type="button"
-              size="small"
-              class="gtr-assign-button"
-              [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
-              title="Asignar"
-              (click)="facade.openAssignment(row)"
-            >
-              <span class="gtr-assign-button__action">
-                <i class="pi pi-send" aria-hidden="true"></i>
-                <span class="gtr-assign-button__label">Asignar</span>
-              </span>
-              <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignacionesHoyPreventa ?? 0) }}</span>
-            </button>
-            <button
-              pButton
-              type="button"
-              icon="pi pi-cog"
-              size="small"
-              severity="secondary"
-              title="Gestionar"
-              aria-label="Gestionar"
-              [disabled]="!facade.canMutateOperationalData()"
-              (click)="facade.openSnapshot(row)"
-            ></button>
-            <button
-              pButton
-              type="button"
-              icon="pi pi-history"
-              size="small"
-              severity="secondary"
-              [disabled]="facade.isLoadingEvents()"
-              title="Ver historial"
-              aria-label="Ver historial"
-              (click)="facade.openLeadHistory(row)"
-            ></button>
-            @if (row.tieneAlertaRegistrosDia) {
-              <span class="lead-warning" [title]="facade.warningTitle(row)" aria-label="Alerta de registros">
-                <span class="lead-warning__triangle" aria-hidden="true">
-                  <span>!</span>
+          <div class="actions-shell">
+            <div class="row-actions">
+              <button
+                pButton
+                type="button"
+                size="small"
+                class="gtr-assign-button"
+                [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+                title="Asignar"
+                (click)="facade.openAssignment(row)"
+              >
+                <span class="gtr-assign-button__action">
+                  <i class="pi pi-send" aria-hidden="true"></i>
+                  <span class="gtr-assign-button__label">Asignar</span>
                 </span>
-              </span>
-            }
+                <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignacionesHoyPreventa ?? 0) }}</span>
+              </button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-cog"
+                size="small"
+                severity="secondary"
+                title="Gestionar"
+                aria-label="Gestionar"
+                [disabled]="!facade.canMutateOperationalData()"
+                (click)="facade.openSnapshot(row)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-history"
+                size="small"
+                severity="secondary"
+                [disabled]="facade.isLoadingEvents()"
+                title="Ver historial"
+                aria-label="Ver historial"
+                (click)="facade.openLeadHistory(row)"
+              ></button>
+            </div>
+            <span class="lead-warning-slot">
+              @if (row.tieneAlertaRegistrosDia) {
+                <span class="lead-warning" [title]="facade.warningTitle(row)" aria-label="Alerta de registros">
+                  <span class="lead-warning__triangle" aria-hidden="true">
+                    <span>!</span>
+                  </span>
+                </span>
+              }
+            </span>
           </div>
         </td>
       </tr>
