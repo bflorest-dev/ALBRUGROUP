@@ -87,6 +87,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN FETCH l.datosPreventa dp
             LEFT JOIN FETCH l.plan pl
             LEFT JOIN FETCH pl.proveedor
+            LEFT JOIN FETCH l.contacto
             WHERE LOWER(l.lead) LIKE :patron
                OR LOWER(l.usermeta) LIKE :patron
                OR LOWER(COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot)) LIKE :patron
@@ -112,6 +113,18 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("lead") String lead,
             @Param("usermeta") String usermeta
     );
+
+    // Reubicación/intercambio: sincroniza el teléfono denormalizado (prefijo+lead) en TODOS los leads
+    // de un contacto (el usermeta no cambia en un intercambio de número).
+    @Modifying
+    @Query("UPDATE Lead l SET l.prefijo = :prefijo, l.lead = :lead WHERE l.contacto.id = :idContacto")
+    int sincronizarTelefonoContacto(
+            @Param("idContacto") Long idContacto,
+            @Param("prefijo") String prefijo,
+            @Param("lead") String lead
+    );
+
+    long countByContactoId(Long idContacto);
 
     @Query("""
             SELECT l
@@ -2843,9 +2856,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     );
 
     // Re-sincroniza id_equipo de TODOS los leads (con campaña mapeada) a su equipo actual según
-    // el mapping equipo_proveedor (campaña → proveedor → equipo). Idempotente y seguro de re-ejecutar:
-    // alinea también los que cambiaron de equipo al mover un proveedor. Los leads cuya campaña/proveedor
-    // no está mapeada a ningún equipo quedan sin tocar. Nativo + subconsulta correlacionada
+    // el mapping equipo_proveedor (campaña → proveedor → equipo). Idempotente y seguro de re-ejecutar.
+    // Si un proveedor está en varios equipos, la derivación por proveedor puede ser ambigua; para leads
+    // nuevos se prefiere el equipo único del usuario cuando existe. Los leads cuya campaña/proveedor no
+    // está mapeada a ningún equipo quedan sin tocar. Nativo + subconsulta correlacionada
     // (portable Postgres/H2). No afectado por @Filter.
     @Modifying
     @Query(value = """

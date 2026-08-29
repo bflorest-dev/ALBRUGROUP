@@ -45,6 +45,7 @@ export class BitacoraPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly searchControl = new FormControl('', { nonNullable: true });
+  protected readonly pickerControl = new FormControl('', { nonNullable: true });
   protected readonly theme = signal<'light' | 'dark'>('light');
   protected readonly actaAbierta = signal(false);
   protected readonly motivoControl = new FormControl('', { nonNullable: true });
@@ -75,6 +76,19 @@ export class BitacoraPageComponent implements OnInit {
     this.searchControl.valueChanges
       .pipe(debounceTime(320), takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => this.f.buscar(value));
+
+    this.pickerControl.valueChanges
+      .pipe(debounceTime(320), takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => this.f.buscarObjetivo(value));
+  }
+
+  protected abrirReestructurar(modo: 'swap' | 'move'): void {
+    this.pickerControl.reset('');
+    this.f.abrirReestructurar(modo);
+  }
+
+  protected sourceSeraHuerfano(): boolean {
+    return (this.f.cluster()?.oportunidades?.length ?? 0) <= 1;
   }
 
   protected buscarAhora(): void {

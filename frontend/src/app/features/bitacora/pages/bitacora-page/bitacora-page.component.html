@@ -150,6 +150,27 @@
         </div>
       </div>
 
+      @if (f.cluster()?.idContacto) {
+        <div class="contacto-actions">
+          <div class="ca-info">
+            <span class="ca-k">Contacto</span>
+            <span class="ca-v mono">{{ f.cluster()?.prefijo }} {{ f.cluster()?.lead }}</span>
+            @if (f.esMultiLead()) { <span class="ca-multi">{{ f.cluster()?.oportunidades?.length }} oportunidades</span> }
+          </div>
+          <div class="ca-btns">
+            <button type="button" class="mini-btn" (click)="abrirReestructurar('swap')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10 3 6l4-4M3 6h13a4 4 0 0 1 4 4M17 14l4 4-4 4M21 18H8a4 4 0 0 1-4-4"/></svg>
+              Intercambiar teléfono
+            </button>
+            <button type="button" class="mini-btn" (click)="abrirReestructurar('move')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              Mover a otro contacto
+            </button>
+          </div>
+        </div>
+      }
+      @if (f.reestructuraMsg(); as msg) { <div class="reestructura-ok">{{ msg }}</div> }
+
       <nav class="tabs">
         <button type="button" class="tab" [class.active]="f.tab() === 'datos'" (click)="setTab('datos')">Datos preventa</button>
         <button type="button" class="tab" [class.active]="f.tab() === 'direccion'" (click)="setTab('direccion')">Dirección</button>
@@ -170,9 +191,13 @@
           <section class="panel">
             <div [formGroup]="f.identidadForm">
               <div class="grouptitle">Identidad del contacto</div>
-              <div class="idnote">
+              <div class="idnote" [class.strong]="f.esMultiLead()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
-                <span>Corregir el teléfono o el usermeta afecta al <b>contacto completo</b>: se sincroniza en todas sus oportunidades. El teléfono no puede repetir el de otro contacto.</span>
+                @if (f.esMultiLead()) {
+                  <span>Este contacto tiene <b>{{ f.cluster()?.oportunidades?.length }} oportunidades</b>. Corregir el teléfono o el usermeta las afecta a <b>todas</b>. Si este lead en realidad pertenece a otra persona, usa <b>Mover a otro contacto</b> en vez de editar aquí.</span>
+                } @else {
+                  <span>Corregir el teléfono o el usermeta afecta al <b>contacto completo</b>: se sincroniza en todas sus oportunidades. El teléfono no puede repetir el de otro contacto.</span>
+                }
               </div>
               <div class="fgrid">
                 <div class="field" [class.dirty]="f.campoModificado('identidad','prefijo')">
@@ -422,6 +447,14 @@
               }
             </div>
           }
+          @if (f.identidadTocada() && f.esMultiLead()) {
+            <div class="dgt warn-dgt">⚠ El cambio de identidad afecta a estas oportunidades del contacto</div>
+            <div class="del-list">
+              @for (h of f.hermanas(); track h.id) {
+                <div class="del-item"><span class="acc">{{ h.etapa }}</span><span class="di">{{ h.numeroDocumentoTitular || 'Sin documento' }}@if (h.usermeta) { · &#64;{{ h.usermeta }} }</span><span class="when mono">{{ fechaHora(h.lastEntryAt) }}</span></div>
+              }
+            </div>
+          }
           <div class="reason">
             <label for="motivo">Motivo de la corrección <span class="opt">(opcional, queda en el acta)</span></label>
             <input id="motivo" [formControl]="motivoControl" placeholder="p. ej. DNI mal digitado en registro; se corrige con documento físico" />
@@ -431,6 +464,70 @@
           <span class="warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>Acción irreversible</span>
           <button type="button" class="btn ghost" (click)="cerrarActa()">Volver</button>
           <button type="button" class="btn primary" (click)="confirmarCorreccion()">Confirmar corrección</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Reestructurar contacto (intercambiar / mover) ── -->
+  @if (f.modoReestructurar() !== 'none' && f.cluster(); as cl) {
+    <div class="acta-scrim" (click)="f.cerrarReestructurar()">
+      <div class="acta reestructura" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <div class="ah">
+          <div class="k">{{ f.modoReestructurar() === 'swap' ? 'Intercambiar teléfono' : 'Mover a otro contacto' }}</div>
+          <h3>{{ f.modoReestructurar() === 'swap' ? 'Intercambia el número con otro contacto' : 'Reubica este lead a otro contacto' }}</h3>
+          <p>
+            @if (f.modoReestructurar() === 'swap') {
+              El teléfono de <b class="mono">{{ cl.prefijo }} {{ cl.lead }}</b> y el del contacto que elijas se intercambian entre sí. Cada lado queda con el número del otro.
+            } @else {
+              Este lead pasará a pertenecer al contacto que elijas (tomará su teléfono y usermeta). Su historial se mantiene.
+            }
+          </p>
+        </div>
+        <div class="abody">
+          @if (f.objetivo(); as obj) {
+            <div class="picker-selected">
+              <div class="ps-row"><span class="ps-k">Actual</span><span class="ps-v mono">{{ cl.prefijo }} {{ cl.lead }}</span></div>
+              <div class="ps-arrow">{{ f.modoReestructurar() === 'swap' ? '⇄' : '→' }}</div>
+              <div class="ps-row">
+                <span class="ps-k">{{ f.modoReestructurar() === 'swap' ? 'Intercambiar con' : 'Destino' }}</span>
+                <span class="ps-v mono">{{ obj.lead }}</span>
+                <span class="ps-sub">{{ obj.titularServicio || '—' }}</span>
+              </div>
+              <button type="button" class="link-btn" (click)="f.limpiarObjetivo()">Cambiar</button>
+            </div>
+            @if (f.modoReestructurar() === 'move' && sourceSeraHuerfano()) {
+              <div class="idnote strong">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+                <span>El contacto actual <b class="mono">{{ cl.prefijo }} {{ cl.lead }}</b> quedará sin oportunidades y <b>se eliminará</b>.</span>
+              </div>
+            }
+          } @else {
+            <div class="picker-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <input [formControl]="pickerControl" autocomplete="off" spellcheck="false" placeholder="Buscar el otro contacto por lead, documento, usermeta…" />
+              @if (f.pickerBuscando()) { <span class="spin"></span> }
+            </div>
+            <div class="picker-list">
+              @if (!f.pickerBuscando() && f.pickerResultados().length === 0 && pickerControl.value) {
+                <div class="picker-empty">Sin coincidencias (se excluye el contacto actual).</div>
+              }
+              @for (row of f.pickerResultados(); track row.idLead) {
+                <button type="button" class="picker-item" (click)="f.elegirObjetivo(row)">
+                  <span class="pi-lead mono">{{ row.lead }}</span>
+                  <span class="pi-tit">{{ row.titularServicio || 'Sin titular' }}</span>
+                  <span class="pi-sub mono">{{ row.numeroDocumento || '—' }}@if (row.usermeta) { · &#64;{{ row.usermeta }} }</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+        <div class="af">
+          <button type="button" class="btn ghost" (click)="f.cerrarReestructurar()">Cancelar</button>
+          <button type="button" class="btn primary" [disabled]="!f.objetivo() || f.procesandoReestructura()" (click)="f.confirmarReestructurar()">
+            @if (f.procesandoReestructura()) { <span class="spin light"></span> Procesando… }
+            @else { {{ f.modoReestructurar() === 'swap' ? 'Intercambiar' : (sourceSeraHuerfano() ? 'Mover y eliminar contacto' : 'Mover lead') }} }
+          </button>
         </div>
       </div>
     </div>

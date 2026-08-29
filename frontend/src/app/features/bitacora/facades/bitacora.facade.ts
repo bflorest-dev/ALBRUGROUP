@@ -13,6 +13,7 @@ import {
 import {
   BitacoraAccion,
   BitacoraBusquedaResponse,
+  BitacoraContactoCluster,
   BitacoraFieldChange,
   BitacoraIdentidadRequest
 } from '../models/bitacora.models';
@@ -89,6 +90,22 @@ export class BitacoraFacade {
   readonly guardadoOk = signal(false);
   readonly error = signal<string | null>(null);
 
+  // Contacto (identidad) del lead abierto + sus oportunidades (para advertencia multi-lead y pickers).
+  readonly cluster = signal<BitacoraContactoCluster | null>(null);
+  readonly esMultiLead = computed(() => (this.cluster()?.oportunidades?.length ?? 0) > 1);
+  readonly hermanas = computed(() => {
+    const idActual = this.detalle()?.id;
+    return (this.cluster()?.oportunidades ?? []).filter((o) => o.id !== idActual);
+  });
+
+  // Reestructuración (intercambiar teléfono / mover lead) desde el drawer.
+  readonly modoReestructurar = signal<'none' | 'swap' | 'move'>('none');
+  readonly pickerBuscando = signal(false);
+  readonly pickerResultados = signal<BitacoraBusquedaResponse[]>([]);
+  readonly objetivo = signal<BitacoraBusquedaResponse | null>(null);
+  readonly procesandoReestructura = signal(false);
+  readonly reestructuraMsg = signal<string | null>(null);
+
   readonly identidadForm: FormGroup = this.fb.group({
     prefijo: [''],
     lead: [''],
@@ -152,6 +169,7 @@ export class BitacoraFacade {
   ]);
   readonly fieldCount = computed(() => this.camposModificados().length);
   readonly evtCount = computed(() => this.marcadosEventos().length);
+  readonly identidadTocada = computed(() => this.grupoTieneCambios(this.identidadOriginal(), this.identidadValues()));
   readonly hayCambios = computed(() => this.fieldCount() > 0 || this.evtCount() > 0);
 
   private readonly equiposMap = computed(() => {
@@ -218,6 +236,9 @@ export class BitacoraFacade {
     this.detalle.set(null);
     this.guardadoOk.set(false);
     this.error.set(null);
+    this.modoReestructurar.set('none');
+    this.reestructuraMsg.set(null);
+    this.objetivo.set(null);
     this.limpiarStaged();
     this.service
       .obtenerDetalle(idLead)
@@ -230,10 +251,133 @@ export class BitacoraFacade {
         error: () => this.error.set('No se pudo cargar el expediente.')
       });
     this.recargarHistorial(idLead);
+    this.cargarCluster(idLead);
+  }
+
+  private cargarCluster(idLead: number): void {
+    this.cluster.set(null);
+    this.service.obtenerContacto(idLead).subscribe({
+      next: (cluster) => this.cluster.set(cluster),
+      error: () => this.cluster.set(null)
+    });
   }
 
   cerrarDrawer(): void {
     this.drawerAbierto.set(false);
+    this.modoReestructurar.set('none');
+  }
+
+  // ── Reestructuración de contactos ─────────────────────
+  abrirReestructurar(modo: 'swap' | 'move'): void {
+    this.modoReestructurar.set(modo);
+    this.pickerResultados.set([]);
+    this.objetivo.set(null);
+    this.reestructuraMsg.set(null);
+  }
+
+  cerrarReestructurar(): void {
+    this.modoReestructurar.set('none');
+    this.objetivo.set(null);
+  }
+
+  buscarObjetivo(termino: string): void {
+    const limpio = (termino ?? '').trim();
+    if (!limpio) {
+      this.pickerResultados.set([]);
+      return;
+    }
+    const idContactoActual = this.cluster()?.idContacto ?? null;
+    this.pickerBuscando.set(true);
+    this.service
+      .buscar(limpio)
+      .pipe(finalize(() => this.pickerBuscando.set(false)))
+      .subscribe({
+        // Solo contactos válidos y distintos del actual como destino/par.
+        next: (filas) =>
+          this.pickerResultados.set(
+            filas.filter((f) => f.idContacto != null && f.idContacto !== idContactoActual)
+          ),
+        error: () => this.pickerResultados.set([])
+      });
+  }
+
+  elegirObjetivo(fila: BitacoraBusquedaResponse): void {
+    this.objetivo.set(fila);
+  }
+
+  limpiarObjetivo(): void {
+    this.objetivo.set(null);
+  }
+
+  confirmarReestructurar(): void {
+    const modo = this.modoReestructurar();
+    const objetivo = this.objetivo();
+    const idContactoActual = this.cluster()?.idContacto ?? null;
+    const idLead = this.detalle()?.id;
+    if (modo === 'none' || !objetivo || objetivo.idContacto == null || !idLead) {
+      return;
+    }
+
+    this.procesandoReestructura.set(true);
+    this.error.set(null);
+    const op =
+      modo === 'swap'
+        ? this.reasignarSwap(idContactoActual, objetivo.idContacto, idLead)
+        : this.reasignarMove(idLead, objetivo.idContacto);
+    op();
+  }
+
+  private reasignarSwap(idContactoActual: number | null, idContactoObjetivo: number, idLead: number): () => void {
+    return () => {
+      if (idContactoActual == null) {
+        this.procesandoReestructura.set(false);
+        this.error.set('Este lead no tiene un contacto para intercambiar.');
+        return;
+      }
+      this.service
+        .intercambiarTelefono(idContactoActual, idContactoObjetivo)
+        .pipe(finalize(() => this.procesandoReestructura.set(false)))
+        .subscribe({
+          next: () => {
+            this.reestructuraMsg.set('Teléfonos intercambiados entre los dos contactos.');
+            this.modoReestructurar.set('none');
+            this.recargar(idLead);
+          },
+          error: () => this.error.set('No se pudo intercambiar el teléfono. Inténtalo de nuevo.')
+        });
+    };
+  }
+
+  private reasignarMove(idLead: number, idContactoDestino: number): () => void {
+    return () => {
+      this.service
+        .moverLead(idLead, idContactoDestino)
+        .pipe(finalize(() => this.procesandoReestructura.set(false)))
+        .subscribe({
+          next: (res) => {
+            this.reestructuraMsg.set(
+              res.huerfanoEliminado
+                ? 'Lead reubicado. El contacto de origen quedó vacío y se eliminó.'
+                : 'Lead reubicado al contacto seleccionado.'
+            );
+            this.modoReestructurar.set('none');
+            this.recargar(idLead);
+          },
+          error: () => this.error.set('No se pudo mover el lead. Inténtalo de nuevo.')
+        });
+    };
+  }
+
+  // Recarga detalle + historial + cluster del lead abierto tras una reestructuración.
+  private recargar(idLead: number): void {
+    this.service.obtenerDetalle(idLead).subscribe({
+      next: (detalle) => {
+        this.detalle.set(detalle);
+        this.patchForms(detalle);
+      }
+    });
+    this.recargarHistorial(idLead);
+    this.cargarCluster(idLead);
   }
 
   setTab(tab: BitacoraTab): void {

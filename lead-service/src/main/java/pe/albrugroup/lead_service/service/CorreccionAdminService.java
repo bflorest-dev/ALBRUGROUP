@@ -10,9 +10,11 @@ import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.request.LeadCorreccionRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
+import pe.albrugroup.lead_service.entity.response.ContactoClusterResponse;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadCorreccionBusquedaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.MoverContactoResultado;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.repository.EventoRepository;
@@ -55,6 +57,20 @@ public class CorreccionAdminService {
 
     public LeadDetalleResponse obtenerDetalle(Long idLead) {
         return leadService.obtenerDetalleParaCorreccion(idLead);
+    }
+
+    public ContactoClusterResponse obtenerContacto(Long idLead) {
+        return leadService.obtenerClusterContacto(idLead);
+    }
+
+    @Transactional
+    public void intercambiarTelefono(Long idContactoA, Long idContactoB) {
+        leadService.intercambiarTelefonoContactos(idContactoA, idContactoB);
+    }
+
+    @Transactional
+    public MoverContactoResultado moverLead(Long idLead, Long idContactoDestino) {
+        return leadService.moverLeadAContacto(idLead, idContactoDestino);
     }
 
     public PageResponse<EventoResponse> listarHistorial(
@@ -138,6 +154,7 @@ public class CorreccionAdminService {
                 .codigoSubtipificacionActual(lead.getCodigoSubtipificacion())
                 .idEquipo(lead.getIdEquipo())
                 .nombreProveedor(proveedor)
+                .idContacto(lead.getContacto() == null ? null : lead.getContacto().getId())
                 .build();
     }
 

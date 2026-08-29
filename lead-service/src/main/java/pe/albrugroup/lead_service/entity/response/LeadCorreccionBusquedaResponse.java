@@ -31,4 +31,7 @@ public class LeadCorreccionBusquedaResponse {
     private String codigoSubtipificacionActual;
     private Long idEquipo;
     private String nombreProveedor;
+    // Contacto (identidad) al que pertenece el lead: permite elegirlo como destino/par en las
+    // acciones de intercambiar teléfono o reubicar un lead.
+    private Long idContacto;
 }

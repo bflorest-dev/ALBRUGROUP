@@ -72,6 +72,8 @@ import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
 import pe.albrugroup.lead_service.entity.response.MisPreventaResponse;
 import pe.albrugroup.lead_service.entity.response.MisPreventasResumenResponse;
 import pe.albrugroup.lead_service.entity.response.NumeroLlamadaResponse;
+import pe.albrugroup.lead_service.entity.response.ContactoClusterResponse;
+import pe.albrugroup.lead_service.entity.response.MoverContactoResultado;
 import pe.albrugroup.lead_service.entity.response.OportunidadHermanaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
@@ -1494,6 +1496,104 @@ public class LeadService {
         lead.setPrefijo(nuevoPrefijo);
         lead.setLead(nuevoLead);
         lead.setUsermeta(nuevoUsermeta);
+    }
+
+    // Contacto (identidad) + sus oportunidades: alimenta la advertencia multi-lead y las vistas
+    // previas de intercambio/reubicación en la Bitácora.
+    public ContactoClusterResponse obtenerClusterContacto(Long idLead) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        Contacto contacto = lead.getContacto() == null
+                ? null
+                : contactoRepository.findById(lead.getContacto().getId()).orElse(null);
+        List<OportunidadHermanaResponse> oportunidades = contacto == null
+                ? List.of(toHermanaResponse(lead))
+                : leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(contacto.getId())
+                        .stream().map(this::toHermanaResponse).toList();
+        return new ContactoClusterResponse(
+                contacto == null ? null : contacto.getId(),
+                contacto == null ? lead.getPrefijo() : contacto.getPrefijo(),
+                contacto == null ? lead.getLead() : contacto.getLead(),
+                contacto == null ? lead.getUsermeta() : contacto.getUsermeta(),
+                contacto == null ? null : contacto.getNombreConocido(),
+                oportunidades
+        );
+    }
+
+    // (B) Intercambio atómico del teléfono entre dos contactos. Resuelve el caso "A y B tienen el
+    // teléfono cruzado" sin el placeholder temporal: la permuta va en un solo statement.
+    @Transactional
+    public void intercambiarTelefonoContactos(Long idContactoA, Long idContactoB) {
+        if (idContactoA == null || idContactoB == null || idContactoA.equals(idContactoB)) {
+            throw new BadRequestException("Debes elegir dos contactos distintos");
+        }
+        Contacto a = contactoRepository.findById(idContactoA)
+                .orElseThrow(() -> new NotFoundException(Contacto.class, idContactoA));
+        Contacto b = contactoRepository.findById(idContactoB)
+                .orElseThrow(() -> new NotFoundException(Contacto.class, idContactoB));
+        String aPrefijo = a.getPrefijo();
+        String aLead = a.getLead();
+        String bPrefijo = b.getPrefijo();
+        String bLead = b.getLead();
+
+        // Swap en 3 pasos con centinela NULL: la unicidad (prefijo,lead) se valida por fila, así que
+        // no se puede permutar en un solo statement. Liberar A → B toma el de A → A toma el de B.
+        contactoRepository.actualizarTelefono(idContactoA, aPrefijo, null);
+        contactoRepository.actualizarTelefono(idContactoB, aPrefijo, aLead);
+        contactoRepository.actualizarTelefono(idContactoA, bPrefijo, bLead);
+        // A queda con el teléfono de B y viceversa; sincronizamos los denormalizados de cada lado.
+        leadRepository.sincronizarTelefonoContacto(idContactoA, bPrefijo, bLead);
+        leadRepository.sincronizarTelefonoContacto(idContactoB, aPrefijo, aLead);
+
+        emitirCorreccionEnLeadsDeContacto(idContactoA, "Intercambio de telefono entre contactos");
+        emitirCorreccionEnLeadsDeContacto(idContactoB, "Intercambio de telefono entre contactos");
+    }
+
+    // (C) Reubica un lead hacia otro contacto (repunta id_contacto + resincroniza denormalizados). Si
+    // el contacto de origen queda sin leads, se elimina (huérfano). El historial viaja con el lead.
+    @Transactional
+    public MoverContactoResultado moverLeadAContacto(Long idLead, Long idContactoDestino) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        Contacto destino = contactoRepository.findById(idContactoDestino)
+                .orElseThrow(() -> new NotFoundException(Contacto.class, idContactoDestino));
+        Long idOrigen = lead.getContacto() == null ? null : lead.getContacto().getId();
+        if (idOrigen != null && idOrigen.equals(idContactoDestino)) {
+            throw new BadRequestException("El lead ya pertenece a ese contacto");
+        }
+
+        lead.setContacto(destino);
+        lead.setPrefijo(destino.getPrefijo());
+        lead.setLead(destino.getLead());
+        lead.setUsermeta(destino.getUsermeta());
+        lead.setLastEntryAt(OperationalDateTime.now());
+        leadRepository.save(lead);
+        emitirCorreccion(idLead, lead.getEtapa(), "Reubicado al contacto " + destino.getLead());
+
+        boolean huerfanoEliminado = false;
+        if (idOrigen != null && leadRepository.countByContactoId(idOrigen) == 0) {
+            contactoRepository.deleteById(idOrigen);
+            huerfanoEliminado = true;
+        }
+        return new MoverContactoResultado(idLead, idOrigen, idContactoDestino, huerfanoEliminado);
+    }
+
+    private void emitirCorreccionEnLeadsDeContacto(Long idContacto, String comentario) {
+        for (Lead item : leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(idContacto)) {
+            emitirCorreccion(item.getId(), item.getEtapa(), comentario);
+        }
+    }
+
+    private void emitirCorreccion(Long idLead, Etapa etapa, String comentario) {
+        eventoRepository.save(Evento.builder()
+                .idLead(idLead)
+                .idActor(currentUser.empleadoID())
+                .nombreActor(currentUser.nombreCompleto())
+                .rolActor(currentUser.rolPrincipal())
+                .accion(Accion.CORRECCION)
+                .etapa(etapa)
+                .comentario(comentario)
+                .build());
     }
 
     // ── Mis preventas (read-only) ─────────────────────────────────────────────

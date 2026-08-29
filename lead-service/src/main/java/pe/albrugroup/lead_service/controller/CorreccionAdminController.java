@@ -16,11 +16,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.request.IntercambiarTelefonoRequest;
 import pe.albrugroup.lead_service.entity.request.LeadCorreccionRequest;
+import pe.albrugroup.lead_service.entity.request.MoverContactoRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
+import pe.albrugroup.lead_service.entity.response.ContactoClusterResponse;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadCorreccionBusquedaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.MoverContactoResultado;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.service.CorreccionAdminService;
 
@@ -72,5 +76,31 @@ public class CorreccionAdminController {
     ) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(correccionAdminService.aplicarCorreccion(idLead, request));
+    }
+
+    // Contacto (identidad) + sus oportunidades: para la advertencia multi-lead y las vistas previas
+    // de intercambiar teléfono / reubicar lead.
+    @GetMapping("/{idLead}/contacto")
+    @PreAuthorize("hasAuthority('CORREGIR_LEAD_ADMIN')")
+    public ResponseEntity<ContactoClusterResponse> obtenerContacto(@PathVariable Long idLead) {
+        return ResponseEntity.ok(correccionAdminService.obtenerContacto(idLead));
+    }
+
+    // (B) Intercambio atómico de teléfono entre dos contactos.
+    @PostMapping("/contactos/intercambiar-telefono")
+    @PreAuthorize("hasAuthority('CORREGIR_LEAD_ADMIN')")
+    public ResponseEntity<Void> intercambiarTelefono(@Valid @RequestBody IntercambiarTelefonoRequest request) {
+        correccionAdminService.intercambiarTelefono(request.getIdContactoA(), request.getIdContactoB());
+        return ResponseEntity.noContent().build();
+    }
+
+    // (C) Reubica un lead a otro contacto (y elimina el origen si queda huérfano).
+    @PostMapping("/{idLead}/mover-contacto")
+    @PreAuthorize("hasAuthority('CORREGIR_LEAD_ADMIN')")
+    public ResponseEntity<MoverContactoResultado> moverContacto(
+            @PathVariable Long idLead,
+            @Valid @RequestBody MoverContactoRequest request
+    ) {
+        return ResponseEntity.ok(correccionAdminService.moverLead(idLead, request.getIdContactoDestino()));
     }
 }

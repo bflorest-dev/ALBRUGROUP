@@ -20,6 +20,37 @@ export interface BitacoraBusquedaResponse {
   codigoSubtipificacionActual?: string | null;
   idEquipo?: number | null;
   nombreProveedor?: string | null;
+  idContacto?: number | null;
+}
+
+/** Oportunidad (lead) del mismo contacto — espejo de OportunidadHermanaResponse. */
+export interface BitacoraOportunidadHermana {
+  id: number;
+  usermeta?: string | null;
+  numeroDocumentoTitular?: string | null;
+  estado?: string | null;
+  etapa?: Etapa | string | null;
+  nombreAsesorAsignado?: string | null;
+  nombrePlanSnapshot?: string | null;
+  lastEntryAt?: string | null;
+}
+
+/** Contacto (identidad) + sus oportunidades — espejo de ContactoClusterResponse. */
+export interface BitacoraContactoCluster {
+  idContacto?: number | null;
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
+  nombreConocido?: string | null;
+  oportunidades: BitacoraOportunidadHermana[];
+}
+
+/** Resultado de reubicar un lead — espejo de MoverContactoResultado. */
+export interface BitacoraMoverResultado {
+  idLead: number;
+  idContactoOrigen?: number | null;
+  idContactoDestino?: number | null;
+  huerfanoEliminado: boolean;
 }
 
 /** Corrección de identidad del contacto (teléfono + usermeta). Alcance CONTACTO: sincroniza hermanas. */
