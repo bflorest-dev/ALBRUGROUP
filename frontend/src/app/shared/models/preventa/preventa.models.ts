@@ -390,8 +390,8 @@ export interface LeadContextoLookupResponse {
   mensajeUsuario?: string | null;
 }
 
-// Catálogo de campos de captura cuya visibilidad/obligatoriedad varía por equipo (espejo del enum
-// CampoConfigurable del backend). Los campos núcleo no entran aquí: van siempre visibles/obligatorios.
+// Catalogo de campos de captura cuya visibilidad/obligatoriedad varia por proveedor/equipo (espejo
+// del enum CampoConfigurable del backend). Los campos nucleo no entran aqui: van siempre visibles.
 export type CampoCaptura =
   | 'NOMBRE_MADRE'
   | 'NOMBRE_PADRE'
@@ -469,8 +469,8 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   fechaProgramacion?: string | null;
   fechaRechazo?: string | null;
   horaProgramada?: string | null;
-  // Config de campos de captura resuelta por el backend según el equipo del lead (no inferida en el
-  // front): por cada campo configurable, si se muestra y si es obligatorio para cerrar la venta.
+  // Config de campos de captura resuelta por el backend: por cada campo configurable, si se muestra
+  // y si es obligatorio para cerrar la venta.
   camposConfig?: CampoConfigItem[] | null;
 }
 

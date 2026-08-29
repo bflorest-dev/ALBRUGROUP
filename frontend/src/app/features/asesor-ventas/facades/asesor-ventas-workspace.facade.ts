@@ -286,6 +286,7 @@ export class AsesorVentasWorkspaceFacade {
       if (providerConfig) {
         return providerConfig;
       }
+      return [];
     }
     return this.detail()?.camposConfig ?? [];
   });
@@ -1085,10 +1086,14 @@ export class AsesorVentasWorkspaceFacade {
     this.adicionales.set([]);
     this.ofertaForm.markAsDirty();
     if (idProveedor) {
-      await Promise.all([
-        this.refreshProviderAdditionals(idProveedor),
-        this.ensureProviderCamposConfig(idProveedor)
-      ]);
+      try {
+        await Promise.all([
+          this.refreshProviderAdditionals(idProveedor),
+          this.ensureProviderCamposConfig(idProveedor)
+        ]);
+      } catch (error) {
+        this.errorMessage.set(this.getErrorMessage(error, 'No pudimos actualizar los campos de este proveedor. Intenta elegirlo otra vez.'));
+      }
     }
   }
 

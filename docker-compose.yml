@@ -137,10 +137,14 @@ services:
       JWT_ISSUER: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
       JWT_EXPIRATION: ${JWT_EXPIRATION:-8h}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-12h}
+      AUTH_REDIS_HOST: redis
+      AUTH_REDIS_PORT: 6379
       AUTH_DOCS_GATEWAY_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
       AUTH_DOCS_PUBLIC_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
     depends_on:
       postgres-core:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://localhost:8081/actuator/health/readiness | grep '\"status\":\"UP\"' >/dev/null || exit 1"]

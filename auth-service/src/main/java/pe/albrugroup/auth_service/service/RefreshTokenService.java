@@ -87,6 +87,10 @@ public class RefreshTokenService {
                 });
     }
 
+    public int revokeActiveTokens(Usuario usuario) {
+        return refreshTokenRepository.revokeActiveByUsuario(usuario, Instant.now());
+    }
+
     private String generateOpaqueToken() {
         byte[] bytes = new byte[REFRESH_TOKEN_BYTES];
         secureRandom.nextBytes(bytes);

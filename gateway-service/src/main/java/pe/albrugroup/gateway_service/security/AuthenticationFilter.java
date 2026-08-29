@@ -24,6 +24,7 @@ public class AuthenticationFilter implements WebFilter {
 
     private final JwtUtil jwtUtil;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
+    private final SessionInvalidationService sessionInvalidationService;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -41,6 +42,7 @@ public class AuthenticationFilter implements WebFilter {
 
             String username = jwtUtil.extractUsername(token);
             Long empleadoId = jwtUtil.extractEmployeeId(token);
+            Long sessionIssuedAt = jwtUtil.extractSessionIssuedAt(token);
             String nombreCompleto = jwtUtil.extractNombreCompleto(token);
             List<String> roles = jwtUtil.extractRoles(token);
             List<String> permisos = jwtUtil.extractPermisos(token);
@@ -60,8 +62,15 @@ public class AuthenticationFilter implements WebFilter {
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(authenticatedUser, null, authorities);
 
-            return chain.filter(exchange)
-                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+            return sessionInvalidationService.isInvalidated(empleadoId, sessionIssuedAt)
+                    .flatMap(invalidated -> {
+                        if (Boolean.TRUE.equals(invalidated)) {
+                            log.warn("Sesion invalidada para empleado {}", empleadoId);
+                            return authenticationEntryPoint.writeJson(exchange, HttpStatus.UNAUTHORIZED, "Sesion invalidada");
+                        }
+                        return chain.filter(exchange)
+                                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+                    });
         } catch (Exception e) {
             log.error("Error validando JWT: {}", e.getMessage());
             return authenticationEntryPoint.writeJson(exchange, HttpStatus.UNAUTHORIZED, "No autenticado o token invalido");

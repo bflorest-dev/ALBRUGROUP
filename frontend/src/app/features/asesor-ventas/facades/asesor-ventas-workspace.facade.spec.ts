@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AttendanceFacade } from '../../../core/facades/attendance.facade';
 import { AsesorVentasWorkspaceStateService } from '../../../core/services/asesor-ventas-workspace-state.service';
@@ -167,5 +167,42 @@ describe('AsesorVentasWorkspaceFacade', () => {
     expect(facade.identidadEditorOpen()).toBe(true);
     expect(facade.errorMessage()).toBe('Para cerrar la venta, completa el numero de lead.');
     expect(preventaService['tipificarLead']).not.toHaveBeenCalled();
+  });
+
+  it('usa la matriz de campos del proveedor elegido en oferta comercial', async () => {
+    preventaService['listarCamposCapturaProveedor'].mockReturnValue(of([
+      { campo: 'DOC_TITULAR_CELULAR', tab: 'DATOS', descripcion: 'Documento del titular del celular', visible: true, requerido: true },
+      { campo: 'NOMBRE_TITULAR_CELULAR', tab: 'DATOS', descripcion: 'Nombre del titular del celular', visible: true, requerido: true },
+      { campo: 'NOMBRE_MADRE', tab: 'DATOS', descripcion: 'Nombre de la madre', visible: false, requerido: false },
+      { campo: 'NOMBRE_PADRE', tab: 'DATOS', descripcion: 'Nombre del padre', visible: false, requerido: false },
+      { campo: 'PLANO', tab: 'DIRECCION', descripcion: 'Plano', visible: false, requerido: false }
+    ]));
+    facade.detail.set({
+      id: 25202,
+      prefijo: '+51',
+      lead: '987654321',
+      camposConfig: [
+        { campo: 'DOC_TITULAR_CELULAR', tab: 'DATOS', descripcion: 'Documento del titular del celular', visible: false, requerido: false },
+        { campo: 'NOMBRE_TITULAR_CELULAR', tab: 'DATOS', descripcion: 'Nombre del titular del celular', visible: false, requerido: false }
+      ]
+    } as never);
+
+    await facade.onOfertaProviderChanged(1);
+
+    expect(preventaService['listarCamposCapturaProveedor']).toHaveBeenCalledWith(1);
+    expect(facade.camposVisibles().has('DOC_TITULAR_CELULAR')).toBe(true);
+    expect(facade.camposVisibles().has('NOMBRE_TITULAR_CELULAR')).toBe(true);
+    expect(facade.camposVisibles().has('NOMBRE_MADRE')).toBe(false);
+  });
+
+  it('muestra un mensaje del modal si no se pueden cargar los campos del proveedor', async () => {
+    preventaService['listarCamposCapturaProveedor'].mockReturnValue(throwError(() => ({
+      error: { message: 'No pudimos actualizar los campos de este proveedor. Intenta elegirlo otra vez.' }
+    })));
+
+    await facade.onOfertaProviderChanged(1);
+
+    expect(facade.camposVisibles().size).toBe(0);
+    expect(facade.errorMessage()).toBe('No pudimos actualizar los campos de este proveedor. Intenta elegirlo otra vez.');
   });
 });

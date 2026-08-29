@@ -46,6 +46,14 @@ public class JwtUtil {
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
+    public Long extractSessionIssuedAt(String token) {
+        Long sessionIssuedAt = extractClaim(token, claims -> claims.get("sessionIssuedAt", Long.class));
+        if (sessionIssuedAt != null) {
+            return sessionIssuedAt;
+        }
+        Date issuedAt = extractClaim(token, Claims::getIssuedAt);
+        return issuedAt == null ? null : issuedAt.getTime();
+    }
     public Long extractEmployeeId(String token) {
         return extractClaim(token, claims -> claims.get("empleadoId", Long.class));
     }

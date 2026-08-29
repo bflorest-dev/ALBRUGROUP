@@ -43,6 +43,7 @@ public class JWTUtil {
 
     public String generateToken(CustomUserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("sessionIssuedAt", System.currentTimeMillis());
         claims.put("empleadoId", userDetails.getEmpleadoId());
         claims.put("nombreCompleto", userDetails.getNombreCompleto());
 
@@ -103,6 +104,15 @@ public class JWTUtil {
 
     public Long extractEmpleadoId(String token) {
         return extractClaim(token, claims -> claims.get("empleadoId", Long.class));
+    }
+
+    public Long extractSessionIssuedAt(String token) {
+        Long sessionIssuedAt = extractClaim(token, claims -> claims.get("sessionIssuedAt", Long.class));
+        if (sessionIssuedAt != null) {
+            return sessionIssuedAt;
+        }
+        Date issuedAt = extractClaim(token, Claims::getIssuedAt);
+        return issuedAt == null ? null : issuedAt.getTime();
     }
 
     public Claims extractAllClaims(String token) {

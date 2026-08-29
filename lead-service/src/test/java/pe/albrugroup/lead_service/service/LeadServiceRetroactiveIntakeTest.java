@@ -15,10 +15,12 @@ import pe.albrugroup.lead_service.entity.DatosPreventa;
 import pe.albrugroup.lead_service.entity.Direccion;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.Plan;
+import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Tipificacion;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Base;
+import pe.albrugroup.lead_service.entity.enums.CampoConfigurable;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -31,6 +33,7 @@ import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
 import pe.albrugroup.lead_service.entity.request.LeadNumeroParaLlamarRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
+import pe.albrugroup.lead_service.entity.response.CampoConfigResponse;
 import pe.albrugroup.lead_service.entity.response.NumeroLlamadaResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.ConflictException;
@@ -569,6 +572,40 @@ class LeadServiceRetroactiveIntakeTest {
     }
 
     @Test
+    void tipificarPreventaCompletaConPlanWinExigeTitularCelularDelProveedorOfrecido() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.setPlan(Plan.builder()
+                .id(5L)
+                .proveedor(Proveedor.builder().id(1L).nombre("WIN").build())
+                .build());
+        LeadTipificacionRequest request = cierrePreventaRequest();
+        Tipificacion tipificacion = tipificacionPreventaCompleta();
+        Subtipificacion subtipificacion = subtipificacionCierrePreventa(tipificacion);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
+        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+                Etapa.PREVENTA,
+                10L,
+                "PREVENTA_COMPLETA"
+        )).thenReturn(Optional.of(tipificacion));
+        when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
+                80L,
+                "VENTA_CERRADA"
+        )).thenReturn(Optional.of(subtipificacion));
+        when(equipoCampoService.resolverConfigPorProveedorVisible(1L)).thenReturn(List.of(
+                campoConfig(CampoConfigurable.DOC_TITULAR_CELULAR, true, true),
+                campoConfig(CampoConfigurable.NOMBRE_TITULAR_CELULAR, true, true)
+        ));
+
+        assertThatThrownBy(() -> leadService.tipificarLead(25202L, request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Falta numeroDocumentoTitularCelularRegistro");
+
+        verify(leadRepository, never()).save(any());
+    }
+
+    @Test
     void aceptaLosLimitesDeHoraYRechazaValoresFueraDelRango() {
         assertThat(leadService.calcularRegistroRetroactivo(LocalDate.of(2026, 6, 10), LocalTime.of(18, 0)))
                 .isNotNull();
@@ -640,6 +677,16 @@ class LeadServiceRetroactiveIntakeTest {
         subtipificacion.setActivo(true);
         subtipificacion.setComportamientos(Set.of(ComportamientoTipificacion.ES_CIERRE_PREVENTA));
         return subtipificacion;
+    }
+
+    private CampoConfigResponse campoConfig(CampoConfigurable campo, boolean visible, boolean requerido) {
+        return CampoConfigResponse.builder()
+                .campo(campo)
+                .tab(campo.getTab())
+                .descripcion(campo.getDescripcion())
+                .visible(visible)
+                .requerido(requerido)
+                .build();
     }
 
     @Test

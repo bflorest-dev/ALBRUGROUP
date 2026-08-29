@@ -5,10 +5,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.entity.EquipoProveedor;
 import pe.albrugroup.lead_service.entity.EquipoCampo;
+import pe.albrugroup.lead_service.entity.ProveedorCampo;
 import pe.albrugroup.lead_service.entity.enums.CampoConfigurable;
 import pe.albrugroup.lead_service.entity.response.CampoConfigResponse;
 import pe.albrugroup.lead_service.repository.EquipoCampoRepository;
 import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
+import pe.albrugroup.lead_service.repository.ProveedorCampoRepository;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +33,7 @@ public class EquipoCampoService {
     private final EquipoCampoRepository equipoCampoRepository;
     private final EquipoProveedorRepository equipoProveedorRepository;
     private final EquipoProveedorService equipoProveedorService;
+    private final ProveedorCampoRepository proveedorCampoRepository;
 
     /** Config completa del equipo: una entrada por cada campo del catálogo (con o sin fila guardada). */
     @Transactional(readOnly = true)
@@ -40,9 +43,30 @@ public class EquipoCampoService {
                 : equipoCampoRepository.findByIdEquipo(idEquipo).stream()
                         .collect(Collectors.toMap(EquipoCampo::getCampo, Function.identity(), (a, b) -> a));
 
+        return resolverConfigEquipo(guardados);
+    }
+
+    private List<CampoConfigResponse> resolverConfigEquipo(Map<CampoConfigurable, EquipoCampo> guardados) {
         return Arrays.stream(CampoConfigurable.values())
                 .map(campo -> {
                     EquipoCampo guardado = guardados.get(campo);
+                    boolean visible = guardado != null && guardado.isVisible();
+                    boolean requerido = guardado != null && guardado.isRequerido();
+                    return CampoConfigResponse.builder()
+                            .campo(campo)
+                            .tab(campo.getTab())
+                            .descripcion(campo.getDescripcion())
+                            .visible(visible)
+                            .requerido(requerido)
+                            .build();
+                })
+                .toList();
+    }
+
+    private List<CampoConfigResponse> resolverConfigProveedor(Map<CampoConfigurable, ProveedorCampo> guardados) {
+        return Arrays.stream(CampoConfigurable.values())
+                .map(campo -> {
+                    ProveedorCampo guardado = guardados.get(campo);
                     boolean visible = guardado != null && guardado.isVisible();
                     boolean requerido = guardado != null && guardado.isRequerido();
                     return CampoConfigResponse.builder()
@@ -66,6 +90,12 @@ public class EquipoCampoService {
         Set<Long> visibles = equipoProveedorService.proveedorIdsVisibles();
         if (idProveedor == null || (visibles != null && !visibles.contains(idProveedor))) {
             return resolverConfig(null);
+        }
+        List<ProveedorCampo> proveedorCampos = proveedorCampoRepository.findByProveedorId(idProveedor);
+        if (!proveedorCampos.isEmpty()) {
+            Map<CampoConfigurable, ProveedorCampo> guardados = proveedorCampos.stream()
+                    .collect(Collectors.toMap(ProveedorCampo::getCampo, Function.identity(), (a, b) -> a));
+            return resolverConfigProveedor(guardados);
         }
         return equipoProveedorRepository.findFirstByProveedorId(idProveedor)
                 .map(EquipoProveedor::getIdEquipo)

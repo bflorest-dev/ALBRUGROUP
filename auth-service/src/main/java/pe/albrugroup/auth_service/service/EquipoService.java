@@ -36,6 +36,8 @@ public class EquipoService implements IEquipo {
 
     private final EquipoRepository equipoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final RefreshTokenService refreshTokenService;
+    private final SessionInvalidationService sessionInvalidationService;
 
     // Roles operativos: su acceso a datos se particiona por equipo. Por defecto pertenecen a
     // exactamente un equipo (salvo los listados en ROLES_MULTIEQUIPO). ADMIN/COMMUNITY/MONITOR no
@@ -153,6 +155,10 @@ public class EquipoService implements IEquipo {
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado por EmpleadoID", empleadoId));
 
         Set<Long> idsSolicitados = equipoIds == null ? Set.of() : equipoIds;
+        Set<Long> idsActuales = usuario.getEquipos().stream()
+                .map(Equipo::getId)
+                .collect(Collectors.toSet());
+        boolean cambioMembresia = !idsActuales.equals(idsSolicitados);
 
         validarMembresia(usuario, idsSolicitados);
 
@@ -166,7 +172,14 @@ public class EquipoService implements IEquipo {
 
         usuario.setEquipos(equipos);
         Usuario guardado = usuarioRepository.save(usuario);
-        log.info("Equipos asignados a empleado {}: {}", empleadoId, idsSolicitados);
+        if (cambioMembresia) {
+            int tokensRevocados = refreshTokenService.revokeActiveTokens(guardado);
+            sessionInvalidationService.invalidateAfterCommit(empleadoId);
+            log.info("Equipos asignados a empleado {}: {} ({} refresh tokens revocados)",
+                    empleadoId, idsSolicitados, tokensRevocados);
+        } else {
+            log.info("Equipos sin cambios para empleado {}: {}", empleadoId, idsSolicitados);
+        }
         return Mapper.toResponse(guardado);
     }
 

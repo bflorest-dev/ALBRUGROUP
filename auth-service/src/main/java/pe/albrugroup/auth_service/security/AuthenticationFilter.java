@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import pe.albrugroup.auth_service.service.SessionInvalidationService;
 
 import java.io.IOException;
 
@@ -21,6 +22,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
     private final JWTUtil jwtUtil;
     private final CustomDetailsService userDetailsService;
+    private final SessionInvalidationService sessionInvalidationService;
 
 
     @Override
@@ -42,7 +44,10 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
           if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
               UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-              if(jwtUtil.validateToken(jwt, userDetails.getUsername())) {
+              Long empleadoId = jwtUtil.extractEmpleadoId(jwt);
+              Long sessionIssuedAt = jwtUtil.extractSessionIssuedAt(jwt);
+              if(jwtUtil.validateToken(jwt, userDetails.getUsername())
+                      && !sessionInvalidationService.isInvalidated(empleadoId, sessionIssuedAt)) {
                   UsernamePasswordAuthenticationToken authToken =
                           new UsernamePasswordAuthenticationToken(
                                   userDetails,
