@@ -48,6 +48,7 @@ public class EquipoProveedorService {
         // Reemplaza solo el set de este equipo. Un mismo proveedor puede estar asignado a varios
         // equipos para que cada equipo vea sus campañas, planes y promociones.
         equipoProveedorRepository.deleteByIdEquipo(idEquipo);
+        equipoProveedorRepository.flush();
         proveedores.forEach(proveedor -> equipoProveedorRepository.save(
                 EquipoProveedor.builder()
                         .idEquipo(idEquipo)
