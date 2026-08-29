@@ -170,6 +170,7 @@ public class DataLoader {
         savePermiso("DELETE_LEADS", "Puede eliminar integralmente leads", "LEAD", "DELETE");
         savePermiso("CORREGIR_CAMPANA_LEAD", "Puede corregir la campana asociada a un lead y sus eventos", "LEAD", "UPDATE_CAMPAIGN");
         savePermiso("CORREGIR_MERITO_PREVENTA", "Puede corregir el asesor de merito de una preventa", "LEAD_PREVENTA_MERITO", "CORRECT");
+        savePermiso("CORREGIR_LEAD_ADMIN", "Puede corregir integralmente un lead: editar datos y eliminar eventos", "LEAD", "CORRECCION");
         savePermiso("ASSIGN_LEADS", "Puede asignar leads", "LEAD", "ASSIGN");
         savePermiso("READ_LEADS_ASESOR", "Puede ver bandeja y detalle de leads del asesor", "LEAD", "READ");
         savePermiso("UPDATE_LEADS_ASESOR", "Puede actualizar datos de gestion del lead", "LEAD", "UPDATE");

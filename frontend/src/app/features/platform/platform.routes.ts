@@ -18,6 +18,7 @@ import {
   AdminTipificacionesPageComponent,
   canDeactivateAdminTipificaciones
 } from '../admin/pages/admin-tipificaciones-page/admin-tipificaciones-page.component';
+import { BitacoraPageComponent } from '../bitacora/pages/bitacora-page/bitacora-page.component';
 import { AsesorVentasWorkspacePageComponent } from '../asesor-ventas/pages/asesor-ventas-workspace-page/asesor-ventas-workspace-page.component';
 import { SupervisorVentasMonitoreoPageComponent } from '../supervisor-ventas/pages/supervisor-ventas-monitoreo-page/supervisor-ventas-monitoreo-page.component';
 import { SupervisorVentasReportePageComponent } from '../supervisor-ventas/pages/supervisor-ventas-reporte-page/supervisor-ventas-reporte-page.component';
@@ -88,6 +89,14 @@ export const PLATFORM_ROUTES: Routes = [
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],
+    }
+  },
+  {
+    path: 'admin/bitacora',
+    component: BitacoraPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
     }
   },
   {

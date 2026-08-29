@@ -11,5 +11,9 @@ public enum Accion {
     ACTUALIZACION_DATOS_PREVENTA,
     ACTUALIZACION_DIRECCION,
     ACTUALIZACION_OFERTA_COMERCIAL,
-    VALIDACION
+    VALIDACION,
+    // Correccion integral hecha por un ADMIN sobre el lead (edicion de datos y/o eliminacion de
+    // eventos). Se emite un unico evento por cada gestion completa de correccion y no es eliminable:
+    // deja constancia de que, a partir de ese punto, la integridad del lead pudo quedar comprometida.
+    CORRECCION
 }

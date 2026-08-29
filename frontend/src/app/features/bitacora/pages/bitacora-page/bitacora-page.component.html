@@ -1,0 +1,413 @@
+<div class="bitacora" [attr.data-bit-theme]="theme()">
+  <h2 class="sr-only">Bitácora de leads: buscar cualquier expediente, revisar su historial y corregir sus datos.</h2>
+
+  <!-- ── Cabecera ─────────────────────────────────────── -->
+  <header class="phead">
+    <div>
+      <div class="eyebrow">Administración · Integridad de leads</div>
+      <h1>Bitácora</h1>
+      <p>Encuentra cualquier lead, entiende dónde y cómo está, y corrige lo que se registró mal. Cada gestión queda sellada con un evento de corrección irreversible.</p>
+    </div>
+    <button type="button" class="theme-toggle" (click)="toggleTheme()">
+      @if (theme() === 'dark') {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        <span>Oscuro</span>
+      } @else {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <span>Claro</span>
+      }
+    </button>
+  </header>
+
+  <!-- ── Buscador ─────────────────────────────────────── -->
+  <div class="searchwrap">
+    <div class="search">
+      <span class="sicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+      <input
+        type="text"
+        [formControl]="searchControl"
+        (keydown.enter)="buscarAhora()"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Lead, usermeta, documento, celular o titular…"
+      />
+      @if (f.buscando()) {
+        <span class="spin" aria-label="Buscando"></span>
+      }
+    </div>
+    <div class="searchmeta">
+      @if (f.busquedaHecha()) {
+        <span><b>{{ f.resultados().length }}</b> {{ f.resultados().length === 1 ? 'expediente' : 'expedientes' }}</span>
+        <span class="dot"></span>
+      }
+      <span>búsqueda total en lead · usermeta · documento · celular · titular</span>
+      <span class="dot"></span>
+      <span class="scope-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 8 8 11 4.6-3 8-6 8-11V5Z"/></svg>
+        visibilidad total (ADMIN)
+      </span>
+    </div>
+  </div>
+
+  <!-- ── Resultados ───────────────────────────────────── -->
+  <div class="recordswrap">
+    @if (!f.busquedaHecha()) {
+      <div class="placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <p>Escribe un dato del lead para empezar. Busca por número, usermeta, documento, celular o nombre del titular.</p>
+      </div>
+    } @else if (f.resultados().length === 0) {
+      <div class="placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M9 15.5a4 4 0 0 1 6 0"/></svg>
+        <p>Ningún expediente coincide con «{{ f.termino() }}». Prueba con otro dato.</p>
+      </div>
+    } @else {
+      <div class="tablecard">
+        <div class="tablescroll">
+          <table class="records">
+            <thead>
+              <tr>
+                <th>Lead / Usermeta</th><th>Titular del servicio</th><th>Documento</th><th>Celular</th>
+                <th>Prov.</th><th>Etapa</th><th>Tipificación</th><th>Equipo</th><th>Creado</th><th>Última gestión</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of f.resultados(); track row.idLead) {
+                <tr (click)="abrir(row)" [class.active]="f.detalle()?.id === row.idLead">
+                  <td>
+                    <div class="cell-lead mono">{{ row.lead || '—' }}</div>
+                    @if (row.usermeta) { <div class="sub mono">&#64;{{ row.usermeta }}</div> }
+                  </td>
+                  <td class="titular">{{ row.titularServicio || '—' }}</td>
+                  <td class="mono muted">{{ row.numeroDocumento || '—' }}</td>
+                  <td class="mono muted">{{ row.celular || '—' }}</td>
+                  <td>
+                    @if (logo(row.nombreProveedor); as src) {
+                      <span class="prov img"><img [src]="src" [alt]="row.nombreProveedor || ''" /></span>
+                    } @else {
+                      <span class="prov" [class]="provClase(row.nombreProveedor)">{{ monograma(row.nombreProveedor) }}</span>
+                    }
+                  </td>
+                  <td>
+                    @if (row.etapa) {
+                      <span class="chip" [class]="etapaClase(row.etapa)">{{ row.etapa }}</span>
+                    } @else { <span class="muted">—</span> }
+                  </td>
+                  <td>
+                    <div class="tip">
+                      {{ row.codigoTipificacionActual || 'Sin tipificar' }}
+                      @if (row.codigoSubtipificacionActual) { <span class="subtip">· {{ row.codigoSubtipificacionActual }}</span> }
+                    </div>
+                  </td>
+                  <td class="equipo">{{ f.nombreEquipo(row.idEquipo) }}</td>
+                  <td class="mono muted">{{ fecha(row.createdAt) }}</td>
+                  <td class="mono muted">{{ fechaHora(row.lastEntryAt) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- ── Drawer / expediente ──────────────────────────── -->
+  <div class="scrim" [class.show]="f.drawerAbierto()" (click)="f.cerrarDrawer()"></div>
+
+  <aside class="drawer" [class.show]="f.drawerAbierto()" aria-label="Expediente del lead">
+    @if (f.detalle(); as d) {
+      <div class="dhead">
+        <div class="top">
+          <div>
+            <div class="idline">
+              <span class="lead mono">{{ d.lead || '—' }}</span>
+              @if (logo(d.nombreProveedorPlan || d.nombreProveedorCampana || d.nombreProveedorEquipo); as src) {
+                <span class="prov img"><img [src]="src" alt="" /></span>
+              } @else {
+                <span class="prov" [class]="provClase(d.nombreProveedorPlan || d.nombreProveedorEquipo)">{{ monograma(d.nombreProveedorPlan || d.nombreProveedorEquipo) }}</span>
+              }
+              @if (d.etapa) { <span class="chip" [class]="etapaClase(d.etapa)">{{ d.etapa }}</span> }
+            </div>
+            @if (d.usermeta) { <div class="um mono">&#64;{{ d.usermeta }}</div> }
+          </div>
+          <button type="button" class="dclose" (click)="f.cerrarDrawer()" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="dmeta">
+          <div class="m"><span class="k">Titular</span><span class="v">{{ d.nombreTitular || '—' }}</span></div>
+          <div class="m"><span class="k">Asignación</span><span class="v mono">{{ fecha(d.fechaAsignacion) }}</span></div>
+          <div class="m"><span class="k">Última gestión</span><span class="v mono">{{ fechaHora(d.lastEntryAt) }}</span></div>
+          <div class="m"><span class="k">Asesor asignado</span><span class="v">{{ d.nombreAsesorAsignado || '—' }}</span></div>
+        </div>
+      </div>
+
+      <div class="integrity">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 2 4 5v6c0 5 3.4 8 8 11 4.6-3 8-6 8-11V5Z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
+        <div>
+          <div class="t">Corrección de expediente</div>
+          <div class="di">Estás editando con visibilidad total. Al guardar, el lead quedará marcado con un evento de corrección permanente.</div>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <button type="button" class="tab" [class.active]="f.tab() === 'datos'" (click)="setTab('datos')">Datos preventa</button>
+        <button type="button" class="tab" [class.active]="f.tab() === 'direccion'" (click)="setTab('direccion')">Dirección</button>
+        <button type="button" class="tab" [class.active]="f.tab() === 'oferta'" (click)="setTab('oferta')">Oferta</button>
+        <button type="button" class="tab" [class.active]="f.tab() === 'historial'" (click)="setTab('historial')">
+          Historial
+          @if (f.evtCount() > 0) { <span class="badge">{{ f.evtCount() }}</span> }
+        </button>
+      </nav>
+
+      <div class="dbody">
+        @if (f.cargandoDetalle()) {
+          <div class="loading">Cargando expediente…</div>
+        }
+
+        <!-- DATOS -->
+        @if (f.tab() === 'datos') {
+          <section class="panel" [formGroup]="f.datosForm">
+            <div class="grouptitle">Titular del servicio</div>
+            <div class="fgrid">
+              <div class="field" [class.dirty]="f.campoModificado('datos','tipoDocumento')">
+                <label>Tipo de documento</label>
+                <select formControlName="tipoDocumento">
+                  @for (opt of tipoDocumentoOpts(); track opt) { <option [value]="opt">{{ opt }}</option> }
+                </select>
+              </div>
+              <div class="field" [class.dirty]="f.campoModificado('datos','numeroDocumentoTitularServicio')">
+                <label>N.º documento</label>
+                <input class="mono" formControlName="numeroDocumentoTitularServicio" />
+                @if (f.campoModificado('datos','numeroDocumentoTitularServicio')) { <span class="was">antes <s>{{ f.valorOriginal('datos','numeroDocumentoTitularServicio') || '—' }}</s></span> }
+              </div>
+              <div class="field col2" [class.dirty]="f.campoModificado('datos','nombreTitularServicio')">
+                <label>Nombre del titular</label>
+                <input formControlName="nombreTitularServicio" />
+                @if (f.campoModificado('datos','nombreTitularServicio')) { <span class="was">antes <s>{{ f.valorOriginal('datos','nombreTitularServicio') || '—' }}</s></span> }
+              </div>
+              <div class="field" [class.dirty]="f.campoModificado('datos','celularRegistro')">
+                <label>Celular registro</label>
+                <input class="mono" formControlName="celularRegistro" />
+              </div>
+              <div class="field" [class.dirty]="f.campoModificado('datos','celularReferencia')">
+                <label>Celular referencia</label>
+                <input class="mono" formControlName="celularReferencia" />
+              </div>
+              <div class="field col2" [class.dirty]="f.campoModificado('datos','correo')">
+                <label>Correo</label>
+                <input formControlName="correo" />
+              </div>
+              <div class="field col2" [class.dirty]="f.campoModificado('datos','ubigeoNacimiento')">
+                <label>Ubigeo de nacimiento</label>
+                <input class="mono" formControlName="ubigeoNacimiento" />
+              </div>
+            </div>
+
+            <div class="grouptitle">Titular del celular · madre / padre</div>
+            <div class="fgrid">
+              <div class="field" [class.dirty]="f.campoModificado('datos','numeroDocumentoTitularCelularRegistro')">
+                <label>Doc. titular del celular</label>
+                <input class="mono" formControlName="numeroDocumentoTitularCelularRegistro" />
+              </div>
+              <div class="field" [class.dirty]="f.campoModificado('datos','nombreTitularCelularRegistro')">
+                <label>Nombre titular del celular</label>
+                <input formControlName="nombreTitularCelularRegistro" />
+              </div>
+              <div class="field" [class.dirty]="f.campoModificado('datos','nombreMadre')">
+                <label>Nombre de la madre</label>
+                <input formControlName="nombreMadre" />
+              </div>
+              <div class="field" [class.dirty]="f.campoModificado('datos','nombrePadre')">
+                <label>Nombre del padre</label>
+                <input formControlName="nombrePadre" />
+              </div>
+            </div>
+          </section>
+        }
+
+        <!-- DIRECCION -->
+        @if (f.tab() === 'direccion') {
+          <section class="panel" [formGroup]="f.direccionForm">
+            <div class="grouptitle">Domicilio de instalación</div>
+            <div class="fgrid">
+              <div class="field col2" [class.dirty]="f.campoModificado('direccion','ubigeoDomicilio')">
+                <label>Ubigeo domicilio</label>
+                <input class="mono" formControlName="ubigeoDomicilio" />
+                @if (d.distritoDomicilio) { <span class="hint">{{ d.distritoDomicilio }}, {{ d.provinciaDomicilio }} · {{ d.departamentoDomicilio }}</span> }
+              </div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','tipoDomicilio')">
+                <label>Tipo de domicilio</label>
+                <select formControlName="tipoDomicilio">
+                  <option value="">—</option>
+                  @for (opt of tipoDomicilioOpts(); track opt) { <option [value]="opt">{{ opt }}</option> }
+                </select>
+              </div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','tipoVia')">
+                <label>Tipo de vía</label>
+                <select formControlName="tipoVia">
+                  <option value="">—</option>
+                  @for (opt of tipoViaOpts(); track opt) { <option [value]="opt">{{ opt }}</option> }
+                </select>
+              </div>
+              <div class="field col2" [class.dirty]="f.campoModificado('direccion','via')">
+                <label>Vía</label>
+                <input formControlName="via" />
+              </div>
+              <div class="field col2" [class.dirty]="f.campoModificado('direccion','direccion')">
+                <label>Dirección</label>
+                <input formControlName="direccion" />
+                @if (f.campoModificado('direccion','direccion')) { <span class="was">antes <s>{{ f.valorOriginal('direccion','direccion') || '—' }}</s></span> }
+              </div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','numero')"><label>Número</label><input class="mono" formControlName="numero" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','manzana')"><label>Manzana</label><input class="mono" formControlName="manzana" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','lote')"><label>Lote</label><input class="mono" formControlName="lote" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','interior')"><label>Interior</label><input class="mono" formControlName="interior" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','piso')"><label>Piso</label><input class="mono" formControlName="piso" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','urbanizacion')"><label>Urbanización</label><input formControlName="urbanizacion" /></div>
+              <div class="field col2" [class.dirty]="f.campoModificado('direccion','referencia')"><label>Referencia</label><input formControlName="referencia" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','nombreEdificio')"><label>Edificio</label><input formControlName="nombreEdificio" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','nombreCondominio')"><label>Condominio</label><input formControlName="nombreCondominio" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','latitud')"><label>Latitud</label><input class="mono" formControlName="latitud" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','longitud')"><label>Longitud</label><input class="mono" formControlName="longitud" /></div>
+              <div class="field col2" [class.dirty]="f.campoModificado('direccion','plano')"><label>Plano</label><input formControlName="plano" /></div>
+            </div>
+          </section>
+        }
+
+        <!-- OFERTA (solo lectura en esta iteración) -->
+        @if (f.tab() === 'oferta') {
+          <section class="panel">
+            <div class="grouptitle">Oferta comercial</div>
+            <div class="offer">
+              <div class="offerrow"><span class="l">Plan</span><span class="r">{{ d.nombrePlan || '—' }}</span></div>
+              <div class="offerrow"><span class="l">Proveedor</span><span class="r">{{ d.nombreProveedorPlan || '—' }}</span></div>
+              <div class="offerrow"><span class="l">Promoción interna</span><span class="r">{{ d.nombrePromocionInterna || '—' }}</span></div>
+              @if (d.adicionales?.length) {
+                <div class="offerrow"><span class="l">Adicionales</span><span class="r">{{ nombresAdicionales(d) }}</span></div>
+              }
+              <div class="offerrow"><span class="l">Día de corte</span><span class="r mono">{{ d.diaCorteFacturacion ?? '—' }}</span></div>
+              <div class="offerrow"><span class="l">Permanencia</span><span class="r mono">{{ d.mesesPermanenciaSnapshot ? d.mesesPermanenciaSnapshot + ' meses' : '—' }}</span></div>
+              <div class="offerrow total"><span class="l">Precio final</span><span class="r mono">{{ soles(d.precioFinal) }}</span></div>
+            </div>
+            <p class="oferta-note">La edición de la oferta comercial (plan, promoción y adicionales) llega en la siguiente iteración. Por ahora, Datos preventa, Dirección y la depuración de eventos ya son corregibles.</p>
+          </section>
+        }
+
+        <!-- HISTORIAL -->
+        @if (f.tab() === 'historial') {
+          <section class="panel">
+            <div class="hfilter">
+              @for (chip of filtros; track chip.label) {
+                <button type="button" class="fchip" [class.on]="f.filtroAccion() === chip.accion" (click)="setFiltro(chip.accion)">{{ chip.label }}</button>
+              }
+            </div>
+
+            @if (f.cargandoHistorial()) {
+              <div class="loading">Cargando historial…</div>
+            } @else if (f.eventos().length === 0) {
+              <div class="placeholder small"><p>No hay eventos de este tipo en el expediente.</p></div>
+            } @else {
+              <div class="timeline">
+                @for (ev of f.eventos(); track ev.id) {
+                  <div class="ev" [class]="accionMeta(ev.accion).cls" [class.marked]="f.estaMarcado(ev.id)">
+                    <div class="ehead">
+                      <span class="acc">{{ accionMeta(ev.accion).label }}</span>
+                      <span class="when mono">{{ fechaHora(ev.createdAt) }}</span>
+                    </div>
+                    <div class="body">
+                      <span class="t2">{{ eventoTitulo(ev) }}</span>
+                      @if (eventoDetalle(ev)) { <span class="cmt"> — {{ eventoDetalle(ev) }}</span> }
+                    </div>
+                    @if (ev.nombreActor) {
+                      <div class="actor">
+                        @if (ev.rolActor) { <span class="role">{{ ev.rolActor }}</span> }
+                        {{ ev.nombreActor }}
+                      </div>
+                    }
+                    @if (esCorreccion(ev)) {
+                      <span class="locked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>no eliminable</span>
+                    } @else {
+                      <button type="button" class="del" (click)="f.toggleEliminarEvento(ev)">
+                        @if (f.estaMarcado(ev.id)) {
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l6-6M15 14L9 8"/></svg> Deshacer
+                        } @else {
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg> Eliminar
+                        }
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </section>
+        }
+      </div>
+
+      <!-- Barra de corrección en curso -->
+      <div class="staged" [class.empty]="!f.hayCambios()">
+        @if (f.guardadoOk() && !f.hayCambios()) {
+          <div class="tally"><span class="ok-dot"></span><div class="txt"><span class="lab ok">Corrección aplicada</span><span class="cnt"> — expediente sellado con evento CORRECCIÓN</span></div></div>
+        } @else {
+          <div class="tally">
+            <span class="pulse" [style.display]="f.hayCambios() ? 'block' : 'none'"></span>
+            <div class="txt">
+              <span class="lab">Corrección en curso</span>
+              <span class="cnt"> — <b>{{ f.fieldCount() }}</b> {{ f.fieldCount() === 1 ? 'campo' : 'campos' }} · <b>{{ f.evtCount() }}</b> {{ f.evtCount() === 1 ? 'evento' : 'eventos' }}</span>
+            </div>
+          </div>
+        }
+        <div class="acts">
+          <button type="button" class="btn ghost" [disabled]="!f.hayCambios() || f.guardando()" (click)="f.descartar()">Descartar</button>
+          <button type="button" class="btn primary" [disabled]="!f.hayCambios() || f.guardando()" (click)="abrirActa()">
+            @if (f.guardando()) { <span class="spin light"></span> Guardando… }
+            @else { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg> Guardar corrección }
+          </button>
+        </div>
+      </div>
+
+      @if (f.error()) { <div class="drawer-error">{{ f.error() }}</div> }
+    }
+  </aside>
+
+  <!-- ── Acta / doble confirmación ────────────────────── -->
+  @if (actaAbierta() && f.detalle(); as d) {
+    <div class="acta-scrim" (click)="cerrarActa()">
+      <div class="acta" role="dialog" aria-modal="true" aria-labelledby="actaTitle" (click)="$event.stopPropagation()">
+        <div class="ah">
+          <div class="seal">ACTA DE<br />CORRECCIÓN</div>
+          <div class="k">Confirmación 2 de 2</div>
+          <h3 id="actaTitle">Vas a corregir el expediente {{ f.detalle()!.lead }}</h3>
+          <p>Revisa exactamente qué cambia. Al confirmar, todo se aplica en una sola operación y se registra un evento de corrección que no podrás eliminar.</p>
+        </div>
+        <div class="abody">
+          @if (f.camposModificados().length) {
+            <div class="dgt">Campos modificados</div>
+            <div class="diff">
+              @for (c of f.camposModificados(); track c.label) {
+                <div class="row"><span class="ff">{{ c.label }}</span><span class="chg"><s>{{ c.antes }}</s><span class="arw">→</span><b>{{ c.despues }}</b></span></div>
+              }
+            </div>
+          }
+          @if (f.marcadosEventos().length) {
+            <div class="dgt">Eventos a eliminar</div>
+            <div class="del-list">
+              @for (ev of f.marcadosEventos(); track ev.id) {
+                <div class="del-item"><span class="acc">{{ accionMeta(ev.accion).label }}</span><span class="di">{{ eventoTitulo(ev) }}</span><span class="when mono">{{ fechaHora(ev.createdAt) }}</span></div>
+              }
+            </div>
+          }
+          <div class="reason">
+            <label for="motivo">Motivo de la corrección <span class="opt">(opcional, queda en el acta)</span></label>
+            <input id="motivo" [formControl]="motivoControl" placeholder="p. ej. DNI mal digitado en registro; se corrige con documento físico" />
+          </div>
+        </div>
+        <div class="af">
+          <span class="warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>Acción irreversible</span>
+          <button type="button" class="btn ghost" (click)="cerrarActa()">Volver</button>
+          <button type="button" class="btn primary" (click)="confirmarCorreccion()">Confirmar corrección</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

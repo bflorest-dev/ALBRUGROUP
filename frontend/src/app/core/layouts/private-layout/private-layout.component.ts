@@ -282,6 +282,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
       const items: SidebarItem[] = [
         { label: 'Dashboard', icon: 'pi pi-chart-pie', children: dashboardChildren },
+        { label: 'Bitácora', route: '/app/admin/bitacora', icon: 'pi pi-book', exact: true },
         { key: 'Plataformas', label: 'Plataformas', icon: 'pi pi-th-large', children: plataformasChildren },
         { label: 'Colaboradores', icon: 'pi pi-users', children: colaboradoresChildren },
         { label: 'Personal', route: '/app/admin/personal', icon: 'pi pi-id-card', exact: true },
@@ -401,6 +402,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     }
     const order = new Map<string, number>([
       ['Dashboard', 1],
+      ['/app/admin/bitacora', 1.5],
       ['/app/admin/finanzas', 2],
       ['/app/admin/leads-del-dia', 3],
       ['Plataformas', 3.5],

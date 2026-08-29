@@ -137,6 +137,29 @@ public class EventoService {
         return PageResponse.from(response);
     }
 
+    // Historial completo para la tab de correccion (ADMIN): todos los eventos del lead, sin filtro de
+    // equipo (el ADMIN ve todo, tenga o no VER_TODOS_LOS_EQUIPOS). Opcionalmente acota por accion y rango.
+    public PageResponse<EventoResponse> listarPorLeadSinScope(
+            Long idLead,
+            Accion accion,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            PageRequest pageRequest
+    ) {
+        if (!leadRepository.existsById(idLead)) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+
+        Instant fechaDesdeInstant = inicioDia(fechaDesde);
+        Instant fechaHastaInstant = finDiaInclusivo(fechaHasta);
+        var pageable = paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS);
+
+        var eventos = accion != null
+                ? listarEventosLeadPorAccionYRango(idLead, accion, fechaDesdeInstant, fechaHastaInstant, pageable)
+                : listarEventosLeadPorRango(idLead, fechaDesdeInstant, fechaHastaInstant, pageable);
+        return PageResponse.from(eventos.map(eventoMapper::toResponse));
+    }
+
     public PageResponse<EventoResponse> listarPorLeadAsignado(Long idLead, Etapa etapa, PageRequest pageRequest) {
         if (leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(idLead, currentUser.empleadoID(), etapa).isEmpty()) {
             throw new NotFoundException(Lead.class, idLead);

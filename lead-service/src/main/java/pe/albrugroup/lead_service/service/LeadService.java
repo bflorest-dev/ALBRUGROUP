@@ -1405,6 +1405,49 @@ public class LeadService {
         return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
     }
 
+    // ── Correccion ADMIN ──────────────────────────────────────────────────────
+    // Detalle sin scope de equipo/asesor: la tab de correccion es exclusiva del ADMIN y opera sobre
+    // cualquier lead en cualquier etapa.
+    public LeadDetalleResponse obtenerDetalleParaCorreccion(Long idLead) {
+        Lead lead = leadRepository.buscarDetalleCompletoPorId(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
+                .map(Evento::getCreatedAt)
+                .orElse(null);
+        return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
+    }
+
+    // Aplica los bloques presentes (datos preventa / direccion / oferta) reutilizando los mappers
+    // internos, pero SIN emitir eventos ACTUALIZACION_* ni notificaciones al asesor: la constancia la
+    // deja un unico evento CORRECCION que arma CorreccionAdminService. Devuelve el Lead ya guardado.
+    @Transactional
+    public Lead aplicarCambiosCorreccion(
+            Long idLead,
+            LeadDatosPreventaRequest datosPreventa,
+            LeadDireccionRequest direccion,
+            LeadOfertaComercialRequest ofertaComercial
+    ) {
+        Lead lead = leadRepository.buscarDetalleCompletoPorId(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        boolean huboCambios = false;
+        if (datosPreventa != null) {
+            actualizarDatosPreventaInterno(lead, datosPreventa);
+            huboCambios = true;
+        }
+        if (direccion != null) {
+            actualizarDireccionInterno(lead, direccion);
+            huboCambios = true;
+        }
+        if (ofertaComercial != null) {
+            actualizarOfertaComercialInterno(lead, ofertaComercial);
+            huboCambios = true;
+        }
+        if (huboCambios) {
+            lead.setLastEntryAt(OperationalDateTime.now());
+        }
+        return leadRepository.save(lead);
+    }
+
     // ── Mis preventas (read-only) ─────────────────────────────────────────────
     // Leads que el asesor autenticado paso a VENTA. Identificados por su evento de cierre
     // (TIPIFICACION / PREVENTA_COMPLETA / VENTA_CERRADA). Solo lectura: sirve de seguimiento.

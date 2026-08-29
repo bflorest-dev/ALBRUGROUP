@@ -77,6 +77,25 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             """)
     List<Lead> buscarPorUsermeta(@Param("usermeta") String usermeta);
 
+    // Buscador total de la tab de correccion (ADMIN): un solo patron LIKE case-insensitive contra
+    // numero de lead, usermeta, documento (preventa o snapshot), celular de registro y titular del
+    // servicio. Sin filtro de equipo: el ADMIN ve todos los leads. Los joins son *-to-one, asi que la
+    // paginacion se resuelve en BD. `:patron` ya viene como '%texto%' en minusculas.
+    @Query("""
+            SELECT l
+            FROM Lead l
+            LEFT JOIN FETCH l.datosPreventa dp
+            LEFT JOIN FETCH l.plan pl
+            LEFT JOIN FETCH pl.proveedor
+            WHERE LOWER(l.lead) LIKE :patron
+               OR LOWER(l.usermeta) LIKE :patron
+               OR LOWER(COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot)) LIKE :patron
+               OR LOWER(dp.celularRegistro) LIKE :patron
+               OR LOWER(dp.nombreTitularServicio) LIKE :patron
+            ORDER BY l.lastEntryAt DESC, l.id DESC
+            """)
+    List<Lead> buscarParaCorreccionAdmin(@Param("patron") String patron, Pageable pageable);
+
     @Query("""
             SELECT l
             FROM Lead l

@@ -34,6 +34,10 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     @Query("DELETE FROM Evento e WHERE e.idLead = :idLead")
     void deleteByIdLead(@Param("idLead") Long idLead);
 
+    // Correccion ADMIN: recupera los eventos indicados que realmente pertenecen al lead, para validar
+    // pertenencia (y que ninguno sea CORRECCION) antes de eliminarlos.
+    List<Evento> findByIdInAndIdLead(Collection<Long> ids, Long idLead);
+
     long countByIdLead(Long idLead);
 
     @Modifying
