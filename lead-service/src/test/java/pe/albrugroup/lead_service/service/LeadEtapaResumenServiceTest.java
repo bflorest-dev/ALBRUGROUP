@@ -106,6 +106,45 @@ class LeadEtapaResumenServiceTest {
     }
 
     @Test
+    void registrarRetornoVentaPreventaActualizaUltimaSinTocarMayorRango() {
+        Instant fechaMayor = Instant.parse("2026-08-25T15:00:00Z");
+        Instant fechaRetorno = Instant.parse("2026-08-26T10:00:00Z");
+        LeadEtapaResumen resumen = LeadEtapaResumen.builder()
+                .idLead(10L)
+                .etapa(Etapa.PREVENTA)
+                .mayorRangoCodigoTipificacion("INTERESADO")
+                .mayorRangoCodigoSubtipificacion("CLIENTE CALIENTE")
+                .mayorRangoOrden(5)
+                .mayorRangoAt(fechaMayor)
+                .fechaMerito(fechaMayor)
+                .totalTipificaciones(2)
+                .build();
+        when(repository.findByIdLeadAndEtapa(10L, Etapa.PREVENTA)).thenReturn(Optional.of(resumen));
+
+        service.registrarRetornoVentaPreventa(
+                10L,
+                Etapa.PREVENTA,
+                "NO DESEA",
+                "PREVENTA DESAPROBADA",
+                9,
+                88L,
+                "Asesor Venta",
+                fechaRetorno);
+
+        assertEquals("NO DESEA", resumen.getUltimaCodigoTipificacion());
+        assertEquals("PREVENTA DESAPROBADA", resumen.getUltimaCodigoSubtipificacion());
+        assertEquals(9, resumen.getUltimaTipificacionOrden());
+        assertSame(fechaRetorno, resumen.getUltimaTipificacionAt());
+        assertEquals("INTERESADO", resumen.getMayorRangoCodigoTipificacion());
+        assertEquals("CLIENTE CALIENTE", resumen.getMayorRangoCodigoSubtipificacion());
+        assertEquals(5, resumen.getMayorRangoOrden());
+        assertSame(fechaMayor, resumen.getMayorRangoAt());
+        assertNull(resumen.getFechaMerito());
+        assertEquals(3, resumen.getTotalTipificaciones());
+        verify(repository).save(resumen);
+    }
+
+    @Test
     void anularFechaMeritoEtapasAnterioresDesdePostventaLimpiaPreventaYVenta() {
         Instant fechaPreventa = Instant.parse("2026-08-25T15:00:00Z");
         Instant fechaVenta = Instant.parse("2026-08-26T15:00:00Z");

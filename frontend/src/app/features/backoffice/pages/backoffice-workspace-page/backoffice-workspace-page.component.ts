@@ -1182,10 +1182,23 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected async requestCloseDetail(): Promise<void> {
     if (this.hasUnsavedDataChanges()) {
-      this.notify('warn', 'Hay datos sin guardar. Guarda los cambios antes de cerrar.');
+      this.confirmationService.confirm({
+        header: 'Cerrar gestion',
+        message: 'Hay cambios sin tipificar. Si cierras ahora, esos cambios no se guardaran.',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Cerrar sin guardar',
+        rejectLabel: 'Seguir editando',
+        acceptButtonStyleClass: 'p-button-warning',
+        rejectButtonStyleClass: 'p-button-text',
+        accept: () => void this.closeDetailFromRequest()
+      });
       this.detailDrawerOpen.set(true);
       return;
     }
+    await this.closeDetailFromRequest();
+  }
+
+  private async closeDetailFromRequest(): Promise<void> {
     if (!this.detailReadOnly()) {
       await this.releaseCurrentLeadIfIdle();
     }
@@ -1304,12 +1317,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     void this.performSave(detail);
   }
 
-  private async performSave(detail: LeadDetalleResponse): Promise<void> {
+  private async performSave(
+    detail: LeadDetalleResponse,
+    options: { notifyEmpty?: boolean; notifySuccess?: boolean } = {}
+  ): Promise<boolean> {
+    const notifyEmpty = options.notifyEmpty ?? true;
+    const notifySuccess = options.notifySuccess ?? true;
     const tasks: { label: string; action: () => Promise<void>; markPristine: () => void }[] = [];
     if (this.datosForm.dirty) {
       if (this.datosForm.invalid) {
         this.notify('warn', 'Datos Preventa incompleto: tipo y documento son obligatorios.');
-        return;
+        return false;
       }
       tasks.push({
         label: 'Datos Preventa',
@@ -1320,7 +1338,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (this.direccionForm.dirty) {
       if (this.direccionForm.invalid) {
         this.notify('warn', 'Direccion incompleta: ubigeo, direccion, latitud y longitud son obligatorios.');
-        return;
+        return false;
       }
       tasks.push({
         label: 'Direccion',
@@ -1333,7 +1351,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       const adicionales = this.adicionalesSeleccionados();
       if (!raw.idPlan) {
         this.notify('warn', 'Selecciona un plan antes de guardar la oferta comercial.');
-        return;
+        return false;
       }
       tasks.push({
         label: 'Oferta Comercial',
@@ -1352,8 +1370,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       });
     }
     if (!tasks.length) {
-      this.notify('info', 'No hay cambios pendientes por guardar.');
-      return;
+      if (notifyEmpty) {
+        this.notify('info', 'No hay cambios pendientes por guardar.');
+      }
+      return true;
     }
 
     this.isSaving.set(true);
@@ -1374,11 +1394,19 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
           this.detailHadOperationalAction = true;
         }
         this.notify('error', `Guardado parcial. OK: ${saved.join(', ') || 'ninguno'}. Fallo: ${failed.join(' | ')}`);
+        await this.reconcile(detail.id);
+        return false;
       } else {
-        this.notify('success', `Guardado: ${saved.join(', ')}.`);
+        if (notifySuccess) {
+          this.notify('success', `Guardado: ${saved.join(', ')}.`);
+        }
         this.detailHadOperationalAction = true;
+        await this.reconcile(detail.id);
+        return true;
       }
-      await this.reconcile(detail.id);
+    } catch (error) {
+      this.notify('error', this.getErrorMessage(error, 'No se pudieron guardar los cambios.'));
+      return false;
     } finally {
       this.isSaving.set(false);
     }
@@ -1386,10 +1414,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected async tipificar(): Promise<void> {
     if (!this.ensureCanMutate()) {
-      return;
-    }
-    if (this.hasUnsavedDataChanges()) {
-      this.notify('warn', 'Guarda los cambios pendientes antes de tipificar.');
       return;
     }
     if (!this.catalogo()) {
@@ -1400,6 +1424,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!detail || this.tipificacionForm.invalid) {
       this.notify('warn', 'Selecciona tipificacion y subtipificacion.');
       return;
+    }
+    if (this.hasUnsavedDataChanges()) {
+      const saved = await this.performSave(detail, { notifyEmpty: false, notifySuccess: false });
+      if (!saved) {
+        this.notify('warn', 'Corrige los datos pendientes para poder tipificar.');
+        return;
+      }
     }
     if (this.requiresInstallDate() && !this.tipificacionForm.controls.fechaInstalacion.value) {
       this.notify('warn', 'La fecha de instalacion es obligatoria para pasar a POSTVENTA.');

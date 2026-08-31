@@ -99,7 +99,7 @@ public class LeadEtapaResumenService {
         repository.save(resumen);
     }
 
-    /** Retorno desde VENTA: descarta la preventa previa como venta no aprobada y reabre gestion. */
+    /** Retorno desde VENTA: registra la ultima preventa desaprobada y reabre gestion. */
     public void registrarRetornoVentaPreventa(
             Long idLead,
             Etapa etapa,
@@ -123,11 +123,6 @@ public class LeadEtapaResumenService {
         resumen.setUltimaCodigoSubtipificacion(codigoSubtipificacion);
         resumen.setUltimaTipificacionOrden(orden);
         resumen.setUltimaTipificacionAt(at);
-
-        resumen.setMayorRangoCodigoTipificacion(codigoTipificacion);
-        resumen.setMayorRangoCodigoSubtipificacion(codigoSubtipificacion);
-        resumen.setMayorRangoOrden(orden);
-        resumen.setMayorRangoAt(at);
 
         resumen.setFechaMerito(null);
         resumen.setTotalTipificaciones(nvl(resumen.getTotalTipificaciones(), 0) + 1);

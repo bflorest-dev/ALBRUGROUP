@@ -102,4 +102,26 @@ public class EquipoCampoService {
                 .map(this::resolverConfig)
                 .orElseGet(() -> resolverConfig(null));
     }
+
+    /**
+     * Config del proveedor real de un lead ya autorizado. No valida el scope del usuario porque la
+     * visibilidad del lead se resuelve antes de construir el detalle; aquí solo se decide qué campos
+     * aplican al plan cerrado del lead.
+     */
+    @Transactional(readOnly = true)
+    public List<CampoConfigResponse> resolverConfigPorProveedor(Long idProveedor) {
+        if (idProveedor == null) {
+            return resolverConfig(null);
+        }
+        List<ProveedorCampo> proveedorCampos = proveedorCampoRepository.findByProveedorId(idProveedor);
+        if (!proveedorCampos.isEmpty()) {
+            Map<CampoConfigurable, ProveedorCampo> guardados = proveedorCampos.stream()
+                    .collect(Collectors.toMap(ProveedorCampo::getCampo, Function.identity(), (a, b) -> a));
+            return resolverConfigProveedor(guardados);
+        }
+        return equipoProveedorRepository.findFirstByProveedorId(idProveedor)
+                .map(EquipoProveedor::getIdEquipo)
+                .map(this::resolverConfig)
+                .orElseGet(() -> resolverConfig(null));
+    }
 }

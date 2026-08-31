@@ -162,6 +162,35 @@ label {
   cursor: text;
 }
 
+.commercial-tabs--drawer .form-grid {
+  gap: 0.85rem 1rem;
+  padding-top: 0.95rem;
+}
+
+.commercial-tabs--drawer label {
+  color: #52637a;
+  font-size: 0.73rem;
+  font-weight: 850;
+}
+
+:host ::ng-deep .commercial-tabs--drawer {
+  .p-inputtext,
+  .p-select {
+    background: #f8fafc;
+    border-color: #c7d5e5;
+    border-radius: 0.5rem;
+    color: #26374d;
+    font-weight: 800;
+    min-height: 2.65rem;
+  }
+
+  .p-inputtext:enabled:focus,
+  .p-select:not(.p-disabled).p-focus {
+    border-color: var(--role-accent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--role-accent) 22%, transparent);
+  }
+}
+
 .helper {
   color: #617187;
   margin: 0;

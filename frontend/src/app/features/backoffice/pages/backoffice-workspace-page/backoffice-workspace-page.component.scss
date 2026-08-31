@@ -695,6 +695,10 @@ app-lead-commercial-data-tabs {
   justify-content: flex-end;
 }
 
+.drawer-close-button {
+  flex: 0 0 auto;
+}
+
 .drawer-scroll {
   box-sizing: border-box;
   flex: 1 1 auto;
@@ -704,7 +708,7 @@ app-lead-commercial-data-tabs {
 }
 
 .drawer-footer {
-  background: #ffffff;
+  background: #f8fafc;
   border-top: 1px solid color-mix(in srgb, var(--role-accent) 16%, #ffffff 84%);
   box-shadow: 0 -12px 24px rgba(15, 31, 51, 0.06);
   display: grid;
@@ -822,6 +826,11 @@ app-lead-commercial-data-tabs {
 
   .backoffice-drawer {
     width: min(58rem, 96vw);
+  }
+
+  .backoffice-drawer .p-drawer-header {
+    border-bottom: 1px solid #e5edf6;
+    padding: 1rem 1.1rem 0.9rem;
   }
 
   .correction-drawer {
@@ -1076,10 +1085,13 @@ app-lead-commercial-data-tabs {
   .hero-actions button,
   .board-organization button,
   .dialog-actions button,
-  .drawer-head__actions button,
   .drawer-actions button,
   .drawer-tipification__main > button {
     width: 100%;
+  }
+
+  .drawer-head__actions .drawer-close-button {
+    width: 2.4rem;
   }
 
   .board-organization-actions {

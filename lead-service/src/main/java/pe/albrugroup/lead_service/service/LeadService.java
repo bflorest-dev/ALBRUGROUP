@@ -4746,7 +4746,7 @@ public class LeadService {
                 ? null
                 : lead.getPlan().getProveedor().getId();
         if (idProveedorPlan != null) {
-            return equipoCampoService.resolverConfigPorProveedorVisible(idProveedorPlan);
+            return equipoCampoService.resolverConfigPorProveedor(idProveedorPlan);
         }
         return equipoCampoService.resolverConfig(lead.getIdEquipo());
     }

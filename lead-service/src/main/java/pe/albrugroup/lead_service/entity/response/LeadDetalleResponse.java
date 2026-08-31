@@ -93,9 +93,9 @@ public class LeadDetalleResponse {
     // campos en solo lectura y solo permite tipificar (informativo) o crear nuevas oportunidades.
     private Etapa etapa;
     private boolean atencionOtraEtapa;
-    // Config de campos de captura resuelta desde el EQUIPO del lead (no del agregado de equipos del
-    // asesor): por cada campo configurable, si se muestra y si es obligatorio. Permite que un
-    // ASESOR_VENTAS multi-equipo vea/valide los campos correctos según el lead que abre.
+    // Config de campos de captura resuelta preferentemente desde el proveedor del plan del lead;
+    // si no tiene plan, cae al equipo del lead. Por cada campo configurable indica si se muestra
+    // y si es obligatorio.
     private List<CampoConfigResponse> camposConfig;
     // Proveedor fallback del equipo del lead: origen a mostrar cuando el lead no tiene campaña.
     private String nombreProveedorEquipo;

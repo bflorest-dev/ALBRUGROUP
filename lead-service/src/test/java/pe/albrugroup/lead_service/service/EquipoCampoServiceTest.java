@@ -13,6 +13,7 @@ import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 import pe.albrugroup.lead_service.repository.ProveedorCampoRepository;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -69,6 +70,40 @@ class EquipoCampoServiceTest {
                     assertThat(campo.isVisible()).isFalse();
                     assertThat(campo.isRequerido()).isFalse();
                 });
+    }
+
+    @Test
+    void configDirectaPorProveedorNoDependeDelScopeVisibleDelUsuario() {
+        when(proveedorCampoRepository.findByProveedorId(2L)).thenReturn(List.of(
+                proveedorCampo(2L, CampoConfigurable.DOC_TITULAR_CELULAR, false, false),
+                proveedorCampo(2L, CampoConfigurable.NOMBRE_TITULAR_CELULAR, false, false),
+                proveedorCampo(2L, CampoConfigurable.NOMBRE_MADRE, true, true),
+                proveedorCampo(2L, CampoConfigurable.NOMBRE_PADRE, true, true),
+                proveedorCampo(2L, CampoConfigurable.PLANO, true, true)
+        ));
+
+        var config = equipoCampoService.resolverConfigPorProveedor(2L);
+
+        assertThat(config)
+                .filteredOn(campo -> campo.getCampo() == CampoConfigurable.NOMBRE_MADRE
+                        || campo.getCampo() == CampoConfigurable.NOMBRE_PADRE
+                        || campo.getCampo() == CampoConfigurable.PLANO)
+                .allSatisfy(campo -> {
+                    assertThat(campo.isVisible()).isTrue();
+                    assertThat(campo.isRequerido()).isTrue();
+                });
+    }
+
+    @Test
+    void configVisiblePorProveedorSigueRespetandoScopeDelUsuario() {
+        when(equipoProveedorService.proveedorIdsVisibles()).thenReturn(Set.of(1L));
+
+        var config = equipoCampoService.resolverConfigPorProveedorVisible(2L);
+
+        assertThat(config).allSatisfy(campo -> {
+            assertThat(campo.isVisible()).isFalse();
+            assertThat(campo.isRequerido()).isFalse();
+        });
     }
 
     private ProveedorCampo proveedorCampo(Long idProveedor, CampoConfigurable campo, boolean visible, boolean requerido) {

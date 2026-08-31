@@ -1073,9 +1073,21 @@
             <div class="drawer-head__status">
               <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="display(lead.estadoSeguimiento)" />
               @if (hasUnsavedDataChanges()) {
-                <p-tag severity="warn" value="Datos sin guardar" />
+                <p-tag severity="warn" value="Se guardara al tipificar" />
               }
             </div>
+            <button
+              pButton
+              type="button"
+              class="drawer-close-button"
+              icon="pi pi-times"
+              severity="secondary"
+              text
+              rounded
+              [disabled]="isSaving()"
+              aria-label="Cerrar gestion"
+              (click)="requestCloseDetail()"
+            ></button>
           </div>
         </header>
       </ng-template>
@@ -1162,18 +1174,14 @@
 
         </div>
 
-        <footer
-          #tipificationFooter
-          class="drawer-footer drawer-footer--adaptive"
-          [class.drawer-footer--expanded]="tipificationFooterExpanded()"
-          (mouseenter)="setTipificationFooterPinned(true)"
-          (mouseleave)="setTipificationFooterPinned(false)"
-        >
-          @if (detailReadOnly()) {
-            <div class="drawer-actions drawer-actions--consultation">
-              <button pButton type="button" label="Cerrar" severity="secondary" (click)="requestCloseDetail()"></button>
-            </div>
-          } @else {
+        @if (!detailReadOnly()) {
+          <footer
+            #tipificationFooter
+            class="drawer-footer drawer-footer--adaptive"
+            [class.drawer-footer--expanded]="tipificationFooterExpanded()"
+            (mouseenter)="setTipificationFooterPinned(true)"
+            (mouseleave)="setTipificationFooterPinned(false)"
+          >
           <form class="drawer-tipification" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
             <div class="drawer-tipification__main">
               <label class="tipification-field">
@@ -1356,21 +1364,8 @@
               </label>
             </div>
           </form>
-
-          <div class="drawer-actions">
-          <button
-            pButton
-            type="button"
-            icon="pi pi-save"
-            label="Guardar datos"
-            [disabled]="!hasUnsavedDataChanges() || !canMutateOperationalData()"
-            [loading]="isSaving()"
-            (click)="guardarCambiosLead()"
-          ></button>
-          <button pButton type="button" label="Cerrar" severity="secondary" (click)="requestCloseDetail()"></button>
-          </div>
-          }
-        </footer>
+          </footer>
+        }
       </section>
     } @else {
       <div class="dialog-skeleton">
