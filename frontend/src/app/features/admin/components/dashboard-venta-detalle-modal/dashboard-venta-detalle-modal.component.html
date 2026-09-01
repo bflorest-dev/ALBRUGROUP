@@ -1,0 +1,105 @@
+<p-dialog
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: '920px', maxWidth: '96vw' }"
+  styleClass="vd-detalle-dialog"
+>
+  <ng-template pTemplate="header">
+    <div class="vdd-head">
+      <div class="vdd-title-row">
+        <span class="vdd-title">{{ title }}</span>
+        @if (!loading && !error) {
+          <span class="vdd-badge">{{ totalElements }}</span>
+        }
+      </div>
+      <div class="vdd-sub"><span class="vdd-dot" [style.background]="accent"></span>{{ contextLine }}</div>
+    </div>
+  </ng-template>
+
+  @if (error) {
+    <div class="vdd-empty">No se pudo cargar el detalle.</div>
+  } @else if (loading) {
+    <div class="vdd-empty">Cargando detalle…</div>
+  } @else if (!rows.length) {
+    <div class="vdd-empty">No hay registros en este período.</div>
+  } @else {
+    <div class="vdd-scroll">
+      <table class="vdd-table">
+        <thead>
+          <tr>
+            <th class="vdd-idx">#</th>
+            @for (c of columns; track c.header) {
+              <th>{{ c.header }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows; track $index) {
+            <tr>
+              <td class="vdd-idx">{{ page * size + $index + 1 }}</td>
+              @for (c of columns; track c.header) {
+                <td>
+                  @switch (c.kind) {
+                    @case ('stack') {
+                      @if (has(row, c.primary)) {
+                        <span class="vdd-main" [class.emph]="c.emphasis" [class.vdd-ellipsis]="c.truncate"
+                          [pTooltip]="c.truncate ? text(row, c.primary) : ''" tooltipPosition="top">{{ text(row, c.primary) }}</span>
+                      }
+                      @if (has(row, c.secondary)) {
+                        <span class="vdd-sub2" [class.vdd-ellipsis]="c.truncate"
+                          [pTooltip]="c.truncate ? text(row, c.secondary) : ''" tooltipPosition="top">{{ c.prefixSecondary }}{{ text(row, c.secondary) }}</span>
+                      }
+                      @if (!has(row, c.primary) && !has(row, c.secondary)) {
+                        <span class="vdd-main is-empty">—</span>
+                      }
+                    }
+                    @case ('datetime') {
+                      @if (has(row, c.field)) {
+                        <span class="vdd-date">{{ fecha(row, c.field) }}</span>
+                        <span class="vdd-time">{{ hora(row, c.field) }}</span>
+                      } @else {
+                        <span class="vdd-main is-empty">—</span>
+                      }
+                    }
+                    @case ('dias') {
+                      <span class="vdd-dias">{{ dias(row, c.fromField, c.toField) }}</span>
+                    }
+                    @case ('comment') {
+                      @if (has(row, c.field)) {
+                        <i class="pi pi-envelope vdd-comment" [pTooltip]="text(row, c.field)"
+                          tooltipPosition="left" tooltipStyleClass="vdd-tip" appendTo="body" [attr.aria-label]="text(row, c.field)"></i>
+                      } @else {
+                        <span class="vdd-main is-empty">—</span>
+                      }
+                    }
+                    @default {
+                      @if (c.truncate) {
+                        <span class="vdd-txt vdd-ellipsis" [pTooltip]="text(row, c.field)" tooltipPosition="top">{{ text(row, c.field) }}</span>
+                      } @else {
+                        <span class="vdd-txt">{{ text(row, c.field) }}</span>
+                      }
+                    }
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalElements > size) {
+      <p-paginator
+        [first]="page * size"
+        [rows]="size"
+        [totalRecords]="totalElements"
+        (onPageChange)="onPaginate($event)"
+        styleClass="vdd-paginator"
+      />
+    }
+    <div class="vdd-foot">{{ totalElements }} registro(s)</div>
+  }
+</p-dialog>

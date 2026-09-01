@@ -1,0 +1,155 @@
+:host {
+  --deep: #0d1120;
+  --card: #161b2b;
+  --soft: #1e2436;
+  --ink: #eceefb;
+  --ink-2: #c3c9e2;
+  --muted: #9aa1bd;
+  --faint: #6d7597;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --accent2: #6ea4f0;
+}
+
+// ── PrimeNG chrome → oscuro ──────────────────────────────────────────────────────────────────
+::ng-deep .vd-detalle-dialog {
+  &.p-dialog {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 24px 70px -24px rgba(0, 0, 0, 0.75);
+  }
+  .p-dialog-header {
+    background: #12172a;
+    color: #eceefb;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 16px 20px;
+  }
+  .p-dialog-content {
+    background: #0d1120;
+    color: #eceefb;
+    padding: 14px 18px 18px;
+  }
+  .p-dialog-header-icons .p-dialog-header-icon,
+  .p-dialog-close-button {
+    color: #9aa1bd;
+    &:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+  }
+}
+
+// ── header ───────────────────────────────────────────────────────────────────────────────────
+.vdd-head { display: flex; flex-direction: column; gap: 6px; }
+.vdd-title-row { display: flex; align-items: center; gap: 10px; }
+.vdd-title { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.vdd-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #43cf8f;
+  background: rgba(67, 207, 143, 0.15);
+  border: 1px solid rgba(67, 207, 143, 0.32);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+.vdd-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.vdd-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+// ── estados ──────────────────────────────────────────────────────────────────────────────────
+.vdd-empty {
+  padding: 40px 12px;
+  text-align: center;
+  color: var(--faint);
+  font-size: 14px;
+}
+
+// ── tabla ────────────────────────────────────────────────────────────────────────────────────
+.vdd-scroll { overflow-x: auto; max-height: 62vh; overflow-y: auto; }
+.vdd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  th, td { padding: 10px 12px; text-align: left; vertical-align: top; }
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #12172a;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--faint);
+    font-weight: 700;
+    border-bottom: 1px solid var(--line-strong);
+    white-space: nowrap;
+  }
+  tbody td { border-bottom: 1px solid var(--line); color: var(--ink-2); }
+  tbody tr:hover td { background: var(--soft); }
+}
+.vdd-idx { width: 34px; color: var(--faint); font-weight: 600; text-align: right !important; }
+.vdd-main { display: block; font-weight: 600; color: var(--ink); }
+.vdd-main.emph { font-weight: 700; }
+.vdd-main.is-empty { color: var(--faint); font-weight: 400; }
+.vdd-sub2 { display: block; font-size: 12px; color: var(--faint); margin-top: 1px; }
+.vdd-txt { color: var(--ink-2); }
+.vdd-dias { font-weight: 700; color: var(--accent2); }
+
+// Fecha/hora apiladas (formato tradicional: DD/MM/YYYY en negrita, hora debajo tenue)
+.vdd-date { display: block; font-weight: 700; color: var(--ink); }
+.vdd-time { display: block; font-size: 12px; color: var(--faint); margin-top: 1px; }
+
+// Corte con elipsis (una línea) + tooltip para el texto completo → filas de altura uniforme
+.vdd-ellipsis {
+  display: block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Último comentario: solo ícono de carta; el texto va en el tooltip (una línea, hacia la izquierda)
+.vdd-comment {
+  color: var(--accent2);
+  cursor: help;
+  font-size: 15px;
+  &:hover { color: #cfe0fb; }
+}
+::ng-deep .vdd-tip .p-tooltip-text {
+  white-space: nowrap;
+  max-width: none;
+  font-size: 12px;
+}
+
+// ── paginador + footer ───────────────────────────────────────────────────────────────────────
+::ng-deep .vdd-paginator.p-paginator {
+  background: transparent;
+  border: 0;
+  padding: 10px 0 2px;
+  justify-content: flex-end;
+  .p-paginator-page,
+  .p-paginator-first,
+  .p-paginator-prev,
+  .p-paginator-next,
+  .p-paginator-last {
+    color: var(--muted);
+    background: transparent;
+    min-width: 2rem;
+    height: 2rem;
+    &:not(.p-disabled):hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+  }
+  .p-paginator-page.p-highlight {
+    background: rgba(110, 164, 240, 0.2);
+    color: #cfe0fb;
+  }
+}
+.vdd-foot {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--faint);
+}

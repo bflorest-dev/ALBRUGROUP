@@ -211,6 +211,24 @@
 }
 .vd-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 
+// afordancia de click en las cards de contador (son botones)
+.vd-kpi.vd-clickable {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  &:hover {
+    border-color: var(--line-strong);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.7);
+  }
+  &:focus-visible { outline: 2px solid var(--vd-info); outline-offset: 2px; }
+}
+
 // ── cinta de conversiones ─────────────────────────────────────────────────────────────────────
 .vd-ribbon {
   display: flex;
@@ -440,6 +458,7 @@
   }
   td:first-child { text-align: left; }
   tbody tr:hover td { background: var(--soft); }
+  tbody tr.vd-rk-row { cursor: pointer; }
   .big { font-weight: 700; color: var(--ink); }
   .sep { border-left: 1px solid var(--line); }
   .c-lima { color: var(--vd-info); font-weight: 700; }

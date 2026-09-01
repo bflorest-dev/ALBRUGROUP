@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.CampoFechaListadoVenta;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
@@ -215,9 +216,10 @@ public class VentaController {
     @GetMapping("/{idLead}/historial-backoffice") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
     public ResponseEntity<PageResponse<EventoResponse>> listarHistorialBackofficeVenta(
             @PathVariable Long idLead,
+            @RequestParam(required = false) Accion accion,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var eventos = eventoService.listarHistorialBackofficeVenta(idLead, pageRequest);
+        var eventos = eventoService.listarHistorialBackofficeVenta(idLead, accion, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(eventos);
     }
     // 7. Editar Lead. El Backoffice, solo puede actualizar la OfertaComercial 1 sola vez.

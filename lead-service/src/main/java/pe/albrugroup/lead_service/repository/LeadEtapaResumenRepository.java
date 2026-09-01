@@ -586,4 +586,112 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("codigoProgramado") String codigoProgramado,
             @Param("dias") Collection<java.time.LocalDate> dias
     );
+
+    // ===== DETALLE paginado del dashboard (drill-down para auditar cada contador) =====
+
+    // Detalle de un ASESOR: sus leads del universo VENTA (fechaIngresoEtapa en período) atribuidos por
+    // mérito de PREVENTA. Trae la tipi VIVA del Lead + etapa + último comentario del último evento de
+    // tipificación (idiom MAX(ev.id)). countQuery explícito (sin el join al subquery/datosPreventa).
+    @Query(value = """
+            SELECT new pe.albrugroup.lead_service.entity.response.VentaAsesorDetalleResponse(
+                l.id, l.lead, l.usermeta,
+                dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
+                l.etapa, l.codigoTipificacion, l.codigoSubtipificacion,
+                ultTip.comentario
+            )
+            FROM Lead l
+            JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN Evento ultTip ON ultTip.id = (
+                SELECT MAX(ev.id) FROM Evento ev WHERE ev.idLead = l.id AND ev.accion = :accionTip
+            )
+            WHERE pr.id = :idProveedor
+              AND rv.fechaIngresoEtapa >= :inicio
+              AND rv.fechaIngresoEtapa < :fin
+              AND rp.idAsesorMerito = :idAsesor
+            ORDER BY rv.fechaIngresoEtapa DESC, l.id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            WHERE pr.id = :idProveedor
+              AND rv.fechaIngresoEtapa >= :inicio
+              AND rv.fechaIngresoEtapa < :fin
+              AND rp.idAsesorMerito = :idAsesor
+            """)
+    Page<pe.albrugroup.lead_service.entity.response.VentaAsesorDetalleResponse> dashboardVentaAsesorDetalle(
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("idProveedor") Long idProveedor,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("idAsesor") Long idAsesor,
+            @Param("accionTip") Accion accionTip,
+            Pageable pageable
+    );
+
+    // Detalle de una MÉTRICA del resumen: el universo VENTA (fechaIngresoEtapa en período) filtrado por la
+    // métrica clickeada (flags booleanos, mismos criterios que los contadores). Tipi VIVA del Lead.
+    @Query(value = """
+            SELECT new pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse(
+                rv.fechaIngresoEtapa,
+                dp.numeroDocumentoTitularServicio,
+                l.lead,
+                dp.nombreTitularServicio,
+                l.codigoTipificacion, l.codigoSubtipificacion,
+                rv.fechaUltimaGestion
+            )
+            FROM Lead l
+            JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            LEFT JOIN l.datosPreventa dp
+            WHERE pr.id = :idProveedor
+              AND rv.fechaIngresoEtapa >= :inicio
+              AND rv.fechaIngresoEtapa < :fin
+              AND ( :todos = true
+                 OR (:registradas = true AND rv.ultimaCodigoTipificacion IS NOT NULL AND rv.ultimaCodigoTipificacion <> :sinIngresar)
+                 OR (:programadas = true AND rv.mayorRangoCodigoTipificacion IN :codigosProgramadaOMas)
+                 OR (:rechazadas  = true AND rv.ultimaCodigoTipificacion IN :codigosRechazo)
+                 OR (:instaladas  = true AND rv.ultimaCodigoTipificacion = :codigoInstalado) )
+            ORDER BY rv.fechaIngresoEtapa DESC, l.id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            WHERE pr.id = :idProveedor
+              AND rv.fechaIngresoEtapa >= :inicio
+              AND rv.fechaIngresoEtapa < :fin
+              AND ( :todos = true
+                 OR (:registradas = true AND rv.ultimaCodigoTipificacion IS NOT NULL AND rv.ultimaCodigoTipificacion <> :sinIngresar)
+                 OR (:programadas = true AND rv.mayorRangoCodigoTipificacion IN :codigosProgramadaOMas)
+                 OR (:rechazadas  = true AND rv.ultimaCodigoTipificacion IN :codigosRechazo)
+                 OR (:instaladas  = true AND rv.ultimaCodigoTipificacion = :codigoInstalado) )
+            """)
+    Page<pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse> dashboardVentaResumenDetalle(
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("idProveedor") Long idProveedor,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("todos") boolean todos,
+            @Param("registradas") boolean registradas,
+            @Param("programadas") boolean programadas,
+            @Param("rechazadas") boolean rechazadas,
+            @Param("instaladas") boolean instaladas,
+            @Param("sinIngresar") String sinIngresar,
+            @Param("codigosProgramadaOMas") Collection<String> codigosProgramadaOMas,
+            @Param("codigosRechazo") Collection<String> codigosRechazo,
+            @Param("codigoInstalado") String codigoInstalado,
+            Pageable pageable
+    );
 }

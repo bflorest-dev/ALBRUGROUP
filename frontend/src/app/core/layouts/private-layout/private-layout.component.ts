@@ -347,7 +347,6 @@ export class PrivateLayoutComponent implements AfterViewInit {
       return [
         { label: 'Monitoreo', route: '/app/supervisor-ventas/monitoreo', icon: 'pi pi-chart-line', exact: true },
         { label: 'Gestion', route: '/app/supervisor-ventas/gestion', icon: 'pi pi-desktop', exact: true },
-        { label: 'Reporte de Ventas', route: '/app/supervisor-ventas/reporte', icon: 'pi pi-file', exact: true },
         { label: 'Dashboard', route: '/app/supervisor-ventas/dashboard', icon: 'pi pi-chart-pie', exact: true }
       ];
     }

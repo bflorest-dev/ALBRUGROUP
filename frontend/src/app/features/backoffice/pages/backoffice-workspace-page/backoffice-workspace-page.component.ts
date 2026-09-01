@@ -58,6 +58,7 @@ import {
 } from '../../../../shared/models/preventa/preventa.models';
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { BackofficeLeadService, LeadRechazadosFilters } from '../../services/backoffice-lead.service';
+import type { BackofficeHistorialAccion } from '../../services/backoffice-lead.service';
 
 type BackofficeSection = 'plataforma' | 'programados' | 'subsanables' | 'rechazados' | 'instalados' | 'correccion-instalacion';
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
@@ -66,6 +67,13 @@ type BackofficeSortDirection = 'asc' | 'desc';
 // Campo de fecha contra el que la bandeja filtra el periodo (mecanica "Usar fecha de").
 type BackofficeCampoFecha = 'PROGRAMACION' | 'RECHAZO' | 'INSTALACION' | 'TIPIFICACION_INSTALADO' | 'INGRESO' | 'ULTIMA_GESTION';
 type DrawerMode = 'gestion' | 'consulta';
+type BackofficeHistorialFiltro = Extract<BackofficeHistorialAccion, 'TIPIFICACION' | 'ASIGNACION'> | null;
+type HistorialAccionMeta = {
+  clase: 'tipificacion' | 'asignacion' | 'contacto' | 'correccion';
+  etiqueta: string;
+};
+type HistorialFiltroOption = { label: string; value: BackofficeHistorialFiltro };
+type HistorialFechaGrupo = { clave: string; etiqueta: string; eventos: EventoResponse[] };
 type OrganizationFilterOption = { label: string; value: string; codigo?: string; descripcion?: string; sinValor?: boolean; rawValue?: string | null };
 type VisualLeadVenta = LeadVentaResponse & {
   isNew?: boolean;
@@ -98,6 +106,18 @@ type AssignmentConflictDetails = {
 const TIPIFICACIONES_RECHAZO_VENTA = new Set(['SUBSANABLE', 'NO RECUPERABLE']);
 // Ventana para agrupar la rafaga de eventos realtime en una sola reconciliacion (ver startRealtime).
 const REALTIME_RECONCILE_DEBOUNCE_MS = 600;
+const HISTORIAL_FILTROS: HistorialFiltroOption[] = [
+  { label: 'Tipificación', value: 'TIPIFICACION' },
+  { label: 'Asignación', value: 'ASIGNACION' },
+  { label: 'Todo', value: null }
+];
+const HISTORIAL_ACCIONES: Record<string, HistorialAccionMeta> = {
+  TIPIFICACION: { clase: 'tipificacion', etiqueta: 'Tipificación' },
+  ASIGNACION: { clase: 'asignacion', etiqueta: 'Asignación' },
+  CONTACTO: { clase: 'contacto', etiqueta: 'Contacto' },
+  CORRECCION: { clase: 'correccion', etiqueta: 'Corrección' }
+};
+const HISTORIAL_MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
 
 @Component({
   selector: 'app-backoffice-workspace-page',
@@ -162,6 +182,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private rechazadosRequestSeq = 0;
   private instaladosRequestSeq = 0;
   private correccionInstalacionRequestSeq = 0;
+  private historialRequestSeq = 0;
   private domicilioResolveSeq = 0;
   private initialized = false;
   private initializeInFlight = false;
@@ -192,6 +213,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     () => new Set((this.detail()?.camposConfig ?? []).filter((campo) => campo.visible).map((campo) => campo.campo))
   );
   protected readonly eventos = signal<EventoResponse[]>([]);
+  protected readonly historialFiltro = signal<BackofficeHistorialFiltro>('TIPIFICACION');
+  protected readonly historialFiltros = HISTORIAL_FILTROS;
+  protected readonly historialLoading = signal(false);
+  protected readonly historialError = signal<string | null>(null);
+  protected readonly historialComentarioExpandidoId = signal<number | null>(null);
+  protected readonly historialGrupos = computed<HistorialFechaGrupo[]>(() => this.agruparHistorialPorFecha(this.eventos()));
   protected readonly selectedLeadId = signal<number | null>(null);
   protected readonly totalPlataforma = signal(0);
   protected readonly totalProgramados = signal(0);
@@ -1113,6 +1140,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.leadActionId.set(idLead);
     }
     this.drawerMode.set('gestion');
+    this.resetHistorialState();
     this.selectedLeadId.set(idLead);
     try {
       const resolvedSourceRow = this.resolvePrefillSourceRow(idLead, sourceRow);
@@ -1162,6 +1190,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.leadActionId.set(idLead);
     }
     this.drawerMode.set('consulta');
+    this.resetHistorialState();
     this.selectedLeadId.set(idLead);
     try {
       const sourceRow = this.findActiveVentaRow(idLead);
@@ -1169,8 +1198,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.detail.set(detail);
       this.detailHadOperationalAction = false;
       this.patchForms(detail, sourceRow);
-      await this.refreshHistorialBackofficeVenta(idLead);
       this.detailDrawerOpen.set(true);
+      void this.refreshHistorialBackofficeVenta(idLead);
     } catch (error) {
       this.notify('error', this.getErrorMessage(error, 'No se pudo abrir la consulta.'));
     } finally {
@@ -2305,6 +2334,89 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return String(value);
   }
 
+  protected setHistorialFiltro(filtro: BackofficeHistorialFiltro): void {
+    if (this.historialFiltro() === filtro) {
+      return;
+    }
+    this.historialComentarioExpandidoId.set(null);
+    this.historialFiltro.set(filtro);
+    const idLead = this.selectedLeadId();
+    if (idLead !== null) {
+      void this.refreshHistorialBackofficeVenta(idLead);
+    }
+  }
+
+  protected retryHistorial(): void {
+    const idLead = this.selectedLeadId();
+    if (idLead !== null) {
+      void this.refreshHistorialBackofficeVenta(idLead);
+    }
+  }
+
+  protected historialAccionMeta(accion?: string | null): HistorialAccionMeta {
+    return HISTORIAL_ACCIONES[this.normalizedCode(accion)] ?? {
+      clase: 'asignacion',
+      etiqueta: this.display(accion)
+    };
+  }
+
+  protected historialEventoTitulo(evento: EventoResponse): string {
+    const detalle = [evento.tipificacion, evento.subtipificacion]
+      .map((value) => value?.trim())
+      .filter((value): value is string => Boolean(value));
+    return detalle.length ? detalle.join(' · ') : this.historialAccionMeta(evento.accion).etiqueta;
+  }
+
+  protected historialFechaHora(value?: string | null): string {
+    const date = value ? new Date(value) : null;
+    if (!date || Number.isNaN(date.getTime())) {
+      return '-';
+    }
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    return `${day} ${HISTORIAL_MESES[date.getMonth()]} · ${hour}:${minute}`;
+  }
+
+  protected historialHora(value?: string | null): string {
+    const date = value ? new Date(value) : null;
+    if (!date || Number.isNaN(date.getTime())) {
+      return '-';
+    }
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    return `${hour}:${minute}`;
+  }
+
+  protected historialComentarioExpandido(evento: EventoResponse): boolean {
+    return Boolean(evento.comentario?.trim()) && this.historialComentarioExpandidoId() === evento.id;
+  }
+
+  protected toggleHistorialComentario(evento: EventoResponse): void {
+    if (!evento.comentario?.trim()) {
+      return;
+    }
+    this.historialComentarioExpandidoId.update((currentId) => currentId === evento.id ? null : evento.id);
+  }
+
+  protected historialComentarioTooltip(value?: string | null): string {
+    const comentario = value?.replace(/\s+/g, ' ').trim();
+    if (!comentario) {
+      return 'Sin comentario';
+    }
+    return comentario.length > 120 ? `${comentario.slice(0, 117)}…` : comentario;
+  }
+
+  protected historialEmptyMessage(): string {
+    if (this.historialFiltro() === 'TIPIFICACION') {
+      return 'No hay tipificaciones de venta registradas.';
+    }
+    if (this.historialFiltro() === 'ASIGNACION') {
+      return 'No hay asignaciones de venta registradas.';
+    }
+    return 'No hay eventos de venta para mostrar.';
+  }
+
   private displayLookupStage(value: string | null | undefined): string {
     const stage = this.normalizedCode(value);
     if (stage === 'PREVENTA') return 'Preventa';
@@ -2510,21 +2622,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   // Logo del proveedor del plan ofrecido (WIN/CLARO). Devuelve string estable (o null): seguro en template.
   protected providerLogo(nombreProveedor?: string | null): string | null {
     return resolveProviderLogo(nombreProveedor);
-  }
-
-  protected eventScheduleLabel(evento: EventoResponse): string {
-    if (!evento.fechaProgramacion && !evento.horaProgramada) {
-      return '-';
-    }
-    return `${this.formatDateOnly(evento.fechaProgramacion)} ${evento.horaProgramada ?? ''}`.trim();
-  }
-
-  protected formatDateOnly(value?: string | null): string {
-    if (!value) {
-      return '-';
-    }
-    const [year, month, day] = value.split('-');
-    return year && month && day ? `${day}/${month}/${year}` : value;
   }
 
   protected organizationGroupTitle(row: VisualLeadVenta): string {
@@ -2985,34 +3082,96 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async refreshEventos(idLead: number): Promise<void> {
-    const page = await firstValueFrom(
-      this.leadService.listarEventos(idLead, {
-        pageNumber: 0,
-        pageSize: 100,
-        sortBy: 'createdAt',
-        direction: 'desc'
-      })
-    );
-    if (this.selectedLeadId() !== idLead) {
-      return; // llegada tardia de otro lead ya cerrado/cambiado
+  private async refreshHistorialBackofficeVenta(idLead: number): Promise<void> {
+    const requestSeq = ++this.historialRequestSeq;
+    const filtro = this.historialFiltro();
+    this.historialLoading.set(true);
+    this.historialError.set(null);
+    try {
+      const page = await firstValueFrom(
+        this.leadService.listarHistorialBackofficeVenta(
+          idLead,
+          {
+            pageNumber: 0,
+            pageSize: 100,
+            sortBy: 'createdAt',
+            direction: 'desc'
+          },
+          filtro
+        )
+      );
+      if (!this.isCurrentHistorialRequest(requestSeq, idLead, filtro)) {
+        return;
+      }
+      this.eventos.set(page.content ?? []);
+    } catch {
+      if (!this.isCurrentHistorialRequest(requestSeq, idLead, filtro)) {
+        return;
+      }
+      this.eventos.set([]);
+      this.historialError.set('No se pudo cargar el historial. Reintenta la consulta.');
+    } finally {
+      if (this.isCurrentHistorialRequest(requestSeq, idLead, filtro)) {
+        this.historialLoading.set(false);
+      }
     }
-    this.eventos.set(page.content.filter((evento) => this.normalizedCode(evento.etapa) === 'VENTA'));
   }
 
-  private async refreshHistorialBackofficeVenta(idLead: number): Promise<void> {
-    const page = await firstValueFrom(
-      this.leadService.listarHistorialBackofficeVenta(idLead, {
-        pageNumber: 0,
-        pageSize: 100,
-        sortBy: 'createdAt',
-        direction: 'desc'
-      })
+  private isCurrentHistorialRequest(
+    requestSeq: number,
+    idLead: number,
+    filtro: BackofficeHistorialFiltro
+  ): boolean {
+    return (
+      this.historialRequestSeq === requestSeq &&
+      this.selectedLeadId() === idLead &&
+      this.historialFiltro() === filtro
     );
-    if (this.selectedLeadId() !== idLead) {
-      return;
+  }
+
+  private resetHistorialState(): void {
+    this.historialRequestSeq += 1;
+    this.historialFiltro.set('TIPIFICACION');
+    this.historialLoading.set(false);
+    this.historialError.set(null);
+    this.historialComentarioExpandidoId.set(null);
+    this.eventos.set([]);
+  }
+
+  private agruparHistorialPorFecha(eventos: readonly EventoResponse[]): HistorialFechaGrupo[] {
+    const grupos = new Map<string, HistorialFechaGrupo>();
+    for (const evento of eventos) {
+      const fecha = evento.createdAt ? new Date(evento.createdAt) : null;
+      const fechaValida = fecha && !Number.isNaN(fecha.getTime()) ? fecha : null;
+      const clave = fechaValida
+        ? `${fechaValida.getFullYear()}-${String(fechaValida.getMonth() + 1).padStart(2, '0')}-${String(fechaValida.getDate()).padStart(2, '0')}`
+        : 'sin-fecha';
+      let grupo = grupos.get(clave);
+      if (!grupo) {
+        grupo = {
+          clave,
+          etiqueta: this.historialFechaGrupoEtiqueta(fechaValida),
+          eventos: []
+        };
+        grupos.set(clave, grupo);
+      }
+      grupo.eventos.push(evento);
     }
-    this.eventos.set(page.content);
+    return Array.from(grupos.values());
+  }
+
+  private historialFechaGrupoEtiqueta(fecha: Date | null): string {
+    if (!fecha) {
+      return 'SIN FECHA';
+    }
+    const hoy = new Date();
+    const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
+    const inicioFecha = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()).getTime();
+    const diferenciaDias = Math.round((inicioHoy - inicioFecha) / 86_400_000);
+    const prefijo = diferenciaDias === 0 ? 'HOY · ' : diferenciaDias === 1 ? 'AYER · ' : '';
+    const day = String(fecha.getDate()).padStart(2, '0');
+    const year = fecha.getFullYear() === hoy.getFullYear() ? '' : ` ${fecha.getFullYear()}`;
+    return `${prefijo}${day} ${HISTORIAL_MESES[fecha.getMonth()].toUpperCase()}${year}`;
   }
 
   private async refreshPlanes(): Promise<void> {
@@ -3674,7 +3833,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.setBackofficeManagingPresence(false);
     this.detailDrawerOpen.set(false);
     this.detail.set(null);
-    this.eventos.set([]);
+    this.resetHistorialState();
     this.selectedLeadId.set(null);
     this.selectedTipificacionCode.set('');
     this.selectedSubtipificacionCode.set('');
@@ -3907,7 +4066,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.instaladosRows.set([]);
     this.correccionInstalacionRows.set([]);
     this.detail.set(null);
-    this.eventos.set([]);
+    this.resetHistorialState();
     this.selectedLeadId.set(null);
     this.totalPlataforma.set(0);
     this.totalProgramados.set(0);

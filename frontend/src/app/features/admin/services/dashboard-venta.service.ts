@@ -92,6 +92,41 @@ export interface DashboardVentaTramosResponse {
   tramos: DashboardVentaTramo[];
 }
 
+/** Respuesta paginada genérica (espejo de PageResponse&lt;T&gt; del backend). */
+export interface PageResponse<T> {
+  page: number;
+  size: number;
+  totalPages: number;
+  totalElements: number;
+  content: T[];
+}
+
+export type MetricaVentaDetalle = 'PREVENTAS' | 'REGISTRADAS' | 'PROGRAMADAS' | 'RECHAZADAS' | 'INSTALADAS';
+
+/** Fila del detalle de un asesor (drill-down del ranking). */
+export interface VentaAsesorDetalle {
+  idLead: number;
+  lead: string | null;
+  usermeta: string | null;
+  numeroDocumento: string | null;
+  nombreCliente: string | null;
+  etapa: string | null;
+  tipificacion: string | null;
+  subtipificacion: string | null;
+  ultimoComentario: string | null;
+}
+
+/** Fila del detalle de una métrica del resumen (drill-down de un contador). */
+export interface VentaResumenDetalle {
+  fechaRegistro: string | null;
+  numeroDocumento: string | null;
+  lead: string | null;
+  nombreCliente: string | null;
+  tipificacion: string | null;
+  subtipificacion: string | null;
+  fechaUltimaGestion: string | null;
+}
+
 /** DASHBOARD de la etapa VENTA. Todo se filtra por proveedor; los % los calcula el frontend. */
 @Injectable({ providedIn: 'root' })
 export class DashboardVentaService {
@@ -116,5 +151,49 @@ export class DashboardVentaService {
   obtenerTramos(idProveedor: number): Observable<DashboardVentaTramosResponse> {
     const params = new HttpParams().set('idProveedor', idProveedor);
     return this.http.get<DashboardVentaTramosResponse>(`${this.baseUrl}/programados-tramos`, { params });
+  }
+
+  obtenerAsesoresDetalle(
+    idProveedor: number,
+    idAsesor: number,
+    desde?: string,
+    hasta?: string,
+    page = 0,
+    size = 25
+  ): Observable<PageResponse<VentaAsesorDetalle>> {
+    let params = new HttpParams()
+      .set('idProveedor', idProveedor)
+      .set('idAsesor', idAsesor)
+      .set('pageNumber', page)
+      .set('pageSize', size);
+    if (desde) {
+      params = params.set('desde', desde);
+    }
+    if (hasta) {
+      params = params.set('hasta', hasta);
+    }
+    return this.http.get<PageResponse<VentaAsesorDetalle>>(`${this.baseUrl}/asesores-detalle`, { params });
+  }
+
+  obtenerResumenDetalle(
+    idProveedor: number,
+    metrica: MetricaVentaDetalle,
+    desde?: string,
+    hasta?: string,
+    page = 0,
+    size = 25
+  ): Observable<PageResponse<VentaResumenDetalle>> {
+    let params = new HttpParams()
+      .set('idProveedor', idProveedor)
+      .set('metrica', metrica)
+      .set('pageNumber', page)
+      .set('pageSize', size);
+    if (desde) {
+      params = params.set('desde', desde);
+    }
+    if (hasta) {
+      params = params.set('hasta', hasta);
+    }
+    return this.http.get<PageResponse<VentaResumenDetalle>>(`${this.baseUrl}/resumen-detalle`, { params });
   }
 }

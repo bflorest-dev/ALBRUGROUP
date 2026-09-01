@@ -61,6 +61,12 @@ public class EventoService {
     private final ProveedorScopeService proveedorScopeService;
 
     private static final Set<String> EVENTO_SORT_FIELDS = Set.of("createdAt", "accion", "etapa", "tipificacion", "subtipificacion");
+    private static final List<Accion> HISTORIAL_BACKOFFICE_ACCIONES = List.of(
+            Accion.TIPIFICACION,
+            Accion.ASIGNACION,
+            Accion.CONTACTO,
+            Accion.CORRECCION
+    );
     private static final Set<String> LEADS_DIARIOS_SORT_FIELDS = Set.of(
             "createdAt",
             "totalAsignacionesDia",
@@ -189,15 +195,23 @@ public class EventoService {
         return PageResponse.from(eventos);
     }
 
-    public PageResponse<EventoResponse> listarHistorialBackofficeVenta(Long idLead, PageRequest pageRequest) {
+    public PageResponse<EventoResponse> listarHistorialBackofficeVenta(
+            Long idLead,
+            Accion accion,
+            PageRequest pageRequest
+    ) {
         if (!leadRepository.existsById(idLead)) {
             throw new NotFoundException(Lead.class, idLead);
         }
+        if (accion != null && !HISTORIAL_BACKOFFICE_ACCIONES.contains(accion)) {
+            throw new BadRequestException("Accion no permitida para el historial de Backoffice", accion);
+        }
 
         EquipoScope equipoScope = equipoScopeBackofficeVenta();
-        var eventos = eventoRepository.listarEventosLeadVisiblesPorAccionYEtapa(
+        List<Accion> acciones = accion == null ? HISTORIAL_BACKOFFICE_ACCIONES : List.of(accion);
+        var eventos = eventoRepository.listarEventosLeadVisiblesPorAccionesYEtapa(
                 idLead,
-                Accion.TIPIFICACION,
+                acciones,
                 Etapa.VENTA,
                 equipoScope.filtrar(),
                 equipoScope.ids(),

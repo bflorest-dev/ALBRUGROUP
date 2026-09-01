@@ -17,8 +17,15 @@ import {
   DashboardVentaResponse,
   DashboardVentaService,
   DashboardVentaTramosResponse,
-  ProveedorRef
+  MetricaVentaDetalle,
+  ProveedorRef,
+  VentaAsesorDetalle,
+  VentaResumenDetalle
 } from '../../services/dashboard-venta.service';
+import {
+  DashboardVentaDetalleModalComponent,
+  DetalleColumna
+} from '../dashboard-venta-detalle-modal/dashboard-venta-detalle-modal.component';
 
 type Vista = 'resumen' | 'asesores';
 type ZonaSel = 'total' | 'lima' | 'provincia';
@@ -123,7 +130,8 @@ const PROVEEDOR_ACCENT_DEFAULT = '#3a3f8f';
     MessageModule,
     SelectButtonModule,
     TooltipModule,
-    PeriodSelectorComponent
+    PeriodSelectorComponent,
+    DashboardVentaDetalleModalComponent
   ],
   templateUrl: './dashboard-venta-stage.component.html',
   styleUrl: './dashboard-venta-stage.component.scss',
@@ -309,6 +317,138 @@ export class DashboardVentaStageComponent implements OnInit {
       };
     });
   });
+
+  // ── Modales de detalle (drill-down) ──────────────────────────────────────────────────────────
+  protected readonly colsAsesor: DetalleColumna[] = [
+    { header: 'Lead', kind: 'stack', primary: 'lead', secondary: 'usermeta', prefixSecondary: '@', emphasis: true },
+    { header: 'Documento', kind: 'text', field: 'numeroDocumento' },
+    { header: 'Nombre', kind: 'text', field: 'nombreCliente', truncate: true },
+    { header: 'Etapa', kind: 'text', field: 'etapa' },
+    { header: 'Tipificación', kind: 'stack', primary: 'tipificacion', secondary: 'subtipificacion', truncate: true },
+    { header: 'Coment.', kind: 'comment', field: 'ultimoComentario' }
+  ];
+  protected readonly colsResumen: DetalleColumna[] = [
+    { header: 'Fecha registro', kind: 'datetime', field: 'fechaRegistro' },
+    { header: 'Cliente', kind: 'stack', primary: 'numeroDocumento', secondary: 'lead', emphasis: true },
+    { header: 'Nombre', kind: 'text', field: 'nombreCliente', truncate: true },
+    { header: 'Tipificación', kind: 'stack', primary: 'tipificacion', secondary: 'subtipificacion', truncate: true },
+    { header: 'Última gestión', kind: 'datetime', field: 'fechaUltimaGestion' },
+    { header: 'Días', kind: 'dias', fromField: 'fechaRegistro', toField: 'fechaUltimaGestion' }
+  ];
+  private readonly metricaPorKey: Record<string, MetricaVentaDetalle> = {
+    preventas: 'PREVENTAS',
+    registradas: 'REGISTRADAS',
+    programadas: 'PROGRAMADAS',
+    rechazadas: 'RECHAZADAS',
+    instaladas: 'INSTALADAS'
+  };
+  private readonly metricaLabel: Record<MetricaVentaDetalle, string> = {
+    PREVENTAS: 'Preventas',
+    REGISTRADAS: 'Registradas',
+    PROGRAMADAS: 'Programadas',
+    RECHAZADAS: 'Rechazadas',
+    INSTALADAS: 'Instaladas'
+  };
+
+  // Asesor
+  protected readonly detAsesorVisible = signal(false);
+  protected readonly detAsesorLoading = signal(false);
+  protected readonly detAsesorError = signal(false);
+  protected readonly detAsesorCtx = signal('');
+  protected readonly detAsesorPage = signal(0);
+  protected readonly detAsesorTotal = signal(0);
+  private readonly detAsesorRows = signal<VentaAsesorDetalle[]>([]);
+  protected readonly detAsesorRowsView = computed(
+    () => this.detAsesorRows() as unknown as Record<string, unknown>[]
+  );
+  private detAsesorId: number | null = null;
+
+  // Resumen
+  protected readonly detResumenVisible = signal(false);
+  protected readonly detResumenLoading = signal(false);
+  protected readonly detResumenError = signal(false);
+  protected readonly detResumenTitle = signal('');
+  protected readonly detResumenCtx = signal('');
+  protected readonly detResumenPage = signal(0);
+  protected readonly detResumenTotal = signal(0);
+  private readonly detResumenRows = signal<VentaResumenDetalle[]>([]);
+  protected readonly detResumenRowsView = computed(
+    () => this.detResumenRows() as unknown as Record<string, unknown>[]
+  );
+  private detResumenMetrica: MetricaVentaDetalle | null = null;
+
+  protected readonly pageSize = 25;
+
+  protected abrirDetalleAsesor(a: RankingVm): void {
+    this.detAsesorId = a.idAsesor;
+    this.detAsesorCtx.set(`${this.proveedorNombre()} · ${a.nombre} · ${this.periodoLabel()}`);
+    this.detAsesorPage.set(0);
+    this.detAsesorVisible.set(true);
+    void this.cargarDetAsesor();
+  }
+
+  protected onDetAsesorPage(page: number): void {
+    this.detAsesorPage.set(page);
+    void this.cargarDetAsesor();
+  }
+
+  private async cargarDetAsesor(): Promise<void> {
+    const idProveedor = this.proveedorId();
+    const idAsesor = this.detAsesorId;
+    if (idProveedor === null || idAsesor === null) return;
+    this.detAsesorLoading.set(true);
+    this.detAsesorError.set(false);
+    const range = resolveMetricsRange(this.periodo(), this.dia(), this.hasta());
+    try {
+      const resp = await firstValueFrom(
+        this.service.obtenerAsesoresDetalle(idProveedor, idAsesor, range.desde, range.hasta, this.detAsesorPage(), this.pageSize)
+      );
+      this.detAsesorRows.set(resp.content);
+      this.detAsesorTotal.set(resp.totalElements);
+    } catch {
+      this.detAsesorError.set(true);
+      this.detAsesorRows.set([]);
+    } finally {
+      this.detAsesorLoading.set(false);
+    }
+  }
+
+  protected abrirDetalleResumen(key: string): void {
+    const metrica = this.metricaPorKey[key];
+    if (!metrica) return;
+    this.detResumenMetrica = metrica;
+    this.detResumenTitle.set(this.metricaLabel[metrica]);
+    this.detResumenCtx.set(`${this.proveedorNombre()} · ${this.metricaLabel[metrica]} · ${this.periodoLabel()}`);
+    this.detResumenPage.set(0);
+    this.detResumenVisible.set(true);
+    void this.cargarDetResumen();
+  }
+
+  protected onDetResumenPage(page: number): void {
+    this.detResumenPage.set(page);
+    void this.cargarDetResumen();
+  }
+
+  private async cargarDetResumen(): Promise<void> {
+    const idProveedor = this.proveedorId();
+    const metrica = this.detResumenMetrica;
+    if (idProveedor === null || metrica === null) return;
+    this.detResumenLoading.set(true);
+    this.detResumenError.set(false);
+    const range = resolveMetricsRange(this.periodo(), this.dia(), this.hasta());
+    try {
+      const resp = await firstValueFrom(
+        this.service.obtenerResumenDetalle(idProveedor, metrica, range.desde, range.hasta, this.detResumenPage(), this.pageSize)
+      );
+      this.detResumenRows.set(resp.content);
+      this.detResumenTotal.set(resp.totalElements);
+    } catch {
+      this.detResumenError.set(true);
+      this.detResumenRows.set([]);
+    } finally {
+      this.detResumenLoading.set(false);
+    }
+  }
 
   async ngOnInit(): Promise<void> {
     try {

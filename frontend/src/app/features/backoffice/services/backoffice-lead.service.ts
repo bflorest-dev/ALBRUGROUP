@@ -32,6 +32,8 @@ export interface LeadRechazadosFilters {
   fechaHasta?: string | null;
 }
 
+export type BackofficeHistorialAccion = 'TIPIFICACION' | 'ASIGNACION' | 'CONTACTO' | 'CORRECCION';
+
 @Injectable({ providedIn: 'root' })
 export class BackofficeLeadService {
   private readonly http = inject(HttpClient);
@@ -247,9 +249,17 @@ export class BackofficeLeadService {
     });
   }
 
-  listarHistorialBackofficeVenta(idLead: number, query: PageQuery): Observable<LeadPage<EventoResponse>> {
+  listarHistorialBackofficeVenta(
+    idLead: number,
+    query: PageQuery,
+    accion?: BackofficeHistorialAccion | null
+  ): Observable<LeadPage<EventoResponse>> {
+    let params = this.pageParams(query);
+    if (accion) {
+      params = params.set('accion', accion);
+    }
     return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/venta/${idLead}/historial-backoffice`, {
-      params: this.pageParams(query)
+      params
     });
   }
 

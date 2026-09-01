@@ -21,7 +21,6 @@ import {
 import { BitacoraPageComponent } from '../bitacora/pages/bitacora-page/bitacora-page.component';
 import { AsesorVentasWorkspacePageComponent } from '../asesor-ventas/pages/asesor-ventas-workspace-page/asesor-ventas-workspace-page.component';
 import { SupervisorVentasMonitoreoPageComponent } from '../supervisor-ventas/pages/supervisor-ventas-monitoreo-page/supervisor-ventas-monitoreo-page.component';
-import { SupervisorVentasReportePageComponent } from '../supervisor-ventas/pages/supervisor-ventas-reporte-page/supervisor-ventas-reporte-page.component';
 import { AsesorVentasHorarioPageComponent } from '../asesor-ventas/pages/asesor-ventas-horario-page/asesor-ventas-horario-page.component';
 import { AsesorVentasMisPreventasPageComponent } from '../asesor-ventas/pages/asesor-ventas-mis-preventas-page/asesor-ventas-mis-preventas-page.component';
 import { AsesorVentasMetricasPageComponent } from '../asesor-ventas/pages/asesor-ventas-metricas-page/asesor-ventas-metricas-page.component';
@@ -594,12 +593,6 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'supervisor-ventas/gestion',
     component: AsesorVentasWorkspacePageComponent,
-    canActivate: [roleGuard],
-    data: { roles: ['SUPERVISOR_VENTAS'] }
-  },
-  {
-    path: 'supervisor-ventas/reporte',
-    component: SupervisorVentasReportePageComponent,
     canActivate: [roleGuard],
     data: { roles: ['SUPERVISOR_VENTAS'] }
   },

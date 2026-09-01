@@ -3,11 +3,19 @@ package pe.albrugroup.lead_service.service;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Session;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Proveedor;
+import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.MetricaVentaDetalle;
+import pe.albrugroup.lead_service.entity.request.PageRequest;
+import pe.albrugroup.lead_service.entity.response.PageResponse;
+import pe.albrugroup.lead_service.entity.response.VentaAsesorDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.Contadores;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.EstadoLead;
@@ -80,6 +88,54 @@ public class DashboardVentaService {
             out.add(new ProveedorRef(p.getId(), p.getNombre()));
         }
         return out;
+    }
+
+    /** DETALLE paginado de los leads de un ASESOR (drill-down del ranking). Filtra proveedor + período. */
+    @Transactional(readOnly = true)
+    public PageResponse<VentaAsesorDetalleResponse> obtenerAsesoresDetalle(
+            Long idProveedor, Long idAsesor, LocalDate desde, LocalDate hasta, PageRequest pageRequest) {
+        desactivarEquipoFilter();
+        Rango r = resolverRango(desde, hasta);
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                pageRequest.getPageNumber(), pageRequest.getPageSize());
+        Page<VentaAsesorDetalleResponse> page = resumenRepository.dashboardVentaAsesorDetalle(
+                Etapa.VENTA, Etapa.PREVENTA, idProveedor, r.inicio(), r.fin(), idAsesor, Accion.TIPIFICACION, pageable);
+        return PageResponse.from(page);
+    }
+
+    /** DETALLE paginado de los leads de una MÉTRICA del resumen (drill-down de un contador). */
+    @Transactional(readOnly = true)
+    public PageResponse<VentaResumenDetalleResponse> obtenerResumenDetalle(
+            Long idProveedor, MetricaVentaDetalle metrica, LocalDate desde, LocalDate hasta, PageRequest pageRequest) {
+        desactivarEquipoFilter();
+        Rango r = resolverRango(desde, hasta);
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                pageRequest.getPageNumber(), pageRequest.getPageSize());
+        Page<VentaResumenDetalleResponse> page = resumenRepository.dashboardVentaResumenDetalle(
+                Etapa.VENTA, idProveedor, r.inicio(), r.fin(),
+                metrica == MetricaVentaDetalle.PREVENTAS,
+                metrica == MetricaVentaDetalle.REGISTRADAS,
+                metrica == MetricaVentaDetalle.PROGRAMADAS,
+                metrica == MetricaVentaDetalle.RECHAZADAS,
+                metrica == MetricaVentaDetalle.INSTALADAS,
+                TIPIFICACION_SIN_INGRESAR, TIPIFICACIONES_PROGRAMADA_O_MAS, TIPIFICACIONES_RECHAZO, TIPIFICACION_INSTALADO,
+                pageable);
+        return PageResponse.from(page);
+    }
+
+    private record Rango(Instant inicio, Instant fin) {}
+
+    private Rango resolverRango(LocalDate desde, LocalDate hasta) {
+        LocalDate d = desde != null ? desde : OperationalDateTime.currentMonth().atDay(1);
+        LocalDate h = hasta != null ? hasta : OperationalDateTime.today();
+        return new Rango(OperationalDateTime.startOfDay(d), OperationalDateTime.endExclusiveOfDay(h));
+    }
+
+    private void desactivarEquipoFilter() {
+        Session session = entityManager.unwrap(Session.class);
+        if (session.getEnabledFilter("equipoFilter") != null) {
+            session.disableFilter("equipoFilter");
+        }
     }
 
     @Transactional(readOnly = true)

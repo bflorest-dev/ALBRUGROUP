@@ -78,12 +78,19 @@
       @if (vista() === 'resumen') {
         <div class="vd-counters">
           @for (k of counterCards(); track k.key) {
-            <div class="vd-card vd-kpi" [class.good]="k.tone === 'good'" [class.bad]="k.tone === 'bad'">
+            <button
+              type="button"
+              class="vd-card vd-kpi vd-clickable"
+              [class.good]="k.tone === 'good'"
+              [class.bad]="k.tone === 'bad'"
+              (click)="abrirDetalleResumen(k.key)"
+              [attr.aria-label]="'Ver detalle de ' + k.label"
+            >
               <div class="vd-kpi__lbl"><span class="vd-dot" [class]="'is-' + k.color"></span>{{ k.label }}</div>
               <div class="vd-kpi__v">{{ k.value }}</div>
               <div class="vd-kpi__prop"><i [class]="'is-' + k.color" [style.width.%]="k.width"></i></div>
               <div class="vd-kpi__nota">{{ k.nota }}</div>
-            </div>
+            </button>
           }
         </div>
 
@@ -230,7 +237,7 @@
             </thead>
             <tbody>
               @for (a of rankingRows(); track a.idAsesor) {
-                <tr>
+                <tr class="vd-rk-row" (click)="abrirDetalleAsesor(a)" [attr.title]="'Ver los leads de ' + a.nombre">
                   <td>
                     <span class="vd-who">
                       <span class="vd-av" [style.background]="a.color">{{ a.inicial }}</span>{{ a.nombre }}
@@ -259,4 +266,35 @@
       }
     </article>
   }
+
+  <!-- Modales de detalle (drill-down) -->
+  <app-dashboard-venta-detalle-modal
+    [(visible)]="detAsesorVisible"
+    [title]="'Leads del asesor'"
+    [contextLine]="detAsesorCtx()"
+    [accent]="providerAccent()"
+    [columns]="colsAsesor"
+    [rows]="detAsesorRowsView()"
+    [loading]="detAsesorLoading()"
+    [error]="detAsesorError()"
+    [page]="detAsesorPage()"
+    [size]="pageSize"
+    [totalElements]="detAsesorTotal()"
+    (pageChange)="onDetAsesorPage($event)"
+  />
+
+  <app-dashboard-venta-detalle-modal
+    [(visible)]="detResumenVisible"
+    [title]="detResumenTitle()"
+    [contextLine]="detResumenCtx()"
+    [accent]="providerAccent()"
+    [columns]="colsResumen"
+    [rows]="detResumenRowsView()"
+    [loading]="detResumenLoading()"
+    [error]="detResumenError()"
+    [page]="detResumenPage()"
+    [size]="pageSize"
+    [totalElements]="detResumenTotal()"
+    (pageChange)="onDetResumenPage($event)"
+  />
 </section>
