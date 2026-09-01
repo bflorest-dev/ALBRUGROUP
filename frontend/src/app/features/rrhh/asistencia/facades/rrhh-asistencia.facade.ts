@@ -431,6 +431,10 @@ export class RrhhAsistenciaFacade {
       }
 
       const empleadoIds = empleadosCumplimiento.map((e) => e.idEmpleado);
+      // El monitor representa el estado de hoy; las bajas históricas solo participan en el resumen mensual.
+      const monitorEmpleadoIds = empleadosCumplimiento
+        .filter((empleado) => empleado.estadoOperativo === 'ACTIVO')
+        .map((empleado) => empleado.idEmpleado);
 
       const [resumen, estados] = await Promise.all([
         firstValueFrom(
@@ -438,9 +442,9 @@ export class RrhhAsistenciaFacade {
             .getCumplimientoResumen({ empleadoIds, desde: range.desde, hasta: range.hasta })
             .pipe(timeout(REQUEST_TIMEOUT_MS))
         ),
-        firstValueFrom(
-          this.service.getEstadosMonitor(empleadoIds).pipe(timeout(REQUEST_TIMEOUT_MS))
-        )
+        monitorEmpleadoIds.length > 0
+          ? firstValueFrom(this.service.getEstadosMonitor(monitorEmpleadoIds).pipe(timeout(REQUEST_TIMEOUT_MS)))
+          : Promise.resolve([])
       ]);
 
       const map: Record<number, CumplimientoResumenEmpleadoResponse> = {};
