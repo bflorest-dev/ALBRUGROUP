@@ -139,7 +139,9 @@ class LeadEtapaResumenServiceTest {
         assertEquals("CLIENTE CALIENTE", resumen.getMayorRangoCodigoSubtipificacion());
         assertEquals(5, resumen.getMayorRangoOrden());
         assertSame(fechaMayor, resumen.getMayorRangoAt());
-        assertNull(resumen.getFechaMerito());
+        // El merito ya NO se borra al retornar de venta a preventa: es permanente (la coherencia por
+        // etapa en el read-side descarta la preventa rechazada de los contadores, no borrando el dato).
+        assertSame(fechaMayor, resumen.getFechaMerito());
         assertEquals(3, resumen.getTotalTipificaciones());
         verify(repository).save(resumen);
     }

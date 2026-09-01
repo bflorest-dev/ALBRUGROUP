@@ -13,6 +13,7 @@ import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.Contacto;
 import pe.albrugroup.lead_service.entity.DatosPreventa;
 import pe.albrugroup.lead_service.entity.Direccion;
+import pe.albrugroup.lead_service.entity.EquipoProveedor;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.Plan;
 import pe.albrugroup.lead_service.entity.Proveedor;
@@ -43,6 +44,7 @@ import pe.albrugroup.lead_service.repository.ContactoRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
+import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
 import pe.albrugroup.lead_service.repository.PlanRepository;
@@ -75,6 +77,7 @@ class LeadServiceRetroactiveIntakeTest {
 
     @Mock private LeadRepository leadRepository;
     @Mock private ContactoRepository contactoRepository;
+    @Mock private EquipoProveedorRepository equipoProveedorRepository;
     @Mock private CampanaRepository campanaRepository;
     @Mock private EventoRepository eventoRepository;
     @Mock private EventoService eventoService;
@@ -310,6 +313,161 @@ class LeadServiceRetroactiveIntakeTest {
         assertThat(lead.getPrefijo()).isNull();
         assertThat(lead.getLead()).isNull();
         assertThat(lead.getUsermeta()).isEqualTo("EfrainBay");
+    }
+
+    @Test
+    void ingresoAdminSinCampanaAsignaEquipoContextual() {
+        LeadIntakeRequest request = new LeadIntakeRequest();
+        request.setPrefijo("+51");
+        request.setLead("987654321");
+        request.setBase(Base.RECONTACTO);
+        Contacto contacto = contactoTelefono();
+        Lead lead = Lead.builder()
+                .id(25202L)
+                .prefijo("+51")
+                .lead("987654321")
+                .contacto(contacto)
+                .base(Base.RECONTACTO)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .build();
+
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(contacto));
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.empty());
+        when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of());
+        when(leadMapper.toNuevoLead(eq("+51"), eq("987654321"), isNull(), eq(Base.RECONTACTO), isNull(), any(Instant.class)))
+                .thenReturn(lead);
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.registrarIngresoLeadAdmin(1L, request);
+
+        assertThat(lead.getIdEquipo()).isEqualTo(1L);
+        verify(leadRepository).save(lead);
+    }
+
+    @Test
+    void ingresoAdminRetroactivoSinCampanaAsignaEquipoYFechaEvento() {
+        LeadIntakeRetroactivoRequest request = new LeadIntakeRetroactivoRequest();
+        request.setPrefijo("+51");
+        request.setLead("987654321");
+        request.setBase(Base.RECONTACTO);
+        request.setHoraRegistro(LocalTime.of(20, 0));
+        Contacto contacto = contactoTelefono();
+        Lead lead = Lead.builder()
+                .id(25202L)
+                .prefijo("+51")
+                .lead("987654321")
+                .contacto(contacto)
+                .base(Base.RECONTACTO)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .build();
+
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(contacto));
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.empty());
+        when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of());
+        when(leadMapper.toNuevoLead(eq("+51"), eq("987654321"), isNull(), eq(Base.RECONTACTO), isNull(), any(Instant.class)))
+                .thenReturn(lead);
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.registrarIngresoLeadAdminRetroactivo(1L, request);
+
+        assertThat(lead.getIdEquipo()).isEqualTo(1L);
+        verify(eventoService).registrarEvento(
+                any(RegistrarEventoRequest.class),
+                eq(OperationalDateTime.today()
+                        .minusDays(1)
+                        .atTime(20, 0)
+                        .atZone(OperationalDateTime.ZONE)
+                        .toInstant())
+        );
+        verify(leadEtapaResumenService).registrarEntradaEtapa(
+                eq(25202L),
+                eq(Etapa.PREVENTA),
+                eq(OperationalDateTime.today()
+                        .minusDays(1)
+                        .atTime(20, 0)
+                        .atZone(OperationalDateTime.ZONE)
+                        .toInstant())
+        );
+    }
+
+    @Test
+    void ingresoAdminRechazaCampanaDeProveedorIncompatibleConEquipo() {
+        LeadIntakeRequest request = normalRequest();
+        Proveedor proveedorCampana = Proveedor.builder().id(7L).nombre("CLARO").build();
+        Proveedor proveedorEquipo = Proveedor.builder().id(1L).nombre("WIN").build();
+        Campana campana = Campana.builder().id(7L).activo(true).proveedor(proveedorCampana).build();
+
+        when(campanaRepository.findByIdAndActivoTrue(7L)).thenReturn(Optional.of(campana));
+        when(equipoProveedorRepository.findByIdEquipo(1L)).thenReturn(List.of(
+                EquipoProveedor.builder().idEquipo(1L).proveedor(proveedorEquipo).build()
+        ));
+
+        assertThatThrownBy(() -> leadService.registrarIngresoLeadAdmin(1L, request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("campana seleccionada no pertenece");
+
+        verify(leadRepository, never()).save(any());
+    }
+
+    @Test
+    void ingresoAdminRechazaLeadExistenteDeOtroEquipo() {
+        LeadIntakeRequest request = new LeadIntakeRequest();
+        request.setPrefijo("+51");
+        request.setLead("987654321");
+        request.setBase(Base.RECONTACTO);
+        Contacto contacto = contactoTelefono();
+        Lead existing = Lead.builder()
+                .id(25202L)
+                .prefijo("+51")
+                .lead("987654321")
+                .contacto(contacto)
+                .idEquipo(2L)
+                .base(Base.RECONTACTO)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .build();
+
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(contacto));
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> leadService.registrarIngresoLeadAdmin(1L, request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("pertenece a otro equipo");
+
+        verify(leadRepository, never()).save(any());
+    }
+
+    @Test
+    void ingresoAdminCompletaEquipoDeLeadExistenteHuerfano() {
+        LeadIntakeRequest request = new LeadIntakeRequest();
+        request.setPrefijo("+51");
+        request.setLead("987654321");
+        request.setBase(Base.RECONTACTO);
+        Contacto contacto = contactoTelefono();
+        Lead existing = Lead.builder()
+                .id(25202L)
+                .prefijo("+51")
+                .lead("987654321")
+                .contacto(contacto)
+                .base(Base.RECONTACTO)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .build();
+
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(contacto));
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.of(existing));
+        when(leadRepository.save(existing)).thenReturn(existing);
+
+        leadService.registrarIngresoLeadAdmin(1L, request);
+
+        assertThat(existing.getIdEquipo()).isEqualTo(1L);
+        verify(leadRepository).save(existing);
     }
 
     @Test

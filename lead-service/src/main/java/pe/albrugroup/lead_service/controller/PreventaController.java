@@ -44,6 +44,16 @@ public class PreventaController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/admin/equipos/{idEquipo}/gtr/intake")
+    @PreAuthorize("hasAuthority('CREATE_LEADS_GTR_ADMIN')")
+    public ResponseEntity<Void> registrarIngresoLeadAdmin(
+            @PathVariable Long idEquipo,
+            @Valid @RequestBody LeadIntakeRequest request
+    ) {
+        leadService.registrarIngresoLeadAdmin(idEquipo, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/correcciones/campana") @PreAuthorize("hasAuthority('CORREGIR_CAMPANA_LEAD')")
     public ResponseEntity<List<LeadCampanaCorreccionCandidatoResponse>> buscarCorreccionCampana(
             @RequestParam String lead
@@ -84,6 +94,16 @@ public class PreventaController {
             @Valid @RequestBody LeadIntakeRetroactivoRequest request
     ) {
         leadService.registrarIngresoLeadRetroactivo(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/admin/equipos/{idEquipo}/gtr/intake/retroactivo")
+    @PreAuthorize("hasAuthority('CREATE_LEADS_GTR_ADMIN')")
+    public ResponseEntity<Void> registrarIngresoLeadAdminRetroactivo(
+            @PathVariable Long idEquipo,
+            @Valid @RequestBody LeadIntakeRetroactivoRequest request
+    ) {
+        leadService.registrarIngresoLeadAdminRetroactivo(idEquipo, request);
         return ResponseEntity.noContent().build();
     }
     // 1.1. Enriqueser un Lead solo con la información puntual que podria detectar si el Lead es válido para seguir en el proceso de recopilar información

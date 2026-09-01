@@ -2647,6 +2647,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     // ── Ranking GTR: preventas concretadas leidas del resumen por etapa (LeadEtapaResumen) ──
     // Fuente de verdad del cierre PREVENTA→VENTA = merito de la etapa PREVENTA (idAsesorMerito/
     // fechaMerito). Lead es raiz para conservar el @Filter por equipo; se joinea el resumen.
+    //
+    // Regla de coherencia (l.etapa <> 'PREVENTA'): el merito ya NO se borra al rechazar una preventa
+    // (es permanente). Una preventa cuyo lead volvio a etapa PREVENTA (rechazada/pendiente) NO es una
+    // preventa completa justificada, asi que se excluye de los contadores. Solo cuenta si el lead avanzo
+    // (VENTA/POSTVENTA/COBRANZA). Esto reemplaza al viejo borrado de fechaMerito.
 
     @Query("""
             SELECT r.idAsesorMerito AS idAsesor,
@@ -2656,6 +2661,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE r.idAsesorMerito IS NOT NULL
               AND r.fechaMerito >= :fechaDesde
               AND r.fechaMerito < :fechaHasta
+              AND l.etapa <> 'PREVENTA'
               AND (:soloIngresados = false
                    OR EXISTS (SELECT 1 FROM Evento reg
                               WHERE reg.idLead = l.id
@@ -2691,6 +2697,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE r.idAsesorMerito IS NOT NULL
               AND r.fechaMerito >= :fechaDesde
               AND r.fechaMerito < :fechaHasta
+              AND l.etapa <> 'PREVENTA'
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la

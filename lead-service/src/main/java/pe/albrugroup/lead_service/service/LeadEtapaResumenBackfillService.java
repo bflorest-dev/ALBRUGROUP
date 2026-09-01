@@ -199,12 +199,8 @@ public class LeadEtapaResumenBackfillService {
             Set<ComportamientoTipificacion> comportamientos
     ) {
         Set<ComportamientoTipificacion> valores = comportamientos == null ? Set.of() : comportamientos;
-        if (valores.contains(ComportamientoTipificacion.ANULA_ASESOR_MERITO)) {
-            resumenService.anularAsesorMeritoEtapasAnteriores(idLead, etapa);
-        }
-        if (valores.contains(ComportamientoTipificacion.ANULA_FECHA_MERITO)) {
-            resumenService.anularFechaMeritoEtapasAnteriores(idLead, etapa);
-        }
+        // El mérito nunca se borra (ni al reconstruir por backfill): un re-backfill preserva asesor/fecha de
+        // mérito. Los comportamientos ANULA_* quedan sin efecto; la coherencia se resuelve en el read-side.
         if (valores.contains(ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)) {
             resumenService.asignarAsesorMerito(idLead, etapa, idAsesor, nombreAsesor, at);
         }

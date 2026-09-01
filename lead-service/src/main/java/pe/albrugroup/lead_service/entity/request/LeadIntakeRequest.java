@@ -19,6 +19,7 @@ public class LeadIntakeRequest {
     private String usermeta;
 
     // Opcional: un lead puede ingresar sin campana (queda en la bandeja del equipo del GTR).
+    // El flujo ADMIN por equipo recibe el equipo desde la URL, no desde este request.
     private Long idCampana;
 
     @NotNull(message = "La base es obligatoria")

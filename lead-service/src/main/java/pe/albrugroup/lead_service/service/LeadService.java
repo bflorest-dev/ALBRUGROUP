@@ -2634,12 +2634,9 @@ public class LeadService {
             Set<ComportamientoTipificacion> comportamientos
     ) {
         Set<ComportamientoTipificacion> valores = comportamientos == null ? Set.of() : comportamientos;
-        if (valores.contains(ComportamientoTipificacion.ANULA_ASESOR_MERITO)) {
-            leadEtapaResumenService.anularAsesorMeritoEtapasAnteriores(idLead, etapa);
-        }
-        if (valores.contains(ComportamientoTipificacion.ANULA_FECHA_MERITO)) {
-            leadEtapaResumenService.anularFechaMeritoEtapasAnteriores(idLead, etapa);
-        }
+        // El mérito (asesor/fecha) NUNCA se borra: es permanente. Los comportamientos ANULA_* quedan
+        // deliberadamente sin efecto. La validez de una preventa se decide por coherencia de etapa en el
+        // read-side (una preventa cuyo lead volvió a PREVENTA no cuenta como completa), no borrando el dato.
         if (valores.contains(ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)) {
             leadEtapaResumenService.asignarAsesorMerito(idLead, etapa, idAsesor, nombreAsesor, at);
         }
@@ -2763,7 +2760,12 @@ public class LeadService {
 
     @Transactional
     public void registrarIngresoLead(LeadIntakeRequest request) {
-        registrarIngresoLead(request, null);
+        registrarIngresoLead(request, null, null);
+    }
+
+    @Transactional
+    public void registrarIngresoLeadAdmin(Long idEquipo, LeadIntakeRequest request) {
+        registrarIngresoLead(request, null, normalizarIdEquipoAdmin(idEquipo));
     }
 
     @Transactional
@@ -2772,7 +2774,16 @@ public class LeadService {
                 OperationalDateTime.today(),
                 request.getHoraRegistro()
         );
-        registrarIngresoLead(request, registroAt);
+        registrarIngresoLead(request, registroAt, null);
+    }
+
+    @Transactional
+    public void registrarIngresoLeadAdminRetroactivo(Long idEquipo, LeadIntakeRetroactivoRequest request) {
+        Instant registroAt = calcularRegistroRetroactivo(
+                OperationalDateTime.today(),
+                request.getHoraRegistro()
+        );
+        registrarIngresoLead(request, registroAt, normalizarIdEquipoAdmin(idEquipo));
     }
 
     Instant calcularRegistroRetroactivo(LocalDate fechaActual, LocalTime horaRegistro) {
@@ -2784,13 +2795,14 @@ public class LeadService {
                 .toInstant();
     }
 
-    private void registrarIngresoLead(LeadIntakeRequest request, Instant registroAt) {
+    private void registrarIngresoLead(LeadIntakeRequest request, Instant registroAt, Long idEquipoContextual) {
         String prefijo = normalizarPrefijo(request.getPrefijo());
         String numeroLead = normalizarLead(request.getLead());
         String usermeta = normalizarUsermeta(request.getUsermeta());
         validarIdentidadIntake(prefijo, numeroLead, usermeta);
         Campana campana = request.getIdCampana() == null ? null : obtenerCampanaActiva(request.getIdCampana());
         validarOrigenIntake(request.getBase(), campana != null);
+        validarCampanaCompatibleConEquipoContextual(idEquipoContextual, campana);
         LeadIdentidad identidad = resolverIdentidadContacto(prefijo, numeroLead, usermeta);
 
         // El lead PREVENTA del contacto (si existe) tiene prioridad: es el que el GTR gestiona y
@@ -2799,16 +2811,16 @@ public class LeadService {
         Optional<Lead> leadPreventa = leadRepository
                 .findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(identidad.contacto().getId(), Etapa.PREVENTA);
         if (leadPreventa.isPresent()) {
-            registrarIngresoLeadExistente(leadPreventa.get(), identidad, request, campana, registroAt);
+            registrarIngresoLeadExistente(leadPreventa.get(), identidad, request, campana, registroAt, idEquipoContextual);
             return;
         }
         List<Lead> oportunidadesContacto =
                 leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(identidad.contacto().getId());
         if (!oportunidadesContacto.isEmpty()) {
-            registrarAtencionGtrLeadOtraEtapa(oportunidadesContacto.get(0), identidad, request, campana, registroAt);
+            registrarAtencionGtrLeadOtraEtapa(oportunidadesContacto.get(0), identidad, request, campana, registroAt, idEquipoContextual);
             return;
         }
-        registrarLeadNuevo(identidad, request, campana, registroAt);
+        registrarLeadNuevo(identidad, request, campana, registroAt, idEquipoContextual);
     }
 
     private void validarOrigenIntake(Base origen, boolean tieneCampana) {
@@ -3551,8 +3563,45 @@ public class LeadService {
         completarNumeroParaLlamarSiFalta(lead);
     }
 
-    // Deriva el equipo del lead: si el usuario pertenece a un único equipo, ese; si no, del
-    // proveedor de la campaña (mapping equipo_proveedor). Puede ser null (contexto sin equipo).
+    private Long normalizarIdEquipoAdmin(Long idEquipo) {
+        if (idEquipo == null || idEquipo <= 0) {
+            throw new BadRequestException("Selecciona un equipo valido para registrar el lead");
+        }
+        return idEquipo;
+    }
+
+    private void validarCampanaCompatibleConEquipoContextual(Long idEquipoContextual, Campana campana) {
+        if (idEquipoContextual == null || campana == null || campana.getProveedor() == null) {
+            return;
+        }
+        Long idProveedor = campana.getProveedor().getId();
+        if (idProveedor == null) {
+            return;
+        }
+        List<EquipoProveedor> proveedoresEquipo = equipoProveedorRepository.findByIdEquipo(idEquipoContextual);
+        if (!proveedoresEquipo.isEmpty()
+                && proveedoresEquipo.stream()
+                .noneMatch(ep -> ep.getProveedor() != null && idProveedor.equals(ep.getProveedor().getId()))) {
+            throw new ConflictException("La campana seleccionada no pertenece al equipo indicado.");
+        }
+    }
+
+    private Long resolverIdEquipoIntake(Campana campana, Long idEquipoContextual) {
+        return idEquipoContextual != null ? idEquipoContextual : derivarIdEquipo(campana);
+    }
+
+    private void validarEquipoContextualLead(Lead lead, Long idEquipoContextual) {
+        if (idEquipoContextual == null || lead == null) {
+            return;
+        }
+        Long idEquipoActual = lead.getIdEquipo();
+        if (idEquipoActual != null && !idEquipoActual.equals(idEquipoContextual)) {
+            throw new ConflictException("El lead pertenece a otro equipo. Revisa el lead antes de registrarlo.");
+        }
+    }
+
+    // Deriva el equipo del lead: si el usuario pertenece a un unico equipo, ese; si no, del
+    // proveedor de la campana (mapping equipo_proveedor). Puede ser null (contexto sin equipo).
     private Long derivarIdEquipo(Campana campana) {
         List<Long> equipos = currentUser.equipos();
         if (equipos != null && equipos.size() == 1) {
@@ -3570,12 +3619,13 @@ public class LeadService {
             LeadIdentidad identidad,
             LeadIntakeRequest request,
             Campana campana,
-            Instant registroAt
+            Instant registroAt,
+            Long idEquipoContextual
     ) {
         Lead lead = leadMapper.toNuevoLead(
                 identidad.prefijo(), identidad.lead(), identidad.usermeta(), request.getBase(), campana, OperationalDateTime.now());
         lead.setContacto(identidad.contacto());
-        lead.setIdEquipo(derivarIdEquipo(campana));
+        lead.setIdEquipo(resolverIdEquipoIntake(campana, idEquipoContextual));
         completarNumeroParaLlamarSiFalta(lead);
 
         Lead savedLead = leadRepository.save(lead);
@@ -3620,10 +3670,12 @@ public class LeadService {
             LeadIdentidad identidad,
             LeadIntakeRequest request,
             Campana campana,
-            Instant registroAt
+            Instant registroAt,
+            Long idEquipoContextual
     ) {
         Etapa etapaAnterior = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        validarEquipoContextualLead(lead, idEquipoContextual);
         sincronizarIdentidadLead(lead, identidad);
         // Si el re-registro no indica campana, se conserva la que ya tenia el lead (no se borra).
         if (campana != null) {
@@ -3632,7 +3684,7 @@ public class LeadService {
         lead.setBase(request.getBase());
         lead.setLastEntryAt(OperationalDateTime.now());
         if (lead.getIdEquipo() == null) {
-            lead.setIdEquipo(derivarIdEquipo(campana));
+            lead.setIdEquipo(resolverIdEquipoIntake(campana, idEquipoContextual));
         }
 
         // Solo se reinicia a NUEVO si el lead no tuvo gestion hoy. Si ya hubo asignacion, contacto
@@ -3662,13 +3714,15 @@ public class LeadService {
             LeadIdentidad identidad,
             LeadIntakeRequest request,
             Campana campana,
-            Instant registroAt
+            Instant registroAt,
+            Long idEquipoContextual
     ) {
         Etapa etapaAnterior = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        validarEquipoContextualLead(lead, idEquipoContextual);
         sincronizarIdentidadLead(lead, identidad);
         if (lead.getIdEquipo() == null) {
-            lead.setIdEquipo(derivarIdEquipo(campana));
+            lead.setIdEquipo(resolverIdEquipoIntake(campana, idEquipoContextual));
         }
         lead.setRequiereAtencionGtr(true);
         lead.setLastEntryAt(OperationalDateTime.now());

@@ -1381,12 +1381,13 @@ export class GtrWorkspaceFacade {
       idCampana: formValue.idCampana || null,
       base: formValue.base as BaseLead
     };
+    const adminEquipoId = this.adminEquipoId();
     if (!skipLookupConfirmation) {
       this.clearMessages();
       this.intakeError.set(null);
       try {
         const lookupValue = request.lead || request.usermeta || '';
-        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(lookupValue));
+        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(lookupValue, adminEquipoId));
         if (lookup.existe) {
           this.pendingIntakeLookup.set(lookup);
           this.activeDialog.set('intake-confirm');
@@ -1409,9 +1410,17 @@ export class GtrWorkspaceFacade {
           ...request,
           horaRegistro: retroactiveTime
         };
-        await firstValueFrom(this.preventaService.registrarIngresoLeadRetroactivo(retroactiveRequest));
+        if (adminEquipoId !== null) {
+          await firstValueFrom(this.preventaService.registrarIngresoLeadAdminRetroactivo(adminEquipoId, retroactiveRequest));
+        } else {
+          await firstValueFrom(this.preventaService.registrarIngresoLeadRetroactivo(retroactiveRequest));
+        }
       } else {
-        await firstValueFrom(this.preventaService.registrarIngresoLead(request));
+        if (adminEquipoId !== null) {
+          await firstValueFrom(this.preventaService.registrarIngresoLeadAdmin(adminEquipoId, request));
+        } else {
+          await firstValueFrom(this.preventaService.registrarIngresoLead(request));
+        }
       }
       this.resetIntakeForm();
       this.pendingIntakeLookup.set(null);

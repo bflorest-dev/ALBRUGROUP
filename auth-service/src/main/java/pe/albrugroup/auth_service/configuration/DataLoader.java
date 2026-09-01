@@ -167,6 +167,7 @@ public class DataLoader {
 
 
         savePermiso("CREATE_LEADS", "Puede registrar ingresos de leads", "LEAD", "CREATE");
+        savePermiso("CREATE_LEADS_GTR_ADMIN", "Puede registrar leads GTR dentro de un equipo desde Administracion", "LEAD_GTR_ADMIN", "CREATE");
         savePermiso("DELETE_LEADS", "Puede eliminar integralmente leads", "LEAD", "DELETE");
         savePermiso("CORREGIR_CAMPANA_LEAD", "Puede corregir la campana asociada a un lead y sus eventos", "LEAD", "UPDATE_CAMPAIGN");
         savePermiso("CORREGIR_MERITO_PREVENTA", "Puede corregir el asesor de merito de una preventa", "LEAD_PREVENTA_MERITO", "CORRECT");

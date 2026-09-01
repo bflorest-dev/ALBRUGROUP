@@ -124,7 +124,9 @@ public class LeadEtapaResumenService {
         resumen.setUltimaTipificacionOrden(orden);
         resumen.setUltimaTipificacionAt(at);
 
-        resumen.setFechaMerito(null);
+        // NO se borra fechaMerito/asesorMerito: el mérito de la preventa es permanente. La preventa
+        // rechazada deja de contar como "completa" por la regla de coherencia del read-side (lead vuelto
+        // a etapa PREVENTA se excluye de los contadores de preventas completas), no borrando el dato.
         resumen.setTotalTipificaciones(nvl(resumen.getTotalTipificaciones(), 0) + 1);
         resumen.setIdAsesorUltimaGestion(idAsesorGestion);
         resumen.setNombreAsesorUltimaGestion(nombreAsesorGestion);
