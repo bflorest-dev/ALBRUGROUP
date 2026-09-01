@@ -150,24 +150,26 @@
               Lima incluye Callao · Total = Lima + Provincia.
               <b [class.ok]="sinUbigeo() === 0" [class.alert]="sinUbigeo() > 0">Sin ubigeo: {{ sinUbigeo() }}</b>
             </div>
-            <div class="vd-cf">
-              <div class="vd-cf__head">
-                <span class="vd-cf__l">Cargo fijo · instaladas</span>
-                <span class="vd-cf__scope">{{ cf().scope }}</span>
-              </div>
-              <div class="vd-cf__boxes">
-                <div class="vd-cf__box">
-                  <div class="vd-cf__k">CF total</div>
-                  <div class="vd-cf__m">S/ {{ cf().total | number: '1.0-0' }}</div>
-                  <div class="vd-cf__s">sobre {{ cf().base }} instaladas</div>
+            @if (esAdmin) {
+              <div class="vd-cf">
+                <div class="vd-cf__head">
+                  <span class="vd-cf__l">Cargo fijo · instaladas</span>
+                  <span class="vd-cf__scope">{{ cf().scope }}</span>
                 </div>
-                <div class="vd-cf__box">
-                  <div class="vd-cf__k">CF promedio</div>
-                  <div class="vd-cf__m">S/ {{ cf().promedio | number: '1.1-1' }}</div>
-                  <div class="vd-cf__s">por instalación</div>
+                <div class="vd-cf__boxes">
+                  <div class="vd-cf__box">
+                    <div class="vd-cf__k">CF total</div>
+                    <div class="vd-cf__m">S/ {{ cf().total | number: '1.0-0' }}</div>
+                    <div class="vd-cf__s">sobre {{ cf().base }} instaladas</div>
+                  </div>
+                  <div class="vd-cf__box">
+                    <div class="vd-cf__k">CF promedio</div>
+                    <div class="vd-cf__m">S/ {{ cf().promedio | number: '1.1-1' }}</div>
+                    <div class="vd-cf__s">por instalación</div>
+                  </div>
                 </div>
               </div>
-            </div>
+            }
           </div>
         </div>
 

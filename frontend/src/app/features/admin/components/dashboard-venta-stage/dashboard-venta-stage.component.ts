@@ -12,6 +12,7 @@ import {
   PeriodSelectorComponent
 } from '../../../../shared/components/period-selector/period-selector.component';
 import { MetricsRango, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
+import { SessionService } from '../../../../core/services/session.service';
 import {
   DashboardVentaResponse,
   DashboardVentaService,
@@ -130,6 +131,8 @@ const PROVEEDOR_ACCENT_DEFAULT = '#3a3f8f';
 })
 export class DashboardVentaStageComponent implements OnInit {
   private readonly service = inject(DashboardVentaService);
+  // El cargo fijo (dato financiero) solo lo ve el administrador.
+  protected readonly esAdmin = inject(SessionService).getPrimaryRole() === 'ADMINISTRADOR';
 
   protected readonly proveedores = signal<ProveedorRef[]>([]);
   protected readonly proveedorId = signal<number | null>(null);
