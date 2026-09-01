@@ -38,6 +38,7 @@ export interface CumplimientoRow {
   cantidadTardanzas: number;
   minutosBalance: number;
   hasResumen: boolean;
+  estadoOperativo: 'ACTIVO' | 'INACTIVO';
 }
 
 export interface MonthOption {
@@ -188,7 +189,8 @@ export class RrhhAsistenciaFacade {
           diasSinRegistro,
           cantidadTardanzas: r?.cantidadTardanzas ?? 0,
           minutosBalance: r?.minutosBalance ?? 0,
-          hasResumen: Boolean(r)
+          hasResumen: Boolean(r),
+          estadoOperativo: e.estadoOperativo
         };
       })
       .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
@@ -414,8 +416,9 @@ export class RrhhAsistenciaFacade {
     this.isLoading.set(true);
     this.errorMessage.set('');
     try {
+      const range = this.resolveMonthRange(this.selectedMonth());
       const empleados = await firstValueFrom(
-        this.service.listarEmpleadosActivos().pipe(timeout(REQUEST_TIMEOUT_MS))
+        this.service.listarEmpleadosAsistencia(range.desde, range.hasta).pipe(timeout(REQUEST_TIMEOUT_MS))
       );
       const empleadosCumplimiento = (empleados ?? []).filter((empleado) => this.isIncludedInAttendanceReport(empleado));
       this.empleados.set(empleadosCumplimiento);
@@ -427,7 +430,6 @@ export class RrhhAsistenciaFacade {
         return;
       }
 
-      const range = this.resolveMonthRange(this.selectedMonth());
       const empleadoIds = empleadosCumplimiento.map((e) => e.idEmpleado);
 
       const [resumen, estados] = await Promise.all([
@@ -524,20 +526,22 @@ export class RrhhAsistenciaFacade {
 
     try {
       const range = this.resolveMonthRange(this.drawerSelectedMonth());
-      const [contrato, horario, detalle] = await Promise.all([
-        firstValueFrom(this.service.getContratoVigente(idEmpleado).pipe(timeout(REQUEST_TIMEOUT_MS))),
-        firstValueFrom(this.service.getHorarioVigente(idEmpleado, this.getToday()).pipe(timeout(REQUEST_TIMEOUT_MS))),
-        firstValueFrom(
-          this.service
-            .getCumplimientoDetalle({ empleadoIds: [idEmpleado], desde: range.desde, hasta: range.hasta })
-            .pipe(timeout(REQUEST_TIMEOUT_MS))
-        )
-      ]);
-
-      this.drawerContrato.set(contrato);
-      this.drawerHorario.set(horario);
+      const detalle = await firstValueFrom(
+        this.service
+          .getCumplimientoDetalle({ empleadoIds: [idEmpleado], desde: range.desde, hasta: range.hasta })
+          .pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
       this.drawerDetalleDias.set(detalle.empleados[0]?.dias ?? []);
-      this.populateScheduleForm(horario, contrato.modalidad);
+
+      if (empleado.estadoOperativo === 'ACTIVO') {
+        const [contrato, horario] = await Promise.all([
+          firstValueFrom(this.service.getContratoVigente(idEmpleado).pipe(timeout(REQUEST_TIMEOUT_MS))),
+          firstValueFrom(this.service.getHorarioVigente(idEmpleado, this.getToday()).pipe(timeout(REQUEST_TIMEOUT_MS)))
+        ]);
+        this.drawerContrato.set(contrato);
+        this.drawerHorario.set(horario);
+        this.populateScheduleForm(horario, contrato.modalidad);
+      }
     } catch (error) {
       this.drawerErrorMessage.set(this.extractErrorMessage(error, 'No fue posible cargar la informacion del empleado.'));
     } finally {

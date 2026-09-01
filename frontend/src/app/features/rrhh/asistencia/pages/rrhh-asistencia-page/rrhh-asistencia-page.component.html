@@ -151,6 +151,9 @@
         <div>
           <span class="rrhh-hero__eyebrow">Empleado</span>
           <h3>{{ empleado.nombres }} {{ empleado.apellidos }}</h3>
+          @if (empleado.estadoOperativo === 'INACTIVO') {
+            <span class="employee-drawer__inactive-badge">Dado de baja</span>
+          }
           <p>
             {{ formatPuesto(empleado.puestoTrabajo) }}
             @if (facade.drawerContrato(); as contrato) { · {{ formatPuesto(contrato.modalidad) }} }

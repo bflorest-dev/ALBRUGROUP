@@ -89,6 +89,18 @@
     text-overflow: ellipsis;
   }
 
+  &__inactive-badge {
+    flex: none;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    color: #64748b;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0.25rem 0.45rem;
+    white-space: nowrap;
+  }
+
   // ── Asistidos X/Y
   &__ratio-head {
     display: flex;
@@ -218,6 +230,21 @@
   &__balance--zero {
     .emp-row__thermo-fill { display: none; }
     .emp-row__balance-val { color: var(--app-text-muted, #6b7280); }
+  }
+
+  &--inactive {
+    background: #f8fafc;
+
+    .emp-row__avatar {
+      background: #e2e8f0;
+      color: #64748b;
+    }
+
+    .emp-row__name,
+    .emp-row__ratio-head,
+    .emp-row__balance-val {
+      color: #64748b;
+    }
   }
 }
 

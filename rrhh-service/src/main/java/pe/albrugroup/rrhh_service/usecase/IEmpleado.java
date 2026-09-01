@@ -12,6 +12,7 @@ import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
 
 import java.util.List;
+import java.time.LocalDate;
 
 public interface IEmpleado {
 
@@ -29,5 +30,7 @@ public interface IEmpleado {
     EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId);
     EmpleadoResponse darDeBajaEmpleado(Long idEmpleado, String authHeader);
     List<EmpleadoRolResponse> listarEmpleadosLight(List<PuestoTrabajo> puestosTrabajo, List<Long> empleadoIds);
+    List<EmpleadoRolResponse> listarEmpleadosAsistencia(LocalDate desde, LocalDate hasta, List<PuestoTrabajo> puestosTrabajo,
+                                                         List<Long> empleadoIds);
     List<EmpleadoRolResponse> listarPersonalRecruitment();
 }

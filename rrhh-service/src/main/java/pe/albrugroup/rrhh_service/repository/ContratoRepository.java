@@ -50,7 +50,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.numeroDocumento AS numeroDocumento,
                 e.celularPersonal AS celularPersonal,
                 e.correoPersonal AS correoPersonal,
-                c.puestoTrabajo AS puestoTrabajo
+                c.puestoTrabajo AS puestoTrabajo,
+                e.estadoOperativo AS estadoOperativo
             FROM Contrato c
             JOIN c.empleado e
             WHERE e.estadoOperativo = :estadoOperativo
@@ -71,7 +72,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.numeroDocumento AS numeroDocumento,
                 e.celularPersonal AS celularPersonal,
                 e.correoPersonal AS correoPersonal,
-                c.puestoTrabajo AS puestoTrabajo
+                c.puestoTrabajo AS puestoTrabajo,
+                e.estadoOperativo AS estadoOperativo
             FROM Contrato c
             JOIN c.empleado e
             WHERE e.estadoOperativo = :estadoOperativo
@@ -90,7 +92,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.numeroDocumento AS numeroDocumento,
                 e.celularPersonal AS celularPersonal,
                 e.correoPersonal AS correoPersonal,
-                c.puestoTrabajo AS puestoTrabajo
+                c.puestoTrabajo AS puestoTrabajo,
+                e.estadoOperativo AS estadoOperativo
             FROM Contrato c
             JOIN c.empleado e
             WHERE e.estadoOperativo = :estadoOperativo
@@ -102,4 +105,66 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
     List<EmpleadoRolProjection> findEmpleadosActivosByIds(@Param("estadoOperativo") EstadoOperativo estadoOperativo,
                                                           @Param("fechaActual") LocalDate fechaActual,
                                                           @Param("empleadoIds") List<Long> empleadoIds);
+
+    @Query("""
+            SELECT DISTINCT
+                e.id AS idEmpleado,
+                e.nombres AS nombres,
+                e.apellidos AS apellidos,
+                e.numeroDocumento AS numeroDocumento,
+                e.celularPersonal AS celularPersonal,
+                e.correoPersonal AS correoPersonal,
+                c.puestoTrabajo AS puestoTrabajo,
+                e.estadoOperativo AS estadoOperativo
+            FROM Contrato c
+            JOIN c.empleado e
+            WHERE c.fechaInicio <= :hasta
+              AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
+            ORDER BY e.nombres ASC, e.apellidos ASC
+            """)
+    List<EmpleadoRolProjection> findEmpleadosConContratoEnRango(@Param("desde") LocalDate desde,
+                                                                 @Param("hasta") LocalDate hasta);
+
+    @Query("""
+            SELECT DISTINCT
+                e.id AS idEmpleado,
+                e.nombres AS nombres,
+                e.apellidos AS apellidos,
+                e.numeroDocumento AS numeroDocumento,
+                e.celularPersonal AS celularPersonal,
+                e.correoPersonal AS correoPersonal,
+                c.puestoTrabajo AS puestoTrabajo,
+                e.estadoOperativo AS estadoOperativo
+            FROM Contrato c
+            JOIN c.empleado e
+            WHERE c.fechaInicio <= :hasta
+              AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
+              AND c.puestoTrabajo IN :puestosTrabajo
+            ORDER BY e.nombres ASC, e.apellidos ASC
+            """)
+    List<EmpleadoRolProjection> findEmpleadosConContratoEnRangoByPuestosTrabajo(
+            @Param("desde") LocalDate desde,
+            @Param("hasta") LocalDate hasta,
+            @Param("puestosTrabajo") List<PuestoTrabajo> puestosTrabajo);
+
+    @Query("""
+            SELECT DISTINCT
+                e.id AS idEmpleado,
+                e.nombres AS nombres,
+                e.apellidos AS apellidos,
+                e.numeroDocumento AS numeroDocumento,
+                e.celularPersonal AS celularPersonal,
+                e.correoPersonal AS correoPersonal,
+                c.puestoTrabajo AS puestoTrabajo,
+                e.estadoOperativo AS estadoOperativo
+            FROM Contrato c
+            JOIN c.empleado e
+            WHERE c.fechaInicio <= :hasta
+              AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
+              AND e.id IN :empleadoIds
+            ORDER BY e.nombres ASC, e.apellidos ASC
+            """)
+    List<EmpleadoRolProjection> findEmpleadosConContratoEnRangoByIds(@Param("desde") LocalDate desde,
+                                                                      @Param("hasta") LocalDate hasta,
+                                                                      @Param("empleadoIds") List<Long> empleadoIds);
 }

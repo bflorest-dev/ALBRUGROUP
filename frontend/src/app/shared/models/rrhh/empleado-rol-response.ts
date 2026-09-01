@@ -6,4 +6,5 @@ export interface EmpleadoRolResponse {
   celularPersonal: string;
   correoPersonal: string;
   puestoTrabajo: string;
+  estadoOperativo: 'ACTIVO' | 'INACTIVO';
 }

@@ -1708,7 +1708,8 @@ export class AdminPersonalFacade implements OnDestroy {
         numeroDocumento: employee.numeroDocumento,
         celularPersonal: employee.celularPersonal,
         correoPersonal: employee.correoPersonal,
-        puestoTrabajo: 'SIN_CONTRATO'
+        puestoTrabajo: 'SIN_CONTRATO',
+        estadoOperativo: 'INACTIVO'
       },
       false
     );

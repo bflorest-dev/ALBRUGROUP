@@ -1,6 +1,7 @@
 package pe.albrugroup.rrhh_service.repository.projection;
 
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
+import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 
 public interface EmpleadoRolProjection {
 
@@ -11,4 +12,5 @@ public interface EmpleadoRolProjection {
     String getCelularPersonal();
     String getCorreoPersonal();
     PuestoTrabajo getPuestoTrabajo();
+    EstadoOperativo getEstadoOperativo();
 }

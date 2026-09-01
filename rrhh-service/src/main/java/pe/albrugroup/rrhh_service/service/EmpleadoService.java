@@ -254,6 +254,27 @@ public class EmpleadoService implements IEmpleado {
 
     @Override
     @Transactional(readOnly = true)
+    public List<EmpleadoRolResponse> listarEmpleadosAsistencia(LocalDate desde, LocalDate hasta,
+                                                                 List<PuestoTrabajo> puestosTrabajo,
+                                                                 List<Long> empleadoIds) {
+        if (empleadoIds != null) {
+            if (empleadoIds.isEmpty()) {
+                return List.of();
+            }
+            return empleadoRolMapper.toResponseList(
+                    contratoRepository.findEmpleadosConContratoEnRangoByIds(desde, hasta, empleadoIds)
+            );
+        }
+
+        return empleadoRolMapper.toResponseList(
+                puestosTrabajo == null || puestosTrabajo.isEmpty()
+                        ? contratoRepository.findEmpleadosConContratoEnRango(desde, hasta)
+                        : contratoRepository.findEmpleadosConContratoEnRangoByPuestosTrabajo(desde, hasta, puestosTrabajo)
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<EmpleadoRolResponse> listarPersonalRecruitment() {
         List<PuestoTrabajo> puestosRecruitment = List.of(
                 PuestoTrabajo.CAPACITADOR,

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
+import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 
 @Builder
 @Getter
@@ -21,4 +22,5 @@ public class EmpleadoRolResponse {
     private String celularPersonal;
     private String correoPersonal;
     private PuestoTrabajo puestoTrabajo;
+    private EstadoOperativo estadoOperativo;
 }

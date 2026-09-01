@@ -31,6 +31,7 @@ import pe.albrugroup.rrhh_service.security.UserSession;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 
 import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @Validated
@@ -116,6 +117,25 @@ public class EmpleadoController {
             @RequestParam(required = false) List<Long> empleadoIds
     ) {
         return ResponseEntity.ok(empleadoService.listarEmpleadosLight(puestosTrabajo, empleadoIds));
+    }
+
+    @Operation(
+            summary = "Listar empleados para asistencia por periodo",
+            description = "Devuelve empleados con contrato que se solapa con el rango consultado, incluyendo bajas históricas. " +
+                    "Si se envían IDs, prevalecen sobre puestosTrabajo."
+    )
+    @GetMapping("/asistencia")
+    @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
+    public ResponseEntity<List<EmpleadoRolResponse>> listarEmpleadosAsistencia(
+            @RequestParam LocalDate desde,
+            @RequestParam LocalDate hasta,
+            @RequestParam(required = false) List<PuestoTrabajo> puestosTrabajo,
+            @RequestParam(required = false) List<Long> empleadoIds
+    ) {
+        if (hasta.isBefore(desde)) {
+            throw new IllegalArgumentException("El rango de asistencia es inválido.");
+        }
+        return ResponseEntity.ok(empleadoService.listarEmpleadosAsistencia(desde, hasta, puestosTrabajo, empleadoIds));
     }
 
     @Operation(

@@ -5,10 +5,13 @@
   </header>
 
   @for (row of group().empleados; track row.idEmpleado) {
-    <button type="button" class="emp-row" (click)="rowClick.emit(row)">
+    <button type="button" class="emp-row" [class.emp-row--inactive]="row.estadoOperativo === 'INACTIVO'" (click)="rowClick.emit(row)">
       <span class="emp-row__person">
         <span class="emp-row__avatar" aria-hidden="true">{{ initials(row.nombreCompleto) }}</span>
         <span class="emp-row__name">{{ row.nombreCompleto }}</span>
+        @if (row.estadoOperativo === 'INACTIVO') {
+          <span class="emp-row__inactive-badge">Dado de baja</span>
+        }
       </span>
 
       <span class="emp-row__ratio">

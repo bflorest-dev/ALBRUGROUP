@@ -28,13 +28,14 @@ export class RrhhAsistenciaService {
   private readonly horariosUrl = `${API_CONSTANTS.gatewayBaseUrl}/schedule/horarios`;
   private readonly revisionUrl = `${API_CONSTANTS.gatewayBaseUrl}/schedule/revision/asistencia`;
 
-  /** Empleados activos con contrato vigente. Permite filtrar por puesto. */
-  listarEmpleadosActivos(puestosTrabajo?: string[]): Observable<EmpleadoRolResponse[]> {
+  /** Empleados con contrato solapado al periodo de asistencia consultado. */
+  listarEmpleadosAsistencia(desde: string, hasta: string, puestosTrabajo?: string[]): Observable<EmpleadoRolResponse[]> {
     let params = new HttpParams();
+    params = params.set('desde', desde).set('hasta', hasta);
     (puestosTrabajo ?? []).forEach((puesto) => {
       params = params.append('puestosTrabajo', puesto);
     });
-    return this.http.get<EmpleadoRolResponse[]>(`${this.empleadosUrl}/light`, { params });
+    return this.http.get<EmpleadoRolResponse[]>(`${this.empleadosUrl}/asistencia`, { params });
   }
 
   getCumplimientoResumen(request: ConsultaCumplimientoRequest): Observable<CumplimientoResumenResponse> {
