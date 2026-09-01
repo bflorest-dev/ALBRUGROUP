@@ -435,4 +435,155 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") java.util.Collection<Long> equipoIds
     );
+
+    // ===== DASHBOARD de VENTA (docs/PLAN_DASHBOARD_VENTA.md §10) =====
+    // Scope por PROVEEDOR: JOIN l.plan.proveedor.id = :idProveedor (el equipoFilter se desactiva en el
+    // servicio; el proveedor es la partición). Universo = fila VENTA con fechaIngresoEtapa ∈ período.
+    // El prefijo de ubigeo (SUBSTRING 1,2) se pliega a Lima ('15'/'07') / Provincia / SinUbigeo en Java.
+
+    // Q1 — universo por (última tipificación, prefijo de ubigeo). Da: preventasCompletas, registradas,
+    // instaladas, rechazadas, programadasActual, estadoLeads y zonas.registradas.
+    @Query("""
+            SELECT r.ultimaCodigoTipificacion, SUBSTRING(d.ubigeoDomicilio, 1, 2), COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            LEFT JOIN l.direccion d
+            WHERE pr.id = :idProveedor
+              AND r.fechaIngresoEtapa >= :inicio
+              AND r.fechaIngresoEtapa < :fin
+            GROUP BY r.ultimaCodigoTipificacion, SUBSTRING(d.ubigeoDomicilio, 1, 2)
+            """)
+    List<Object[]> dashboardVentaUniverso(
+            @Param("etapa") Etapa etapa,
+            @Param("idProveedor") Long idProveedor,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // Q2 — embudo "programada alguna vez" (mayorRango ∈ {PROGRAMADO, INSTALADO}) por última tipificación.
+    // Da: programadasTotal (suma), programadasInstaladas (bucket INSTALADO), programadasRechazadas (rechazo).
+    @Query("""
+            SELECT r.ultimaCodigoTipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            WHERE pr.id = :idProveedor
+              AND r.fechaIngresoEtapa >= :inicio
+              AND r.fechaIngresoEtapa < :fin
+              AND r.mayorRangoCodigoTipificacion IN :codigosProgramadaOMas
+            GROUP BY r.ultimaCodigoTipificacion
+            """)
+    List<Object[]> dashboardVentaEmbudo(
+            @Param("etapa") Etapa etapa,
+            @Param("idProveedor") Long idProveedor,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("codigosProgramadaOMas") Collection<String> codigosProgramadaOMas
+    );
+
+    // Q3 — zonas: instaladas EN EL PERÍODO (fechaInstalacion) por prefijo de ubigeo, con CF (SUM/AVG del
+    // precioPlanSnapshot) y cuántas de esas también ingresaron a venta en el período (registradasEInstaladas).
+    @Query("""
+            SELECT SUBSTRING(d.ubigeoDomicilio, 1, 2),
+                   COUNT(DISTINCT l.id),
+                   SUM(l.precioPlanSnapshot),
+                   AVG(l.precioPlanSnapshot),
+                   SUM(CASE WHEN r.fechaIngresoEtapa >= :inicio AND r.fechaIngresoEtapa < :fin THEN 1 ELSE 0 END)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            LEFT JOIN l.direccion d
+            JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE pr.id = :idProveedor
+              AND r.ultimaCodigoTipificacion = :codigoInstalado
+              AND c.fechaInstalacion >= :desdeDate
+              AND c.fechaInstalacion < :hastaDateExcl
+            GROUP BY SUBSTRING(d.ubigeoDomicilio, 1, 2)
+            """)
+    List<Object[]> dashboardVentaZonasInstaladas(
+            @Param("etapa") Etapa etapa,
+            @Param("idProveedor") Long idProveedor,
+            @Param("codigoInstalado") String codigoInstalado,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
+    // Q5 — programación actual: cartera viva de PROGRAMADO por subtipificación (estado actual, sin período).
+    @Query("""
+            SELECT r.ultimaCodigoSubtipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            WHERE pr.id = :idProveedor
+              AND l.etapa = :etapa
+              AND r.ultimaCodigoTipificacion = :codigoProgramado
+            GROUP BY r.ultimaCodigoSubtipificacion
+            """)
+    List<Object[]> dashboardVentaProgramacionActual(
+            @Param("etapa") Etapa etapa,
+            @Param("idProveedor") Long idProveedor,
+            @Param("codigoProgramado") String codigoProgramado
+    );
+
+    // Q6 — ranking por asesor de mérito de PREVENTA sobre el universo VENTA, con prefijo de ubigeo.
+    @Query("""
+            SELECT rp.idAsesorMerito, rp.nombreAsesorMerito, SUBSTRING(d.ubigeoDomicilio, 1, 2),
+                   COUNT(DISTINCT l.id),
+                   SUM(CASE WHEN rv.ultimaCodigoTipificacion = :codigoInstalado THEN 1 ELSE 0 END)
+            FROM Lead l
+            JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            LEFT JOIN l.direccion d
+            WHERE pr.id = :idProveedor
+              AND rv.fechaIngresoEtapa >= :inicio
+              AND rv.fechaIngresoEtapa < :fin
+              AND rp.idAsesorMerito IS NOT NULL
+            GROUP BY rp.idAsesorMerito, rp.nombreAsesorMerito, SUBSTRING(d.ubigeoDomicilio, 1, 2)
+            """)
+    List<Object[]> dashboardVentaRanking(
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("idProveedor") Long idProveedor,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("codigoInstalado") String codigoInstalado
+    );
+
+    // Q4 (endpoint auxiliar) — tramos: cartera viva de PROGRAMADO cuyo evento de programación VIGENTE cae en
+    // uno de los días pedidos (hoy/mañana/pasado). Devuelve [fechaProgramacion, horaProgramada, cantidad]; el
+    // servicio agrupa por tramo horario × día. El evento vigente = el último PROGRAMADO con hora (MAX createdAt).
+    @Query("""
+            SELECT e.fechaProgramacion, e.horaProgramada, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            JOIN Evento e ON e.idLead = l.id AND e.etapa = :etapa AND e.tipificacion = :codigoProgramado
+                         AND e.horaProgramada IS NOT NULL AND e.fechaProgramacion IS NOT NULL
+            WHERE pr.id = :idProveedor
+              AND l.etapa = :etapa
+              AND r.ultimaCodigoTipificacion = :codigoProgramado
+              AND e.fechaProgramacion IN :dias
+              AND e.createdAt = (
+                  SELECT MAX(es.createdAt) FROM Evento es
+                  WHERE es.idLead = l.id AND es.etapa = :etapa AND es.tipificacion = :codigoProgramado
+                    AND es.horaProgramada IS NOT NULL
+              )
+            GROUP BY e.fechaProgramacion, e.horaProgramada
+            """)
+    List<Object[]> dashboardVentaTramos(
+            @Param("etapa") Etapa etapa,
+            @Param("idProveedor") Long idProveedor,
+            @Param("codigoProgramado") String codigoProgramado,
+            @Param("dias") Collection<java.time.LocalDate> dias
+    );
 }

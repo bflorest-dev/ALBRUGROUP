@@ -1,13 +1,260 @@
-<section class="admin-page">
-  <app-page-header
-    eyebrow="Dashboard"
-    title="Venta"
-    description="Las métricas de la etapa de Venta llegarán pronto a este panel."
-  />
-
-  <div class="ph-empty">
-    <i class="pi pi-clock" aria-hidden="true"></i>
-    <p class="ph-empty__title">Próximamente</p>
-    <p class="ph-empty__text">Estamos preparando las métricas de esta etapa.</p>
+<section class="venta-dash">
+  <!-- Controles: viven sobre el poster, con el tema de la app. -->
+  <div class="vd-controls">
+    @if (proveedorOptions().length > 1) {
+      <div class="vd-control">
+        <span class="vd-control__label">Proveedor</span>
+        <p-selectButton
+          [options]="proveedorOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="proveedorId()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onProveedorChange($event.value)"
+        />
+      </div>
+    }
+    <div class="vd-control">
+      <span class="vd-control__label">Vista</span>
+      <p-selectButton
+        [options]="vistaOptions"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+        [ngModel]="vista()"
+        [ngModelOptions]="{ standalone: true }"
+        (onChange)="onVistaChange($event.value)"
+      />
+    </div>
+    <div class="vd-control">
+      <span class="vd-control__label">Período</span>
+      <app-period-selector
+        [periodo]="periodo()"
+        [dia]="dia()"
+        [hasta]="hasta()"
+        (periodoChange)="onPeriodoChange($event)"
+        (rangoChange)="onRangoChange($event)"
+      />
+    </div>
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      severity="secondary"
+      [rounded]="true"
+      [outlined]="true"
+      [loading]="isLoading()"
+      (click)="recargar()"
+      pTooltip="Actualizar"
+      tooltipPosition="top"
+      aria-label="Actualizar"
+      class="vd-refresh"
+    ></button>
   </div>
+
+  @if (errorMessage()) {
+    <p-message severity="error" [text]="errorMessage()" styleClass="vd-message" />
+  }
+  @if (!hayDatos() && !errorMessage()) {
+    <div class="vd-empty">{{ isLoading() ? 'Cargando métricas…' : 'Sin datos para el período.' }}</div>
+  }
+
+  @if (hayDatos()) {
+    <article class="poster" [style.--team-accent]="providerAccent()">
+      <header class="poster-head">
+        <div class="poster-head__left">
+          <p class="eyebrow">Dashboard · Venta</p>
+          <h2 class="poster-title">{{ tituloVista() }}</h2>
+        </div>
+        <div class="poster-head__right">
+          <span class="ph-chip"><span class="ph-dot"></span>{{ proveedorNombre() }}</span>
+          <span class="ph-sep"></span>
+          <span class="ph-chip">{{ periodoLabel() }}</span>
+        </div>
+      </header>
+
+      <!-- ═══════════ RESUMEN ═══════════ -->
+      @if (vista() === 'resumen') {
+        <div class="vd-counters">
+          @for (k of counterCards(); track k.key) {
+            <div class="vd-card vd-kpi" [class.good]="k.tone === 'good'" [class.bad]="k.tone === 'bad'">
+              <div class="vd-kpi__lbl"><span class="vd-dot" [class]="'is-' + k.color"></span>{{ k.label }}</div>
+              <div class="vd-kpi__v">{{ k.value }}</div>
+              <div class="vd-kpi__prop"><i [class]="'is-' + k.color" [style.width.%]="k.width"></i></div>
+              <div class="vd-kpi__nota">{{ k.nota }}</div>
+            </div>
+          }
+        </div>
+
+        <div class="vd-card vd-ribbon">
+          @for (c of conversiones(); track c.label) {
+            <div class="vd-conv">
+              <div class="vd-conv__lbl">{{ c.label }}</div>
+              <div class="vd-conv__v">{{ c.pct }}%<span class="vd-conv__f">{{ c.frac }}</span></div>
+            </div>
+          }
+        </div>
+
+        <h3 class="vd-sec">Distribución</h3>
+        <div class="vd-row2">
+          <div class="vd-card vd-estado">
+            <div class="vd-zone__head"><span class="vd-zone__ttl">Por tipificación</span></div>
+            <div class="vd-estado__rows">
+              @for (e of estadoRows(); track e.label) {
+                <div class="vd-er">
+                  <span class="vd-er__lbl"><span class="vd-chip" [class]="'is-' + e.color"></span>{{ e.label }}</span>
+                  <span class="vd-bar"><i [class]="'is-' + e.color" [style.width.%]="e.width"></i></span>
+                  <span class="vd-er__n">{{ e.cantidad }}</span>
+                  <span class="vd-er__pct">{{ e.pct }}%</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="vd-card vd-zone">
+            <div class="vd-zone__head">
+              <span class="vd-zone__ttl">Por territorio</span>
+              <p-selectButton
+                [options]="zonaOptions"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false"
+                [ngModel]="zonaSel()"
+                [ngModelOptions]="{ standalone: true }"
+                (onChange)="onZonaSel($event.value)"
+                styleClass="vd-zseg"
+              />
+            </div>
+            <table class="vd-zt">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th class="z-lima" [class.dim]="zonaSel() === 'provincia'">Lima</th>
+                  <th class="z-prov" [class.dim]="zonaSel() === 'lima'">Provincia</th>
+                  <th class="z-tot">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of zonaRows(); track r.label) {
+                  <tr>
+                    <th>{{ r.label }}@if (r.hint) {<small>{{ r.hint }}</small>}</th>
+                    <td [class.dim]="zonaSel() === 'provincia'">{{ r.lima }}</td>
+                    <td [class.dim]="zonaSel() === 'lima'">{{ r.provincia }}</td>
+                    <td class="z-tot">{{ r.total }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <div class="vd-znote">
+              Lima incluye Callao · Total = Lima + Provincia.
+              <b [class.ok]="sinUbigeo() === 0" [class.alert]="sinUbigeo() > 0">Sin ubigeo: {{ sinUbigeo() }}</b>
+            </div>
+            <div class="vd-cf">
+              <div class="vd-cf__head">
+                <span class="vd-cf__l">Cargo fijo · instaladas</span>
+                <span class="vd-cf__scope">{{ cf().scope }}</span>
+              </div>
+              <div class="vd-cf__boxes">
+                <div class="vd-cf__box">
+                  <div class="vd-cf__k">CF total</div>
+                  <div class="vd-cf__m">S/ {{ cf().total | number: '1.0-0' }}</div>
+                  <div class="vd-cf__s">sobre {{ cf().base }} instaladas</div>
+                </div>
+                <div class="vd-cf__box">
+                  <div class="vd-cf__k">CF promedio</div>
+                  <div class="vd-cf__m">S/ {{ cf().promedio | number: '1.1-1' }}</div>
+                  <div class="vd-cf__s">por instalación</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="vd-sec">Programación <span class="vd-tag-now">Estado actual</span></h3>
+        <div class="vd-row3">
+          <div class="vd-card vd-prog">
+            @for (p of programacionRows(); track p.label) {
+              <div class="vd-pr">
+                <span class="vd-pr__lbl"><span class="vd-st"></span>{{ p.label }}</span>
+                <span class="vd-bar"><i class="is-secondary" [style.width.%]="p.width"></i></span>
+                <span class="vd-pr__n">{{ p.cantidad }}</span>
+              </div>
+            }
+            @if (!programacionRows().length) {
+              <div class="vd-prog__empty">Sin leads programados.</div>
+            }
+            <div class="vd-prog__tot"><span>Total programadas ahora</span><b>{{ programacionTotal() }}</b></div>
+          </div>
+
+          <div class="vd-card vd-tramos">
+            <table class="vd-tr">
+              <thead>
+                <tr><th>Tramo horario</th><th>Hoy</th><th>Mañana</th><th>Pasado</th></tr>
+              </thead>
+              <tbody>
+                @for (t of tramoRows(); track t.label) {
+                  <tr>
+                    <th>{{ t.label }} <small>{{ t.rango }}</small></th>
+                    <td><span class="vd-heat" [style.opacity]="0.2 + 0.8 * (t.hoy / tramoMax())">{{ t.hoy }}</span></td>
+                    <td><span class="vd-heat" [style.opacity]="0.2 + 0.8 * (t.manana / tramoMax())">{{ t.manana }}</span></td>
+                    <td><span class="vd-heat" [style.opacity]="0.2 + 0.8 * (t.pasado / tramoMax())">{{ t.pasado }}</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <div class="vd-tramos__foot">Fecha y hora del evento vigente · {{ programacionTotal() }} leads con cita a futuro.</div>
+          </div>
+        </div>
+      }
+
+      <!-- ═══════════ ASESORES ═══════════ -->
+      @if (vista() === 'asesores') {
+        <div class="vd-rank">
+          <table class="vd-rk">
+            <thead>
+              <tr class="g">
+                <th></th>
+                <th colspan="3">Total</th>
+                <th class="lima" colspan="3">Lima</th>
+                <th class="prov" colspan="3">Provincia</th>
+              </tr>
+              <tr class="c">
+                <th>Asesor</th>
+                <th>Reg.</th><th>Inst.</th><th>Conv.</th>
+                <th class="sep">Reg.</th><th>Inst.</th><th>Conv.</th>
+                <th class="sep">Reg.</th><th>Inst.</th><th>Conv.</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of rankingRows(); track a.idAsesor) {
+                <tr>
+                  <td>
+                    <span class="vd-who">
+                      <span class="vd-av" [style.background]="a.color">{{ a.inicial }}</span>{{ a.nombre }}
+                    </span>
+                  </td>
+                  <td class="big">{{ a.registradas }}</td>
+                  <td class="big">{{ a.instaladas }}</td>
+                  <td>
+                    <span class="vd-cvb">
+                      <span class="vd-cvb__t"><i [style.width.%]="a.conv"></i></span>
+                      <b>{{ a.conv }}%</b>
+                    </span>
+                  </td>
+                  <td class="sep">{{ a.regLima }}</td><td>{{ a.instLima }}</td>
+                  <td><b class="c-lima">{{ a.convLima }}%</b></td>
+                  <td class="sep">{{ a.regProv }}</td><td>{{ a.instProv }}</td>
+                  <td><b class="c-prov">{{ a.convProv }}%</b></td>
+                </tr>
+              }
+              @if (!rankingRows().length) {
+                <tr><td colspan="10" class="vd-rk__empty">Sin preventas atribuidas en el período.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  }
 </section>

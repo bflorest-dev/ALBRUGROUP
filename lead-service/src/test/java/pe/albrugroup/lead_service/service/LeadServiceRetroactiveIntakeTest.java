@@ -751,7 +751,7 @@ class LeadServiceRetroactiveIntakeTest {
                 80L,
                 "VENTA_CERRADA"
         )).thenReturn(Optional.of(subtipificacion));
-        when(equipoCampoService.resolverConfigPorProveedorVisible(1L)).thenReturn(List.of(
+        when(equipoCampoService.resolverConfigPorProveedor(1L)).thenReturn(List.of(
                 campoConfig(CampoConfigurable.DOC_TITULAR_CELULAR, true, true),
                 campoConfig(CampoConfigurable.NOMBRE_TITULAR_CELULAR, true, true)
         ));
