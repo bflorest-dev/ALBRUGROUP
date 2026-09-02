@@ -4,7 +4,7 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, filter, map, of, startWith, switchMap, timeout } from 'rxjs';
 import { ApiErrorResponse } from '../../shared/models/api/api-error-response';
-import { DetalleDiaResponse } from '../../shared/models/schedule/detalle-dia-response';
+import { DetalleDiaResponse, TramoDiaResponse } from '../../shared/models/schedule/detalle-dia-response';
 import {
   ATTENDANCE_STATUS_META,
   AttendanceActionId,
@@ -157,25 +157,133 @@ export class AttendanceFacade {
   readonly rawStatus = computed<EstadoAsistencia>(
     () => this.attendanceDetail()?.estadoActual ?? 'OFFLINE'
   );
-  readonly isWithinSchedule = computed(() => Boolean(this.attendanceDetail()?.enTurnoActivo));
-  readonly isOperational = computed(() => Boolean(this.attendanceDetail()?.operativo));
+  // ===================== Derivacion de la jornada con el reloj vivo (v3) =====================
+  // El backend entrega los tramos + politica; el frontend calcula tramo vigente/proximo/hueco y las
+  // compuertas cada tick (nowTick, 1s), asi nunca muestra un gate vencido. El backend re-valida al marcar.
+
+  private readonly tramosOrdenados = computed<TramoDiaResponse[]>(() => {
+    const t = this.attendanceDetail()?.tramos ?? [];
+    return [...t].sort((a, b) => a.inicio.localeCompare(b.inicio));
+  });
+
+  /** Tramo cuya ventana contiene el instante actual (marcable/curso), o null en hueco/fuera. */
+  readonly tramoVigente = computed<TramoDiaResponse | null>(() => {
+    const now = this.nowTick();
+    return this.tramosOrdenados().find(t => this.ms(t.inicio) <= now && now < this.ms(t.fin)) ?? null;
+  });
+
+  /** Proximo tramo que aun no comienza. */
+  readonly proximoTramo = computed<TramoDiaResponse | null>(() => {
+    const now = this.nowTick();
+    return this.tramosOrdenados().find(t => this.ms(t.inicio) > now) ?? null;
+  });
+
+  /** true si estamos entre dos tramos programados (hueco), no dentro de ninguno. */
+  readonly enHueco = computed<boolean>(() => {
+    const now = this.nowTick();
+    const ts = this.tramosOrdenados();
+    if (!ts.length || this.tramoVigente()) return false;
+    return ts.some(t => this.ms(t.fin) <= now) && ts.some(t => this.ms(t.inicio) > now);
+  });
+
+  readonly isWithinSchedule = computed(() => this.tramoVigente() !== null);
+  readonly isOperational = computed(() => this.attendanceDetail()?.estadoActual === 'ONLINE');
+
   /**
-   * Jornada abierta (ONLINE) cuya hora de salida programada ya paso. Lo usan las vistas con cierre
-   * propio (ej. ASESOR_VENTAS) para saber que el turno termino aunque el empleado siga operativo.
-   * Heuristica con reloj local (patron permitido); solo aplica a turnos del mismo dia.
+   * Jornada abierta (ONLINE) cuya jornada del dia ya termino (paso el fin del ultimo tramo). Lo usan
+   * las vistas con cierre propio (ej. ASESOR_VENTAS) para saber que el turno termino aunque siga ONLINE.
    */
   readonly isPastSalida = computed(() => {
     const detail = this.attendanceDetail();
     if (!detail || detail.jornadaCerrada || detail.estadoActual === 'OFFLINE') {
       return false;
     }
-    const salidaMin = this.toMinutes(detail.salidaProgramada);
-    const entradaMin = this.toMinutes(detail.entradaProgramada);
-    if (salidaMin === null || entradaMin === null || salidaMin <= entradaMin) {
-      return false;
-    }
-    return this.nowMinutes() > salidaMin;
+    const ts = this.tramosOrdenados();
+    if (!ts.length) return false;
+    return this.nowTick() > this.ms(ts[ts.length - 1].fin);
   });
+
+  // --- Compuertas derivadas (espejan las validaciones del backend, con el reloj del cliente) ---
+
+  readonly puedeMarcarIngreso = computed<boolean>(() => {
+    const d = this.attendanceDetail();
+    if (!d || this.currentStatus() !== 'OFFLINE') return false;
+    const now = this.nowTick();
+    const tramos = d.tramos ?? [];
+    if (tramos.length === 0) return Boolean(d.politica?.permiteIngresoDuranteTurno); // OJT sin horario
+    return this.tramoMarcable(now) !== null;
+  });
+
+  readonly puedeMarcarSalida = computed<boolean>(() => this.isOnline());
+
+  readonly puedeIniciarAlmuerzo = computed<boolean>(() => {
+    const d = this.attendanceDetail();
+    if (!d || !this.isOnline() || !this.tramoVigente()) return false;
+    if (d.almuerzoRealFin) return false;
+    return this.ventanaAlmuerzoAbierta(d);
+  });
+
+  readonly puedeIniciarServicios = computed<boolean>(() => {
+    const d = this.attendanceDetail();
+    if (!d || !this.isOnline() || !this.tramoVigente()) return false;
+    return (d.minutosServiciosHoy ?? 0) < (d.minutosServiciosTope ?? 0);
+  });
+
+  readonly puedeIniciarPausaActiva = computed<boolean>(() => {
+    const d = this.attendanceDetail();
+    if (!d || !this.isOnline() || !this.tramoVigente()) return false;
+    return (d.pausaActivaUsosHoy ?? 0) < (d.politica?.maxUsosPausaActivaDia ?? 0);
+  });
+
+  private isOnline(): boolean {
+    const d = this.attendanceDetail();
+    return !!d && d.estadoActual === 'ONLINE' && !!d.fechaHoraIngreso && !d.fechaHoraSalida;
+  }
+
+  /** Ventana de ingreso de un tramo: [inicio - margen, corte]; corte = base:inicio+bloqueo, extra:fin. */
+  private ventanaIngresoAbierta(t: TramoDiaResponse, now: number): boolean {
+    const p = this.attendanceDetail()?.politica;
+    const margen = p?.margenAdelantoMin ?? 0;
+    const bloqueo = p?.bloqueoTardanzaMin ?? Number.MAX_SAFE_INTEGER;
+    const permite = Boolean(p?.permiteIngresoDuranteTurno);
+    const inicio = this.ms(t.inicio);
+    const fin = this.ms(t.fin);
+    if (now > fin) return false;
+    const desfaseMin = (now - inicio) / 60000;
+    if (desfaseMin < 0) return -desfaseMin <= margen;
+    return t.tipo !== 'BASE' || permite || desfaseMin < bloqueo;
+  }
+
+  /** Tramo donde se puede marcar ingreso ahora (vigente con ventana abierta, o proximo dentro del margen). */
+  private tramoMarcable(now: number): TramoDiaResponse | null {
+    const vig = this.tramoVigente();
+    if (vig && this.ventanaIngresoAbierta(vig, now)) return vig;
+    const prox = this.proximoTramo();
+    if (prox && this.ventanaIngresoAbierta(prox, now)) return prox;
+    return null;
+  }
+
+  private ventanaAlmuerzoAbierta(d: DetalleDiaResponse): boolean {
+    const lunch = d.inicioAlmuerzoProgramado;
+    if (!lunch) return true;
+    const lunchMin = this.toMinutes(lunch);
+    if (lunchMin === null) return true;
+    const ventana = d.politica?.ventanaMarcaAlmuerzoMin ?? 15;
+    return this.nowMinutes() >= lunchMin - ventana;
+  }
+
+  private ms(iso: string | null | undefined): number {
+    if (!iso) return Number.NaN;
+    const t = new Date(iso).getTime();
+    return Number.isNaN(t) ? Number.NaN : t;
+  }
+
+  /** HH:MM de un ISO LocalDateTime (para copy). */
+  private hhmm(iso: string | null | undefined): string {
+    if (!iso) return '';
+    const idx = iso.indexOf('T');
+    return idx >= 0 ? iso.substring(idx + 1, idx + 6) : iso.substring(0, 5);
+  }
   readonly currentStatus = computed<EstadoAsistencia>(
     () => {
       const raw = this.rawStatus();
@@ -227,19 +335,18 @@ export class AttendanceFacade {
     const detail = this.attendanceDetail();
     if (!detail) return '';
 
-    if (detail.jornadaCerrada) return 'Tu jornada de hoy ya está cerrada.';
-    if (!detail.idHorario && !detail.tieneHorario) return 'No tienes turno programado para hoy.';
-
-    const entrada = detail.entradaProgramada?.substring(0, 5) ?? null;
-    const salida = detail.salidaProgramada?.substring(0, 5) ?? null;
-
-    if (entrada && salida) {
-      const now = this.nowHhMm();
-      if (now < entrada) return `Tu turno comienza a las ${entrada}.`;
-      if (now > salida) return `Tu turno terminó a las ${salida}.`;
-    } else if (entrada) {
-      return `Tu turno comienza a las ${entrada}.`;
+    if (!detail.idHorario && !detail.tieneHorario && (detail.tramos?.length ?? 0) === 0) {
+      return 'No tienes turno programado para hoy.';
     }
+
+    const prox = this.proximoTramo();
+    if (prox) return `Tu turno comienza a las ${this.hhmm(prox.inicio)}.`;
+    const ts = this.tramosOrdenados();
+    if (ts.length && this.nowTick() > this.ms(ts[ts.length - 1].fin)) {
+      return detail.jornadaCerrada ? 'Tu jornada de hoy ya está cerrada.' : `Tu turno terminó a las ${this.hhmm(ts[ts.length - 1].fin)}.`;
+    }
+    if (this.enHueco()) return 'Estás entre turnos.';
+    if (detail.jornadaCerrada) return 'Tu jornada de hoy ya está cerrada.';
 
     return 'Estás fuera de tu horario programado.';
   });
@@ -564,7 +671,7 @@ export class AttendanceFacade {
       detail?.estadoActual === 'SERVICIOS' ||
       detail?.estadoActual === 'PAUSA_ACTIVA' ||
       detail?.estadoActual === 'CAPACITACION';
-    return Boolean(detail?.operativo) || this.managingLeadActive() || enPausa;
+    return detail?.estadoActual === 'ONLINE' || this.managingLeadActive() || enPausa;
   }
 
   /**
@@ -684,7 +791,7 @@ export class AttendanceFacade {
 
     switch (this.currentStatus()) {
       case 'OFFLINE': {
-        const puede = Boolean(detail.puedeMarcarIngreso);
+        const puede = this.puedeMarcarIngreso();
         return [
           {
             key: 'INGRESO',
@@ -699,11 +806,11 @@ export class AttendanceFacade {
       case 'ONLINE':
         return [
           this.buildOption('ALMUERZO', 'INICIAR_ALMUERZO', 'ALMUERZO', 'Almuerzo',
-            Boolean(detail.puedeIniciarAlmuerzo), this.almuerzoDisabledReason(detail)),
+            this.puedeIniciarAlmuerzo(), this.almuerzoDisabledReason(detail)),
           this.buildOption('SERVICIOS', 'INICIAR_SERVICIOS', 'SERVICIOS', 'Servicios',
-            Boolean(detail.puedeIniciarServicios), this.serviciosDisabledReason(detail)),
+            this.puedeIniciarServicios(), this.serviciosDisabledReason(detail)),
           this.buildOption('PAUSA_ACTIVA', 'INICIAR_PAUSA_ACTIVA', 'PAUSA_ACTIVA', 'Pausa activa',
-            Boolean(detail.puedeIniciarPausaActiva), this.pausaDisabledReason(detail)),
+            this.puedeIniciarPausaActiva(), this.pausaDisabledReason(detail)),
           {
             key: 'CAPACITACION',
             actionId: null,
@@ -713,7 +820,7 @@ export class AttendanceFacade {
             disabledReason: 'La activa tu supervisor'
           },
           this.buildOption('OFFLINE', 'REGISTRAR_SALIDA', 'OFFLINE', 'Offline',
-            Boolean(detail.puedeMarcarSalida), 'Vuelve a ONLINE para marcar salida')
+            this.puedeMarcarSalida(), 'Vuelve a ONLINE para marcar salida')
         ];
       case 'ALMUERZO':
         return [this.returnOption('FINALIZAR_ALMUERZO')];
@@ -750,34 +857,39 @@ export class AttendanceFacade {
   }
 
   private ingresoDisabledReason(detail: DetalleDiaResponse): string {
+    if (!detail.idHorario && !detail.tieneHorario && (detail.tramos?.length ?? 0) === 0) {
+      return 'No tienes turno programado para hoy.';
+    }
+    const prox = this.proximoTramo();
+    if (prox) return `Podrás marcar poco antes de las ${this.hhmm(prox.inicio)}.`;
+    if (this.enHueco()) return 'Estás entre turnos; espera tu próximo bloque.';
+    const ts = this.tramosOrdenados();
+    if (ts.length && this.nowTick() > this.ms(ts[ts.length - 1].fin)) {
+      return `Tu turno terminó a las ${this.hhmm(ts[ts.length - 1].fin)}.`;
+    }
     if (detail.jornadaCerrada) return 'Tu jornada de hoy ya está cerrada.';
-    if (!detail.idHorario && !detail.tieneHorario) return 'No tienes turno programado para hoy.';
-    const entrada = detail.entradaProgramada?.substring(0, 5) ?? null;
-    const salida = detail.salidaProgramada?.substring(0, 5) ?? null;
-    const now = this.nowHhMm();
-    if (entrada && now < entrada) return `Podrás marcar poco antes de las ${entrada}.`;
-    if (salida && now > salida) return `Tu turno terminó a las ${salida}.`;
     return 'Estás fuera de tu horario para marcar ingreso.';
   }
 
   private almuerzoDisabledReason(detail: DetalleDiaResponse): string {
-    if (!detail.enTurnoActivo) return 'Disponible dentro de tu turno.';
+    if (!this.tramoVigente()) return 'Disponible dentro de tu turno.';
     if (detail.almuerzoRealFin) return 'Ya tomaste tu almuerzo de hoy.';
     const inicio = detail.inicioAlmuerzoProgramado;
     if (inicio) {
-      const desde = this.minusMinutesHhMm(inicio, 15);
+      const ventana = detail.politica?.ventanaMarcaAlmuerzoMin ?? 15;
+      const desde = this.minusMinutesHhMm(inicio, ventana);
       if (desde) return `Disponible desde las ${desde}.`;
     }
     return 'Disponible cerca de tu hora de almuerzo.';
   }
 
   private serviciosDisabledReason(detail: DetalleDiaResponse): string {
-    if (!detail.enTurnoActivo) return 'Disponible dentro de tu turno.';
+    if (!this.tramoVigente()) return 'Disponible dentro de tu turno.';
     return 'Alcanzaste tu límite de servicios de hoy.';
   }
 
   private pausaDisabledReason(detail: DetalleDiaResponse): string {
-    if (!detail.enTurnoActivo) return 'Disponible dentro de tu turno.';
+    if (!this.tramoVigente()) return 'Disponible dentro de tu turno.';
     return 'Ya usaste tu pausa activa de hoy.';
   }
 
@@ -790,19 +902,27 @@ export class AttendanceFacade {
   private evaluateAttendanceAutomation(detail: DetalleDiaResponse | null): void {
     this.clearPollTimer();
 
+    const tramos = detail?.tramos
+      ? [...detail.tramos].sort((a, b) => a.inicio.localeCompare(b.inicio))
+      : [];
     if (
       !detail ||
       detail.estadoActual !== 'OFFLINE' ||
       detail.fechaHoraIngreso !== null ||
-      !detail.entradaProgramada ||
+      tramos.length === 0 ||
       detail.jornadaCerrada
     ) {
       this.autoCheckInArmed = false;
       return;
     }
 
-    if (detail.enTurnoActivo) {
-      // Ya dentro de horario y sin ingreso.
+    const now = Date.now();
+    const enTramo = tramos.some(t => this.ms(t.inicio) <= now && now < this.ms(t.fin));
+    const antesDelPrimero = now < this.ms(tramos[0].inicio);
+    const despuesDelUltimo = now > this.ms(tramos[tramos.length - 1].fin);
+
+    if (enTramo) {
+      // Ya dentro de un tramo y sin ingreso.
       if (this.autoCheckInArmed) {
         // Estabamos esperando que llegara su hora de entrada: marcar ONLINE automaticamente.
         this.autoCheckInArmed = false;
@@ -815,8 +935,8 @@ export class AttendanceFacade {
       return;
     }
 
-    // Fuera de horario y sin ingreso: solo automatizar si aun no llega su entrada (nunca tras la salida).
-    if ((this.isBeforeEntrada(detail) || this.autoCheckInArmed) && !this.isAfterSalida(detail)) {
+    // Fuera de tramo y sin ingreso: solo automatizar si aun no llega su primer tramo (nunca tras el ultimo).
+    if ((antesDelPrimero || this.autoCheckInArmed) && !despuesDelUltimo) {
       this.autoCheckInArmed = true;
       this.startAttendancePoll();
     } else {
@@ -828,7 +948,8 @@ export class AttendanceFacade {
     if (this.pollTimerId !== null) {
       return;
     }
-    // El backend es la autoridad de "ya es tu hora": recargamos hasta que confirme enTurnoActivo.
+    // Refresco periodico mientras se espera la hora de entrada (por si cambia el horario); la decision
+    // de "ya es tu hora" la toma el frontend con su reloj sobre los tramos.
     this.pollTimerId = setInterval(() => this.reload(), 60000);
   }
 
@@ -837,20 +958,6 @@ export class AttendanceFacade {
       clearInterval(this.pollTimerId);
       this.pollTimerId = null;
     }
-  }
-
-  private isBeforeEntrada(detail: DetalleDiaResponse): boolean {
-    const entradaMin = this.toMinutes(detail.entradaProgramada);
-    return entradaMin !== null && this.nowMinutes() < entradaMin;
-  }
-
-  private isAfterSalida(detail: DetalleDiaResponse): boolean {
-    const salidaMin = this.toMinutes(detail.salidaProgramada);
-    const entradaMin = this.toMinutes(detail.entradaProgramada);
-    if (salidaMin === null || entradaMin === null || salidaMin <= entradaMin) {
-      return false;
-    }
-    return this.nowMinutes() > salidaMin;
   }
 
   private toMinutes(time: string | null | undefined): number | null {
@@ -879,11 +986,6 @@ export class AttendanceFacade {
   private nowMinutes(): number {
     const now = new Date();
     return now.getHours() * 60 + now.getMinutes();
-  }
-
-  private nowHhMm(): string {
-    const now = new Date();
-    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   }
 
   private getErrorMessage(error: HttpErrorResponse, fallbackMessage: string): string {

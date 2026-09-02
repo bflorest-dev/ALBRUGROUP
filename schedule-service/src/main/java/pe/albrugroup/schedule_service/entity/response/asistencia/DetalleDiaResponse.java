@@ -13,9 +13,11 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * Read model del dia para la marcacion nueva (/asistencia/v2). Refleja el estado del dia del
- * empleado: snapshot de horario, estado actual, marcaciones, y totales de sub-estados (derivados
- * de sesion_estado). Reemplaza a DetalleAsistenciaResponse en el flujo v2.
+ * Read model del dia (v3, /asistencia/v2/dia). Reemplazo limpio: el backend entrega ESTADO real +
+ * TRAMOS resueltos + POLITICA + VERSION; el frontend deriva las compuertas de marcacion con su reloj
+ * vivo (tramo vigente/proximo/hueco, ventanas). El backend re-valida en el write. Ya NO expone
+ * booleanos de compuerta (puede*), ni enTurnoActivo/operativo, ni entrada/salida programada planas:
+ * todo eso se deriva de {@link #tramos} + {@link #politica} + reloj del cliente.
  */
 @Getter
 @Setter
@@ -26,33 +28,33 @@ public class DetalleDiaResponse {
     private LocalDate fecha;
     private Long idHorario;
 
+    // --- Estado real (verdad de servidor) ---
     private EstadoAsistencia estadoActual;
     private Boolean tieneHorario;
-    /** Dentro del tramo de turno activo ahora (base de pausas + display). NO responde "¿puedo marcar?". */
-    private Boolean enTurnoActivo;
-    private Boolean operativo;
     private Boolean jornadaCerrada;
-
-    // Compuertas: un booleano por decision de UI, autoritativo. El frontend habilita/deshabilita con esto,
-    // sin recalcular ventanas con el reloj local. Espejan las validaciones del camino de escritura.
-    private Boolean puedeMarcarIngreso;
-    private Boolean puedeMarcarSalida;
-    private Boolean puedeIniciarAlmuerzo;
-    private Boolean puedeIniciarServicios;
-    private Boolean puedeIniciarPausaActiva;
-
-    private LocalTime entradaProgramada;
-    private LocalTime salidaProgramada;
     private LocalDateTime fechaHoraIngreso;
     private LocalDateTime fechaHoraSalida;
 
+    /**
+     * Jornada del dia resuelta: todos los tramos (base + extras/compensables) con ventana, tipo y
+     * subestado. El frontend deriva de aqui el tramo vigente, el proximo, el hueco y los gates.
+     */
+    private List<TramoDiaResponse> tramos;
+
+    /** Parametros de politica del rol para que el frontend calcule ventanas (no recalcula el backend). */
+    private PoliticaMarcacionResponse politica;
+
+    /** Cambia cuando cambia la jornada o el estado: el frontend detecta un cambio en la sesion abierta. */
+    private String version;
+
+    // --- Totales del dia ---
     private Integer minutosObjetivoDia;
     private Integer minutosTrabajados;
     private Integer minutosBalance;
     private Integer minutosExtra;
     private Integer minutosCompensados;
 
-    // Almuerzo (split): estado vs. marcacion real.
+    // --- Almuerzo (split): programado + marcacion real ---
     private LocalTime inicioAlmuerzoProgramado;
     private Integer minutosAlmuerzoProgramado;
     private LocalDateTime almuerzoEstadoDesde;
@@ -61,22 +63,16 @@ public class DetalleDiaResponse {
     private OrigenAlmuerzo origenAlmuerzo;
     private Integer minutosAlmuerzoTomados;
 
-    // Sub-estados cronometrados (totales del dia, derivados de sesion_estado; en curso hasta ahora).
+    // --- Sub-estados cronometrados (totales del dia + uso, para que el frontend derive sus gates) ---
     private Integer minutosServiciosHoy;
     private Integer minutosPausaActivaHoy;
     private Integer minutosCapacitacionHoy;
+    private Integer pausaActivaUsosHoy;
     private Boolean sesionEnCurso;
 
-    // Umbrales para el aviso de desbalance/tope (el frontend pinta en rojo al superarlos) y anclas de
-    // cronometro de la sesion abierta (SERVICIOS/PAUSA_ACTIVA/CAPACITACION). El almuerzo ancla en almuerzoRealInicio.
+    // Umbrales/anclas de la sesion abierta (cronometros y aviso de tope en rojo).
     private Integer minutosServiciosTope;
     private Integer maxMinutosPausaActiva;
     private TipoSesionEstado sesionActualTipo;
     private LocalDateTime sesionActualInicio;
-
-    /**
-     * Desglose de tramos del dia. Solo se llena en dias partidos (jornada reabierta por una
-     * ampliacion): tramos base (mañana) + tramos extra (tarde). En dias normales queda vacio.
-     */
-    private List<TramoAsistenciaResponse> tramos;
 }

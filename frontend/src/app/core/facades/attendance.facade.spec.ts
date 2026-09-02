@@ -16,18 +16,30 @@ describe('AttendanceFacade schedule automation', () => {
     idHorario: 7,
     estadoActual: 'OFFLINE',
     tieneHorario: true,
-    enTurnoActivo: false,
-    operativo: false,
     jornadaCerrada: false,
-    puedeMarcarIngreso: false,
-    puedeMarcarSalida: false,
-    puedeIniciarAlmuerzo: false,
-    puedeIniciarServicios: false,
-    puedeIniciarPausaActiva: false,
-    entradaProgramada: '17:00:00',
-    salidaProgramada: '19:00:00',
     fechaHoraIngreso: null,
     fechaHoraSalida: null,
+    tramos: [
+      {
+        idAjuste: null,
+        tipo: 'BASE',
+        inicio: '2026-06-15T17:00:00',
+        fin: '2026-06-15T19:00:00',
+        estado: 'PENDIENTE',
+        ingresoReal: null,
+        salidaReal: null,
+        minutosAcreditados: 0
+      }
+    ],
+    politica: {
+      margenAdelantoMin: 5,
+      bloqueoTardanzaMin: 20,
+      maxMinutosPausaActiva: 5,
+      maxUsosPausaActivaDia: 1,
+      ventanaMarcaAlmuerzoMin: 15,
+      permiteIngresoDuranteTurno: false
+    },
+    version: 'v1',
     minutosObjetivoDia: 120,
     minutosTrabajados: 0,
     minutosBalance: -120,
@@ -43,12 +55,12 @@ describe('AttendanceFacade schedule automation', () => {
     minutosServiciosHoy: 0,
     minutosPausaActivaHoy: 0,
     minutosCapacitacionHoy: 0,
+    pausaActivaUsosHoy: 0,
     sesionEnCurso: false,
     minutosServiciosTope: 20,
     maxMinutosPausaActiva: 5,
     sesionActualTipo: null,
     sesionActualInicio: null,
-    tramos: [],
     ...overrides
   });
 
@@ -61,7 +73,7 @@ describe('AttendanceFacade schedule automation', () => {
           provide: AttendanceService,
           useValue: {
             getAsistenciaDia: vi.fn(() => of(detail({}))),
-            registrarIngreso: vi.fn(() => of(detail({ estadoActual: 'ONLINE', operativo: true }))),
+            registrarIngreso: vi.fn(() => of(detail({ estadoActual: 'ONLINE' }))),
             registrarSalida: vi.fn(() => of(detail({ jornadaCerrada: true }))),
             iniciarAlmuerzo: vi.fn(),
             finalizarAlmuerzo: vi.fn(),
@@ -100,12 +112,12 @@ describe('AttendanceFacade schedule automation', () => {
     const reload = vi.spyOn(facade, 'reload');
     const submit = vi.spyOn(facade, 'submitAction');
 
-    facade['evaluateAttendanceAutomation'](detail({ enTurnoActivo: false }));
+    facade['evaluateAttendanceAutomation'](detail({}));
     vi.advanceTimersByTime(60_000);
     expect(reload).toHaveBeenCalledOnce();
 
     vi.setSystemTime(new Date(2026, 5, 15, 17, 0));
-    facade['evaluateAttendanceAutomation'](detail({ enTurnoActivo: true }));
+    facade['evaluateAttendanceAutomation'](detail({}));
     expect(submit).toHaveBeenCalledWith('REGISTRAR_INGRESO');
   });
 
@@ -113,7 +125,7 @@ describe('AttendanceFacade schedule automation', () => {
     vi.setSystemTime(new Date(2026, 5, 15, 17, 2));
     const submit = vi.spyOn(facade, 'submitAction');
 
-    facade['evaluateAttendanceAutomation'](detail({ enTurnoActivo: true }));
+    facade['evaluateAttendanceAutomation'](detail({}));
 
     expect(submit).not.toHaveBeenCalled();
   });

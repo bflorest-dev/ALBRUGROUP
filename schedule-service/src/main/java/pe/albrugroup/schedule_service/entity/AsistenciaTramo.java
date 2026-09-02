@@ -3,7 +3,9 @@ package pe.albrugroup.schedule_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import pe.albrugroup.schedule_service.entity.enums.EstadoTramoDia;
 import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
+import pe.albrugroup.schedule_service.entity.enums.TipoTramoDia;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -41,6 +43,16 @@ public class AsistenciaTramo {
     @Column(nullable = false, length = 30)
     private OrigenTramo origen;
 
+    /** Tipo funcional del tramo (BASE / EXTRA / COMPENSABLE) para el reporte per-tramo. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_tramo", length = 20)
+    private TipoTramoDia tipoTramo;
+
+    /** Subestado final del tramo al cerrar la jornada (CUMPLIDO / EXPIRADO / ANULADO). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_tramo", length = 20)
+    private EstadoTramoDia estadoTramo;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ajuste_jornada_id")
     private AjusteJornada ajusteJornada;
@@ -55,6 +67,9 @@ public class AsistenciaTramo {
 
     private LocalDateTime fechaHoraIngreso;
     private LocalDateTime fechaHoraSalida;
+    /** true = el segmento se cerro forzado (expiracion/reconciliacion), no por marca real del empleado. */
+    @Column(name = "salida_forzada")
+    private Boolean salidaForzada;
     private LocalDateTime fechaHoraInicioAlmuerzo;
     private LocalDateTime fechaHoraFinAlmuerzo;
     private LocalDateTime fechaHoraInicioServicios;

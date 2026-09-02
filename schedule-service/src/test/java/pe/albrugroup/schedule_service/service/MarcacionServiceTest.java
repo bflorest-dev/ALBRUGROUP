@@ -23,6 +23,7 @@ import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
 import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
+import pe.albrugroup.schedule_service.entity.enums.TipoTramoDia;
 import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
@@ -171,7 +172,11 @@ class MarcacionServiceTest {
 
         DetalleDiaResponse dia = service.getDia(EMP, DIA);
 
-        assertThat(dia.getPuedeMarcarIngreso()).isTrue();
+        // v3: el backend entrega los insumos; el gate lo deriva el frontend. OJT dentro de horario ->
+        // hay tramo y la politica permite ingreso durante el turno.
+        assertThat(dia.getTieneHorario()).isTrue();
+        assertThat(dia.getTramos()).isNotEmpty();
+        assertThat(dia.getPolitica().getPermiteIngresoDuranteTurno()).isTrue();
     }
 
     @Test
@@ -182,14 +187,12 @@ class MarcacionServiceTest {
 
         DetalleDiaResponse previo = service.getDia(EMP, DIA);
         assertThat(previo.getTieneHorario()).isFalse();
-        assertThat(previo.getPuedeMarcarIngreso()).isTrue();
+        assertThat(previo.getPolitica().getPermiteIngresoDuranteTurno()).isTrue(); // OJT puede marcar sin horario
 
         DetalleDiaResponse dia = service.registrarIngreso();
 
         assertThat(almacen.get().getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
-        assertThat(dia.getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
-        assertThat(dia.getOperativo()).isTrue();
-        assertThat(dia.getPuedeMarcarSalida()).isTrue();
+        assertThat(dia.getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE); // operativo se deriva de esto
     }
 
     @Test
@@ -209,7 +212,7 @@ class MarcacionServiceTest {
 
         assertThat(almacen.get().getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
         assertThat(almacen.get().getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(2026, 8, 10, 18, 50));
-        assertThat(dia.getOperativo()).isTrue();
+        assertThat(dia.getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE); // operativo se deriva de esto
     }
 
     @Test
@@ -357,10 +360,10 @@ class MarcacionServiceTest {
         assertThat(a.getMinutosTrabajados()).isEqualTo(480); // base intacta
         assertThat(a.getMinutosExtra()).isEqualTo(120);      // 19-21 -> horas extra
         assertThat(a.getMinutosBalance()).isZero();
-        // El dia muestra ambos periodos (base archivado + extra actual).
+        // v3: el dia expone la jornada resuelta (base + extra) con su tipo.
         assertThat(dia.getTramos()).hasSize(2);
-        assertThat(dia.getTramos().get(0).getOrigen()).isEqualTo(OrigenTramo.BASE);
-        assertThat(dia.getTramos().get(1).getOrigen()).isEqualTo(OrigenTramo.TRAMO_ADICIONAL);
+        assertThat(dia.getTramos().get(0).getTipo()).isEqualTo(TipoTramoDia.BASE);
+        assertThat(dia.getTramos().get(1).getTipo()).isEqualTo(TipoTramoDia.EXTRA);
     }
 
     @Test
@@ -476,9 +479,11 @@ class MarcacionServiceTest {
     }
 
     @Test
-    void tramoExtraConHuecoSigueSiendoDiaPartidoYNoContaminaElObjetivo() {
-        // Extra 09:00-10:00 DISJUNTO del base 13:00-18:00 (hay hueco). NO se ancla ni fusiona: es dia partido
-        // y exige OFFLINE para cruzar el hueco. Marca 08:58->10:03 (extra), luego 13:03->17:58 (base).
+    void extraConHuecoAnclaAlBaseYRedistribuyeCredito() {
+        // Extra 09:00-10:00 DISJUNTO del base 13:00-18:00 (hay hueco). Bajo redistribucion por tramo, la
+        // primera marca (en el extra) ANCLA AL BASE; el credito se reparte por ventana. Marca 08:58->10:03
+        // (extra, OFFLINE real), luego 13:03->17:58 (base). El extra cuenta (cierre real) y el base deja
+        // su deficit. Mismos totales finales que el flujo viejo (295 / 60 / -5).
         horarioBase(LocalTime.of(13, 0), LocalTime.of(18, 0));
         stubAjustes(ampliacion(74L, LocalTime.of(9, 0), LocalTime.of(10, 0)));
         List<AsistenciaTramo> tramos = new java.util.ArrayList<>();
@@ -489,23 +494,23 @@ class MarcacionServiceTest {
         });
         when(asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(anyLong())).thenReturn(tramos);
 
-        reloj(8, 58); // 2 min antes del extra (margen 5): permitido
+        reloj(8, 58); // 2 min antes del extra (margen 5): permitido; ancla al base
         service.registrarIngreso();
         Asistencia a = almacen.get();
-        assertThat(a.getOrigenTramoActual()).isEqualTo(OrigenTramo.TRAMO_ADICIONAL);
-        assertThat(a.getEntradaProgramada()).isEqualTo(LocalTime.of(9, 0));
-        assertThat(a.getMinutosObjetivoDia()).isZero(); // fix objetivo: el extra no aporta objetivo
+        assertThat(a.getOrigenTramoActual()).isEqualTo(OrigenTramo.BASE);       // ancla al base, no al extra
+        assertThat(a.getEntradaProgramada()).isEqualTo(LocalTime.of(13, 0));
+        assertThat(a.getMinutosObjetivoDia()).isEqualTo(300);                    // objetivo = neta base
 
         reloj(10, 3);
-        service.registrarSalida();
-        assertThat(almacen.get().getMinutosExtra()).isEqualTo(60);
-        assertThat(almacen.get().getMinutosBalance()).isZero();
+        service.registrarSalida(); // OFFLINE real dentro del extra: cierre coherente
+        assertThat(almacen.get().getMinutosExtra()).isEqualTo(60);              // 09:00-10:00 acreditado
+        assertThat(almacen.get().getMinutosBalance()).isEqualTo(-300);          // base aun sin trabajar -> deficit total
 
         reloj(13, 3); // re-ingreso al base (3 min tarde, dentro del bloqueo)
         service.registrarIngreso();
         a = almacen.get();
         assertThat(a.getOrigenTramoActual()).isEqualTo(OrigenTramo.BASE);
-        assertThat(a.getEntradaProgramada()).isEqualTo(LocalTime.of(13, 0)); // tardanza contra el base, no las 9:00
+        assertThat(a.getEntradaProgramada()).isEqualTo(LocalTime.of(13, 0)); // tardanza contra el base
         assertThat(a.getMinutosObjetivoDia()).isEqualTo(300);
 
         reloj(17, 58);
@@ -513,7 +518,60 @@ class MarcacionServiceTest {
         a = almacen.get();
         assertThat(a.getMinutosTrabajados()).isEqualTo(295); // 13:03-17:58
         assertThat(a.getMinutosExtra()).isEqualTo(60);         // 09:00-10:00, intacto
-        assertThat(a.getMinutosBalance()).isEqualTo(-5);       // 3 tarde + 2 antes, solo contra el base
+        assertThat(a.getMinutosBalance()).isEqualTo(-5);       // 3 tarde, solo contra el base
+    }
+
+    // ===================== Multi-tramo con hueco (redistribucion por tramo) =====================
+
+    @Test
+    void extraAntesConHuecoDeCorridoAcreditaBaseYExtraEnUnaMarca() {
+        // Extra 08:00-13:00 + base 14:00-18:00 (hueco 13-14). Trabaja de corrido: UNA marca de ingreso
+        // (08:00) y UNA de salida (18:00). El hueco se excluye; base y extra se acreditan por separado.
+        horarioBase(LocalTime.of(14, 0), LocalTime.of(18, 0));
+        stubAjustes(ampliacion(80L, LocalTime.of(8, 0), LocalTime.of(13, 0)));
+
+        reloj(8, 0);
+        service.registrarIngreso();
+        Asistencia a = almacen.get();
+        assertThat(a.getOrigenTramoActual()).isEqualTo(OrigenTramo.BASE); // ancla al base, no al extra
+        assertThat(a.getMinutosObjetivoDia()).isEqualTo(240);             // neta base 14-18
+
+        reloj(18, 0);
+        service.registrarSalida();
+        a = almacen.get();
+        assertThat(a.getMinutosTrabajados()).isEqualTo(240); // base 14-18 completo
+        assertThat(a.getMinutosExtra()).isEqualTo(300);       // extra 08-13
+        assertThat(a.getMinutosBalance()).isZero();           // hueco 13-14 no cuenta ni penaliza
+    }
+
+    @Test
+    void extraAntesAbandonadoSeAnulaYNoAfectaAlBase() {
+        // Marca el extra 08:00 y lo abandona (nunca marca salida); vuelve 14:05 para el base. El cierre
+        // forzado del extra colgado (sin salida real) lo ANULA a 0; el base se marca normal y cuenta.
+        horarioBase(LocalTime.of(14, 0), LocalTime.of(18, 0));
+        stubAjustes(ampliacion(81L, LocalTime.of(8, 0), LocalTime.of(13, 0)));
+        List<AsistenciaTramo> tramos = new java.util.ArrayList<>();
+        when(asistenciaTramoRepository.save(any(AsistenciaTramo.class))).thenAnswer(i -> {
+            AsistenciaTramo t = i.getArgument(0);
+            tramos.add(t);
+            return t;
+        });
+        when(asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(anyLong())).thenReturn(tramos);
+
+        reloj(8, 0);
+        service.registrarIngreso(); // ingreso al extra (anclado al base)
+
+        reloj(14, 5); // vuelve para el base sin haber marcado salida del extra
+        service.registrarIngreso(); // fuerza cierre del extra colgado + re-ingreso al base
+        assertThat(almacen.get().getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
+        assertThat(almacen.get().getMinutosExtra()).isZero(); // extra abandonado -> anulado
+
+        reloj(18, 0);
+        service.registrarSalida();
+        Asistencia a = almacen.get();
+        assertThat(a.getMinutosTrabajados()).isEqualTo(235); // base 14:05-18:00
+        assertThat(a.getMinutosExtra()).isZero();              // extra sigue anulado
+        assertThat(a.getMinutosBalance()).isEqualTo(-5);       // 5 min tarde al base
     }
 
     // ===================== Corrimiento por tardanza (REEMPLAZO_BASE) =====================

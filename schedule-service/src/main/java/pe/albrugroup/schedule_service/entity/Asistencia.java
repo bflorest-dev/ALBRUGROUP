@@ -38,6 +38,9 @@ public class Asistencia {
     private LocalTime finAlmuerzoProgramado;
     private LocalDateTime fechaHoraIngreso;
     private LocalDateTime fechaHoraSalida;
+    /** true = la salida del segmento actual fue un cierre forzado (expiracion/reconciliacion), no marca real. */
+    @Column(name = "salida_forzada")
+    private Boolean salidaForzada;
     private LocalDateTime fechaHoraInicioAlmuerzo;
     private LocalDateTime fechaHoraFinAlmuerzo;
     private LocalDateTime fechaHoraInicioServiciosActual;

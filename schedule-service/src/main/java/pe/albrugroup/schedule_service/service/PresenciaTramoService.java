@@ -85,6 +85,48 @@ public class PresenciaTramoService {
                 .orElse("OFFLINE");
     }
 
+    /** true si el empleado tiene al menos un tramo de presencia registrado ese dia (fail-open si no). */
+    public boolean tienePresencia(Long idEmpleado, LocalDate fecha) {
+        return !presenciaTramoRepository.findByIdEmpleadoAndFechaOrderByInicioAsc(idEmpleado, fecha).isEmpty();
+    }
+
+    /**
+     * Minutos de la ventana [windowStart, windowEnd] efectivamente CUBIERTOS por tramos de presencia
+     * (modelo de cobertura, no de brecha): solo cuenta el tiempo realmente conectado. Un tramo abierto
+     * (fin == null) se considera cubierto hasta el fin de la ventana. Fail-open lo decide el llamador
+     * via {@link #tienePresencia}: sin tramos, no llamar a este metodo (se acredita lo marcado).
+     */
+    public int minutosCubiertos(Long idEmpleado, LocalDate fecha,
+                                LocalDateTime windowStart, LocalDateTime windowEnd) {
+        if (windowStart == null || windowEnd == null || !windowStart.isBefore(windowEnd)) {
+            return 0;
+        }
+        int total = 0;
+        for (PresenciaTramo tramo : presenciaTramoRepository.findByIdEmpleadoAndFechaOrderByInicioAsc(idEmpleado, fecha)) {
+            if (tramo.getInicio() == null) {
+                continue;
+            }
+            LocalDateTime fin = tramo.getFin() != null ? tramo.getFin() : windowEnd;
+            LocalDateTime inicio = tramo.getInicio().isAfter(windowStart) ? tramo.getInicio() : windowStart;
+            LocalDateTime cierre = fin.isBefore(windowEnd) ? fin : windowEnd;
+            if (inicio.isBefore(cierre)) {
+                total += (int) Duration.between(inicio, cierre).toMinutes();
+            }
+        }
+        return total;
+    }
+
+    /** true si el instante cae dentro de algun tramo de presencia (handoff/cierre coherente de extras). */
+    public boolean estuvoConectadoEn(Long idEmpleado, LocalDate fecha, LocalDateTime instante) {
+        if (instante == null) {
+            return false;
+        }
+        return presenciaTramoRepository.findByIdEmpleadoAndFechaOrderByInicioAsc(idEmpleado, fecha).stream()
+                .anyMatch(t -> t.getInicio() != null
+                        && !instante.isBefore(t.getInicio())
+                        && (t.getFin() == null || instante.isBefore(t.getFin())));
+    }
+
     public int calcularMinutosBrechaPresencia(Long idEmpleado, LocalDate fecha,
                                                LocalDateTime windowStart, LocalDateTime windowEnd) {
         List<PresenciaTramo> tramos = presenciaTramoRepository

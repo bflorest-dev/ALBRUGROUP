@@ -16,11 +16,14 @@ import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAlmuerzo;
 import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
+import pe.albrugroup.schedule_service.entity.enums.EstadoTramoDia;
+import pe.albrugroup.schedule_service.entity.enums.TipoTramoDia;
 import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
 import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
 import pe.albrugroup.schedule_service.entity.request.asistencia.IniciarAlmuerzoRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
-import pe.albrugroup.schedule_service.entity.response.asistencia.TramoAsistenciaResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.PoliticaMarcacionResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.TramoDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.TramoJornadaResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
@@ -39,6 +42,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Marcacion nueva (rediseno). Usa SOLO el motor nuevo ({@link JornadaEfectivaResolver}); sin ramas
@@ -141,6 +146,7 @@ public class MarcacionService {
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
         // La salida se permite despues del horario (gracia), pero el balance se topa en la salida programada.
         asistencia.setFechaHoraSalida(ahora);
+        asistencia.setSalidaForzada(false); // marca OFFLINE real del empleado (cierre coherente)
         asistencia.setEstadoActual(EstadoAsistencia.OFFLINE);
         recalcularMinutos(asistencia);
         asistenciaRepository.save(asistencia);
@@ -483,7 +489,7 @@ public class MarcacionService {
         // Si la marca cae en un tramo extra CONTIGUO al borde del base, se ancla al base (sesion continua):
         // tardanza/salida/objetivo se miden contra el base; el tiempo en la ventana extra va a minutosExtra
         // (lo atribuye recalcularMinutos). Un extra CON HUECO no se ancla: sigue el flujo de dia partido.
-        TramoJornadaResponse anchor = anclarABaseSiContiguo(jornada, tramo);
+        TramoJornadaResponse anchor = anclarABase(jornada, tramo);
         OrigenTramo origen = mapOrigenTramo(anchor);
         VentanaAlmuerzo almuerzo = resolverAlmuerzoProgramado(horario, fecha);
         int minutosAlmuerzoProgramado = almuerzo == null ? 0
@@ -554,138 +560,135 @@ public class MarcacionService {
     }
 
     /**
-     * Si {@code tramo} es un tramo extra (no base) CONTIGUO al borde de un tramo base (extra-antes que pega
-     * con la entrada base, o extra-despues que pega con la salida base), devuelve el tramo BASE para anclar
-     * la asistencia como una sesion continua. Si {@code tramo} ya es base, o el extra tiene HUECO respecto
-     * del base (no pega), devuelve el mismo {@code tramo} (flujo normal / dia partido).
+     * Ancla la asistencia al tramo BASE del dia si existe (contiguo o con hueco): entrada/salida/objetivo/
+     * origen se toman del base, y el credito de cada tramo se redistribuye por ventana en recalcularMinutos.
+     * Si la primera marca cae en un extra pero hay base, se ancla al base (una sola jornada, sin re-ingreso
+     * obligatorio para el caso continuo). Si NO hay base (dia extra-only, p. ej. jornada extraordinaria en
+     * dia de descanso), se ancla al propio {@code tramo}.
      */
-    private TramoJornadaResponse anclarABaseSiContiguo(JornadaEfectivaResponse jornada, TramoJornadaResponse tramo) {
-        if (tramo == null || Boolean.TRUE.equals(tramo.getBase()) || jornada == null) {
+    private TramoJornadaResponse anclarABase(JornadaEfectivaResponse jornada, TramoJornadaResponse tramo) {
+        if (jornada == null || tramo == null || Boolean.TRUE.equals(tramo.getBase())) {
             return tramo;
         }
         return jornada.getTramos().stream()
                 .filter(t -> Boolean.TRUE.equals(t.getBase()))
-                .filter(base -> base.getInicio().equals(tramo.getFin())   // extra-antes: pega con la entrada base
-                        || base.getFin().equals(tramo.getInicio()))       // extra-despues: pega con la salida base
                 .findFirst()
                 .orElse(tramo);
     }
 
     /**
-     * Tiempo trabajado del dia = jornada (con topes de entrada y salida) menos pausas personales.
-     * Tope entrada = max(marca, entrada programada) -> marcar temprano no da positivo.
-     * Tope salida = min(marca, salida programada) -> trabajar de mas no da positivo.
-     * Se descuentan ALMUERZO + SERVICIOS + PAUSA_ACTIVA. CAPACITACION NO se descuenta (tiempo autorizado).
-     */
-    /**
-     * Recalcula los totales del dia agregando tramos archivados + segmento actual, clasificados en 3
-     * cubetas por origen + razon: BASE/REEMPLAZO_BASE -> minutosTrabajados y balance; aditivos con
-     * razon COMPENSACION -> minutosCompensados (neutraliza deficit, no da positivo aqui); el resto de
-     * aditivos (AMPLIACION operativa) -> minutosExtra. El status del dia (derivado) sale de la base.
+     * Recalcula los totales del dia por REDISTRIBUCION por tramo (Opcion B): cada tramo esperado de la
+     * jornada (base + extras/compensables) recibe el credito de la interseccion de los segmentos de marca
+     * del dia con su ventana, topado por la cobertura de presencia. El ancla ya NO capa el calculo.
+     *  - BASE / REEMPLAZO_BASE: suma a minutosTrabajados; el balance es min(base - objetivo, 0).
+     *  - COMPENSACION: suma a minutosCompensados; el resto de aditivos, a minutosExtra.
+     *  - Extras/compensables se ANULAN a 0 si el tramo no tuvo cierre coherente (salida real o handoff de
+     *    presencia que cubre su fin): abandono. El base nunca se anula (los gaps quedan como deficit).
+     * Las pausas personales del dia (almuerzo + servicios + pausa activa) se descuentan del tiempo base.
      */
     private void recalcularMinutos(Asistencia asistencia) {
-        int segmento = trabajadoSegmentoActual(asistencia);
-        List<AsistenciaTramo> archivados = asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(asistencia.getId());
+        JornadaEfectivaResponse jornada = jornadaEfectivaResolver
+                .resolverSiExiste(asistencia.getIdEmpleado(), asistencia.getFecha()).orElse(null);
+        List<Segmento> segmentos = segmentosTrabajados(asistencia);
+        boolean hayPresencia = presenciaTramoService.tienePresencia(asistencia.getIdEmpleado(), asistencia.getFecha());
+        Map<Long, RazonAjuste> razonPorAjuste = ajusteJornadaRepository
+                .findByIdEmpleadoAndFechaOperativaAndEstadoOrderByInicioAsc(
+                        asistencia.getIdEmpleado(), asistencia.getFecha(), EstadoAjusteJornada.ACTIVO)
+                .stream()
+                .filter(aj -> aj.getId() != null)
+                .collect(Collectors.toMap(AjusteJornada::getId,
+                        aj -> aj.getRazon() == null ? RazonAjuste.AMPLIACION_OPERATIVA : aj.getRazon(),
+                        (a, b) -> a));
+
         int base = 0, extra = 0, compensado = 0;
-        for (AsistenciaTramo t : archivados) {
-            int mt = safe(t.getMinutosTrabajados());
-            switch (cubeta(t.getOrigen(), razonDe(t.getAjusteJornada()))) {
-                case BASE -> base += mt;
-                case EXTRA -> extra += mt;
-                case COMPENSACION -> compensado += mt;
+        if (jornada != null) {
+            for (TramoJornadaResponse t : jornada.getTramos()) {
+                if (t.getInicio() == null || t.getFin() == null) {
+                    continue;
+                }
+                boolean esBase = Boolean.TRUE.equals(t.getBase())
+                        || t.getOrigen() == OrigenAjusteJornada.REEMPLAZO_BASE;
+                int credito = creditoTramo(asistencia, t, segmentos, hayPresencia, esBase);
+                if (credito <= 0) {
+                    continue;
+                }
+                if (esBase) {
+                    base += credito;
+                } else if (razonPorAjuste.get(t.getIdAjuste()) == RazonAjuste.COMPENSACION) {
+                    compensado += credito;
+                } else {
+                    extra += credito;
+                }
             }
         }
-        switch (cubeta(asistencia.getOrigenTramoActual(), razonDe(asistencia.getAjusteJornadaActual()))) {
-            case BASE -> base += segmento;
-            case EXTRA -> extra += segmento;
-            case COMPENSACION -> compensado += segmento;
-        }
-        // Sesion continua: si el segmento actual es el BASE y la marca cruzo un borde hacia un tramo extra
-        // CONTIGUO (extra-antes / extra-despues sin OFFLINE), el tiempo trabajado en esas ventanas extra se
-        // atribuye a su cubeta. trabajadoSegmentoActual ya capo el BASE a [entrada, salida], asi que aqui no
-        // hay doble conteo. El gate (segmento actual = BASE) excluye el dia partido (segmento actual = extra,
-        // ya contado por su cubeta) y evita el doble conteo.
-        int[] extraContiguo = minutosExtraContiguos(asistencia);
-        extra += extraContiguo[0];
-        compensado += extraContiguo[1];
+
+        // Las pausas personales ocurren dentro del turno base -> se descuentan del tiempo base.
+        int pausas = safe(asistencia.getMinutosAlmuerzoTomados())
+                + sumarSesionesCerradas(asistencia.getId(), TipoSesionEstado.SERVICIOS)
+                + sumarPausaCapadaDesde(asistencia.getId(), null);
+        base = Math.max(base - pausas, 0);
+
         asistencia.setMinutosTrabajados(base);
         asistencia.setMinutosExtra(extra);
         asistencia.setMinutosCompensados(compensado);
-        // Invariante: balance <= 0. Trabajar de mas por cuenta propia NO da positivo; extra y compensacion
-        // viven en sus propios acumuladores, separados del balance.
+        // Invariante: balance <= 0. El extra/compensacion viven en sus propios acumuladores.
         asistencia.setMinutosBalance(Math.min(base - safe(asistencia.getMinutosObjetivoDia()), 0));
     }
 
-    private enum Cubeta { BASE, EXTRA, COMPENSACION }
-
-    /** Cubeta de un tramo: base (objetivo/balance), compensacion (neutraliza deficit) o extra. */
-    private Cubeta cubeta(OrigenTramo origen, RazonAjuste razon) {
-        if (esBaseOrigen(origen)) {
-            return Cubeta.BASE;
+    /**
+     * Credito de un tramo = suma, sobre los segmentos de marca del dia, de la interseccion
+     * [ingreso,salida] ∩ [tramo.inicio,tramo.fin], topada por la cobertura de presencia (si hay datos;
+     * fail-open si no). Para tramos NO base aplica la regla de nulidad: si ningun segmento cerro
+     * coherentemente el tramo (salida real o presencia que cubre el fin), el credito es 0 (abandono).
+     */
+    private int creditoTramo(Asistencia a, TramoJornadaResponse t, List<Segmento> segmentos,
+                             boolean hayPresencia, boolean esBase) {
+        int marcado = 0;
+        boolean cerroReal = false;
+        for (Segmento s : segmentos) {
+            if (s.ingreso() == null || s.salida() == null) {
+                continue;
+            }
+            int ov = overlapMinutos(s.ingreso(), s.salida(), t.getInicio(), t.getFin());
+            if (ov <= 0) {
+                continue;
+            }
+            if (hayPresencia) {
+                LocalDateTime wi = s.ingreso().isAfter(t.getInicio()) ? s.ingreso() : t.getInicio();
+                LocalDateTime wf = s.salida().isBefore(t.getFin()) ? s.salida() : t.getFin();
+                ov = Math.min(ov, presenciaTramoService.minutosCubiertos(a.getIdEmpleado(), a.getFecha(), wi, wf));
+            }
+            marcado += Math.max(ov, 0);
+            if (!Boolean.TRUE.equals(s.forzada())) {
+                cerroReal = true;
+            }
         }
-        return razon == RazonAjuste.COMPENSACION ? Cubeta.COMPENSACION : Cubeta.EXTRA;
-    }
-
-    private RazonAjuste razonDe(AjusteJornada ajuste) {
-        return ajuste == null ? null : ajuste.getRazon();
-    }
-
-    /** Minutos trabajados del segmento ACTUAL (con topes de entrada/salida), menos sus pausas. */
-    private int trabajadoSegmentoActual(Asistencia a) {
-        if (a.getEntradaProgramada() == null || a.getSalidaProgramada() == null) {
+        if (marcado <= 0) {
             return 0;
         }
-        LocalDateTime entradaProg = LocalDateTime.of(a.getFecha(), a.getEntradaProgramada());
-        LocalDateTime topeSalida = topeSalida(a);
-        LocalDateTime entradaEfectiva = a.getFechaHoraIngreso().isAfter(entradaProg) ? a.getFechaHoraIngreso() : entradaProg;
-        LocalDateTime salidaEfectiva = a.getFechaHoraSalida().isAfter(topeSalida) ? topeSalida : a.getFechaHoraSalida();
-        long jornada = Duration.between(entradaEfectiva, salidaEfectiva).toMinutes();
-        int almuerzo = safe(a.getMinutosAlmuerzoTomados());
-        int servicios = sumarSesionesCerradasDesde(a.getId(), TipoSesionEstado.SERVICIOS, a.getFechaHoraIngreso());
-        int pausa = sumarPausaCapadaDesde(a.getId(), a.getFechaHoraIngreso());
-        int brechaPresencia = presenciaTramoService.calcularMinutosBrechaPresencia(
-                a.getIdEmpleado(), a.getFecha(), entradaEfectiva, salidaEfectiva);
-        return (int) Math.max(jornada - almuerzo - servicios - pausa - brechaPresencia, 0);
+        if (!esBase) {
+            boolean coherente = cerroReal
+                    || presenciaTramoService.estuvoConectadoEn(a.getIdEmpleado(), a.getFecha(), t.getFin());
+            if (!coherente) {
+                return 0; // extra/compensable abandonado -> se anula
+            }
+        }
+        return marcado;
     }
 
-    /**
-     * Minutos trabajados en ventanas extra CONTIGUAS al borde del base, durante una sesion continua
-     * (el empleado cruzo el borde sin marcar OFFLINE). Devuelve {@code [extra, compensacion]}.
-     *
-     * Solo aplica cuando el segmento actual es el BASE: es la firma de la sesion continua. En el dia
-     * partido el segmento actual es el tramo extra (lo cuenta su propia cubeta), asi que se retorna cero
-     * para no duplicar. Cada ventana se topa a lo realmente autorizado por su interseccion con las marcas.
-     */
-    private int[] minutosExtraContiguos(Asistencia a) {
-        if (!esBaseOrigen(a.getOrigenTramoActual())
-                || a.getFechaHoraIngreso() == null || a.getFechaHoraSalida() == null
-                || a.getEntradaProgramada() == null || a.getSalidaProgramada() == null) {
-            return new int[]{0, 0};
+    /** Segmentos de marca del dia: los archivados (re-ingreso) + el segmento actual, como pares crudos. */
+    private List<Segmento> segmentosTrabajados(Asistencia a) {
+        List<Segmento> segmentos = new ArrayList<>();
+        for (AsistenciaTramo t : asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(a.getId())) {
+            segmentos.add(new Segmento(t.getFechaHoraIngreso(), t.getFechaHoraSalida(), t.getSalidaForzada()));
         }
-        LocalDateTime baseInicio = LocalDateTime.of(a.getFecha(), a.getEntradaProgramada());
-        LocalDateTime baseFin = topeSalida(a);
-        List<AjusteJornada> ajustes = ajusteJornadaRepository
-                .findByIdEmpleadoAndFechaOperativaAndEstadoOrderByInicioAsc(
-                        a.getIdEmpleado(), a.getFecha(), EstadoAjusteJornada.ACTIVO);
-        int extra = 0, compensado = 0;
-        for (AjusteJornada aj : ajustes) {
-            if (aj.getOrigen() == OrigenAjusteJornada.REEMPLAZO_BASE
-                    || aj.getInicio() == null || aj.getFin() == null) {
-                continue; // REEMPLAZO_BASE sustituye el base, no es tiempo extra
-            }
-            boolean contiguo = aj.getFin().equals(baseInicio) || aj.getInicio().equals(baseFin);
-            if (!contiguo) {
-                continue; // con hueco -> no es sesion continua (dia partido)
-            }
-            int min = overlapMinutos(a.getFechaHoraIngreso(), a.getFechaHoraSalida(), aj.getInicio(), aj.getFin());
-            if (aj.getRazon() == RazonAjuste.COMPENSACION) {
-                compensado += min;
-            } else {
-                extra += min;
-            }
+        if (a.getFechaHoraIngreso() != null) {
+            segmentos.add(new Segmento(a.getFechaHoraIngreso(), a.getFechaHoraSalida(), a.getSalidaForzada()));
         }
-        return new int[]{extra, compensado};
+        return segmentos;
     }
+
+    private record Segmento(LocalDateTime ingreso, LocalDateTime salida, Boolean forzada) {}
 
     /** Minutos de interseccion entre [aInicio, aFin] y [bInicio, bFin] (0 si no se solapan). */
     private int overlapMinutos(LocalDateTime aInicio, LocalDateTime aFin, LocalDateTime bInicio, LocalDateTime bFin) {
@@ -697,40 +700,68 @@ public class MarcacionService {
     // --- Cierre forzado de tramo expirado ---
 
     /**
-     * Si el tramo actual ya expiro (pasada la salidaProgramada) y el empleado no marco salida
-     * (p. ej. auto-cierre del gateway puso OFFLINE sin estampar fechaHoraSalida, o simplemente
-     * se le paso), fuerza el cierre con salida = salidaProgramada. Despues de esto el flujo
-     * normal de re-ingreso funciona (fechaHoraSalida != null → esTramoReingreso → prepararReingreso).
+     * Segmento colgado: el empleado tiene un ingreso abierto pero el TRAMO donde cayo ese ingreso ya
+     * termino (dia partido con hueco, o extra abandonado antes del base). Se fuerza el cierre en el fin
+     * de ESE tramo (no en la salidaProgramada del ancla, que con anclaje-al-base puede ser el fin del
+     * base aunque el ingreso haya sido en un extra previo ya expirado). Tras esto, el re-ingreso al
+     * tramo actual funciona. La salida forzada NO da cierre coherente (regla de nulidad de extras).
+     * En la sesion continua (una sola marca que cruza el hueco sin re-marcar) esto NO se dispara: solo
+     * se invoca al inicio de un registrarIngreso explicito.
      */
     private void forzarCierreTramoExpirado(Asistencia a, LocalDateTime ahora) {
-        if (a.getFechaHoraIngreso() == null
-                || a.getFechaHoraSalida() != null
-                || a.getSalidaProgramada() == null) {
+        if (a.getFechaHoraIngreso() == null || a.getFechaHoraSalida() != null) {
             return;
         }
-        LocalDateTime salidaProg = LocalDateTime.of(a.getFecha(), a.getSalidaProgramada());
-        if (!ahora.isAfter(salidaProg)) {
+        JornadaEfectivaResponse jornada = jornadaEfectivaResolver
+                .resolverSiExiste(a.getIdEmpleado(), a.getFecha()).orElse(null);
+        LocalDateTime finTramoIngreso = finDelTramoQueContiene(jornada, a.getFechaHoraIngreso());
+        if (finTramoIngreso == null || !ahora.isAfter(finTramoIngreso)) {
             return;
         }
-        a.setFechaHoraSalida(salidaProg);
+        a.setFechaHoraSalida(finTramoIngreso);
+        a.setSalidaForzada(true); // cierre forzado (no marca real): no cuenta como cierre coherente
         a.setEstadoActual(EstadoAsistencia.OFFLINE);
         recalcularMinutos(a);
         asistenciaRepository.save(a);
     }
 
+    /** Fin del tramo de la jornada que contiene {@code instante}, o null si ninguno lo contiene. */
+    private LocalDateTime finDelTramoQueContiene(JornadaEfectivaResponse jornada, LocalDateTime instante) {
+        if (jornada == null || instante == null) {
+            return null;
+        }
+        return jornada.getTramos().stream()
+                .filter(t -> t.getInicio() != null && t.getFin() != null
+                        && !instante.isBefore(t.getInicio()) && instante.isBefore(t.getFin()))
+                .map(TramoJornadaResponse::getFin)
+                .findFirst()
+                .orElse(null);
+    }
+
     // --- Re-ingreso (dia partido): archivar el segmento base y reabrir para el tramo extra ---
 
     private boolean esTramoReingreso(Asistencia a, TramoJornadaResponse tramo) {
-        if (a.getSalidaProgramada() == null || tramo == null || tramo.getInicio() == null || tramo.getFin() == null) {
-            return false;
-        }
-        LocalDateTime finAnterior = LocalDateTime.of(a.getFecha(), a.getSalidaProgramada());
-        return tramo.getFin().isAfter(finAnterior) && !tramo.getInicio().isBefore(finAnterior);
+        // Bajo redistribucion por tramo, reabrir es seguro: el credito se reparte por ventana desde todos
+        // los segmentos. Se permite mientras exista un tramo marcable cuya ventana aun no termino (queda
+        // trabajo del dia). La ventana concreta ya la valido validarVentanaIngreso.
+        return tramo != null && tramo.getFin() != null
+                && tramo.getFin().isAfter(OperationalDateTime.nowLocalDateTime());
     }
 
     private void prepararReingreso(Asistencia a, TramoJornadaResponse tramo) {
+        // Archivar el segmento cerrado como par crudo y reabrir. El OBJETIVO del dia NO cambia (ya es la
+        // neta base) y el credito lo redistribuye recalcularMinutos por tramo. Solo movemos el ancla de
+        // DISPLAY (entrada/salida programada + origen) al tramo que se reingresa, para el desglose visual.
         archivarSegmentoActual(a);
-        reiniciarParaTramo(a, tramo);
+        a.setEntradaProgramada(tramo.getInicio().toLocalTime());
+        a.setSalidaProgramada(tramo.getFin().toLocalTime());
+        a.setOrigenTramoActual(mapOrigenTramo(tramo));
+        a.setAjusteJornadaActual(tramo.getIdAjuste() == null ? null
+                : ajusteJornadaRepository.findById(tramo.getIdAjuste()).orElse(null));
+        a.setFechaHoraIngreso(null);
+        a.setFechaHoraSalida(null);
+        a.setSalidaForzada(null);
+        a.setEstadoActual(EstadoAsistencia.OFFLINE);
     }
 
     private void prepararReingresoOjtLibre(Asistencia a) {
@@ -771,6 +802,7 @@ public class MarcacionService {
                 .finAlmuerzoProgramado(a.getFinAlmuerzoProgramado())
                 .fechaHoraIngreso(a.getFechaHoraIngreso())
                 .fechaHoraSalida(a.getFechaHoraSalida())
+                .salidaForzada(a.getSalidaForzada())
                 .fechaHoraInicioAlmuerzo(a.getAlmuerzoRealInicio())
                 .fechaHoraFinAlmuerzo(a.getAlmuerzoRealFin())
                 .minutosObjetivo(Math.max(safe(a.getMinutosObjetivoDia()) - previosObjetivo, 0))
@@ -778,31 +810,6 @@ public class MarcacionService {
                 .minutosAlmuerzoTomados(safe(a.getMinutosAlmuerzoTomados()))
                 .minutosServiciosAcumulados(0)
                 .build());
-    }
-
-    private void reiniciarParaTramo(Asistencia a, TramoJornadaResponse tramo) {
-        OrigenTramo origen = mapOrigenTramo(tramo);
-        // El tramo extra no tiene objetivo (horas extra); un tramo base adicional sumaria su objetivo.
-        int objetivoNuevo = esBaseOrigen(origen)
-                ? (int) Duration.between(tramo.getInicio(), tramo.getFin()).toMinutes()
-                : 0;
-        a.setEntradaProgramada(tramo.getInicio().toLocalTime());
-        a.setSalidaProgramada(tramo.getFin().toLocalTime());
-        a.setInicioAlmuerzoProgramado(null);
-        a.setFinAlmuerzoProgramado(null);
-        a.setFechaHoraIngreso(null);
-        a.setFechaHoraSalida(null);
-        a.setAlmuerzoEstadoDesde(null);
-        a.setAlmuerzoRealInicio(null);
-        a.setAlmuerzoRealFin(null);
-        a.setOrigenAlmuerzo(null);
-        a.setMinutosAlmuerzoTomados(0);
-        a.setEstadoActual(EstadoAsistencia.OFFLINE);
-        a.setOrigenTramoActual(origen);
-        a.setAjusteJornadaActual(tramo.getIdAjuste() == null ? null
-                : ajusteJornadaRepository.findById(tramo.getIdAjuste()).orElse(null));
-        a.setMinutosObjetivoDia(safe(a.getMinutosObjetivoDia()) + objetivoNuevo);
-        // minutosTrabajados / minutosExtra se conservan (totales del dia) y se recomputan al cerrar el tramo.
     }
 
     private OrigenTramo mapOrigenTramo(TramoJornadaResponse tramo) {
@@ -822,43 +829,6 @@ public class MarcacionService {
 
     private int safe(Integer valor) {
         return valor == null ? 0 : valor;
-    }
-
-    /** Desglose de tramos del dia (solo dia partido): tramos archivados + segmento actual. */
-    private List<TramoAsistenciaResponse> construirTramos(Asistencia a) {
-        List<AsistenciaTramo> archivados = asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(a.getId());
-        if (archivados.isEmpty()) {
-            return List.of();
-        }
-        List<TramoAsistenciaResponse> tramos = new ArrayList<>();
-        int previosObjetivo = 0;
-        int previosTrabajados = 0;
-        for (AsistenciaTramo t : archivados) {
-            tramos.add(TramoAsistenciaResponse.builder()
-                    .origen(t.getOrigen())
-                    .horaEntradaEstablecida(t.getEntradaProgramada())
-                    .horaSalidaEstablecida(t.getSalidaProgramada())
-                    .horaEntradaAsistencia(t.getFechaHoraIngreso() != null ? t.getFechaHoraIngreso().toLocalTime() : null)
-                    .horaSalidaAsistencia(t.getFechaHoraSalida() != null ? t.getFechaHoraSalida().toLocalTime() : null)
-                    .minutosObjetivo(t.getMinutosObjetivo())
-                    .minutosTrabajados(t.getMinutosTrabajados())
-                    .motivo(t.getMotivo())
-                    .creadoPor(t.getCreadoPor())
-                    .build());
-            previosObjetivo += t.getMinutosObjetivo();
-            previosTrabajados += t.getMinutosTrabajados();
-        }
-        int totalDia = safe(a.getMinutosTrabajados()) + safe(a.getMinutosExtra()) + safe(a.getMinutosCompensados());
-        tramos.add(TramoAsistenciaResponse.builder()
-                .origen(a.getOrigenTramoActual() == null ? OrigenTramo.BASE : a.getOrigenTramoActual())
-                .horaEntradaEstablecida(a.getEntradaProgramada())
-                .horaSalidaEstablecida(a.getSalidaProgramada())
-                .horaEntradaAsistencia(a.getFechaHoraIngreso() != null ? a.getFechaHoraIngreso().toLocalTime() : null)
-                .horaSalidaAsistencia(a.getFechaHoraSalida() != null ? a.getFechaHoraSalida().toLocalTime() : null)
-                .minutosObjetivo(Math.max(safe(a.getMinutosObjetivoDia()) - previosObjetivo, 0))
-                .minutosTrabajados(Math.max(totalDia - previosTrabajados, 0))
-                .build());
-        return tramos;
     }
 
     private int sumarSesionesCerradasDesde(Long asistenciaId, TipoSesionEstado tipo, LocalDateTime desde) {
@@ -901,47 +871,40 @@ public class MarcacionService {
     public DetalleDiaResponse getDia(Long idEmpleado, LocalDate fecha) {
         JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolverSiExiste(idEmpleado, fecha).orElse(null);
         Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha).orElse(null);
-
-        boolean esHoy = fecha.equals(OperationalDateTime.today());
-        boolean enTurnoActivo = esHoy && jornada != null && jornada.getTramoActual() != null;
         List<String> roles = currentUser.roles();
         boolean ojt = esOjt(roles);
         EffectiveParams params = parametroAsistenciaResolver.resolve(roles);
+
+        // El backend entrega los INSUMOS (tramos resueltos + politica + estado); el frontend deriva las
+        // compuertas con su reloj vivo y el backend re-valida en el write. Sin booleanos puede* vencidos.
+        PoliticaMarcacionResponse politica = PoliticaMarcacionResponse.builder()
+                .margenAdelantoMin(params.margenAdelantoMin())
+                .bloqueoTardanzaMin(params.bloqueoTardanzaMin())
+                .maxMinutosPausaActiva(params.maxMinutosPausaActiva())
+                .maxUsosPausaActivaDia(params.maxUsosPausaActivaDia())
+                .ventanaMarcaAlmuerzoMin(VENTANA_MARCA_ALMUERZO_MIN)
+                .permiteIngresoDuranteTurno(ojt)
+                .build();
 
         DetalleDiaResponse.DetalleDiaResponseBuilder b = DetalleDiaResponse.builder()
                 .idEmpleado(idEmpleado)
                 .fecha(fecha)
                 .tieneHorario(jornada != null)
-                .enTurnoActivo(enTurnoActivo)
-                .maxMinutosPausaActiva(params.maxMinutosPausaActiva())
-                .puedeMarcarIngreso(puedeMarcarIngresoAhora(jornada, asistencia, esHoy, params, ojt));
+                .politica(politica)
+                .tramos(construirTramosDia(asistencia, jornada))
+                .version(calcularVersion(jornada, asistencia))
+                .maxMinutosPausaActiva(params.maxMinutosPausaActiva());
 
         if (asistencia != null) {
             SesionTotales tot = totales(asistencia.getId());
-            boolean online = esHoy
-                    && asistencia.getEstadoActual() == EstadoAsistencia.ONLINE
-                    && asistencia.getFechaHoraIngreso() != null
-                    && asistencia.getFechaHoraSalida() == null;
-            int serviciosUsado = sumarSesionesCerradas(asistencia.getId(), TipoSesionEstado.SERVICIOS);
             int usosPausa = sesionEstadoRepository
                     .findByAsistenciaIdAndTipoOrderByInicioAsc(asistencia.getId(), TipoSesionEstado.PAUSA_ACTIVA).size();
             return b
                     .idHorario(asistencia.getIdHorario())
                     .estadoActual(asistencia.getEstadoActual())
-                    .entradaProgramada(asistencia.getEntradaProgramada())
-                    .salidaProgramada(asistencia.getSalidaProgramada())
                     .fechaHoraIngreso(asistencia.getFechaHoraIngreso())
                     .fechaHoraSalida(asistencia.getFechaHoraSalida())
                     .jornadaCerrada(asistencia.getFechaHoraSalida() != null)
-                    .operativo(asistencia.getEstadoActual() == EstadoAsistencia.ONLINE && esHoy)
-                    .puedeMarcarSalida(online)
-                    .puedeIniciarAlmuerzo(online && enTurnoActivo
-                            && asistencia.getAlmuerzoRealFin() == null
-                            && ventanaAlmuerzoAbierta(asistencia))
-                    .puedeIniciarServicios(online && enTurnoActivo
-                            && serviciosUsado < safe(asistencia.getMinutosServiciosPermitidos()))
-                    .puedeIniciarPausaActiva(online && enTurnoActivo
-                            && usosPausa < params.maxUsosPausaActivaDia())
                     .minutosObjetivoDia(asistencia.getMinutosObjetivoDia())
                     .minutosTrabajados(asistencia.getMinutosTrabajados())
                     .minutosBalance(asistencia.getMinutosBalance())
@@ -957,28 +920,20 @@ public class MarcacionService {
                     .minutosServiciosHoy(tot.servicios())
                     .minutosPausaActivaHoy(tot.pausa())
                     .minutosCapacitacionHoy(tot.capacitacion())
+                    .pausaActivaUsosHoy(usosPausa)
                     .sesionEnCurso(tot.enCurso())
                     .minutosServiciosTope(asistencia.getMinutosServiciosPermitidos())
                     .sesionActualTipo(tot.sesionActualTipo())
                     .sesionActualInicio(tot.sesionActualInicio())
-                    .tramos(construirTramos(asistencia))
                     .build();
         }
 
-        TramoJornadaResponse tramoRef = tramoReferencia(jornada);
         Horario horario = jornada != null ? horarioRepository.findById(jornada.getIdHorario()).orElse(null) : null;
         VentanaAlmuerzo almuerzo = horario != null ? resolverAlmuerzoProgramado(horario, fecha) : null;
         return b
                 .idHorario(jornada != null ? jornada.getIdHorario() : null)
                 .estadoActual(EstadoAsistencia.OFFLINE)
-                .entradaProgramada(tramoRef != null ? tramoRef.getInicio().toLocalTime() : null)
-                .salidaProgramada(tramoRef != null ? tramoRef.getFin().toLocalTime() : null)
                 .jornadaCerrada(false)
-                .operativo(false)
-                .puedeMarcarSalida(false)
-                .puedeIniciarAlmuerzo(false)
-                .puedeIniciarServicios(false)
-                .puedeIniciarPausaActiva(false)
                 .minutosObjetivoDia(objetivoJornada(jornada))
                 .minutosTrabajados(0)
                 .minutosBalance(0)
@@ -990,74 +945,108 @@ public class MarcacionService {
                 .minutosServiciosHoy(0)
                 .minutosPausaActivaHoy(0)
                 .minutosCapacitacionHoy(0)
+                .pausaActivaUsosHoy(0)
                 .sesionEnCurso(false)
                 .minutosServiciosTope(horario != null ? horario.getMinutosServicios() : null)
-                .tramos(List.of())
                 .build();
     }
 
-    /** Espeja la aceptacion de registrarIngreso: true sii marcar ingreso ahora seria aceptado. */
-    private boolean puedeMarcarIngresoAhora(JornadaEfectivaResponse jornada, Asistencia asistencia,
-                                            boolean esHoy, EffectiveParams params, boolean ojt) {
-        if (!esHoy) {
-            return false;
+    /**
+     * Proyeccion pura de la jornada del dia: todos los tramos (base + extras/compensables) con su tipo,
+     * subestado derivado y credito. NO muta nada. El frontend deriva de aqui el tramo vigente/proximo/hueco
+     * y las compuertas con su reloj. Sin jornada -> lista vacia.
+     */
+    private List<TramoDiaResponse> construirTramosDia(Asistencia a, JornadaEfectivaResponse jornada) {
+        if (jornada == null) {
+            return List.of();
         }
-        TramoJornadaResponse tramo = tramoParaIngreso(jornada);
-        if (tramo == null && !ojt) {
-            return false;
-        }
-        if (!ojt && !ventanaIngresoAbierta(OperationalDateTime.nowLocalDateTime(), tramo.getInicio(), tramo.getFin(), params,
-                Boolean.TRUE.equals(tramo.getBase()), false)) {
-            return false;
-        }
-        if (asistencia == null) {
-            return true;
-        }
-        if (asistencia.getFechaHoraSalida() != null) {
-            if (ojt) {
-                return true;
+        LocalDateTime ahora = OperationalDateTime.nowLocalDateTime();
+        List<Segmento> segmentos = a != null ? segmentosTrabajados(a) : List.of();
+        boolean hayPresencia = a != null && presenciaTramoService.tienePresencia(a.getIdEmpleado(), a.getFecha());
+        Map<Long, RazonAjuste> razonPorAjuste = a == null ? Map.of() : ajusteJornadaRepository
+                .findByIdEmpleadoAndFechaOperativaAndEstadoOrderByInicioAsc(
+                        a.getIdEmpleado(), a.getFecha(), EstadoAjusteJornada.ACTIVO)
+                .stream()
+                .filter(aj -> aj.getId() != null)
+                .collect(Collectors.toMap(AjusteJornada::getId,
+                        aj -> aj.getRazon() == null ? RazonAjuste.AMPLIACION_OPERATIVA : aj.getRazon(),
+                        (x, y) -> x));
+
+        List<TramoDiaResponse> out = new ArrayList<>();
+        for (TramoJornadaResponse t : jornada.getTramos()) {
+            if (t.getInicio() == null || t.getFin() == null) {
+                continue;
             }
-            return tramo != null && esTramoReingreso(asistencia, tramo);
-        }
-        if (asistencia.getFechaHoraIngreso() != null) {
-            // Tramo expirado sin salida: registrarIngreso forzara el cierre y hara re-ingreso.
-            if (tramo != null && asistencia.getSalidaProgramada() != null) {
-                LocalDateTime salidaProg = LocalDateTime.of(asistencia.getFecha(), asistencia.getSalidaProgramada());
-                if (OperationalDateTime.nowLocalDateTime().isAfter(salidaProg)
-                        && esTramoReingreso(asistencia, tramo)) {
-                    return true;
+            boolean esBase = Boolean.TRUE.equals(t.getBase())
+                    || t.getOrigen() == OrigenAjusteJornada.REEMPLAZO_BASE;
+            TipoTramoDia tipo = esBase ? TipoTramoDia.BASE
+                    : (razonPorAjuste.get(t.getIdAjuste()) == RazonAjuste.COMPENSACION
+                            ? TipoTramoDia.COMPENSABLE : TipoTramoDia.EXTRA);
+            int credito = a != null ? creditoTramo(a, t, segmentos, hayPresencia, esBase) : 0;
+
+            LocalDateTime ingresoReal = null, salidaReal = null;
+            boolean huboMarca = false;
+            for (Segmento s : segmentos) {
+                if (s.ingreso() == null) {
+                    continue;
+                }
+                LocalDateTime segFin = s.salida() != null ? s.salida() : ahora; // segmento abierto -> hasta ahora
+                if (overlapMinutos(s.ingreso(), segFin, t.getInicio(), t.getFin()) <= 0) {
+                    continue;
+                }
+                huboMarca = true;
+                LocalDateTime i = s.ingreso().isAfter(t.getInicio()) ? s.ingreso() : t.getInicio();
+                if (ingresoReal == null || i.isBefore(ingresoReal)) ingresoReal = i;
+                if (s.salida() != null) { // salida real cerrada (un segmento abierto no aporta salidaReal)
+                    LocalDateTime f = s.salida().isBefore(t.getFin()) ? s.salida() : t.getFin();
+                    if (salidaReal == null || f.isAfter(salidaReal)) salidaReal = f;
                 }
             }
-            return false;
+
+            EstadoTramoDia estado;
+            if (ahora.isBefore(t.getInicio())) {
+                estado = EstadoTramoDia.PENDIENTE;
+            } else if (ahora.isBefore(t.getFin())) {
+                estado = EstadoTramoDia.EN_CURSO;
+            } else if (credito > 0) {
+                estado = EstadoTramoDia.CUMPLIDO;
+            } else if (huboMarca && !esBase) {
+                estado = EstadoTramoDia.ANULADO;
+            } else {
+                estado = EstadoTramoDia.EXPIRADO;
+            }
+
+            out.add(TramoDiaResponse.builder()
+                    .idAjuste(t.getIdAjuste())
+                    .tipo(tipo)
+                    .inicio(t.getInicio())
+                    .fin(t.getFin())
+                    .estado(estado)
+                    .ingresoReal(ingresoReal)
+                    .salidaReal(salidaReal)
+                    .minutosAcreditados(credito)
+                    .build());
         }
-        return true;
+        return out;
     }
 
-    /** Predicado de la ventana de ingreso (mismos limites que validarVentanaIngreso, sin lanzar). */
-    private boolean ventanaIngresoAbierta(LocalDateTime ahora, LocalDateTime inicio, LocalDateTime fin,
-                                          EffectiveParams params, boolean esBase, boolean permiteIngresoDuranteTurno) {
-        if (ahora.isAfter(fin)) {
-            return false;
-        }
-        long desfaseMin = Duration.between(inicio, ahora).toMinutes();
-        if (desfaseMin < 0) {
-            return -desfaseMin <= params.margenAdelantoMin();
-        }
-        return !esBase || permiteIngresoDuranteTurno || desfaseMin < params.bloqueoTardanzaMin();
+    /** Version del read model: cambia cuando cambian los tramos o el estado de la asistencia. */
+    private String calcularVersion(JornadaEfectivaResponse jornada, Asistencia asistencia) {
+        List<String> firma = jornada == null ? List.of()
+                : jornada.getTramos().stream()
+                        .map(t -> t.getIdAjuste() + "|" + t.getInicio() + "|" + t.getFin())
+                        .toList();
+        return Integer.toHexString(java.util.Objects.hash(
+                jornada != null ? jornada.getIdHorario() : null,
+                firma,
+                asistencia != null ? asistencia.getEstadoActual() : null,
+                asistencia != null ? asistencia.getUpdatedAt() : null,
+                asistencia != null ? asistencia.getFechaHoraIngreso() : null,
+                asistencia != null ? asistencia.getFechaHoraSalida() : null));
     }
 
     private boolean esOjt(List<String> roles) {
         return roles != null && roles.stream().anyMatch(role -> OJT_ROLE.equalsIgnoreCase(role));
-    }
-
-    /** Ventana de marca de almuerzo: desde 15 min antes de la hora programada (sin ventana -> libre). */
-    private boolean ventanaAlmuerzoAbierta(Asistencia a) {
-        LocalTime lunchStart = a.getInicioAlmuerzoProgramado();
-        if (lunchStart == null) {
-            return true;
-        }
-        LocalDateTime desde = LocalDateTime.of(a.getFecha(), lunchStart).minusMinutes(VENTANA_MARCA_ALMUERZO_MIN);
-        return !OperationalDateTime.nowLocalDateTime().isBefore(desde);
     }
 
     private Integer minutosEntre(LocalTime inicio, LocalTime fin) {
@@ -1065,19 +1054,6 @@ public class MarcacionService {
             return null;
         }
         return (int) Math.max(Duration.between(inicio, fin).toMinutes(), 0);
-    }
-
-    private TramoJornadaResponse tramoReferencia(JornadaEfectivaResponse jornada) {
-        if (jornada == null) {
-            return null;
-        }
-        if (jornada.getTramoActual() != null) {
-            return jornada.getTramoActual();
-        }
-        if (jornada.getProximoTramo() != null) {
-            return jornada.getProximoTramo();
-        }
-        return jornada.getTramos().isEmpty() ? null : jornada.getTramos().getLast();
     }
 
     private int objetivoJornada(JornadaEfectivaResponse jornada) {
