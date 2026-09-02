@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-08-29T01:41:27.157Z",
         "reason": "claude: img only renders inside @if(logo()) guard, src is always a real /provider-logos path; dynamic binding the detector cannot resolve"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "frontend/src/app/shared/components/lead-merito-correccion-drawer/lead-merito-correccion-drawer.component.html"
+        ],
+        "createdAt": "2026-09-02T15:15:28.834Z",
+        "reason": "Angular [src] binding is dynamic (providerLogo signal); same pattern as original component, static analysis cannot see it"
       }
     ]
   }

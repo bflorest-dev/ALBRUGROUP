@@ -10,12 +10,31 @@
 >
   <ng-template #header>
     <div class="drawer-title">
-      <span class="drawer-title__eyebrow">PREVENTA</span>
+      @if (isAdmin()) {
+        <span class="drawer-title__eyebrow">ADMIN · {{ selectedEtapa() }}</span>
+      } @else {
+        <span class="drawer-title__eyebrow">PREVENTA</span>
+      }
       <strong>Correccion de merito</strong>
     </div>
   </ng-template>
 
   <section class="merito-panel">
+
+    @if (isAdmin()) {
+      <div class="etapa-selector">
+        <span class="section-label">Etapa a corregir</span>
+        <p-selectButton
+          [ngModel]="selectedEtapa()"
+          (ngModelChange)="selectedEtapa.set($event); onEtapaChange()"
+          [options]="etapaOptions"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="etapa-select-btn"
+        />
+      </div>
+    }
+
     <div class="search-row">
       <label class="field field--lead">
         <span>Lead</span>
@@ -66,10 +85,12 @@
       <div class="result-card">
         <div class="result-card__header">
           <span class="section-label">Resultado del lead</span>
-          <p-tag
-            [severity]="candidate.corregible ? 'success' : 'warn'"
-            [value]="candidate.corregible ? 'Corregible' : 'Bloqueado'"
-          />
+          @if (!isAdmin()) {
+            <p-tag
+              [severity]="candidate.corregible ? 'success' : 'warn'"
+              [value]="candidate.corregible ? 'Corregible' : 'Bloqueado'"
+            />
+          }
         </div>
 
         <div class="result-table">
@@ -97,7 +118,7 @@
             </strong>
           </div>
           <div class="result-row">
-            <span>Merito actual</span>
+            <span>Merito actual (preventa)</span>
             <strong>{{ display(candidate.asesorMeritoActualPreventa) }}</strong>
           </div>
           <div class="result-row">
@@ -108,14 +129,14 @@
           </div>
         </div>
 
-        @if (!candidate.corregible && candidate.motivoNoCorregible) {
+        @if (!isAdmin() && !candidate.corregible && candidate.motivoNoCorregible) {
           <p-message severity="warn" [text]="candidate.motivoNoCorregible" />
         }
       </div>
 
-      <div class="correction-form" [class.is-disabled]="!candidate.corregible">
+      <div class="correction-form" [class.is-disabled]="!isAdmin() && !candidate.corregible">
         <label class="field">
-          <span>Asesor objetivo</span>
+          <span>{{ empleadoLabel() }}</span>
           <p-autoComplete
             [ngModel]="selectedAsesor()"
             (ngModelChange)="selectedAsesor.set($event)"
@@ -124,9 +145,9 @@
             [optionLabel]="'nombreCompleto'"
             [forceSelection]="true"
             [dropdown]="true"
-            [disabled]="!candidate.corregible || isLoadingAsesores()"
+            [disabled]="(!isAdmin() && !candidate.corregible) || isLoadingAsesores()"
             appendTo="body"
-            placeholder="Buscar asesor"
+            placeholder="Buscar empleado"
             styleClass="advisor-autocomplete"
             panelStyleClass="advisor-autocomplete-panel"
             scrollHeight="18rem"
@@ -146,7 +167,7 @@
             type="text"
             [ngModel]="motivo()"
             (ngModelChange)="motivo.set($event)"
-            [disabled]="!candidate.corregible"
+            [disabled]="!isAdmin() && !candidate.corregible"
             maxlength="500"
             placeholder="Venta subida por supervisor fuera de horario"
           />

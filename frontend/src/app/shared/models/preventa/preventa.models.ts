@@ -501,6 +501,12 @@ export interface LeadMeritoCorreccionRequest {
   motivo?: string | null;
 }
 
+export interface LeadMeritoAdminCorreccionRequest {
+  etapaMerito: Etapa;
+  idAsesorMerito: number;
+  motivo?: string | null;
+}
+
 export interface LeadMeritoCorreccionResponse {
   idLead: number;
   lead: string;

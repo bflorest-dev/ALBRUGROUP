@@ -10,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pe.albrugroup.lead_service.entity.request.*;
+import pe.albrugroup.lead_service.service.AuthEquipoClient;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -34,6 +35,7 @@ public class PreventaController {
     private final LeadExcelIntakeService leadExcelIntakeService;
     private final LeadCampanaCorreccionService leadCampanaCorreccionService;
     private final LeadMeritoCorreccionService leadMeritoCorreccionService;
+    private final AuthEquipoClient authEquipoClient;
 
     //GTR
 
@@ -87,6 +89,24 @@ public class PreventaController {
             @Valid @RequestBody LeadMeritoCorreccionRequest request
     ) {
         return ResponseEntity.ok(leadMeritoCorreccionService.corregirMerito(idLead, request));
+    }
+
+    // ── Admin: corrección de mérito por etapa ─────────────────────────────────
+
+    @GetMapping("/admin/correcciones/merito/empleados") @PreAuthorize("hasAuthority('CORREGIR_MERITO_ADMIN')")
+    public ResponseEntity<List<UsuarioRolAuthResponse>> listarEmpleadosMeritoAdmin(
+            @RequestParam Long idEquipo,
+            @RequestParam Etapa etapa
+    ) {
+        return ResponseEntity.ok(authEquipoClient.listarEmpleadosMeritoAdmin(idEquipo, etapa));
+    }
+
+    @PatchMapping("/admin/correcciones/merito/{idLead}") @PreAuthorize("hasAuthority('CORREGIR_MERITO_ADMIN')")
+    public ResponseEntity<LeadMeritoCorreccionResponse> corregirMeritoAdmin(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadMeritoAdminCorreccionRequest request
+    ) {
+        return ResponseEntity.ok(leadMeritoCorreccionService.corregirMeritoAdmin(idLead, request));
     }
 
     @PostMapping("/intake/retroactivo") @PreAuthorize("hasAuthority('CREATE_LEADS')")

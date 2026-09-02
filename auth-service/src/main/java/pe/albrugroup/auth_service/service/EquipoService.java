@@ -72,6 +72,13 @@ public class EquipoService implements IEquipo {
     );
     private static final String ROL_ASESOR_VENTAS = "ASESOR_VENTAS";
 
+    // Roles listados para corregir el mérito por etapa (modo ADMIN).
+    private static final Set<String> ROLES_MERITO_ADMIN_PREVENTA = Set.of(
+            "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "ASESOR_GTR"
+    );
+    private static final String ROL_MERITO_ADMIN_VENTA    = "ASESOR_BACKOFFICE";
+    private static final String ROL_MERITO_ADMIN_POSTVENTA = "ASESOR_POSTVENTA";
+
     @Override
     public EquipoResponse crear(EquipoRequest request) {
         String nombre = request.getNombre().trim();
@@ -240,6 +247,41 @@ public class EquipoService implements IEquipo {
                         .anyMatch(ROL_ASESOR_VENTAS::equals))
                 .map(this::toUsuarioRolResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UsuarioRolResponse> listarAsesoresMeritoAdmin(Long equipoId, String etapa) {
+        if (etapa == null || etapa.isBlank()) {
+            throw new BadRequestException("La etapa es obligatoria");
+        }
+        return switch (etapa.toUpperCase()) {
+            case "PREVENTA" -> {
+                Equipo equipo = equipoRepository.findById(equipoId)
+                        .orElseThrow(() -> new NotFoundException("Equipo no encontrado", equipoId));
+                if (!Boolean.TRUE.equals(equipo.getActivo())) {
+                    throw new BadRequestException("El equipo seleccionado no esta activo");
+                }
+                yield usuarioRepository
+                        .findDistinctByEquiposIdAndActivoTrueOrderByNombreCompletoAsc(equipoId).stream()
+                        .filter(u -> u.getRoles().stream()
+                                .map(Rol::getNombre)
+                                .anyMatch(ROLES_MERITO_ADMIN_PREVENTA::contains))
+                        .map(this::toUsuarioRolResponse)
+                        .toList();
+            }
+            case "VENTA" -> usuarioRepository
+                    .findDistinctByRolesNombreAndActivoTrue(ROL_MERITO_ADMIN_VENTA).stream()
+                    .sorted(java.util.Comparator.comparing(Usuario::getNombreCompleto))
+                    .map(this::toUsuarioRolResponse)
+                    .toList();
+            case "POSTVENTA" -> usuarioRepository
+                    .findDistinctByRolesNombreAndActivoTrue(ROL_MERITO_ADMIN_POSTVENTA).stream()
+                    .sorted(java.util.Comparator.comparing(Usuario::getNombreCompleto))
+                    .map(this::toUsuarioRolResponse)
+                    .toList();
+            default -> throw new BadRequestException("Etapa no valida: " + etapa + ". Use PREVENTA, VENTA o POSTVENTA");
+        };
     }
 
     private UsuarioRolResponse toUsuarioRolResponse(Usuario usuario) {

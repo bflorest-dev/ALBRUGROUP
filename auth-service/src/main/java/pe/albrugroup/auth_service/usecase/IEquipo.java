@@ -19,5 +19,6 @@ public interface IEquipo {
     List<EquipoResponse> listarMisEquipos();
     List<UsuarioRolResponse> listarAsesoresPreventa(Long equipoId);
     List<UsuarioRolResponse> listarAsesoresVentasMerito(Long equipoId);
+    List<UsuarioRolResponse> listarAsesoresMeritoAdmin(Long equipoId, String etapa);
     List<UsuarioRolResponse> listarMiembros(Long equipoId);
 }

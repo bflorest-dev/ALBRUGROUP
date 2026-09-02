@@ -10,6 +10,8 @@ import org.springframework.web.client.RestClient;
 import pe.albrugroup.lead_service.entity.response.UsuarioRolAuthResponse;
 import pe.albrugroup.lead_service.exception.ForbiddenException;
 
+import pe.albrugroup.lead_service.entity.enums.Etapa;
+
 import java.util.List;
 
 @Service
@@ -53,6 +55,24 @@ public class AuthEquipoClient {
 
     public List<UsuarioRolAuthResponse> listarAsesoresVentasMerito(Long idEquipo) {
         return listarAsesores(idEquipo, "/equipos/{idEquipo}/asesores-ventas-merito");
+    }
+
+    public List<UsuarioRolAuthResponse> listarEmpleadosMeritoAdmin(Long idEquipo, Etapa etapa) {
+        if (idEquipo == null || etapa == null) {
+            return List.of();
+        }
+        String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authorization == null || authorization.isBlank()) {
+            throw new ForbiddenException("No se pudo validar el empleado seleccionado");
+        }
+        return restClientBuilder
+                .baseUrl(authBaseUrl)
+                .build()
+                .get()
+                .uri("/equipos/{idEquipo}/asesores-merito-admin?etapa={etapa}", idEquipo, etapa.name())
+                .header(HttpHeaders.AUTHORIZATION, authorization)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<UsuarioRolAuthResponse>>() {});
     }
 
     private List<UsuarioRolAuthResponse> listarAsesores(Long idEquipo, String uri) {

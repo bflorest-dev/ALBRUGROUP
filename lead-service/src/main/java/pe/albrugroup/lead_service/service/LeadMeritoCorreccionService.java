@@ -11,6 +11,7 @@ import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.LeadEtapaResumen;
 import pe.albrugroup.lead_service.entity.LeadMeritoCorreccion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.request.LeadMeritoAdminCorreccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadMeritoCorreccionRequest;
 import pe.albrugroup.lead_service.entity.response.LeadMeritoCorreccionCandidatoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadMeritoCorreccionResponse;
@@ -122,6 +123,101 @@ public class LeadMeritoCorreccionService {
                 .motivo(savedCorreccion.getMotivo())
                 .fechaCorreccion(fechaCorreccion(savedCorreccion))
                 .build();
+    }
+
+    public LeadMeritoCorreccionResponse corregirMeritoAdmin(Long idLead, LeadMeritoAdminCorreccionRequest request) {
+        if (request == null || request.getEtapaMerito() == null) {
+            throw new BadRequestException("La etapa de merito es obligatoria");
+        }
+        Etapa etapaMerito = request.getEtapaMerito();
+
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+
+        validarEtapaActualAdmin(lead, etapaMerito);
+
+        LeadEtapaResumen resumen = leadEtapaResumenRepository.findByIdLeadAndEtapa(lead.getId(), etapaMerito)
+                .orElseThrow(() -> new BadRequestException(
+                        "El lead no tiene resumen de etapa " + etapaMerito.name()));
+        if (resumen.getFechaMerito() == null || resumen.getIdAsesorMerito() == null) {
+            throw new BadRequestException(
+                    "El resumen de etapa " + etapaMerito.name() + " no tiene asesor y fecha de merito validos");
+        }
+
+        if (correccionRepository.existsByIdLeadAndEtapaMerito(lead.getId(), etapaMerito)) {
+            throw new ConflictException("Este lead ya tiene una correccion de merito para la etapa " + etapaMerito.name());
+        }
+        if (Objects.equals(resumen.getIdAsesorMerito(), request.getIdAsesorMerito())) {
+            throw new BadRequestException("El empleado seleccionado ya tiene el merito de esta etapa");
+        }
+
+        List<UsuarioRolAuthResponse> candidatos = authEquipoClient.listarEmpleadosMeritoAdmin(lead.getIdEquipo(), etapaMerito);
+        UsuarioRolAuthResponse empleadoNuevo = candidatos.stream()
+                .filter(e -> request.getIdAsesorMerito().equals(e.empleadoId()))
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException(
+                        "El empleado seleccionado no es elegible para recibir el merito de la etapa " + etapaMerito.name()));
+
+        Long idAsesorAnterior = resumen.getIdAsesorMerito();
+        String nombreAsesorAnterior = resumen.getNombreAsesorMerito();
+        String nombreEmpleadoNuevo = empleadoNuevo.nombreCompleto() == null ? "" : empleadoNuevo.nombreCompleto().trim();
+        String motivo = normalizarMotivo(request.getMotivo());
+
+        LeadMeritoCorreccion correccion = LeadMeritoCorreccion.builder()
+                .idLead(lead.getId())
+                .leadNumero(lead.getLead())
+                .etapaMerito(etapaMerito)
+                .idAsesorAnterior(idAsesorAnterior)
+                .nombreAsesorAnterior(nombreAsesorAnterior)
+                .idAsesorNuevo(empleadoNuevo.empleadoId())
+                .nombreAsesorNuevo(nombreEmpleadoNuevo)
+                .idActor(currentUser.empleadoID())
+                .nombreActor(currentUser.nombreCompleto())
+                .rolActor(currentUser.rolPrincipal())
+                .motivo(motivo)
+                .build();
+
+        LeadMeritoCorreccion savedCorreccion = guardarCorreccion(correccion);
+
+        resumen.setIdAsesorMerito(empleadoNuevo.empleadoId());
+        resumen.setNombreAsesorMerito(nombreEmpleadoNuevo);
+        leadEtapaResumenRepository.save(resumen);
+
+        return LeadMeritoCorreccionResponse.builder()
+                .idLead(lead.getId())
+                .lead(lead.getLead())
+                .etapaActual(lead.getEtapa())
+                .estadoActual(lead.getEstado())
+                .idAsesorAnterior(idAsesorAnterior)
+                .nombreAsesorAnterior(nombreAsesorAnterior)
+                .idAsesorNuevo(empleadoNuevo.empleadoId())
+                .nombreAsesorNuevo(nombreEmpleadoNuevo)
+                .fechaMeritoPreventa(resumen.getFechaMerito())
+                .idActor(savedCorreccion.getIdActor())
+                .nombreActor(savedCorreccion.getNombreActor())
+                .rolActor(savedCorreccion.getRolActor())
+                .motivo(savedCorreccion.getMotivo())
+                .fechaCorreccion(fechaCorreccion(savedCorreccion))
+                .build();
+    }
+
+    private void validarEtapaActualAdmin(Lead lead, Etapa etapaMerito) {
+        switch (etapaMerito) {
+            case PREVENTA -> {
+                if (lead.getEtapa() != Etapa.VENTA && lead.getEtapa() != Etapa.POSTVENTA) {
+                    throw new BadRequestException(
+                            "Para corregir el merito de PREVENTA el lead debe estar en VENTA o POSTVENTA");
+                }
+            }
+            case VENTA -> {
+                if (lead.getEtapa() != Etapa.POSTVENTA) {
+                    throw new BadRequestException(
+                            "Para corregir el merito de VENTA el lead debe estar en POSTVENTA");
+                }
+            }
+            case POSTVENTA -> { /* sin restricción de etapa actual */ }
+            default -> throw new BadRequestException("Etapa de merito no soportada: " + etapaMerito.name());
+        }
     }
 
     private LeadMeritoCorreccion guardarCorreccion(LeadMeritoCorreccion correccion) {

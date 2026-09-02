@@ -10,7 +10,10 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DrawerModule } from 'primeng/drawer';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
+import { SessionService } from '../../../core/services/session.service';
+import { Etapa } from '../../models/preventa/preventa.models';
 import { UsuarioResponse } from '../../models/auth/usuario-response';
 import {
   LeadMeritoCorreccionCandidatoResponse,
@@ -18,6 +21,11 @@ import {
 } from '../../models/preventa/preventa.models';
 import { providerLogo } from '../../utils/provider-logo';
 import { PreventaLeadService } from '../../../features/preventa/services/preventa-lead.service';
+
+interface EtapaOption {
+  label: string;
+  value: Etapa;
+}
 
 @Component({
   selector: 'app-lead-merito-correccion-drawer',
@@ -31,6 +39,7 @@ import { PreventaLeadService } from '../../../features/preventa/services/prevent
     DrawerModule,
     InputTextModule,
     MessageModule,
+    SelectButtonModule,
     TagModule
   ],
   providers: [ConfirmationService],
@@ -41,10 +50,19 @@ import { PreventaLeadService } from '../../../features/preventa/services/prevent
 export class LeadMeritoCorreccionDrawerComponent implements OnDestroy {
   private readonly preventaLeadService = inject(PreventaLeadService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly sessionService = inject(SessionService);
   private readonly document = inject(DOCUMENT);
   private readonly scrollLockClass = 'merito-drawer-scroll-lock';
   private scrollLocked = false;
   private scrollTop = 0;
+
+  protected readonly isAdmin = computed(() => this.sessionService.getPrimaryRole() === 'ADMINISTRADOR');
+
+  protected readonly etapaOptions: EtapaOption[] = [
+    { label: 'Preventa', value: 'PREVENTA' as Etapa },
+    { label: 'Venta', value: 'VENTA' as Etapa },
+    { label: 'Postventa', value: 'POSTVENTA' as Etapa }
+  ];
 
   protected readonly visible = signal(false);
   protected readonly leadQuery = signal('');
@@ -54,6 +72,7 @@ export class LeadMeritoCorreccionDrawerComponent implements OnDestroy {
   protected readonly asesorSuggestions = signal<UsuarioResponse[]>([]);
   protected readonly selectedAsesor = signal<UsuarioResponse | null>(null);
   protected readonly motivo = signal('');
+  protected readonly selectedEtapa = signal<Etapa>('PREVENTA' as Etapa);
   protected readonly isSearching = signal(false);
   protected readonly isLoadingAsesores = signal(false);
   protected readonly isSaving = signal(false);
@@ -63,7 +82,14 @@ export class LeadMeritoCorreccionDrawerComponent implements OnDestroy {
 
   protected readonly canApply = computed(() => {
     const candidate = this.selectedCandidate();
-    return Boolean(candidate?.corregible && this.selectedAsesor() && !this.isSaving());
+    const asesor = this.selectedAsesor();
+    if (!asesor || this.isSaving()) {
+      return false;
+    }
+    if (this.isAdmin()) {
+      return true;
+    }
+    return Boolean(candidate?.corregible);
   });
 
   protected readonly providerName = computed(() => {
@@ -72,6 +98,10 @@ export class LeadMeritoCorreccionDrawerComponent implements OnDestroy {
   });
 
   protected readonly providerLogo = computed(() => providerLogo(this.providerName()));
+
+  protected readonly empleadoLabel = computed(() =>
+    this.isAdmin() ? 'Empleado objetivo' : 'Asesor objetivo'
+  );
 
   constructor() {
     effect(() => {
@@ -93,6 +123,16 @@ export class LeadMeritoCorreccionDrawerComponent implements OnDestroy {
 
   protected onVisibleChange(value: boolean): void {
     this.visible.set(value);
+  }
+
+  protected onEtapaChange(): void {
+    this.selectedAsesor.set(null);
+    this.asesores.set([]);
+    this.asesorSuggestions.set([]);
+    const candidate = this.selectedCandidate();
+    if (candidate?.idEquipo) {
+      void this.loadAsesores(candidate);
+    }
   }
 
   private setScrollLock(locked: boolean): void {
@@ -161,7 +201,8 @@ export class LeadMeritoCorreccionDrawerComponent implements OnDestroy {
     this.selectedAsesor.set(null);
     this.asesores.set([]);
     this.asesorSuggestions.set([]);
-    if (!candidate.corregible || !candidate.idEquipo) {
+    const loadable = this.isAdmin() ? Boolean(candidate.idEquipo) : Boolean(candidate.corregible && candidate.idEquipo);
+    if (!loadable) {
       return;
     }
     await this.loadAsesores(candidate);
@@ -172,7 +213,7 @@ export class LeadMeritoCorreccionDrawerComponent implements OnDestroy {
     const currentMerito = this.selectedCandidate()?.idAsesorMeritoActualPreventa;
     const matches = this.asesores()
       .filter((asesor) => asesor.empleadoId !== currentMerito)
-      .filter((asesor) => this.isAsesorVentas(asesor))
+      .filter((asesor) => this.isAdmin() || this.isAsesorVentas(asesor))
       .filter((asesor) => this.matchesAsesor(asesor, query));
     this.asesorSuggestions.set(matches);
   }
@@ -181,13 +222,14 @@ export class LeadMeritoCorreccionDrawerComponent implements OnDestroy {
     const candidate = this.selectedCandidate();
     const asesor = this.selectedAsesor();
     if (!candidate || !asesor) {
-      this.errorMessage.set('Selecciona el asesor objetivo.');
+      this.errorMessage.set('Selecciona el empleado objetivo.');
       return;
     }
 
+    const etapaLabel = this.etapaDisplayLabel(this.selectedEtapa());
     this.confirmationService.confirm({
       header: 'Confirmar correccion de merito',
-      message: `El lead ${candidate.lead} otorgara el merito de la PREVENTA a ${asesor.nombreCompleto}. Esta correccion no se podra volver a realizar.`,
+      message: `El lead ${candidate.lead} otorgara el merito de ${etapaLabel} a ${asesor.nombreCompleto}. Esta correccion no se podra volver a realizar.`,
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Aplicar correccion',
       rejectLabel: 'Cancelar',
@@ -228,20 +270,35 @@ export class LeadMeritoCorreccionDrawerComponent implements OnDestroy {
     return `${asesor.nombreCompleto}${doc}`;
   }
 
+  private etapaDisplayLabel(etapa: Etapa): string {
+    switch (etapa) {
+      case 'PREVENTA' as Etapa: return 'PREVENTA';
+      case 'VENTA' as Etapa: return 'VENTA';
+      case 'POSTVENTA' as Etapa: return 'POSTVENTA';
+      default: return String(etapa);
+    }
+  }
+
   private async loadAsesores(candidate: LeadMeritoCorreccionCandidatoResponse): Promise<void> {
     if (!candidate.idEquipo) {
       return;
     }
     this.isLoadingAsesores.set(true);
     try {
-      const asesores = await firstValueFrom(this.preventaLeadService.listarAsesoresVentasMeritoPorEquipo(candidate.idEquipo));
-      const filtrados = asesores
-        .filter((asesor) => this.isAsesorVentas(asesor))
-        .filter((asesor) => asesor.empleadoId !== candidate.idAsesorMeritoActualPreventa);
+      const asesores = this.isAdmin()
+        ? await firstValueFrom(this.preventaLeadService.listarEmpleadosMeritoAdmin(candidate.idEquipo, this.selectedEtapa()))
+        : await firstValueFrom(this.preventaLeadService.listarAsesoresVentasMeritoPorEquipo(candidate.idEquipo));
+
+      const filtrados = this.isAdmin()
+        ? asesores.filter((a) => a.empleadoId !== candidate.idAsesorMeritoActualPreventa)
+        : asesores
+            .filter((a) => this.isAsesorVentas(a))
+            .filter((a) => a.empleadoId !== candidate.idAsesorMeritoActualPreventa);
+
       this.asesores.set(filtrados);
       this.asesorSuggestions.set(filtrados);
     } catch (error) {
-      this.errorMessage.set(this.errorMessageFrom(error, 'No se pudo cargar la lista de asesores.'));
+      this.errorMessage.set(this.errorMessageFrom(error, 'No se pudo cargar la lista de empleados.'));
     } finally {
       this.isLoadingAsesores.set(false);
     }
@@ -254,10 +311,17 @@ export class LeadMeritoCorreccionDrawerComponent implements OnDestroy {
     this.clearMessages();
     this.isSaving.set(true);
     try {
-      const result = await firstValueFrom(this.preventaLeadService.corregirMeritoPreventa(candidate.idLead, {
-        idAsesorMerito: asesor.empleadoId,
-        motivo: this.normalizeOptionalText(this.motivo())
-      }));
+      const result = this.isAdmin()
+        ? await firstValueFrom(this.preventaLeadService.corregirMeritoAdmin(candidate.idLead, {
+            etapaMerito: this.selectedEtapa(),
+            idAsesorMerito: asesor.empleadoId,
+            motivo: this.normalizeOptionalText(this.motivo())
+          }))
+        : await firstValueFrom(this.preventaLeadService.corregirMeritoPreventa(candidate.idLead, {
+            idAsesorMerito: asesor.empleadoId,
+            motivo: this.normalizeOptionalText(this.motivo())
+          }));
+
       this.lastResult.set(result);
       this.successMessage.set(`Merito corregido para ${result.nombreAsesorNuevo}.`);
       this.selectedAsesor.set(null);

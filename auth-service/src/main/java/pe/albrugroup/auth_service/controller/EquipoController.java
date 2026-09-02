@@ -74,6 +74,16 @@ public class EquipoController {
         return ResponseEntity.ok(equipoService.listarAsesoresVentasMerito(id));
     }
 
+    @GetMapping("/{id}/asesores-merito-admin")
+    @PreAuthorize("hasAuthority('CORREGIR_MERITO_ADMIN')")
+    @Operation(summary = "Empleados por equipo y etapa (admin)", description = "Lista empleados activos elegibles para recibir el merito de una etapa dada. PREVENTA: asesores, supervisores y GTR del equipo. VENTA: todos los ASESOR_BACKOFFICE. POSTVENTA: todos los ASESOR_POSTVENTA.")
+    public ResponseEntity<List<UsuarioRolResponse>> listarAsesoresMeritoAdmin(
+            @PathVariable @Positive Long id,
+            @RequestParam String etapa
+    ) {
+        return ResponseEntity.ok(equipoService.listarAsesoresMeritoAdmin(id, etapa));
+    }
+
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('UPDATE_EQUIPOS')")
     @Operation(summary = "Actualizar equipo", description = "Actualiza nombre, descripcion o estado de un equipo.")
