@@ -217,7 +217,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly historialFiltros = HISTORIAL_FILTROS;
   protected readonly historialLoading = signal(false);
   protected readonly historialError = signal<string | null>(null);
-  protected readonly historialComentarioExpandidoId = signal<number | null>(null);
   protected readonly historialGrupos = computed<HistorialFechaGrupo[]>(() => this.agruparHistorialPorFecha(this.eventos()));
   protected readonly selectedLeadId = signal<number | null>(null);
   protected readonly totalPlataforma = signal(0);
@@ -2338,7 +2337,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (this.historialFiltro() === filtro) {
       return;
     }
-    this.historialComentarioExpandidoId.set(null);
     this.historialFiltro.set(filtro);
     const idLead = this.selectedLeadId();
     if (idLead !== null) {
@@ -2386,25 +2384,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const hour = String(date.getHours()).padStart(2, '0');
     const minute = String(date.getMinutes()).padStart(2, '0');
     return `${hour}:${minute}`;
-  }
-
-  protected historialComentarioExpandido(evento: EventoResponse): boolean {
-    return Boolean(evento.comentario?.trim()) && this.historialComentarioExpandidoId() === evento.id;
-  }
-
-  protected toggleHistorialComentario(evento: EventoResponse): void {
-    if (!evento.comentario?.trim()) {
-      return;
-    }
-    this.historialComentarioExpandidoId.update((currentId) => currentId === evento.id ? null : evento.id);
-  }
-
-  protected historialComentarioTooltip(value?: string | null): string {
-    const comentario = value?.replace(/\s+/g, ' ').trim();
-    if (!comentario) {
-      return 'Sin comentario';
-    }
-    return comentario.length > 120 ? `${comentario.slice(0, 117)}…` : comentario;
   }
 
   protected historialEmptyMessage(): string {
@@ -3134,7 +3113,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.historialFiltro.set('TIPIFICACION');
     this.historialLoading.set(false);
     this.historialError.set(null);
-    this.historialComentarioExpandidoId.set(null);
     this.eventos.set([]);
   }
 

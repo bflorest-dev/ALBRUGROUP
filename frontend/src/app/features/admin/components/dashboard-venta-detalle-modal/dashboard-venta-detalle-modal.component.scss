@@ -119,10 +119,13 @@
   font-size: 15px;
   &:hover { color: #cfe0fb; }
 }
-::ng-deep .vdd-tip .p-tooltip-text {
-  white-space: nowrap;
-  max-width: none;
-  font-size: 12px;
+::ng-deep .vdd-tip {
+  max-width: 360px;
+  .p-tooltip-text {
+    font-size: 12px;
+    white-space: normal;
+    word-break: break-word;
+  }
 }
 
 // ── paginador + footer ───────────────────────────────────────────────────────────────────────

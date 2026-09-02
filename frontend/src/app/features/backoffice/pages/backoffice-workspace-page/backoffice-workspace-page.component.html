@@ -1133,6 +1133,7 @@
         >
           <section lead-commercial-history class="backoffice-history" aria-label="Historial de eventos del lead">
             <div class="history-filters" role="group" aria-label="Filtrar historial por tipo de evento">
+              <span class="history-filters__label">Ver</span>
               @for (filtro of historialFiltros; track filtro.label) {
                 <button
                   type="button"
@@ -1165,22 +1166,20 @@
             } @else {
               <div class="history-timeline">
                 @for (grupo of historialGrupos(); track grupo.clave) {
-                  <section class="history-day" [attr.aria-label]="grupo.etiqueta">
-                    <h3 class="history-day__label">{{ grupo.etiqueta }}</h3>
+                  <section class="history-day-group" [attr.aria-label]="grupo.etiqueta">
+                    <h3 class="history-day">
+                      <span class="history-day__label">{{ grupo.etiqueta }}</span>
+                      <span class="history-day__count">· {{ grupo.eventos.length }} {{ grupo.eventos.length === 1 ? 'evento' : 'eventos' }}</span>
+                    </h3>
                     @for (evento of grupo.eventos; track evento.id) {
                       @let meta = historialAccionMeta(evento.accion);
                       @let comentario = evento.comentario?.trim();
-                      <article
-                        class="history-event history-event--{{ meta.clase }}"
-                        [class.history-event--expanded]="historialComentarioExpandido(evento)"
-                      >
-                        <div class="history-event__main">
-                          <div class="history-event__head">
-                            <span class="history-event__action">{{ meta.etiqueta }}</span>
-                            <span class="history-event__date">{{ historialHora(evento.createdAt) }}</span>
-                          </div>
-                          <div class="history-event__title">{{ historialEventoTitulo(evento) }}</div>
+                      <article class="history-event history-event--{{ meta.clase }}">
+                        <div class="history-event__row">
+                          <span class="history-event__action">{{ meta.etiqueta }}</span>
+                          <span class="history-event__date">{{ historialHora(evento.createdAt) }}</span>
                         </div>
+                        <div class="history-event__title">{{ historialEventoTitulo(evento) }}</div>
 
                         @if (evento.nombreActor || evento.rolActor) {
                           <div class="history-event__actor" aria-label="Actor del evento">
@@ -1195,35 +1194,14 @@
                           <div class="history-event__actor history-event__actor--empty">Actor no disponible</div>
                         }
 
-                        <button
-                          type="button"
-                          class="comment-trigger history-event__comment"
-                          [class.comment-trigger--empty]="!comentario"
-                          [class.history-event__comment--open]="historialComentarioExpandido(evento)"
-                          [pTooltip]="historialComentarioTooltip(evento.comentario)"
-                          tooltipPosition="left"
-                          tooltipStyleClass="app-tip-nowrap"
-                          appendTo="body"
-                          [attr.aria-label]="comentario ? (historialComentarioExpandido(evento) ? 'Ocultar comentario' : 'Mostrar comentario') : 'Sin comentario'"
-                          [attr.aria-expanded]="comentario ? historialComentarioExpandido(evento) : null"
-                          [attr.aria-controls]="comentario ? 'history-comment-' + evento.id : null"
-                          [attr.aria-disabled]="comentario ? null : true"
-                          (click)="toggleHistorialComentario(evento)"
-                        >
-                          <i class="pi" [class.pi-comment]="!historialComentarioExpandido(evento)" [class.pi-times]="historialComentarioExpandido(evento)" aria-hidden="true"></i>
-                          <span class="history-event__comment-label">{{ comentario ? (historialComentarioExpandido(evento) ? 'Cerrar' : 'Comentario') : 'Sin comentario' }}</span>
-                        </button>
-
-                        @if (comentario && historialComentarioExpandido(evento)) {
-                          <div
-                            class="history-event__detail"
-                            id="history-comment-{{ evento.id }}"
-                            role="region"
-                            aria-label="Comentario del evento"
-                          >
-                            <span class="history-event__detail-label">Comentario</span>
+                        @if (comentario) {
+                          <div class="history-event__comment" role="note" aria-label="Comentario del evento">
+                            <i class="pi pi-comment" aria-hidden="true"></i>
+                            <span class="history-event__comment-label">Comentario</span>
                             <p>{{ comentario }}</p>
                           </div>
+                        } @else {
+                          <p class="history-event__no-comment">Sin comentario</p>
                         }
                       </article>
                     }
