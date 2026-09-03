@@ -675,6 +675,7 @@
     &--jornada { background: #d1fae5; color: #047857; }
     &--comp-falta { background: #fef3c7; color: #b45309; }
     &--dia-libre { background: #fee2e2; color: #b91c1c; }
+    &--lunch { background: #fef3c7; color: #b7791f; }
   }
 
   &__body {
@@ -703,6 +704,8 @@
     border-radius: 999px;
     padding: 3px 10px;
     white-space: nowrap;
+
+    &--ok { color: rgb(21, 128, 61); background: #dcfce7; }
   }
 }
 

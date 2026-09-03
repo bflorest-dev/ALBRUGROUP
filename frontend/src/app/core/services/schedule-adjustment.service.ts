@@ -9,6 +9,7 @@ import {
   RegistrarAjusteV2Request
 } from '../../shared/models/schedule/jornada-efectiva-response';
 import { DeclararDiaNoLaborableRequest } from '../../shared/models/schedule/dia-no-laborable-request';
+import { ReporteDiaResponse } from '../../shared/models/schedule/reporte-dia-response';
 import { API_CONSTANTS } from '../constants/api.constants';
 
 @Injectable({ providedIn: 'root' })
@@ -84,6 +85,21 @@ export class ScheduleAdjustmentService {
     return this.http.post<AjusteJornadaResponse>(
       `${this.gtrUrl}/${idEmpleado}/ajustes`,
       request
+    );
+  }
+
+  /** Ajuste puntual del almuerzo programado de un día (mover/habilitar/quitar). inicio/fin null = quitar. */
+  ajustarAlmuerzo(
+    idEmpleado: number,
+    inicio: string | null,
+    fin: string | null,
+    fecha?: string
+  ): Observable<ReporteDiaResponse> {
+    const params = fecha ? new HttpParams().set('fecha', fecha) : undefined;
+    return this.http.patch<ReporteDiaResponse>(
+      `${this.asistenciaV2Url}/${idEmpleado}/almuerzo-programado`,
+      { inicio, fin },
+      { params }
     );
   }
 

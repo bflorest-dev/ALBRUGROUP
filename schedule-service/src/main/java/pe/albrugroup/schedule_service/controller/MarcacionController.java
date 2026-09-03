@@ -6,6 +6,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.constraints.Positive;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestBody;
 import pe.albrugroup.schedule_service.configuration.CurrentUser;
 import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
+import pe.albrugroup.schedule_service.entity.request.asistencia.AjustarAlmuerzoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.IniciarAlmuerzoRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
@@ -48,6 +50,19 @@ public class MarcacionController {
                                                             @RequestParam(required = false) LocalDate fecha) {
         return ResponseEntity.ok(
                 marcacionService.getReporteDia(idEmpleado, OperationalDateTime.resolveDate(fecha)));
+    }
+
+    /**
+     * Ajuste puntual del almuerzo programado de un dia (admin/RRHH): mover, habilitar o quitar la ventana de
+     * almuerzo mientras el asesor aun no la marca. El almuerzo debe caer dentro del horario base.
+     */
+    @PatchMapping("/empleados/{idEmpleado}/almuerzo-programado")
+    @PreAuthorize("hasAuthority('EXTEND_HORARIO')")
+    public ResponseEntity<ReporteDiaResponse> ajustarAlmuerzo(@PathVariable @Positive Long idEmpleado,
+                                                              @RequestParam(required = false) LocalDate fecha,
+                                                              @RequestBody AjustarAlmuerzoRequest request) {
+        return ResponseEntity.ok(marcacionService.ajustarAlmuerzoProgramado(
+                idEmpleado, OperationalDateTime.resolveDate(fecha), request.inicio(), request.fin()));
     }
 
     @PostMapping("/ingreso")

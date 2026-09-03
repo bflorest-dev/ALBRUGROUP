@@ -710,6 +710,17 @@
                           ></button>
                         </div>
                       </div>
+                    } @else if (op === 'almuerzo') {
+                      <app-lunch-day-editor
+                        [entrada]="lunchEntrada()"
+                        [salida]="lunchSalida()"
+                        [inicio]="lunchInicioActual()"
+                        [fin]="lunchFinActual()"
+                        [saving]="facade.isSavingAdjustment()"
+                        [error]="facade.adjustmentError()"
+                        (cancel)="closeAdjustment()"
+                        (save)="onSaveLunch($event)"
+                      />
                     }
                   </section>
                 } @else {
@@ -775,6 +786,30 @@
                         <i class="pi pi-lock adjust-row__chevron"></i>
                       } @else {
                         <i class="pi pi-chevron-right adjust-row__chevron"></i>
+                      }
+                    </button>
+
+                    <button
+                      type="button"
+                      class="adjust-row"
+                      [disabled]="!lunchEditAvailable() || !facade.canMutateOperationalData()"
+                      (click)="openAdjustment('almuerzo')"
+                    >
+                      <span class="adjust-row__icon adjust-row__icon--lunch"><i class="pi pi-stopwatch"></i></span>
+                      <span class="adjust-row__body">
+                        <strong>Modificar almuerzo del día</strong>
+                        <small>
+                          @if (lunchEditAvailable()) {
+                            Ubicá, habilitá o quitá el almuerzo de hoy.
+                          } @else {
+                            {{ lunchEditReason() }}
+                          }
+                        </small>
+                      </span>
+                      @if (lunchEditAvailable()) {
+                        <span class="adjust-row__badge adjust-row__badge--ok">Disponible</span>
+                      } @else {
+                        <i class="pi pi-lock adjust-row__chevron"></i>
                       }
                     </button>
                   </section>

@@ -873,6 +873,35 @@ export class RrhhAsistenciaFacade {
     }
   }
 
+  /**
+   * Ajuste puntual del almuerzo del día actual (mover / habilitar / quitar). inicio/fin null = quitar.
+   * El backend valida que caiga dentro del base y que el almuerzo aún no se haya marcado.
+   */
+  async submitLunchAdjustment(inicio: string | null, fin: string | null): Promise<boolean> {
+    if (!this.ensureCanMutate()) return false;
+    const empleado = this.drawerEmpleado();
+    if (!empleado) return false;
+
+    this.isSavingAdjustment.set(true);
+    this.adjustmentError.set(null);
+    try {
+      await firstValueFrom(
+        this.scheduleAdjustmentService
+          .ajustarAlmuerzo(empleado.idEmpleado, inicio, fin, this.getToday())
+          .pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      this.scheduleChangeSuccessMessage.set(inicio ? 'Almuerzo del día actualizado.' : 'Almuerzo del día quitado.');
+      await this.refreshDrawerAfterScheduleMutation(empleado.idEmpleado);
+      void this.recargar();
+      return true;
+    } catch (error) {
+      this.adjustmentError.set(this.extractErrorMessage(error, 'No se pudo ajustar el almuerzo.'));
+      return false;
+    } finally {
+      this.isSavingAdjustment.set(false);
+    }
+  }
+
   async submitDiaLibre(fecha: string, tipo: TipoDiaNoLaborable, motivo: string, global: boolean): Promise<boolean> {
     if (!this.ensureCanMutate()) return false;
     const empleado = this.drawerEmpleado();

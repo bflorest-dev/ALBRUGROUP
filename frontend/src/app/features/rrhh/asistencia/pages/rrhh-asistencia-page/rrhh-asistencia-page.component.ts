@@ -20,6 +20,7 @@ import { AttendanceFilterBarComponent } from '../../components/attendance-filter
 import { AttendanceMetricCardsComponent } from '../../components/attendance-metric-cards/attendance-metric-cards.component';
 import { AttendanceMonthHeatmapComponent } from '../../components/attendance-month-heatmap/attendance-month-heatmap.component';
 import { AttendanceTrayComponent } from '../../components/attendance-tray/attendance-tray.component';
+import { LunchDayEditorComponent } from '../../../../../shared/components/lunch-day-editor/lunch-day-editor.component';
 import { ScheduleWeekEditorComponent } from '../../../../../shared/components/schedule-week-editor/schedule-week-editor.component';
 import { ScheduleExtensionTimelineComponent } from '../../../../../shared/components/schedule-extension-timeline/schedule-extension-timeline.component';
 import { ScheduleShiftEditorComponent } from '../../../../../shared/components/schedule-shift-editor/schedule-shift-editor.component';
@@ -51,7 +52,7 @@ interface HistorialVm {
 }
 
 /** Operación de ajuste del día seleccionada para el editor inline. */
-type AdjustmentOp = 'extra' | 'compensacion' | 'corrimiento' | 'jornada-extra' | 'compensar-falta' | 'dia-libre';
+type AdjustmentOp = 'extra' | 'compensacion' | 'corrimiento' | 'jornada-extra' | 'compensar-falta' | 'dia-libre' | 'almuerzo';
 
 @Component({
   selector: 'app-rrhh-asistencia-page',
@@ -73,6 +74,7 @@ type AdjustmentOp = 'extra' | 'compensacion' | 'corrimiento' | 'jornada-extra' |
     ScheduleWeekEditorComponent,
     ScheduleExtensionTimelineComponent,
     ScheduleShiftEditorComponent,
+    LunchDayEditorComponent,
     SelectModule,
     TableModule,
     TabsModule,
@@ -299,6 +301,43 @@ export class RrhhAsistenciaPageComponent implements OnInit {
 
   protected onSelectHistorial(h: HorarioResponse): void {
     this.facade.loadHorarioIntoForm(h);
+  }
+
+  // ── Modificar almuerzo del día (acción de "Ajustes del día", solo día actual) ──
+  protected readonly todayRow = computed<CumplimientoDetalleDiaResponse | null>(() =>
+    this.facade.drawerDetalleDias().find((d) => d.fecha === this.todayValue()) ?? null
+  );
+
+  /** Disponible mientras el almuerzo aún no se marcó (y hay jornada abierta hoy). */
+  protected readonly lunchEditAvailable = computed(() => {
+    const d = this.todayRow();
+    return !!d && d.laborable && !!d.horaEntradaAsistencia && !d.almuerzoRealInicio && !d.jornadaCerrada;
+  });
+
+  protected lunchEditReason(): string {
+    const d = this.todayRow();
+    if (!d) return 'Solo el día en curso.';
+    if (!d.laborable) return 'Hoy no es día laborable.';
+    if (!d.horaEntradaAsistencia) return 'El asesor aún no marcó ingreso.';
+    if (d.almuerzoRealInicio) return 'El almuerzo ya se marcó hoy.';
+    if (d.jornadaCerrada) return 'La jornada de hoy ya cerró.';
+    return '';
+  }
+
+  protected readonly lunchEntrada = computed(() => (this.todayRow()?.horaEntradaEstablecida ?? '').slice(0, 5));
+  protected readonly lunchSalida = computed(() => (this.todayRow()?.horaSalidaEstablecida ?? '').slice(0, 5));
+  protected readonly lunchInicioActual = computed(() => {
+    const v = this.todayRow()?.inicioAlmuerzoProgramado;
+    return v ? v.slice(0, 5) : null;
+  });
+  protected readonly lunchFinActual = computed(() => {
+    const v = this.todayRow()?.finAlmuerzoProgramado;
+    return v ? v.slice(0, 5) : null;
+  });
+
+  protected async onSaveLunch(payload: { inicio: string | null; fin: string | null }): Promise<void> {
+    const ok = await this.facade.submitLunchAdjustment(payload.inicio, payload.fin);
+    if (ok) this.closeAdjustment();
   }
 
   protected formatTime(value: string | null): string {
@@ -559,6 +598,9 @@ export class RrhhAsistenciaPageComponent implements OnInit {
       this.diaLibreGlobal.set(false);
       this.diaLibreTipo.set('FERIADO');
       this.diaLibreMotivo.set('');
+    } else if (op === 'almuerzo') {
+      // Los datos (base + almuerzo actual) salen del día de hoy en el detalle; no hace falta cargar jornada.
+      this.adjustmentDay.set(this.todayValue());
     } else {
       void this.facade.openDayAdjustment(this.todayValue());
     }
@@ -611,6 +653,7 @@ export class RrhhAsistenciaPageComponent implements OnInit {
     if (op === 'jornada-extra') return 'Habilitar jornada en día libre';
     if (op === 'compensar-falta') return 'Compensar falta con día libre';
     if (op === 'dia-libre') return 'Declarar día libre';
+    if (op === 'almuerzo') return 'Modificar almuerzo del día';
     return 'Correr horario (tardanza)';
   }
 

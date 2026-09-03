@@ -1014,6 +1014,55 @@ public class MarcacionService {
     }
 
     /**
+     * Ajuste PUNTUAL del almuerzo PROGRAMADO de un dia (admin/RRHH), desacoplado del horario base: mueve o
+     * habilita/quita la ventana de almuerzo de ese dia. Se puede repetir mientras el almuerzo AUN NO se haya
+     * marcado ({@code almuerzoRealInicio == null}) y la jornada no haya cerrado. El almuerzo debe caer DENTRO
+     * del horario base. Recalcula el objetivo (jornada neta) por el delta de almuerzo y publica el cambio
+     * para que el asesor vea la nueva ventana en vivo. {@code inicio}/{@code fin} nulos = quitar el almuerzo.
+     */
+    @Transactional
+    public ReporteDiaResponse ajustarAlmuerzoProgramado(Long idEmpleado, LocalDate fecha, LocalTime inicio, LocalTime fin) {
+        Asistencia a = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha)
+                .orElseThrow(() -> new BadRequestException("No hay una jornada iniciada ese dia para ajustar el almuerzo"));
+        if (a.getFechaHoraSalida() != null) {
+            throw new BadRequestException("La jornada ya cerro; no se puede cambiar el almuerzo");
+        }
+        if (a.getAlmuerzoRealInicio() != null) {
+            throw new BadRequestException("El almuerzo ya se marco ese dia; no se puede cambiar");
+        }
+
+        int oldLunch = safe(minutosEntre(a.getInicioAlmuerzoProgramado(), a.getFinAlmuerzoProgramado()));
+        boolean quitar = inicio == null && fin == null;
+        int newLunch;
+        if (quitar) {
+            a.setInicioAlmuerzoProgramado(null);
+            a.setFinAlmuerzoProgramado(null);
+            newLunch = 0;
+        } else {
+            if (inicio == null || fin == null) {
+                throw new BadRequestException("El almuerzo debe tener inicio y fin, o quitarse por completo");
+            }
+            LocalTime entrada = a.getEntradaProgramada();
+            LocalTime salida = a.getSalidaProgramada();
+            if (entrada == null || salida == null) {
+                throw new BadRequestException("El dia no tiene horario base sobre el cual ubicar el almuerzo");
+            }
+            if (!inicio.isAfter(entrada) || !fin.isAfter(inicio) || !salida.isAfter(fin)) {
+                throw new BadRequestException("El almuerzo debe caer dentro del horario base");
+            }
+            a.setInicioAlmuerzoProgramado(inicio);
+            a.setFinAlmuerzoProgramado(fin);
+            newLunch = (int) Duration.between(inicio, fin).toMinutes();
+        }
+
+        a.setMinutosObjetivoDia(safe(a.getMinutosObjetivoDia()) + oldLunch - newLunch);
+        recalcularMinutos(a);
+        asistenciaRepository.save(a);
+        publicar("EXCEPCION_HORARIO_AFECTADA", "AJUSTE_ALMUERZO", idEmpleado, fecha, a.getEstadoActual());
+        return getReporteDia(idEmpleado, fecha);
+    }
+
+    /**
      * Excesos del dia que pesan en el balance, con su rango temporal (la "cola" sobre el tope), para la
      * linea de Incidencias: almuerzo pasado del programado + cada pausa activa que paso del maximo.
      */

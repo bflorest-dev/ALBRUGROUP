@@ -1,0 +1,75 @@
+<div class="lunch-editor">
+  <p class="lunch-editor__desc">
+    El horario base no se modifica. Ubicá el almuerzo dentro de la jornada, habilitalo si no lo tenía, o
+    quitalo. Se puede cambiar mientras el asesor aún no marque su almuerzo.
+  </p>
+
+  <label class="lunch-editor__toggle">
+    <input type="checkbox" [checked]="hasLunch()" (change)="toggleLunch($any($event.target).checked)" />
+    <span>Este día lleva almuerzo</span>
+  </label>
+
+  <!-- Línea de tiempo gruesa: base bloqueado + almuerzo dentro -->
+  <div class="lunch-editor__timeline">
+    <div class="lunch-editor__ticks">
+      @for (t of ticks(); track t.leftPct) {
+        <span class="lunch-editor__tick" [style.left.%]="t.leftPct">{{ t.label }}</span>
+      }
+    </div>
+    <div class="lunch-editor__track">
+      <div class="lunch-editor__base">
+        <i class="pi pi-lock"></i>
+        <span>Base {{ baseLabel() }}</span>
+      </div>
+      @if (hasLunch() && lunchWidth() > 0) {
+        <div class="lunch-editor__lunch" [style.left.%]="lunchLeft()" [style.width.%]="lunchWidth()">
+          <span>{{ li() }}–{{ lf() }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (hasLunch()) {
+    <div class="lunch-editor__controls">
+      <div class="lunch-editor__field">
+        <span>Inicio</span>
+        <div class="lunch-editor__stepper">
+          <button type="button" (click)="nudge('li', -1)" aria-label="Adelantar inicio">−</button>
+          <input type="time" [value]="li()" (input)="onLi($any($event.target).value)" />
+          <button type="button" (click)="nudge('li', 1)" aria-label="Atrasar inicio">+</button>
+        </div>
+      </div>
+      <div class="lunch-editor__field">
+        <span>Fin</span>
+        <div class="lunch-editor__stepper">
+          <button type="button" (click)="nudge('lf', -1)" aria-label="Adelantar fin">−</button>
+          <input type="time" [value]="lf()" (input)="onLf($any($event.target).value)" />
+          <button type="button" (click)="nudge('lf', 1)" aria-label="Atrasar fin">+</button>
+        </div>
+      </div>
+    </div>
+
+    @if (outOfBase()) {
+      <p class="lunch-editor__warn">El almuerzo debe empezar y terminar dentro del horario base.</p>
+    }
+  } @else {
+    <p class="lunch-editor__note">Este día quedará sin almuerzo programado.</p>
+  }
+
+  @if (error()) {
+    <p class="lunch-editor__warn">{{ error() }}</p>
+  }
+
+  <div class="lunch-editor__actions">
+    <button pButton type="button" severity="secondary" label="Cancelar" (click)="emitCancel()"></button>
+    <button
+      pButton
+      type="button"
+      icon="pi pi-save"
+      [label]="hasLunch() ? 'Guardar almuerzo' : 'Quitar almuerzo'"
+      [loading]="saving()"
+      [disabled]="!canSave()"
+      (click)="emitSave()"
+    ></button>
+  </div>
+</div>
