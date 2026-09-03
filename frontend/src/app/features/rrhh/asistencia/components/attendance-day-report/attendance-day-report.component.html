@@ -10,6 +10,13 @@
 } @else if (reporte()) {
   <div class="dr">
 
+    @if (sinSalida()) {
+      <div class="dr-warn">
+        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+        <span>Jornada sin cierre: no se marcó salida (última actividad {{ ultimaActividad() }}). No cuenta como falta ni penaliza el balance, pero el empleado debe marcar su salida.</span>
+      </div>
+    }
+
     <!-- ── Línea de tiempo (3 carriles, eje compartido) ── -->
     <div class="dr-card">
       <h5>Línea de tiempo del día</h5>
@@ -56,7 +63,8 @@
           <span class="tll__lab">Marcaciones</span>
           <div class="tll__track">
             @for (p of presenceBlocks(); track $index) {
-              <div class="tl__block tl__pres" [style.left.%]="p.leftPct" [style.width.%]="p.widthPct"
+              <div class="tl__block tl__pres" [class.tl__pres--abierta]="p.open"
+                   [style.left.%]="p.leftPct" [style.width.%]="p.widthPct"
                    [pTooltip]="p.title" tooltipPosition="top">
                 @if (p.capLeft) { <span class="tl__cap tl__cap--l">{{ p.capLeft }}</span> }
                 @if (p.capRight) { <span class="tl__cap tl__cap--r">{{ p.capRight }}</span> }
@@ -120,7 +128,7 @@
         <div class="agg">
           <div class="agg__total">
             <span class="big">{{ durLabel(deadTotal().min) }}</span>
-            <span class="lbl">· {{ deadTotal().count }} {{ deadTotal().count === 1 ? 'desconexión' : 'desconexiones' }}</span>
+            <span class="lbl">penaliza · {{ deadTotal().count }} {{ deadTotal().count === 1 ? 'desconexión' : 'desconexiones' }}</span>
           </div>
           @for (row of deadRows(); track row.label) {
             <div class="aggrow" [class.is-off]="!row.active">

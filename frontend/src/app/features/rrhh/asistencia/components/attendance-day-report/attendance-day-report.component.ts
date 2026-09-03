@@ -27,6 +27,7 @@ interface TramoBlock {
 interface PresBlock {
   leftPct: number;
   widthPct: number;
+  open: boolean;     // tramo sin cierre (día pasado sin salida marcada) → estilo rayado
   capLeft: string;   // hora de ingreso (solo en el primer tramo conectado)
   capRight: string;  // hora de salida (solo en el último, si la jornada cerró)
   title: string;
@@ -54,8 +55,6 @@ interface AxisTick { leftPct: number; label: string; }
 
 /** Fila agregada de una tarjeta (por motivo o por tipo de estado). */
 interface AggRow { label: string; count: string; minutos: number; kind: string; active: boolean; }
-
-interface Interval { s: number; e: number; }
 
 const SESION_LABEL: Record<TipoSesionEstado, string> = {
   SERVICIOS: 'Servicios',
@@ -168,33 +167,51 @@ export class AttendanceDayReportComponent {
   });
 
   // ── Línea 2: Marcaciones (presencia autoritativa del backend) ───────────
-  private readonly presenceIntervals = computed<Interval[]>(() => {
+  private readonly presenceIntervals = computed<{ s: number; e: number; open: boolean }[]>(() => {
     const r = this.reporte();
     if (!r) return [];
+    const hoy = !this.isPastDay();
     const now = this.nowMin();
-    const cerrada = !!r.jornadaCerrada;
-    const out: Interval[] = [];
+    const last = this.lastEvidenceMin();
+    const out: { s: number; e: number; open: boolean }[] = [];
     for (const p of r.presencia ?? []) {
       const s = this.toMin(p.inicio);
       if (s === null) continue;
       let e = this.toMin(p.fin);
-      if (e === null) e = cerrada ? s : Math.max(s, now); // tramo abierto → hasta ahora
-      if (e > s) out.push({ s, e });
+      let open = false;
+      if (e === null) {
+        // Hoy: sigue conectada → hasta ahora. Día pasado sin cierre: hasta la última evidencia (stub rayado).
+        open = true;
+        e = hoy ? Math.max(s, now) : Math.max(s + 5, last);
+      }
+      if (e > s) out.push({ s, e, open });
     }
-    return this.merge(out);
+    return out;
   });
+
+  /** Día pasado sin salida marcada: la jornada quedó abierta (obligación del empleado marcar salida). */
+  protected readonly sinSalida = computed(() => {
+    const r = this.reporte();
+    if (!r || r.jornadaCerrada || !this.isPastDay()) return false;
+    return (r.presencia ?? []).some((p) => !p.fin);
+  });
+
+  protected readonly ultimaActividad = computed(() => this.hhmm(this.lastEvidenceMin()));
 
   protected readonly presenceBlocks = computed<PresBlock[]>(() => {
     const ivs = this.presenceIntervals();
     if (ivs.length === 0) return [];
     const cerrada = !!this.reporte()?.jornadaCerrada;
     const ingreso = Math.min(...ivs.map((x) => x.s));
-    const salida = Math.max(...ivs.map((x) => x.e));
+    const cerrados = ivs.filter((x) => !x.open);
+    const salida = cerrados.length ? Math.max(...cerrados.map((x) => x.e)) : -1;
     return ivs.map((iv) => ({
-      leftPct: this.pct(iv.s), widthPct: this.pct(iv.e) - this.pct(iv.s),
+      leftPct: this.pct(iv.s), widthPct: this.pct(iv.e) - this.pct(iv.s), open: iv.open,
       capLeft: iv.s === ingreso ? this.hhmm(iv.s) : '',
-      capRight: cerrada && iv.e === salida ? this.hhmm(iv.e) : '',
-      title: `Conectado ${this.hhmm(iv.s)}–${this.hhmm(iv.e)}`
+      capRight: !iv.open && cerrada && iv.e === salida ? this.hhmm(iv.e) : '',
+      title: iv.open
+        ? `Conectado desde ${this.hhmm(iv.s)} · sin salida marcada`
+        : `Conectado ${this.hhmm(iv.s)}–${this.hhmm(iv.e)}`
     }));
   });
 
@@ -231,13 +248,15 @@ export class AttendanceDayReportComponent {
       const a = this.toMin(g.inicio); const b = this.toMin(g.fin);
       if (a === null || b === null || b <= a) continue;
       const w = this.pct(b) - this.pct(a);
-      const dead = (g.motivo ?? '').toUpperCase() === 'INACTIVIDAD';
+      // Solo penaliza el balance la desconexión estando ONLINE; en otro estado es informativa.
+      const penaliza = (g.estadoAlDesconectar ?? '').toUpperCase() === 'ONLINE';
       const min = g.minutos ?? (b - a);
       out.push({
-        leftPct: this.pct(a), widthPct: w, kind: dead ? 'dead' : 'soft',
-        label: w >= 6 ? `−${min}m` : '',
+        leftPct: this.pct(a), widthPct: w, kind: penaliza ? 'dead' : 'soft',
+        label: penaliza && w >= 6 ? `−${min}m` : '',
         title: `${this.motivoLabel(g.motivo)} ${this.hhmm(a)}–${this.hhmm(b)} · ${min} min`
           + (g.estadoAlDesconectar ? ` · estaba ${g.estadoAlDesconectar}` : '')
+          + (penaliza ? ' · penaliza el balance' : ' · no penaliza')
       });
     }
     for (const e of this.reporte()?.excesos ?? []) {
@@ -256,33 +275,25 @@ export class AttendanceDayReportComponent {
 
   protected readonly hasInc = computed(() => this.incBlocks().length > 0);
 
-  // ── Tarjeta: Tiempos muertos (agregado por motivo, altura fija) ─────────
+  // ── Tarjeta: Tiempos muertos (penaliza vs informativo, altura fija) ─────
   protected readonly deadRows = computed<AggRow[]>(() => {
-    const by = new Map<string, { count: number; min: number }>();
+    let penMin = 0, penCt = 0, infMin = 0, infCt = 0;
     for (const g of this.reporte()?.tiemposMuertos ?? []) {
-      const key = (g.motivo ?? 'OTRO').toUpperCase();
-      const acc = by.get(key) ?? { count: 0, min: 0 };
-      acc.count += 1; acc.min += g.minutos ?? 0;
-      by.set(key, acc);
+      if ((g.estadoAlDesconectar ?? '').toUpperCase() === 'ONLINE') { penMin += g.minutos ?? 0; penCt += 1; }
+      else { infMin += g.minutos ?? 0; infCt += 1; }
     }
-    // Motivos fijos primero (para que la tarjeta conserve su forma), luego cualquier otro.
-    const fixed = ['INACTIVIDAD', 'CIERRE_MANUAL'];
-    const keys = [...fixed, ...[...by.keys()].filter((k) => !fixed.includes(k))];
-    return keys.map((k) => {
-      const acc = by.get(k);
-      return {
-        label: this.motivoLabel(k),
-        count: acc ? `×${acc.count}` : '',
-        minutos: acc?.min ?? 0,
-        kind: k === 'INACTIVIDAD' ? 'dead' : 'soft',
-        active: !!acc
-      };
-    });
+    return [
+      { label: 'Penaliza el balance', count: penCt ? `×${penCt}` : '', minutos: penMin, kind: 'dead', active: penCt > 0 },
+      { label: 'No penaliza', count: infCt ? `×${infCt}` : '', minutos: infMin, kind: 'soft', active: infCt > 0 }
+    ];
   });
 
+  // El total de la tarjeta = solo lo que PENALIZA (desconexión estando ONLINE).
   protected readonly deadTotal = computed(() => {
     let min = 0; let count = 0;
-    for (const g of this.reporte()?.tiemposMuertos ?? []) { min += g.minutos ?? 0; count += 1; }
+    for (const g of this.reporte()?.tiemposMuertos ?? []) {
+      if ((g.estadoAlDesconectar ?? '').toUpperCase() === 'ONLINE') { min += g.minutos ?? 0; count += 1; }
+    }
     return { min, count };
   });
 
@@ -393,16 +404,24 @@ export class AttendanceDayReportComponent {
     return d.getHours() * 60 + d.getMinutes();
   }
 
-  /** Une intervalos solapados/contiguos. */
-  private merge(items: Interval[]): Interval[] {
-    const sorted = [...items].sort((a, b) => a.s - b.s);
-    const out: Interval[] = [];
-    for (const iv of sorted) {
-      const last = out[out.length - 1];
-      if (last && iv.s <= last.e) last.e = Math.max(last.e, iv.e);
-      else out.push({ ...iv });
-    }
-    return out;
+  private todayIso(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
+  private isPastDay(): boolean {
+    const f = this.reporte()?.fecha;
+    return !!f && f < this.todayIso();
+  }
+
+  /** Último minuto con evidencia real del día (fin de almuerzo, fin de sesión, salida real, inicio de tramo). */
+  private lastEvidenceMin(): number {
+    const r = this.reporte();
+    const marks: number[] = [];
+    this.pushMin(marks, r?.almuerzoRealFin ?? null);
+    for (const s of r?.sesiones ?? []) this.pushMin(marks, s.fin);
+    for (const t of r?.tramos ?? []) this.pushMin(marks, t.salidaReal);
+    for (const p of r?.presencia ?? []) this.pushMin(marks, p.inicio);
+    return marks.length ? Math.max(...marks) : 0;
+  }
 }

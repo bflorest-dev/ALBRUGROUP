@@ -30,6 +30,20 @@
   padding: 0.25rem 0 0.5rem;
 }
 
+.dr-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #8a5a00;
+  background: #fff7e6;
+  border: 1px solid #f2d98a;
+  border-radius: 9px;
+  padding: 0.55rem 0.75rem;
+
+  i { color: #c77800; margin-top: 1px; }
+}
+
 .dr-card {
   background: var(--p-content-background, #fff);
   border: 1px solid var(--dr-border);
@@ -156,6 +170,12 @@
 .tl__pres {
   background: #c0dd97;
   .tl__cap { color: #166534; }
+
+  // Tramo sin cierre (día pasado sin salida marcada): rayado + borde derecho punteado.
+  &--abierta {
+    background: repeating-linear-gradient(45deg, #c0dd97 0 6px, #e2efd6 6px 12px);
+    border-right: 2px dashed #7fae57;
+  }
 }
 
 .tl__seg {
