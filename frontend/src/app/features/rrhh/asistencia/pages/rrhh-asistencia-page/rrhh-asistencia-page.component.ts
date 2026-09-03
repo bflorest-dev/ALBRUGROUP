@@ -12,9 +12,10 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
-import type { OrigenTramo } from '../../../../../shared/models/schedule/cumplimiento-response';
+import type { CumplimientoDetalleDiaResponse, OrigenTramo } from '../../../../../shared/models/schedule/cumplimiento-response';
 import type { TipoDiaNoLaborable } from '../../../../../shared/models/schedule/dia-no-laborable-request';
 import type { RazonAjuste } from '../../../../../shared/models/schedule/jornada-efectiva-response';
+import { AttendanceDayReportComponent } from '../../components/attendance-day-report/attendance-day-report.component';
 import { AttendanceFilterBarComponent } from '../../components/attendance-filter-bar/attendance-filter-bar.component';
 import { AttendanceMetricCardsComponent } from '../../components/attendance-metric-cards/attendance-metric-cards.component';
 import { AttendanceMonthHeatmapComponent } from '../../components/attendance-month-heatmap/attendance-month-heatmap.component';
@@ -52,6 +53,7 @@ type AdjustmentOp = 'extra' | 'compensacion' | 'corrimiento' | 'jornada-extra' |
     InputTextModule,
     MessageModule,
     ProgressSpinnerModule,
+    AttendanceDayReportComponent,
     AttendanceFilterBarComponent,
     AttendanceMetricCardsComponent,
     AttendanceMonthHeatmapComponent,
@@ -138,6 +140,16 @@ export class RrhhAsistenciaPageComponent implements OnInit {
 
   protected openDrawer(row: CumplimientoRow): void {
     void this.facade.openEmployeeDrawer(row.idEmpleado);
+  }
+
+  /** Claves de fila expandida para el p-table (un solo día abierto a la vez). */
+  protected readonly drawerExpandedKeys = computed<Record<string, boolean>>(() => {
+    const dia = this.facade.expandedDay();
+    return dia ? { [dia]: true } : {};
+  });
+
+  protected toggleDay(fecha: string): void {
+    void this.facade.toggleDayReport(fecha);
   }
 
   protected formatPuesto(value: string): string {
@@ -240,6 +252,16 @@ export class RrhhAsistenciaPageComponent implements OnInit {
 
   protected formatTime(value: string | null): string {
     return value ? value.slice(0, 5) : '—';
+  }
+
+  /** El día tiene horas extra registradas → badge "+ Extra" en la fila. */
+  protected dayHasExtra(d: CumplimientoDetalleDiaResponse): boolean {
+    return (d.minutosExtra ?? 0) > 0;
+  }
+
+  /** El día tiene horas de compensación registradas → badge "+ Comp" en la fila. */
+  protected dayHasComp(d: CumplimientoDetalleDiaResponse): boolean {
+    return (d.minutosCompensados ?? 0) > 0;
   }
 
   protected segmentOriginLabel(origen: OrigenTramo): string {

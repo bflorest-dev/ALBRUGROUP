@@ -144,6 +144,7 @@
     position="right"
     [modal]="true"
     [dismissible]="true"
+    [blockScroll]="true"
     styleClass="employee-drawer"
   >
     @if (facade.drawerEmpleado(); as empleado) {
@@ -239,6 +240,7 @@
                     [value]="facade.drawerDetalleDias()"
                     dataKey="fecha"
                     [rowHover]="true"
+                    [expandedRowKeys]="drawerExpandedKeys()"
                     styleClass="p-datatable-sm employee-month-table"
                   >
                     <ng-template #header>
@@ -248,10 +250,11 @@
                         <th>Programado</th>
                         <th>Conexion</th>
                         <th class="col-num">Balance</th>
+                        <th class="col-chev"></th>
                       </tr>
                     </ng-template>
                     <ng-template #body let-d>
-                      <tr>
+                      <tr class="rd-row" (click)="toggleDay(d.fecha)">
                         <td>{{ formatDate(d.fecha) }}</td>
                         <td class="col-state">
                           <p-tag
@@ -261,45 +264,51 @@
                           />
                         </td>
                         <td>
-                          @if (d.tramos?.length) {
-                            <div class="day-segments">
-                              @for (tramo of d.tramos; track $index) {
-                                <div class="day-segment">
-                                  <span class="day-segment__origin">{{ segmentOriginLabel(tramo.origen) }}</span>
-                                  <span>
-                                    {{ formatTime(tramo.horaEntradaEstablecida) }} -
-                                    {{ formatTime(tramo.horaSalidaEstablecida) }}
-                                  </span>
-                                </div>
+                          @if (d.laborable) {
+                            <div class="cstack">
+                              <span class="cmain">
+                                {{ formatTime(d.horaEntradaEstablecida) }} – {{ formatTime(d.horaSalidaEstablecida) }}
+                                @if (dayHasExtra(d)) { <span class="minib mb-extra">+ Extra</span> }
+                                @if (dayHasComp(d)) { <span class="minib mb-comp">+ Comp</span> }
+                              </span>
+                              @if (d.inicioAlmuerzoProgramado) {
+                                <span class="csub"><i class="pi pi-stopwatch" aria-hidden="true"></i>
+                                  {{ formatTime(d.inicioAlmuerzoProgramado) }} – {{ formatTime(d.finAlmuerzoProgramado) }}</span>
                               }
                             </div>
-                          } @else if (d.laborable) {
-                            {{ formatTime(d.horaEntradaEstablecida) }} -
-                            {{ formatTime(d.horaSalidaEstablecida) }}
-                          } @else { - }
+                          } @else { — }
                         </td>
                         <td>
-                          @if (d.tramos?.length) {
-                            <div class="day-segments">
-                              @for (tramo of d.tramos; track $index) {
-                                <div class="day-segment">
-                                  <span>
-                                    {{ formatTime(tramo.horaEntradaAsistencia) }} -
-                                    {{ formatTime(tramo.horaSalidaAsistencia) }}
-                                  </span>
-                                  <small>{{ workedTimeLabel(tramo.minutosTrabajados) }}</small>
-                                </div>
+                          @if (d.horaEntradaAsistencia) {
+                            <div class="cstack">
+                              <span class="cmain">
+                                {{ formatTime(d.horaEntradaAsistencia) }} – {{ d.horaSalidaAsistencia ? formatTime(d.horaSalidaAsistencia) : '—' }}
+                              </span>
+                              @if (d.almuerzoRealInicio) {
+                                <span class="csub"><i class="pi pi-stopwatch" aria-hidden="true"></i>
+                                  {{ formatTime(d.almuerzoRealInicio) }} – {{ d.almuerzoRealFin ? formatTime(d.almuerzoRealFin) : '—' }}</span>
                               }
                             </div>
-                          } @else if (d.horaEntradaAsistencia) {
-                            {{ formatTime(d.horaEntradaAsistencia) }} -
-                            {{ formatTime(d.horaSalidaAsistencia) }}
-                          } @else { - }
+                          } @else { — }
                         </td>
                         <td class="col-num">
                           <p-tag
                             [value]="balanceLabel(d.minutosBalance)"
                             [severity]="balanceSeverity(d.minutosBalance)"
+                          />
+                        </td>
+                        <td class="col-chev">
+                          <i class="pi pi-chevron-right rd-chev" [class.is-open]="facade.expandedDay() === d.fecha" aria-hidden="true"></i>
+                        </td>
+                      </tr>
+                    </ng-template>
+                    <ng-template #expandedrow let-d>
+                      <tr class="rd-detail-row">
+                        <td [attr.colspan]="6">
+                          <app-attendance-day-report
+                            [reporte]="facade.dayReport()"
+                            [loading]="facade.isLoadingDayReport()"
+                            [error]="facade.dayReportError()"
                           />
                         </td>
                       </tr>

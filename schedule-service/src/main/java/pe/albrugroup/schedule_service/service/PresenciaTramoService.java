@@ -9,6 +9,7 @@ import pe.albrugroup.schedule_service.entity.Asistencia;
 import pe.albrugroup.schedule_service.entity.PresenciaTramo;
 import pe.albrugroup.schedule_service.entity.enums.OrigenPresencia;
 import pe.albrugroup.schedule_service.entity.request.asistencia.PresenciaEventoRequest;
+import pe.albrugroup.schedule_service.entity.response.asistencia.IntervaloPresenciaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.PresenciaGapResponse;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.PresenciaTramoRepository;
@@ -114,6 +115,18 @@ public class PresenciaTramoService {
                     .build());
         }
         return gaps;
+    }
+
+    /**
+     * Intervalos de presencia real (conectado) del dia, en orden. Cada tramo abierto (fin == null) se
+     * devuelve tal cual (fin nulo) para que el consumidor decida el corte (p. ej. "ahora"). Evidencia
+     * autoritativa de la linea de Marcaciones del reporte.
+     */
+    public List<IntervaloPresenciaResponse> intervalosDelDia(Long idEmpleado, LocalDate fecha) {
+        return presenciaTramoRepository.findByIdEmpleadoAndFechaOrderByInicioAsc(idEmpleado, fecha).stream()
+                .filter(t -> t.getInicio() != null)
+                .map(t -> IntervaloPresenciaResponse.builder().inicio(t.getInicio()).fin(t.getFin()).build())
+                .toList();
     }
 
     /** true si el empleado tiene al menos un tramo de presencia registrado ese dia (fail-open si no). */

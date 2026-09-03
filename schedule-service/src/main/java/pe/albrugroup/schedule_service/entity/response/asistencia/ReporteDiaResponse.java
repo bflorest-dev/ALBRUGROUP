@@ -24,6 +24,14 @@ public class ReporteDiaResponse {
     private List<TramoDiaResponse> tramos;
     private List<SesionEstadoResponse> sesiones;
     private List<PresenciaGapResponse> tiemposMuertos;
+    // Presencia real (conectado) autoritativa: linea de Marcaciones sin reconstruir en el frontend.
+    private List<IntervaloPresenciaResponse> presencia;
+    // Excesos que pesan en el balance (almuerzo/pausa sobre el tope): linea de Incidencias.
+    private List<ExcesoDiaResponse> excesos;
+
+    // Almuerzo PROGRAMADO del dia (para dibujarlo en la linea Programado y comparar contra el real).
+    private LocalDateTime inicioAlmuerzoProgramado;
+    private LocalDateTime finAlmuerzoProgramado;
 
     // Almuerzo real del dia.
     private LocalDateTime almuerzoRealInicio;

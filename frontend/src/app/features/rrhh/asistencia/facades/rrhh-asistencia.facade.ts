@@ -2,8 +2,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { firstValueFrom, timeout } from 'rxjs';
+import { AttendanceService } from '../../../../core/services/attendance.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { ScheduleAdjustmentService } from '../../../../core/services/schedule-adjustment.service';
+import { ReporteDiaResponse } from '../../../../shared/models/schedule/reporte-dia-response';
 import { ContratoResponse } from '../../../../shared/models/rrhh/contrato-response';
 import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
 import { CorregirHorarioRequest } from '../../../../shared/models/schedule/corregir-horario-request';
@@ -104,6 +106,7 @@ const PUESTOS_EXCLUIDOS_CUMPLIMIENTO = new Set(['OJT', 'ADMINISTRADOR']);
 @Injectable()
 export class RrhhAsistenciaFacade {
   private readonly service = inject(RrhhAsistenciaService);
+  private readonly attendanceService = inject(AttendanceService);
   private readonly scheduleAdjustmentService = inject(ScheduleAdjustmentService);
   private readonly fb = inject(FormBuilder);
   private readonly operationalGateService = inject(OperationalGateService);
@@ -320,6 +323,12 @@ export class RrhhAsistenciaFacade {
   readonly drawerSelectedMonth = signal<string>(this.currentMonthValue());
   readonly isLoadingDrawerDetalle = signal<boolean>(false);
 
+  // Detalle del día expandido inline (drill de reporte-dia). Solo un día abierto a la vez.
+  readonly expandedDay = signal<string | null>(null);
+  readonly dayReport = signal<ReporteDiaResponse | null>(null);
+  readonly isLoadingDayReport = signal<boolean>(false);
+  readonly dayReportError = signal<string>('');
+
   /** Faltas, tardanzas y balance del empleado en el mes del drawer, derivados del detalle diario. */
   readonly drawerKpis = computed(() => {
     let faltas = 0;
@@ -483,7 +492,45 @@ export class RrhhAsistenciaFacade {
   setDrawerMonth(month: string): void {
     if (!month || month === this.drawerSelectedMonth()) return;
     this.drawerSelectedMonth.set(month);
+    this.collapseDayReport();
     void this.reloadDrawerDetalle();
+  }
+
+  /**
+   * Abre (o cierra si ya estaba) el detalle del día y carga su reporte v2 (tramos + sesiones + tiempos
+   * muertos). Los guards por `expandedDay` evitan pisar el estado si el usuario cambia de día mientras carga.
+   */
+  async toggleDayReport(fecha: string): Promise<void> {
+    if (this.expandedDay() === fecha) {
+      this.collapseDayReport();
+      return;
+    }
+    const empleado = this.drawerEmpleado();
+    if (!empleado) return;
+
+    this.expandedDay.set(fecha);
+    this.dayReport.set(null);
+    this.dayReportError.set('');
+    this.isLoadingDayReport.set(true);
+    try {
+      const reporte = await firstValueFrom(
+        this.attendanceService.getReporteDia(empleado.idEmpleado, fecha).pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      if (this.expandedDay() === fecha) this.dayReport.set(reporte);
+    } catch (error) {
+      if (this.expandedDay() === fecha) {
+        this.dayReportError.set(this.extractErrorMessage(error, 'No se pudo cargar el detalle del día.'));
+      }
+    } finally {
+      if (this.expandedDay() === fecha) this.isLoadingDayReport.set(false);
+    }
+  }
+
+  collapseDayReport(): void {
+    this.expandedDay.set(null);
+    this.dayReport.set(null);
+    this.dayReportError.set('');
+    this.isLoadingDayReport.set(false);
   }
 
   private async reloadDrawerDetalle(): Promise<void> {
@@ -519,6 +566,7 @@ export class RrhhAsistenciaFacade {
     this.drawerContrato.set(null);
     this.drawerHorario.set(null);
     this.drawerDetalleDias.set([]);
+    this.collapseDayReport();
     this.drawerErrorMessage.set('');
     this.drawerSuccessMessage.set('');
     this.scheduleChangeErrorMessage.set('');
@@ -559,6 +607,7 @@ export class RrhhAsistenciaFacade {
     this.drawerContrato.set(null);
     this.drawerHorario.set(null);
     this.drawerDetalleDias.set([]);
+    this.collapseDayReport();
     this.isCorrectionDecisionVisible.set(false);
     this.adjustmentJornada.set(null);
     this.adjustmentError.set(null);
@@ -781,6 +830,12 @@ export class RrhhAsistenciaFacade {
     ]);
     this.drawerHorario.set(horario);
     this.drawerDetalleDias.set(detalle.empleados[0]?.dias ?? []);
+    // El ajuste pudo cambiar el día abierto: recargar su reporte si sigue expandido.
+    const abierto = this.expandedDay();
+    if (abierto) {
+      this.expandedDay.set(null); // fuerza el refetch (toggle re-abre porque ya no coincide)
+      void this.toggleDayReport(abierto);
+    }
   }
 
   private async runCorregir(

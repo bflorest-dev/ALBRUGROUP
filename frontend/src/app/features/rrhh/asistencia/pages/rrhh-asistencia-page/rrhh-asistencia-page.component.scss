@@ -371,6 +371,35 @@
     text-align: center;
     width: 7rem;
   }
+
+  ::ng-deep .col-chev {
+    width: 2.25rem;
+  }
+}
+
+// Registro diario: fila expandible con el detalle del día (drill de reporte-dia).
+.employee-month-table {
+  ::ng-deep .rd-row {
+    cursor: pointer;
+  }
+
+  ::ng-deep .rd-chev {
+    color: #9ca3af;
+    font-size: 0.8rem;
+    transition: transform 0.15s ease;
+
+    &.is-open {
+      transform: rotate(90deg);
+      color: var(--p-primary-color, #059669);
+    }
+  }
+
+  ::ng-deep .rd-detail-row > td {
+    text-align: left;
+    padding: 0.35rem 0.5rem 0.85rem;
+    background: var(--app-surface-soft, #f5f8fb);
+    border-bottom: 1px solid var(--p-content-border-color, #e2e8f0);
+  }
 }
 
 .employee-month {
@@ -465,6 +494,47 @@
   color: var(--p-text-muted-color, #6b7280);
   font-size: 0.72rem;
   font-weight: 600;
+}
+
+// Fila de resumen diario: base + almuerzo apilados, con badges (+ Extra / + Comp).
+.cstack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+
+  .cmain {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    font-weight: 600;
+    font-size: 0.82rem;
+  }
+
+  .csub {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.72rem;
+    color: var(--p-text-muted-color, #6b7280);
+
+    i { font-size: 0.72rem; color: #c0a04a; }
+  }
+
+  .minib {
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 0.05rem 0.35rem;
+    border-radius: 5px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+
+    &.mb-extra { background: #fbeecb; color: #8a6d1a; }
+    &.mb-comp { background: #ffedd5; color: #c2410c; }
+  }
 }
 
 .employee-schedule {

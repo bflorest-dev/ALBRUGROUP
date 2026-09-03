@@ -1,0 +1,170 @@
+@if (loading()) {
+  <div class="dr-loading">
+    <p-progressSpinner styleClass="spinner-sm" strokeWidth="3" />
+    <span>Cargando detalle del día…</span>
+  </div>
+} @else if (error()) {
+  <p-message severity="error" [text]="error()!" />
+} @else if (sinDatos()) {
+  <p-message severity="info" text="Este día no tiene jornada programada." />
+} @else if (reporte()) {
+  <div class="dr">
+
+    <!-- ── Línea de tiempo (3 carriles, eje compartido) ── -->
+    <div class="dr-card">
+      <h5>Línea de tiempo del día</h5>
+      <div class="tll">
+        <div class="tll__ticks">
+          @for (t of axisTicks(); track t.leftPct) {
+            <span class="tll__tick" [style.left.%]="t.leftPct">{{ t.label }}</span>
+          }
+        </div>
+
+        <!-- 1 · Programado -->
+        <div class="tll__row">
+          <span class="tll__lab">Programado</span>
+          <div class="tll__track">
+            @for (b of tramoBlocks(); track $index) {
+              <div
+                class="tl__block band"
+                [class.band--base]="b.tipo === 'BASE'"
+                [class.band--extra]="b.tipo === 'EXTRA'"
+                [class.band--comp]="b.tipo === 'COMPENSABLE'"
+                [class.is-anulado]="b.anulado"
+                [style.left.%]="b.leftPct"
+                [style.width.%]="b.widthPct"
+                [pTooltip]="b.title"
+                tooltipPosition="top"
+              >
+                @if (b.center) {
+                  <span class="tl__cap tl__cap--c">{{ b.center }}</span>
+                } @else {
+                  @if (b.capLeft) { <span class="tl__cap">{{ b.capLeft }}</span> }
+                  @if (b.capRight) { <span class="tl__cap tl__cap--r">{{ b.capRight }}</span> }
+                }
+              </div>
+            }
+            @if (lunchProgBlock(); as lp) {
+              <div class="tl__block tl__lunchprog" [style.left.%]="lp.leftPct" [style.width.%]="lp.widthPct"
+                   [pTooltip]="lp.title" tooltipPosition="top"></div>
+            }
+          </div>
+        </div>
+
+        <!-- 2 · Marcaciones -->
+        <div class="tll__row">
+          <span class="tll__lab">Marcaciones</span>
+          <div class="tll__track">
+            @for (p of presenceBlocks(); track $index) {
+              <div class="tl__block tl__pres" [style.left.%]="p.leftPct" [style.width.%]="p.widthPct"
+                   [pTooltip]="p.title" tooltipPosition="top">
+                @if (p.capLeft) { <span class="tl__cap tl__cap--l">{{ p.capLeft }}</span> }
+                @if (p.capRight) { <span class="tl__cap tl__cap--r">{{ p.capRight }}</span> }
+              </div>
+            }
+            @for (s of overlaySegments(); track $index) {
+              <div
+                class="tl__block tl__seg"
+                [class.seg--lunch]="s.kind === 'lunch'"
+                [class.seg--serv]="s.kind === 'serv'"
+                [class.seg--pausa]="s.kind === 'pausa'"
+                [class.seg--capa]="s.kind === 'capa'"
+                [style.left.%]="s.leftPct"
+                [style.width.%]="s.widthPct"
+                [pTooltip]="s.title"
+                tooltipPosition="top"
+              ><span class="tl__cap tl__cap--c">{{ s.label }}</span></div>
+            }
+          </div>
+        </div>
+
+        <!-- 3 · Incidencias (siempre visible) -->
+        <div class="tll__row">
+          <span class="tll__lab">Incidencias</span>
+          <div class="tll__track tll__track--inc">
+            @if (!hasInc()) { <span class="tll__none">Sin incidencias</span> }
+            @for (b of incBlocks(); track $index) {
+              <div
+                class="tl__block tl__inc"
+                [class.inc--dead]="b.kind === 'dead'"
+                [class.inc--soft]="b.kind === 'soft'"
+                [class.inc--exceso]="b.kind === 'exceso'"
+                [style.left.%]="b.leftPct"
+                [style.width.%]="b.widthPct"
+                [pTooltip]="b.title"
+                tooltipPosition="top"
+              ><span class="tl__cap tl__cap--c">{{ b.label }}</span></div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="dr-legend">
+        <span><i class="sw sw--base"></i> Base</span>
+        <span><i class="sw sw--extra"></i> Extra</span>
+        <span><i class="sw sw--comp"></i> Compensable</span>
+        <span><i class="sw sw--lunchprog"></i> Almuerzo prog.</span>
+        <span><i class="sw sw--pres"></i> Conectado</span>
+        <span><i class="sw sw--lunch"></i> Almuerzo real</span>
+        <span><i class="sw sw--serv"></i> Servicios</span>
+        <span><i class="sw sw--pausa"></i> Pausa activa</span>
+        <span><i class="sw sw--dead"></i> Tiempo muerto</span>
+        <span><i class="sw sw--exceso"></i> Exceso</span>
+      </div>
+    </div>
+
+    <!-- ── Tarjetas agregadas (altura fija) ── -->
+    <div class="dr-rows2">
+      <div class="dr-card">
+        <h5>Tiempos muertos</h5>
+        <div class="agg">
+          <div class="agg__total">
+            <span class="big">{{ durLabel(deadTotal().min) }}</span>
+            <span class="lbl">· {{ deadTotal().count }} {{ deadTotal().count === 1 ? 'desconexión' : 'desconexiones' }}</span>
+          </div>
+          @for (row of deadRows(); track row.label) {
+            <div class="aggrow" [class.is-off]="!row.active">
+              <span class="dot" [class.dot--dead]="row.kind === 'dead'" [class.dot--soft]="row.kind === 'soft'"></span>
+              <span class="nm">{{ row.label }}</span>
+              <span class="ct" [style.visibility]="row.active ? 'visible' : 'hidden'">{{ row.count }}</span>
+              <span class="mn">{{ row.active ? durLabel(row.minutos) : '—' }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="dr-card">
+        <h5>Sesiones y almuerzo</h5>
+        <div class="agg">
+          @for (row of sesionRows(); track row.label) {
+            <div class="aggrow" [class.is-off]="!row.active">
+              <span class="dot" [class.dot--serv]="row.kind === 'serv'" [class.dot--pausa]="row.kind === 'pausa'" [class.dot--capa]="row.kind === 'capa'"></span>
+              <span class="nm">{{ row.label }}</span>
+              <span class="ct" [style.visibility]="row.active ? 'visible' : 'hidden'">{{ row.count }}</span>
+              <span class="mn">{{ row.active ? durLabel(row.minutos) : '—' }}</span>
+            </div>
+          }
+          <div class="aggrow" [class.is-off]="!almuerzo().active">
+            <span class="dot dot--lunch"></span>
+            <span class="nm">Almuerzo</span>
+            <span class="ct" [style.visibility]="almuerzo().rango ? 'visible' : 'hidden'">{{ almuerzo().rango }}</span>
+            <span class="mn">{{ almuerzo().active ? durLabel(almuerzo().tomado) : '—' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Totales del día ── -->
+    <div class="dr-card">
+      <h5>Totales del día</h5>
+      <div class="dr-tots">
+        <div class="tot"><span class="k">Objetivo</span><span class="v">{{ durLabel(totales().objetivo) }}</span></div>
+        <div class="tot"><span class="k">Trabajado</span><span class="v">{{ durLabel(totales().trabajado) }}</span></div>
+        <div class="tot"><span class="k">Balance</span><span class="v" [class.v--neg]="totales().balance < 0" [class.v--pos]="totales().balance > 0">{{ balanceLabel(totales().balance) }}</span></div>
+        <div class="tot"><span class="k">Extra</span><span class="v">{{ totales().extra ? '+' + durLabel(totales().extra) : '0' }}</span></div>
+        <div class="tot"><span class="k">Compensado</span><span class="v">{{ durLabel(totales().compensado) }}</span></div>
+      </div>
+    </div>
+
+  </div>
+}

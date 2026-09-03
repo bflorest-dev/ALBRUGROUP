@@ -952,6 +952,12 @@ public class AsistenciaService implements IAsistencia {
                 .minutosServiciosAcumulados(asistencia != null ? asistencia.getMinutosServiciosAcumulados() : 0)
                 .excedioServicios(asistencia != null && Boolean.TRUE.equals(asistencia.getExcedioServicios()))
                 .tardanza(esTardanza(asistencia != null ? asistencia.getFechaHoraIngreso() : null, horaEntradaEstablecida))
+                .inicioAlmuerzoProgramado(programacion.inicioAlmuerzo())
+                .finAlmuerzoProgramado(programacion.finAlmuerzo())
+                .almuerzoRealInicio(asistencia != null && asistencia.getAlmuerzoRealInicio() != null ? asistencia.getAlmuerzoRealInicio().toLocalTime() : null)
+                .almuerzoRealFin(asistencia != null && asistencia.getAlmuerzoRealFin() != null ? asistencia.getAlmuerzoRealFin().toLocalTime() : null)
+                .minutosExtra(asistencia != null ? asistencia.getMinutosExtra() : 0)
+                .minutosCompensados(asistencia != null ? asistencia.getMinutosCompensados() : 0)
                 .tramos(construirTramos(asistencia, tramosArchivados))
                 .build();
     }

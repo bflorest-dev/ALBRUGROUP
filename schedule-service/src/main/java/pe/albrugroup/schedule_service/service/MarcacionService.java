@@ -23,6 +23,7 @@ import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
 import pe.albrugroup.schedule_service.entity.request.asistencia.IniciarAlmuerzoRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.PoliticaMarcacionResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.ExcesoDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.SesionEstadoResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.TramoDiaResponse;
@@ -975,6 +976,20 @@ public class MarcacionService {
                         .build())
                 .toList();
 
+        // Almuerzo programado: de la asistencia si existe, si no del horario (dia pasado sin marca).
+        Horario horarioReporte = jornada != null ? horarioRepository.findById(jornada.getIdHorario()).orElse(null) : null;
+        LocalTime lunchIni = null;
+        LocalTime lunchFin = null;
+        if (asistencia != null && asistencia.getInicioAlmuerzoProgramado() != null) {
+            lunchIni = asistencia.getInicioAlmuerzoProgramado();
+            lunchFin = asistencia.getFinAlmuerzoProgramado();
+        } else if (horarioReporte != null) {
+            VentanaAlmuerzo va = resolverAlmuerzoProgramado(horarioReporte, fecha);
+            if (va != null) { lunchIni = va.inicio(); lunchFin = va.fin(); }
+        }
+        List<ExcesoDiaResponse> excesos = asistencia == null ? List.of()
+                : calcularExcesos(asistencia, lunchIni, lunchFin);
+
         return ReporteDiaResponse.builder()
                 .idEmpleado(idEmpleado)
                 .fecha(fecha)
@@ -983,6 +998,10 @@ public class MarcacionService {
                 .tramos(construirTramosDia(asistencia, jornada))
                 .sesiones(sesiones)
                 .tiemposMuertos(presenciaTramoService.gapsDelDia(idEmpleado, fecha))
+                .presencia(presenciaTramoService.intervalosDelDia(idEmpleado, fecha))
+                .excesos(excesos)
+                .inicioAlmuerzoProgramado(lunchIni != null ? LocalDateTime.of(fecha, lunchIni) : null)
+                .finAlmuerzoProgramado(lunchFin != null ? LocalDateTime.of(fecha, lunchFin) : null)
                 .almuerzoRealInicio(asistencia != null ? asistencia.getAlmuerzoRealInicio() : null)
                 .almuerzoRealFin(asistencia != null ? asistencia.getAlmuerzoRealFin() : null)
                 .minutosAlmuerzoTomados(asistencia != null ? asistencia.getMinutosAlmuerzoTomados() : 0)
@@ -992,6 +1011,42 @@ public class MarcacionService {
                 .minutosExtra(asistencia != null ? asistencia.getMinutosExtra() : 0)
                 .minutosCompensados(asistencia != null ? asistencia.getMinutosCompensados() : 0)
                 .build();
+    }
+
+    /**
+     * Excesos del dia que pesan en el balance, con su rango temporal (la "cola" sobre el tope), para la
+     * linea de Incidencias: almuerzo pasado del programado + cada pausa activa que paso del maximo.
+     */
+    private List<ExcesoDiaResponse> calcularExcesos(Asistencia a, LocalTime lunchIni, LocalTime lunchFin) {
+        List<ExcesoDiaResponse> out = new ArrayList<>();
+
+        Integer progMin = minutosEntre(lunchIni, lunchFin);
+        int tomado = safe(a.getMinutosAlmuerzoTomados());
+        if (progMin != null && progMin > 0 && tomado > progMin
+                && a.getAlmuerzoRealInicio() != null && a.getAlmuerzoRealFin() != null) {
+            LocalDateTime desde = a.getAlmuerzoRealInicio().plusMinutes(progMin);
+            if (desde.isBefore(a.getAlmuerzoRealFin())) {
+                out.add(ExcesoDiaResponse.builder().tipo("ALMUERZO")
+                        .inicio(desde).fin(a.getAlmuerzoRealFin())
+                        .minutos((int) Duration.between(desde, a.getAlmuerzoRealFin()).toMinutes()).build());
+            }
+        }
+
+        int maxPausa = parametrosGlobales().maxMinutosPausaActiva();
+        if (maxPausa > 0) {
+            sesionEstadoRepository
+                    .findByAsistenciaIdAndTipoOrderByInicioAsc(a.getId(), TipoSesionEstado.PAUSA_ACTIVA).stream()
+                    .filter(s -> s.getFin() != null)
+                    .forEach(s -> {
+                        int dur = (int) Math.max(Duration.between(s.getInicio(), s.getFin()).toMinutes(), 0);
+                        if (dur > maxPausa) {
+                            out.add(ExcesoDiaResponse.builder().tipo("PAUSA_ACTIVA")
+                                    .inicio(s.getInicio().plusMinutes(maxPausa)).fin(s.getFin())
+                                    .minutos(dur - maxPausa).build());
+                        }
+                    });
+        }
+        return out;
     }
 
     /**

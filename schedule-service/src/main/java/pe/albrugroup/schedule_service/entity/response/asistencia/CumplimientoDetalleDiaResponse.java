@@ -31,6 +31,16 @@ public class CumplimientoDetalleDiaResponse {
     private Boolean excedioServicios;
     private Boolean tardanza;
 
+    // Almuerzo del dia (programado + real) para la fila de resumen: base + almuerzo, lo mas consultado.
+    private LocalTime inicioAlmuerzoProgramado;
+    private LocalTime finAlmuerzoProgramado;
+    private LocalTime almuerzoRealInicio;
+    private LocalTime almuerzoRealFin;
+
+    // Split para los badges de la fila (+ Extra / + Comp). 0 en dias normales.
+    private Integer minutosExtra;
+    private Integer minutosCompensados;
+
     /** Tramos del dia cuando fue partido por una ampliacion (reapertura). Vacio en dias normales. */
     private List<TramoAsistenciaResponse> tramos;
 }

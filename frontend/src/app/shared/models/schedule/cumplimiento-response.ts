@@ -32,6 +32,12 @@ export interface CumplimientoDetalleDiaResponse {
   minutosServiciosAcumulados: number;
   excedioServicios: boolean;
   tardanza: boolean;
+  inicioAlmuerzoProgramado: string | null;
+  finAlmuerzoProgramado: string | null;
+  almuerzoRealInicio: string | null;
+  almuerzoRealFin: string | null;
+  minutosExtra: number;
+  minutosCompensados: number;
   tramos: TramoAsistenciaResponse[];
 }
 
