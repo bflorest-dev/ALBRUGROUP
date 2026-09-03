@@ -445,31 +445,24 @@ public class HorarioService implements IHorario {
         }
     }
 
+    /**
+     * Almuerzo POR DÍA, desacoplado de la modalidad: cada día decide si lleva un período de almuerzo o no.
+     * No se fuerza nada por modalidad; solo se rechaza el par a medias (un día con inicio pero sin fin, o
+     * viceversa), que sería un dato inconsistente.
+     */
     private void normalizarAlmuerzoPorModalidad(ModalidadContrato modalidad, List<BloqueHorarioRequest> detalles) {
-        if (!requiereAlmuerzo(modalidad)) {
-            detalles.forEach(detalle -> {
-                detalle.setInicioAlmuerzo(null);
-                detalle.setFinAlmuerzo(null);
-            });
-            return;
-        }
-
-        List<String> diasSinAlmuerzo = detalles.stream()
-                .filter(detalle -> detalle.getInicioAlmuerzo() == null || detalle.getFinAlmuerzo() == null)
+        List<String> inconsistentes = detalles.stream()
+                .filter(detalle -> (detalle.getInicioAlmuerzo() == null) != (detalle.getFinAlmuerzo() == null))
                 .map(detalle -> detalle.getDia().name())
                 .toList();
 
-        if (!diasSinAlmuerzo.isEmpty()) {
+        if (!inconsistentes.isEmpty()) {
             throw new BadRequestException(
-                    "inicioAlmuerzo y finAlmuerzo son obligatorios para la modalidad " + modalidad,
+                    "Cada día debe tener inicio y fin de almuerzo, o ninguno de los dos",
                     modalidad,
-                    diasSinAlmuerzo
+                    inconsistentes
             );
         }
-    }
-
-    private boolean requiereAlmuerzo(ModalidadContrato modalidad) {
-        return modalidad != ModalidadContrato.PART_TIME && modalidad != ModalidadContrato.SEMI_FULL;
     }
 
     private ExcepcionHorario getExcepcionById(Long idHorario, Long idExcepcion) {

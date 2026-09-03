@@ -146,6 +146,24 @@
       accent-color: #15803d;
     }
   }
+
+  &__lunch-check {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+
+    span {
+      font-size: 0.75rem;
+      color: var(--role-muted);
+    }
+
+    input {
+      width: 15px;
+      height: 15px;
+      accent-color: #15803d;
+    }
+  }
 }
 
 .timeline {

@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../constants/api.constants';
 import { DetalleDiaResponse } from '../../shared/models/schedule/detalle-dia-response';
 import { ReporteDiaResponse } from '../../shared/models/schedule/reporte-dia-response';
+import { ResumenMensualResponse } from '../../shared/models/schedule/resumen-mensual-response';
 import { AsistenciaMesResponse } from '../../shared/models/schedule/asistencia-mes-response';
 import { HorarioMesResponse } from '../../shared/models/schedule/horario-mes-response';
 
@@ -26,6 +27,12 @@ export class AttendanceService {
   getReporteDia(idEmpleado: number, fecha?: string): Observable<ReporteDiaResponse> {
     const params = fecha ? new HttpParams().set('fecha', fecha) : undefined;
     return this.http.get<ReporteDiaResponse>(`${this.attendanceUrl}/reporte-dia/${idEmpleado}`, { params });
+  }
+
+  /** Resumen mensual CERRADO de un empleado (mes pasado). El mes en vivo se deriva en el frontend. */
+  getResumenMensual(idEmpleado: number, anio: number, mes: number): Observable<ResumenMensualResponse> {
+    const params = new HttpParams().set('anio', anio).set('mes', mes);
+    return this.http.get<ResumenMensualResponse>(`${this.attendanceUrl}/resumen-mensual/${idEmpleado}`, { params });
   }
 
   // El motor nuevo usa el reloj del servidor: las acciones no llevan cuerpo.

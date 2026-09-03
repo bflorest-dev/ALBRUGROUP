@@ -102,6 +102,7 @@ type TipificacionVisualMeta = {
 };
 
 type OfertaProviderOption = { id: number; nombre: string };
+type PreventaCompletaChecklistItem = { tab: LeadCommercialDataTab; campo: string; completo: boolean };
 type OfertaAdditionalSelection = {
   idAdicional: number;
   nombre: string;
@@ -543,6 +544,8 @@ export class GtrWorkspaceFacade {
     celularRegistro: [''],
     celularReferencia: [''],
     correo: [''],
+    fechaNacimiento: [''],
+    parentesco: [''],
     nombreMadre: [''],
     nombrePadre: [''],
     numeroDocumentoTitularCelularRegistro: [''],
@@ -2175,6 +2178,10 @@ export class GtrWorkspaceFacade {
 
   hasUnsavedDataChanges(): boolean {
     return this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty;
+  }
+
+  preventaCompletaChecklist(): PreventaCompletaChecklistItem[] {
+    return this.buildVentaCompletaChecklist();
   }
 
   toggleComment(): void {
@@ -4230,6 +4237,8 @@ export class GtrWorkspaceFacade {
       celularRegistro: detail.celularRegistro ?? '',
       celularReferencia: detail.celularReferencia ?? '',
       correo: detail.correo ?? '',
+      fechaNacimiento: detail.fechaNacimiento ?? '',
+      parentesco: detail.parentesco ?? '',
       nombreMadre: detail.nombreMadre ?? '',
       nombrePadre: detail.nombrePadre ?? '',
       numeroDocumentoTitularCelularRegistro: detail.numeroDocumentoTitularCelularRegistro ?? '',
@@ -4433,18 +4442,22 @@ export class GtrWorkspaceFacade {
     });
   }
 
-  private getVentaCompletaMissingMessage(): string | null {
-    const blank = (value: string | null | undefined): boolean => !value || !value.trim();
+  private buildVentaCompletaChecklist(): PreventaCompletaChecklistItem[] {
+    const blank = (value: unknown): boolean => value === null || value === undefined || String(value).trim().length === 0;
     const d = this.datosForm.controls;
     const a = this.direccionForm.controls;
+    const checklist: PreventaCompletaChecklistItem[] = [];
+    const add = (tab: LeadCommercialDataTab, campo: string, value: unknown): void => {
+      checklist.push({ tab, campo, completo: !blank(value) });
+    };
 
-    const faltantes: { tab: 'datos' | 'direccion' | 'oferta'; campo: string }[] = [];
-
-    if (blank(d.tipoDocumento.value)) faltantes.push({ tab: 'datos', campo: 'Documento' });
-    if (blank(d.numeroDocumentoTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Numero de Documento' });
-    if (blank(d.nombreTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Titular del Servicio' });
-    if (blank(d.celularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Celular a registrar' });
-    if (blank(d.correo.value)) faltantes.push({ tab: 'datos', campo: 'Correo' });
+    add('datos', 'Documento', d.tipoDocumento.value);
+    add('datos', 'Numero de Documento', d.numeroDocumentoTitularServicio.value);
+    add('datos', 'Titular del Servicio', d.nombreTitularServicio.value);
+    add('datos', 'Celular a registrar', d.celularRegistro.value);
+    add('datos', 'Correo', d.correo.value);
+    add('datos', 'Fecha de nacimiento', d.fechaNacimiento.value);
+    add('datos', 'Parentesco', d.parentesco.value);
 
     for (const campo of this.camposConfig()) {
       if (!campo.visible || !campo.requerido) {
@@ -4454,23 +4467,22 @@ export class GtrWorkspaceFacade {
       if (!meta) {
         continue;
       }
-      const value =
-        meta.tab === 'datos' ? this.datosForm.get(meta.control)?.value : this.direccionForm.get(meta.control)?.value;
-      if (blank(value)) {
-        faltantes.push({ tab: meta.tab, campo: meta.label });
-      }
+      add(meta.tab, meta.label, meta.tab === 'datos' ? this.datosForm.get(meta.control)?.value : this.direccionForm.get(meta.control)?.value);
     }
 
-    if (blank(a.ubigeoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Distrito' });
-    if (blank(a.tipoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de Domicilio' });
-    if (blank(a.direccion.value)) faltantes.push({ tab: 'direccion', campo: 'Direccion' });
-    if (blank(a.referencia.value)) faltantes.push({ tab: 'direccion', campo: 'Referencia' });
-    if (blank(a.piso.value)) faltantes.push({ tab: 'direccion', campo: 'Piso' });
-    if (blank(a.interior.value)) faltantes.push({ tab: 'direccion', campo: 'Interior' });
+    add('direccion', 'Distrito', a.ubigeoDomicilio.value);
+    add('direccion', 'Tipo de Domicilio', a.tipoDomicilio.value);
+    add('direccion', 'Direccion', a.direccion.value);
+    add('direccion', 'Referencia', a.referencia.value);
+    add('direccion', 'Piso', a.piso.value);
+    add('direccion', 'Interior', a.interior.value);
+    checklist.push({ tab: 'oferta', campo: 'Plan', completo: !!this.ofertaForm.controls.idPlan.value });
 
-    if (!this.ofertaForm.controls.idPlan.value) {
-      faltantes.push({ tab: 'oferta', campo: 'Plan' });
-    }
+    return checklist;
+  }
+
+  private getVentaCompletaMissingMessage(): string | null {
+    const faltantes = this.buildVentaCompletaChecklist().filter((item) => !item.completo);
 
     if (!faltantes.length) {
       return null;

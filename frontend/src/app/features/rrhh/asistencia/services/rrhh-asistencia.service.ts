@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../../core/constants/api.constants';
 import { ContratoResponse } from '../../../../shared/models/rrhh/contrato-response';
 import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
+import { PageResponse } from '../../../../shared/models/common/page-response';
 import { ConsultaCumplimientoRequest } from '../../../../shared/models/schedule/consulta-cumplimiento-request';
 import { CorregirHorarioRequest } from '../../../../shared/models/schedule/corregir-horario-request';
 import {
@@ -62,6 +63,19 @@ export class RrhhAsistenciaService {
       params = params.set('fecha', fecha);
     }
     return this.http.get<HorarioResponse>(`${this.horariosUrl}/empleados/${idEmpleado}/vigente`, { params });
+  }
+
+  /** Historial de versiones de horario del empleado (pasado / actual / futuro), más nuevo primero. */
+  listarHistoricoHorarios(idEmpleado: number, pageSize = 50): Observable<PageResponse<HorarioResponse>> {
+    const params = new HttpParams()
+      .set('pageNumber', 0)
+      .set('pageSize', pageSize)
+      .set('sortBy', 'fechaInicio')
+      .set('direction', 'desc');
+    return this.http.get<PageResponse<HorarioResponse>>(
+      `${this.horariosUrl}/empleados/${idEmpleado}/historico`,
+      { params }
+    );
   }
 
   corregirHorario(idHorario: number, request: CorregirHorarioRequest): Observable<HorarioResponse> {

@@ -1,15 +1,14 @@
-<p-dialog
-  [showHeader]="false"
+<p-drawer
   [visible]="facade.activeDialog() === 'typify'"
   (visibleChange)="!$event && facade.closeTipificationDialog()"
+  position="right"
   [modal]="true"
-  [draggable]="false"
-  [closable]="false"
   [closeOnEscape]="false"
-  [dismissableMask]="false"
-  [breakpoints]="{ '1200px': '92vw', '720px': '96vw' }"
+  [dismissible]="false"
+  [blockScroll]="true"
+  [showCloseIcon]="false"
   appendTo="body"
-  styleClass="gtr-tipification-dialog"
+  styleClass="gtr-tipification-drawer"
 >
   @if (facade.typifyDetail(); as lead) {
     <section class="tipify-workspace">
@@ -37,7 +36,7 @@
         <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
       }
 
-      <form class="tipification-bar" [formGroup]="facade.tipificacionForm" (ngSubmit)="facade.tipificarLeadGtr()">
+      <form id="gtr-tipification-form" class="tipification-bar" [formGroup]="facade.tipificacionForm" (ngSubmit)="facade.tipificarLeadGtr()">
         <label class="tipification-bar__field tipification-bar__field--tipificacion">
           <span>Tipificacion</span>
           <p-select
@@ -94,22 +93,24 @@
           </label>
         }
 
-        <button
-          pButton
-          type="button"
-          icon="pi pi-comment"
-          [label]="facade.showComment() ? 'Ocultar comentario' : 'Comentario'"
-          severity="secondary"
-          (click)="facade.toggleComment()"
-        ></button>
-        <button
-          pButton
-          type="submit"
-          icon="pi pi-check"
-          label="Tipificar"
-          [disabled]="!facade.canMutateOperationalData()"
-          [loading]="facade.isSaving()"
-        ></button>
+        <div class="tipification-actions">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-comment"
+            [label]="facade.showComment() ? 'Ocultar' : 'Comentario'"
+            severity="secondary"
+            (click)="facade.toggleComment()"
+          ></button>
+          <button
+            pButton
+            type="submit"
+            icon="pi pi-check"
+            label="Tipificar"
+            [disabled]="!facade.canMutateOperationalData()"
+            [loading]="facade.isSaving()"
+          ></button>
+        </div>
 
         @if (facade.showComment()) {
           <label class="tipification-bar__comment">
@@ -119,7 +120,28 @@
         }
       </form>
 
+      <section class="completion-strip">
+        <div class="completion-strip__score">
+          <span>Preventa completa</span>
+          <strong>{{ completionCount() }}/{{ completionTotal() }}</strong>
+        </div>
+        <div class="completion-strip__segments" aria-hidden="true">
+          @for (segment of completionSegments(); track $index) {
+            <span [class.completion-strip__segment--done]="segment"></span>
+          }
+        </div>
+        @if (pendingCompletionLabels().length) {
+          <div class="completion-strip__pending">
+            <span>Campos pendientes:</span>
+            @for (label of pendingCompletionLabels(); track $index) {
+              <strong>{{ label }}</strong>
+            }
+          </div>
+        }
+      </section>
+
       <app-lead-commercial-data-tabs
+        layoutMode="drawer"
         [datosForm]="facade.datosForm"
         [direccionForm]="facade.direccionForm"
         [ofertaForm]="facade.ofertaForm"
@@ -175,4 +197,4 @@
       <p-skeleton width="100%" height="16rem" />
     </div>
   }
-</p-dialog>
+</p-drawer>

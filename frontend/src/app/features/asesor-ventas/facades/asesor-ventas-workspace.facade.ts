@@ -37,6 +37,7 @@ type VisualLeadAsesor = LeadAsesorVentasResponse & { isNew?: boolean };
 type ActiveDataTab = 'datos' | 'direccion' | 'oferta';
 type SubtipificacionSelectOption = SubtipificacionResponse & { disabled?: boolean };
 type OfertaProviderOption = { id: number; nombre: string };
+type PreventaCompletaChecklistItem = { tab: ActiveDataTab; campo: string; completo: boolean };
 type OfertaAdditionalSelection = {
   idAdicional: number;
   nombre: string;
@@ -203,6 +204,8 @@ export class AsesorVentasWorkspaceFacade {
     celularRegistro: [''],
     celularReferencia: [''],
     correo: [''],
+    fechaNacimiento: [''],
+    parentesco: [''],
     nombreMadre: ['', [personNameValidator]],
     nombrePadre: ['', [personNameValidator]],
     numeroDocumentoTitularCelularRegistro: [''],
@@ -336,6 +339,9 @@ export class AsesorVentasWorkspaceFacade {
   }
   hasUnsavedModalChanges(): boolean {
     return this.hasPendingPreTipifyChanges() || this.tipificacionForm.dirty;
+  }
+  preventaCompletaChecklist(): PreventaCompletaChecklistItem[] {
+    return this.buildVentaCompletaChecklist();
   }
   readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
@@ -1607,6 +1613,8 @@ export class AsesorVentasWorkspaceFacade {
       celularRegistro: detail.celularRegistro ?? '',
       celularReferencia: detail.celularReferencia ?? '',
       correo: detail.correo ?? '',
+      fechaNacimiento: detail.fechaNacimiento ?? '',
+      parentesco: detail.parentesco ?? '',
       nombreMadre: detail.nombreMadre ?? '',
       nombrePadre: detail.nombrePadre ?? '',
       numeroDocumentoTitularCelularRegistro: detail.numeroDocumentoTitularCelularRegistro ?? '',
@@ -1932,6 +1940,42 @@ export class AsesorVentasWorkspaceFacade {
     });
   }
 
+  private buildVentaCompletaChecklist(): PreventaCompletaChecklistItem[] {
+    const blank = (value: unknown): boolean => value === null || value === undefined || String(value).trim().length === 0;
+    const d = this.datosForm.controls;
+    const a = this.direccionForm.controls;
+    const checklist: PreventaCompletaChecklistItem[] = [];
+    const add = (tab: ActiveDataTab, campo: string, value: unknown): void => {
+      checklist.push({ tab, campo, completo: !blank(value) });
+    };
+
+    add('datos', 'Documento', d.tipoDocumento.value);
+    add('datos', 'Numero de Documento', d.numeroDocumentoTitularServicio.value);
+    add('datos', 'Titular del Servicio', d.nombreTitularServicio.value);
+    add('datos', 'Celular a registrar', d.celularRegistro.value);
+    add('datos', 'Correo', d.correo.value);
+    add('datos', 'Fecha de nacimiento', d.fechaNacimiento.value);
+    add('datos', 'Parentesco', d.parentesco.value);
+
+    for (const campo of this.camposConfig()) {
+      if (!campo.visible || !campo.requerido) continue;
+      const meta = CAMPOS_CONFIGURABLES[campo.campo];
+      if (!meta) continue;
+      add(meta.tab, meta.label, meta.tab === 'datos' ? this.datosForm.get(meta.control)?.value : this.direccionForm.get(meta.control)?.value);
+    }
+
+    add('direccion', 'Distrito', a.ubigeoDomicilio.value);
+    add('direccion', 'Tipo de Domicilio', a.tipoDomicilio.value);
+    // tipoVia y via son opcionales (opcion "Sin Via"); no se exigen para cerrar la preventa.
+    add('direccion', 'Direccion', a.direccion.value);
+    add('direccion', 'Referencia', a.referencia.value);
+    add('direccion', 'Piso', a.piso.value);
+    add('direccion', 'Interior', a.interior.value);
+    checklist.push({ tab: 'oferta', campo: 'Plan', completo: !!this.ofertaForm.controls.idPlan.value });
+
+    return checklist;
+  }
+
   /**
    * Refleja la validacion del backend para cerrar una venta (PREVENTA_COMPLETA).
    * Revisa de una sola vez todos los campos obligatorios, los agrupa por pestana
@@ -1939,40 +1983,7 @@ export class AsesorVentasWorkspaceFacade {
    * Devuelve el mensaje a mostrar, o null si todo esta completo.
    */
   private getVentaCompletaMissingMessage(): string | null {
-    const blank = (value: string | null | undefined): boolean => !value || !value.trim();
-    const d = this.datosForm.controls;
-    const a = this.direccionForm.controls;
-
-    const faltantes: { tab: ActiveDataTab; campo: string }[] = [];
-
-    if (blank(d.tipoDocumento.value)) faltantes.push({ tab: 'datos', campo: 'Documento' });
-    if (blank(d.numeroDocumentoTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Numero de Documento' });
-    if (blank(d.nombreTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Titular del Servicio' });
-    if (blank(d.celularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Celular a registrar' });
-    if (blank(d.correo.value)) faltantes.push({ tab: 'datos', campo: 'Correo' });
-    // Campos configurables por equipo: solo se exigen los que el equipo del lead MUESTRA y marca
-    // como obligatorios (misma config que decide su visibilidad en el modal). Para un asesor
-    // multi-equipo esto sigue al equipo del lead abierto, no al agregado de sus equipos.
-    for (const campo of this.camposConfig()) {
-      if (!campo.visible || !campo.requerido) continue;
-      const meta = CAMPOS_CONFIGURABLES[campo.campo];
-      if (!meta) continue;
-      const value =
-        meta.tab === 'datos' ? this.datosForm.get(meta.control)?.value : this.direccionForm.get(meta.control)?.value;
-      if (blank(value)) {
-        faltantes.push({ tab: meta.tab, campo: meta.label });
-      }
-    }
-
-    if (blank(a.ubigeoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Distrito' });
-    if (blank(a.tipoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de Domicilio' });
-    // tipoVia y via son opcionales (opcion "Sin Via"); no se exigen para cerrar la preventa.
-    if (blank(a.direccion.value)) faltantes.push({ tab: 'direccion', campo: 'Direccion' });
-    if (blank(a.referencia.value)) faltantes.push({ tab: 'direccion', campo: 'Referencia' });
-    if (blank(a.piso.value)) faltantes.push({ tab: 'direccion', campo: 'Piso' });
-    if (blank(a.interior.value)) faltantes.push({ tab: 'direccion', campo: 'Interior' });
-
-    if (!this.ofertaForm.controls.idPlan.value) faltantes.push({ tab: 'oferta', campo: 'Plan' });
+    const faltantes = this.buildVentaCompletaChecklist().filter((item) => !item.completo);
 
     if (!faltantes.length) {
       return null;

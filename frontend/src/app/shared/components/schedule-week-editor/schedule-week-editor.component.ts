@@ -59,6 +59,8 @@ const DAY_LABELS: Record<string, string> = {
 export class ScheduleWeekEditorComponent implements OnChanges {
   @Input({ required: true }) horarioForm!: FormGroup;
   @Input() requiresLunch = true;
+  /** Cuando true, el almuerzo se decide POR DÍA (toggle "lleva almuerzo"); si false, es global. */
+  @Input() perDayLunch = false;
   @Input() lunchMinutes = 60;
   @Input() showDate = false;
   @Input() showCompensable = false;
@@ -80,7 +82,14 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   protected readonly bLi = signal('');
   protected readonly bLf = signal('');
   protected readonly bLab = signal(true);
+  /** El buffer actual (día o "todos") lleva almuerzo. Solo aplica cuando perDayLunch. */
+  protected readonly bLunch = signal(true);
   protected readonly error = signal<string | null>(null);
+
+  /** ¿Se muestran/escriben los campos de almuerzo para el buffer actual? */
+  protected lunchOn(): boolean {
+    return this.requiresLunch && (!this.perDayLunch || this.bLunch());
+  }
 
   private prevEntrada: string | null = null;
 
@@ -216,6 +225,7 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     this.bS.set(base?.s ?? '');
     this.bLi.set(this.requiresLunch ? base?.li ?? '' : '');
     this.bLf.set(this.requiresLunch ? base?.lf ?? '' : '');
+    this.bLunch.set(this.perDayLunch ? !!(base?.li && base?.lf) : true);
     this.prevEntrada = base?.e ?? null;
   }
 
@@ -233,7 +243,19 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     this.bLi.set(r.li);
     this.bLf.set(r.lf);
     this.bLab.set(r.laborable);
+    this.bLunch.set(this.perDayLunch ? !!(r.li && r.lf) : true);
     this.prevEntrada = r.e || null;
+  }
+
+  /** Toggle "lleva almuerzo" del buffer actual (día o todos). Al encender sin horas, pone un default. */
+  protected toggleLunch(checked: boolean): void {
+    this.error.set(null);
+    this.bLunch.set(checked);
+    if (checked && this.requiresLunch) {
+      if (!this.bLi()) this.bLi.set('13:00');
+      if (!this.bLf()) this.bLf.set(shift(this.bLi() || '13:00', this.lunchMinutes));
+    }
+    this.commitIfDay();
   }
 
   protected onEntrada(value: string): void {
@@ -301,15 +323,15 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     ctrl.patchValue({
       horaEntrada: this.bE(),
       horaSalida: this.bS(),
-      inicioAlmuerzo: this.requiresLunch ? this.bLi() : '',
-      finAlmuerzo: this.requiresLunch ? this.bLf() : ''
+      inicioAlmuerzo: this.lunchOn() ? this.bLi() : '',
+      finAlmuerzo: this.lunchOn() ? this.bLf() : ''
     });
     ctrl.markAsDirty();
   }
 
   protected applyToAll(): void {
-    if (!this.bE() || !this.bS() || (this.requiresLunch && (!this.bLi() || !this.bLf()))) {
-      this.error.set('Completa entrada, salida' + (this.requiresLunch ? ' y almuerzo' : '') + ' antes de aplicar.');
+    if (!this.bE() || !this.bS() || (this.lunchOn() && (!this.bLi() || !this.bLf()))) {
+      this.error.set('Completa entrada, salida' + (this.lunchOn() ? ' y almuerzo' : '') + ' antes de aplicar.');
       return;
     }
     this.error.set(null);
@@ -319,8 +341,8 @@ export class ScheduleWeekEditorComponent implements OnChanges {
       ctrl.patchValue({
         horaEntrada: this.bE(),
         horaSalida: this.bS(),
-        inicioAlmuerzo: this.requiresLunch ? this.bLi() : '',
-        finAlmuerzo: this.requiresLunch ? this.bLf() : ''
+        inicioAlmuerzo: this.lunchOn() ? this.bLi() : '',
+        finAlmuerzo: this.lunchOn() ? this.bLf() : ''
       });
       ctrl.markAsDirty();
     });

@@ -6,6 +6,7 @@ import { AttendanceService } from '../../../../core/services/attendance.service'
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { ScheduleAdjustmentService } from '../../../../core/services/schedule-adjustment.service';
 import { ReporteDiaResponse } from '../../../../shared/models/schedule/reporte-dia-response';
+import { ResumenMensualResponse } from '../../../../shared/models/schedule/resumen-mensual-response';
 import { ContratoResponse } from '../../../../shared/models/rrhh/contrato-response';
 import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
 import { CorregirHorarioRequest } from '../../../../shared/models/schedule/corregir-horario-request';
@@ -27,7 +28,25 @@ import { RegistrarExcepcionHorarioRequest } from '../../../../shared/models/sche
 import { RrhhAsistenciaService } from '../services/rrhh-asistencia.service';
 
 export type RrhhAsistenciaSection = 'cumplimiento' | 'hoy';
-export type DrawerTab = 'cumplimiento' | 'horario';
+export type DrawerTab = 'cumplimiento' | 'horario' | 'ajustes';
+
+/**
+ * Resumen mensual unificado del empleado en el drawer: del snapshot cerrado (con desglose de tardanzas)
+ * o derivado del detalle diario para el mes en vivo. `cerrado` distingue la fuente; el desglose de
+ * tardanzas (compensable/justificada) solo existe en el snapshot (null en vivo).
+ */
+export interface DrawerResumen {
+  laborables: number;
+  presente: number;
+  faltas: number;
+  tardanzas: number;
+  tardanzaCompensable: number | null;
+  tardanzaJustificada: number | null;
+  balance: number;
+  extra: number;
+  compensado: number;
+  cerrado: boolean;
+}
 /** Filtro activo por card de métrica; recorta la bandeja sin alterar los totales de las cards. */
 export type MetricFilter = 'all' | 'faltas' | 'tardanzas' | 'incidencias';
 
@@ -317,6 +336,8 @@ export class RrhhAsistenciaFacade {
   readonly drawerEmpleado = signal<EmpleadoRolResponse | null>(null);
   readonly drawerContrato = signal<ContratoResponse | null>(null);
   readonly drawerHorario = signal<HorarioResponse | null>(null);
+  readonly drawerHorarioHistorial = signal<HorarioResponse[]>([]);
+  readonly isLoadingHistorial = signal<boolean>(false);
   readonly drawerDetalleDias = signal<CumplimientoDetalleDiaResponse[]>([]);
   readonly isLoadingDrawer = signal<boolean>(false);
   // Mes propio del drawer (independiente del de la bandeja) + carga de su detalle.
@@ -340,6 +361,45 @@ export class RrhhAsistenciaFacade {
       balanceMin += dia.minutosBalance ?? 0;
     }
     return { faltas, tardanzas, balanceMin };
+  });
+
+  // Snapshot del mes cerrado (null = mes en vivo → se deriva del detalle).
+  readonly drawerResumenMensual = signal<ResumenMensualResponse | null>(null);
+
+  /** El mes del drawer ya cerró (es anterior al mes actual). */
+  readonly drawerMonthCerrado = computed(() => this.drawerSelectedMonth() < this.currentMonthValue());
+
+  /** Resumen mensual unificado: del snapshot cerrado si existe, si no derivado del detalle diario. */
+  readonly drawerResumen = computed<DrawerResumen>(() => {
+    const snap = this.drawerResumenMensual();
+    if (snap) {
+      return {
+        laborables: snap.diasLaborables ?? 0,
+        presente: snap.diasPresente ?? 0,
+        faltas: snap.diasFalta ?? 0,
+        tardanzas: snap.diasTardanza ?? 0,
+        tardanzaCompensable: snap.diasTardanzaCompensable ?? 0,
+        tardanzaJustificada: snap.diasTardanzaJustificada ?? 0,
+        balance: snap.balanceFinal ?? 0,
+        extra: snap.minutosExtra ?? 0,
+        compensado: snap.minutosCompensados ?? 0,
+        cerrado: true
+      };
+    }
+    const hoy = this.getToday();
+    let laborables = 0, presente = 0, faltas = 0, tardanzas = 0, balance = 0, extra = 0, compensado = 0;
+    for (const d of this.drawerDetalleDias()) {
+      if (d.laborable) {
+        laborables += 1;
+        if (d.horaEntradaAsistencia) presente += 1;
+        else if (d.fecha < hoy) faltas += 1; // hoy sin marcar aún no es falta
+      }
+      if (d.tardanza) tardanzas += 1;
+      balance += d.minutosBalance ?? 0;
+      extra += d.minutosExtra ?? 0;
+      compensado += d.minutosCompensados ?? 0;
+    }
+    return { laborables, presente, faltas, tardanzas, tardanzaCompensable: null, tardanzaJustificada: null, balance, extra, compensado, cerrado: false };
   });
   readonly drawerErrorMessage = signal<string>('');
   readonly drawerSuccessMessage = signal<string>('');
@@ -546,11 +606,53 @@ export class RrhhAsistenciaFacade {
           .pipe(timeout(REQUEST_TIMEOUT_MS))
       );
       this.drawerDetalleDias.set(detalle.empleados[0]?.dias ?? []);
+      await this.loadDrawerResumen();
     } catch (error) {
       this.drawerErrorMessage.set(this.extractErrorMessage(error, 'No fue posible cargar el detalle del mes.'));
     } finally {
       this.isLoadingDrawerDetalle.set(false);
     }
+  }
+
+  /**
+   * Carga el snapshot del mes CERRADO (con desglose de tardanzas); el mes en vivo se deriva del detalle,
+   * así que ahí no se llama al endpoint (que lanza para el mes en curso). Fallback silencioso a derivado.
+   */
+  private async loadDrawerResumen(): Promise<void> {
+    const empleado = this.drawerEmpleado();
+    if (!empleado || !this.drawerMonthCerrado()) {
+      this.drawerResumenMensual.set(null);
+      return;
+    }
+    const [anio, mes] = this.drawerSelectedMonth().split('-').map(Number);
+    try {
+      const snap = await firstValueFrom(
+        this.attendanceService.getResumenMensual(empleado.idEmpleado, anio, mes).pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      this.drawerResumenMensual.set(snap);
+    } catch {
+      this.drawerResumenMensual.set(null); // sin snapshot → se deriva del detalle
+    }
+  }
+
+  /** Historial de versiones de horario del empleado (para la tab Horario). Tolerante a fallos. */
+  private async loadHorarioHistorial(idEmpleado: number): Promise<void> {
+    this.isLoadingHistorial.set(true);
+    try {
+      const page = await firstValueFrom(
+        this.service.listarHistoricoHorarios(idEmpleado, 50).pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      this.drawerHorarioHistorial.set(page.content ?? []);
+    } catch {
+      this.drawerHorarioHistorial.set([]);
+    } finally {
+      this.isLoadingHistorial.set(false);
+    }
+  }
+
+  /** Precarga una versión del historial en el editor de horario (el guardado crea una nueva vigencia). */
+  loadHorarioIntoForm(horario: HorarioResponse): void {
+    this.populateScheduleForm(horario, this.drawerContrato()?.modalidad ?? 'FULL_TIME');
   }
 
   async openEmployeeDrawer(idEmpleado: number): Promise<void> {
@@ -565,6 +667,7 @@ export class RrhhAsistenciaFacade {
     this.drawerEmpleado.set(empleado);
     this.drawerContrato.set(null);
     this.drawerHorario.set(null);
+    this.drawerHorarioHistorial.set([]);
     this.drawerDetalleDias.set([]);
     this.collapseDayReport();
     this.drawerErrorMessage.set('');
@@ -584,6 +687,7 @@ export class RrhhAsistenciaFacade {
           .pipe(timeout(REQUEST_TIMEOUT_MS))
       );
       this.drawerDetalleDias.set(detalle.empleados[0]?.dias ?? []);
+      await this.loadDrawerResumen();
 
       if (empleado.estadoOperativo === 'ACTIVO') {
         const [contrato, horario] = await Promise.all([
@@ -593,6 +697,7 @@ export class RrhhAsistenciaFacade {
         this.drawerContrato.set(contrato);
         this.drawerHorario.set(horario);
         this.populateScheduleForm(horario, contrato.modalidad);
+        void this.loadHorarioHistorial(idEmpleado);
       }
     } catch (error) {
       this.drawerErrorMessage.set(this.extractErrorMessage(error, 'No fue posible cargar la informacion del empleado.'));
@@ -606,7 +711,9 @@ export class RrhhAsistenciaFacade {
     this.drawerEmpleado.set(null);
     this.drawerContrato.set(null);
     this.drawerHorario.set(null);
+    this.drawerHorarioHistorial.set([]);
     this.drawerDetalleDias.set([]);
+    this.drawerResumenMensual.set(null);
     this.collapseDayReport();
     this.isCorrectionDecisionVisible.set(false);
     this.adjustmentJornada.set(null);
@@ -1046,7 +1153,6 @@ export class RrhhAsistenciaFacade {
       this.applySimpleSchedule();
     }
     const raw = this.horarioForm.getRawValue();
-    const requiereAlmuerzo = this.requiresLunchBreak(modalidad);
 
     return {
       modalidad,
@@ -1056,8 +1162,9 @@ export class RrhhAsistenciaFacade {
         dia: detalle.dia,
         horaEntrada: detalle.horaEntrada,
         horaSalida: detalle.horaSalida,
-        inicioAlmuerzo: requiereAlmuerzo ? detalle.inicioAlmuerzo : null,
-        finAlmuerzo: requiereAlmuerzo ? detalle.finAlmuerzo : null,
+        // Almuerzo POR DÍA (desacoplado de la modalidad): lleva las horas solo si el día las tiene.
+        inicioAlmuerzo: detalle.inicioAlmuerzo || null,
+        finAlmuerzo: detalle.finAlmuerzo || null,
         laborable: detalle.laborable === 'true'
       }))
     };
@@ -1117,8 +1224,9 @@ export class RrhhAsistenciaFacade {
           dia,
           horaEntrada: d?.horaEntrada ?? '09:00',
           horaSalida: d?.horaSalida ?? '18:00',
-          inicioAlmuerzo: d?.inicioAlmuerzo ?? '13:00',
-          finAlmuerzo: d?.finAlmuerzo ?? '14:00',
+          // Vacío si el día no tiene almuerzo (nullable por día): así el toggle carga apagado.
+          inicioAlmuerzo: d?.inicioAlmuerzo ?? '',
+          finAlmuerzo: d?.finAlmuerzo ?? '',
           laborable: d?.laborable === false ? 'false' : 'true'
         };
       })

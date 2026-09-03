@@ -31,6 +31,8 @@ export interface LeadCommercialAdditionalSelection {
   cantidad: number;
 }
 
+type ParentescoOption = { label: string; value: string };
+
 @Component({
   selector: 'app-lead-commercial-data-tabs',
   standalone: true,
@@ -104,6 +106,13 @@ export class LeadCommercialDataTabsComponent {
   @Output() disminuirAdicional = new EventEmitter<AdicionalResponse>();
 
   protected readonly coordinatePasteMessage = signal<string | null>(null);
+  protected readonly parentescoOptions: ParentescoOption[] = [
+    { label: 'Madre', value: 'MADRE' },
+    { label: 'Padre', value: 'PADRE' },
+    { label: 'Hermano(a)', value: 'HERMANO_A' },
+    { label: 'Tio(a)', value: 'TIO_A' },
+    { label: 'Conocido', value: 'CONOCIDO' }
+  ];
 
   private readonly viaSelectOptionsCache = new WeakMap<readonly string[], { label: string; value: string }[]>();
 

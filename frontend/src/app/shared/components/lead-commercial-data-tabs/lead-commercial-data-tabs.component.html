@@ -15,128 +15,161 @@
     <p-tabpanels>
     <p-tabpanel value="datos">
       <form class="form-grid" [class.form-grid--readonly]="readonly" [formGroup]="datosForm">
-        <label class="data-field data-field--document-type">
-          <span>Documento</span>
-          <p-select
-            formControlName="tipoDocumento"
-            [options]="tipoDocumentoOptions"
-            placeholder="Seleccionar"
-            appendTo="body"
-            [disabled]="readonly"
-            (onChange)="tipoDocumentoChange.emit()"
-          />
-        </label>
-        <label class="data-field data-field--document-number">
-          <span>Numero de Documento</span>
-          <input
-            pInputText
-            type="text"
-            inputmode="numeric"
-            formControlName="numeroDocumentoTitularServicio"
-            [readonly]="readonly"
-            (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularServicio'), $any($event.target).value, documentoServicioMaxLength())"
-          />
-        </label>
-        <label class="data-field data-field--service-owner">
-          <span>Titular del Servicio</span>
-          <input
-            pInputText
-            type="text"
-            formControlName="nombreTitularServicio"
-            [readonly]="readonly"
-            (input)="setPersonNameValue(datosForm.get('nombreTitularServicio'), $any($event.target).value)"
-            (blur)="setPersonNameValue(datosForm.get('nombreTitularServicio'), $any($event.target).value, true)"
-          />
-        </label>
-        <label class="data-field data-field--phone">
-          <span>Celular a registrar</span>
-          <input
-            pInputText
-            type="text"
-            inputmode="numeric"
-            formControlName="celularRegistro"
-            [readonly]="readonly"
-            (input)="setNumericDigits(datosForm.get('celularRegistro'), $any($event.target).value, 9)"
-          />
-        </label>
-        <label class="data-field data-field--phone">
-          <span>Celular de referencia</span>
-          <input
-            pInputText
-            type="text"
-            inputmode="numeric"
-            formControlName="celularReferencia"
-            [readonly]="readonly"
-            (input)="setNumericDigits(datosForm.get('celularReferencia'), $any($event.target).value, 9)"
-          />
-        </label>
-        <label class="data-field data-field--email">
-          <span>Correo</span>
-          <input pInputText type="email" formControlName="correo" [readonly]="readonly" />
-        </label>
-        <label class="data-field data-field--ubigeo">
-          <span>
-            Ubigeo de Nacimiento
-            <i
-              class="pi pi-info-circle ubigeo-hint"
-              pTooltip="El numero de Ubigeo se encuentra en la parte posterior del DNI"
-              tooltipPosition="top"
-              aria-hidden="true"
-            ></i>
-          </span>
-          <input
-            pInputText
-            type="text"
-            inputmode="numeric"
-            formControlName="ubigeoNacimiento"
-            [readonly]="readonly"
-            (input)="setNumericDigits(datosForm.get('ubigeoNacimiento'), $any($event.target).value, 6)"
-          />
-        </label>
-        <label class="data-field data-field--family" [class.form-field--readonly]="campoSoloLectura('NOMBRE_MADRE')">
-          <span>Madre</span>
-          <input
-            pInputText
-            type="text"
-            formControlName="nombreMadre"
-            [readonly]="campoSoloLectura('NOMBRE_MADRE')"
-            (input)="setPersonNameValue(datosForm.get('nombreMadre'), $any($event.target).value)"
-            (blur)="setPersonNameValue(datosForm.get('nombreMadre'), $any($event.target).value, true)"
-          />
-        </label>
-        <label class="data-field data-field--family" [class.form-field--readonly]="campoSoloLectura('NOMBRE_PADRE')">
-          <span>Padre</span>
-          <input
-            pInputText
-            type="text"
-            formControlName="nombrePadre"
-            [readonly]="campoSoloLectura('NOMBRE_PADRE')"
-            (input)="setPersonNameValue(datosForm.get('nombrePadre'), $any($event.target).value)"
-            (blur)="setPersonNameValue(datosForm.get('nombrePadre'), $any($event.target).value, true)"
-          />
-        </label>
-        <label class="data-field data-field--cell-owner-document" [class.form-field--readonly]="campoSoloLectura('DOC_TITULAR_CELULAR')">
-          <span>Numero de Documento del Titular del Celular</span>
-          <input
-            pInputText
-            type="text"
-            inputmode="numeric"
-            formControlName="numeroDocumentoTitularCelularRegistro"
-            [readonly]="campoSoloLectura('DOC_TITULAR_CELULAR')"
-            (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularCelularRegistro'), $any($event.target).value, 8)"
-          />
-        </label>
-        <label class="data-field data-field--cell-owner-name" [class.form-field--readonly]="campoSoloLectura('NOMBRE_TITULAR_CELULAR')">
-          <span>Nombre del Titular del Celular</span>
-          <input
-            pInputText
-            type="text"
-            formControlName="nombreTitularCelularRegistro"
-            [readonly]="campoSoloLectura('NOMBRE_TITULAR_CELULAR')"
-            (input)="setPersonNameValue(datosForm.get('nombreTitularCelularRegistro'), $any($event.target).value)"
-            (blur)="setPersonNameValue(datosForm.get('nombreTitularCelularRegistro'), $any($event.target).value, true)"
-          />
-        </label>
+        <section class="data-section">
+          <h3>Identidad del titular</h3>
+          <div class="data-section__grid">
+            <label class="data-field data-field--document-type">
+              <span>Documento</span>
+              <p-select
+                formControlName="tipoDocumento"
+                [options]="tipoDocumentoOptions"
+                placeholder="Seleccionar"
+                appendTo="body"
+                [disabled]="readonly"
+                (onChange)="tipoDocumentoChange.emit()"
+              />
+            </label>
+            <label class="data-field data-field--document-number">
+              <span>Numero de Documento</span>
+              <input
+                pInputText
+                type="text"
+                inputmode="numeric"
+                formControlName="numeroDocumentoTitularServicio"
+                [readonly]="readonly"
+                (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularServicio'), $any($event.target).value, documentoServicioMaxLength())"
+              />
+            </label>
+            <label class="data-field data-field--service-owner">
+              <span>Titular del Servicio</span>
+              <input
+                pInputText
+                type="text"
+                formControlName="nombreTitularServicio"
+                [readonly]="readonly"
+                (input)="setPersonNameValue(datosForm.get('nombreTitularServicio'), $any($event.target).value)"
+                (blur)="setPersonNameValue(datosForm.get('nombreTitularServicio'), $any($event.target).value, true)"
+              />
+            </label>
+            <label class="data-field data-field--birth-date">
+              <span>Fecha de nacimiento</span>
+              <input pInputText type="date" formControlName="fechaNacimiento" [readonly]="readonly" />
+            </label>
+            <label class="data-field data-field--relationship">
+              <span>Parentesco</span>
+              <p-select
+                formControlName="parentesco"
+                [options]="parentescoOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar"
+                appendTo="body"
+                [disabled]="readonly"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section class="data-section">
+          <h3>Contacto</h3>
+          <div class="data-section__grid">
+            <label class="data-field data-field--phone">
+              <span>Celular a registrar</span>
+              <input
+                pInputText
+                type="text"
+                inputmode="numeric"
+                formControlName="celularRegistro"
+                [readonly]="readonly"
+                (input)="setNumericDigits(datosForm.get('celularRegistro'), $any($event.target).value, 9)"
+              />
+            </label>
+            <label class="data-field data-field--phone">
+              <span>Celular de referencia</span>
+              <input
+                pInputText
+                type="text"
+                inputmode="numeric"
+                formControlName="celularReferencia"
+                [readonly]="readonly"
+                (input)="setNumericDigits(datosForm.get('celularReferencia'), $any($event.target).value, 9)"
+              />
+            </label>
+            <label class="data-field data-field--email">
+              <span>Correo</span>
+              <input pInputText type="email" formControlName="correo" [readonly]="readonly" />
+            </label>
+          </div>
+        </section>
+
+        <section class="data-section">
+          <h3>Datos segun proveedor</h3>
+          <div class="data-section__grid">
+            <label class="data-field data-field--ubigeo">
+              <span>
+                Ubigeo nacimiento
+                <i
+                  class="pi pi-info-circle ubigeo-hint"
+                  pTooltip="El numero de Ubigeo se encuentra en la parte posterior del DNI"
+                  tooltipPosition="top"
+                  aria-hidden="true"
+                ></i>
+              </span>
+              <input
+                pInputText
+                type="text"
+                inputmode="numeric"
+                formControlName="ubigeoNacimiento"
+                [readonly]="readonly"
+                (input)="setNumericDigits(datosForm.get('ubigeoNacimiento'), $any($event.target).value, 6)"
+              />
+            </label>
+            <label class="data-field data-field--family" [class.form-field--readonly]="campoSoloLectura('NOMBRE_MADRE')">
+              <span>Madre</span>
+              <input
+                pInputText
+                type="text"
+                formControlName="nombreMadre"
+                [readonly]="campoSoloLectura('NOMBRE_MADRE')"
+                (input)="setPersonNameValue(datosForm.get('nombreMadre'), $any($event.target).value)"
+                (blur)="setPersonNameValue(datosForm.get('nombreMadre'), $any($event.target).value, true)"
+              />
+            </label>
+            <label class="data-field data-field--family" [class.form-field--readonly]="campoSoloLectura('NOMBRE_PADRE')">
+              <span>Padre</span>
+              <input
+                pInputText
+                type="text"
+                formControlName="nombrePadre"
+                [readonly]="campoSoloLectura('NOMBRE_PADRE')"
+                (input)="setPersonNameValue(datosForm.get('nombrePadre'), $any($event.target).value)"
+                (blur)="setPersonNameValue(datosForm.get('nombrePadre'), $any($event.target).value, true)"
+              />
+            </label>
+            <label class="data-field data-field--cell-owner-document" [class.form-field--readonly]="campoSoloLectura('DOC_TITULAR_CELULAR')">
+              <span>Numero de Documento del Titular del Celular</span>
+              <input
+                pInputText
+                type="text"
+                inputmode="numeric"
+                formControlName="numeroDocumentoTitularCelularRegistro"
+                [readonly]="campoSoloLectura('DOC_TITULAR_CELULAR')"
+                (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularCelularRegistro'), $any($event.target).value, 8)"
+              />
+            </label>
+            <label class="data-field data-field--cell-owner-name" [class.form-field--readonly]="campoSoloLectura('NOMBRE_TITULAR_CELULAR')">
+              <span>Nombre del Titular del Celular</span>
+              <input
+                pInputText
+                type="text"
+                formControlName="nombreTitularCelularRegistro"
+                [readonly]="campoSoloLectura('NOMBRE_TITULAR_CELULAR')"
+                (input)="setPersonNameValue(datosForm.get('nombreTitularCelularRegistro'), $any($event.target).value)"
+                (blur)="setPersonNameValue(datosForm.get('nombreTitularCelularRegistro'), $any($event.target).value, true)"
+              />
+            </label>
+          </div>
+        </section>
       </form>
     </p-tabpanel>
 
@@ -328,16 +361,14 @@
                 styleClass="scope-select offer-provider-select"
                 [disabled]="offerLocked || readonly"
                 (onChange)="ofertaProviderChange.emit($any($event.value))"
-              >
-                <ng-template #item let-proveedor>
-                  <p-tag
-                    [severity]="selectedProviderId === proveedor.id ? 'info' : 'secondary'"
-                    [value]="proveedor.nombre"
-                    icon="pi pi-building"
-                    [rounded]="true"
-                  />
-                </ng-template>
-              </p-selectbutton>
+            >
+              <ng-template #item let-proveedor>
+                <span class="provider-option" [class.provider-option--active]="selectedProviderId === proveedor.id">
+                  <i class="pi pi-building" aria-hidden="true"></i>
+                  <span>{{ proveedor.nombre }}</span>
+                </span>
+              </ng-template>
+            </p-selectbutton>
             } @else {
               <p class="helper">No hay proveedores con planes vigentes.</p>
             }

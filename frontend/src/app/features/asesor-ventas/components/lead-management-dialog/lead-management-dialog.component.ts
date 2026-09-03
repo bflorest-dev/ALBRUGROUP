@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
-import { DialogModule } from 'primeng/dialog';
+import { DrawerModule } from 'primeng/drawer';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
@@ -19,7 +19,7 @@ import { AsesorVentasWorkspaceFacade } from '../../facades/asesor-ventas-workspa
     ReactiveFormsModule,
     ButtonModule,
     DatePickerModule,
-    DialogModule,
+    DrawerModule,
     InputTextModule,
     MessageModule,
     SelectModule,
@@ -35,4 +35,20 @@ import { AsesorVentasWorkspaceFacade } from '../../facades/asesor-ventas-workspa
 })
 export class LeadManagementDialogComponent {
   protected readonly facade = inject(AsesorVentasWorkspaceFacade);
+
+  protected completionSegments(): boolean[] {
+    return this.facade.preventaCompletaChecklist().map((item) => item.completo);
+  }
+
+  protected completionCount(): number {
+    return this.facade.preventaCompletaChecklist().filter((item) => item.completo).length;
+  }
+
+  protected completionTotal(): number {
+    return this.facade.preventaCompletaChecklist().length;
+  }
+
+  protected pendingCompletionLabels(): string[] {
+    return this.facade.preventaCompletaChecklist().filter((item) => !item.completo).map((item) => item.campo);
+  }
 }

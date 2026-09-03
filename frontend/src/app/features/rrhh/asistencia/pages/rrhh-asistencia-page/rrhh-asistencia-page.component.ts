@@ -25,6 +25,7 @@ import { ScheduleExtensionTimelineComponent } from '../../../../../shared/compon
 import { ScheduleShiftEditorComponent } from '../../../../../shared/components/schedule-shift-editor/schedule-shift-editor.component';
 import { SessionService } from '../../../../../core/services/session.service';
 import { AjusteJornadaRequest, RegistrarAjusteV2Request } from '../../../../../shared/models/schedule/jornada-efectiva-response';
+import { HorarioResponse } from '../../../../../shared/models/schedule/horario-response';
 import {
   CumplimientoRow,
   DrawerTab,
@@ -36,6 +37,17 @@ import {
 interface SelectChoice {
   label: string;
   value: string;
+}
+
+/** VM de una versión del historial de horarios (precomputado para no crear refs en el template). */
+interface HistorialVm {
+  id: number;
+  horario: HorarioResponse;
+  kind: 'actual' | 'futuro' | 'anterior';
+  label: string;
+  rango: string;
+  vigencia: string;
+  descanso: string;
 }
 
 /** Operación de ajuste del día seleccionada para el editor inline. */
@@ -250,6 +262,45 @@ export class RrhhAsistenciaPageComponent implements OnInit {
     return `${parts[2]}/${parts[1]}`;
   }
 
+  protected formatDateFull(value: string | null): string {
+    if (!value) return '—';
+    const parts = value.split('-');
+    if (parts.length !== 3) return value;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  /** Versiones del historial de horario clasificadas (actual/futuro/anterior) para la tab Horario. */
+  protected readonly historialVm = computed<HistorialVm[]>(() => {
+    const hoy = this.todayValue();
+    return this.facade.drawerHorarioHistorial().map((h) => {
+      const first = h.detalles.find((d) => d.laborable);
+      const rango = first
+        ? `${this.formatTime(first.horaEntrada)} – ${this.formatTime(first.horaSalida)}`
+          + (first.inicioAlmuerzo
+            ? ` · almuerzo ${this.formatTime(first.inicioAlmuerzo)}–${this.formatTime(first.finAlmuerzo)}`
+            : ' · sin almuerzo')
+        : 'Sin días laborables';
+      const descansoDia = h.detalles.find((d) => !d.laborable)?.dia ?? '';
+      const descanso = descansoDia ? descansoDia.charAt(0) + descansoDia.slice(1).toLowerCase() : '—';
+
+      let kind: HistorialVm['kind'];
+      if (h.fechaInicio > hoy) kind = 'futuro';
+      else if (!h.fechaFin || h.fechaFin >= hoy) kind = 'actual';
+      else kind = 'anterior';
+      const label = kind === 'actual' ? 'Actual' : kind === 'futuro' ? 'Futuro' : 'Anterior';
+
+      const vigencia = h.fechaFin
+        ? `${this.formatDateFull(h.fechaInicio)} – ${this.formatDateFull(h.fechaFin)}`
+        : `Desde ${this.formatDateFull(h.fechaInicio)}`;
+
+      return { id: h.id, horario: h, kind, label, rango, vigencia, descanso };
+    });
+  });
+
+  protected onSelectHistorial(h: HorarioResponse): void {
+    this.facade.loadHorarioIntoForm(h);
+  }
+
   protected formatTime(value: string | null): string {
     return value ? value.slice(0, 5) : '—';
   }
@@ -273,6 +324,16 @@ export class RrhhAsistenciaPageComponent implements OnInit {
       TRAMO_ADICIONAL: 'Tramo adicional'
     };
     return labels[origen] ?? 'Tramo de trabajo';
+  }
+
+  /** Duración simple para el resumen mensual: "0" · "45 min" · "2 h" · "1 h 30 min". */
+  protected durMin(minutes: number): string {
+    if (!minutes) return '0';
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h === 0) return `${m} min`;
+    if (m === 0) return `${h} h`;
+    return `${h} h ${m} min`;
   }
 
   protected workedTimeLabel(minutes: number): string {

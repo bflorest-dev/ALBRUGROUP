@@ -25,6 +25,7 @@ import pe.albrugroup.lead_service.entity.enums.CampoConfigurable;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.Parentesco;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoNumeroLlamada;
@@ -703,6 +704,60 @@ class LeadServiceRetroactiveIntakeTest {
     }
 
     @Test
+    void tipificarPreventaCompletaRechazaLeadSinFechaNacimiento() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.getDatosPreventa().setFechaNacimiento(null);
+        LeadTipificacionRequest request = cierrePreventaRequest();
+        Tipificacion tipificacion = tipificacionPreventaCompleta();
+        Subtipificacion subtipificacion = subtipificacionCierrePreventa(tipificacion);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
+        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+                Etapa.PREVENTA,
+                10L,
+                "PREVENTA_COMPLETA"
+        )).thenReturn(Optional.of(tipificacion));
+        when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
+                80L,
+                "VENTA_CERRADA"
+        )).thenReturn(Optional.of(subtipificacion));
+
+        assertThatThrownBy(() -> leadService.tipificarLead(25202L, request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Falta fechaNacimiento");
+
+        verify(leadRepository, never()).save(any());
+    }
+
+    @Test
+    void tipificarPreventaCompletaRechazaLeadSinParentesco() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.getDatosPreventa().setParentesco(null);
+        LeadTipificacionRequest request = cierrePreventaRequest();
+        Tipificacion tipificacion = tipificacionPreventaCompleta();
+        Subtipificacion subtipificacion = subtipificacionCierrePreventa(tipificacion);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
+        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+                Etapa.PREVENTA,
+                10L,
+                "PREVENTA_COMPLETA"
+        )).thenReturn(Optional.of(tipificacion));
+        when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
+                80L,
+                "VENTA_CERRADA"
+        )).thenReturn(Optional.of(subtipificacion));
+
+        assertThatThrownBy(() -> leadService.tipificarLead(25202L, request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Falta parentesco");
+
+        verify(leadRepository, never()).save(any());
+    }
+
+    @Test
     void tipificarPreventaCompletaAceptaLeadConNumero() {
         Lead lead = leadCompletoParaCierrePreventa();
         LeadTipificacionRequest request = cierrePreventaRequest();
@@ -796,6 +851,8 @@ class LeadServiceRetroactiveIntakeTest {
                         .nombreTitularServicio("Juan Perez")
                         .celularRegistro("987654321")
                         .correo("cliente@correo.com")
+                        .fechaNacimiento(LocalDate.of(1990, 5, 12))
+                        .parentesco(Parentesco.CONOCIDO)
                         .build())
                 .direccion(Direccion.builder()
                         .ubigeoDomicilio("150101")

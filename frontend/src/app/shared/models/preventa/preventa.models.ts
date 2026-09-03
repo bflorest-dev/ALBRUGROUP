@@ -373,6 +373,8 @@ export type CampoCaptura =
   | 'NOMBRE_TITULAR_CELULAR'
   | 'PLANO';
 
+export type ParentescoPreventa = 'MADRE' | 'PADRE' | 'HERMANO_A' | 'TIO_A' | 'CONOCIDO';
+
 export interface CampoConfigItem {
   campo: CampoCaptura;
   tab: 'DATOS' | 'DIRECCION';
@@ -400,6 +402,8 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   celularReferencia?: string | null;
   nombreMadre?: string | null;
   nombrePadre?: string | null;
+  fechaNacimiento?: string | null;
+  parentesco?: ParentescoPreventa | string | null;
   numeroDocumentoTitularCelularRegistro?: string | null;
   nombreTitularCelularRegistro?: string | null;
   ubigeoNacimiento?: string | null;
@@ -640,6 +644,8 @@ export interface LeadDatosPreventaRequest {
   celularRegistro?: string | null;
   celularReferencia?: string | null;
   correo?: string | null;
+  fechaNacimiento?: string | null;
+  parentesco?: ParentescoPreventa | string | null;
   nombreMadre?: string | null;
   nombrePadre?: string | null;
   numeroDocumentoTitularCelularRegistro?: string | null;

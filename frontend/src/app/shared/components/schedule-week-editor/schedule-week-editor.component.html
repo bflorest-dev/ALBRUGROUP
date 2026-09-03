@@ -33,10 +33,19 @@
 
     @if (requiresLunch) {
       <div class="editor-bar__field editor-bar__field--lunch">
-        <span>Almuerzo</span>
-        <input type="time" [value]="bLi()" (input)="onLunchStart($any($event.target).value)" />
-        <em>–</em>
-        <input type="time" [value]="bLf()" (input)="onLunchEnd($any($event.target).value)" />
+        @if (perDayLunch) {
+          <label class="editor-bar__lunch-check">
+            <input type="checkbox" [checked]="bLunch()" (change)="toggleLunch($any($event.target).checked)" />
+            <span>Almuerzo</span>
+          </label>
+        } @else {
+          <span>Almuerzo</span>
+        }
+        @if (lunchOn()) {
+          <input type="time" [value]="bLi()" (input)="onLunchStart($any($event.target).value)" />
+          <em>–</em>
+          <input type="time" [value]="bLf()" (input)="onLunchEnd($any($event.target).value)" />
+        }
       </div>
     }
 

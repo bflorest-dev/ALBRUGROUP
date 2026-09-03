@@ -4743,6 +4743,8 @@ public class LeadService {
                 datosPreventa == null ? null : datosPreventa.getCelularRegistro(),
                 datosPreventa == null ? null : datosPreventa.getCelularReferencia(),
                 datosPreventa == null ? null : datosPreventa.getCorreo(),
+                datosPreventa == null ? null : datosPreventa.getFechaNacimiento(),
+                datosPreventa == null ? null : datosPreventa.getParentesco(),
                 datosPreventa == null ? null : datosPreventa.getNombreMadre(),
                 datosPreventa == null ? null : datosPreventa.getNombrePadre(),
                 datosPreventa == null ? null : datosPreventa.getNumeroDocumentoTitularCelularRegistro(),
@@ -5312,6 +5314,12 @@ public class LeadService {
         validarTextoObligatorio(datosPreventa.getNombreTitularServicio(), "Falta nombreTitularServicio");
         validarTextoObligatorio(datosPreventa.getCelularRegistro(), "Falta celularRegistro");
         validarTextoObligatorio(datosPreventa.getCorreo(), "Falta correo");
+        if (datosPreventa.getFechaNacimiento() == null) {
+            throw new BadRequestException("Falta fechaNacimiento");
+        }
+        if (datosPreventa.getParentesco() == null) {
+            throw new BadRequestException("Falta parentesco");
+        }
         validarCamposConfigurablesObligatorios(lead, datosPreventa, direccion);
 
         validarTextoObligatorio(direccion.getUbigeoDomicilio(), "Falta ubigeoDomicilio");

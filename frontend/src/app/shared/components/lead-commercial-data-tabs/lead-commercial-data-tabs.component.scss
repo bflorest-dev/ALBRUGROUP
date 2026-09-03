@@ -36,9 +36,39 @@
   grid-column: 1 / -1;
 }
 
+.data-section {
+  border-bottom: 1px solid #dce6ee;
+  display: grid;
+  gap: 0.9rem;
+  grid-column: 1 / -1;
+  padding: 0.9rem 0 1rem;
+}
+
+.data-section:first-child {
+  padding-top: 0.35rem;
+}
+
+.data-section:last-child {
+  border-bottom: 0;
+}
+
+.data-section h3 {
+  color: #123050;
+  font-size: 0.98rem;
+  font-weight: 850;
+  margin: 0;
+}
+
+.data-section__grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
 .data-field,
 .address-field {
   grid-column: span 4;
+  min-width: 0;
 }
 
 .data-field--document-type {
@@ -60,6 +90,11 @@
 
 .data-field--email {
   grid-column: span 6;
+}
+
+.data-field--birth-date,
+.data-field--relationship {
+  grid-column: span 3;
 }
 
 .data-field--family {
@@ -167,6 +202,16 @@ label {
   padding-top: 0.95rem;
 }
 
+.commercial-tabs--drawer .data-section {
+  background: transparent;
+  gap: 0.85rem;
+  padding-block: 0.9rem 1rem;
+}
+
+.commercial-tabs--drawer .data-section__grid {
+  gap: 0.75rem;
+}
+
 .commercial-tabs--drawer label {
   color: #52637a;
   font-size: 0.73rem;
@@ -181,7 +226,9 @@ label {
     border-radius: 0.5rem;
     color: #26374d;
     font-weight: 800;
+    min-width: 0;
     min-height: 2.65rem;
+    width: 100%;
   }
 
   .p-inputtext:enabled:focus,
@@ -281,6 +328,63 @@ label {
 .offer-additionals__list {
   display: grid;
   gap: 0.6rem;
+}
+
+.offer-provider label {
+  width: 100%;
+}
+
+.provider-option {
+  align-items: center;
+  color: #50647c;
+  display: flex;
+  gap: 0.45rem;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.provider-option i,
+.provider-option span {
+  min-width: 0;
+}
+
+.provider-option span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.provider-option--active {
+  color: #0f6b57;
+}
+
+:host ::ng-deep .offer-provider .p-selectbutton {
+  display: flex;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+:host ::ng-deep .offer-provider-select.p-togglebutton {
+  border: 1px solid #cbd8e6;
+  border-radius: 8px;
+  flex: 1 1 0 !important;
+  min-height: 2.75rem;
+  min-width: 0 !important;
+  width: auto !important;
+}
+
+:host ::ng-deep .offer-provider-select.p-togglebutton .p-togglebutton-content {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+}
+
+:host ::ng-deep .offer-provider-select.p-togglebutton.p-togglebutton-checked {
+  background: #e9f8f1;
+  border-color: #16b979;
 }
 
 .offer-additionals {
@@ -408,6 +512,8 @@ label {
   .form-grid .p-select,
   .form-grid .p-selectbutton,
   .form-grid .p-inputtext,
+  .data-section__grid .p-inputtext,
+  .data-section__grid .p-select,
   .address-detail-grid .p-inputtext {
     width: 100%;
   }
@@ -420,12 +526,48 @@ label {
     background: transparent;
     border: 0;
     flex: 1;
+    min-width: 0;
     padding: 0;
   }
 
   .scope-select .p-togglebutton-content {
     background: transparent;
     padding: 0;
+    width: 100%;
+  }
+
+  .offer-provider .p-selectbutton {
+    display: flex;
+    gap: 0.45rem;
+    width: 100%;
+  }
+
+  .offer-provider .p-selectbutton .p-togglebutton,
+  .offer-provider-select {
+    border: 1px solid #cbd8e6;
+    border-radius: 8px;
+    flex: 1 1 0 !important;
+    min-height: 2.75rem;
+    min-width: 0 !important;
+    width: auto !important;
+  }
+
+  .offer-provider .p-selectbutton .p-togglebutton-checked {
+    background: #e9f8f1;
+    border-color: #16b979;
+  }
+
+  .offer-provider .p-selectbutton .p-togglebutton-content {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .offer-provider .p-tag {
+    justify-content: center;
+    min-width: 0;
     width: 100%;
   }
 
@@ -452,6 +594,21 @@ label {
     padding: 0.65rem 0.85rem;
     white-space: nowrap;
   }
+
+  .commercial-tabs--drawer .data-field--document-type {
+    grid-column: span 3;
+  }
+
+  .commercial-tabs--drawer .data-field--document-number,
+  .commercial-tabs--drawer .data-field--birth-date,
+  .commercial-tabs--drawer .data-field--relationship {
+    grid-column: span 3;
+  }
+
+  .commercial-tabs--drawer .data-field--service-owner,
+  .commercial-tabs--drawer .data-field--email {
+    grid-column: span 6;
+  }
 }
 
 @media (min-width: 901px) and (max-height: 800px) {
@@ -472,6 +629,11 @@ label {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
+  .data-section__grid,
+  .commercial-tabs--drawer .data-section__grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
   .data-field,
   .address-field,
   .data-field--document-type,
@@ -486,6 +648,8 @@ label {
 
   .data-field--service-owner,
   .data-field--email,
+  .data-field--birth-date,
+  .data-field--relationship,
   .data-field--family,
   .data-field--cell-owner-document,
   .address-field--street-name {
@@ -532,6 +696,15 @@ label {
     grid-template-columns: 1fr;
   }
 
+  .data-section {
+    padding: 0.7rem;
+  }
+
+  .data-section__grid,
+  .commercial-tabs--drawer .data-section__grid {
+    grid-template-columns: 1fr;
+  }
+
   .data-field,
   .address-field,
   .data-field--document-type,
@@ -540,6 +713,8 @@ label {
   .data-field--ubigeo,
   .data-field--service-owner,
   .data-field--email,
+  .data-field--birth-date,
+  .data-field--relationship,
   .data-field--family,
   .data-field--cell-owner-document,
   .data-field--cell-owner-name,

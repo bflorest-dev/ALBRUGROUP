@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
-import { DialogModule } from 'primeng/dialog';
+import { DrawerModule } from 'primeng/drawer';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -17,7 +17,7 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
     ReactiveFormsModule,
     ButtonModule,
     DatePickerModule,
-    DialogModule,
+    DrawerModule,
     MessageModule,
     SelectModule,
     SkeletonModule,
@@ -31,4 +31,20 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 })
 export class GtrTipificationDialogComponent {
   protected readonly facade = inject(GtrWorkspaceFacade);
+
+  protected completionSegments(): boolean[] {
+    return this.facade.preventaCompletaChecklist().map((item) => item.completo);
+  }
+
+  protected completionCount(): number {
+    return this.facade.preventaCompletaChecklist().filter((item) => item.completo).length;
+  }
+
+  protected completionTotal(): number {
+    return this.facade.preventaCompletaChecklist().length;
+  }
+
+  protected pendingCompletionLabels(): string[] {
+    return this.facade.preventaCompletaChecklist().filter((item) => !item.completo).map((item) => item.campo);
+  }
 }

@@ -10,16 +10,14 @@
 } @else if (reporte()) {
   <div class="dr">
 
-    @if (sinSalida()) {
-      <div class="dr-warn">
-        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-        <span>Jornada sin cierre: no se marcó salida (última actividad {{ ultimaActividad() }}). No cuenta como falta ni penaliza el balance, pero el empleado debe marcar su salida.</span>
-      </div>
-    }
-
     <!-- ── Línea de tiempo (3 carriles, eje compartido) ── -->
     <div class="dr-card">
-      <h5>Línea de tiempo del día</h5>
+      <h5 class="dr-th">
+        <span>Línea de tiempo del día</span>
+        @if (sinSalida()) {
+          <i class="pi pi-exclamation-triangle dr-warn-ic" [pTooltip]="sinSalidaMsg()" tooltipPosition="top" aria-hidden="true"></i>
+        }
+      </h5>
       <div class="tll">
         <div class="tll__ticks">
           @for (t of axisTicks(); track t.leftPct) {

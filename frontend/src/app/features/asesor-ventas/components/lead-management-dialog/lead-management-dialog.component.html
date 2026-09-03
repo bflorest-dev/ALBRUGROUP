@@ -1,14 +1,13 @@
-﻿<p-dialog
-  [showHeader]="false"
+﻿<p-drawer
   [visible]="facade.detailDialogOpen()"
   (visibleChange)="!$event && facade.requestCloseDetail()"
+  position="right"
   [modal]="true"
-  [draggable]="false"
-  [closable]="false"
   [closeOnEscape]="false"
-  [dismissableMask]="false"
-  [breakpoints]="{ '1200px': '92vw', '720px': '96vw' }"
-  styleClass="asesor-dialog"
+  [dismissible]="false"
+  [blockScroll]="true"
+  [showCloseIcon]="false"
+  styleClass="asesor-management-drawer"
 >
   @if (facade.detail(); as lead) {
     <section class="lead-workspace">
@@ -87,7 +86,7 @@
             size="small"
             aria-label="Minimizar"
             [disabled]="facade.isSaving()"
-            title="Guarda lo ingresado y deja este Lead para despuÃ©s. Vuelve a tu bandeja como 'Retomar' y puedes gestionar otros mientras tanto."
+            title="Guarda lo ingresado y deja este Lead para después. Vuelve a tu bandeja como 'Retomar' y puedes gestionar otros mientras tanto."
             (click)="facade.minimizeDetail()"
           ></button>
         </div>
@@ -96,13 +95,13 @@
       @if (facade.wrapUpActive()) {
         <p-message
           severity="warn"
-          text="Tu turno terminÃ³. Tipifica este lead y luego continÃºa con los demÃ¡s de tu bandeja."
+          text="Tu turno terminó. Tipifica este lead y luego continúa con los demás de tu bandeja."
         />
       }
       @if (facade.atencionOtraEtapa()) {
         <p-message
           severity="info"
-          text="Este contacto ya tiene un trÃ¡mite en curso en otra etapa. Sus datos son de solo lectura: comunÃ­cate con el contacto y, si quiere un nuevo servicio, crea una nueva oportunidad. Tipificar este lead es opcional y no afecta su trÃ¡mite."
+          text="Este contacto ya tiene un trámite en curso en otra etapa. Sus datos son de solo lectura: comunícate con el contacto y, si quiere un nuevo servicio, crea una nueva oportunidad. Tipificar este lead es opcional y no afecta su trámite."
         />
       }
       @if (facade.successMessage()) {
@@ -115,7 +114,7 @@
         <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
       }
 
-      <form class="tipification-bar" [formGroup]="facade.tipificacionForm" (ngSubmit)="facade.tipificar()">
+      <form id="asesor-tipification-form" class="tipification-bar" [formGroup]="facade.tipificacionForm" (ngSubmit)="facade.tipificar()">
         <div class="contact-actions">
           <app-phone-action-button
             [idLead]="lead.id"
@@ -195,24 +194,26 @@
           </label>
         }
 
-        <button
-          pButton
-          type="button"
-          class="tipification-bar__comment-toggle"
-          icon="pi pi-comment"
-          [label]="facade.showComment() ? 'Ocultar' : 'Comentario'"
-          severity="secondary"
-          (click)="facade.toggleComment()"
-        ></button>
-        <button
-          pButton
-          type="submit"
-          class="tipification-bar__submit"
-          icon="pi pi-check"
-          label="Tipificar"
-          [disabled]="!facade.canMutateOperationalData()"
-          [loading]="facade.isSaving()"
-        ></button>
+        <div class="tipification-actions">
+          <button
+            pButton
+            type="button"
+            class="tipification-bar__comment-toggle"
+            icon="pi pi-comment"
+            [label]="facade.showComment() ? 'Ocultar' : 'Comentario'"
+            severity="secondary"
+            (click)="facade.toggleComment()"
+          ></button>
+          <button
+            pButton
+            type="submit"
+            class="tipification-bar__submit"
+            icon="pi pi-check"
+            label="Tipificar"
+            [disabled]="!facade.canMutateOperationalData()"
+            [loading]="facade.isSaving()"
+          ></button>
+        </div>
 
         @if (facade.showComment()) {
           <label class="comment-field">
@@ -222,8 +223,28 @@
         }
       </form>
 
+      <section class="completion-strip">
+        <div class="completion-strip__score">
+          <span>Preventa completa</span>
+          <strong>{{ completionCount() }}/{{ completionTotal() }}</strong>
+        </div>
+        <div class="completion-strip__segments" aria-hidden="true">
+          @for (segment of completionSegments(); track $index) {
+            <span [class.completion-strip__segment--done]="segment"></span>
+          }
+        </div>
+        @if (pendingCompletionLabels().length) {
+          <div class="completion-strip__pending">
+            <span>Campos pendientes:</span>
+            @for (label of pendingCompletionLabels(); track $index) {
+              <strong>{{ label }}</strong>
+            }
+          </div>
+        }
+      </section>
 
       <app-lead-commercial-data-tabs
+        layoutMode="drawer"
         [datosForm]="facade.datosForm"
         [direccionForm]="facade.direccionForm"
         [ofertaForm]="facade.ofertaForm"
@@ -252,43 +273,32 @@
         (planChange)="facade.onPlanChanged()"
         (incrementarAdicional)="facade.incrementarAdicional($event)"
         (disminuirAdicional)="facade.disminuirAdicional($event)"
-      >
-        <section class="oportunidades-contacto" lead-commercial-tabs-actions>
+      />
+      <footer class="dialog-actions">
+        <div class="oportunidades-contacto">
           <div class="oportunidades-contacto__chips">
             @if (facade.chipsOportunidades().length > 1) {
               @for (op of facade.chipsOportunidades(); track op.id) {
-                <span
+                <button
+                  type="button"
                   class="op-chip"
                   [class.op-chip--active]="op.id === facade.detail()?.id"
+                  [disabled]="facade.isSaving()"
                   (click)="facade.cambiarOportunidad(op.id)"
                 >
                   <span class="op-chip__doc">Doc: {{ op.numeroDocumentoTitular || 'Sin Documento' }}</span>
                   @if (facade.puedeDescartar(op)) {
-                    <button
-                      type="button"
+                    <span
                       class="op-chip__close"
                       title="Descartar oportunidad vacia"
-                      [disabled]="facade.isSaving()"
                       (click)="facade.descartarOportunidad(op.id, $event)"
-                    >x</button>
+                    >x</span>
                   }
-                </span>
+                </button>
               }
             }
           </div>
-          <button
-            pButton
-            type="button"
-            icon="pi pi-plus"
-            label="Nueva oportunidad (otro titular)"
-            severity="secondary"
-            size="small"
-            [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
-            (click)="facade.crearOportunidadAdicional()"
-          ></button>
-        </section>
-      </app-lead-commercial-data-tabs>
-      <footer class="dialog-actions">
+        </div>
         <button
           pButton
           type="button"
@@ -299,6 +309,16 @@
           title="Restaurar el tab al ultimo estado guardado"
           (click)="facade.limpiarTabActiva()"
         ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-plus"
+          label="Nueva oportunidad"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+          (click)="facade.crearOportunidadAdicional()"
+        ></button>
       </footer>
     </section>
   } @else {
@@ -307,4 +327,4 @@
       <p-skeleton width="100%" height="16rem" />
     </div>
   }
-</p-dialog>
+</p-drawer>

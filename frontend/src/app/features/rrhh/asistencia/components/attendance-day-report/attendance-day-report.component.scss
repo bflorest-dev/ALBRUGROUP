@@ -30,18 +30,16 @@
   padding: 0.25rem 0 0.5rem;
 }
 
-.dr-warn {
+.dr-th {
   display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  font-size: 0.8rem;
-  color: #8a5a00;
-  background: #fff7e6;
-  border: 1px solid #f2d98a;
-  border-radius: 9px;
-  padding: 0.55rem 0.75rem;
+  align-items: center;
+  gap: 0.4rem;
+}
 
-  i { color: #c77800; margin-top: 1px; }
+.dr-warn-ic {
+  color: #c77800;
+  font-size: 0.85rem;
+  cursor: help;
 }
 
 .dr-card {
@@ -122,13 +120,13 @@
   font-weight: 600;
 }
 
-// Bloque genérico a altura completa (top:0/bottom:0), etiqueta interna recortada por overflow.
+// Bloque genérico a altura completa (top:0/bottom:0). NO recorta su texto: la etiqueta puede
+// derramarse (como el editor) y solo la recorta el track; así "07:53" no queda como "07".
 .tl__block {
   position: absolute;
   top: 0;
   bottom: 0;
   border-radius: 4px;
-  overflow: hidden;
 }
 
 .tl__cap {

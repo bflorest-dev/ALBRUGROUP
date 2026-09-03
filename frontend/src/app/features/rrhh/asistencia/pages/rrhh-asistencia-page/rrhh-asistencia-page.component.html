@@ -183,6 +183,10 @@
               <i class="pi pi-calendar" aria-hidden="true"></i>
               <span>Horario</span>
             </p-tab>
+            <p-tab value="ajustes">
+              <i class="pi pi-sliders-h" aria-hidden="true"></i>
+              <span>Ajustes del día</span>
+            </p-tab>
           </p-tablist>
 
           <p-tabpanels>
@@ -191,33 +195,53 @@
               <div class="employee-month">
                 <div class="month-detail__head">
                   <span class="month-detail__title">Asistencia del mes</span>
-                  <p-select
-                    [options]="monthSelectChoices()"
-                    optionLabel="label"
-                    optionValue="value"
-                    [ngModel]="facade.drawerSelectedMonth()"
-                    (ngModelChange)="facade.setDrawerMonth($event)"
-                    appendTo="body"
-                    styleClass="month-detail__select"
-                  />
+                  <div class="month-detail__head-right">
+                    @if (facade.drawerMonthCerrado()) {
+                      <span class="ms-chip ms-chip--ok">Mes cerrado</span>
+                    } @else {
+                      <span class="ms-chip ms-chip--warn">En curso</span>
+                    }
+                    <p-select
+                      [options]="monthSelectChoices()"
+                      optionLabel="label"
+                      optionValue="value"
+                      [ngModel]="facade.drawerSelectedMonth()"
+                      (ngModelChange)="facade.setDrawerMonth($event)"
+                      appendTo="body"
+                      styleClass="month-detail__select"
+                    />
+                  </div>
                 </div>
 
-                <div class="drawer-kpis">
-                  <div class="dkpi">
-                    <span class="dkpi__label">Faltas</span>
-                    <span class="dkpi__value dkpi__value--danger">{{ facade.drawerKpis().faltas }}</span>
+                @let r = facade.drawerResumen();
+                <div class="month-summary">
+                  <div class="ms-cell">
+                    <span class="ms-k">Presente</span>
+                    <span class="ms-v ms-v--ok">{{ r.presente }}</span>
+                    <span class="ms-sub">de {{ r.laborables }} laborables</span>
                   </div>
-                  <div class="dkpi">
-                    <span class="dkpi__label">Tardanzas</span>
-                    <span class="dkpi__value dkpi__value--warn">{{ facade.drawerKpis().tardanzas }}</span>
+                  <div class="ms-cell">
+                    <span class="ms-k">Faltas</span>
+                    <span class="ms-v" [class.ms-v--danger]="r.faltas > 0">{{ r.faltas }}</span>
                   </div>
-                  <div class="dkpi">
-                    <span class="dkpi__label">Balance</span>
-                    <span
-                      class="dkpi__value"
-                      [class.dkpi__value--neg]="facade.drawerKpis().balanceMin < 0"
-                      [class.dkpi__value--pos]="facade.drawerKpis().balanceMin > 0"
-                    >{{ balanceLabel(facade.drawerKpis().balanceMin) }}</span>
+                  <div class="ms-cell">
+                    <span class="ms-k">Tardanzas</span>
+                    <span class="ms-v" [class.ms-v--warn]="r.tardanzas > 0">{{ r.tardanzas }}</span>
+                    @if (r.tardanzaCompensable !== null && r.tardanzas > 0) {
+                      <span class="ms-sub">{{ r.tardanzaCompensable }} comp · {{ r.tardanzaJustificada }} just</span>
+                    }
+                  </div>
+                  <div class="ms-cell">
+                    <span class="ms-k">Balance</span>
+                    <span class="ms-v" [class.ms-v--neg]="r.balance < 0" [class.ms-v--pos]="r.balance > 0">{{ balanceLabel(r.balance) }}</span>
+                  </div>
+                  <div class="ms-cell">
+                    <span class="ms-k">Extra</span>
+                    <span class="ms-v">{{ r.extra ? '+' + durMin(r.extra) : '0' }}</span>
+                  </div>
+                  <div class="ms-cell">
+                    <span class="ms-k">Compensado</span>
+                    <span class="ms-v">{{ durMin(r.compensado) }}</span>
                   </div>
                 </div>
 
@@ -318,8 +342,90 @@
               </div>
             </p-tabpanel>
 
-            <!-- ── Editor de horario ── -->
+            <!-- ── Horario base (editor + historial) ── -->
             <p-tabpanel value="horario">
+              <div class="employee-schedule">
+                @if (!facade.canMutateOperationalData()) {
+                  <p-message severity="info" text="Marca tu asistencia para modificar horarios." />
+                }
+
+                <section class="schedule-history">
+                  <span class="schedule-action-block__eyebrow">Historial de horarios</span>
+                  @if (facade.isLoadingHistorial()) {
+                    <div class="employee-drawer__loading">
+                      <p-progressSpinner styleClass="spinner-sm" strokeWidth="3" />
+                      <span>Cargando historial…</span>
+                    </div>
+                  } @else if (historialVm().length === 0) {
+                    <p-message severity="info" text="Sin versiones de horario registradas." />
+                  } @else {
+                    <div class="hist">
+                      @for (v of historialVm(); track v.id) {
+                        <button
+                          type="button"
+                          class="hist__it"
+                          [class.is-current]="v.kind === 'actual'"
+                          (click)="onSelectHistorial(v.horario)"
+                        >
+                          <span
+                            class="hist__badge"
+                            [class.hb--cur]="v.kind === 'actual'"
+                            [class.hb--fut]="v.kind === 'futuro'"
+                            [class.hb--past]="v.kind === 'anterior'"
+                          >{{ v.label }}</span>
+                          <span class="hist__main">
+                            <span class="hist__r">{{ v.rango }}</span>
+                            <span class="hist__s">{{ v.vigencia }} · descansa {{ v.descanso }}</span>
+                          </span>
+                          <i class="pi pi-pencil hist__go" aria-hidden="true"></i>
+                        </button>
+                      }
+                    </div>
+                    <p class="schedule-history__hint">Elegí una versión para precargarla en el editor.</p>
+                  }
+                </section>
+
+                <section class="schedule-base-block">
+                  <div class="schedule-base-block__head">
+                    <span class="schedule-action-block__eyebrow">Horario base</span>
+                    <h4>Cambiar horario recurrente</h4>
+                    <p>Este cambio aplica desde la fecha de inicio y se mantiene para los días siguientes.</p>
+                  </div>
+
+                  <app-schedule-week-editor
+                    [horarioForm]="facade.horarioForm"
+                    [requiresLunch]="true"
+                    [perDayLunch]="true"
+                    [lunchMinutes]="60"
+                    [showDate]="true"
+                    [showCompensable]="true"
+                    dateLabel="Fecha de inicio"
+                  />
+
+                  @if (facade.scheduleChangeSuccessMessage()) {
+                    <p-message severity="success" [text]="facade.scheduleChangeSuccessMessage()" />
+                  }
+                  @if (facade.scheduleChangeErrorMessage()) {
+                    <p-message severity="error" [text]="facade.scheduleChangeErrorMessage()" />
+                  }
+
+                  <div class="actions actions--end">
+                    <button
+                      pButton
+                      type="button"
+                      icon="pi pi-save"
+                      label="Guardar horario"
+                      [loading]="facade.isSubmittingHorario()"
+                      [disabled]="!facade.canMutateOperationalData()"
+                      (click)="facade.submitScheduleChange()"
+                    ></button>
+                  </div>
+                </section>
+              </div>
+            </p-tabpanel>
+
+            <!-- ── Ajustes del día (mecánicas + calendario) ── -->
+            <p-tabpanel value="ajustes">
               <div class="employee-schedule">
                 @if (!facade.canMutateOperationalData()) {
                   <p-message severity="info" text="Marca tu asistencia para modificar horarios." />
@@ -729,42 +835,6 @@
                       </span>
                       <i class="pi pi-chevron-right adjust-row__chevron"></i>
                     </button>
-                  </section>
-
-                  <section class="schedule-base-block">
-                    <div class="schedule-base-block__head">
-                      <span class="schedule-action-block__eyebrow">Horario base</span>
-                      <h4>Cambiar horario recurrente</h4>
-                      <p>Este cambio aplica desde la fecha de inicio y se mantiene para los días siguientes.</p>
-                    </div>
-
-                    <app-schedule-week-editor
-                      [horarioForm]="facade.horarioForm"
-                      [requiresLunch]="usesLunchBreak()"
-                      [lunchMinutes]="60"
-                      [showDate]="true"
-                      [showCompensable]="true"
-                      dateLabel="Fecha de inicio"
-                    />
-
-                    @if (facade.scheduleChangeSuccessMessage()) {
-                      <p-message severity="success" [text]="facade.scheduleChangeSuccessMessage()" />
-                    }
-                    @if (facade.scheduleChangeErrorMessage()) {
-                      <p-message severity="error" [text]="facade.scheduleChangeErrorMessage()" />
-                    }
-
-                    <div class="actions actions--end">
-                      <button
-                        pButton
-                        type="button"
-                        icon="pi pi-save"
-                        label="Guardar horario"
-                        [loading]="facade.isSubmittingHorario()"
-                        [disabled]="!facade.canMutateOperationalData()"
-                        (click)="facade.submitScheduleChange()"
-                      ></button>
-                    </div>
                   </section>
                 }
               </div>

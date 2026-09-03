@@ -8,6 +8,7 @@ import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.Parentesco;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoVia;
@@ -44,6 +45,8 @@ public class LeadDetalleResponse {
     private String celularRegistro;
     private String celularReferencia;
     private String correo;
+    private LocalDate fechaNacimiento;
+    private Parentesco parentesco;
     private String nombreMadre;
     private String nombrePadre;
     private String numeroDocumentoTitularCelularRegistro;

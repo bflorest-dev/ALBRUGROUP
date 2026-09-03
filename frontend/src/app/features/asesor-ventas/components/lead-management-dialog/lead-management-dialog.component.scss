@@ -4,11 +4,11 @@
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  gap: 1rem;
+  gap: 0.9rem;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding-top: 0.75rem;
+  padding: 0 1rem 0.9rem;
 }
 
 app-lead-commercial-data-tabs {
@@ -20,10 +20,10 @@ app-lead-commercial-data-tabs {
 .oportunidades-contacto {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: 0.5rem;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-height: 2.4rem;
   position: relative;
   z-index: 2;
@@ -40,11 +40,13 @@ app-lead-commercial-data-tabs {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.2rem 0.6rem;
+  border: 1px solid #cbd8e6;
+  padding: 0.38rem 0.65rem;
   border-radius: 999px;
-  background: var(--surface-200, #e7edf4);
+  background: #ffffff;
   color: var(--text-color, #334155);
   font-size: 0.78rem;
+  font-family: inherit;
   line-height: 1.2;
   cursor: pointer;
   white-space: nowrap;
@@ -55,11 +57,13 @@ app-lead-commercial-data-tabs {
 }
 
 .op-chip--active {
-  background: var(--primary-color, #16a34a);
+  background: #e9f8f1;
+  border-color: #16b979;
   color: #fff;
 }
 
 .op-chip__doc {
+  color: #334155;
   font-weight: 600;
 }
 
@@ -86,14 +90,12 @@ app-lead-commercial-data-tabs {
 .lead-workspace__head {
   align-items: center;
   background:
-    linear-gradient(135deg, rgba(28, 125, 98, 0.1), rgba(15, 31, 51, 0.04)),
+    linear-gradient(135deg, rgba(28, 125, 98, 0.08), rgba(15, 31, 51, 0.035)),
     #ffffff;
-  border: 1px solid #dbe7e1;
-  border-radius: 12px;
   display: flex;
   gap: 1rem;
   justify-content: space-between;
-  padding: 1rem;
+  padding: 0.95rem 1rem;
 }
 
 .lead-workspace__head > div:first-child {
@@ -179,11 +181,76 @@ h2 {
   align-items: end;
   background: #f8fbfa;
   border: 1px solid #dce8e3;
-  border-radius: 12px;
+  border-radius: 8px;
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: minmax(10rem, .75fr) minmax(11rem, 1fr) minmax(11rem, 1fr) minmax(7.5rem, .55fr) minmax(7.5rem, .55fr);
+  grid-template-columns: minmax(9.5rem, .6fr) minmax(14rem, 1fr) minmax(14rem, 1fr) minmax(8rem, .52fr);
   padding: 0.9rem;
+}
+
+.completion-strip {
+  align-items: center;
+  border: 1px solid #dde7ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: minmax(8.5rem, auto) minmax(11rem, .8fr) minmax(16rem, 1.2fr);
+  min-height: 3.85rem;
+  padding: 0.85rem;
+}
+
+.completion-strip__score,
+.completion-strip__pending {
+  align-items: center;
+  color: #50647c;
+  display: flex;
+  font-size: 0.8rem;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.completion-strip__score strong {
+  color: #12243a;
+}
+
+.completion-strip__segments {
+  display: flex;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.completion-strip__segments span {
+  background: #cfd8e4;
+  border-radius: 999px;
+  flex: 1 1 0;
+  height: 0.24rem;
+  min-width: 0.55rem;
+}
+
+.completion-strip__segments .completion-strip__segment--done {
+  background: #10b981;
+}
+
+.completion-strip__pending {
+  justify-content: flex-end;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.1rem;
+  scrollbar-width: thin;
+  white-space: nowrap;
+}
+
+.completion-strip__pending strong {
+  background: #ffe6ea;
+  border-radius: 6px;
+  color: #d93656;
+  font-weight: 800;
+  padding: 0.42rem 0.62rem;
+  flex: 0 0 auto;
+}
+
+.completion-strip__pending span {
+  flex: 0 0 auto;
 }
 
 .tipification-bar > * {
@@ -199,10 +266,15 @@ h2 {
   white-space: nowrap;
 }
 
+.tipification-actions {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
 .contact-actions {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
+  align-items: stretch;
+  display: grid;
   gap: 0.6rem;
   min-width: 0;
 }
@@ -213,6 +285,20 @@ h2 {
 
 :host ::ng-deep .contact-actions app-phone-action-button .call-split .p-button {
   min-height: 42px;
+}
+
+:host ::ng-deep .contact-actions app-phone-action-button .call-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--call-toggle-width);
+}
+
+:host ::ng-deep .contact-actions app-phone-action-button .call-split .p-button:first-child,
+:host ::ng-deep .contact-actions > .p-button {
+  justify-content: center;
+}
+
+:host ::ng-deep .contact-actions app-phone-action-button .call-split .p-button:first-child .p-button-label {
+  flex: 0 0 auto;
 }
 
 .scheduled-field {
@@ -242,21 +328,21 @@ label {
 
 .dialog-actions {
   align-items: center;
-  bottom: 0.65rem;
+  background: #ffffff;
+  border-top: 1px solid #dce6ee;
   flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.8rem;
   justify-content: flex-end;
-  pointer-events: none;
-  position: absolute;
-  right: 1.1rem;
+  margin: auto -1rem -0.9rem;
+  padding: 0.9rem 1rem;
+  position: relative;
   z-index: 5;
 }
 
 .dialog-actions button {
-  box-shadow: 0 10px 24px rgba(15, 31, 51, 0.12);
-  pointer-events: auto;
+  min-width: 10.5rem;
 }
 
 .dialog-skeleton {
@@ -266,24 +352,26 @@ label {
 }
 
 :host ::ng-deep {
-  .asesor-dialog {
-    height: min(56rem, 92vh);
-    max-height: 92vh;
-    width: min(72rem, 94vw);
+  .asesor-management-drawer {
+    width: min(60rem, 100vw);
   }
 
-  .asesor-dialog .p-dialog-content {
+  .asesor-management-drawer .p-drawer-header {
+    border-bottom: 1px solid #dbe7e1;
+    padding: 0;
+  }
+
+  .asesor-management-drawer .p-drawer-content {
     position: relative;
     display: flex;
     flex-direction: column;
-    height: 100%;
     min-height: 0;
-    max-height: calc(92vh - 1rem);
     overflow: hidden;
+    padding: 0;
   }
 
-  .asesor-dialog .p-dialog-header {
-    border-bottom: 1px solid #e4ece8;
+  .asesor-management-drawer .p-drawer {
+    border-radius: 0;
   }
 
   .tipification-bar .p-select,
@@ -302,6 +390,10 @@ label {
 
   .tipification-bar .p-button {
     width: 100%;
+  }
+
+  .tipification-actions .p-button {
+    min-height: 42px;
   }
 
   .scope-select .p-togglebutton {
@@ -352,7 +444,7 @@ label {
   }
 
   .lead-workspace__head {
-    padding: 0.8rem;
+    padding: 0.8rem 0.9rem;
   }
 
   .lead-workspace__head > div:first-child {
@@ -390,12 +482,32 @@ label {
   }
 
   .contact-actions,
+  .completion-strip,
+  .completion-strip__pending,
+  .tipification-actions,
   .comment-field {
     grid-column: 1 / -1;
+  }
+
+  .completion-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .completion-strip__pending {
+    justify-content: flex-start;
   }
 }
 
 @media (max-width: 720px) {
+  .lead-workspace {
+    padding-inline: 0.75rem;
+  }
+
+  .lead-workspace__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .lead-identity--editing,
   .lead-identity__phone {
     width: 100%;

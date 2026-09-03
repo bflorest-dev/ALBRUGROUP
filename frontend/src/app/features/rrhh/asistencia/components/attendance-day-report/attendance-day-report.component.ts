@@ -68,7 +68,7 @@ const SESION_KIND: Record<TipoSesionEstado, SegBlock['kind']> = {
 };
 const MOTIVO_LABEL: Record<string, string> = {
   INACTIVIDAD: 'Inactividad',
-  CIERRE_MANUAL: 'Cierre manual'
+  CIERRE_MANUAL: 'Cierre'
 };
 
 /**
@@ -189,14 +189,21 @@ export class AttendanceDayReportComponent {
     return out;
   });
 
-  /** Día pasado sin salida marcada: la jornada quedó abierta (obligación del empleado marcar salida). */
+  /**
+   * Día pasado sin salida marcada: la jornada quedó sin cerrar (obligación del empleado marcar salida).
+   * Vale con o sin tramo de presencia abierto: basta que hubo actividad (ingreso/presencia) y no hay salida.
+   */
   protected readonly sinSalida = computed(() => {
     const r = this.reporte();
     if (!r || r.jornadaCerrada || !this.isPastDay()) return false;
-    return (r.presencia ?? []).some((p) => !p.fin);
+    return (r.presencia ?? []).length > 0 || (r.tramos ?? []).some((t) => !!t.ingresoReal);
   });
 
   protected readonly ultimaActividad = computed(() => this.hhmm(this.lastEvidenceMin()));
+
+  protected readonly sinSalidaMsg = computed(() =>
+    `Jornada sin cierre: no se marcó salida (última actividad ${this.ultimaActividad()}). No cuenta como falta ni penaliza el balance, pero el empleado debe marcar su salida.`
+  );
 
   protected readonly presenceBlocks = computed<PresBlock[]>(() => {
     const ivs = this.presenceIntervals();
@@ -254,9 +261,8 @@ export class AttendanceDayReportComponent {
       out.push({
         leftPct: this.pct(a), widthPct: w, kind: penaliza ? 'dead' : 'soft',
         label: penaliza && w >= 6 ? `−${min}m` : '',
-        title: `${this.motivoLabel(g.motivo)} ${this.hhmm(a)}–${this.hhmm(b)} · ${min} min`
-          + (g.estadoAlDesconectar ? ` · estaba ${g.estadoAlDesconectar}` : '')
-          + (penaliza ? ' · penaliza el balance' : ' · no penaliza')
+        title: `${this.motivoLabel(g.motivo)} · ${this.hhmm(a)}–${this.hhmm(b)} · ${min} min`
+          + (penaliza ? ' · penaliza' : '')
       });
     }
     for (const e of this.reporte()?.excesos ?? []) {
@@ -421,7 +427,7 @@ export class AttendanceDayReportComponent {
     this.pushMin(marks, r?.almuerzoRealFin ?? null);
     for (const s of r?.sesiones ?? []) this.pushMin(marks, s.fin);
     for (const t of r?.tramos ?? []) this.pushMin(marks, t.salidaReal);
-    for (const p of r?.presencia ?? []) this.pushMin(marks, p.inicio);
+    for (const p of r?.presencia ?? []) { this.pushMin(marks, p.inicio); this.pushMin(marks, p.fin); }
     return marks.length ? Math.max(...marks) : 0;
   }
 }
