@@ -46,6 +46,9 @@ const ESTADOS_PERIODO_CERRADO = [
 ];
 const TODOS_LOS_CORTES = 'TODOS';
 const MESES_PERMANENCIA_WIN = 3;
+const MESES_PERMANENCIA_CLARO = 3;
+const DIA_INICIO_CORTE_DOS_WIN = 23;
+const DIA_INICIO_CORTE_DOS_CLARO = 12;
 const DIA_CIERRE_EMPRESA_POSTVENTA = 15;
 const CORTES_GRACIA_PRE_CIERRE_EMPRESA = 2;
 type BeforeTipificarTask = () => Promise<boolean>;
@@ -89,6 +92,7 @@ export class PostventaWorkspaceFacade {
         return;
       }
       this.lastProviderId = activeId;
+      this.normalizarCorteSeleccionado();
       void this.loadBoard(0);
     });
 
@@ -117,7 +121,7 @@ export class PostventaWorkspaceFacade {
   readonly selectedCorteValue = this._selectedCorteValue.asReadonly();
   readonly corteOptions = computed<CortePostventaOption[]>(() => [
     { label: 'Todos los cortes', value: TODOS_LOS_CORTES, mesCorteBase: null, numeroCorteBase: null },
-    ...this.buildCortesWinActivos()
+    ...this.buildCortesActivos()
   ]);
   readonly selectedCorteLabel = computed(() =>
     this.corteOptions().find((option) => option.value === this._selectedCorteValue())?.label ?? 'Todos los cortes'
@@ -808,6 +812,16 @@ export class PostventaWorkspaceFacade {
     };
   }
 
+  private normalizarCorteSeleccionado(): void {
+    const selected = this._selectedCorteValue();
+    if (selected === TODOS_LOS_CORTES) {
+      return;
+    }
+    if (!this.corteOptions().some((option) => option.value === selected)) {
+      this._selectedCorteValue.set(TODOS_LOS_CORTES);
+    }
+  }
+
   private boardRequestKey(pageNumber: number): string {
     return JSON.stringify({
       pageNumber,
@@ -819,14 +833,28 @@ export class PostventaWorkspaceFacade {
     });
   }
 
-  private buildCortesWinActivos(): CortePostventaOption[] {
+  private buildCortesActivos(): CortePostventaOption[] {
+    const proveedor = this.proveedorActivoNormalizado();
+    const config = proveedor === 'CLARO'
+      ? {
+          diaInicioCorteDos: DIA_INICIO_CORTE_DOS_CLARO,
+          mesesPermanencia: MESES_PERMANENCIA_CLARO,
+          inicioNumeroCorte: 1,
+          aplicarGraciaPreCierreEmpresa: false
+        }
+      : {
+          diaInicioCorteDos: DIA_INICIO_CORTE_DOS_WIN,
+          mesesPermanencia: MESES_PERMANENCIA_WIN,
+          inicioNumeroCorte: 2,
+          aplicarGraciaPreCierreEmpresa: true
+        };
     const [year, month, day] = this.today.split('-').map(Number);
-    const currentNumber = day >= 23 ? 2 : 1;
+    const currentNumber = day >= config.diaInicioCorteDos ? 2 : 1;
     const current = { year, month, number: currentNumber };
-    const startDate = this.addMonths(year, month, -MESES_PERMANENCIA_WIN);
+    const startDate = this.addMonths(year, month, -config.mesesPermanencia);
     const options: CortePostventaOption[] = [];
-    let cursor = { year: startDate.year, month: startDate.month, number: 2 };
-    if (day <= DIA_CIERRE_EMPRESA_POSTVENTA) {
+    let cursor = { year: startDate.year, month: startDate.month, number: config.inicioNumeroCorte };
+    if (config.aplicarGraciaPreCierreEmpresa && day <= DIA_CIERRE_EMPRESA_POSTVENTA) {
       for (let i = 0; i < CORTES_GRACIA_PRE_CIERRE_EMPRESA; i++) {
         cursor = this.previousCorte(cursor);
       }
@@ -838,6 +866,10 @@ export class PostventaWorkspaceFacade {
     }
 
     return options;
+  }
+
+  private proveedorActivoNormalizado(): string {
+    return this.providerScope.proveedorActivo()?.nombre?.trim().toUpperCase() ?? '';
   }
 
   private toCorteOption(year: number, month: number, number: number): CortePostventaOption {

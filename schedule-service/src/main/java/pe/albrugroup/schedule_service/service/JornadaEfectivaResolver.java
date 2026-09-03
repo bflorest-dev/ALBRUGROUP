@@ -72,7 +72,11 @@ public class JornadaEfectivaResolver {
                 ? toBaseTramo(fecha, base)
                 : null;
 
+        // Solo un CORRIMIENTO (REEMPLAZO_BASE) reemplaza el base. Un ajuste aditivo (extra/compensacion) es
+        // disjunto por invariante (validado al registrar); si por data mala se solapara, NO debe descartar
+        // el base (eso escondia el turno base).
         boolean baseReemplazada = tramoBase != null && ajustes.stream()
+                .filter(ajuste -> ajuste.getOrigen() == OrigenAjusteJornada.REEMPLAZO_BASE)
                 .anyMatch(ajuste -> overlaps(
                         ajuste.getInicio(), ajuste.getFin(), tramoBase.getInicio(), tramoBase.getFin()));
         if (tramoBase != null && !baseReemplazada) {

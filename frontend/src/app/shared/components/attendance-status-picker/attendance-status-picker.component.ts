@@ -8,6 +8,7 @@ import {
   AttendanceActionId,
   AttendanceActionOption
 } from '../../models/schedule/estado-asistencia';
+import { TramoDiaVm } from '../../models/schedule/detalle-dia-response';
 
 @Component({
   selector: 'app-attendance-status-picker',
@@ -24,6 +25,8 @@ export class AttendanceStatusPickerComponent {
   @Input({ required: true }) errorMessage = '';
   @Input() disabled = false;
   @Input() hint = '';
+  /** Tramos del día (base + extras/compensables) para mostrar la estructura de la jornada. */
+  @Input() tramos: TramoDiaVm[] = [];
   /** Cuando hay cronometro en curso, el pill muestra el tiempo (MM:SS) en vez de la etiqueta. */
   @Input() timerText: string | null = null;
   /** El cronometro supero su tiempo estimado: el numero parpadea en rojo. */
@@ -100,6 +103,28 @@ export class AttendanceStatusPickerComponent {
 
   protected getOptionColor(action: AttendanceActionOption): string {
     return ATTENDANCE_STATUS_META[action.targetStatus].color;
+  }
+
+  protected tramoColor(tipo: TramoDiaVm['tipo']): string {
+    switch (tipo) {
+      case 'EXTRA':
+        return '#d9a93a';
+      case 'COMPENSABLE':
+        return '#e08a3c';
+      default:
+        return '#5b6b9a';
+    }
+  }
+
+  protected tramoTitulo(tipo: TramoDiaVm['tipo']): string {
+    switch (tipo) {
+      case 'EXTRA':
+        return 'Horas extra';
+      case 'COMPENSABLE':
+        return 'Compensación';
+      default:
+        return 'Horario base';
+    }
   }
 
   protected statusTagStyle(color = this.statusColor): Record<string, string> {

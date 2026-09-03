@@ -26,6 +26,8 @@ import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
 import pe.albrugroup.schedule_service.entity.enums.TipoTramoDia;
 import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.PresenciaGapResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
 import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
@@ -572,6 +574,40 @@ class MarcacionServiceTest {
         assertThat(a.getMinutosTrabajados()).isEqualTo(235); // base 14:05-18:00
         assertThat(a.getMinutosExtra()).isZero();              // extra sigue anulado
         assertThat(a.getMinutosBalance()).isEqualTo(-5);       // 5 min tarde al base
+    }
+
+    // ===================== Reporte por dia (tramos + sesiones + tiempos muertos) =====================
+
+    @Test
+    void reporteDiaConsolidaTramosSesionesYTiemposMuertos() {
+        // Base 8-17 cerrado; una sesion de SERVICIOS 10:00-10:10 y un tiempo muerto de presencia 12:00-12:30.
+        Asistencia base = asistenciaOnline(LocalDateTime.of(2026, 8, 10, 8, 0), 60);
+        base.setFechaHoraSalida(LocalDateTime.of(2026, 8, 10, 17, 0));
+        base.setEstadoActual(EstadoAsistencia.OFFLINE);
+        base.setMinutosTrabajados(480);
+        base.setMinutosBalance(0);
+        base.setOrigenTramoActual(OrigenTramo.BASE);
+        almacen.set(base);
+        when(sesionEstadoRepository.findByAsistenciaIdOrderByInicioAsc(1L)).thenReturn(List.of(
+                sesionCerrada(TipoSesionEstado.SERVICIOS, LocalTime.of(10, 0), LocalTime.of(10, 10))));
+        when(presenciaTramoService.gapsDelDia(EMP, DIA)).thenReturn(List.of(
+                PresenciaGapResponse.builder()
+                        .inicio(LocalDateTime.of(2026, 8, 10, 12, 0))
+                        .fin(LocalDateTime.of(2026, 8, 10, 12, 30))
+                        .minutos(30).motivo("INACTIVIDAD").estadoAlDesconectar("ONLINE").build()));
+        reloj(17, 30); // despues del cierre
+
+        ReporteDiaResponse r = service.getReporteDia(EMP, DIA);
+
+        assertThat(r.getTramos()).hasSize(1);
+        assertThat(r.getTramos().get(0).getTipo()).isEqualTo(TipoTramoDia.BASE);
+        assertThat(r.getSesiones()).hasSize(1);
+        assertThat(r.getSesiones().get(0).getMinutos()).isEqualTo(10);
+        assertThat(r.getTiemposMuertos()).hasSize(1);
+        assertThat(r.getTiemposMuertos().get(0).getMinutos()).isEqualTo(30);
+        assertThat(r.getTiemposMuertos().get(0).getMotivo()).isEqualTo("INACTIVIDAD");
+        assertThat(r.getMinutosTrabajados()).isEqualTo(480);
+        assertThat(r.getJornadaCerrada()).isTrue();
     }
 
     // ===================== Corrimiento por tardanza (REEMPLAZO_BASE) =====================

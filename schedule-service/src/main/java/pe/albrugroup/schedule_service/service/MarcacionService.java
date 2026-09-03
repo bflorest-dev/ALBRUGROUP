@@ -23,6 +23,8 @@ import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
 import pe.albrugroup.schedule_service.entity.request.asistencia.IniciarAlmuerzoRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.PoliticaMarcacionResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.SesionEstadoResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.TramoDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.TramoJornadaResponse;
@@ -948,6 +950,47 @@ public class MarcacionService {
                 .pausaActivaUsosHoy(0)
                 .sesionEnCurso(false)
                 .minutosServiciosTope(horario != null ? horario.getMinutosServicios() : null)
+                .build();
+    }
+
+    /**
+     * Reporte por empleado/dia (admin/RRHH): re-deriva el desglose por tramo (misma proyeccion que el
+     * read model, para cualquier fecha) + sesiones de sub-estado + tiempos muertos de presencia + totales.
+     * No persiste snapshot: los insumos de un dia pasado son estables (guard de versionado de horario).
+     */
+    @Transactional(readOnly = true)
+    public ReporteDiaResponse getReporteDia(Long idEmpleado, LocalDate fecha) {
+        JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolverSiExiste(idEmpleado, fecha).orElse(null);
+        Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha).orElse(null);
+
+        List<SesionEstadoResponse> sesiones = asistencia == null ? List.of()
+                : sesionEstadoRepository.findByAsistenciaIdOrderByInicioAsc(asistencia.getId()).stream()
+                .map(s -> SesionEstadoResponse.builder()
+                        .tipo(s.getTipo())
+                        .inicio(s.getInicio())
+                        .fin(s.getFin())
+                        .minutos(s.getFin() == null ? null
+                                : (int) Math.max(Duration.between(s.getInicio(), s.getFin()).toMinutes(), 0))
+                        .creadoPor(s.getCreadoPor())
+                        .build())
+                .toList();
+
+        return ReporteDiaResponse.builder()
+                .idEmpleado(idEmpleado)
+                .fecha(fecha)
+                .tieneHorario(jornada != null)
+                .jornadaCerrada(asistencia != null && asistencia.getFechaHoraSalida() != null)
+                .tramos(construirTramosDia(asistencia, jornada))
+                .sesiones(sesiones)
+                .tiemposMuertos(presenciaTramoService.gapsDelDia(idEmpleado, fecha))
+                .almuerzoRealInicio(asistencia != null ? asistencia.getAlmuerzoRealInicio() : null)
+                .almuerzoRealFin(asistencia != null ? asistencia.getAlmuerzoRealFin() : null)
+                .minutosAlmuerzoTomados(asistencia != null ? asistencia.getMinutosAlmuerzoTomados() : 0)
+                .minutosObjetivoDia(asistencia != null ? asistencia.getMinutosObjetivoDia() : objetivoJornada(jornada))
+                .minutosTrabajados(asistencia != null ? asistencia.getMinutosTrabajados() : 0)
+                .minutosBalance(asistencia != null ? asistencia.getMinutosBalance() : 0)
+                .minutosExtra(asistencia != null ? asistencia.getMinutosExtra() : 0)
+                .minutosCompensados(asistencia != null ? asistencia.getMinutosCompensados() : 0)
                 .build();
     }
 

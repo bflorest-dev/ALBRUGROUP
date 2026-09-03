@@ -153,6 +153,9 @@ export class PrivateLayoutComponent implements AfterViewInit {
   protected readonly attendanceHint = computed(() =>
     this.isAlwaysOnlineRole() ? '' : this.attendanceFacade.scheduleHint()
   );
+  protected readonly attendanceTramos = computed(() =>
+    this.isAlwaysOnlineRole() ? [] : this.attendanceFacade.tramosVm()
+  );
   protected readonly attendanceTimerText = computed(() =>
     this.isAlwaysOnlineRole() ? null : this.attendanceFacade.timerText()
   );

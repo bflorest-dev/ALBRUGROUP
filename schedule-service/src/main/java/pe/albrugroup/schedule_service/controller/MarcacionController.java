@@ -16,6 +16,7 @@ import pe.albrugroup.schedule_service.configuration.CurrentUser;
 import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
 import pe.albrugroup.schedule_service.entity.request.asistencia.IniciarAlmuerzoRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
 import pe.albrugroup.schedule_service.service.MarcacionService;
 
 import java.time.LocalDate;
@@ -38,6 +39,15 @@ public class MarcacionController {
     public ResponseEntity<DetalleDiaResponse> getDia(@RequestParam(required = false) LocalDate fecha) {
         return ResponseEntity.ok(
                 marcacionService.getDia(currentUser.empleadoID(), OperationalDateTime.resolveDate(fecha)));
+    }
+
+    /** Reporte por empleado/dia (admin/RRHH): tramos + sesiones + tiempos muertos + totales, para cualquier fecha. */
+    @GetMapping("/reporte-dia/{idEmpleado}")
+    @PreAuthorize("hasAuthority('READ_ASISTENCIAS_CUMPLIMIENTO')")
+    public ResponseEntity<ReporteDiaResponse> getReporteDia(@PathVariable @Positive Long idEmpleado,
+                                                            @RequestParam(required = false) LocalDate fecha) {
+        return ResponseEntity.ok(
+                marcacionService.getReporteDia(idEmpleado, OperationalDateTime.resolveDate(fecha)));
     }
 
     @PostMapping("/ingreso")

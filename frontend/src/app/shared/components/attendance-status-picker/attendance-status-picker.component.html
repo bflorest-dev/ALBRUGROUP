@@ -30,6 +30,23 @@
 
     @if (isOpen() && !disabled) {
       <div class="attendance-status__menu">
+        @if (tramos.length > 1) {
+          <div class="attendance-status__tramos">
+            <span class="attendance-status__tramos-title">Tu jornada de hoy</span>
+            @for (t of tramos; track t.rango) {
+              <span
+                class="attendance-status__tramo"
+                [class.is-current]="t.vigente"
+                [style.borderColor]="tramoColor(t.tipo)"
+                [pTooltip]="tramoTitulo(t.tipo)"
+                tooltipPosition="bottom"
+              >
+                <span class="attendance-status__tramo-dot" [style.background]="tramoColor(t.tipo)"></span>
+                {{ t.rango }}
+              </span>
+            }
+          </div>
+        }
         @if (actions.length) {
           @for (action of actions; track action.key) {
             @if (action.enabled) {

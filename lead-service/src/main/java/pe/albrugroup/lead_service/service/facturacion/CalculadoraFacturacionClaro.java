@@ -9,10 +9,13 @@ import pe.albrugroup.lead_service.entity.enums.EstadoPeriodoFacturacionPostventa
 import pe.albrugroup.lead_service.entity.enums.TipoReglaFacturacion;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 
 @Component
 public class CalculadoraFacturacionClaro implements CalculadoraFacturacionPostventa {
 
+    private static final int DIA_INICIO_CORTE_UNO = 1;
+    private static final int DIA_INICIO_CORTE_DOS = 12;
     private static final int DIAS_HASTA_VENCIMIENTO = 15;
 
     @Override
@@ -23,6 +26,7 @@ public class CalculadoraFacturacionClaro implements CalculadoraFacturacionPostve
     @Override
     public CalendarioFacturacionPostventa crearCalendario(Lead lead, LocalDate fechaInstalacion) {
         LocalDate primerVencimiento = fechaInstalacion.plusDays(DIAS_HASTA_VENCIMIENTO);
+        CorteClaro corte = resolverCorteDesdeInstalacion(fechaInstalacion);
 
         return CalendarioFacturacionPostventa.builder()
                 .lead(lead)
@@ -32,10 +36,12 @@ public class CalculadoraFacturacionClaro implements CalculadoraFacturacionPostve
                 .mesesPermanenciaSnapshot(lead.getMesesPermanenciaSnapshot())
                 .montoPlanSnapshot(lead.getPrecioFinal())
                 .tipoReglaProveedor(TipoReglaFacturacion.CLARO)
-                .diaCorte(fechaInstalacion.getDayOfMonth())
+                .diaCorte(corte.diaCorte())
                 .diaEmisionEstimado(fechaInstalacion.getDayOfMonth())
                 .diaVencimiento(primerVencimiento.getDayOfMonth())
-                .bloqueFacturacion(BloqueFacturacion.DIA_INSTALACION)
+                .mesCorteBase(corte.mesCorteBase())
+                .numeroCorteBase(corte.numeroCorteBase())
+                .bloqueFacturacion(corte.bloqueFacturacion())
                 .requiereProrrateoInicial(true)
                 .activo(true)
                 .build();
@@ -60,5 +66,23 @@ public class CalculadoraFacturacionClaro implements CalculadoraFacturacionPostve
                 .montoEsperado(calendario.getMontoPlanSnapshot())
                 .estado(EstadoPeriodoFacturacionPostventa.ABIERTO)
                 .build();
+    }
+
+    private CorteClaro resolverCorteDesdeInstalacion(LocalDate fechaInstalacion) {
+        boolean segundoCorte = fechaInstalacion.getDayOfMonth() >= DIA_INICIO_CORTE_DOS;
+        return new CorteClaro(
+                YearMonth.from(fechaInstalacion).atDay(1),
+                segundoCorte ? 2 : 1,
+                segundoCorte ? DIA_INICIO_CORTE_DOS : DIA_INICIO_CORTE_UNO,
+                segundoCorte ? BloqueFacturacion.MES_SIGUIENTE : BloqueFacturacion.MISMO_MES
+        );
+    }
+
+    private record CorteClaro(
+            LocalDate mesCorteBase,
+            Integer numeroCorteBase,
+            Integer diaCorte,
+            BloqueFacturacion bloqueFacturacion
+    ) {
     }
 }

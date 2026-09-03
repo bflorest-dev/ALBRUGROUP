@@ -21,6 +21,14 @@ export interface TramoDiaResponse {
   minutosAcreditados: number | null;
 }
 
+/** VM compacto de un tramo del día para mostrarlo en el picker: rango + tipo + si es el vigente. */
+export interface TramoDiaVm {
+  rango: string;
+  tipo: TipoTramoDia;
+  vigente: boolean;
+  estado: EstadoTramoDia;
+}
+
 /** Parámetros de política (por rol) para calcular las ventanas de marcación en el frontend. */
 export interface PoliticaMarcacion {
   margenAdelantoMin: number | null;

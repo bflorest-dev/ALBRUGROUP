@@ -4,7 +4,11 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, filter, map, of, startWith, switchMap, timeout } from 'rxjs';
 import { ApiErrorResponse } from '../../shared/models/api/api-error-response';
-import { DetalleDiaResponse, TramoDiaResponse } from '../../shared/models/schedule/detalle-dia-response';
+import {
+  DetalleDiaResponse,
+  TramoDiaResponse,
+  TramoDiaVm
+} from '../../shared/models/schedule/detalle-dia-response';
 import {
   ATTENDANCE_STATUS_META,
   AttendanceActionId,
@@ -189,6 +193,17 @@ export class AttendanceFacade {
   readonly isWithinSchedule = computed(() => this.tramoVigente() !== null);
   readonly isOperational = computed(() => this.attendanceDetail()?.estadoActual === 'ONLINE');
 
+  /** Tramos del dia para mostrarlos en el picker (rango + tipo + cuál es el vigente). */
+  readonly tramosVm = computed<TramoDiaVm[]>(() => {
+    const vig = this.tramoVigente();
+    return this.tramosOrdenados().map(t => ({
+      rango: `${this.hhmm(t.inicio)}–${this.hhmm(t.fin)}`,
+      tipo: t.tipo,
+      vigente: vig != null && vig.inicio === t.inicio && vig.fin === t.fin,
+      estado: t.estado
+    }));
+  });
+
   /**
    * Jornada abierta (ONLINE) cuya jornada del dia ya termino (paso el fin del ultimo tramo). Lo usan
    * las vistas con cierre propio (ej. ASESOR_VENTAS) para saber que el turno termino aunque siga ONLINE.
@@ -340,7 +355,12 @@ export class AttendanceFacade {
     }
 
     const prox = this.proximoTramo();
-    if (prox) return `Tu turno comienza a las ${this.hhmm(prox.inicio)}.`;
+    if (prox) {
+      const mins = Math.round((this.ms(prox.inicio) - this.nowTick()) / 60000);
+      return mins > 0 && mins <= 90
+        ? `Tu turno comienza en ${mins} min (${this.hhmm(prox.inicio)}).`
+        : `Tu turno comienza a las ${this.hhmm(prox.inicio)}.`;
+    }
     const ts = this.tramosOrdenados();
     if (ts.length && this.nowTick() > this.ms(ts[ts.length - 1].fin)) {
       return detail.jornadaCerrada ? 'Tu jornada de hoy ya está cerrada.' : `Tu turno terminó a las ${this.hhmm(ts[ts.length - 1].fin)}.`;

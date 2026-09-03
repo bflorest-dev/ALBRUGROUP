@@ -124,6 +124,23 @@ public class AjusteJornadaService {
                         item.getInicio(), item.getFin(), validated.inicio(), validated.fin()))
                 .toList();
 
+        // Defensa en profundidad (el frontend ya lo impide): un ajuste ADITIVO (horas extra / compensacion)
+        // NO puede solaparse con el horario base ni con otro tramo activo. El solape solo es valido para el
+        // corrimiento (REEMPLAZO_BASE), que reemplaza el base a proposito. Sin esto, un pedido de horas extra
+        // que se solapa se reclasificaba silenciosamente como corrimiento y pisaba el base.
+        boolean aditiva = request.getRazon() == RazonAjuste.AMPLIACION_OPERATIVA
+                || request.getRazon() == RazonAjuste.COMPENSACION;
+        if (aditiva) {
+            if (validated.origen() == OrigenAjusteJornada.REEMPLAZO_BASE) {
+                throw new BadRequestException(
+                        "Un tramo de horas extra o compensación no puede solaparse con el horario base");
+            }
+            if (!reemplazados.isEmpty()) {
+                throw new BadRequestException(
+                        "El tramo no puede solaparse con otro tramo ya registrado ese día");
+            }
+        }
+
         AjusteJornada nuevo = ajusteRepository.save(AjusteJornada.builder()
                 .idEmpleado(idEmpleado)
                 .horario(validated.horario())

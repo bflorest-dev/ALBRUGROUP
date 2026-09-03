@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../constants/api.constants';
 import { DetalleDiaResponse } from '../../shared/models/schedule/detalle-dia-response';
+import { ReporteDiaResponse } from '../../shared/models/schedule/reporte-dia-response';
 import { AsistenciaMesResponse } from '../../shared/models/schedule/asistencia-mes-response';
 import { HorarioMesResponse } from '../../shared/models/schedule/horario-mes-response';
 
@@ -19,6 +20,12 @@ export class AttendanceService {
   getAsistenciaDia(fecha?: string): Observable<DetalleDiaResponse> {
     const params = fecha ? new HttpParams().set('fecha', fecha) : undefined;
     return this.http.get<DetalleDiaResponse>(`${this.attendanceUrl}/dia`, { params });
+  }
+
+  /** Reporte por empleado/día (admin/RRHH): tramos + sesiones + tiempos muertos + totales. */
+  getReporteDia(idEmpleado: number, fecha?: string): Observable<ReporteDiaResponse> {
+    const params = fecha ? new HttpParams().set('fecha', fecha) : undefined;
+    return this.http.get<ReporteDiaResponse>(`${this.attendanceUrl}/reporte-dia/${idEmpleado}`, { params });
   }
 
   // El motor nuevo usa el reloj del servidor: las acciones no llevan cuerpo.

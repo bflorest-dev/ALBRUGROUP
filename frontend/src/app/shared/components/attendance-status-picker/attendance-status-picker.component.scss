@@ -83,6 +83,48 @@
   box-shadow: var(--app-shadow-popover);
 }
 
+.attendance-status__tramos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.1rem 0.15rem 0.4rem;
+  border-bottom: 1px solid var(--app-border-soft);
+}
+
+.attendance-status__tramos-title {
+  width: 100%;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--app-text-muted);
+}
+
+.attendance-status__tramo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.12rem 0.4rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-strong);
+  background: var(--app-surface-soft);
+}
+
+.attendance-status__tramo.is-current {
+  font-weight: 700;
+  background: var(--app-surface-raised);
+  box-shadow: 0 0 0 1px currentColor inset;
+}
+
+.attendance-status__tramo-dot {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 50%;
+  flex: none;
+}
+
 .attendance-status__option,
 .attendance-status__retry,
 .attendance-status__empty {

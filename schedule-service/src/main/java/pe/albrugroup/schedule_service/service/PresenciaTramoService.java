@@ -9,6 +9,7 @@ import pe.albrugroup.schedule_service.entity.Asistencia;
 import pe.albrugroup.schedule_service.entity.PresenciaTramo;
 import pe.albrugroup.schedule_service.entity.enums.OrigenPresencia;
 import pe.albrugroup.schedule_service.entity.request.asistencia.PresenciaEventoRequest;
+import pe.albrugroup.schedule_service.entity.response.asistencia.PresenciaGapResponse;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.PresenciaTramoRepository;
 
@@ -16,6 +17,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -83,6 +85,35 @@ public class PresenciaTramoService {
         return asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha)
                 .map(a -> a.getEstadoActual().name())
                 .orElse("OFFLINE");
+    }
+
+    /**
+     * Tiempos muertos del dia: huecos entre tramos de presencia consecutivos (el empleado se desconecto
+     * y luego volvio). Cada hueco lleva el motivo de la desconexion (origenFin) y el estado al desconectar.
+     */
+    public List<PresenciaGapResponse> gapsDelDia(Long idEmpleado, LocalDate fecha) {
+        List<PresenciaTramo> tramos = presenciaTramoRepository.findByIdEmpleadoAndFechaOrderByInicioAsc(idEmpleado, fecha);
+        List<PresenciaGapResponse> gaps = new ArrayList<>();
+        for (int i = 0; i < tramos.size() - 1; i++) {
+            PresenciaTramo actual = tramos.get(i);
+            PresenciaTramo siguiente = tramos.get(i + 1);
+            if (actual.getFin() == null || siguiente.getInicio() == null
+                    || !actual.getFin().isBefore(siguiente.getInicio())) {
+                continue;
+            }
+            int minutos = (int) Duration.between(actual.getFin(), siguiente.getInicio()).toMinutes();
+            if (minutos <= 0) {
+                continue;
+            }
+            gaps.add(PresenciaGapResponse.builder()
+                    .inicio(actual.getFin())
+                    .fin(siguiente.getInicio())
+                    .minutos(minutos)
+                    .motivo(actual.getOrigenFin() != null ? actual.getOrigenFin().name() : null)
+                    .estadoAlDesconectar(actual.getEstadoAlDesconectar())
+                    .build());
+        }
+        return gaps;
     }
 
     /** true si el empleado tiene al menos un tramo de presencia registrado ese dia (fail-open si no). */

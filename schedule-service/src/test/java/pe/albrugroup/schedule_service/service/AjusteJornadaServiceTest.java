@@ -202,6 +202,19 @@ class AjusteJornadaServiceTest {
                 .isEqualTo(OrigenAjusteJornada.TRAMO_ADICIONAL);
     }
 
+    @Test
+    void horasExtraQueSeSolapanConElBaseSeRechaza() {
+        // Defensa en profundidad: un ajuste ADITIVO (horas extra) que se solapa con el base NO debe
+        // reclasificarse como corrimiento ni pisar el base; se rechaza.
+        prepararHorario(horario(true, LocalTime.of(8, 0), LocalTime.of(17, 0)));
+        lenient().when(currentUser.roles()).thenReturn(List.of("RRHH"));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.registrarV2(
+                        21L, requestV2("2026-06-15T16:00:00", "2026-06-15T18:00:00", RazonAjuste.AMPLIACION_OPERATIVA)))
+                .isInstanceOf(pe.albrugroup.schedule_service.exception.BadRequestException.class)
+                .hasMessageContaining("horario base");
+    }
+
     // ===================== Compensacion (razon COMPENSACION, precondicion de deficit) =====================
 
     @Test
