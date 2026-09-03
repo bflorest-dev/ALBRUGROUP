@@ -990,6 +990,7 @@ export class RrhhAsistenciaFacade {
       );
       this.scheduleChangeSuccessMessage.set('Horario corregido. Los cambios aplican desde la vigencia actual.');
       this.drawerHorario.set(horario);
+      void this.loadHorarioHistorial(idEmpleado);
       void this.recargar();
     } catch (error) {
       const http = error as HttpErrorResponse;
@@ -1020,6 +1021,7 @@ export class RrhhAsistenciaFacade {
       );
       this.scheduleChangeSuccessMessage.set('Horario actualizado. La nueva vigencia iniciara en la fecha seleccionada.');
       this.drawerHorario.set(horario);
+      void this.loadHorarioHistorial(idEmpleado);
       void this.recargar();
     } catch (error) {
       this.scheduleChangeErrorMessage.set(this.extractErrorMessage(error, 'No se pudo cambiar el horario.'));
@@ -1104,6 +1106,7 @@ export class RrhhAsistenciaFacade {
         this.service.getHorarioVigente(empleado.idEmpleado, this.getToday()).pipe(timeout(REQUEST_TIMEOUT_MS))
       );
       this.drawerHorario.set(refreshed);
+      void this.loadHorarioHistorial(empleado.idEmpleado);
       void this.recargar();
     } catch (error) {
       this.scheduleChangeErrorMessage.set(this.extractErrorMessage(error, 'No se pudo aplicar la correccion.'));

@@ -349,42 +349,6 @@
                   <p-message severity="info" text="Marca tu asistencia para modificar horarios." />
                 }
 
-                <section class="schedule-history">
-                  <span class="schedule-action-block__eyebrow">Historial de horarios</span>
-                  @if (facade.isLoadingHistorial()) {
-                    <div class="employee-drawer__loading">
-                      <p-progressSpinner styleClass="spinner-sm" strokeWidth="3" />
-                      <span>Cargando historial…</span>
-                    </div>
-                  } @else if (historialVm().length === 0) {
-                    <p-message severity="info" text="Sin versiones de horario registradas." />
-                  } @else {
-                    <div class="hist">
-                      @for (v of historialVm(); track v.id) {
-                        <button
-                          type="button"
-                          class="hist__it"
-                          [class.is-current]="v.kind === 'actual'"
-                          (click)="onSelectHistorial(v.horario)"
-                        >
-                          <span
-                            class="hist__badge"
-                            [class.hb--cur]="v.kind === 'actual'"
-                            [class.hb--fut]="v.kind === 'futuro'"
-                            [class.hb--past]="v.kind === 'anterior'"
-                          >{{ v.label }}</span>
-                          <span class="hist__main">
-                            <span class="hist__r">{{ v.rango }}</span>
-                            <span class="hist__s">{{ v.vigencia }} · descansa {{ v.descanso }}</span>
-                          </span>
-                          <i class="pi pi-pencil hist__go" aria-hidden="true"></i>
-                        </button>
-                      }
-                    </div>
-                    <p class="schedule-history__hint">Elegí una versión para precargarla en el editor.</p>
-                  }
-                </section>
-
                 <section class="schedule-base-block">
                   <div class="schedule-base-block__head">
                     <span class="schedule-action-block__eyebrow">Horario base</span>
@@ -420,6 +384,42 @@
                       (click)="facade.submitScheduleChange()"
                     ></button>
                   </div>
+                </section>
+
+                <section class="schedule-history">
+                  <span class="schedule-action-block__eyebrow">Historial de horarios</span>
+                  @if (facade.isLoadingHistorial()) {
+                    <div class="employee-drawer__loading">
+                      <p-progressSpinner styleClass="spinner-sm" strokeWidth="3" />
+                      <span>Cargando historial…</span>
+                    </div>
+                  } @else if (historialVm().length === 0) {
+                    <p-message severity="info" text="Sin versiones de horario registradas." />
+                  } @else {
+                    <div class="hist">
+                      @for (v of historialVm(); track v.id) {
+                        <button
+                          type="button"
+                          class="hist__it"
+                          [class.is-current]="v.kind === 'actual'"
+                          (click)="onSelectHistorial(v.horario)"
+                        >
+                          <span
+                            class="hist__badge"
+                            [class.hb--cur]="v.kind === 'actual'"
+                            [class.hb--fut]="v.kind === 'futuro'"
+                            [class.hb--past]="v.kind === 'anterior'"
+                          >{{ v.label }}</span>
+                          <span class="hist__main">
+                            <span class="hist__r">{{ v.rango }}</span>
+                            <span class="hist__s">{{ v.vigencia }} · descansa {{ v.descanso }}</span>
+                          </span>
+                          <i class="pi pi-pencil hist__go" aria-hidden="true"></i>
+                        </button>
+                      }
+                    </div>
+                    <p class="schedule-history__hint">Elegí una versión para precargarla en el editor de arriba.</p>
+                  }
                 </section>
               </div>
             </p-tabpanel>
