@@ -195,7 +195,7 @@ export class DashboardVentaStageComponent implements OnInit {
     return [
       { key: 'preventas', label: 'Preventas', value: c.preventasCompletas, color: 'primary', width: 100, nota: 'Preventas válidas', tone: '' },
       { key: 'registradas', label: 'Registradas', value: c.ventasRegistradas, color: 'info', width: this.w(c.ventasRegistradas, base), nota: 'En ingresado', tone: '' },
-      { key: 'programadas', label: 'Programadas', value: c.ventasProgramadasActual, color: 'secondary', width: this.w(c.ventasProgramadasActual, base), nota: 'Programadas ahora', tone: '' },
+      { key: 'programadas', label: 'Programadas', value: c.ventasProgramadasActual, color: 'secondary', width: this.w(c.ventasProgramadasActual, base), nota: 'En programado', tone: '' },
       { key: 'rechazadas', label: 'Rechazadas', value: c.ventasRechazadas, color: 'danger', width: this.w(c.ventasRechazadas, base), nota: 'Ventas rechazadas', tone: 'bad' },
       { key: 'instaladas', label: 'Instaladas', value: c.ventasInstaladas, color: 'success', width: this.w(c.ventasInstaladas, base), nota: 'Instaladas del período', tone: 'good' }
     ];

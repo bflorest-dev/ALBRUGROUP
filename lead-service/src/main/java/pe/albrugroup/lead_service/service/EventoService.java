@@ -86,6 +86,7 @@ public class EventoService {
         if (!leadRepository.existsById(request.getIdLead())) {
             throw new NotFoundException(Lead.class, request.getIdLead());
         }
+        validarFechaInstalacionNoFutura(request.getFechaInstalacion());
 
         Evento evento = Evento.builder()
                 .idLead(request.getIdLead())
@@ -879,6 +880,12 @@ public class EventoService {
 
     private Instant finDiaInclusivo(LocalDate fecha) {
         return fecha == null ? null : OperationalDateTime.endExclusiveOfDay(fecha);
+    }
+
+    private void validarFechaInstalacionNoFutura(LocalDate fechaInstalacion) {
+        if (fechaInstalacion != null && fechaInstalacion.isAfter(OperationalDateTime.today())) {
+            throw new BadRequestException("La fecha de instalacion no puede ser futura");
+        }
     }
 
     private org.springframework.data.domain.Page<Evento> listarEventosLeadPorRango(

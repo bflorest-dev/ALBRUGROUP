@@ -9,9 +9,10 @@ import java.util.List;
  * Solo devuelve absolutos; los porcentajes (6 conversiones, % por tipificación, Total por zona) los
  * calcula el frontend. Ver docs/PLAN_DASHBOARD_VENTA.md §10.
  *
- * Anclajes: contadores/estado/ranking = universo VENTA por {@code fechaIngresoEtapa ∈ período} + estado por
- * ULTIMA; zonas.instaladas/CF = instaladas por {@code fechaInstalacion ∈ período}; programacionActual = foto
- * del estado actual (ignora período).
+ * Anclajes (cada métrica el suyo, a propósito): PREVENTAS + embudo de conversiones + breakdown + ranking =
+ * cohorte por {@code fechaIngresoEtapa ∈ período}; REGISTRADAS/PROGRAMADAS/RECHAZADAS + zonas.registradas =
+ * {@code ultimaTipificacionAt ∈ período}; INSTALADAS + zonas.instaladas/CF/registradasEInstaladas =
+ * {@code fechaInstalacion ∈ período}; programacionActual = foto del estado actual (ignora período).
  */
 public record DashboardVentaResponse(
         ProveedorRef proveedor,
@@ -27,19 +28,20 @@ public record DashboardVentaResponse(
     public record PeriodoRef(LocalDate desde, LocalDate hasta) {}
 
     /**
-     * Absolutos del cohorte VENTA (fila VENTA, fechaIngresoEtapa ∈ período). Dos grupos:
-     *  - CARDS (los 5 contadores) = slices DISTINTOS, ya no un embudo anidado: preventas por mayor rango;
-     *    registradas/programadas/rechazadas por última; instaladas por fechaInstalacion.
+     * Dos grupos:
+     *  - CARDS (los 5 contadores) = slices DISTINTOS con anclaje temporal propio (ver comentarios por campo),
+     *    ya no un embudo anidado.
      *  - EMBUDO (solo para las 6 conversiones que calcula el frontend) = "alcanzó X alguna vez" por mayor
-     *    rango, monotónico y anidado, para que los % sean coherentes (≤ 100%). NO son los cards.
+     *    rango sobre la cohorte (fechaIngresoEtapa), monotónico y anidado, para que los % sean coherentes
+     *    (≤ 100%). NO son los cards.
      */
     public record Contadores(
-            // Cards
-            long preventasCompletas,      // mayorRango ∈ {INGRESADO,PROGRAMADO,INSTALADO} ó última nula — UI: "Preventas"
-            long ventasRegistradas,       // ultima == INGRESADO — UI: "Registradas"
-            long ventasInstaladas,        // instaladas por fechaInstalacion ∈ período — UI: "Instaladas"
-            long ventasRechazadas,        // ultima ∈ {SUBSANABLE, NO RECUPERABLE} — UI: "Rechazadas"
-            long ventasProgramadasActual, // ultima == PROGRAMADO (== programacionActual.total) — UI: "Programadas"
+            // Cards — cada uno con su propio anclaje temporal:
+            long preventasCompletas,      // cohorte fechaIngresoEtapa; todos menos NO RECUPERABLE que nunca ingresó — UI: "Preventas"
+            long ventasRegistradas,       // ultimaTipificacionAt ∈ período; ultima == INGRESADO — UI: "Registradas"
+            long ventasInstaladas,        // fechaInstalacion ∈ período — UI: "Instaladas"
+            long ventasRechazadas,        // ultimaTipificacionAt ∈ período; ultima ∈ rechazo Y mayorRango ≥ INGRESADO — UI: "Rechazadas"
+            long ventasProgramadasActual, // ultimaTipificacionAt ∈ período; ultima == PROGRAMADO — UI: "Programadas"
             // Embudo (conversiones): base = preventasCompletas
             long registradasFunnel,       // mayorRango ∈ {INGRESADO,PROGRAMADO,INSTALADO} (registró alguna vez)
             long instaladasFunnel,        // ultima == INSTALADO en la cohorte (instaló alguna vez)
@@ -49,10 +51,13 @@ public record DashboardVentaResponse(
             long programadasRechazadas    // programadasTotal ∩ ultima ∈ rechazo
     ) {}
 
-    /** Universo agrupado por última tipificación (código null => SIN_INGRESAR). Suma == preventasCompletas. */
+    /**
+     * Breakdown "Por tipificación": cohorte (fechaIngresoEtapa ∈ período) agrupada por última tipificación
+     * (código null => SIN_INGRESAR). Suma == cohorte total (todos los que entraron), NO == preventasCompletas.
+     */
     public record EstadoLead(String codigo, long cantidad) {}
 
-    /** Tabla de zonas. "registradas" = ventasRegistradas por zona; instaladas ancladas en fechaInstalacion. */
+    /** Tabla de zonas. "registradas" = card REGISTRADAS por zona (ultimaTipificacionAt); instaladas por fechaInstalacion. */
     public record Zonas(Zona lima, Zona provincia, ZonaSinUbigeo sinUbigeo) {}
 
     public record Zona(

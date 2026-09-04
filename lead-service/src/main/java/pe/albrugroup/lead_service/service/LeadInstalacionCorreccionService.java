@@ -141,6 +141,9 @@ public class LeadInstalacionCorreccionService {
         if (fechaInstalacion == null) {
             throw new BadRequestException("La fecha de instalacion es obligatoria");
         }
+        if (fechaInstalacion.isAfter(OperationalDateTime.today())) {
+            throw new BadRequestException("La fecha de instalacion no puede ser futura");
+        }
         return fechaInstalacion;
     }
 

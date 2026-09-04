@@ -985,9 +985,9 @@
 
         <label>
           <span>Fecha instalación</span>
-          <input pInputText type="date" formControlName="fechaInstalacion" />
+          <input pInputText type="date" formControlName="fechaInstalacion" [max]="todayDate" />
           @if (correctionFieldInvalid('fechaInstalacion')) {
-            <small>La fecha de instalación es obligatoria.</small>
+            <small>{{ correctionFieldError('fechaInstalacion') }}</small>
           }
         </label>
 
@@ -1322,6 +1322,7 @@
                     [ngModelOptions]="{ standalone: true }"
                     dateFormat="dd/mm/yy"
                     [minDate]="null"
+                    [maxDate]="toPickerDate(todayDate)"
                     [showIcon]="true"
                     appendTo="body"
                     [disabled]="!canMutateOperationalData()"

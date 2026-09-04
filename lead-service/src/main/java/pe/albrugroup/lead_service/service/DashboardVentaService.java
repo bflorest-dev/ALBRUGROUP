@@ -58,6 +58,7 @@ public class DashboardVentaService {
     private static final String TIPIFICACION_INSTALADO = "INSTALADO";
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
     private static final String TIPIFICACION_INGRESADO = "INGRESADO";
+    private static final String TIPIFICACION_NO_RECUPERABLE = "NO RECUPERABLE";
     // Estado de ingreso: puede venir como última tipificación NULL (nunca gestionado) o como el código
     // literal "SIN INGRESAR" de la matriz. Ambos son "sin ingresar": NO cuentan como venta registrada.
     private static final String TIPIFICACION_SIN_INGRESAR = "SIN INGRESAR";
@@ -120,24 +121,25 @@ public class DashboardVentaService {
         LocalDate desdeR = desde != null ? desde : OperationalDateTime.currentMonth().atDay(1);
         LocalDate hastaR = hasta != null ? hasta : OperationalDateTime.today();
 
-        Page<VentaResumenDetalleResponse> page;
-        if (metrica == MetricaVentaDetalle.INSTALADAS) {
-            // Instaladas se anclan en fechaInstalacion ∈ período (no en la cohorte de ingreso).
-            page = resumenRepository.dashboardVentaInstaladasDetalle(
+        Instant inicio = OperationalDateTime.startOfDay(desdeR);
+        Instant fin = OperationalDateTime.endExclusiveOfDay(hastaR);
+
+        // Cada métrica se ancla como su card: PREVENTAS por fechaIngresoEtapa; REG/PROG/RECH por
+        // ultimaTipificacionAt; INSTALADAS por fechaInstalacion. Así cada lista cuadra con su contador.
+        Page<VentaResumenDetalleResponse> page = switch (metrica) {
+            case INSTALADAS -> resumenRepository.dashboardVentaInstaladasDetalle(
                     Etapa.VENTA, idProveedor, TIPIFICACION_INSTALADO, desdeR, hastaR.plusDays(1), pageable);
-        } else {
-            Instant inicio = OperationalDateTime.startOfDay(desdeR);
-            Instant fin = OperationalDateTime.endExclusiveOfDay(hastaR);
-            page = resumenRepository.dashboardVentaResumenDetalle(
+            case PREVENTAS -> resumenRepository.dashboardVentaPreventasDetalle(
                     Etapa.VENTA, idProveedor, inicio, fin,
-                    metrica == MetricaVentaDetalle.PREVENTAS,
+                    TIPIFICACION_NO_RECUPERABLE, TIPIFICACIONES_INGRESADO_O_MAS, pageable);
+            case REGISTRADAS, PROGRAMADAS, RECHAZADAS -> resumenRepository.dashboardVentaEstadoDetalle(
+                    Etapa.VENTA, idProveedor, inicio, fin,
                     metrica == MetricaVentaDetalle.REGISTRADAS,
                     metrica == MetricaVentaDetalle.PROGRAMADAS,
                     metrica == MetricaVentaDetalle.RECHAZADAS,
                     TIPIFICACION_INGRESADO, TIPIFICACION_PROGRAMADO,
-                    TIPIFICACIONES_INGRESADO_O_MAS, TIPIFICACIONES_RECHAZO,
-                    pageable);
-        }
+                    TIPIFICACIONES_RECHAZO, TIPIFICACIONES_INGRESADO_O_MAS, pageable);
+        };
         return PageResponse.from(page);
     }
 
@@ -174,17 +176,20 @@ public class DashboardVentaService {
         Instant fin = OperationalDateTime.endExclusiveOfDay(hastaR);
         LocalDate hastaExcl = hastaR.plusDays(1);
 
+        // Q1 cohorte (fechaIngresoEtapa): PREVENTAS + breakdown + embudo para conversiones.
+        // Q2 estado (ultimaTipificacionAt): REGISTRADAS/PROGRAMADAS/RECHAZADAS + zonas.registradas.
         Acumulador acc = new Acumulador()
                 .universo(resumenRepository.dashboardVentaUniverso(Etapa.VENTA, idProveedor, inicio, fin))
-                .embudo(resumenRepository.dashboardVentaEmbudo(
-                        Etapa.VENTA, idProveedor, inicio, fin, TIPIFICACIONES_PROGRAMADA_O_MAS));
+                .estado(resumenRepository.dashboardVentaEstado(Etapa.VENTA, idProveedor, inicio, fin));
 
         // Zonas primero: ancla las instaladas en fechaInstalacion y de paso fija el total de instaladas del
-        // período (card "Instaladas"), que ya no es la cohorte por fechaIngresoEtapa.
+        // período (card "Instaladas"), que ya no es la cohorte por fechaIngresoEtapa. registradasEInstaladas
+        // sale del EXISTS sobre Evento (INGRESADO en el período).
         Zonas zonas = construirZonas(
                 acc,
                 resumenRepository.dashboardVentaZonasInstaladas(
-                        Etapa.VENTA, idProveedor, TIPIFICACION_INSTALADO, inicio, fin, desdeR, hastaExcl));
+                        Etapa.VENTA, idProveedor, TIPIFICACION_INSTALADO, TIPIFICACION_INGRESADO,
+                        Accion.TIPIFICACION, inicio, fin, desdeR, hastaExcl));
         Contadores contadores = acc.build();
 
         ProgramacionActual programacion = construirProgramacion(
@@ -249,9 +254,10 @@ public class DashboardVentaService {
         return 3;
     }
 
-    // ── Contadores + estado (Q1 universo + Q2 embudo) ─────────────────────────────────────────────
+    // ── Contadores + estado (Q1 cohorte por fechaIngresoEtapa + Q2 estado por ultimaTipificacionAt) ──────
     private static final class Acumulador {
-        // Cards (contadores): foto por última + preventas por mayor rango + instaladas por fechaInstalacion.
+        // Cards (contadores): PREVENTAS por mayor rango (cohorte) · REG/PROG/RECH por última (Q2) ·
+        // INSTALADAS por fechaInstalacion (zonas).
         long preventasCompletas, ventasRegistradas, ventasInstaladas, ventasRechazadas, ventasProgramadasActual;
         // Embudo (solo para las 6 conversiones, NO son los cards): "alcanzó X alguna vez" por mayor rango.
         long registradasFunnel, instaladasFunnel, rechazadasFunnel;
@@ -259,43 +265,51 @@ public class DashboardVentaService {
         final Map<String, Long> porUltima = new LinkedHashMap<>();
         final long[] registradasZona = new long[Zona3.values().length];
 
+        // Q1 — cohorte por fechaIngresoEtapa, agrupada por (última, mayor rango). Da PREVENTAS, el breakdown
+        // "Por tipificación" (por última) y todos los absolutos de embudo para las conversiones.
         Acumulador universo(List<Object[]> rows) {
+            for (Object[] r : rows) {
+                String ultima = (String) r[0];
+                String mayor = (String) r[1];
+                long n = asLong(r[2]);
+                boolean sinIngresar = esSinIngresar(ultima);
+                boolean alcanzoRegistrado = mayor != null && TIPIFICACIONES_INGRESADO_O_MAS.contains(mayor);
+                // Breakdown: fusiona null y "SIN INGRESAR" en un solo bucket "sin ingresar".
+                porUltima.merge(sinIngresar ? null : ultima, n, Long::sum);
+                // PREVENTAS (card): todos MENOS el NO RECUPERABLE que nunca ingresó. Incluye INGRESADO/PROG/
+                // INST, los rechazados que sí ingresaron, y SUBSANABLE/SIN INGRESAR/no-gestionados.
+                if (!(TIPIFICACION_NO_RECUPERABLE.equals(ultima) && !alcanzoRegistrado)) preventasCompletas += n;
+
+                // Embudo (conversiones): monotónico y anidado en el mayor rango.
+                if (alcanzoRegistrado) registradasFunnel += n;                 // registró alguna vez
+                if (TIPIFICACION_INSTALADO.equals(ultima)) instaladasFunnel += n; // instaló (terminal)
+                if (alcanzoRegistrado && esRechazo(ultima)) rechazadasFunnel += n; // registró y luego cayó
+                if (mayor != null && TIPIFICACIONES_PROGRAMADA_O_MAS.contains(mayor)) {
+                    programadasTotal += n;                                     // programó alguna vez
+                    if (TIPIFICACION_INSTALADO.equals(ultima)) programadasInstaladas += n;
+                    if (esRechazo(ultima)) programadasRechazadas += n;
+                }
+            }
+            return this;
+        }
+
+        // Q2 — estado por ultimaTipificacionAt, agrupado por (última, mayor rango, zona). Da los cards
+        // REGISTRADAS/PROGRAMADAS/RECHAZADAS (foto: gestionadas en el período que quedaron en ese estado) y
+        // el desglose geográfico de registradas.
+        Acumulador estado(List<Object[]> rows) {
             for (Object[] r : rows) {
                 String ultima = (String) r[0];
                 String mayor = (String) r[1];
                 String prefijo = (String) r[2];
                 long n = asLong(r[3]);
-                boolean sinIngresar = esSinIngresar(ultima);
-                boolean alcanzoRegistrado = mayor != null && TIPIFICACIONES_INGRESADO_O_MAS.contains(mayor);
-                // Fusiona null y "SIN INGRESAR" en un solo bucket "sin ingresar" (breakdown por última).
-                porUltima.merge(sinIngresar ? null : ultima, n, Long::sum);
-                // Preventa genuina (card): por el MAYOR RANGO (llegó al menos a INGRESADO) o recién llegada
-                // (última nula, sin gestionar aún). Excluye a las rechazadas sin haber ingresado nunca.
-                if (alcanzoRegistrado || ultima == null) preventasCompletas += n;
-                // Registrada (card): foto de las que están HOY en INGRESADO (aún sin avanzar/rechazar).
-                if (TIPIFICACION_INGRESADO.equals(ultima)) ventasRegistradas += n;
-                // Zonas.registradas mide "subidas" (registró en el sistema alguna vez = última no nula y no
-                // SIN INGRESAR); más amplio que el card, para no romper la intersección "…e instaladas".
-                if (!sinIngresar) registradasZona[Zona3.de(prefijo).ordinal()] += n;
-                if (esRechazo(ultima)) ventasRechazadas += n;
+                if (TIPIFICACION_INGRESADO.equals(ultima)) {
+                    ventasRegistradas += n;
+                    registradasZona[Zona3.de(prefijo).ordinal()] += n;
+                }
                 if (TIPIFICACION_PROGRAMADO.equals(ultima)) ventasProgramadasActual += n;
-
-                // Embudo (conversiones): monotónico y anidado en el mayor rango. registradasFunnel = registró
-                // alguna vez; instaladasFunnel = instaló (terminal); rechazadasFunnel = registró y luego cayó.
-                if (alcanzoRegistrado) registradasFunnel += n;
-                if (TIPIFICACION_INSTALADO.equals(ultima)) instaladasFunnel += n;
-                if (alcanzoRegistrado && esRechazo(ultima)) rechazadasFunnel += n;
-            }
-            return this;
-        }
-
-        Acumulador embudo(List<Object[]> rows) {
-            for (Object[] r : rows) {
-                String ultima = (String) r[0];
-                long n = asLong(r[1]);
-                programadasTotal += n;
-                if (TIPIFICACION_INSTALADO.equals(ultima)) programadasInstaladas += n;
-                if (esRechazo(ultima)) programadasRechazadas += n;
+                // RECHAZADAS: rechazado TRAS haber ingresado (mayor rango ≥ INGRESADO).
+                boolean alcanzoRegistrado = mayor != null && TIPIFICACIONES_INGRESADO_O_MAS.contains(mayor);
+                if (esRechazo(ultima) && alcanzoRegistrado) ventasRechazadas += n;
             }
             return this;
         }
@@ -314,7 +328,7 @@ public class DashboardVentaService {
         }
     }
 
-    // ── Zonas (Q1 registradas + Q3 instaladas/CF/registradasEInstaladas) ──────────────────────────
+    // ── Zonas (Q2 registradas + Q3 instaladas/CF/registradasEInstaladas) ──────────────────────────
     private Zonas construirZonas(Acumulador acc, List<Object[]> instaladasRows) {
         long[] instaladas = new long[Zona3.values().length];
         long[] regEInst = new long[Zona3.values().length];

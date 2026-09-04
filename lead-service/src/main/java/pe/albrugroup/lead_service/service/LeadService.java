@@ -4050,6 +4050,9 @@ public class LeadService {
         if (fechaInstalacion == null) {
             throw new BadRequestException("La fecha de instalacion es obligatoria para pasar a POSTVENTA");
         }
+        if (fechaInstalacion.isAfter(OperationalDateTime.today())) {
+            throw new BadRequestException("La fecha de instalacion no puede ser futura");
+        }
         // TEMPORAL: regularizacion de leads antiguos. Descomentar al cerrar la regularizacion.
         // validarFechaNoAnteriorAHoy(fechaInstalacion, "La fecha de instalacion no puede ser anterior a hoy");
     }

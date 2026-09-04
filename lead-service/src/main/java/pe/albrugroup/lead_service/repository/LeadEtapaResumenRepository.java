@@ -441,21 +441,21 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     // servicio; el proveedor es la partición). Universo = fila VENTA con fechaIngresoEtapa ∈ período.
     // El prefijo de ubigeo (SUBSTRING 1,2) se pliega a Lima ('15'/'07') / Provincia / SinUbigeo en Java.
 
-    // Q1 — universo por (última tipificación, mayor rango, prefijo de ubigeo). Da: preventasCompletas
-    // (por mayor rango >= INGRESADO ó última nula), registradas, rechazadas, programadasActual, estadoLeads
-    // (por última) y zonas.registradas (subidas). El mayor rango entra en el GROUP BY porque "preventa
-    // genuina" se decide con el high-water mark, no con la última tipificación.
+    // Q1 — cohorte por (última tipificación, mayor rango). Anclada en fechaIngresoEtapa ∈ período. Da:
+    // preventasCompletas (todos menos NO RECUPERABLE que nunca ingresó), el breakdown "Por tipificación"
+    // (por última) y TODOS los absolutos de embudo para las conversiones (por mayor rango). El mayor rango
+    // entra en el GROUP BY porque tanto "preventa genuina" como el embudo se deciden con el high-water mark.
+    // Las zonas ya NO salen de aquí (registradas se ancla en ultimaTipificacionAt → Q2).
     @Query("""
-            SELECT r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, SUBSTRING(d.ubigeoDomicilio, 1, 2), COUNT(DISTINCT l.id)
+            SELECT r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, COUNT(DISTINCT l.id)
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             JOIN l.plan pl
             JOIN pl.proveedor pr
-            LEFT JOIN l.direccion d
             WHERE pr.id = :idProveedor
               AND r.fechaIngresoEtapa >= :inicio
               AND r.fechaIngresoEtapa < :fin
-            GROUP BY r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, SUBSTRING(d.ubigeoDomicilio, 1, 2)
+            GROUP BY r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion
             """)
     List<Object[]> dashboardVentaUniverso(
             @Param("etapa") Etapa etapa,
@@ -464,36 +464,46 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("fin") Instant fin
     );
 
-    // Q2 — embudo "programada alguna vez" (mayorRango ∈ {PROGRAMADO, INSTALADO}) por última tipificación.
-    // Da: programadasTotal (suma), programadasInstaladas (bucket INSTALADO), programadasRechazadas (rechazo).
+    // Q2 — estado por (última tipificación, mayor rango, prefijo de ubigeo). Anclada en ultimaTipificacionAt
+    // ∈ período (foto de "gestionadas en el período que quedaron en ese estado"). Da: REGISTRADAS
+    // (última == INGRESADO), PROGRAMADAS (última == PROGRAMADO), RECHAZADAS (última ∈ rechazo Y mayor rango
+    // ∈ {INGRESADO,PROGRAMADO,INSTALADO}) y zonas.registradas. Lee la fila del resumen VENTA, no lead.etapa
+    // (un NO RECUPERABLE devuelve el lead a PREVENTA pero su resumen VENTA conserva la última).
     @Query("""
-            SELECT r.ultimaCodigoTipificacion, COUNT(DISTINCT l.id)
+            SELECT r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, SUBSTRING(d.ubigeoDomicilio, 1, 2), COUNT(DISTINCT l.id)
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             JOIN l.plan pl
             JOIN pl.proveedor pr
+            LEFT JOIN l.direccion d
             WHERE pr.id = :idProveedor
-              AND r.fechaIngresoEtapa >= :inicio
-              AND r.fechaIngresoEtapa < :fin
-              AND r.mayorRangoCodigoTipificacion IN :codigosProgramadaOMas
-            GROUP BY r.ultimaCodigoTipificacion
+              AND r.ultimaTipificacionAt >= :inicio
+              AND r.ultimaTipificacionAt < :fin
+            GROUP BY r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, SUBSTRING(d.ubigeoDomicilio, 1, 2)
             """)
-    List<Object[]> dashboardVentaEmbudo(
+    List<Object[]> dashboardVentaEstado(
             @Param("etapa") Etapa etapa,
             @Param("idProveedor") Long idProveedor,
             @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin,
-            @Param("codigosProgramadaOMas") Collection<String> codigosProgramadaOMas
+            @Param("fin") Instant fin
     );
 
     // Q3 — zonas: instaladas EN EL PERÍODO (fechaInstalacion) por prefijo de ubigeo, con CF (SUM/AVG del
-    // precioPlanSnapshot) y cuántas de esas también ingresaron a venta en el período (registradasEInstaladas).
+    // precioPlanSnapshot) y registradasEInstaladas = de esas instaladas, las que ADEMÁS tienen un evento de
+    // tipificación INGRESADO cuyo createdAt cae en el período (registró e instaló en el mismo período). Es la
+    // única métrica que necesita el log de eventos: el resumen guarda una sola última, no "fue INGRESADO Y
+    // luego INSTALADO". Subconjunto de las instaladas, así que la fila cuadra por debajo de INSTALADAS.
     @Query("""
             SELECT SUBSTRING(d.ubigeoDomicilio, 1, 2),
                    COUNT(DISTINCT l.id),
                    SUM(l.precioPlanSnapshot),
                    AVG(l.precioPlanSnapshot),
-                   SUM(CASE WHEN r.fechaIngresoEtapa >= :inicio AND r.fechaIngresoEtapa < :fin THEN 1 ELSE 0 END)
+                   SUM(CASE WHEN EXISTS (
+                       SELECT 1 FROM Evento e
+                       WHERE e.idLead = l.id AND e.etapa = :etapa AND e.accion = :accionTip
+                         AND e.tipificacion = :codigoIngresado
+                         AND e.createdAt >= :inicio AND e.createdAt < :fin
+                   ) THEN 1 ELSE 0 END)
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             JOIN l.plan pl
@@ -510,6 +520,8 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("etapa") Etapa etapa,
             @Param("idProveedor") Long idProveedor,
             @Param("codigoInstalado") String codigoInstalado,
+            @Param("codigoIngresado") String codigoIngresado,
+            @Param("accionTip") Accion accionTip,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
             @Param("desdeDate") java.time.LocalDate desdeDate,
@@ -639,13 +651,8 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             Pageable pageable
     );
 
-    // Detalle de una MÉTRICA del resumen: el universo VENTA (fechaIngresoEtapa en período) filtrado por la
-    // métrica clickeada (flags booleanos, mismos criterios que los contadores). Tipi VIVA del Lead.
-    //   - PREVENTAS:   preventa genuina = mayor rango en {INGRESADO, PROGRAMADO, INSTALADO} ó última nula.
-    //   - REGISTRADAS: última == INGRESADO (foto: registrada y aún sin avanzar/rechazar).
-    //   - PROGRAMADAS: última == PROGRAMADO.
-    //   - RECHAZADAS:  última ∈ {SUBSANABLE, NO RECUPERABLE}.
-    // INSTALADAS NO sale por aquí: se ancla en fechaInstalacion (ver dashboardVentaInstaladasDetalle).
+    // Detalle de PREVENTAS: cohorte VENTA anclada en fechaIngresoEtapa ∈ período, con la misma regla del card
+    // (todos menos el NO RECUPERABLE que nunca ingresó). Tipi VIVA del Lead.
     @Query(value = """
             SELECT new pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse(
                 rv.fechaIngresoEtapa,
@@ -663,10 +670,9 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             WHERE pr.id = :idProveedor
               AND rv.fechaIngresoEtapa >= :inicio
               AND rv.fechaIngresoEtapa < :fin
-              AND ( (:preventas = true AND (rv.mayorRangoCodigoTipificacion IN :codigosIngresadoOMas OR rv.ultimaCodigoTipificacion IS NULL))
-                 OR (:registradas = true AND rv.ultimaCodigoTipificacion = :codigoIngresado)
-                 OR (:programadas = true AND rv.ultimaCodigoTipificacion = :codigoProgramado)
-                 OR (:rechazadas  = true AND rv.ultimaCodigoTipificacion IN :codigosRechazo) )
+              AND ( rv.ultimaCodigoTipificacion IS NULL
+                 OR rv.ultimaCodigoTipificacion <> :codigoNoRecuperable
+                 OR rv.mayorRangoCodigoTipificacion IN :codigosIngresadoOMas )
             ORDER BY rv.fechaIngresoEtapa DESC, l.id DESC
             """,
             countQuery = """
@@ -678,24 +684,70 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             WHERE pr.id = :idProveedor
               AND rv.fechaIngresoEtapa >= :inicio
               AND rv.fechaIngresoEtapa < :fin
-              AND ( (:preventas = true AND (rv.mayorRangoCodigoTipificacion IN :codigosIngresadoOMas OR rv.ultimaCodigoTipificacion IS NULL))
-                 OR (:registradas = true AND rv.ultimaCodigoTipificacion = :codigoIngresado)
-                 OR (:programadas = true AND rv.ultimaCodigoTipificacion = :codigoProgramado)
-                 OR (:rechazadas  = true AND rv.ultimaCodigoTipificacion IN :codigosRechazo) )
+              AND ( rv.ultimaCodigoTipificacion IS NULL
+                 OR rv.ultimaCodigoTipificacion <> :codigoNoRecuperable
+                 OR rv.mayorRangoCodigoTipificacion IN :codigosIngresadoOMas )
             """)
-    Page<pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse> dashboardVentaResumenDetalle(
+    Page<pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse> dashboardVentaPreventasDetalle(
             @Param("etapaVenta") Etapa etapaVenta,
             @Param("idProveedor") Long idProveedor,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
-            @Param("preventas") boolean preventas,
+            @Param("codigoNoRecuperable") String codigoNoRecuperable,
+            @Param("codigosIngresadoOMas") Collection<String> codigosIngresadoOMas,
+            Pageable pageable
+    );
+
+    // Detalle de REGISTRADAS / PROGRAMADAS / RECHAZADAS: anclado en ultimaTipificacionAt ∈ período (mismo
+    // criterio que los cards). RECHAZADAS exige además mayor rango ∈ {INGRESADO,PROGRAMADO,INSTALADO}.
+    // INSTALADAS NO sale por aquí (se ancla en fechaInstalacion, ver dashboardVentaInstaladasDetalle).
+    @Query(value = """
+            SELECT new pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse(
+                rv.fechaIngresoEtapa,
+                dp.numeroDocumentoTitularServicio,
+                l.lead,
+                dp.nombreTitularServicio,
+                l.codigoTipificacion, l.codigoSubtipificacion,
+                rv.fechaUltimaGestion
+            )
+            FROM Lead l
+            JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            LEFT JOIN l.datosPreventa dp
+            WHERE pr.id = :idProveedor
+              AND rv.ultimaTipificacionAt >= :inicio
+              AND rv.ultimaTipificacionAt < :fin
+              AND ( (:registradas = true AND rv.ultimaCodigoTipificacion = :codigoIngresado)
+                 OR (:programadas = true AND rv.ultimaCodigoTipificacion = :codigoProgramado)
+                 OR (:rechazadas  = true AND rv.ultimaCodigoTipificacion IN :codigosRechazo AND rv.mayorRangoCodigoTipificacion IN :codigosIngresadoOMas) )
+            ORDER BY rv.ultimaTipificacionAt DESC, l.id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            WHERE pr.id = :idProveedor
+              AND rv.ultimaTipificacionAt >= :inicio
+              AND rv.ultimaTipificacionAt < :fin
+              AND ( (:registradas = true AND rv.ultimaCodigoTipificacion = :codigoIngresado)
+                 OR (:programadas = true AND rv.ultimaCodigoTipificacion = :codigoProgramado)
+                 OR (:rechazadas  = true AND rv.ultimaCodigoTipificacion IN :codigosRechazo AND rv.mayorRangoCodigoTipificacion IN :codigosIngresadoOMas) )
+            """)
+    Page<pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse> dashboardVentaEstadoDetalle(
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("idProveedor") Long idProveedor,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
             @Param("registradas") boolean registradas,
             @Param("programadas") boolean programadas,
             @Param("rechazadas") boolean rechazadas,
             @Param("codigoIngresado") String codigoIngresado,
             @Param("codigoProgramado") String codigoProgramado,
-            @Param("codigosIngresadoOMas") Collection<String> codigosIngresadoOMas,
             @Param("codigosRechazo") Collection<String> codigosRechazo,
+            @Param("codigosIngresadoOMas") Collection<String> codigosIngresadoOMas,
             Pageable pageable
     );
 

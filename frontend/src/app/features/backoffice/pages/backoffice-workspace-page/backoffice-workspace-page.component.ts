@@ -468,7 +468,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     codigoTipificacion: ['', [Validators.required]],
     codigoSubtipificacion: ['', [Validators.required]],
     comentario: [''],
-    fechaInstalacion: [''],
+    fechaInstalacion: ['', [this.dateNotAfterTodayValidator()]],
     fechaProgramacion: [''],
     fechaRechazo: [''],
     horaProgramada: [''],
@@ -480,7 +480,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly correctionForm = this.fb.group({
     sec: ['', [Validators.required, Validators.pattern(/^\d{9}$/)]],
     sot: ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
-    fechaInstalacion: ['', [Validators.required]]
+    fechaInstalacion: ['', [Validators.required, this.dateNotAfterTodayValidator()]]
   });
 
   protected readonly tipificaciones = computed(() => [...(this.catalogo()?.tipificaciones ?? [])].sort((a, b) => a.orden - b.orden));
@@ -1466,6 +1466,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.notify('warn', 'La fecha de instalacion es obligatoria para pasar a POSTVENTA.');
       return;
     }
+    if (this.requiresInstallDate() && this.tipificacionForm.controls.fechaInstalacion.invalid) {
+      this.notify('warn', 'La fecha de instalacion no puede ser futura.');
+      return;
+    }
     // TEMPORAL: regularizacion de leads antiguos. Descomentar al cerrar la regularizacion.
     // if (this.requiresInstallDate() && !this.validateDateNotBeforeToday(
     //   this.tipificacionForm.controls.fechaInstalacion.value,
@@ -1843,6 +1847,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return control.invalid && (control.touched || control.dirty);
   }
 
+  protected correctionFieldError(field: 'sec' | 'sot' | 'fechaInstalacion'): string {
+    const control = this.correctionForm.controls[field];
+    if (field === 'fechaInstalacion' && control.hasError('futureDate')) {
+      return 'La fecha de instalación no puede ser futura.';
+    }
+    if (field === 'fechaInstalacion') {
+      return 'La fecha de instalación es obligatoria.';
+    }
+    return field === 'sec' ? 'El SEC debe tener 9 dígitos.' : 'El SOT debe tener 8 dígitos.';
+  }
+
   private firstCorrectionFormError(): string {
     const controls = this.correctionForm.controls;
     if (controls.sec.invalid) {
@@ -1850,6 +1865,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     if (controls.sot.invalid) {
       return 'El SOT debe tener 8 dígitos.';
+    }
+    if (controls.fechaInstalacion.hasError('futureDate')) {
+      return 'La fecha de instalación no puede ser futura.';
     }
     return 'La fecha de instalación es obligatoria.';
   }
@@ -2460,6 +2478,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return false;
     }
     return true;
+  }
+
+  private dateNotAfterTodayValidator() {
+    return (control: AbstractControl<string | null>) => {
+      const value = control.value;
+      if (value && value > this.todayDate) {
+        return { futureDate: true };
+      }
+      return null;
+    };
   }
 
   protected setDateControl(controlName: 'fechaInstalacion' | 'fechaProgramacion' | 'fechaRechazo', value: Date | string | null): void {

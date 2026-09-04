@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
@@ -97,6 +98,21 @@ class LeadInstalacionCorreccionServiceTest {
         );
 
         assertThat(exception.getMessage()).contains("SEC es obligatorio");
+        verify(leadRepository, never()).save(any());
+    }
+
+    @Test
+    void rechazaFechaInstalacionFutura() {
+        LeadInstalacionCorreccionService service = service();
+        LeadInstalacionCorreccionRequest request = new LeadInstalacionCorreccionRequest();
+        request.setFechaInstalacion(OperationalDateTime.today().plusDays(1));
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> service.corregirInstalacion(28248L, request)
+        );
+
+        assertThat(exception.getMessage()).contains("La fecha de instalacion no puede ser futura");
         verify(leadRepository, never()).save(any());
     }
 
