@@ -12,8 +12,29 @@
 }
 
 .mobile-topbar,
-.mobile-menu-backdrop {
+.mobile-menu-backdrop,
+.admin-sidebar-v2-host {
   display: none;
+}
+
+@media (min-width: 901px) {
+  .layout-shell--admin-v2 {
+    --layout-sidebar-width: 4.5rem;
+  }
+
+  .admin-sidebar-v2-host {
+    align-self: start;
+    display: block;
+    height: 100dvh;
+    position: sticky;
+    top: 0;
+    width: var(--layout-sidebar-width);
+    z-index: 160;
+  }
+
+  .layout-shell--admin-v2 > .sidebar--legacy-admin {
+    display: none;
+  }
 }
 
 .sidebar {

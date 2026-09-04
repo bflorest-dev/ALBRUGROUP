@@ -31,21 +31,8 @@ import { GtrAgendadosAlertFacade } from '../../../features/gtr/facades/gtr-agend
 import { EquiposNavService } from '../../services/equipos-nav.service';
 import { CurrentUserProviderScopeService } from '../../services/current-user-provider-scope.service';
 import { LeadMeritoCorreccionDrawerComponent } from '../../../shared/components/lead-merito-correccion-drawer/lead-merito-correccion-drawer.component';
-
-type SidebarItem = {
-  label: string;
-  key?: string;
-  route?: string;
-  icon: string;
-  badge?: string | number;
-  alertActive?: boolean;
-  alertLabel?: string;
-  exact?: boolean;
-  /** Sub-items de un grupo expandible (p. ej. COLABORADORES). */
-  children?: SidebarItem[];
-  /** Marca el primer hijo de un bloque distinto (dibuja un divisor arriba). */
-  startsGroup?: boolean;
-};
+import { AdminSidebarV2Component } from './admin-sidebar-v2.component';
+import { SidebarItem } from './sidebar-item.model';
 
 const ROLE_THEME_CLASS: Record<string, string> = {
   ADMINISTRADOR: 'theme-admin',
@@ -74,7 +61,8 @@ const ROLE_THEME_CLASS: Record<string, string> = {
     AttendanceStatusPickerComponent,
     TopBannerComponent,
     BadgeModule,
-    LeadMeritoCorreccionDrawerComponent
+    LeadMeritoCorreccionDrawerComponent,
+    AdminSidebarV2Component
   ],
   templateUrl: './private-layout.component.html',
   styleUrl: './private-layout.component.scss',

@@ -1,4 +1,4 @@
-<div [class]="'layout-shell ' + themeClass()">
+<div [class]="'layout-shell ' + themeClass()" [class.layout-shell--admin-v2]="isAdmin()">
   <header class="mobile-topbar">
     <button
       type="button"
@@ -20,9 +20,26 @@
     <button type="button" class="mobile-menu-backdrop" aria-label="Cerrar menu" (click)="closeMobileMenu()"></button>
   }
 
+  @if (isAdmin()) {
+    <app-admin-sidebar-v2
+      class="admin-sidebar-v2-host"
+      [items]="menuItems()"
+      [displayName]="userDisplayName()"
+      [roleLabel]="primaryRoleLabel()"
+      [statusLabel]="attendanceStatusLabel()"
+      [statusColor]="attendanceStatusColor()"
+      [deleteLeadsVisible]="adminDeleteLeadsVisible()"
+      [canCorrectMerito]="canCorrectMerito()"
+      (deleteLeadsToggled)="toggleAdminDeleteLeadsVisible()"
+      (correctMeritoRequested)="openMeritoCorrection()"
+      (logoutRequested)="logout()"
+    />
+  }
+
   <aside
     #sidebar
-    class="sidebar"
+    class="sidebar sidebar--legacy"
+    [class.sidebar--legacy-admin]="isAdmin()"
     [class.sidebar--open]="mobileMenuOpen()"
     aria-label="Menu principal"
     (mouseleave)="releaseSidebarPointerFocus()"

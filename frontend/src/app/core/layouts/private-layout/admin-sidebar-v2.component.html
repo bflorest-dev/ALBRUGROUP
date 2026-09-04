@@ -1,0 +1,201 @@
+<div
+  class="admin-nav-v2"
+  [class.admin-nav-v2--open]="isPanelOpen()"
+  (mouseenter)="cancelClose()"
+  (mouseleave)="scheduleClose()"
+>
+  <span class="admin-nav-v2__focus-layer" aria-hidden="true"></span>
+
+  <aside class="admin-nav-v2__rail" aria-label="Navegación principal de Administrador">
+    <button
+      type="button"
+      class="admin-nav-v2__brand"
+      pTooltip="ALBRU GROUP"
+      tooltipPosition="right"
+      (click)="openHome($event)"
+    >
+      <svg class="admin-nav-v2__brand-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M3.7 18.5 9.25 5.5h3.45l-5.55 13H3.7Zm6.25 0 5.55-13h3.45l-5.55 13H9.95ZM7.4 13.3h8.35l-1.3 3.05H6.1L7.4 13.3Z" />
+      </svg>
+      <span class="sr-only">ALBRU GROUP</span>
+    </button>
+
+    <nav class="admin-nav-v2__domains" aria-label="Dominios administrativos">
+      @for (domain of domains(); track domain.id) {
+        <button
+          type="button"
+          class="admin-nav-v2__domain"
+          [class.is-active]="domainIsActive(domain)"
+          [attr.aria-expanded]="openPanelId() === domain.id"
+          [attr.aria-controls]="'admin-context-panel'"
+          [pTooltip]="domain.label"
+          tooltipPosition="right"
+          (mouseenter)="openDomain(domain, $event)"
+          (focus)="openDomain(domain, $event)"
+          (click)="selectDomain(domain, $event)"
+        >
+          <i [class]="domain.icon" aria-hidden="true"></i>
+          <span class="sr-only">{{ domain.label }}</span>
+        </button>
+      }
+    </nav>
+
+    <div class="admin-nav-v2__identity">
+      <span
+        class="admin-nav-v2__status"
+        [style.--status-color]="statusColor()"
+        [pTooltip]="statusLabel()"
+        tooltipPosition="right"
+      >
+        <span aria-hidden="true"></span>
+        <span class="sr-only">Estado: {{ statusLabel() }}</span>
+      </span>
+      <button
+        type="button"
+        class="admin-nav-v2__profile-trigger"
+        [class.is-active]="isProfileOpen()"
+        [attr.aria-expanded]="isProfileOpen()"
+        pTooltip="Cuenta y sesión"
+        tooltipPosition="right"
+        (click)="openProfile($event)"
+      >
+        <span aria-hidden="true">{{ displayName().charAt(0).toUpperCase() }}</span>
+        <span class="sr-only">Abrir cuenta de {{ displayName() }}</span>
+      </button>
+    </div>
+  </aside>
+
+  <section
+    #contextPanel
+    id="admin-context-panel"
+    class="admin-nav-v2__panel"
+    [class.admin-nav-v2__panel--confirmed]="panelClickConfirmed()"
+    tabindex="-1"
+    [attr.aria-hidden]="!isPanelOpen()"
+    [attr.aria-label]="isProfileOpen() ? 'Cuenta y sesión' : currentDomain()?.label"
+  >
+    @if (isProfileOpen()) {
+      <header class="admin-nav-v2__panel-header admin-nav-v2__panel-header--profile">
+        <span class="admin-nav-v2__avatar" aria-hidden="true">
+          {{ displayName().charAt(0).toUpperCase() }}
+        </span>
+        <span>
+          <strong>{{ displayName() }}</strong>
+          <small>{{ roleLabel() }}</small>
+        </span>
+      </header>
+
+      <div class="admin-nav-v2__profile-status">
+        <span [style.background]="statusColor()" aria-hidden="true"></span>
+        <div>
+          <strong>{{ statusLabel() }}</strong>
+          <small>Estado operativo de la sesión</small>
+        </div>
+      </div>
+
+      <div class="admin-nav-v2__profile-actions">
+        <span class="admin-nav-v2__section-label">Herramientas administrativas</span>
+        <button
+          type="button"
+          class="admin-nav-v2__profile-action"
+          role="switch"
+          [attr.aria-checked]="deleteLeadsVisible()"
+          (click)="selectProfileAction('delete')"
+        >
+          <i class="ti ti-trash" aria-hidden="true"></i>
+          <span>
+            <strong>Eliminar leads</strong>
+            <small>Mostrar acceso en la navegación</small>
+          </span>
+          <span class="admin-nav-v2__switch" [class.is-on]="deleteLeadsVisible()" aria-hidden="true">
+            <span></span>
+          </span>
+        </button>
+
+        @if (canCorrectMerito()) {
+          <button type="button" class="admin-nav-v2__profile-action" (click)="selectProfileAction('merito')">
+            <i class="ti ti-user-edit" aria-hidden="true"></i>
+            <span>
+              <strong>Corrección de mérito</strong>
+              <small>Revisar identidad y atribución</small>
+            </span>
+            <i class="ti ti-chevron-right" aria-hidden="true"></i>
+          </button>
+        }
+      </div>
+
+      <button type="button" class="admin-nav-v2__logout" (click)="selectProfileAction('logout')">
+        <i class="ti ti-logout-2" aria-hidden="true"></i>
+        <span>Cerrar sesión</span>
+      </button>
+    } @else if (currentDomain(); as domain) {
+      <header class="admin-nav-v2__panel-header">
+        <span>
+          <strong>{{ domain.label }}</strong>
+          <small>{{ domain.description }}</small>
+        </span>
+        <button type="button" class="admin-nav-v2__close" aria-label="Cerrar navegación" (click)="closePanel(true)">
+          <i class="ti ti-x" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <nav #breadcrumbs class="admin-nav-v2__breadcrumbs" aria-label="Ruta del menú">
+        <button type="button" (click)="navigateToLevel(0)">{{ domain.label }}</button>
+        @for (pathItem of selectedPath(); track itemKey(pathItem); let index = $index) {
+          <i class="ti ti-chevron-right" aria-hidden="true"></i>
+          <button type="button" (click)="navigateToLevel(index + 1)">{{ pathItem.label }}</button>
+        }
+      </nav>
+
+      <div class="admin-nav-v2__level">
+        <span class="admin-nav-v2__section-label">
+          {{ selectedPath().length ? 'Selecciona una opción' : 'Herramientas del dominio' }}
+        </span>
+
+        <div class="admin-nav-v2__items">
+          @for (item of visibleItems(); track itemKey(item)) {
+            @if (item.children?.length) {
+              <button
+                type="button"
+                class="admin-nav-v2__item"
+                [class.is-active]="itemIsActive(item)"
+                (click)="activateGroup(item)"
+              >
+                <i [class]="item.icon" aria-hidden="true"></i>
+                <span>
+                  <strong>{{ item.label }}</strong>
+                  <small>{{ item.children!.length }} opciones</small>
+                </span>
+                <i class="ti ti-chevron-right" aria-hidden="true"></i>
+              </button>
+            } @else if (item.route) {
+              <a
+                class="admin-nav-v2__item"
+                [routerLink]="item.route"
+                routerLinkActive="is-active"
+                [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+              >
+                <i [class]="item.icon" aria-hidden="true"></i>
+                <span><strong>{{ item.label }}</strong></span>
+                @if (item.badge !== undefined && item.badge !== null && item.badge !== '') {
+                  <p-badge class="admin-nav-v2__badge" [value]="item.badge" />
+                }
+                @if (item.alertActive) {
+                  <span class="admin-nav-v2__alert" [attr.aria-label]="item.alertLabel">
+                    <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+                  </span>
+                }
+                <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+              </a>
+            }
+          }
+        </div>
+      </div>
+
+      <footer class="admin-nav-v2__panel-footer">
+        <span><kbd>Esc</kbd> cerrar</span>
+        <span>La vista permanece en su lugar</span>
+      </footer>
+    }
+  </section>
+</div>

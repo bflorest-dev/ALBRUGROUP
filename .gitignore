@@ -16,3 +16,4 @@ docker/postgres/users-seed/users.xlsx
 docker/postgres/users-seed/~$users.xlsx
 CLAUDE.md
 AGENTS.md
+DESIGN_SYSTEM_V2.md
