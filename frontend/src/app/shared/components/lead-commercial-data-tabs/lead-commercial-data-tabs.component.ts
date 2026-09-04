@@ -15,6 +15,7 @@ import {
   UbigeoItem
 } from '../../models/preventa/preventa.models';
 import { normalizePersonNameFinal, normalizePersonNameInput } from '../../utils/person-name';
+import { DateFieldComponent } from '../date-field/date-field.component';
 
 export type LeadCommercialDataTab = 'datos' | 'direccion' | 'oferta' | 'historial';
 export type LeadCommercialDataTabsLayoutMode = 'default' | 'drawer';
@@ -39,6 +40,7 @@ type ParentescoOption = { label: string; value: string };
   imports: [
     ReactiveFormsModule,
     ButtonModule,
+    DateFieldComponent,
     InputTextModule,
     MessageModule,
     SelectModule,
@@ -107,6 +109,7 @@ export class LeadCommercialDataTabsComponent {
 
   protected readonly coordinatePasteMessage = signal<string | null>(null);
   protected readonly parentescoOptions: ParentescoOption[] = [
+    { label: 'Titular', value: 'TITULAR' },
     { label: 'Madre', value: 'MADRE' },
     { label: 'Padre', value: 'PADRE' },
     { label: 'Hermano(a)', value: 'HERMANO_A' },

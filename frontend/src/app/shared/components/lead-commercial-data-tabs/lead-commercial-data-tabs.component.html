@@ -51,10 +51,13 @@
                 (blur)="setPersonNameValue(datosForm.get('nombreTitularServicio'), $any($event.target).value, true)"
               />
             </label>
-            <label class="data-field data-field--birth-date">
-              <span>Fecha de nacimiento</span>
-              <input pInputText type="date" formControlName="fechaNacimiento" [readonly]="readonly" />
-            </label>
+            <app-date-field
+              class="data-field data-field--birth-date"
+              formControlName="fechaNacimiento"
+              label="Fecha de nacimiento"
+              placeholder="dd/mm/aaaa"
+              [readonly]="readonly"
+            />
             <label class="data-field data-field--relationship">
               <span>Parentesco</span>
               <p-select

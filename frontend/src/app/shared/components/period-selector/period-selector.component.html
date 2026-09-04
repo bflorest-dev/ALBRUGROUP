@@ -17,7 +17,7 @@
       [inline]="true"
       selectionMode="range"
       [maxDate]="maxDate()"
-      [ngModel]="selectedDates()"
+      [ngModel]="calendarModel()"
       [ngModelOptions]="{ standalone: true }"
       (ngModelChange)="onPickRange($event)"
     />

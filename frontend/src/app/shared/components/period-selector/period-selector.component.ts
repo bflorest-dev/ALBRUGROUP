@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, computed, inject, input, output, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePickerModule } from 'primeng/datepicker';
 import { Popover, PopoverModule } from 'primeng/popover';
@@ -82,16 +82,9 @@ export class PeriodSelectorComponent implements OnDestroy {
 
   protected readonly maxDate = computed<Date | null>(() => this.allowFuture() ? null : new Date());
 
-  // `selectionMode="range"` espera un arreglo `[inicio, fin]`. Un dia suelto va como `[inicio, null]`
-  // para que el datepicker lo pinte sin cerrar el rango, y quede listo para elegir el segundo dia.
-  protected readonly selectedDates = computed<Array<Date | null>>(() => {
-    const desde = this.parse(this.dia() || this.hoy);
-    const hastaIso = this.hasta();
-    if (!hastaIso || hastaIso === (this.dia() || this.hoy)) {
-      return [desde, null];
-    }
-    return [desde, this.parse(hastaIso)];
-  });
+  // Modelo local del datepicker: se sincroniza al ABRIR el popover y no se toca durante la seleccion
+  // del rango, para que PrimeNG no resetee el mes visible al recibir un nuevo ngModel.
+  protected readonly calendarModel = signal<Array<Date | null>>([new Date(), null]);
 
   ngOnDestroy(): void {
     this.cancelarCierre();
@@ -119,6 +112,7 @@ export class PeriodSelectorComponent implements OnDestroy {
     if (clicked === this.host.nativeElement.querySelector('.p-togglebutton')) {
       const debeVolverAHoy = this.periodo() !== 'dia';
       this.botonAncla = clicked as HTMLElement;
+      this.syncCalendarModel();
       this.dayPopover().show(event, clicked as HTMLElement);
       if (debeVolverAHoy) {
         this.emitirHoy();
@@ -242,6 +236,16 @@ export class PeriodSelectorComponent implements OnDestroy {
   private cerrar(): void {
     this.cancelarCierre();
     this.dayPopover().hide();
+  }
+
+  private syncCalendarModel(): void {
+    const desde = this.parse(this.dia() || this.hoy);
+    const hastaIso = this.hasta();
+    if (!hastaIso || hastaIso === (this.dia() || this.hoy)) {
+      this.calendarModel.set([desde, null]);
+    } else {
+      this.calendarModel.set([desde, this.parse(hastaIso)]);
+    }
   }
 
   private emitirHoy(): void {

@@ -1,4 +1,4 @@
-<div class="date-field" [class.date-field--disabled]="isDisabled">
+<div class="date-field" [class.date-field--disabled]="isDisabled || readonly">
   @if (label) {
     <label class="date-field__label" [attr.for]="inputId">{{ label }}</label>
   }
@@ -14,7 +14,7 @@
     iconDisplay="input"
     [showButtonBar]="true"
     [readonlyInput]="true"
-    [disabled]="isDisabled"
+    [disabled]="isDisabled || readonly"
     dateFormat="dd/mm/yy"
     appendTo="body"
     inputStyleClass="date-field__input"

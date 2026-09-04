@@ -373,7 +373,7 @@ export type CampoCaptura =
   | 'NOMBRE_TITULAR_CELULAR'
   | 'PLANO';
 
-export type ParentescoPreventa = 'MADRE' | 'PADRE' | 'HERMANO_A' | 'TIO_A' | 'CONOCIDO';
+export type ParentescoPreventa = 'TITULAR' | 'MADRE' | 'PADRE' | 'HERMANO_A' | 'TIO_A' | 'CONOCIDO';
 
 export interface CampoConfigItem {
   campo: CampoCaptura;

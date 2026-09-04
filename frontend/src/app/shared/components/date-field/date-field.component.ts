@@ -23,6 +23,7 @@ export class DateFieldComponent implements ControlValueAccessor {
   @Input() min: string | null = null;
   @Input() max: string | null = null;
   @Input() inputId?: string;
+  @Input() readonly = false;
 
   protected selectedDate: Date | null = null;
   protected isDisabled = false;
