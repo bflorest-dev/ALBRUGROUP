@@ -204,11 +204,12 @@ export class DashboardVentaStageComponent implements OnInit {
   protected readonly conversiones = computed<ConversionVm[]>(() => {
     const c = this.data()?.contadores;
     if (!c) return [];
+    // Las 6 conversiones usan el EMBUDO (mayor rango, anidado), NO los cards: así son monotónicas y ≤100%.
     return [
-      { label: 'Preventas → Registradas', pct: this.pct(c.ventasRegistradas, c.preventasCompletas), frac: `${c.ventasRegistradas}/${c.preventasCompletas}` },
-      { label: 'Preventas → Instaladas', pct: this.pct(c.ventasInstaladas, c.preventasCompletas), frac: `${c.ventasInstaladas}/${c.preventasCompletas}` },
-      { label: 'Registradas → Instaladas', pct: this.pct(c.ventasInstaladas, c.ventasRegistradas), frac: `${c.ventasInstaladas}/${c.ventasRegistradas}` },
-      { label: 'Preventas → Rechazadas', pct: this.pct(c.ventasRechazadas, c.preventasCompletas), frac: `${c.ventasRechazadas}/${c.preventasCompletas}` },
+      { label: 'Preventas → Registradas', pct: this.pct(c.registradasFunnel, c.preventasCompletas), frac: `${c.registradasFunnel}/${c.preventasCompletas}` },
+      { label: 'Preventas → Instaladas', pct: this.pct(c.instaladasFunnel, c.preventasCompletas), frac: `${c.instaladasFunnel}/${c.preventasCompletas}` },
+      { label: 'Registradas → Instaladas', pct: this.pct(c.instaladasFunnel, c.registradasFunnel), frac: `${c.instaladasFunnel}/${c.registradasFunnel}` },
+      { label: 'Preventas → Rechazadas', pct: this.pct(c.rechazadasFunnel, c.preventasCompletas), frac: `${c.rechazadasFunnel}/${c.preventasCompletas}` },
       { label: 'Programadas → Instaladas', pct: this.pct(c.programadasInstaladas, c.programadasTotal), frac: `${c.programadasInstaladas}/${c.programadasTotal}` },
       { label: 'Programadas → Rechazadas', pct: this.pct(c.programadasRechazadas, c.programadasTotal), frac: `${c.programadasRechazadas}/${c.programadasTotal}` }
     ];

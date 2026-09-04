@@ -251,7 +251,10 @@ public class DashboardVentaService {
 
     // ── Contadores + estado (Q1 universo + Q2 embudo) ─────────────────────────────────────────────
     private static final class Acumulador {
+        // Cards (contadores): foto por última + preventas por mayor rango + instaladas por fechaInstalacion.
         long preventasCompletas, ventasRegistradas, ventasInstaladas, ventasRechazadas, ventasProgramadasActual;
+        // Embudo (solo para las 6 conversiones, NO son los cards): "alcanzó X alguna vez" por mayor rango.
+        long registradasFunnel, instaladasFunnel, rechazadasFunnel;
         long programadasTotal, programadasInstaladas, programadasRechazadas;
         final Map<String, Long> porUltima = new LinkedHashMap<>();
         final long[] registradasZona = new long[Zona3.values().length];
@@ -263,11 +266,12 @@ public class DashboardVentaService {
                 String prefijo = (String) r[2];
                 long n = asLong(r[3]);
                 boolean sinIngresar = esSinIngresar(ultima);
+                boolean alcanzoRegistrado = mayor != null && TIPIFICACIONES_INGRESADO_O_MAS.contains(mayor);
                 // Fusiona null y "SIN INGRESAR" en un solo bucket "sin ingresar" (breakdown por última).
                 porUltima.merge(sinIngresar ? null : ultima, n, Long::sum);
-                // Preventa genuina: por el MAYOR RANGO (llegó al menos a INGRESADO) o recién llegada (última
-                // nula, sin gestionar aún). Excluye a las rechazadas sin haber ingresado nunca.
-                if (esPreventaGenuina(mayor, ultima)) preventasCompletas += n;
+                // Preventa genuina (card): por el MAYOR RANGO (llegó al menos a INGRESADO) o recién llegada
+                // (última nula, sin gestionar aún). Excluye a las rechazadas sin haber ingresado nunca.
+                if (alcanzoRegistrado || ultima == null) preventasCompletas += n;
                 // Registrada (card): foto de las que están HOY en INGRESADO (aún sin avanzar/rechazar).
                 if (TIPIFICACION_INGRESADO.equals(ultima)) ventasRegistradas += n;
                 // Zonas.registradas mide "subidas" (registró en el sistema alguna vez = última no nula y no
@@ -275,6 +279,12 @@ public class DashboardVentaService {
                 if (!sinIngresar) registradasZona[Zona3.de(prefijo).ordinal()] += n;
                 if (esRechazo(ultima)) ventasRechazadas += n;
                 if (TIPIFICACION_PROGRAMADO.equals(ultima)) ventasProgramadasActual += n;
+
+                // Embudo (conversiones): monotónico y anidado en el mayor rango. registradasFunnel = registró
+                // alguna vez; instaladasFunnel = instaló (terminal); rechazadasFunnel = registró y luego cayó.
+                if (alcanzoRegistrado) registradasFunnel += n;
+                if (TIPIFICACION_INSTALADO.equals(ultima)) instaladasFunnel += n;
+                if (alcanzoRegistrado && esRechazo(ultima)) rechazadasFunnel += n;
             }
             return this;
         }
@@ -292,7 +302,8 @@ public class DashboardVentaService {
 
         Contadores build() {
             return new Contadores(preventasCompletas, ventasRegistradas, ventasInstaladas, ventasRechazadas,
-                    ventasProgramadasActual, programadasTotal, programadasInstaladas, programadasRechazadas);
+                    ventasProgramadasActual, registradasFunnel, instaladasFunnel, rechazadasFunnel,
+                    programadasTotal, programadasInstaladas, programadasRechazadas);
         }
 
         List<EstadoLead> estadoLeads() {
@@ -387,11 +398,6 @@ public class DashboardVentaService {
             if (prefijo == null || prefijo.isBlank()) return SIN_UBIGEO;
             return PREFIJOS_LIMA.contains(prefijo) ? LIMA : PROVINCIA;
         }
-    }
-
-    // Preventa genuina: recién llegada (última nula) o cuyo mayor rango alcanzó al menos INGRESADO.
-    private static boolean esPreventaGenuina(String mayorRango, String ultima) {
-        return ultima == null || (mayorRango != null && TIPIFICACIONES_INGRESADO_O_MAS.contains(mayorRango));
     }
 
     // Set.of(...) lanza NPE ante contains(null); un lead SIN INGRESAR tiene última = null.

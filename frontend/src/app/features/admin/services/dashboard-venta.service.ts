@@ -8,13 +8,21 @@ export interface ProveedorRef {
   nombre: string;
 }
 
-/** Absolutos del universo VENTA del período (el frontend deriva las 6 conversiones). */
+/**
+ * Absolutos del cohorte VENTA del período. Los 5 primeros son los CARDS (slices distintos); los "*Funnel"
+ * y "programadas*" son el EMBUDO (mayor rango, anidado) del que el frontend deriva las 6 conversiones.
+ */
 export interface DashboardVentaContadores {
+  // Cards
   preventasCompletas: number;
   ventasRegistradas: number;
   ventasInstaladas: number;
   ventasRechazadas: number;
   ventasProgramadasActual: number;
+  // Embudo (conversiones)
+  registradasFunnel: number;
+  instaladasFunnel: number;
+  rechazadasFunnel: number;
   programadasTotal: number;
   programadasInstaladas: number;
   programadasRechazadas: number;

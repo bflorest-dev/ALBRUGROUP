@@ -27,19 +27,26 @@ public record DashboardVentaResponse(
     public record PeriodoRef(LocalDate desde, LocalDate hasta) {}
 
     /**
-     * Absolutos del cohorte VENTA (fila VENTA, fechaIngresoEtapa ∈ período). Los 5 cards son slices
-     * DISTINTOS, ya no un embudo anidado: preventas por mayor rango, registradas/programadas/rechazadas
-     * por última, instaladas por fechaInstalacion. Los tres "programadas*" alimentan las conversiones.
+     * Absolutos del cohorte VENTA (fila VENTA, fechaIngresoEtapa ∈ período). Dos grupos:
+     *  - CARDS (los 5 contadores) = slices DISTINTOS, ya no un embudo anidado: preventas por mayor rango;
+     *    registradas/programadas/rechazadas por última; instaladas por fechaInstalacion.
+     *  - EMBUDO (solo para las 6 conversiones que calcula el frontend) = "alcanzó X alguna vez" por mayor
+     *    rango, monotónico y anidado, para que los % sean coherentes (≤ 100%). NO son los cards.
      */
     public record Contadores(
+            // Cards
             long preventasCompletas,      // mayorRango ∈ {INGRESADO,PROGRAMADO,INSTALADO} ó última nula — UI: "Preventas"
             long ventasRegistradas,       // ultima == INGRESADO — UI: "Registradas"
             long ventasInstaladas,        // instaladas por fechaInstalacion ∈ período — UI: "Instaladas"
-            long ventasRechazadas,        // ultima ∈ {SUBSANABLE, NO RECUPERABLE}
+            long ventasRechazadas,        // ultima ∈ {SUBSANABLE, NO RECUPERABLE} — UI: "Rechazadas"
             long ventasProgramadasActual, // ultima == PROGRAMADO (== programacionActual.total) — UI: "Programadas"
-            long programadasTotal,        // embudo (conversiones): mayorRango ∈ {PROGRAMADO, INSTALADO}
-            long programadasInstaladas,   // embudo ∩ ultima == INSTALADO
-            long programadasRechazadas    // embudo ∩ ultima ∈ rechazo
+            // Embudo (conversiones): base = preventasCompletas
+            long registradasFunnel,       // mayorRango ∈ {INGRESADO,PROGRAMADO,INSTALADO} (registró alguna vez)
+            long instaladasFunnel,        // ultima == INSTALADO en la cohorte (instaló alguna vez)
+            long rechazadasFunnel,        // registró alguna vez Y última ∈ rechazo (cayó tras registrarse)
+            long programadasTotal,        // mayorRango ∈ {PROGRAMADO, INSTALADO} (programó alguna vez)
+            long programadasInstaladas,   // programadasTotal ∩ ultima == INSTALADO
+            long programadasRechazadas    // programadasTotal ∩ ultima ∈ rechazo
     ) {}
 
     /** Universo agrupado por última tipificación (código null => SIN_INGRESAR). Suma == preventasCompletas. */
