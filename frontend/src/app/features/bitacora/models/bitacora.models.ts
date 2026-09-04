@@ -19,6 +19,7 @@ export interface BitacoraBusquedaResponse {
   codigoTipificacionActual?: string | null;
   codigoSubtipificacionActual?: string | null;
   idEquipo?: number | null;
+  nombreCampana?: string | null;
   nombreProveedor?: string | null;
   idContacto?: number | null;
 }

@@ -99,7 +99,21 @@
                       @if (row.codigoSubtipificacionActual) { <span class="subtip">· {{ row.codigoSubtipificacionActual }}</span> }
                     </div>
                   </td>
-                  <td class="equipo">{{ f.nombreEquipo(row.idEquipo) }}</td>
+                  <td class="equipo">
+                    <span
+                      class="equipo-tip"
+                      [pTooltip]="campanaTooltip(row) ?? ''"
+                      tooltipPosition="top"
+                      tooltipStyleClass="bitacora-campana-tooltip"
+                      [tooltipDisabled]="!campanaTooltip(row)"
+                      [attr.data-campana]="campanaTooltip(row)"
+                      [attr.title]="campanaTooltip(row)"
+                      [attr.aria-label]="campanaTooltip(row) || null"
+                      [attr.tabindex]="campanaTooltip(row) ? 0 : null"
+                    >
+                      {{ f.nombreEquipo(row.idEquipo) }}
+                    </span>
+                  </td>
                   <td class="mono muted">{{ fecha(row.createdAt) }}</td>
                   <td class="mono muted">{{ fechaHora(row.lastEntryAt) }}</td>
                 </tr>

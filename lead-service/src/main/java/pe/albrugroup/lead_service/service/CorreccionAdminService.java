@@ -153,6 +153,7 @@ public class CorreccionAdminService {
                 .codigoTipificacionActual(lead.getCodigoTipificacion())
                 .codigoSubtipificacionActual(lead.getCodigoSubtipificacion())
                 .idEquipo(lead.getIdEquipo())
+                .nombreCampana(lead.getCampana() == null ? null : lead.getCampana().getNombre())
                 .nombreProveedor(proveedor)
                 .idContacto(lead.getContacto() == null ? null : lead.getContacto().getId())
                 .build();

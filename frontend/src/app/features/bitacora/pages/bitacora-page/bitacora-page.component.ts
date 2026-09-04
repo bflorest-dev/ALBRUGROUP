@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, injec
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime } from 'rxjs';
+import { TooltipModule } from 'primeng/tooltip';
 import { providerLogo } from '../../../../shared/utils/provider-logo';
 import { LeadDetalleResponse, EventoResponse } from '../../../../shared/models/preventa/preventa.models';
 import { BitacoraFacade, BitacoraTab } from '../../facades/bitacora.facade';
@@ -34,7 +35,7 @@ const ACCION_META: Record<string, AccionMeta> = {
 @Component({
   selector: 'app-bitacora-page',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, TooltipModule],
   providers: [BitacoraFacade],
   templateUrl: './bitacora-page.component.html',
   styleUrl: './bitacora-page.component.scss',
@@ -183,6 +184,11 @@ export class BitacoraPageComponent implements OnInit {
 
   protected eventoDetalle(evento: EventoResponse): string {
     return evento.comentario ?? '';
+  }
+
+  protected campanaTooltip(row: BitacoraBusquedaResponse): string | null {
+    const nombre = row.nombreCampana?.trim();
+    return nombre ? `Campaña: ${nombre}` : null;
   }
 
   protected fecha(iso?: string | null): string {
