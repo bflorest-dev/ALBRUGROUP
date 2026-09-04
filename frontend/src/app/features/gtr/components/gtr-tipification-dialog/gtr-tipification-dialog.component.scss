@@ -1,13 +1,16 @@
-:host ::ng-deep .gtr-tipification-drawer {
-  width: min(58rem, 100vw);
+:host ::ng-deep .gtr-tipification-drawer,
+::ng-deep .gtr-tipification-drawer {
+  width: min(74rem, calc(100vw - 1.5rem));
 }
 
-:host ::ng-deep .gtr-tipification-drawer .p-drawer-header {
+:host ::ng-deep .gtr-tipification-drawer .p-drawer-header,
+::ng-deep .gtr-tipification-drawer .p-drawer-header {
   border-bottom: 1px solid var(--app-border-soft);
   padding: 0;
 }
 
-:host ::ng-deep .gtr-tipification-drawer .p-drawer-content {
+:host ::ng-deep .gtr-tipification-drawer .p-drawer-content,
+::ng-deep .gtr-tipification-drawer .p-drawer-content {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -75,7 +78,7 @@ h2 {
   border-radius: 8px;
   display: grid;
   gap: .75rem;
-  grid-template-columns: minmax(14rem, 1fr) minmax(14rem, 1fr) minmax(8rem, .52fr);
+  grid-template-columns: minmax(17rem, 1.15fr) minmax(17rem, 1.15fr) minmax(10rem, .55fr);
   padding: .85rem;
 }
 
