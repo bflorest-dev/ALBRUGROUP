@@ -396,6 +396,17 @@ section:focus-visible {
   width: 100%;
 }
 
+.admin-nav-v2__item {
+  border-radius: .375rem;
+  min-height: 3rem;
+  padding: .5rem .7rem;
+}
+
+.admin-nav-v2__item--group {
+  gap: .55rem;
+  grid-template-columns: 1.4rem minmax(0, 1fr) auto .8rem;
+}
+
 .admin-nav-v2__item:hover,
 .admin-nav-v2__profile-action:hover {
   background: rgba(255, 255, 255, .09);
@@ -431,6 +442,11 @@ section:focus-visible {
   white-space: nowrap;
 }
 
+.admin-nav-v2__item-count {
+  justify-self: end;
+  white-space: nowrap;
+}
+
 .admin-nav-v2__item > i:last-child,
 .admin-nav-v2__profile-action > i:last-child {
   color: var(--admin-panel-muted);
@@ -457,18 +473,30 @@ section:focus-visible {
   border-top: 1px solid var(--admin-panel-line);
   color: var(--admin-panel-muted);
   display: flex;
-  font-size: .71rem;
   justify-content: space-between;
   padding: .85rem 1.55rem;
 }
 
-kbd {
-  border: 1px solid var(--admin-panel-line);
-  border-radius: .28rem;
+.admin-nav-v2__date {
+  align-items: center;
+  display: inline-flex;
+  font-size: .69rem;
+  font-weight: 600;
+  gap: .4rem;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+
+.admin-nav-v2__date i {
+  font-size: .9rem;
+}
+
+.admin-nav-v2__clock {
   color: #ffffff;
   font-family: 'Spline Sans Mono', ui-monospace, monospace;
-  font-size: .65rem;
-  padding: .16rem .3rem;
+  font-size: .72rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .025em;
 }
 
 .admin-nav-v2__panel-header--profile {

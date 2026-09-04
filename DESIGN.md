@@ -119,6 +119,8 @@ perimetro. Con movimiento reducido, la confirmacion se conserva como un borde es
 mouseleave es el cierre implicito; `Escape`, el boton de cierre y la navegacion son cierres explicitos.
 Cuando la ruta supera el ancho disponible, cada cambio de nivel ancla automaticamente el breadcrumb
 en su extremo derecho sin desactivar el desplazamiento horizontal manual.
+Las opciones de navegacion usan filas compactas de 48px y esquinas de 6px. En los grupos, el conteo
+de opciones comparte la linea principal y se alinea inmediatamente antes del indicador de avance.
 
 ### Buttons and Fields
 

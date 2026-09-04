@@ -55,6 +55,19 @@ const DOMAIN_META: Array<Omit<AdminDomain, 'items'>> = [
   }
 ];
 
+const ADMIN_DATE_FORMATTER = new Intl.DateTimeFormat('es-PE', {
+  day: '2-digit',
+  month: 'short',
+  weekday: 'short'
+});
+
+const ADMIN_TIME_FORMATTER = new Intl.DateTimeFormat('es-PE', {
+  hour: '2-digit',
+  hour12: false,
+  minute: '2-digit',
+  second: '2-digit'
+});
+
 @Component({
   selector: 'app-admin-sidebar-v2',
   imports: [RouterLink, RouterLinkActive, BadgeModule, TooltipModule],
@@ -67,6 +80,7 @@ export class AdminSidebarV2Component implements OnDestroy {
 
   private readonly router = inject(Router);
   private breadcrumbScrollFrame?: number;
+  private clockTimer?: ReturnType<typeof setInterval>;
   private closeTimer?: ReturnType<typeof setTimeout>;
   private confirmationTimer?: ReturnType<typeof setTimeout>;
   private confirmationFrame?: number;
@@ -87,7 +101,10 @@ export class AdminSidebarV2Component implements OnDestroy {
   protected readonly openPanelId = signal<AdminDomainId | 'profile' | null>(null);
   protected readonly selectedPath = signal<SidebarItem[]>([]);
   protected readonly currentUrl = signal(this.router.url);
+  protected readonly currentDate = signal(new Date());
   protected readonly panelClickConfirmed = signal(false);
+  protected readonly dateLabel = computed(() => ADMIN_DATE_FORMATTER.format(this.currentDate()));
+  protected readonly timeLabel = computed(() => ADMIN_TIME_FORMATTER.format(this.currentDate()));
 
   protected readonly domains = computed<AdminDomain[]>(() =>
     DOMAIN_META.map((domain) => ({
@@ -113,6 +130,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   protected readonly isProfileOpen = computed(() => this.openPanelId() === 'profile');
 
   constructor() {
+    this.clockTimer = setInterval(() => this.currentDate.set(new Date()), 1000);
     this.router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -126,6 +144,7 @@ export class AdminSidebarV2Component implements OnDestroy {
 
   ngOnDestroy(): void {
     if (this.breadcrumbScrollFrame !== undefined) cancelAnimationFrame(this.breadcrumbScrollFrame);
+    if (this.clockTimer) clearInterval(this.clockTimer);
     this.cancelClose();
     this.cancelConfirmation();
   }
