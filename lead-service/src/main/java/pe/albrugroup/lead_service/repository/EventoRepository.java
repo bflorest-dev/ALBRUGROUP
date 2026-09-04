@@ -1070,13 +1070,13 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT l.idEquipo, COUNT(e.id), COUNT(DISTINCT e.idLead)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY l.idEquipo
             """)
     List<Object[]> metricasBaseRegistrosDiariosPorEquipo(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
     );
@@ -1086,14 +1086,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT l.idEquipo, e.idLead
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY l.idEquipo, e.idLead
             HAVING COUNT(e.id) > 1
             """)
     List<Object[]> listarLeadsDiariosConRepeticionPorEquipo(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
     );
@@ -1106,14 +1106,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion IS NOT NULL
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosTipificadosPorEquipoUltima(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -1124,14 +1124,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.primeraCodigoTipificacion IS NOT NULL
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosTipificadosPorEquipoPrimera(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -1142,14 +1142,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion IS NOT NULL
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosTipificadosPorEquipoMayor(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -1161,14 +1161,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaTipificacionOrden IS NOT NULL
             GROUP BY l.idEquipo, r.ultimaTipificacionOrden
             """)
     List<Object[]> agruparLeadsDiariosPorOrdenPorEquipoUltima(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -1179,14 +1179,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.primeraTipificacionOrden IS NOT NULL
             GROUP BY l.idEquipo, r.primeraTipificacionOrden
             """)
     List<Object[]> agruparLeadsDiariosPorOrdenPorEquipoPrimera(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -1197,14 +1197,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.mayorRangoOrden IS NOT NULL
             GROUP BY l.idEquipo, r.mayorRangoOrden
             """)
     List<Object[]> agruparLeadsDiariosPorOrdenPorEquipoMayor(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -1216,7 +1216,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
@@ -1225,7 +1225,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoUltima(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
@@ -1237,7 +1237,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.primeraCodigoTipificacion = :codigoTipificacion
@@ -1246,7 +1246,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoPrimera(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
@@ -1258,7 +1258,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
@@ -1267,7 +1267,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoMayor(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,

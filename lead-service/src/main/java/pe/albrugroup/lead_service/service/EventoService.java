@@ -480,6 +480,13 @@ public class EventoService {
     private static final String TIPIFICACION_PREVENTA = "PREVENTA";
 
     /**
+     * Acciones que representan ingreso real a la cohorte diaria: un lead nuevo o una oportunidad
+     * adicional creada sobre un contacto existente.
+     */
+    private static final List<Accion> ACCIONES_INGRESO =
+            List.of(Accion.REGISTRO, Accion.NUEVA_OPORTUNIDAD);
+
+    /**
      * Acciones que ponen un lead en la cartera del período: ingresó, se lo trajo de otro día, o se
      * lo tipificó (esto último como blindaje, para que gestionados nunca exceda a la cartera).
      */
@@ -531,7 +538,7 @@ public class EventoService {
      * con visibilidad global ve todos los equipos; uno acotado, solo el suyo (via equipoFilter).
      * idEquipo null = "Sin equipo".
      *
-     * <p>La cohorte son los leads con evento {@code REGISTRO} en el período (modo INGRESADOS). El
+     * <p>La cohorte son los leads con evento de ingreso en el período (modo INGRESADOS). El
      * {@code campo} elige el punto de tipificación (primera/última/mayor) con el que se calculan
      * tipificados, bloques y venta cerrada. Omitir el rango equivale al día operativo de hoy.
      */
@@ -551,12 +558,12 @@ public class EventoService {
 
         // A, B y D describen la ingesta del período y se calculan en ambos modos: miden la calidad
         // de la base, que no depende de la operación.
-        for (Object[] fila : eventoRepository.metricasBaseRegistrosDiariosPorEquipo(Accion.REGISTRO, inicio, fin)) {
+        for (Object[] fila : eventoRepository.metricasBaseRegistrosDiariosPorEquipo(ACCIONES_INGRESO, inicio, fin)) {
             long[] acc = acumuladorEquipo(porEquipo, (Long) fila[0]);
             acc[0] = (Long) fila[1];
             acc[1] = (Long) fila[2];
         }
-        for (Object[] fila : eventoRepository.listarLeadsDiariosConRepeticionPorEquipo(Accion.REGISTRO, inicio, fin)) {
+        for (Object[] fila : eventoRepository.listarLeadsDiariosConRepeticionPorEquipo(ACCIONES_INGRESO, inicio, fin)) {
             acumuladorEquipo(porEquipo, (Long) fila[0])[2] += 1;
         }
 
@@ -627,33 +634,33 @@ public class EventoService {
     private List<Object[]> tipificadosPorEquipoSegunCampo(CampoTipificacion campo, Instant inicio, Instant fin) {
         return switch (campo) {
             case PRIMERA -> eventoRepository.contarLeadsDiariosTipificadosPorEquipoPrimera(
-                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin);
             case ULTIMA -> eventoRepository.contarLeadsDiariosTipificadosPorEquipoUltima(
-                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin);
             case MAYOR -> eventoRepository.contarLeadsDiariosTipificadosPorEquipoMayor(
-                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin);
         };
     }
 
     private List<Object[]> bloquesPorEquipoSegunCampo(CampoTipificacion campo, Instant inicio, Instant fin) {
         return switch (campo) {
             case PRIMERA -> eventoRepository.agruparLeadsDiariosPorOrdenPorEquipoPrimera(
-                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin);
             case ULTIMA -> eventoRepository.agruparLeadsDiariosPorOrdenPorEquipoUltima(
-                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin);
             case MAYOR -> eventoRepository.agruparLeadsDiariosPorOrdenPorEquipoMayor(
-                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin);
         };
     }
 
     private List<Object[]> ventaCerradaPorEquipoSegunCampo(CampoTipificacion campo, Instant inicio, Instant fin) {
         return switch (campo) {
             case PRIMERA -> eventoRepository.contarLeadsDiariosVentaCerradaPorEquipoPrimera(
-                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
+                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
             case ULTIMA -> eventoRepository.contarLeadsDiariosVentaCerradaPorEquipoUltima(
-                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
+                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
             case MAYOR -> eventoRepository.contarLeadsDiariosVentaCerradaPorEquipoMayor(
-                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
+                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
         };
     }
 
@@ -681,9 +688,9 @@ public class EventoService {
                 case MAYOR -> leadEtapaResumenRepository.gestionPorCampanaMayor(etapa, inicio, fin);
             };
             case INGRESADOS -> switch (campo) {
-                case PRIMERA -> leadEtapaResumenRepository.ingresadosPorCampanaPrimera(Accion.REGISTRO, etapa, inicio, fin);
-                case ULTIMA -> leadEtapaResumenRepository.ingresadosPorCampanaUltima(Accion.REGISTRO, etapa, inicio, fin);
-                case MAYOR -> leadEtapaResumenRepository.ingresadosPorCampanaMayor(Accion.REGISTRO, etapa, inicio, fin);
+                case PRIMERA -> leadEtapaResumenRepository.ingresadosPorCampanaPrimera(ACCIONES_INGRESO, etapa, inicio, fin);
+                case ULTIMA -> leadEtapaResumenRepository.ingresadosPorCampanaUltima(ACCIONES_INGRESO, etapa, inicio, fin);
+                case MAYOR -> leadEtapaResumenRepository.ingresadosPorCampanaMayor(ACCIONES_INGRESO, etapa, inicio, fin);
             };
         };
 

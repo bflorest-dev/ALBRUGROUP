@@ -147,6 +147,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LeadService {
 
+    private static final List<Accion> ACCIONES_INGRESO =
+            List.of(Accion.REGISTRO, Accion.NUEVA_OPORTUNIDAD);
+
     private final LeadRepository leadRepository;
     private final ContactoRepository contactoRepository;
     private final EquipoProveedorRepository equipoProveedorRepository;
@@ -5649,13 +5652,13 @@ public class LeadService {
                         rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids())
                 : switch (campo) {
                     case PRIMERA -> leadEtapaResumenRepository.preventasDetalleIngresadasPrimera(
-                            Accion.REGISTRO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
+                            ACCIONES_INGRESO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
                             rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
                     case ULTIMA -> leadEtapaResumenRepository.preventasDetalleIngresadasUltima(
-                            Accion.REGISTRO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
+                            ACCIONES_INGRESO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
                             rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
                     case MAYOR -> leadEtapaResumenRepository.preventasDetalleIngresadasMayor(
-                            Accion.REGISTRO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
+                            ACCIONES_INGRESO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
                             rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
                 };
 
@@ -5772,11 +5775,11 @@ public class LeadService {
             };
             case INGRESADOS -> switch (campo) {
                 case PRIMERA -> leadEtapaResumenRepository.ingresadosSubtipPorCampanaPrimera(
-                        Accion.REGISTRO, etapa, inicio, fin);
+                        ACCIONES_INGRESO, etapa, inicio, fin);
                 case ULTIMA -> leadEtapaResumenRepository.ingresadosSubtipPorCampanaUltima(
-                        Accion.REGISTRO, etapa, inicio, fin);
+                        ACCIONES_INGRESO, etapa, inicio, fin);
                 case MAYOR -> leadEtapaResumenRepository.ingresadosSubtipPorCampanaMayor(
-                        Accion.REGISTRO, etapa, inicio, fin);
+                        ACCIONES_INGRESO, etapa, inicio, fin);
             };
         };
 

@@ -160,11 +160,12 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("fin") Instant fin
     );
 
-    // ===== Modo INGRESADOS: cohorte de leads con evento REGISTRO en el período =====
-    // Igual que "leads del día": la cohorte se define por el evento REGISTRO (un lead re-registrado
-    // cuenta aunque sea antiguo), no por Lead.createdAt. Se agrupan por su tipificación ACTUAL del
-    // campo elegido (excluyendo los que aún no tienen tipificación). Rooteadas en Evento + JOIN Lead
-    // para que el equipoFilter acote, igual que las métricas diarias por equipo.
+    // ===== Modo INGRESADOS: cohorte de leads con evento de ingreso en el período =====
+    // Igual que "leads del día": la cohorte se define por REGISTRO o NUEVA_OPORTUNIDAD (un lead
+    // re-ingresado o una oportunidad adicional cuenta aunque el contacto sea antiguo), no por
+    // Lead.createdAt. Se agrupan por su tipificación ACTUAL del campo elegido (excluyendo los que aún
+    // no tienen tipificación). Rooteadas en Evento + JOIN Lead para que el equipoFilter acote, igual
+    // que las métricas diarias por equipo.
 
     @Query("""
             SELECT l.idEquipo, c.id, c.nombre, r.primeraCodigoTipificacion, COUNT(DISTINCT l.id)
@@ -172,13 +173,13 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY l.idEquipo, c.id, c.nombre, r.primeraCodigoTipificacion
             """)
     List<Object[]> ingresadosPorCampanaPrimera(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("etapa") Etapa etapa,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -190,13 +191,13 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY l.idEquipo, c.id, c.nombre, r.ultimaCodigoTipificacion
             """)
     List<Object[]> ingresadosPorCampanaUltima(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("etapa") Etapa etapa,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -208,13 +209,13 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY l.idEquipo, c.id, c.nombre, r.mayorRangoCodigoTipificacion
             """)
     List<Object[]> ingresadosPorCampanaMayor(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("etapa") Etapa etapa,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -287,14 +288,14 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.primeraCodigoTipificacion IS NOT NULL
             GROUP BY l.idEquipo, c.id, c.nombre, r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion
             """)
     List<Object[]> ingresadosSubtipPorCampanaPrimera(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("etapa") Etapa etapa,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -307,14 +308,14 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion IS NOT NULL
             GROUP BY l.idEquipo, c.id, c.nombre, r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
             """)
     List<Object[]> ingresadosSubtipPorCampanaUltima(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("etapa") Etapa etapa,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -327,14 +328,14 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion IS NOT NULL
             GROUP BY l.idEquipo, c.id, c.nombre, r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion
             """)
     List<Object[]> ingresadosSubtipPorCampanaMayor(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("etapa") Etapa etapa,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
@@ -356,7 +357,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
                           AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.campana c
-            WHERE re.accion = :accionRegistro
+            WHERE re.accion IN :accionesIngreso
               AND re.createdAt >= :inicio
               AND re.createdAt < :fin
               AND r.primeraCodigoTipificacion = :codigoTipificacion
@@ -366,7 +367,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             ORDER BY te.createdAt DESC
             """)
     List<Object[]> preventasDetalleIngresadasPrimera(
-            @Param("accionRegistro") Accion accionRegistro,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("etapa") Etapa etapa,
             @Param("codigoTipificacion") String codigoTipificacion,
@@ -386,7 +387,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
                           AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.campana c
-            WHERE re.accion = :accionRegistro
+            WHERE re.accion IN :accionesIngreso
               AND re.createdAt >= :inicio
               AND re.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
@@ -396,7 +397,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             ORDER BY te.createdAt DESC
             """)
     List<Object[]> preventasDetalleIngresadasUltima(
-            @Param("accionRegistro") Accion accionRegistro,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("etapa") Etapa etapa,
             @Param("codigoTipificacion") String codigoTipificacion,
@@ -416,7 +417,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
                           AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.campana c
-            WHERE re.accion = :accionRegistro
+            WHERE re.accion IN :accionesIngreso
               AND re.createdAt >= :inicio
               AND re.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
@@ -426,7 +427,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             ORDER BY te.createdAt DESC
             """)
     List<Object[]> preventasDetalleIngresadasMayor(
-            @Param("accionRegistro") Accion accionRegistro,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("etapa") Etapa etapa,
             @Param("codigoTipificacion") String codigoTipificacion,
