@@ -57,6 +57,7 @@ public class DashboardVentaService {
 
     private static final String TIPIFICACION_INSTALADO = "INSTALADO";
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
+    private static final String TIPIFICACION_INGRESADO = "INGRESADO";
     // Estado de ingreso: puede venir como última tipificación NULL (nunca gestionado) o como el código
     // literal "SIN INGRESAR" de la matriz. Ambos son "sin ingresar": NO cuentan como venta registrada.
     private static final String TIPIFICACION_SIN_INGRESAR = "SIN INGRESAR";
@@ -64,6 +65,11 @@ public class DashboardVentaService {
     // "Programada alguna vez" = el mayor rango llegó al menos a PROGRAMADO. Como no hay instalación
     // directa (todo INSTALADO pasó antes por PROGRAMADO), basta con estos dos códigos.
     private static final Set<String> TIPIFICACIONES_PROGRAMADA_O_MAS = Set.of(TIPIFICACION_PROGRAMADO, TIPIFICACION_INSTALADO);
+    // "Preventa genuina": el mayor rango (high-water mark) llegó al menos a INGRESADO. Tras el reorden de
+    // la matriz (V50), los rechazos (NO RECUPERABLE, SUBSANABLE) quedan por debajo de INGRESADO, así que un
+    // rechazo solo es mayor rango cuando el lead nunca avanzó. Excluye a los rechazados sin haber ingresado.
+    private static final Set<String> TIPIFICACIONES_INGRESADO_O_MAS =
+            Set.of(TIPIFICACION_INGRESADO, TIPIFICACION_PROGRAMADO, TIPIFICACION_INSTALADO);
     private static final Set<String> PREFIJOS_LIMA = Set.of("15", "07"); // Lima + Callao
     private static final LocalTime T08 = LocalTime.of(8, 0);
     private static final LocalTime T12 = LocalTime.of(12, 0);
@@ -108,18 +114,30 @@ public class DashboardVentaService {
     public PageResponse<VentaResumenDetalleResponse> obtenerResumenDetalle(
             Long idProveedor, MetricaVentaDetalle metrica, LocalDate desde, LocalDate hasta, PageRequest pageRequest) {
         desactivarEquipoFilter();
-        Rango r = resolverRango(desde, hasta);
         Pageable pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPageNumber(), pageRequest.getPageSize());
-        Page<VentaResumenDetalleResponse> page = resumenRepository.dashboardVentaResumenDetalle(
-                Etapa.VENTA, idProveedor, r.inicio(), r.fin(),
-                metrica == MetricaVentaDetalle.PREVENTAS,
-                metrica == MetricaVentaDetalle.REGISTRADAS,
-                metrica == MetricaVentaDetalle.PROGRAMADAS,
-                metrica == MetricaVentaDetalle.RECHAZADAS,
-                metrica == MetricaVentaDetalle.INSTALADAS,
-                TIPIFICACION_SIN_INGRESAR, TIPIFICACIONES_PROGRAMADA_O_MAS, TIPIFICACIONES_RECHAZO, TIPIFICACION_INSTALADO,
-                pageable);
+
+        LocalDate desdeR = desde != null ? desde : OperationalDateTime.currentMonth().atDay(1);
+        LocalDate hastaR = hasta != null ? hasta : OperationalDateTime.today();
+
+        Page<VentaResumenDetalleResponse> page;
+        if (metrica == MetricaVentaDetalle.INSTALADAS) {
+            // Instaladas se anclan en fechaInstalacion ∈ período (no en la cohorte de ingreso).
+            page = resumenRepository.dashboardVentaInstaladasDetalle(
+                    Etapa.VENTA, idProveedor, TIPIFICACION_INSTALADO, desdeR, hastaR.plusDays(1), pageable);
+        } else {
+            Instant inicio = OperationalDateTime.startOfDay(desdeR);
+            Instant fin = OperationalDateTime.endExclusiveOfDay(hastaR);
+            page = resumenRepository.dashboardVentaResumenDetalle(
+                    Etapa.VENTA, idProveedor, inicio, fin,
+                    metrica == MetricaVentaDetalle.PREVENTAS,
+                    metrica == MetricaVentaDetalle.REGISTRADAS,
+                    metrica == MetricaVentaDetalle.PROGRAMADAS,
+                    metrica == MetricaVentaDetalle.RECHAZADAS,
+                    TIPIFICACION_INGRESADO, TIPIFICACION_PROGRAMADO,
+                    TIPIFICACIONES_INGRESADO_O_MAS, TIPIFICACIONES_RECHAZO,
+                    pageable);
+        }
         return PageResponse.from(page);
     }
 
@@ -160,12 +178,14 @@ public class DashboardVentaService {
                 .universo(resumenRepository.dashboardVentaUniverso(Etapa.VENTA, idProveedor, inicio, fin))
                 .embudo(resumenRepository.dashboardVentaEmbudo(
                         Etapa.VENTA, idProveedor, inicio, fin, TIPIFICACIONES_PROGRAMADA_O_MAS));
-        Contadores contadores = acc.build();
 
+        // Zonas primero: ancla las instaladas en fechaInstalacion y de paso fija el total de instaladas del
+        // período (card "Instaladas"), que ya no es la cohorte por fechaIngresoEtapa.
         Zonas zonas = construirZonas(
                 acc,
                 resumenRepository.dashboardVentaZonasInstaladas(
                         Etapa.VENTA, idProveedor, TIPIFICACION_INSTALADO, inicio, fin, desdeR, hastaExcl));
+        Contadores contadores = acc.build();
 
         ProgramacionActual programacion = construirProgramacion(
                 resumenRepository.dashboardVentaProgramacionActual(Etapa.VENTA, idProveedor, TIPIFICACION_PROGRAMADO));
@@ -239,17 +259,20 @@ public class DashboardVentaService {
         Acumulador universo(List<Object[]> rows) {
             for (Object[] r : rows) {
                 String ultima = (String) r[0];
-                String prefijo = (String) r[1];
-                long n = asLong(r[2]);
-                preventasCompletas += n;
+                String mayor = (String) r[1];
+                String prefijo = (String) r[2];
+                long n = asLong(r[3]);
                 boolean sinIngresar = esSinIngresar(ultima);
-                // Fusiona null y "SIN INGRESAR" en un solo bucket "sin ingresar".
+                // Fusiona null y "SIN INGRESAR" en un solo bucket "sin ingresar" (breakdown por última).
                 porUltima.merge(sinIngresar ? null : ultima, n, Long::sum);
-                if (!sinIngresar) {
-                    ventasRegistradas += n;
-                    registradasZona[Zona3.de(prefijo).ordinal()] += n;
-                }
-                if (TIPIFICACION_INSTALADO.equals(ultima)) ventasInstaladas += n;
+                // Preventa genuina: por el MAYOR RANGO (llegó al menos a INGRESADO) o recién llegada (última
+                // nula, sin gestionar aún). Excluye a las rechazadas sin haber ingresado nunca.
+                if (esPreventaGenuina(mayor, ultima)) preventasCompletas += n;
+                // Registrada (card): foto de las que están HOY en INGRESADO (aún sin avanzar/rechazar).
+                if (TIPIFICACION_INGRESADO.equals(ultima)) ventasRegistradas += n;
+                // Zonas.registradas mide "subidas" (registró en el sistema alguna vez = última no nula y no
+                // SIN INGRESAR); más amplio que el card, para no romper la intersección "…e instaladas".
+                if (!sinIngresar) registradasZona[Zona3.de(prefijo).ordinal()] += n;
                 if (esRechazo(ultima)) ventasRechazadas += n;
                 if (TIPIFICACION_PROGRAMADO.equals(ultima)) ventasProgramadasActual += n;
             }
@@ -293,6 +316,11 @@ public class DashboardVentaService {
             cfProm[z] = asBigDecimal(r[3]).setScale(2, RoundingMode.HALF_UP);
             regEInst[z] += asLong(r[4]);
         }
+        // Card "Instaladas" = instaladas del período por fechaInstalacion (todas las zonas; una instalada sin
+        // ubigeo es anomalía pero se cuenta para no perderla).
+        acc.ventasInstaladas = instaladas[Zona3.LIMA.ordinal()]
+                + instaladas[Zona3.PROVINCIA.ordinal()]
+                + instaladas[Zona3.SIN_UBIGEO.ordinal()];
         return new Zonas(
                 zonaDe(Zona3.LIMA, acc, instaladas, regEInst, cfTotal, cfProm),
                 zonaDe(Zona3.PROVINCIA, acc, instaladas, regEInst, cfTotal, cfProm),
@@ -359,6 +387,11 @@ public class DashboardVentaService {
             if (prefijo == null || prefijo.isBlank()) return SIN_UBIGEO;
             return PREFIJOS_LIMA.contains(prefijo) ? LIMA : PROVINCIA;
         }
+    }
+
+    // Preventa genuina: recién llegada (última nula) o cuyo mayor rango alcanzó al menos INGRESADO.
+    private static boolean esPreventaGenuina(String mayorRango, String ultima) {
+        return ultima == null || (mayorRango != null && TIPIFICACIONES_INGRESADO_O_MAS.contains(mayorRango));
     }
 
     // Set.of(...) lanza NPE ante contains(null); un lead SIN INGRESAR tiene última = null.

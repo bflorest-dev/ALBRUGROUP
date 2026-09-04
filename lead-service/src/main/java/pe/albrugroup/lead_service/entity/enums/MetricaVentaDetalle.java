@@ -1,13 +1,12 @@
 package pe.albrugroup.lead_service.entity.enums;
 
 /**
- * Métrica del RESUMEN de VENTA cuyo detalle se pide. Cada valor corresponde a un contador del dashboard
- * y define el filtro sobre el universo (fila VENTA en el período):
- *  - PREVENTAS:  todas (universo completo).
- *  - REGISTRADAS: última tipificación no nula y distinta de "SIN INGRESAR".
- *  - PROGRAMADAS: embudo (mayor rango en {PROGRAMADO, INSTALADO}).
+ * Métrica del RESUMEN de VENTA cuyo detalle se pide. Cada valor corresponde a un card del dashboard:
+ *  - PREVENTAS:  preventa genuina = mayor rango en {INGRESADO, PROGRAMADO, INSTALADO} ó última nula.
+ *  - REGISTRADAS: última tipificación = INGRESADO.
+ *  - PROGRAMADAS: última tipificación = PROGRAMADO.
  *  - RECHAZADAS: última tipificación en {SUBSANABLE, NO RECUPERABLE}.
- *  - INSTALADAS: última tipificación = INSTALADO.
+ *  - INSTALADAS: instaladas por fechaInstalacion ∈ período (ancla distinta al resto).
  */
 public enum MetricaVentaDetalle {
     PREVENTAS,

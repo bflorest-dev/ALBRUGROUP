@@ -193,11 +193,11 @@ export class DashboardVentaStageComponent implements OnInit {
     if (!c) return [];
     const base = c.preventasCompletas || 1;
     return [
-      { key: 'preventas', label: 'Preventas', value: c.preventasCompletas, color: 'primary', width: 100, nota: 'Preventas completas', tone: '' },
-      { key: 'registradas', label: 'Registradas', value: c.ventasRegistradas, color: 'info', width: this.w(c.ventasRegistradas, base), nota: 'Ventas validadas', tone: '' },
-      { key: 'programadas', label: 'Programadas', value: c.programadasTotal, color: 'secondary', width: this.w(c.programadasTotal, base), nota: 'Ventas programadas', tone: '' },
+      { key: 'preventas', label: 'Preventas', value: c.preventasCompletas, color: 'primary', width: 100, nota: 'Preventas válidas', tone: '' },
+      { key: 'registradas', label: 'Registradas', value: c.ventasRegistradas, color: 'info', width: this.w(c.ventasRegistradas, base), nota: 'En ingresado', tone: '' },
+      { key: 'programadas', label: 'Programadas', value: c.ventasProgramadasActual, color: 'secondary', width: this.w(c.ventasProgramadasActual, base), nota: 'Programadas ahora', tone: '' },
       { key: 'rechazadas', label: 'Rechazadas', value: c.ventasRechazadas, color: 'danger', width: this.w(c.ventasRechazadas, base), nota: 'Ventas rechazadas', tone: 'bad' },
-      { key: 'instaladas', label: 'Instaladas', value: c.ventasInstaladas, color: 'success', width: this.w(c.ventasInstaladas, base), nota: 'Ventas instaladas', tone: 'good' }
+      { key: 'instaladas', label: 'Instaladas', value: c.ventasInstaladas, color: 'success', width: this.w(c.ventasInstaladas, base), nota: 'Instaladas del período', tone: 'good' }
     ];
   });
 
@@ -218,7 +218,9 @@ export class DashboardVentaStageComponent implements OnInit {
   protected readonly estadoRows = computed<EstadoVm[]>(() => {
     const d = this.data();
     if (!d) return [];
-    const total = d.contadores.preventasCompletas || 1;
+    // El breakdown cubre TODO el cohorte por última (incluye sin-ingresar/rechazadas), no solo las
+    // preventas válidas; su denominador es su propia suma, no el card "Preventas" (que es más chico).
+    const total = d.estadoLeads.reduce((acc, e) => acc + e.cantidad, 0) || 1;
     const max = Math.max(1, ...d.estadoLeads.map((e) => e.cantidad));
     return d.estadoLeads
       .map((e) => {

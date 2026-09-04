@@ -26,14 +26,18 @@ public record DashboardVentaResponse(
 
     public record PeriodoRef(LocalDate desde, LocalDate hasta) {}
 
-    /** Absolutos del universo (fila VENTA, fechaIngresoEtapa ∈ período), estado por ULTIMA. */
+    /**
+     * Absolutos del cohorte VENTA (fila VENTA, fechaIngresoEtapa ∈ período). Los 5 cards son slices
+     * DISTINTOS, ya no un embudo anidado: preventas por mayor rango, registradas/programadas/rechazadas
+     * por última, instaladas por fechaInstalacion. Los tres "programadas*" alimentan las conversiones.
+     */
     public record Contadores(
-            long preventasCompletas,      // |universo| — UI: "Preventas"
-            long ventasRegistradas,       // ultima != null — UI: "Registradas"
-            long ventasInstaladas,        // ultima == INSTALADO
+            long preventasCompletas,      // mayorRango ∈ {INGRESADO,PROGRAMADO,INSTALADO} ó última nula — UI: "Preventas"
+            long ventasRegistradas,       // ultima == INGRESADO — UI: "Registradas"
+            long ventasInstaladas,        // instaladas por fechaInstalacion ∈ período — UI: "Instaladas"
             long ventasRechazadas,        // ultima ∈ {SUBSANABLE, NO RECUPERABLE}
-            long ventasProgramadasActual, // ultima == PROGRAMADO (== programacionActual.total)
-            long programadasTotal,        // embudo: mayorRango ∈ {PROGRAMADO, INSTALADO}
+            long ventasProgramadasActual, // ultima == PROGRAMADO (== programacionActual.total) — UI: "Programadas"
+            long programadasTotal,        // embudo (conversiones): mayorRango ∈ {PROGRAMADO, INSTALADO}
             long programadasInstaladas,   // embudo ∩ ultima == INSTALADO
             long programadasRechazadas    // embudo ∩ ultima ∈ rechazo
     ) {}

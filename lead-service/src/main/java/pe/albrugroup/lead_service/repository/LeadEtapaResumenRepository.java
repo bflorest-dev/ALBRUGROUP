@@ -441,10 +441,12 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     // servicio; el proveedor es la partición). Universo = fila VENTA con fechaIngresoEtapa ∈ período.
     // El prefijo de ubigeo (SUBSTRING 1,2) se pliega a Lima ('15'/'07') / Provincia / SinUbigeo en Java.
 
-    // Q1 — universo por (última tipificación, prefijo de ubigeo). Da: preventasCompletas, registradas,
-    // instaladas, rechazadas, programadasActual, estadoLeads y zonas.registradas.
+    // Q1 — universo por (última tipificación, mayor rango, prefijo de ubigeo). Da: preventasCompletas
+    // (por mayor rango >= INGRESADO ó última nula), registradas, rechazadas, programadasActual, estadoLeads
+    // (por última) y zonas.registradas (subidas). El mayor rango entra en el GROUP BY porque "preventa
+    // genuina" se decide con el high-water mark, no con la última tipificación.
     @Query("""
-            SELECT r.ultimaCodigoTipificacion, SUBSTRING(d.ubigeoDomicilio, 1, 2), COUNT(DISTINCT l.id)
+            SELECT r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, SUBSTRING(d.ubigeoDomicilio, 1, 2), COUNT(DISTINCT l.id)
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             JOIN l.plan pl
@@ -453,7 +455,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             WHERE pr.id = :idProveedor
               AND r.fechaIngresoEtapa >= :inicio
               AND r.fechaIngresoEtapa < :fin
-            GROUP BY r.ultimaCodigoTipificacion, SUBSTRING(d.ubigeoDomicilio, 1, 2)
+            GROUP BY r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, SUBSTRING(d.ubigeoDomicilio, 1, 2)
             """)
     List<Object[]> dashboardVentaUniverso(
             @Param("etapa") Etapa etapa,
@@ -639,6 +641,11 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
 
     // Detalle de una MÉTRICA del resumen: el universo VENTA (fechaIngresoEtapa en período) filtrado por la
     // métrica clickeada (flags booleanos, mismos criterios que los contadores). Tipi VIVA del Lead.
+    //   - PREVENTAS:   preventa genuina = mayor rango en {INGRESADO, PROGRAMADO, INSTALADO} ó última nula.
+    //   - REGISTRADAS: última == INGRESADO (foto: registrada y aún sin avanzar/rechazar).
+    //   - PROGRAMADAS: última == PROGRAMADO.
+    //   - RECHAZADAS:  última ∈ {SUBSANABLE, NO RECUPERABLE}.
+    // INSTALADAS NO sale por aquí: se ancla en fechaInstalacion (ver dashboardVentaInstaladasDetalle).
     @Query(value = """
             SELECT new pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse(
                 rv.fechaIngresoEtapa,
@@ -656,11 +663,10 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             WHERE pr.id = :idProveedor
               AND rv.fechaIngresoEtapa >= :inicio
               AND rv.fechaIngresoEtapa < :fin
-              AND ( :todos = true
-                 OR (:registradas = true AND rv.ultimaCodigoTipificacion IS NOT NULL AND rv.ultimaCodigoTipificacion <> :sinIngresar)
-                 OR (:programadas = true AND rv.mayorRangoCodigoTipificacion IN :codigosProgramadaOMas)
-                 OR (:rechazadas  = true AND rv.ultimaCodigoTipificacion IN :codigosRechazo)
-                 OR (:instaladas  = true AND rv.ultimaCodigoTipificacion = :codigoInstalado) )
+              AND ( (:preventas = true AND (rv.mayorRangoCodigoTipificacion IN :codigosIngresadoOMas OR rv.ultimaCodigoTipificacion IS NULL))
+                 OR (:registradas = true AND rv.ultimaCodigoTipificacion = :codigoIngresado)
+                 OR (:programadas = true AND rv.ultimaCodigoTipificacion = :codigoProgramado)
+                 OR (:rechazadas  = true AND rv.ultimaCodigoTipificacion IN :codigosRechazo) )
             ORDER BY rv.fechaIngresoEtapa DESC, l.id DESC
             """,
             countQuery = """
@@ -672,26 +678,68 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             WHERE pr.id = :idProveedor
               AND rv.fechaIngresoEtapa >= :inicio
               AND rv.fechaIngresoEtapa < :fin
-              AND ( :todos = true
-                 OR (:registradas = true AND rv.ultimaCodigoTipificacion IS NOT NULL AND rv.ultimaCodigoTipificacion <> :sinIngresar)
-                 OR (:programadas = true AND rv.mayorRangoCodigoTipificacion IN :codigosProgramadaOMas)
-                 OR (:rechazadas  = true AND rv.ultimaCodigoTipificacion IN :codigosRechazo)
-                 OR (:instaladas  = true AND rv.ultimaCodigoTipificacion = :codigoInstalado) )
+              AND ( (:preventas = true AND (rv.mayorRangoCodigoTipificacion IN :codigosIngresadoOMas OR rv.ultimaCodigoTipificacion IS NULL))
+                 OR (:registradas = true AND rv.ultimaCodigoTipificacion = :codigoIngresado)
+                 OR (:programadas = true AND rv.ultimaCodigoTipificacion = :codigoProgramado)
+                 OR (:rechazadas  = true AND rv.ultimaCodigoTipificacion IN :codigosRechazo) )
             """)
     Page<pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse> dashboardVentaResumenDetalle(
             @Param("etapaVenta") Etapa etapaVenta,
             @Param("idProveedor") Long idProveedor,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
-            @Param("todos") boolean todos,
+            @Param("preventas") boolean preventas,
             @Param("registradas") boolean registradas,
             @Param("programadas") boolean programadas,
             @Param("rechazadas") boolean rechazadas,
-            @Param("instaladas") boolean instaladas,
-            @Param("sinIngresar") String sinIngresar,
-            @Param("codigosProgramadaOMas") Collection<String> codigosProgramadaOMas,
+            @Param("codigoIngresado") String codigoIngresado,
+            @Param("codigoProgramado") String codigoProgramado,
+            @Param("codigosIngresadoOMas") Collection<String> codigosIngresadoOMas,
             @Param("codigosRechazo") Collection<String> codigosRechazo,
+            Pageable pageable
+    );
+
+    // Detalle de INSTALADAS: leads instalados EN EL PERÍODO (fechaInstalacion ∈ período), en VENTA o
+    // POSTVENTA. Ancla distinta al resto (fechaInstalacion, no fechaIngresoEtapa), por eso query aparte.
+    @Query(value = """
+            SELECT new pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse(
+                rv.fechaIngresoEtapa,
+                dp.numeroDocumentoTitularServicio,
+                l.lead,
+                dp.nombreTitularServicio,
+                l.codigoTipificacion, l.codigoSubtipificacion,
+                rv.fechaUltimaGestion
+            )
+            FROM Lead l
+            JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            LEFT JOIN l.datosPreventa dp
+            JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE pr.id = :idProveedor
+              AND rv.ultimaCodigoTipificacion = :codigoInstalado
+              AND c.fechaInstalacion >= :desdeDate
+              AND c.fechaInstalacion < :hastaDateExcl
+            ORDER BY c.fechaInstalacion DESC, l.id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE pr.id = :idProveedor
+              AND rv.ultimaCodigoTipificacion = :codigoInstalado
+              AND c.fechaInstalacion >= :desdeDate
+              AND c.fechaInstalacion < :hastaDateExcl
+            """)
+    Page<pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse> dashboardVentaInstaladasDetalle(
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("idProveedor") Long idProveedor,
             @Param("codigoInstalado") String codigoInstalado,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl,
             Pageable pageable
     );
 }
