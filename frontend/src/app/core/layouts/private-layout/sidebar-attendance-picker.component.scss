@@ -36,7 +36,8 @@
 
 .sidebar-attendance__trigger:focus-visible,
 .sidebar-attendance__option:focus-visible,
-.sidebar-attendance__error button:focus-visible {
+.sidebar-attendance__error button:focus-visible,
+.sidebar-attendance__inline-confirm button:focus-visible {
   outline: 2px solid var(--admin-signal);
   outline-offset: 2px;
 }
@@ -343,12 +344,79 @@
   padding: 0;
 }
 
-.sidebar-attendance__confirm-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .65rem;
-  justify-content: flex-end;
-  margin-top: 1.25rem;
+.sidebar-attendance__inline-confirm {
+  animation: sidebar-attendance-confirm-enter 160ms cubic-bezier(.16, 1, .3, 1);
+  background: rgba(255, 255, 255, .065);
+  border: 1px solid color-mix(in srgb, var(--admin-signal) 52%, transparent);
+  border-radius: .375rem;
+  display: grid;
+  gap: .7rem;
+  padding: .7rem .65rem;
+}
+
+.sidebar-attendance__inline-confirm-copy {
+  align-items: start;
+  display: grid;
+  gap: .6rem;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.sidebar-attendance__inline-confirm-copy > span:last-child {
+  display: grid;
+  gap: .16rem;
+}
+
+.sidebar-attendance__inline-confirm-copy strong {
+  color: var(--admin-panel-ink);
+  font-size: .82rem;
+  font-weight: 650;
+}
+
+.sidebar-attendance__inline-confirm-copy small {
+  color: var(--admin-panel-muted);
+  font-size: .7rem;
+  line-height: 1.4;
+}
+
+.sidebar-attendance__inline-confirm-actions {
+  display: grid;
+  gap: .4rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+}
+
+.sidebar-attendance__inline-confirm-actions button {
+  align-items: center;
+  appearance: none;
+  border-radius: .32rem;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 650;
+  gap: .32rem;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: .4rem .5rem;
+}
+
+.sidebar-attendance__confirm-cancel {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, .18);
+  color: var(--admin-panel-ink);
+}
+
+.sidebar-attendance__confirm-cancel:hover {
+  background: rgba(255, 255, 255, .08);
+}
+
+.sidebar-attendance__confirm-submit {
+  background: #d94b4b;
+  border: 1px solid #e45a5a;
+  color: #ffffff;
+}
+
+.sidebar-attendance__confirm-submit:hover {
+  background: #c94040;
 }
 
 .sidebar-attendance__lunch {
@@ -402,8 +470,16 @@
   }
 }
 
+@keyframes sidebar-attendance-confirm-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-.2rem);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sidebar-attendance__menu,
+  .sidebar-attendance__inline-confirm,
   .sidebar-attendance__loading,
   .sidebar-attendance__timer.is-over {
     animation: none;

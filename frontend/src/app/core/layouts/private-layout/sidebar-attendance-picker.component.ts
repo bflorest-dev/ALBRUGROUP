@@ -80,6 +80,11 @@ export class SidebarAttendancePickerComponent {
 
   @HostListener('document:keydown.escape')
   protected closeOnEscape(): void {
+    if (this.pendingConfirmation()) {
+      this.cancelPendingAction();
+      return;
+    }
+
     this.close();
   }
 
@@ -114,6 +119,11 @@ export class SidebarAttendancePickerComponent {
 
     if (action.actionId === 'REGISTRAR_SALIDA') {
       this.pendingConfirmation.set(action);
+      window.setTimeout(() => {
+        this.host.nativeElement
+          .querySelector<HTMLElement>('.sidebar-attendance__confirm-cancel')
+          ?.focus({ preventScroll: true });
+      });
       return;
     }
 
@@ -126,7 +136,19 @@ export class SidebarAttendancePickerComponent {
   }
 
   protected cancelPendingAction(): void {
+    const actionKey = this.pendingConfirmation()?.key;
     this.pendingConfirmation.set(null);
+
+    if (actionKey) {
+      window.setTimeout(() => {
+        const actionButtons = Array.from(
+          this.host.nativeElement.querySelectorAll<HTMLElement>('[data-action-key]')
+        );
+        actionButtons
+          .find((button) => button.dataset['actionKey'] === actionKey)
+          ?.focus({ preventScroll: true });
+      });
+    }
   }
 
   protected acknowledgeLunch(): void {

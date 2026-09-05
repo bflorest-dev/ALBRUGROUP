@@ -76,49 +76,63 @@
 
       <div class="sidebar-attendance__options">
         @for (action of actions(); track action.key) {
-          <button
-            type="button"
-            class="sidebar-attendance__option"
-            [class.is-guided]="action.actionId === guidedActionId()"
-            [disabled]="!action.enabled || !action.actionId"
-            [attr.title]="action.disabledReason || null"
-            (click)="selectAction(action)"
-          >
-            <span class="sidebar-attendance__option-dot" [style.background]="actionColor(action)" aria-hidden="true"></span>
-            <span>
-              <strong>{{ action.label }}</strong>
-              @if (!action.enabled && action.disabledReason) {
-                <small>{{ action.disabledReason }}</small>
+          @if (pendingConfirmation()?.key === action.key) {
+            <div
+              class="sidebar-attendance__inline-confirm"
+              role="alert"
+              [attr.aria-labelledby]="menuId + '-confirm-title'"
+            >
+              <div class="sidebar-attendance__inline-confirm-copy">
+                <span
+                  class="sidebar-attendance__option-dot"
+                  [style.background]="actionColor(action)"
+                  aria-hidden="true"
+                ></span>
+                <span>
+                  <strong [id]="menuId + '-confirm-title'">¿Confirmar fin de jornada?</strong>
+                  <small>Tu jornada quedará cerrada y no podrás volver a ONLINE hoy.</small>
+                </span>
+              </div>
+              <div class="sidebar-attendance__inline-confirm-actions">
+                <button type="button" class="sidebar-attendance__confirm-cancel" (click)="cancelPendingAction()">
+                  Cancelar
+                </button>
+                <button type="button" class="sidebar-attendance__confirm-submit" (click)="confirmPendingAction()">
+                  <i class="ti ti-logout-2" aria-hidden="true"></i>
+                  Confirmar salida
+                </button>
+              </div>
+            </div>
+          } @else {
+            <button
+              type="button"
+              class="sidebar-attendance__option"
+              [class.is-guided]="action.actionId === guidedActionId()"
+              [disabled]="pendingConfirmation() !== null || !action.enabled || !action.actionId"
+              [attr.data-action-key]="action.key"
+              [attr.title]="action.disabledReason || null"
+              (click)="selectAction(action)"
+            >
+              <span class="sidebar-attendance__option-dot" [style.background]="actionColor(action)" aria-hidden="true"></span>
+              <span>
+                <strong>{{ action.label }}</strong>
+                @if (!action.enabled && action.disabledReason) {
+                  <small>{{ action.disabledReason }}</small>
+                }
+              </span>
+              @if (action.enabled && action.actionId) {
+                <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+              } @else {
+                <i class="ti ti-lock" aria-hidden="true"></i>
               }
-            </span>
-            @if (action.enabled && action.actionId) {
-              <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
-            } @else {
-              <i class="ti ti-lock" aria-hidden="true"></i>
-            }
-          </button>
+            </button>
+          }
         } @empty {
           <p class="sidebar-attendance__empty">{{ hint() || 'No hay cambios disponibles en este momento.' }}</p>
         }
       </div>
     </div>
   }
-
-  <p-dialog
-    header="Confirmar salida"
-    [visible]="pendingConfirmation() !== null"
-    (visibleChange)="!$event && cancelPendingAction()"
-    [modal]="true"
-    [draggable]="false"
-    [resizable]="false"
-    styleClass="sidebar-attendance-confirm-dialog"
-  >
-    <p>Vas a cerrar tu jornada de hoy. Después de marcar salida no podrás volver a ONLINE en esta fecha.</p>
-    <div class="sidebar-attendance__confirm-actions">
-      <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="cancelPendingAction()"></button>
-      <button pButton type="button" severity="danger" label="Confirmar salida" (click)="confirmPendingAction()"></button>
-    </div>
-  </p-dialog>
 
   <p-dialog
     [visible]="showLunchWait()"

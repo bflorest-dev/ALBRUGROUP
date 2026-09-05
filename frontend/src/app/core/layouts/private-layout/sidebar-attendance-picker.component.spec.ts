@@ -68,9 +68,28 @@ describe('SidebarAttendancePickerComponent', () => {
 
     expect(emitted).toEqual([]);
     expect(fixture.componentInstance['pendingConfirmation']()).toEqual(actions[1]);
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__inline-confirm')).toBeTruthy();
+    expect(
+      (fixture.nativeElement.querySelector('[data-action-key="lunch"]') as HTMLButtonElement).disabled
+    ).toBe(true);
 
     fixture.componentInstance['confirmPendingAction']();
     expect(emitted).toEqual(['REGISTRAR_SALIDA']);
+  });
+
+  it('cancela la confirmación inline con Escape sin cerrar el selector', () => {
+    const fixture = createFixture();
+    fixture.componentInstance.open();
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('[data-action-key="offline"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['pendingConfirmation']()).toBeNull();
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__menu')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__inline-confirm')).toBeNull();
   });
 
   it('muestra el cronómetro activo y conserva bloqueadas las acciones no disponibles', () => {
