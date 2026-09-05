@@ -154,6 +154,12 @@ app-employee-access-panel .row-actions {
   --layout-sidebar-bg-deep: #071c17;
   --layout-sidebar-glow: rgba(61, 175, 119, 0.35);
   --layout-sidebar-icon: #8ee0b7;
+  --layout-sidebar-rail: #08271f;
+  --layout-sidebar-panel: #185846;
+  --layout-sidebar-panel-deep: #124636;
+  --layout-sidebar-ink: #f4fbf7;
+  --layout-sidebar-muted: #b8d8cc;
+  --layout-sidebar-signal: #e7a13f;
 
   font-family:
     var(--app-font-family);
@@ -269,6 +275,12 @@ app-employee-access-panel .row-actions {
   --layout-sidebar-bg-deep: #0a2345;
   --layout-sidebar-glow: rgba(96, 165, 250, 0.34);
   --layout-sidebar-icon: #bfdbfe;
+  --layout-sidebar-rail: #0a2345;
+  --layout-sidebar-panel: #153e75;
+  --layout-sidebar-panel-deep: #102f59;
+  --layout-sidebar-ink: #f5f8ff;
+  --layout-sidebar-muted: #bfd3ee;
+  --layout-sidebar-signal: #60a5fa;
 }
 
 .theme-sales {
@@ -309,6 +321,12 @@ app-employee-access-panel .row-actions {
   --layout-sidebar-bg-deep: #1f0338;
   --layout-sidebar-glow: rgba(192, 132, 252, 0.32);
   --layout-sidebar-icon: #e9d5ff;
+  --layout-sidebar-rail: #1f0338;
+  --layout-sidebar-panel: #3b0764;
+  --layout-sidebar-panel-deep: #2f054f;
+  --layout-sidebar-ink: #fcf7ff;
+  --layout-sidebar-muted: #dbc4eb;
+  --layout-sidebar-signal: #c084fc;
 }
 
 .theme-postventa {

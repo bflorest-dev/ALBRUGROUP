@@ -6,7 +6,11 @@
 >
   <span class="admin-nav-v2__focus-layer" aria-hidden="true"></span>
 
-  <aside class="admin-nav-v2__rail" aria-label="Navegación principal de Administrador">
+  <aside
+    class="admin-nav-v2__rail"
+    [attr.aria-label]="'Navegación principal de ' + roleLabel()"
+    (mouseenter)="openRail()"
+  >
     <button
       type="button"
       class="admin-nav-v2__brand"
@@ -18,17 +22,19 @@
       <span class="sr-only">ALBRU GROUP</span>
     </button>
 
-    <nav class="admin-nav-v2__domains" aria-label="Dominios administrativos">
+    <nav class="admin-nav-v2__domains" aria-label="Áreas de navegación">
       @for (domain of domains(); track domain.id) {
         <button
           type="button"
           class="admin-nav-v2__domain"
           [class.is-active]="domainIsActive(domain)"
+          [attr.aria-pressed]="committedDomainId() === domain.id"
           [attr.aria-expanded]="openPanelId() === domain.id"
           [attr.aria-controls]="'admin-context-panel'"
           [pTooltip]="domain.label"
           tooltipPosition="right"
           (mouseenter)="openDomain(domain, $event)"
+          (mouseleave)="resumeRailOpenIntent()"
           (focus)="openDomain(domain, $event)"
           (click)="selectDomain(domain, $event)"
         >
@@ -92,22 +98,27 @@
       </div>
 
       <div class="admin-nav-v2__profile-actions">
-        <span class="admin-nav-v2__section-label">Herramientas administrativas</span>
-        <button
-          type="button"
-          class="admin-nav-v2__profile-action"
-          role="switch"
-          [attr.aria-checked]="deleteLeadsVisible()"
-          (click)="selectProfileAction('delete')"
-        >
-          <i class="ti ti-trash" aria-hidden="true"></i>
-          <span>
-            <strong>Eliminar leads</strong>
-          </span>
-          <span class="admin-nav-v2__switch" [class.is-on]="deleteLeadsVisible()" aria-hidden="true">
-            <span></span>
-          </span>
-        </button>
+        @if (showDeleteLeadsAction() || canCorrectMerito() || providers().length) {
+          <span class="admin-nav-v2__section-label">Herramientas de la sesión</span>
+        }
+
+        @if (showDeleteLeadsAction()) {
+          <button
+            type="button"
+            class="admin-nav-v2__profile-action"
+            role="switch"
+            [attr.aria-checked]="deleteLeadsVisible()"
+            (click)="selectProfileAction('delete')"
+          >
+            <i class="ti ti-trash" aria-hidden="true"></i>
+            <span>
+              <strong>Eliminar leads</strong>
+            </span>
+            <span class="admin-nav-v2__switch" [class.is-on]="deleteLeadsVisible()" aria-hidden="true">
+              <span></span>
+            </span>
+          </button>
+        }
 
         @if (canCorrectMerito()) {
           <button type="button" class="admin-nav-v2__profile-action" (click)="selectProfileAction('merito')">
@@ -116,6 +127,26 @@
               <strong>Corrección de mérito</strong>
             </span>
             <i class="ti ti-chevron-right" aria-hidden="true"></i>
+          </button>
+        }
+
+        @for (provider of providers(); track provider.id) {
+          <button
+            type="button"
+            class="admin-nav-v2__profile-action"
+            [class.is-active]="provider.id === activeProviderId()"
+            [attr.aria-pressed]="provider.id === activeProviderId()"
+            (click)="selectProvider(provider.id)"
+          >
+            <i class="ti ti-building-store" aria-hidden="true"></i>
+            <span>
+              <strong>{{ provider.nombre }}</strong>
+              <small>{{ provider.id === activeProviderId() ? 'Proveedor activo' : 'Cambiar proveedor' }}</small>
+            </span>
+            <i
+              [class]="provider.id === activeProviderId() ? 'ti ti-circle-check' : 'ti ti-chevron-right'"
+              aria-hidden="true"
+            ></i>
           </button>
         }
       </div>
@@ -168,18 +199,21 @@
                 [routerLink]="item.route"
                 routerLinkActive="is-active"
                 [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+                (click)="commitCurrentContext()"
               >
                 <i [class]="item.icon" aria-hidden="true"></i>
                 <span><strong>{{ item.label }}</strong></span>
-                @if (item.badge !== undefined && item.badge !== null && item.badge !== '') {
-                  <p-badge class="admin-nav-v2__badge" [value]="item.badge" />
-                }
-                @if (item.alertActive) {
-                  <span class="admin-nav-v2__alert" [attr.aria-label]="item.alertLabel">
-                    <i class="ti ti-alert-triangle" aria-hidden="true"></i>
-                  </span>
-                }
-                <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+                <span class="admin-nav-v2__item-meta">
+                  @if (item.badge !== undefined && item.badge !== null && item.badge !== '') {
+                    <p-badge class="admin-nav-v2__badge" [value]="item.badge" />
+                  }
+                  @if (item.alertActive) {
+                    <span class="admin-nav-v2__alert" [attr.aria-label]="item.alertLabel">
+                      <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+                    </span>
+                  }
+                  <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+                </span>
               </a>
             }
           }

@@ -1,4 +1,4 @@
-<div [class]="'layout-shell ' + themeClass()" [class.layout-shell--admin-v2]="isAdmin()">
+<div [class]="'layout-shell ' + themeClass()" [class.layout-shell--sidebar-v2]="usesSidebarV2()">
   <header class="mobile-topbar">
     <button
       type="button"
@@ -20,18 +20,23 @@
     <button type="button" class="mobile-menu-backdrop" aria-label="Cerrar menu" (click)="closeMobileMenu()"></button>
   }
 
-  @if (isAdmin()) {
+  @if (usesSidebarV2()) {
     <app-admin-sidebar-v2
-      class="admin-sidebar-v2-host"
+      class="sidebar-v2-host"
       [items]="menuItems()"
+      [domainDefinitions]="sidebarDomainDefinitions()"
       [displayName]="userDisplayName()"
       [roleLabel]="primaryRoleLabel()"
       [statusLabel]="attendanceStatusLabel()"
       [statusColor]="attendanceStatusColor()"
       [deleteLeadsVisible]="adminDeleteLeadsVisible()"
+      [showDeleteLeadsAction]="isAdmin()"
       [canCorrectMerito]="canCorrectMerito()"
+      [providers]="mostrarSelectorProveedor() ? proveedoresUsuario() : []"
+      [activeProviderId]="proveedorActivoId()"
       (deleteLeadsToggled)="toggleAdminDeleteLeadsVisible()"
       (correctMeritoRequested)="openMeritoCorrection()"
+      (providerSelected)="seleccionarProveedor($event)"
       (logoutRequested)="logout()"
     />
   }
@@ -39,7 +44,7 @@
   <aside
     #sidebar
     class="sidebar sidebar--legacy"
-    [class.sidebar--legacy-admin]="isAdmin()"
+    [class.sidebar--legacy-v2]="usesSidebarV2()"
     [class.sidebar--open]="mobileMenuOpen()"
     aria-label="Menu principal"
     (mouseleave)="releaseSidebarPointerFocus()"

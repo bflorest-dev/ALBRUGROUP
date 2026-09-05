@@ -13,16 +13,16 @@
 
 .mobile-topbar,
 .mobile-menu-backdrop,
-.admin-sidebar-v2-host {
+.sidebar-v2-host {
   display: none;
 }
 
 @media (min-width: 901px) {
-  .layout-shell--admin-v2 {
+  .layout-shell--sidebar-v2 {
     --layout-sidebar-width: 4.5rem;
   }
 
-  .admin-sidebar-v2-host {
+  .sidebar-v2-host {
     align-self: start;
     display: block;
     height: 100dvh;
@@ -32,7 +32,7 @@
     z-index: 160;
   }
 
-  .layout-shell--admin-v2 > .sidebar--legacy-admin {
+  .layout-shell--sidebar-v2 > .sidebar--legacy-v2 {
     display: none;
   }
 }

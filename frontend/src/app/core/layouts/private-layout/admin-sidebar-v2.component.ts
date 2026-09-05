@@ -16,44 +16,11 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/ro
 import { filter } from 'rxjs';
 import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
-import { SidebarItem } from './sidebar-item.model';
+import { SidebarDomainDefinition, SidebarItem, SidebarProviderOption } from './sidebar-item.model';
 
-type AdminDomainId = 'overview' | 'operation' | 'people' | 'system';
-
-type AdminDomain = {
-  id: AdminDomainId;
-  label: string;
-  description: string;
-  icon: string;
+type SidebarDomain = SidebarDomainDefinition & {
   items: SidebarItem[];
 };
-
-const DOMAIN_META: Array<Omit<AdminDomain, 'items'>> = [
-  {
-    id: 'overview',
-    label: 'Vista general',
-    description: 'Indicadores, actividad y control diario',
-    icon: 'ti ti-layout-dashboard'
-  },
-  {
-    id: 'operation',
-    label: 'Operación',
-    description: 'Plataformas, campañas y mantenimiento',
-    icon: 'ti ti-adjustments-horizontal'
-  },
-  {
-    id: 'people',
-    label: 'Personas',
-    description: 'Colaboradores, asistencia y empleabilidad',
-    icon: 'ti ti-users-group'
-  },
-  {
-    id: 'system',
-    label: 'Configuración',
-    description: 'Catálogos, equipos y administración',
-    icon: 'ti ti-settings-2'
-  }
-];
 
 const ADMIN_DATE_FORMATTER = new Intl.DateTimeFormat('es-PE', {
   day: '2-digit',
@@ -67,6 +34,8 @@ const ADMIN_TIME_FORMATTER = new Intl.DateTimeFormat('es-PE', {
   minute: '2-digit',
   second: '2-digit'
 });
+
+const HOVER_OPEN_DELAY_MS = 200;
 
 @Component({
   selector: 'app-admin-sidebar-v2',
@@ -84,32 +53,40 @@ export class AdminSidebarV2Component implements OnDestroy {
   private closeTimer?: ReturnType<typeof setTimeout>;
   private confirmationTimer?: ReturnType<typeof setTimeout>;
   private confirmationFrame?: number;
+  private hoverOpenTimer?: ReturnType<typeof setTimeout>;
   private lastRailTrigger?: HTMLElement;
 
   readonly items = input.required<SidebarItem[]>();
+  readonly domainDefinitions = input.required<SidebarDomainDefinition[]>();
   readonly displayName = input('Usuario');
   readonly roleLabel = input('Administrador');
   readonly statusLabel = input('ONLINE');
   readonly statusColor = input('#37c676');
   readonly deleteLeadsVisible = input(false);
+  readonly showDeleteLeadsAction = input(false);
   readonly canCorrectMerito = input(false);
+  readonly providers = input<SidebarProviderOption[]>([]);
+  readonly activeProviderId = input<number | null>(null);
 
   readonly logoutRequested = output<void>();
   readonly correctMeritoRequested = output<void>();
   readonly deleteLeadsToggled = output<void>();
+  readonly providerSelected = output<number>();
 
-  protected readonly openPanelId = signal<AdminDomainId | 'profile' | null>(null);
+  protected readonly openPanelId = signal<string | 'profile' | null>(null);
   protected readonly selectedPath = signal<SidebarItem[]>([]);
+  protected readonly committedDomainId = signal<string | null>(null);
+  private readonly committedPath = signal<SidebarItem[]>([]);
   protected readonly currentUrl = signal(this.router.url);
   protected readonly currentDate = signal(new Date());
   protected readonly panelClickConfirmed = signal(false);
   protected readonly dateLabel = computed(() => ADMIN_DATE_FORMATTER.format(this.currentDate()));
   protected readonly timeLabel = computed(() => ADMIN_TIME_FORMATTER.format(this.currentDate()));
 
-  protected readonly domains = computed<AdminDomain[]>(() =>
-    DOMAIN_META.map((domain) => ({
+  protected readonly domains = computed<SidebarDomain[]>(() =>
+    this.domainDefinitions().map((domain, index) => ({
       ...domain,
-      items: this.items().filter((item) => this.domainFor(item) === domain.id)
+      items: this.items().filter((item) => item.domainId === domain.id || (!item.domainId && index === 0))
     })).filter((domain) => domain.items.length > 0)
   );
 
@@ -138,6 +115,7 @@ export class AdminSidebarV2Component implements OnDestroy {
       )
       .subscribe((event) => {
         this.currentUrl.set(event.urlAfterRedirects);
+        this.syncCommittedContextWithRoute();
         this.closePanel();
       });
   }
@@ -146,6 +124,7 @@ export class AdminSidebarV2Component implements OnDestroy {
     if (this.breadcrumbScrollFrame !== undefined) cancelAnimationFrame(this.breadcrumbScrollFrame);
     if (this.clockTimer) clearInterval(this.clockTimer);
     this.cancelClose();
+    this.cancelHoverOpen();
     this.cancelConfirmation();
   }
 
@@ -154,19 +133,55 @@ export class AdminSidebarV2Component implements OnDestroy {
     this.closePanel(true);
   }
 
-  protected openDomain(domain: AdminDomain, event?: Event): void {
+  protected openDomain(domain: SidebarDomain, event?: Event): void {
     this.rememberRailTrigger(event);
     this.cancelClose();
-    const activePath = this.findActivePath(domain.items);
-    const groupPath = activePath.filter((item) => Boolean(item.children?.length));
-    this.selectedPath.set(groupPath);
-    this.openPanelId.set(domain.id);
-    this.scrollBreadcrumbToEnd();
+    const committedDomainId = this.committedDomainId();
+    if (committedDomainId && committedDomainId !== domain.id) return;
+
+    const showDomain = () => {
+      const path = committedDomainId === domain.id ? this.committedPath() : this.activeGroupPath(domain);
+      this.showDomain(domain, path);
+    };
+
+    if (event?.type === 'mouseenter' && !this.isPanelOpen()) {
+      this.scheduleHoverOpen(showDomain);
+      return;
+    }
+
+    this.cancelHoverOpen();
+    showDomain();
   }
 
-  protected selectDomain(domain: AdminDomain, event?: Event): void {
-    this.openDomain(domain, event);
+  protected selectDomain(domain: SidebarDomain, event?: Event): void {
+    this.rememberRailTrigger(event);
+    this.cancelClose();
+    this.cancelHoverOpen();
+    const path = this.activeGroupPath(domain);
+    this.commitContext(domain.id, path);
+    this.showDomain(domain, path);
     this.confirmPanelSelection();
+  }
+
+  protected openRail(): void {
+    this.cancelClose();
+    if (this.isPanelOpen()) return;
+
+    this.scheduleHoverOpen(() => {
+      const committedDomainId = this.committedDomainId();
+      const domain =
+        this.domains().find((candidate) => candidate.id === committedDomainId) ??
+        this.domains().find((candidate) => this.hasActiveRoute(candidate.items)) ??
+        this.domains()[0];
+      if (!domain) return;
+
+      const path = committedDomainId === domain.id ? this.committedPath() : this.activeGroupPath(domain);
+      this.showDomain(domain, path);
+    });
+  }
+
+  protected resumeRailOpenIntent(): void {
+    if (!this.isPanelOpen()) this.openRail();
   }
 
   protected openHome(event?: Event): void {
@@ -177,6 +192,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   protected openProfile(event?: Event): void {
     this.rememberRailTrigger(event);
     this.cancelClose();
+    this.cancelHoverOpen();
     this.selectedPath.set([]);
     this.openPanelId.set('profile');
     this.confirmPanelSelection();
@@ -184,16 +200,28 @@ export class AdminSidebarV2Component implements OnDestroy {
 
   protected activateGroup(item: SidebarItem): void {
     if (!item.children?.length) return;
-    this.selectedPath.update((path) => [...path, item]);
+    const path = [...this.selectedPath(), item];
+    this.selectedPath.set(path);
+    const domain = this.currentDomain();
+    if (domain) this.commitContext(domain.id, path);
     this.scrollBreadcrumbToEnd();
   }
 
   protected navigateToLevel(level: number): void {
-    this.selectedPath.update((path) => path.slice(0, level));
+    const path = this.selectedPath().slice(0, level);
+    this.selectedPath.set(path);
+    const domain = this.currentDomain();
+    if (domain && this.committedDomainId() === domain.id) this.committedPath.set(path);
     this.scrollBreadcrumbToEnd();
   }
 
+  protected commitCurrentContext(): void {
+    const domain = this.currentDomain();
+    if (domain) this.commitContext(domain.id, this.selectedPath());
+  }
+
   protected scheduleClose(): void {
+    this.cancelHoverOpen();
     this.cancelClose();
     this.closeTimer = setTimeout(() => this.closePanel(), 180);
   }
@@ -207,6 +235,7 @@ export class AdminSidebarV2Component implements OnDestroy {
 
   protected closePanel(restoreFocus = false): void {
     this.cancelClose();
+    this.cancelHoverOpen();
     this.openPanelId.set(null);
     this.selectedPath.set([]);
     if (restoreFocus) queueMicrotask(() => this.lastRailTrigger?.focus({ preventScroll: true }));
@@ -216,8 +245,10 @@ export class AdminSidebarV2Component implements OnDestroy {
     return item.key ?? item.route ?? item.label;
   }
 
-  protected domainIsActive(domain: AdminDomain): boolean {
-    return this.openPanelId() === domain.id || this.hasActiveRoute(domain.items);
+  protected domainIsActive(domain: SidebarDomain): boolean {
+    const openPanelId = this.openPanelId();
+    if (openPanelId && openPanelId !== 'profile') return openPanelId === domain.id;
+    return this.hasActiveRoute(domain.items);
   }
 
   protected itemIsActive(item: SidebarItem): boolean {
@@ -235,12 +266,9 @@ export class AdminSidebarV2Component implements OnDestroy {
     if (action === 'logout') this.logoutRequested.emit();
   }
 
-  private domainFor(item: SidebarItem): AdminDomainId {
-    const key = `${item.label} ${item.route ?? ''}`.toLocaleLowerCase('es');
-    if (/dashboard|bitácora|bitacora|finanzas|leads.del.d[ií]a/.test(key)) return 'overview';
-    if (/plataformas|correcci[oó]n|mantenimiento|operaciones/.test(key)) return 'operation';
-    if (/colaboradores|asistencia|personal|empleabilidad/.test(key)) return 'people';
-    return 'system';
+  protected selectProvider(providerId: number): void {
+    this.providerSelected.emit(providerId);
+    this.closePanel();
   }
 
   private hasActiveRoute(items: SidebarItem[]): boolean {
@@ -263,6 +291,42 @@ export class AdminSidebarV2Component implements OnDestroy {
       }
     }
     return [];
+  }
+
+  private activeGroupPath(domain: SidebarDomain): SidebarItem[] {
+    return this.findActivePath(domain.items).filter((item) => Boolean(item.children?.length));
+  }
+
+  private showDomain(domain: SidebarDomain, path: SidebarItem[]): void {
+    this.selectedPath.set(path);
+    this.openPanelId.set(domain.id);
+    this.scrollBreadcrumbToEnd();
+  }
+
+  private commitContext(domainId: string, path: SidebarItem[]): void {
+    this.committedDomainId.set(domainId);
+    this.committedPath.set(path);
+  }
+
+  private syncCommittedContextWithRoute(): void {
+    if (!this.committedDomainId()) return;
+    const activeDomain = this.domains().find((domain) => this.hasActiveRoute(domain.items));
+    if (activeDomain) this.commitContext(activeDomain.id, this.activeGroupPath(activeDomain));
+  }
+
+  private scheduleHoverOpen(open: () => void): void {
+    this.cancelHoverOpen();
+    this.hoverOpenTimer = setTimeout(() => {
+      this.hoverOpenTimer = undefined;
+      open();
+    }, HOVER_OPEN_DELAY_MS);
+  }
+
+  protected cancelHoverOpen(): void {
+    if (this.hoverOpenTimer) {
+      clearTimeout(this.hoverOpenTimer);
+      this.hoverOpenTimer = undefined;
+    }
   }
 
   private confirmPanelSelection(): void {

@@ -1,12 +1,12 @@
 :host {
   --admin-rail-width: 4.5rem;
-  --admin-rail-bg: #08271f;
-  --admin-panel-bg: #185846;
-  --admin-panel-bg-deep: #124636;
-  --admin-panel-ink: #f4fbf7;
-  --admin-panel-muted: #b8d8cc;
+  --admin-rail-bg: var(--layout-sidebar-rail, #08271f);
+  --admin-panel-bg: var(--layout-sidebar-panel, #185846);
+  --admin-panel-bg-deep: var(--layout-sidebar-panel-deep, #124636);
+  --admin-panel-ink: var(--layout-sidebar-ink, #f4fbf7);
+  --admin-panel-muted: var(--layout-sidebar-muted, #b8d8cc);
   --admin-panel-line: rgba(238, 255, 247, 0.16);
-  --admin-signal: #e7a13f;
+  --admin-signal: var(--layout-sidebar-signal, #e7a13f);
 
   display: block;
   height: 100dvh;
@@ -34,7 +34,7 @@ a {
 button:focus-visible,
 a:focus-visible,
 section:focus-visible {
-  outline: 2px solid #9ed6c1;
+  outline: 2px solid color-mix(in srgb, var(--admin-panel-muted) 78%, #ffffff);
   outline-offset: -2px;
 }
 
@@ -189,7 +189,7 @@ section:focus-visible {
 }
 
 .admin-nav-v2__domain i {
-  color: #9bcdbb;
+  color: var(--layout-sidebar-icon, var(--admin-panel-muted));
   font-size: 1.3rem;
   transition:
     color 160ms ease,
@@ -243,18 +243,18 @@ section:focus-visible {
 }
 
 .admin-nav-v2__profile-trigger {
-  background: #dcebe5;
+  background: var(--admin-panel-ink);
   border: 2px solid rgba(255, 255, 255, .16);
   border-radius: 50%;
-  color: #173d32;
+  color: var(--admin-panel-bg-deep);
   font-weight: 800;
   height: 2.65rem;
   width: 2.65rem;
 }
 
 .admin-nav-v2__profile-trigger.is-active {
-  background: #dcebe5;
-  color: #173d32;
+  background: var(--admin-panel-ink);
+  color: var(--admin-panel-bg-deep);
   box-shadow: 0 0 0 2px var(--admin-signal);
 }
 
@@ -467,13 +467,13 @@ section:focus-visible {
 
 .admin-nav-v2__item.is-active {
   background: var(--admin-panel-bg-deep);
-  border-color: rgba(231, 161, 63, .52);
+  border-color: color-mix(in srgb, var(--admin-signal) 52%, transparent);
   box-shadow: inset 2px 0 0 var(--admin-signal);
 }
 
 .admin-nav-v2__item > i:first-child,
 .admin-nav-v2__profile-action > i:first-child {
-  color: #a9d8c7;
+  color: var(--layout-sidebar-icon, var(--admin-panel-muted));
   font-size: 1.02rem;
   justify-self: center;
 }
@@ -503,6 +503,13 @@ section:focus-visible {
 .admin-nav-v2__profile-action > i:last-child {
   color: var(--admin-panel-muted);
   font-size: .85rem;
+}
+
+.admin-nav-v2__item-meta {
+  align-items: center;
+  color: var(--admin-panel-muted);
+  gap: .42rem;
+  grid-auto-flow: column;
 }
 
 .admin-nav-v2__badge {
@@ -559,9 +566,9 @@ section:focus-visible {
 
 .admin-nav-v2__avatar {
   align-items: center;
-  background: #dcebe5;
+  background: var(--admin-panel-ink);
   border-radius: 50%;
-  color: #173d32;
+  color: var(--admin-panel-bg-deep);
   display: inline-flex;
   flex: 0 0 auto;
   font-size: 1rem;
@@ -650,7 +657,7 @@ section:focus-visible {
 }
 
 .admin-nav-v2__logout:hover {
-  background: #0e3b2d;
+  background: color-mix(in srgb, var(--admin-panel-bg-deep) 82%, #000000 18%);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -32,7 +32,8 @@ import { EquiposNavService } from '../../services/equipos-nav.service';
 import { CurrentUserProviderScopeService } from '../../services/current-user-provider-scope.service';
 import { LeadMeritoCorreccionDrawerComponent } from '../../../shared/components/lead-merito-correccion-drawer/lead-merito-correccion-drawer.component';
 import { AdminSidebarV2Component } from './admin-sidebar-v2.component';
-import { SidebarItem } from './sidebar-item.model';
+import { SidebarDomainDefinition, SidebarItem } from './sidebar-item.model';
+import { sidebarDomainsForRole, sidebarV2EnabledForRole } from './sidebar-v2.config';
 
 const ROLE_THEME_CLASS: Record<string, string> = {
   ADMINISTRADOR: 'theme-admin',
@@ -102,6 +103,10 @@ export class PrivateLayoutComponent implements AfterViewInit {
   private handledSalidaTick = this.attendanceFacade.salidaSuccessTick();
   protected readonly session = this.sessionService.session;
   protected readonly isAdmin = computed(() => this.session()?.primaryRole === 'ADMINISTRADOR');
+  protected readonly usesSidebarV2 = computed(() => sidebarV2EnabledForRole(this.session()?.primaryRole));
+  protected readonly sidebarDomainDefinitions = computed<SidebarDomainDefinition[]>(() =>
+    sidebarDomainsForRole(this.session()?.primaryRole)
+  );
   protected readonly canCorrectMerito = computed(() => {
     const primaryRole = this.session()?.primaryRole;
     return primaryRole === 'ADMINISTRADOR' || primaryRole === 'SUPERVISOR_VENTAS';
@@ -272,25 +277,25 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ];
 
       const items: SidebarItem[] = [
-        { label: 'Dashboard', icon: 'pi pi-chart-pie', children: dashboardChildren },
-        { label: 'Bitácora', route: '/app/admin/bitacora', icon: 'pi pi-book', exact: true },
-        { key: 'Plataformas', label: 'Plataformas', icon: 'pi pi-th-large', children: plataformasChildren },
-        { label: 'Colaboradores', icon: 'pi pi-users', children: colaboradoresChildren },
-        { label: 'Personal', route: '/app/admin/personal', icon: 'pi pi-id-card', exact: true },
-        { label: 'Asistencia', route: '/app/admin/asistencia', icon: 'pi pi-clock', exact: true },
-        { label: 'Empleabilidad', route: '/app/admin/empleabilidad', icon: 'pi pi-briefcase' },
-        { label: 'Tipificaciones', route: '/app/admin/tipificaciones', icon: 'pi pi-sitemap', exact: true },
-        { label: 'Equipos', route: '/app/admin/equipos', icon: 'pi pi-th-large', exact: true },
-        { label: 'Proveedores', route: '/app/admin/proveedores', icon: 'pi pi-building', exact: true },
-        { label: 'Mantenimiento', route: '/app/admin/mantenimiento', icon: 'pi pi-database', exact: true },
-        { label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
-        { label: 'CorrecciÃ³n de campaÃ±a', route: '/app/admin/correccion-campana', icon: 'pi pi-sync', exact: true },
-        { label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
-        { label: 'Operaciones', route: '/app/admin/operaciones', icon: 'pi pi-wrench', exact: true }
+        { domainId: 'overview', label: 'Dashboard', icon: 'pi pi-chart-pie', children: dashboardChildren },
+        { domainId: 'overview', label: 'Bitácora', route: '/app/admin/bitacora', icon: 'pi pi-book', exact: true },
+        { domainId: 'operation', key: 'Plataformas', label: 'Plataformas', icon: 'pi pi-th-large', children: plataformasChildren },
+        { domainId: 'people', label: 'Colaboradores', icon: 'pi pi-users', children: colaboradoresChildren },
+        { domainId: 'people', label: 'Personal', route: '/app/admin/personal', icon: 'pi pi-id-card', exact: true },
+        { domainId: 'people', label: 'Asistencia', route: '/app/admin/asistencia', icon: 'pi pi-clock', exact: true },
+        { domainId: 'people', label: 'Empleabilidad', route: '/app/admin/empleabilidad', icon: 'pi pi-briefcase' },
+        { domainId: 'system', label: 'Tipificaciones', route: '/app/admin/tipificaciones', icon: 'pi pi-sitemap', exact: true },
+        { domainId: 'system', label: 'Equipos', route: '/app/admin/equipos', icon: 'pi pi-th-large', exact: true },
+        { domainId: 'system', label: 'Proveedores', route: '/app/admin/proveedores', icon: 'pi pi-building', exact: true },
+        { domainId: 'operation', label: 'Mantenimiento', route: '/app/admin/mantenimiento', icon: 'pi pi-database', exact: true },
+        { domainId: 'overview', label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
+        { domainId: 'operation', label: 'CorrecciÃ³n de campaÃ±a', route: '/app/admin/correccion-campana', icon: 'pi pi-sync', exact: true },
+        { domainId: 'overview', label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
+        { domainId: 'operation', label: 'Operaciones', route: '/app/admin/operaciones', icon: 'pi pi-wrench', exact: true }
       ];
 
       if (this.adminDeleteLeadsVisible()) {
-        items.push({ label: 'Eliminar Leads', route: '/app/admin/eliminar-leads', icon: 'pi pi-trash', exact: true });
+        items.push({ domainId: 'system', label: 'Eliminar Leads', route: '/app/admin/eliminar-leads', icon: 'pi pi-trash', exact: true });
       }
 
       this.sortAdminMenu(items);
@@ -344,8 +349,9 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
     if (session.primaryRole === 'ASESOR_GTR' || session.primaryRole === 'SUPERVISOR_GTR') {
       return [
-        { label: 'Plataforma', route: '/app/gtr/plataforma', icon: 'pi pi-desktop', exact: true },
+        { domainId: 'workspace', label: 'Plataforma', route: '/app/gtr/plataforma', icon: 'pi pi-desktop', exact: true },
         {
+          domainId: 'workspace',
           label: 'Agendados',
           route: '/app/gtr/agendados',
           icon: 'pi pi-calendar',
@@ -354,20 +360,20 @@ export class PrivateLayoutComponent implements AfterViewInit {
           alertLabel: this.gtrAgendadosAlertFacade.accessibleLabel(),
           exact: true
         },
-        { label: 'Historicos', route: '/app/gtr/historicos', icon: 'pi pi-history', exact: true },
-        { label: 'Leads del día', route: '/app/gtr/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
-        { label: 'Dashboard', route: '/app/gtr/dashboard', icon: 'pi pi-chart-pie', exact: true }
+        { domainId: 'workspace', label: 'Historicos', route: '/app/gtr/historicos', icon: 'pi pi-history', exact: true },
+        { domainId: 'insights', label: 'Leads del día', route: '/app/gtr/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
+        { domainId: 'insights', label: 'Dashboard', route: '/app/gtr/dashboard', icon: 'pi pi-chart-pie', exact: true }
       ];
     }
 
     if (session.primaryRole === 'ASESOR_BACKOFFICE' || session.primaryRole === 'SUPERVISOR_BACKOFFICE') {
       return [
-        { label: 'Plataforma', route: '/app/backoffice/plataforma', icon: 'pi pi-desktop', exact: true },
-        { label: 'Programados', route: '/app/backoffice/programados', icon: 'pi pi-calendar-clock', exact: true },
-        { label: 'Subsanables', route: '/app/backoffice/subsanables', icon: 'pi pi-wrench', exact: true },
-        { label: 'Rechazados', route: '/app/backoffice/rechazados', icon: 'pi pi-exclamation-triangle', exact: true },
-        { label: 'Instalados', route: '/app/backoffice/instalados', icon: 'pi pi-check-circle', exact: true },
-        { label: 'Dashboard', route: '/app/backoffice/dashboard', icon: 'pi pi-chart-pie', exact: true }
+        { domainId: 'workspace', label: 'Plataforma', route: '/app/backoffice/plataforma', icon: 'pi pi-desktop', exact: true },
+        { domainId: 'workspace', label: 'Programados', route: '/app/backoffice/programados', icon: 'pi pi-calendar-clock', exact: true },
+        { domainId: 'workspace', label: 'Subsanables', route: '/app/backoffice/subsanables', icon: 'pi pi-wrench', exact: true },
+        { domainId: 'workspace', label: 'Rechazados', route: '/app/backoffice/rechazados', icon: 'pi pi-exclamation-triangle', exact: true },
+        { domainId: 'workspace', label: 'Instalados', route: '/app/backoffice/instalados', icon: 'pi pi-check-circle', exact: true },
+        { domainId: 'insights', label: 'Dashboard', route: '/app/backoffice/dashboard', icon: 'pi pi-chart-pie', exact: true }
       ];
     }
 
