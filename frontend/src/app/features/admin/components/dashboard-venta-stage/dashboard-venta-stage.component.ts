@@ -145,7 +145,7 @@ export class DashboardVentaStageComponent implements OnInit {
   protected readonly proveedores = signal<ProveedorRef[]>([]);
   protected readonly proveedorId = signal<number | null>(null);
   protected readonly vista = signal<Vista>('resumen');
-  protected readonly periodo = signal<MetricsPeriodo>('mes');
+  protected readonly periodo = signal<MetricsPeriodo>('dia');
   protected readonly dia = signal<string | null>(null);
   protected readonly hasta = signal<string | null>(null);
   protected readonly zonaSel = signal<ZonaSel>('total');

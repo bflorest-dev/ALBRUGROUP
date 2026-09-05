@@ -11,6 +11,7 @@ const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'set', 'o
 
 /** Margen antes de cerrar al salir el mouse: evita cierres bruscos al cruzar hacia el calendario. */
 const CIERRE_MS = 320;
+const HOVER_MES_MS = 200;
 
 /**
  * Control segmentado de periodo para bloques de metricas: [Hoy | Semanal | Mensual].
@@ -22,6 +23,10 @@ const CIERRE_MS = 320;
  * Seleccion de rango (dos clics): el primer clic pinta el dia y carga ese dia, pero deja el
  * calendario abierto; el segundo pinta todo el tramo entre ambos y carga el periodo. Como todos los
  * endpoints piden desde/hasta, un dia suelto se emite como `desde === hasta`.
+ *
+ * El tercer segmento (Mensual) sigue la misma mecanica: clic = mes actual; hover 200 ms = selector
+ * de meses. Al elegir un mes se emite como rango dia (1..ultimo dia), con lo que la etiqueta del
+ * primer segmento muestra el rango y el endpoint recibe las cotas exactas.
  *
  * Cierre del calendario: al salir el mouse (con margen), al cerrar un rango de dos dias, y por clic
  * fuera / Escape que ya maneja el popover — necesario porque en tactil no existe `mouseleave`. El
@@ -52,6 +57,8 @@ export class PeriodSelectorComponent implements OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly dayPopover = viewChild.required<Popover>('dayPopover');
   private cierreTimer: ReturnType<typeof setTimeout> | null = null;
+  private hoverMesTimer: ReturnType<typeof setTimeout> | null = null;
+  private sobreMes = false;
   /** Segmento sobre el que se abrio el calendario; ancla de la flecha del popover. */
   private botonAncla: HTMLElement | null = null;
 
@@ -86,8 +93,15 @@ export class PeriodSelectorComponent implements OnDestroy {
   // del rango, para que PrimeNG no resetee el mes visible al recibir un nuevo ngModel.
   protected readonly calendarModel = signal<Array<Date | null>>([new Date(), null]);
 
+  /** Modo del popover: `day` = datepicker de dias (rango), `month` = selector de meses. */
+  protected readonly popoverMode = signal<'day' | 'month'>('day');
+
+  /** Modelo del selector de meses. */
+  protected readonly monthModel = signal<Date>(new Date());
+
   ngOnDestroy(): void {
     this.cancelarCierre();
+    this.cancelarHoverMes();
   }
 
   protected onSegmentChange(value: MetricsPeriodo | null | undefined): void {
@@ -105,6 +119,8 @@ export class PeriodSelectorComponent implements OnDestroy {
     if (this.disabled()) {
       return;
     }
+    this.cancelarHoverMes();
+    this.sobreMes = false;
     const clicked = (event.target as HTMLElement | null)?.closest('.p-togglebutton');
     if (!clicked) {
       return;
@@ -112,6 +128,7 @@ export class PeriodSelectorComponent implements OnDestroy {
     if (clicked === this.host.nativeElement.querySelector('.p-togglebutton')) {
       const debeVolverAHoy = this.periodo() !== 'dia';
       this.botonAncla = clicked as HTMLElement;
+      this.popoverMode.set('day');
       this.syncCalendarModel();
       this.dayPopover().show(event, clicked as HTMLElement);
       if (debeVolverAHoy) {
@@ -123,8 +140,35 @@ export class PeriodSelectorComponent implements OnDestroy {
     }
   }
 
+  /** Detecta hover sobre el segmento Mensual para abrir el selector de meses tras 200 ms. */
+  protected onMouseOver(event: MouseEvent): void {
+    if (this.disabled()) {
+      return;
+    }
+    const target = (event.target as HTMLElement)?.closest('.p-togglebutton') as HTMLElement | null;
+    const buttons = this.host.nativeElement.querySelectorAll('.p-togglebutton');
+    const isOverMes = target === buttons[2];
+
+    if (isOverMes && !this.sobreMes) {
+      this.sobreMes = true;
+      this.hoverMesTimer = setTimeout(() => {
+        this.hoverMesTimer = null;
+        this.abrirMesPicker(target!);
+      }, HOVER_MES_MS);
+    } else if (!isOverMes && this.sobreMes) {
+      this.sobreMes = false;
+      this.cancelarHoverMes();
+    }
+  }
+
+  protected onMouseLeave(): void {
+    this.sobreMes = false;
+    this.cancelarHoverMes();
+    this.programarCierre();
+  }
+
   /**
-   * Centra la flecha del popover bajo el segmento "Hoy". PrimeNG la ancla al borde izquierdo del
+   * Centra la flecha del popover bajo el segmento ancla. PrimeNG la ancla al borde izquierdo del
    * target y le resta `2 * border-radius`, con lo que termina saliendo del control; aqui se reubica al
    * centro del boton. `onShow` corre despues del `align()` interno, asi que este override gana.
    *
@@ -151,8 +195,6 @@ export class PeriodSelectorComponent implements OnDestroy {
     const boton = target.getBoundingClientRect();
     const centroBotonDoc = boton.left + window.scrollX + boton.width / 2;
     const left = centroBotonDoc - this.leftEnDocumento(container);
-    // El offset base ya lo absorbe `left`; la flecha se centra exactamente en ese punto (margin-left
-    // negativo del propio triangulo).
     container.style.setProperty('--p-popover-arrow-offset', '0px');
     container.style.setProperty('--p-popover-arrow-left', `${left}px`);
   }
@@ -221,6 +263,23 @@ export class PeriodSelectorComponent implements OnDestroy {
     this.cerrar();
   }
 
+  /** Seleccion de un mes desde el picker: emite como rango dia (1..ultimo dia del mes). */
+  protected onPickMonth(date: Date | null): void {
+    if (!date) {
+      return;
+    }
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const desde = this.formatLocal(new Date(year, month, 1));
+    const hasta = this.formatLocal(new Date(year, month + 1, 0));
+
+    if (this.periodo() !== 'dia') {
+      this.periodoChange.emit('dia');
+    }
+    this.rangoChange.emit({ desde, hasta });
+    this.cerrar();
+  }
+
   protected programarCierre(): void {
     this.cancelarCierre();
     this.cierreTimer = setTimeout(() => this.cerrar(), CIERRE_MS);
@@ -235,7 +294,25 @@ export class PeriodSelectorComponent implements OnDestroy {
 
   private cerrar(): void {
     this.cancelarCierre();
+    this.cancelarHoverMes();
+    this.sobreMes = false;
     this.dayPopover().hide();
+  }
+
+  private cancelarHoverMes(): void {
+    if (this.hoverMesTimer) {
+      clearTimeout(this.hoverMesTimer);
+      this.hoverMesTimer = null;
+    }
+  }
+
+  private abrirMesPicker(target: HTMLElement): void {
+    this.cancelarCierre();
+    this.popoverMode.set('month');
+    this.monthModel.set(new Date());
+    this.botonAncla = target;
+    this.dayPopover().show(new MouseEvent('click'), target);
+    this.ajustarPopoverDiferido();
   }
 
   private syncCalendarModel(): void {

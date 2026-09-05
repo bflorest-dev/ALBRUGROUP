@@ -1,4 +1,4 @@
-<div class="period" (click)="onClick($event)" (mouseenter)="cancelarCierre()" (mouseleave)="programarCierre()">
+<div class="period" (click)="onClick($event)" (mouseover)="onMouseOver($event)" (mouseenter)="cancelarCierre()" (mouseleave)="onMouseLeave()">
   <p-selectButton
     [options]="segments()"
     optionLabel="label"
@@ -12,14 +12,26 @@
 </div>
 
 <p-popover #dayPopover appendTo="body" styleClass="period-day-popover" (onShow)="centrarFlecha()">
-  <div class="period__calendar" (mouseenter)="cancelarCierre()" (mouseleave)="programarCierre()">
-    <p-datepicker
-      [inline]="true"
-      selectionMode="range"
-      [maxDate]="maxDate()"
-      [ngModel]="calendarModel()"
-      [ngModelOptions]="{ standalone: true }"
-      (ngModelChange)="onPickRange($event)"
-    />
+  <div class="period__calendar" (mouseenter)="cancelarCierre()" (mouseleave)="onMouseLeave()">
+    @if (popoverMode() === 'day') {
+      <p-datepicker
+        [inline]="true"
+        selectionMode="range"
+        [maxDate]="maxDate()"
+        [ngModel]="calendarModel()"
+        [ngModelOptions]="{ standalone: true }"
+        (ngModelChange)="onPickRange($event)"
+      />
+    } @else {
+      <p-datepicker
+        [inline]="true"
+        view="month"
+        dateFormat="mm/yy"
+        [maxDate]="maxDate()"
+        [ngModel]="monthModel()"
+        [ngModelOptions]="{ standalone: true }"
+        (ngModelChange)="onPickMonth($event)"
+      />
+    }
   </div>
 </p-popover>
