@@ -11,12 +11,14 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import pe.albrugroup.lead_service.entity.enums.EnfoqueVenta;
 import pe.albrugroup.lead_service.entity.enums.MetricaVentaDetalle;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaTramosResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.VentaAsesorDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.VentaDetallePage;
 import pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse;
 import pe.albrugroup.lead_service.service.DashboardVentaService;
 
@@ -86,5 +88,28 @@ public class DashboardVentaController {
     ) {
         return ResponseEntity.ok(
                 dashboardVentaService.obtenerResumenDetalle(idProveedor, metrica, desde, hasta, pageRequest));
+    }
+
+    // Drill-down UNIFICADO: una fila superset por lead detrás de CUALQUIER contador del dashboard, con
+    // búsqueda, orden y agrupación server-side (lista plana + resumen de grupos). Reemplazará a resumen-detalle
+    // y asesores-detalle cuando el frontend migre al drawer.
+    @GetMapping("/dashboard/detalle")
+    @PreAuthorize("hasAuthority('READ_DASHBOARD_VENTA')")
+    public ResponseEntity<VentaDetallePage> obtenerDetalleUnificado(
+            @RequestParam Long idProveedor,
+            @RequestParam MetricaVentaDetalle metrica,
+            @RequestParam(required = false) EnfoqueVenta enfoque,
+            @RequestParam(required = false) String zona,
+            @RequestParam(required = false) String subtipificacion,
+            @RequestParam(required = false) Long idAsesor,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String groupBy,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        return ResponseEntity.ok(dashboardVentaService.obtenerDetalle(
+                idProveedor, metrica, enfoque, zona, subtipificacion, idAsesor, desde, hasta,
+                search, groupBy, pageRequest));
     }
 }

@@ -11,6 +11,7 @@ import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.EnfoqueVenta;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.MetricaVentaDetalle;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
@@ -31,10 +32,12 @@ import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.ZonaSin
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.Zonas;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaTramosResponse;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaTramosResponse.Tramo;
+import pe.albrugroup.lead_service.entity.response.VentaDetallePage;
 import pe.albrugroup.lead_service.exception.ForbiddenException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
+import pe.albrugroup.lead_service.repository.VentaDetalleQueryRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -88,6 +91,7 @@ public class DashboardVentaService {
     private static final LocalTime T20 = LocalTime.of(20, 0);
 
     private final LeadEtapaResumenRepository resumenRepository;
+    private final VentaDetalleQueryRepository ventaDetalleQueryRepository;
     private final ProveedorRepository proveedorRepository;
     private final ProveedorScopeService proveedorScopeService;
     private final EquipoProveedorService equipoProveedorService;
@@ -164,8 +168,42 @@ public class DashboardVentaService {
                     metrica == MetricaVentaDetalle.RECHAZADAS,
                     TIPIFICACION_INGRESADO, TIPIFICACION_PROGRAMADO,
                     TIPIFICACIONES_RECHAZO, TIPIFICACIONES_INGRESADO_O_MAS, pageable);
+            // Las métricas nuevas (cuadrante por enfoque, embudo, ranking, tramos) usan el detalle unificado
+            // (obtenerDetalle). Este endpoint legacy solo cubre los 5 cards originales.
+            default -> throw new IllegalArgumentException("Métrica sin detalle legacy: " + metrica);
         };
         return PageResponse.from(page);
+    }
+
+    /**
+     * DETALLE UNIFICADO (drill-down) de cualquier contador del dashboard: una fila superset por lead, con
+     * búsqueda, orden y agrupación server-side (lista plana + resumen de grupos). El anclaje/predicado de la
+     * métrica sale de {@link VentaMetricaSpec} (misma fuente que los contadores → el total cuadra con el card).
+     */
+    @Transactional(readOnly = true)
+    public VentaDetallePage obtenerDetalle(
+            Long idProveedor, MetricaVentaDetalle metrica, EnfoqueVenta enfoque, String zona,
+            String subtipificacion, Long idAsesor, LocalDate desde, LocalDate hasta,
+            String search, String groupBy, PageRequest pageRequest) {
+        validarProveedorVisibleParaSupervisorVentas(idProveedor);
+        desactivarEquipoFilter();
+
+        LocalDate desdeR = desde != null ? desde : OperationalDateTime.currentMonth().atDay(1);
+        LocalDate hastaR = hasta != null ? hasta : OperationalDateTime.today();
+        Instant inicio = OperationalDateTime.startOfDay(desdeR);
+        Instant fin = OperationalDateTime.endExclusiveOfDay(hastaR);
+        LocalDate hastaExcl = hastaR.plusDays(1);
+
+        LocalDate hoy = OperationalDateTime.today();
+        List<LocalDate> tramoDias = List.of(hoy, hoy.plusDays(1), hoy.plusDays(2));
+
+        VentaMetricaSpec.Ctx ctx = new VentaMetricaSpec.Ctx(
+                inicio, fin, desdeR, hastaExcl, subtipificacion, idAsesor, tramoDias);
+
+        return ventaDetalleQueryRepository.buscar(
+                idProveedor, metrica, enfoque, zona, ctx, search, groupBy,
+                pageRequest.getSortBy(), pageRequest.getDirection(),
+                pageRequest.getPageNumber(), pageRequest.getPageSize());
     }
 
     private record Rango(Instant inicio, Instant fin) {}
