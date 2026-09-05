@@ -16,6 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { BadgeModule } from 'primeng/badge';
+import { FocusTrap } from 'primeng/focustrap';
 import { AttendanceFacade } from '../../facades/attendance.facade';
 import { AttendanceRealtimeService } from '../../services/attendance-realtime.service';
 import { AuthSessionService } from '../../services/auth-session.service';
@@ -34,6 +35,7 @@ import { LeadMeritoCorreccionDrawerComponent } from '../../../shared/components/
 import { AdminSidebarV2Component } from './admin-sidebar-v2.component';
 import { SidebarDomainDefinition, SidebarItem } from './sidebar-item.model';
 import { sidebarDomainsForRole, sidebarV2EnabledForRole } from './sidebar-v2.config';
+import { shouldGuideAttendanceLogout } from './attendance-logout-guidance';
 
 const ROLE_THEME_CLASS: Record<string, string> = {
   ADMINISTRADOR: 'theme-admin',
@@ -62,6 +64,7 @@ const ROLE_THEME_CLASS: Record<string, string> = {
     AttendanceStatusPickerComponent,
     TopBannerComponent,
     BadgeModule,
+    FocusTrap,
     LeadMeritoCorreccionDrawerComponent,
     AdminSidebarV2Component
   ],
@@ -96,6 +99,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
   private readonly currentUrl = signal(this.router.url);
   protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
   protected readonly attendanceErrorMessage = signal('');
+  protected readonly logoutGuidanceActive = signal(false);
   private attendanceInitialized = false;
   private menuScrollUpdateScheduled = false;
   // Ultimo tick de salida ya procesado: al marcar OFFLINE (REGISTRAR_SALIDA) cerramos la sesion, y
@@ -160,6 +164,14 @@ export class PrivateLayoutComponent implements AfterViewInit {
   );
   protected readonly attendanceLunchDuration = computed(() =>
     this.isAlwaysOnlineRole() ? null : this.attendanceFacade.lunchDurationMinutes()
+  );
+  protected readonly shouldGuideLogout = computed(() =>
+    shouldGuideAttendanceLogout({
+      alwaysOnlineRole: this.isAlwaysOnlineRole(),
+      statusConfirmed: this.attendanceFacade.statusConfirmed(),
+      status: this.attendanceFacade.rawStatus(),
+      shiftEnded: this.attendanceFacade.isPastSalida()
+    })
   );
   protected readonly themeClass = computed(() => {
     const primaryRole = this.session()?.primaryRole;
@@ -515,18 +527,23 @@ export class PrivateLayoutComponent implements AfterViewInit {
       }
     });
 
-    // Marcar OFFLINE = terminar la jornada para roles operativos de bandeja: al registrarse la salida
-    // con exito, cerramos la sesion. COMMUNITY conserva acceso despues de marcar salida.
+    // Marcar OFFLINE = terminar la jornada para roles operativos de bandeja. Si la salida respondio a
+    // una intencion de logout guiada, completamos esa intencion en cualquier rol. COMMUNITY conserva
+    // acceso cuando marco salida por iniciativa propia.
     effect(() => {
       const tick = this.attendanceFacade.salidaSuccessTick();
       if (tick === this.handledSalidaTick) {
         return;
       }
       this.handledSalidaTick = tick;
+      if (this.logoutGuidanceActive()) {
+        untracked(() => void this.performLogout());
+        return;
+      }
       if (this.session()?.primaryRole === 'COMMUNITY') {
         return;
       }
-      untracked(() => void this.authSessionService.logout());
+      untracked(() => void this.performLogout());
     });
 
     // Contrato "bandeja vacia" (fase schedule): el frontend reporta el vaciado. Si el asesor entro a
@@ -627,6 +644,11 @@ export class PrivateLayoutComponent implements AfterViewInit {
   @HostListener('window:resize')
   protected onWindowResize(): void {
     this.scheduleMenuScrollStateUpdate();
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    this.cancelLogoutGuidance();
   }
 
   protected updateMenuScrollState(): void {
@@ -737,6 +759,24 @@ export class PrivateLayoutComponent implements AfterViewInit {
   protected async logout(): Promise<void> {
     this.profileMenuOpen.set(false);
     this.mobileMenuOpen.set(false);
+
+    if (this.shouldGuideLogout()) {
+      this.logoutGuidanceActive.set(true);
+      return;
+    }
+
+    await this.performLogout();
+  }
+
+  protected cancelLogoutGuidance(): void {
+    if (this.isAttendanceLoading()) {
+      return;
+    }
+    this.logoutGuidanceActive.set(false);
+  }
+
+  private async performLogout(): Promise<void> {
+    this.logoutGuidanceActive.set(false);
     this.providerScope.clear();
     await this.authSessionService.logout();
   }

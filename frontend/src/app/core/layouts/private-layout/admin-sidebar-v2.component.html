@@ -4,7 +4,16 @@
   (mouseenter)="cancelClose()"
   (mouseleave)="scheduleClose()"
 >
-  <span class="admin-nav-v2__focus-layer" aria-hidden="true"></span>
+  <button
+    type="button"
+    class="admin-nav-v2__focus-layer"
+    aria-label="Cerrar navegación"
+    tabindex="-1"
+    [disabled]="!isPanelOpen()"
+    (mouseenter)="scheduleClose()"
+    (mouseleave)="cancelClose()"
+    (click)="closePanel()"
+  ></button>
 
   <aside
     class="admin-nav-v2__rail"
@@ -199,7 +208,7 @@
                 [routerLink]="item.route"
                 routerLinkActive="is-active"
                 [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
-                (click)="commitCurrentContext()"
+                (click)="selectRoute()"
               >
                 <i [class]="item.icon" aria-hidden="true"></i>
                 <span><strong>{{ item.label }}</strong></span>

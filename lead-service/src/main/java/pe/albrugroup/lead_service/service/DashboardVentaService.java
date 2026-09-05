@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
+import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -28,6 +29,7 @@ import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.ZonaSin
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.Zonas;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaTramosResponse;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaTramosResponse.Tramo;
+import pe.albrugroup.lead_service.exception.ForbiddenException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
@@ -55,6 +57,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DashboardVentaService {
 
+    private static final String SUPERVISOR_VENTAS = "SUPERVISOR_VENTAS";
     private static final String TIPIFICACION_INSTALADO = "INSTALADO";
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
     private static final String TIPIFICACION_INGRESADO = "INGRESADO";
@@ -80,14 +83,27 @@ public class DashboardVentaService {
     private final LeadEtapaResumenRepository resumenRepository;
     private final ProveedorRepository proveedorRepository;
     private final ProveedorScopeService proveedorScopeService;
+    private final EquipoProveedorService equipoProveedorService;
+    private final CurrentUser currentUser;
     private final EntityManager entityManager;
 
     /**
-     * Proveedores que el usuario puede elegir en el dashboard: los asignados si está acotado por
-     * proveedor (BACKOFFICE), o todos los activos si no lo está (ADMIN / SUPERVISOR_VENTAS / COMMUNITY).
+     * Proveedores que el usuario puede elegir en el dashboard: por equipo para SUPERVISOR_VENTAS,
+     * por asignación directa si está acotado por proveedor (BACKOFFICE), o todos los activos si no lo está.
      */
     @Transactional(readOnly = true)
     public List<ProveedorRef> proveedoresSeleccionables() {
+        if (esSupervisorVentasAcotado()) {
+            Set<Long> proveedorIds = equipoProveedorService.proveedorIdsVisibles();
+            if (proveedorIds == null || proveedorIds.isEmpty()) {
+                return List.of();
+            }
+            return proveedorRepository.findAllById(proveedorIds).stream()
+                    .filter(p -> Boolean.TRUE.equals(p.getActivo()))
+                    .sorted(Comparator.comparing(Proveedor::getNombre, Comparator.nullsLast(String::compareToIgnoreCase)))
+                    .map(p -> new ProveedorRef(p.getId(), p.getNombre()))
+                    .toList();
+        }
         List<Proveedor> asignados = proveedorScopeService.misProveedores();
         List<Proveedor> lista = asignados.isEmpty() ? proveedorRepository.listarPorActivo(true) : asignados;
         List<ProveedorRef> out = new ArrayList<>(lista.size());
@@ -101,6 +117,7 @@ public class DashboardVentaService {
     @Transactional(readOnly = true)
     public PageResponse<VentaAsesorDetalleResponse> obtenerAsesoresDetalle(
             Long idProveedor, Long idAsesor, LocalDate desde, LocalDate hasta, PageRequest pageRequest) {
+        validarProveedorVisibleParaSupervisorVentas(idProveedor);
         desactivarEquipoFilter();
         Rango r = resolverRango(desde, hasta);
         Pageable pageable = org.springframework.data.domain.PageRequest.of(
@@ -114,6 +131,7 @@ public class DashboardVentaService {
     @Transactional(readOnly = true)
     public PageResponse<VentaResumenDetalleResponse> obtenerResumenDetalle(
             Long idProveedor, MetricaVentaDetalle metrica, LocalDate desde, LocalDate hasta, PageRequest pageRequest) {
+        validarProveedorVisibleParaSupervisorVentas(idProveedor);
         desactivarEquipoFilter();
         Pageable pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPageNumber(), pageRequest.getPageSize());
@@ -160,6 +178,7 @@ public class DashboardVentaService {
 
     @Transactional(readOnly = true)
     public DashboardVentaResponse obtener(Long idProveedor, LocalDate desde, LocalDate hasta) {
+        validarProveedorVisibleParaSupervisorVentas(idProveedor);
         Proveedor proveedor = proveedorRepository.findById(idProveedor)
                 .orElseThrow(() -> new NotFoundException(Proveedor.class, idProveedor));
 
@@ -213,6 +232,7 @@ public class DashboardVentaService {
     /** Endpoint auxiliar (bloque 4): matriz tramo horario × día (hoy/mañana/pasado). Relativo a HOY. */
     @Transactional(readOnly = true)
     public DashboardVentaTramosResponse obtenerTramos(Long idProveedor) {
+        validarProveedorVisibleParaSupervisorVentas(idProveedor);
         Proveedor proveedor = proveedorRepository.findById(idProveedor)
                 .orElseThrow(() -> new NotFoundException(Proveedor.class, idProveedor));
         Session session = entityManager.unwrap(Session.class);
@@ -252,6 +272,23 @@ public class DashboardVentaService {
         if (!h.isBefore(T12) && h.isBefore(T16)) return 1;
         if (!h.isBefore(T16) && h.isBefore(T20)) return 2;
         return 3;
+    }
+
+    private void validarProveedorVisibleParaSupervisorVentas(Long idProveedor) {
+        if (!esSupervisorVentasAcotado()) {
+            return;
+        }
+        Set<Long> proveedorIds = equipoProveedorService.proveedorIdsVisibles();
+        if (proveedorIds == null || !proveedorIds.contains(idProveedor)) {
+            throw new ForbiddenException("No tienes acceso al proveedor seleccionado", idProveedor);
+        }
+    }
+
+    private boolean esSupervisorVentasAcotado() {
+        List<String> roles = currentUser.roles();
+        return roles != null
+                && roles.contains(SUPERVISOR_VENTAS)
+                && !currentUser.tieneVisibilidadGlobalEquipos();
     }
 
     // ── Contadores + estado (Q1 cohorte por fechaIngresoEtapa + Q2 estado por ultimaTipificacionAt) ──────

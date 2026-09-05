@@ -161,4 +161,56 @@ describe('AdminSidebarV2Component', () => {
     fixture.detectChanges();
     expect(breadcrumbs.textContent).toContain('Plataformas');
   });
+
+  it('cierra el panel al seleccionar una ruta aunque ya sea la ruta activa', () => {
+    TestBed.configureTestingModule({
+      imports: [AdminSidebarV2Component],
+      providers: [provideRouter([])]
+    });
+
+    const fixture = TestBed.createComponent(AdminSidebarV2Component);
+    fixture.componentRef.setInput('items', multiDomainItems);
+    fixture.componentRef.setInput('domainDefinitions', multiDomains);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance;
+    component['currentUrl'].set('/usuarios');
+    component['openPanelId'].set('system');
+    fixture.detectChanges();
+
+    component['selectRoute']();
+    fixture.detectChanges();
+
+    expect(component['openPanelId']()).toBeNull();
+  });
+
+  it('cierra al salir hacia la web y permite usar el fondo difuminado como respaldo', async () => {
+    TestBed.configureTestingModule({
+      imports: [AdminSidebarV2Component],
+      providers: [provideRouter([])]
+    });
+
+    const fixture = TestBed.createComponent(AdminSidebarV2Component);
+    fixture.componentRef.setInput('items', items);
+    fixture.componentRef.setInput('domainDefinitions', domains);
+    fixture.detectChanges();
+
+    const domain = fixture.nativeElement.querySelector('.admin-nav-v2__domain') as HTMLButtonElement;
+    domain.click();
+    fixture.detectChanges();
+
+    const backdrop = fixture.nativeElement.querySelector('.admin-nav-v2__focus-layer') as HTMLButtonElement;
+    expect(backdrop.disabled).toBe(false);
+    backdrop.dispatchEvent(new MouseEvent('mouseenter'));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.admin-nav-v2').classList).not.toContain('admin-nav-v2--open');
+
+    domain.click();
+    fixture.detectChanges();
+    backdrop.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.admin-nav-v2').classList).not.toContain('admin-nav-v2--open');
+  });
 });

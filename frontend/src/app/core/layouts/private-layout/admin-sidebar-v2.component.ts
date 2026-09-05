@@ -220,6 +220,13 @@ export class AdminSidebarV2Component implements OnDestroy {
     if (domain) this.commitContext(domain.id, this.selectedPath());
   }
 
+  protected selectRoute(): void {
+    this.commitCurrentContext();
+    // Router no emite NavigationEnd al seleccionar de nuevo la misma URL. Cerramos el panel desde
+    // la intencion del usuario para que todas las rutas finales tengan una respuesta determinista.
+    this.closePanel();
+  }
+
   protected scheduleClose(): void {
     this.cancelHoverOpen();
     this.cancelClose();

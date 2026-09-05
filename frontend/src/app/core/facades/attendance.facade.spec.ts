@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -95,11 +96,15 @@ describe('AttendanceFacade schedule automation', () => {
         },
         {
           provide: SessionService,
-          useValue: { getSession: vi.fn(() => null) }
+          useValue: {
+            session: signal({ primaryRole: 'ASESOR_VENTAS' }),
+            getSession: vi.fn(() => ({ primaryRole: 'ASESOR_VENTAS' }))
+          }
         }
       ]
     });
     facade = TestBed.inject(AttendanceFacade);
+    TestBed.flushEffects();
   });
 
   afterEach(() => {

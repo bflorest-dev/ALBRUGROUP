@@ -50,11 +50,22 @@
         @if (actions.length) {
           @for (action of actions; track action.key) {
             @if (action.enabled) {
-              <button type="button" class="attendance-status__option" (click)="selectAction(action)">
+              <button
+                type="button"
+                class="attendance-status__option"
+                [class.is-guided]="isGuidedAction(action)"
+                [attr.data-guided-action]="isGuidedAction(action) ? 'true' : null"
+                (click)="selectAction(action)"
+              >
                 <p-tag [value]="action.label" [style]="statusTagStyle(getOptionColor(action))" />
               </button>
             } @else {
-              <div class="attendance-status__option is-disabled">
+              <div
+                class="attendance-status__option is-disabled"
+                [class.is-guided]="isGuidedAction(action)"
+                [attr.data-guided-action]="isGuidedAction(action) ? 'true' : null"
+                [attr.tabindex]="isGuidedAction(action) ? -1 : null"
+              >
                 <p-tag [value]="action.label" [style]="statusTagStyle(getOptionColor(action))" />
                 @if (action.disabledReason) {
                   <span class="attendance-status__option-reason">{{ action.disabledReason }}</span>

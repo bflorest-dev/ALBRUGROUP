@@ -48,10 +48,14 @@ section:focus-visible {
 }
 
 .admin-nav-v2__focus-layer {
+  appearance: none;
   background: rgba(5, 20, 16, 0.16);
   backdrop-filter: blur(0) saturate(1);
+  border: 0;
+  cursor: default;
   inset: 0 0 0 var(--admin-rail-width);
   opacity: 0;
+  padding: 0;
   pointer-events: none;
   position: fixed;
   transition:
@@ -64,6 +68,7 @@ section:focus-visible {
 .admin-nav-v2--open .admin-nav-v2__focus-layer {
   backdrop-filter: blur(5px) saturate(.82);
   opacity: 1;
+  pointer-events: auto;
   visibility: visible;
 }
 

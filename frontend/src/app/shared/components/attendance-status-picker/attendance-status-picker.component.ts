@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Input, Output, computed, inject, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
@@ -22,9 +22,32 @@ export class AttendanceStatusPickerComponent {
   @Input({ required: true }) statusColor = '#8f96ad';
   @Input({ required: true }) actions: AttendanceActionOption[] = [];
   @Input({ required: true }) isLoading = false;
-  @Input({ required: true }) errorMessage = '';
+  @Input({ required: true }) set errorMessage(value: string) {
+    this._errorMessage = value;
+    if (value && this.guidedActionId) {
+      this.openGuidedAction();
+    }
+  }
+  get errorMessage(): string {
+    return this._errorMessage;
+  }
+  private _errorMessage = '';
   @Input() disabled = false;
   @Input() hint = '';
+  @Input() set guidedActionId(value: AttendanceActionId | null) {
+    const wasGuided = this._guidedActionId !== null;
+    this._guidedActionId = value;
+
+    if (value) {
+      this.openGuidedAction();
+    } else if (wasGuided) {
+      this.close();
+    }
+  }
+  get guidedActionId(): AttendanceActionId | null {
+    return this._guidedActionId;
+  }
+  private _guidedActionId: AttendanceActionId | null = null;
   /** Tramos del día (base + extras/compensables) para mostrar la estructura de la jornada. */
   @Input() tramos: TramoDiaVm[] = [];
   /** Cuando hay cronometro en curso, el pill muestra el tiempo (MM:SS) en vez de la etiqueta. */
@@ -50,6 +73,7 @@ export class AttendanceStatusPickerComponent {
   protected readonly isOpen = signal(false);
   protected readonly pendingConfirmation = signal<AttendanceActionOption | null>(null);
   private readonly lunchAcknowledged = signal(false);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly showLunchWait = computed(() => this._lunchWaitVisible && !this.lunchAcknowledged());
   protected readonly lunchDurationLabel = computed(() => {
@@ -61,6 +85,10 @@ export class AttendanceStatusPickerComponent {
 
   protected toggleOpen(): void {
     if (!this.isLoading && !this.disabled) {
+      if (this.guidedActionId) {
+        this.openGuidedAction();
+        return;
+      }
       this.isOpen.update((value) => !value);
     }
   }
@@ -105,6 +133,10 @@ export class AttendanceStatusPickerComponent {
     return ATTENDANCE_STATUS_META[action.targetStatus].color;
   }
 
+  protected isGuidedAction(action: AttendanceActionOption): boolean {
+    return Boolean(this.guidedActionId && action.actionId === this.guidedActionId);
+  }
+
   protected tramoColor(tipo: TramoDiaVm['tipo']): string {
     switch (tipo) {
       case 'EXTRA':
@@ -143,5 +175,18 @@ export class AttendanceStatusPickerComponent {
     this.pendingConfirmation.set(null);
     this.isOpen.set(false);
     this.actionSelected.emit(actionId);
+  }
+
+  private openGuidedAction(): void {
+    if (this.disabled) {
+      return;
+    }
+
+    this.isOpen.set(true);
+    window.setTimeout(() => {
+      this.host.nativeElement
+        .querySelector<HTMLElement>('[data-guided-action="true"]')
+        ?.focus({ preventScroll: true });
+    });
   }
 }
