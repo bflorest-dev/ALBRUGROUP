@@ -11,8 +11,13 @@
   />
 </div>
 
-<p-popover #dayPopover appendTo="body" styleClass="period-day-popover" (onShow)="centrarFlecha()">
-  <div class="period__calendar" (mouseenter)="cancelarCierre()" (mouseleave)="onMouseLeave()">
+<p-popover #dayPopover appendTo="body" [styleClass]="popoverStyleClass()" (onShow)="centrarFlecha()">
+  <div
+    class="period__calendar"
+    [class.period__calendar--month]="popoverMode() === 'month'"
+    (mouseenter)="cancelarCierre()"
+    (mouseleave)="onMouseLeave()"
+  >
     @if (popoverMode() === 'day') {
       <p-datepicker
         [inline]="true"

@@ -12,6 +12,10 @@
   display: block;
 }
 
+.period__calendar--month {
+  inline-size: min(12rem, calc(100vw - 2rem));
+}
+
 /*
  * El popover se monta en `body` (appendTo), fuera del host: se estila con `::ng-deep` global, como el
  * resto de overlays del proyecto (p. ej. `.gxc-campaign-panel`). Un `:host ::ng-deep` no lo alcanza.
@@ -27,4 +31,30 @@
    * que el `:root` del tema), asi solo afecta a este calendario.
    */
   --p-datepicker-date-range-selected-background: color-mix(in srgb, var(--p-primary-color) 35%, transparent);
+}
+
+::ng-deep .period-month-popover {
+  inline-size: fit-content;
+  max-inline-size: calc(100vw - 1rem);
+}
+
+::ng-deep .period-month-popover .p-popover-content {
+  inline-size: fit-content;
+  max-inline-size: 100%;
+}
+
+::ng-deep .period-month-popover .p-datepicker {
+  inline-size: min(12rem, calc(100vw - 2rem));
+}
+
+::ng-deep .period-month-popover .p-datepicker-month-view {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem 1.25rem;
+}
+
+::ng-deep .period-month-popover .p-datepicker-month {
+  inline-size: 100%;
+  min-inline-size: 0;
+  justify-content: center;
 }
