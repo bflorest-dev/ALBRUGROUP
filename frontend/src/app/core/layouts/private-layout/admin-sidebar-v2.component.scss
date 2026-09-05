@@ -100,14 +100,64 @@ section:focus-visible {
   border: 1px solid rgba(255, 255, 255, .22);
   border-radius: .62rem;
   height: 2.75rem;
+  isolation: isolate;
   letter-spacing: -.04em;
+  overflow: hidden;
   width: 2.75rem;
 }
 
+.admin-nav-v2__brand::after {
+  animation: admin-brand-sheen 7s cubic-bezier(.16, 1, .3, 1) 1.8s infinite;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, .08) 28%,
+    rgba(255, 255, 255, .72) 50%,
+    rgba(255, 255, 255, .08) 72%,
+    transparent 100%
+  );
+  content: '';
+  inset: -.35rem auto -.35rem -60%;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(0) skewX(-16deg);
+  width: 55%;
+  z-index: 2;
+}
+
+.admin-nav-v2__brand:hover {
+  background: rgba(255, 255, 255, .08);
+  border-color: rgba(255, 255, 255, .38);
+}
+
 .admin-nav-v2__brand-mark {
-  fill: currentColor;
-  height: 1.55rem;
-  width: 1.55rem;
+  font-size: 1.45rem;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes admin-brand-sheen {
+  0%,
+  72% {
+    opacity: 0;
+    transform: translateX(0) skewX(-16deg);
+  }
+
+  75% {
+    opacity: .9;
+  }
+
+  88% {
+    opacity: .9;
+    transform: translateX(300%) skewX(-16deg);
+  }
+
+  91%,
+  100% {
+    opacity: 0;
+    transform: translateX(300%) skewX(-16deg);
+  }
 }
 
 .admin-nav-v2__domains {
@@ -203,6 +253,8 @@ section:focus-visible {
 }
 
 .admin-nav-v2__profile-trigger.is-active {
+  background: #dcebe5;
+  color: #173d32;
   box-shadow: 0 0 0 2px var(--admin-signal);
 }
 
@@ -545,8 +597,15 @@ section:focus-visible {
 }
 
 .admin-nav-v2__profile-actions {
+  align-content: start;
   flex: 1 1 auto;
   padding: 1.3rem 1.25rem;
+}
+
+.admin-nav-v2__profile-action {
+  border-radius: .375rem;
+  min-height: 3rem;
+  padding: .5rem .7rem;
 }
 
 .admin-nav-v2__switch {
@@ -595,6 +654,11 @@ section:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .admin-nav-v2__brand::after {
+    animation: none;
+    display: none;
+  }
+
   .admin-nav-v2__focus-layer,
   .admin-nav-v2__panel,
   .admin-nav-v2__domain::before,

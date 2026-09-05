@@ -121,6 +121,11 @@ Cuando la ruta supera el ancho disponible, cada cambio de nivel ancla automatica
 en su extremo derecho sin desactivar el desplazamiento horizontal manual.
 Las opciones de navegacion usan filas compactas de 48px y esquinas de 6px. En los grupos, el conteo
 de opciones comparte la linea principal y se alinea inmediatamente antes del indicador de avance.
+El perfil conserva el avatar claro al abrirse y comunica seleccion mediante un anillo ambar. Sus
+herramientas administrativas reutilizan las filas compactas de navegacion y se agrupan arriba; el
+cierre de sesion permanece aislado al pie por ser una accion de salida.
+La marca del rail usa un simbolo generico de empresa y un reflejo diagonal breve cada siete segundos.
+Es un detalle ambiental, no una alerta; desaparece por completo con movimiento reducido.
 
 ### Buttons and Fields
 
