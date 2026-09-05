@@ -8,6 +8,7 @@ import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Escritura de la metadata historica por etapa ({@link LeadEtapaResumen}).
@@ -71,11 +72,22 @@ public class LeadEtapaResumenService {
             resumen.setPrimeraTipificacionAt(at);
         }
 
-        // Ultima tipificacion: se pisa siempre.
+        // Ultima tipificacion: codigo/subtipificacion/orden se pisan siempre (reflejan el estado vigente,
+        // p.ej. el bloque 3 del dashboard agrupa por la subtipificacion actual). Pero ultimaTipificacionAt
+        // solo se mueve cuando cambia el ESTADO (codigo u orden): re-tipificar con el mismo codigo (cambiar
+        // solo la subtipificacion, reprogramar, o tipificar lo mismo otro dia) NO debe "reingresar" el lead a
+        // ese estado ni arrastrarlo al dia de la re-gestion en las metricas ancladas en esta fecha. La fecha
+        // pasa a significar "cuando entro al estado vigente". fechaUltimaGestion (abajo) si se mueve siempre:
+        // esa es la fecha de actividad / ultimo gestor.
+        boolean cambioEstado =
+                !Objects.equals(codigoTipificacion, resumen.getUltimaCodigoTipificacion())
+                        || !Objects.equals(orden, resumen.getUltimaTipificacionOrden());
         resumen.setUltimaCodigoTipificacion(codigoTipificacion);
         resumen.setUltimaCodigoSubtipificacion(codigoSubtipificacion);
         resumen.setUltimaTipificacionOrden(orden);
-        resumen.setUltimaTipificacionAt(at);
+        if (cambioEstado) {
+            resumen.setUltimaTipificacionAt(at);
+        }
 
         // Mayor rango (high-water mark por orden): la tipi solo sube; en empate refresca la subtipi.
         if (orden != null) {

@@ -76,23 +76,44 @@
 
       <!-- ═══════════ RESUMEN ═══════════ -->
       @if (vista() === 'resumen') {
-        <div class="vd-counters">
-          @for (k of counterCards(); track k.key) {
-            <button
-              type="button"
-              class="vd-card vd-kpi vd-clickable"
-              [class.good]="k.tone === 'good'"
-              [class.bad]="k.tone === 'bad'"
-              (click)="abrirDetalleResumen(k.key)"
-              [attr.aria-label]="'Ver detalle de ' + k.label"
-            >
-              <div class="vd-kpi__lbl"><span class="vd-dot" [class]="'is-' + k.color"></span>{{ k.label }}</div>
-              <div class="vd-kpi__v">{{ k.value }}</div>
-              <div class="vd-kpi__prop"><i [class]="'is-' + k.color" [style.width.%]="k.width"></i></div>
-              <div class="vd-kpi__nota">{{ k.nota }}</div>
-            </button>
-          }
+        <div class="vd-cuad">
+          <button
+            type="button"
+            class="vd-cuad__hero"
+            (click)="abrirDetalleResumen('preventas')"
+            aria-label="Ver detalle de Preventas"
+          >
+            <div class="vd-cuad__herolbl">Preventas</div>
+            <div class="vd-cuad__herov">{{ preventas() }}</div>
+            <div class="vd-cuad__heronote">Las que ingresaron en la fecha o rango elegido.</div>
+            <div class="vd-cuad__herosigma">La fila <b>Del día</b> reparte este total entre los estados.</div>
+          </button>
+
+          <div class="vd-cuad__matrix">
+            <div class="vd-mh vd-mh--corner"></div>
+            @for (s of cuadranteStates; track s.key) {
+              <div class="vd-mh" [pTooltip]="s.headTip" tooltipPosition="top">
+                <div class="vd-mh__lbl">{{ s.label }}</div>
+                <span class="vd-mh__rule" [style.background]="s.color"></span>
+              </div>
+            }
+
+            <div class="vd-rl" [pTooltip]="tipDelDia" tooltipPosition="top"><span class="vd-rl__t">Del día</span></div>
+            @for (c of diaCells(); track c.key) {
+              <div class="vd-cell" [class.vd-cell--tip]="c.tip" [pTooltip]="c.tip" tooltipPosition="top">
+                <span class="vd-cell__v">{{ c.value }}</span>
+              </div>
+            }
+
+            <div class="vd-rl" [pTooltip]="tipGeneral" tooltipPosition="top"><span class="vd-rl__t">General</span></div>
+            @for (c of generalCells(); track c.key) {
+              <div class="vd-cell"><span class="vd-cell__v">{{ c.value }}</span></div>
+            }
+          </div>
         </div>
+        <p class="vd-cuadfoot">
+          La fila <b>Del día</b> suma el total de Preventas. Pasa el cursor por cada título para ver qué mide.
+        </p>
 
         <div class="vd-card vd-ribbon">
           @for (c of conversiones(); track c.label) {

@@ -54,15 +54,18 @@
     </nav>
 
     <div class="admin-nav-v2__identity">
-      <span
+      <button
+        type="button"
         class="admin-nav-v2__status"
         [style.--status-color]="statusColor()"
-        [pTooltip]="statusLabel()"
+        [disabled]="attendanceDisabled()"
+        [pTooltip]="attendanceDisabled() ? statusLabel() : 'Abrir asistencia: ' + statusLabel()"
         tooltipPosition="right"
+        (click)="openAttendance($event)"
       >
         <span aria-hidden="true"></span>
-        <span class="sr-only">Estado: {{ statusLabel() }}</span>
-      </span>
+        <span class="sr-only">{{ attendanceDisabled() ? 'Estado' : 'Abrir asistencia. Estado' }}: {{ statusLabel() }}</span>
+      </button>
       <button
         type="button"
         class="admin-nav-v2__profile-trigger"
@@ -160,6 +163,24 @@
         }
       </div>
 
+      <div class="admin-nav-v2__attendance">
+        <app-sidebar-attendance-picker
+          [statusLabel]="statusLabel()"
+          [statusColor]="statusColor()"
+          [actions]="attendanceActions()"
+          [isLoading]="attendanceLoading()"
+          [errorMessage]="attendanceErrorMessage()"
+          [disabled]="attendanceDisabled()"
+          [hint]="attendanceHint()"
+          [tramos]="attendanceTramos()"
+          [timerText]="attendanceTimerText()"
+          [timerOver]="attendanceTimerOver()"
+          [lunchDurationMinutes]="attendanceLunchDuration()"
+          (actionSelected)="attendanceActionSelected.emit($event)"
+          (retry)="attendanceRetry.emit()"
+        />
+      </div>
+
       <button type="button" class="admin-nav-v2__logout" (click)="selectProfileAction('logout')">
         <i class="ti ti-logout-2" aria-hidden="true"></i>
         <span>Cerrar sesión</span>
@@ -227,6 +248,24 @@
             }
           }
         </div>
+      </div>
+
+      <div class="admin-nav-v2__attendance">
+        <app-sidebar-attendance-picker
+          [statusLabel]="statusLabel()"
+          [statusColor]="statusColor()"
+          [actions]="attendanceActions()"
+          [isLoading]="attendanceLoading()"
+          [errorMessage]="attendanceErrorMessage()"
+          [disabled]="attendanceDisabled()"
+          [hint]="attendanceHint()"
+          [tramos]="attendanceTramos()"
+          [timerText]="attendanceTimerText()"
+          [timerOver]="attendanceTimerOver()"
+          [lunchDurationMinutes]="attendanceLunchDuration()"
+          (actionSelected)="attendanceActionSelected.emit($event)"
+          (retry)="attendanceRetry.emit()"
+        />
       </div>
 
       <footer class="admin-nav-v2__panel-footer">

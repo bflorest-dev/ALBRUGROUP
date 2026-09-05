@@ -19,6 +19,8 @@ import pe.albrugroup.lead_service.entity.response.VentaAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.Contadores;
+import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.EnfoqueDia;
+import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.EnfoqueGeneral;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.EstadoLead;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.ProgramacionActual;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.ProveedorRef;
@@ -62,6 +64,11 @@ public class DashboardVentaService {
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
     private static final String TIPIFICACION_INGRESADO = "INGRESADO";
     private static final String TIPIFICACION_NO_RECUPERABLE = "NO RECUPERABLE";
+    private static final String TIPIFICACION_SUBSANABLE = "SUBSANABLE";
+    // GESTIÓN GENERAL, estados vivos acumulados (cartera al cierre del período): los que hay que seguir
+    // gestionando para que no se queden ahí. Los terminales (rechazadas/instaladas) van por su fecha, aparte.
+    private static final Set<String> TIPIFICACIONES_VIVAS_GENERAL =
+            Set.of(TIPIFICACION_INGRESADO, TIPIFICACION_PROGRAMADO, TIPIFICACION_SUBSANABLE);
     // Estado de ingreso: puede venir como última tipificación NULL (nunca gestionado) o como el código
     // literal "SIN INGRESAR" de la matriz. Ambos son "sin ingresar": NO cuentan como venta registrada.
     private static final String TIPIFICACION_SIN_INGRESAR = "SIN INGRESAR";
@@ -211,6 +218,31 @@ public class DashboardVentaService {
                         Accion.TIPIFICACION, inicio, fin, desdeR, hastaExcl));
         Contadores contadores = acc.build();
 
+        // ── Rediseño 2 enfoques ──
+        // PREVENTAS DEL DÍA sale del cohorte (Q1) ya acumulado; solo falta la auxiliar Q1 (instaló en ventana).
+        long diaInstaladasEnVentana = resumenRepository.dashboardVentaDiaInstaladasEnVentana(
+                Etapa.VENTA, idProveedor, TIPIFICACION_INSTALADO, inicio, fin, desdeR, hastaExcl);
+        EnfoqueDia enfoqueDia = acc.enfoqueDia(diaInstaladasEnVentana);
+
+        // GESTIÓN GENERAL: vivos acumulados (≤ hasta) por Q7; rechazadas ∈ período (Q2, solo NO RECUPERABLE);
+        // instaladas ∈ período = total de instaladas por fechaInstalacion (ya fijado en construirZonas).
+        Map<String, Long> vivos = new LinkedHashMap<>();
+        for (Object[] r : resumenRepository.dashboardVentaGeneralVivos(
+                Etapa.VENTA, idProveedor, TIPIFICACIONES_VIVAS_GENERAL, fin)) {
+            vivos.merge((String) r[0], asLong(r[1]), Long::sum);
+        }
+        // Sin ingresar acumulado (última nula o 'SIN INGRESAR' que aún no ingresaron al cierre): ancla en
+        // fechaIngresoEtapa porque la última nula no tiene ultimaTipificacionAt. Query aparte.
+        long generalSinIngresar = resumenRepository.dashboardVentaGeneralSinIngresar(
+                Etapa.VENTA, idProveedor, TIPIFICACION_SIN_INGRESAR, fin);
+        EnfoqueGeneral enfoqueGeneral = new EnfoqueGeneral(
+                generalSinIngresar,
+                vivos.getOrDefault(TIPIFICACION_INGRESADO, 0L),
+                vivos.getOrDefault(TIPIFICACION_PROGRAMADO, 0L),
+                vivos.getOrDefault(TIPIFICACION_SUBSANABLE, 0L),
+                acc.generalRechazadas,
+                acc.ventasInstaladas);
+
         ProgramacionActual programacion = construirProgramacion(
                 resumenRepository.dashboardVentaProgramacionActual(Etapa.VENTA, idProveedor, TIPIFICACION_PROGRAMADO));
 
@@ -225,7 +257,10 @@ public class DashboardVentaService {
                 acc.estadoLeads(),
                 zonas,
                 programacion,
-                ranking
+                ranking,
+                acc.preventasCompletas,
+                enfoqueDia,
+                enfoqueGeneral
         );
     }
 
@@ -301,6 +336,11 @@ public class DashboardVentaService {
         long programadasTotal, programadasInstaladas, programadasRechazadas;
         final Map<String, Long> porUltima = new LinkedHashMap<>();
         final long[] registradasZona = new long[Zona3.values().length];
+        // PREVENTAS DEL DÍA (cohorte fechaIngresoEtapa, por última actual). Partición de PREVENTAS: la suma
+        // de estos 6 == preventasCompletas. diaInstaladas = Q2 (última == INSTALADO); la auxiliar Q1 llega aparte.
+        long diaSinIngresar, diaRegistradas, diaProgramadas, diaSubsanables, diaRechazadas, diaInstaladas;
+        // GESTIÓN GENERAL · rechazadas (terminal ∈ período, solo NO RECUPERABLE — SUBSANABLE es su propio bucket).
+        long generalRechazadas;
 
         // Q1 — cohorte por fechaIngresoEtapa, agrupada por (última, mayor rango). Da PREVENTAS, el breakdown
         // "Por tipificación" (por última) y todos los absolutos de embudo para las conversiones.
@@ -316,6 +356,15 @@ public class DashboardVentaService {
                 // PREVENTAS (card): todos MENOS el NO RECUPERABLE que nunca ingresó. Incluye INGRESADO/PROG/
                 // INST, los rechazados que sí ingresaron, y SUBSANABLE/SIN INGRESAR/no-gestionados.
                 if (!(TIPIFICACION_NO_RECUPERABLE.equals(ultima) && !alcanzoRegistrado)) preventasCompletas += n;
+
+                // PREVENTAS DEL DÍA: partición del cohorte por última actual (suma == preventasCompletas).
+                if (sinIngresar) diaSinIngresar += n;
+                else if (TIPIFICACION_INGRESADO.equals(ultima)) diaRegistradas += n;
+                else if (TIPIFICACION_PROGRAMADO.equals(ultima)) diaProgramadas += n;
+                else if (TIPIFICACION_SUBSANABLE.equals(ultima)) diaSubsanables += n;
+                else if (TIPIFICACION_INSTALADO.equals(ultima)) diaInstaladas += n;
+                else if (TIPIFICACION_NO_RECUPERABLE.equals(ultima) && alcanzoRegistrado) diaRechazadas += n;
+                // (NO RECUPERABLE sin ingresar queda fuera, igual que de preventasCompletas.)
 
                 // Embudo (conversiones): monotónico y anidado en el mayor rango.
                 if (alcanzoRegistrado) registradasFunnel += n;                 // registró alguna vez
@@ -347,8 +396,18 @@ public class DashboardVentaService {
                 // RECHAZADAS: rechazado TRAS haber ingresado (mayor rango ≥ INGRESADO).
                 boolean alcanzoRegistrado = mayor != null && TIPIFICACIONES_INGRESADO_O_MAS.contains(mayor);
                 if (esRechazo(ultima) && alcanzoRegistrado) ventasRechazadas += n;
+                // GESTIÓN GENERAL · rechazadas: mismo anclaje (ultimaTipificacionAt ∈ período) pero SOLO
+                // NO RECUPERABLE (en el nuevo modelo SUBSANABLE es su propio bucket, no un rechazo).
+                if (TIPIFICACION_NO_RECUPERABLE.equals(ultima) && alcanzoRegistrado) generalRechazadas += n;
             }
             return this;
+        }
+
+        // PREVENTAS DEL DÍA: los 6 buckets del cohorte (suman preventasCompletas) + la auxiliar Q1 (instaladas
+        // que además cayeron dentro de la ventana; se calcula con su propia query y se inyecta aquí).
+        EnfoqueDia enfoqueDia(long instaladasEnVentana) {
+            return new EnfoqueDia(diaSinIngresar, diaRegistradas, diaProgramadas, diaSubsanables,
+                    diaRechazadas, diaInstaladas, instaladasEnVentana);
         }
 
         Contadores build() {

@@ -117,7 +117,7 @@ const AVATAR_COLORS = ['#c73a53', '#3a3f8f', '#1f9d9d', '#b9770a', '#2f6bd0', '#
 const PROVEEDORES_VISIBLES = new Set(['CLARO', 'WIN']);
 
 // Acento del poster por proveedor (banda del header), como el color de equipo en PREVENTA.
-const PROVEEDOR_ACCENT: Record<string, string> = { CLARO: '#c8384b', WIN: '#3457d5' };
+const PROVEEDOR_ACCENT: Record<string, string> = { CLARO: '#c8384b', WIN: '#e8752b' };
 const PROVEEDOR_ACCENT_DEFAULT = '#3a3f8f';
 
 @Component({
@@ -213,6 +213,40 @@ export class DashboardVentaStageComponent implements OnInit {
       { label: 'Programadas → Instaladas', pct: this.pct(c.programadasInstaladas, c.programadasTotal), frac: `${c.programadasInstaladas}/${c.programadasTotal}` },
       { label: 'Programadas → Rechazadas', pct: this.pct(c.programadasRechazadas, c.programadasTotal), frac: `${c.programadasRechazadas}/${c.programadasTotal}` }
     ];
+  });
+
+  // ── Cuadrante: PREVENTAS (ancla) + los 2 enfoques ────────────────────────────────────────────
+  protected readonly tipDelDia =
+    'Las preventas que ingresaron en la fecha o rango elegido, según cómo están ahora. Suman el total de Preventas.';
+  protected readonly tipGeneral =
+    'Todo lo que sigue pendiente en cada estado hasta hoy, más lo que se rechazó o instaló en la fecha o rango elegido.';
+
+  // Estados de la matriz: nombre, color del subrayado y texto (oculto en tooltip, en lenguaje de usuario).
+  protected readonly cuadranteStates = [
+    { key: 'sinIngresar', label: 'Sin ingresar', color: 'var(--faint)', headTip: 'Sin ingresar — La venta todavía no se ingresa al sistema.' },
+    { key: 'registradas', label: 'Registradas', color: 'var(--vd-info)', headTip: 'Registradas — Venta ingresada, a la espera de que se agende la instalación.' },
+    { key: 'programadas', label: 'Programadas', color: 'var(--vd-teal)', headTip: 'Programadas — Con fecha de instalación agendada.' },
+    { key: 'subsanables', label: 'Subsanables', color: 'var(--vd-warning)', headTip: 'Subsanables — Observadas: falta corregir algo para poder avanzar.' },
+    { key: 'rechazadas', label: 'Rechazadas', color: 'var(--vd-danger)', headTip: 'Rechazadas — Descartadas: no se concretaron.' },
+    { key: 'instaladas', label: 'Instaladas', color: 'var(--vd-success)', headTip: 'Instaladas — Instaladas y facturando.' }
+  ] as const;
+
+  protected readonly preventas = computed(() => this.data()?.preventas ?? 0);
+
+  protected readonly diaCells = computed(() => {
+    const e = this.data()?.enfoqueDia ?? null;
+    return this.cuadranteStates.map((s) => {
+      let tip = '';
+      if (s.key === 'instaladas' && e && e.instaladasEnVentana < e.instaladas) {
+        tip = `De estas ${e.instaladas}, ${e.instaladasEnVentana} se instalaron dentro de la fecha o rango elegido.`;
+      }
+      return { key: s.key, value: e ? e[s.key] : 0, tip };
+    });
+  });
+
+  protected readonly generalCells = computed(() => {
+    const e = this.data()?.enfoqueGeneral ?? null;
+    return this.cuadranteStates.map((s) => ({ key: s.key, value: e ? e[s.key] : 0 }));
   });
 
   // ── Estado por tipificación ──────────────────────────────────────────────────────────────────

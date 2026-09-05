@@ -147,6 +147,51 @@ class LeadEtapaResumenServiceTest {
     }
 
     @Test
+    void registrarTipificacionMismoCodigoNoMueveUltimaTipificacionAt() {
+        Instant primera = Instant.parse("2026-08-24T14:00:00Z");
+        Instant segunda = Instant.parse("2026-08-27T09:00:00Z");
+        LeadEtapaResumen resumen = LeadEtapaResumen.builder()
+                .idLead(10L)
+                .etapa(Etapa.VENTA)
+                .build();
+        when(repository.findByIdLeadAndEtapa(10L, Etapa.VENTA)).thenReturn(Optional.of(resumen));
+
+        // Primera tipificacion: entra a PROGRAMADO.
+        service.registrarTipificacion(10L, Etapa.VENTA, "PROGRAMADO", "PROGRAMADA", 5, 88L, "Asesor", primera);
+        assertSame(primera, resumen.getUltimaTipificacionAt());
+
+        // Re-tipificacion mismo codigo/orden, distinta subtipificacion, otro dia (una reprogramacion).
+        service.registrarTipificacion(10L, Etapa.VENTA, "PROGRAMADO", "REPROGRAMADA", 5, 88L, "Asesor", segunda);
+
+        // La subtipificacion refleja el estado vigente...
+        assertEquals("REPROGRAMADA", resumen.getUltimaCodigoSubtipificacion());
+        // ...pero la fecha del estado NO se mueve: sigue "programado desde" la primera.
+        assertSame(primera, resumen.getUltimaTipificacionAt());
+        // La fecha de actividad / ultimo gestor SI se mueve siempre.
+        assertSame(segunda, resumen.getFechaUltimaGestion());
+    }
+
+    @Test
+    void registrarTipificacionCambioDeCodigoMueveUltimaTipificacionAt() {
+        Instant primera = Instant.parse("2026-08-24T14:00:00Z");
+        Instant segunda = Instant.parse("2026-08-27T09:00:00Z");
+        LeadEtapaResumen resumen = LeadEtapaResumen.builder()
+                .idLead(10L)
+                .etapa(Etapa.VENTA)
+                .build();
+        when(repository.findByIdLeadAndEtapa(10L, Etapa.VENTA)).thenReturn(Optional.of(resumen));
+
+        service.registrarTipificacion(10L, Etapa.VENTA, "INGRESADO", "SUBIDO", 4, 88L, "Asesor", primera);
+        assertSame(primera, resumen.getUltimaTipificacionAt());
+
+        // Cambia el estado (codigo y orden) -> la fecha del estado si se actualiza.
+        service.registrarTipificacion(10L, Etapa.VENTA, "PROGRAMADO", "PROGRAMADA", 5, 88L, "Asesor", segunda);
+
+        assertEquals("PROGRAMADO", resumen.getUltimaCodigoTipificacion());
+        assertSame(segunda, resumen.getUltimaTipificacionAt());
+    }
+
+    @Test
     void anularFechaMeritoEtapasAnterioresDesdePostventaLimpiaPreventaYVenta() {
         Instant fechaPreventa = Instant.parse("2026-08-25T15:00:00Z");
         Instant fechaVenta = Instant.parse("2026-08-26T15:00:00Z");

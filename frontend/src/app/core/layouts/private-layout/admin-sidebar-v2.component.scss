@@ -231,6 +231,32 @@ section:focus-visible {
 }
 
 .admin-nav-v2__status {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.admin-nav-v2__status:disabled {
+  cursor: default;
+}
+
+.admin-nav-v2__status:focus-visible {
+  border-radius: 50%;
+  outline: 2px solid var(--admin-signal);
+  outline-offset: 3px;
+}
+
+.admin-nav-v2__attendance {
+  border-top: 1px solid var(--admin-panel-line);
+  flex: 0 0 auto;
+  padding: .55rem 1.25rem;
+  position: relative;
+  z-index: 4;
+}
+
+.admin-nav-v2__status {
   align-items: center;
   display: inline-flex;
   height: 1.25rem;
@@ -240,11 +266,9 @@ section:focus-visible {
 
 .admin-nav-v2__status > span:first-child {
   background: var(--status-color);
-  border: 2px solid var(--admin-rail-bg);
   border-radius: 50%;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--status-color) 45%, transparent);
-  height: .62rem;
-  width: .62rem;
+  height: .72rem;
+  width: .72rem;
 }
 
 .admin-nav-v2__profile-trigger {
@@ -535,9 +559,11 @@ section:focus-visible {
 .admin-nav-v2__panel-footer {
   align-items: center;
   border-top: 1px solid var(--admin-panel-line);
+  box-sizing: border-box;
   color: var(--admin-panel-muted);
   display: flex;
   justify-content: space-between;
+  height: 3.6rem;
   padding: .85rem 1.55rem;
 }
 
@@ -653,10 +679,11 @@ section:focus-visible {
   border: 0;
   border-top: 1px solid var(--admin-panel-line);
   color: #ffffff;
+  box-sizing: border-box;
   cursor: pointer;
   display: flex;
   gap: .7rem;
-  min-height: 3.6rem;
+  height: 3.6rem;
   padding: .9rem 1.55rem;
   text-align: left;
 }

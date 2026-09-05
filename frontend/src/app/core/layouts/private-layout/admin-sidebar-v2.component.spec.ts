@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AdminSidebarV2Component } from './admin-sidebar-v2.component';
+import { AttendanceActionOption } from '../../../shared/models/schedule/estado-asistencia';
 import { SidebarDomainDefinition, SidebarItem } from './sidebar-item.model';
 
 describe('AdminSidebarV2Component', () => {
@@ -212,5 +213,38 @@ describe('AdminSidebarV2Component', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.admin-nav-v2').classList).not.toContain('admin-nav-v2--open');
+  });
+
+  it('abre la asistencia desde el indicador compacto y retransmite la acción elegida', async () => {
+    TestBed.configureTestingModule({
+      imports: [AdminSidebarV2Component],
+      providers: [provideRouter([])]
+    });
+    const attendanceActions: AttendanceActionOption[] = [
+      {
+        key: 'lunch',
+        actionId: 'INICIAR_ALMUERZO',
+        targetStatus: 'ALMUERZO',
+        label: 'Iniciar almuerzo',
+        enabled: true
+      }
+    ];
+    const fixture = TestBed.createComponent(AdminSidebarV2Component);
+    fixture.componentRef.setInput('items', items);
+    fixture.componentRef.setInput('domainDefinitions', domains);
+    fixture.componentRef.setInput('attendanceActions', attendanceActions);
+    fixture.detectChanges();
+    const emitted: string[] = [];
+    fixture.componentInstance.attendanceActionSelected.subscribe((action) => emitted.push(action));
+
+    (fixture.nativeElement.querySelector('.admin-nav-v2__status') as HTMLButtonElement).click();
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.admin-nav-v2').classList).toContain('admin-nav-v2--open');
+    const option = fixture.nativeElement.querySelector('.sidebar-attendance__option') as HTMLButtonElement;
+    option.click();
+    fixture.detectChanges();
+    expect(emitted).toEqual(['INICIAR_ALMUERZO']);
   });
 });

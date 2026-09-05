@@ -529,6 +529,74 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
     );
 
+    // Q7 — GESTIÓN GENERAL (estados vivos acumulados): cartera que sigue en INGRESADO/PROGRAMADO/SUBSANABLE
+    // AL CIERRE del período. Ancla en ultimaTipificacionAt < :fin ("entró a ese estado antes del cierre");
+    // SIN cota inferior, porque es un acumulado de todos los cohortes. Agrupada por última tipificación.
+    @Query("""
+            SELECT r.ultimaCodigoTipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            WHERE pr.id = :idProveedor
+              AND r.ultimaCodigoTipificacion IN :codigos
+              AND r.ultimaTipificacionAt < :fin
+            GROUP BY r.ultimaCodigoTipificacion
+            """)
+    List<Object[]> dashboardVentaGeneralVivos(
+            @Param("etapa") Etapa etapa,
+            @Param("idProveedor") Long idProveedor,
+            @Param("codigos") java.util.Collection<String> codigos,
+            @Param("fin") Instant fin
+    );
+
+    // Q7b — GESTIÓN GENERAL · sin ingresar (acumulado): leads que al cierre siguen sin ingresarse — última
+    // nula (nunca gestionado) o el literal 'SIN INGRESAR'. Se ancla en fechaIngresoEtapa < :fin (no en
+    // ultimaTipificacionAt, que es NULL para la última nula). Va aparte de Q7 por ese anclaje distinto.
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            WHERE pr.id = :idProveedor
+              AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion = :codigoSinIngresar)
+              AND r.fechaIngresoEtapa < :fin
+            """)
+    long dashboardVentaGeneralSinIngresar(
+            @Param("etapa") Etapa etapa,
+            @Param("idProveedor") Long idProveedor,
+            @Param("codigoSinIngresar") String codigoSinIngresar,
+            @Param("fin") Instant fin
+    );
+
+    // Q8 — PREVENTAS DEL DÍA · instaladas EN LA VENTANA (dato auxiliar Q1): del cohorte (fechaIngresoEtapa ∈
+    // período), las que ADEMÁS instalaron dentro del período (fechaInstalacion ∈ período). Subconjunto de las
+    // instaladas del cohorte; coincide con ellas cuando el período termina hoy.
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            JOIN l.plan pl
+            JOIN pl.proveedor pr
+            JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE pr.id = :idProveedor
+              AND r.ultimaCodigoTipificacion = :codigoInstalado
+              AND r.fechaIngresoEtapa >= :inicio
+              AND r.fechaIngresoEtapa < :fin
+              AND c.fechaInstalacion >= :desdeDate
+              AND c.fechaInstalacion < :hastaDateExcl
+            """)
+    long dashboardVentaDiaInstaladasEnVentana(
+            @Param("etapa") Etapa etapa,
+            @Param("idProveedor") Long idProveedor,
+            @Param("codigoInstalado") String codigoInstalado,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
     // Q5 — programación actual: cartera viva de PROGRAMADO por subtipificación (estado actual, sin período).
     @Query("""
             SELECT r.ultimaCodigoSubtipificacion, COUNT(DISTINCT l.id)

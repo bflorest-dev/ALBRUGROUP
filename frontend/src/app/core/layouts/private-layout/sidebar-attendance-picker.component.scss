@@ -1,0 +1,325 @@
+:host {
+  display: block;
+  min-width: 0;
+  position: relative;
+}
+
+.sidebar-attendance {
+  position: relative;
+}
+
+.sidebar-attendance__trigger {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: .375rem;
+  color: var(--admin-panel-ink);
+  cursor: pointer;
+  display: grid;
+  gap: .65rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 3rem;
+  padding: .45rem .65rem;
+  text-align: left;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+  width: 100%;
+}
+
+.sidebar-attendance__trigger:hover,
+.sidebar-attendance__trigger.is-open {
+  background: rgba(255, 255, 255, .08);
+  border-color: rgba(255, 255, 255, .09);
+}
+
+.sidebar-attendance__trigger:focus-visible,
+.sidebar-attendance__option:focus-visible,
+.sidebar-attendance__error button:focus-visible {
+  outline: 2px solid var(--admin-signal);
+  outline-offset: 2px;
+}
+
+.sidebar-attendance__trigger.is-disabled {
+  cursor: default;
+  opacity: .78;
+}
+
+.sidebar-attendance__signal {
+  align-self: center;
+  background: var(--attendance-color);
+  border-radius: 50%;
+  height: .72rem;
+  justify-self: center;
+  width: .72rem;
+}
+
+.sidebar-attendance__current {
+  display: grid;
+  gap: .08rem;
+  min-width: 0;
+}
+
+.sidebar-attendance__current small,
+.sidebar-attendance__schedule > span,
+.sidebar-attendance__option small {
+  color: var(--admin-panel-muted);
+  font-size: .72rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.sidebar-attendance__current strong {
+  font-size: .88rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-attendance__timer {
+  align-items: center;
+  display: inline-flex;
+  font-family: 'Spline Sans Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  gap: .3rem;
+}
+
+.sidebar-attendance__timer i {
+  font-size: .8rem;
+}
+
+.sidebar-attendance__timer.is-over {
+  color: #ffd1d1;
+  animation: sidebar-attendance-alert 1s steps(1) infinite;
+}
+
+.sidebar-attendance__trigger > i {
+  color: var(--admin-panel-muted);
+  font-size: .82rem;
+}
+
+.sidebar-attendance__loading {
+  animation: sidebar-attendance-spin .8s linear infinite;
+}
+
+.sidebar-attendance__menu {
+  animation: sidebar-attendance-enter 160ms cubic-bezier(.16, 1, .3, 1);
+  background: var(--admin-panel-bg-deep);
+  border: 1px solid rgba(255, 255, 255, .13);
+  border-radius: .55rem;
+  bottom: calc(100% + .55rem);
+  box-shadow: 0 -14px 34px -20px rgba(2, 13, 10, .82);
+  left: 0;
+  max-height: min(26rem, calc(100dvh - 7rem));
+  overflow-y: auto;
+  padding: .55rem;
+  position: absolute;
+  right: 0;
+  scrollbar-color: rgba(255, 255, 255, .26) transparent;
+  scrollbar-width: thin;
+  transform-origin: bottom center;
+  z-index: 8;
+}
+
+.sidebar-attendance__menu-header {
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, .1);
+  display: flex;
+  justify-content: space-between;
+  padding: .35rem .35rem .65rem;
+}
+
+.sidebar-attendance__menu-header span {
+  color: var(--admin-panel-muted);
+  font-size: .68rem;
+}
+
+.sidebar-attendance__menu-header strong {
+  color: var(--attendance-color);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.sidebar-attendance__schedule {
+  border-bottom: 1px solid rgba(255, 255, 255, .1);
+  display: grid;
+  gap: .4rem;
+  padding: .65rem .35rem;
+}
+
+.sidebar-attendance__schedule > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+}
+
+.sidebar-attendance__shift {
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 999px;
+  color: var(--admin-panel-muted);
+  display: inline-flex;
+  font-family: 'Spline Sans Mono', ui-monospace, monospace;
+  font-size: .64rem;
+  gap: .3rem;
+  padding: .18rem .4rem;
+}
+
+.sidebar-attendance__shift > span {
+  border-radius: 50%;
+  height: .38rem;
+  width: .38rem;
+}
+
+.sidebar-attendance__shift.is-current {
+  background: rgba(255, 255, 255, .08);
+  color: #ffffff;
+}
+
+.sidebar-attendance__options {
+  display: grid;
+  gap: .2rem;
+  padding-top: .35rem;
+}
+
+.sidebar-attendance__option {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: .375rem;
+  color: var(--admin-panel-ink);
+  cursor: pointer;
+  display: grid;
+  gap: .6rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 2.75rem;
+  padding: .45rem .55rem;
+  text-align: left;
+  width: 100%;
+}
+
+.sidebar-attendance__option:hover {
+  background: rgba(255, 255, 255, .08);
+  border-color: rgba(255, 255, 255, .07);
+}
+
+.sidebar-attendance__option:disabled {
+  cursor: not-allowed;
+  opacity: .56;
+}
+
+.sidebar-attendance__option > span:nth-child(2) {
+  display: grid;
+  gap: .08rem;
+  min-width: 0;
+}
+
+.sidebar-attendance__option strong {
+  font-size: .82rem;
+  font-weight: 650;
+}
+
+.sidebar-attendance__option i {
+  color: var(--admin-panel-muted);
+  font-size: .74rem;
+}
+
+.sidebar-attendance__option-dot {
+  background: var(--attendance-color);
+  border: 1px solid rgba(255, 255, 255, .48);
+  border-radius: 50%;
+  height: .6rem;
+  width: .6rem;
+}
+
+.sidebar-attendance__empty {
+  color: var(--admin-panel-muted);
+  font-size: .72rem;
+  line-height: 1.45;
+  margin: 0;
+  padding: .65rem .45rem;
+}
+
+.sidebar-attendance__error {
+  align-items: start;
+  background: rgba(255, 224, 224, .1);
+  border-top: 1px solid rgba(255, 195, 195, .18);
+  color: #ffd1d1;
+  display: grid;
+  font-size: .68rem;
+  gap: .35rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  line-height: 1.35;
+  margin-top: .35rem;
+  padding: .5rem .65rem;
+}
+
+.sidebar-attendance__error button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+}
+
+.sidebar-attendance__confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.sidebar-attendance__lunch {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  max-width: 20rem;
+  text-align: center;
+}
+
+.sidebar-attendance__lunch > i {
+  color: var(--admin-signal);
+  font-size: 1.5rem;
+}
+
+.sidebar-attendance__lunch p {
+  color: var(--app-text-muted);
+  font-size: .85rem;
+  line-height: 1.5;
+  margin: 0 0 .35rem;
+}
+
+@keyframes sidebar-attendance-enter {
+  from {
+    opacity: 0;
+    transform: translateY(.45rem) scale(.985);
+  }
+}
+
+@keyframes sidebar-attendance-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sidebar-attendance-alert {
+  50% {
+    opacity: .35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-attendance__menu,
+  .sidebar-attendance__loading,
+  .sidebar-attendance__timer.is-over {
+    animation: none;
+  }
+}

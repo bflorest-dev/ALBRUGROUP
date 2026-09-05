@@ -229,6 +229,163 @@
   &:focus-visible { outline: 2px solid var(--vd-info); outline-offset: 2px; }
 }
 
+// ── CUADRANTE: PREVENTAS (ancla) + 2 enfoques (Del día / General) ──────────────────────────────
+.vd-cuad {
+  display: grid;
+  grid-template-columns: 214px 1fr;
+  gap: 12px;
+}
+.vd-cuad__hero {
+  position: relative;
+  background: linear-gradient(160deg, var(--soft), var(--card));
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  // afordancia de click (drill-down de Preventas)
+  appearance: none;
+  width: 100%;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 16px;
+    bottom: 16px;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--vd-primary);
+  }
+  &:hover {
+    border-color: var(--vd-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.7);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--vd-info);
+    outline-offset: 2px;
+  }
+}
+.vd-cuad__herolbl {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+.vd-cuad__herov {
+  margin: 12px 0 4px;
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.vd-cuad__heronote {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--faint);
+  max-width: 22ch;
+}
+.vd-cuad__herosigma {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+  b { color: var(--ink-2); font-weight: 700; }
+}
+
+.vd-cuad__matrix {
+  display: grid;
+  grid-template-columns: 128px repeat(6, minmax(0, 1fr));
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.vd-mh {
+  position: relative;
+  padding: 13px 10px;
+  cursor: help;
+  &--corner { cursor: default; }
+  &__lbl {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    color: var(--ink);
+  }
+  &__rule {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 0;
+    height: 3px;
+    border-radius: 3px;
+    opacity: 0.92;
+  }
+}
+.vd-rl {
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-top: 1px solid var(--line);
+  cursor: help;
+  &__t {
+    width: max-content;
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    text-decoration: underline dotted;
+    text-underline-offset: 4px;
+    text-decoration-color: var(--faint);
+  }
+}
+.vd-cell {
+  padding: 17px 8px;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  &--tip { cursor: help; }
+  &:hover { background: var(--soft); }
+  &__v {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+}
+.vd-cuadfoot {
+  margin: 12px 2px 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  b { color: var(--ink-2); font-weight: 700; }
+}
+
+@media (max-width: 900px) {
+  .vd-cuad { grid-template-columns: 1fr; }
+  .vd-cuad__matrix { grid-template-columns: 118px repeat(6, minmax(56px, 1fr)); overflow-x: auto; }
+}
+
 // ── cinta de conversiones ─────────────────────────────────────────────────────────────────────
 .vd-ribbon {
   display: flex;

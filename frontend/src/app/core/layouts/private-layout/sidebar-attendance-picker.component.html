@@ -1,0 +1,122 @@
+<section class="sidebar-attendance" [style.--attendance-color]="statusColor()">
+  <button
+    type="button"
+    class="sidebar-attendance__trigger"
+    [class.is-open]="isOpen()"
+    [class.is-disabled]="disabled()"
+    [disabled]="isLoading() || disabled()"
+    [attr.aria-expanded]="isOpen()"
+    aria-controls="sidebar-attendance-menu"
+    (click)="toggleOpen()"
+  >
+    <span class="sidebar-attendance__signal" aria-hidden="true"></span>
+    <span class="sidebar-attendance__current">
+      <small>Asistencia</small>
+      @if (timerText(); as timer) {
+        <strong class="sidebar-attendance__timer" [class.is-over]="timerOver()">
+          <i class="ti ti-clock" aria-hidden="true"></i>
+          {{ timer }}
+        </strong>
+      } @else {
+        <strong>{{ statusLabel() }}</strong>
+      }
+    </span>
+    @if (isLoading()) {
+      <i class="ti ti-loader-2 sidebar-attendance__loading" aria-hidden="true"></i>
+    } @else if (!disabled()) {
+      <i [class]="isOpen() ? 'ti ti-chevron-down' : 'ti ti-chevron-up'" aria-hidden="true"></i>
+    }
+  </button>
+
+  @if (errorMessage() && !disabled()) {
+    <div class="sidebar-attendance__error" role="alert">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" (click)="retry.emit()">Reintentar</button>
+    </div>
+  }
+
+  @if (isOpen() && !disabled()) {
+    <div id="sidebar-attendance-menu" class="sidebar-attendance__menu">
+      <header class="sidebar-attendance__menu-header">
+        <span>Cambiar estado</span>
+        <strong>{{ statusLabel() }}</strong>
+      </header>
+
+      @if (tramos().length > 1) {
+        <div class="sidebar-attendance__schedule">
+          <span>Jornada de hoy</span>
+          <div>
+            @for (tramo of tramos(); track tramo.rango) {
+              <span class="sidebar-attendance__shift" [class.is-current]="tramo.vigente">
+                <span [style.background]="tramoColor(tramo.tipo)" aria-hidden="true"></span>
+                {{ tramo.rango }}
+              </span>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="sidebar-attendance__options">
+        @for (action of actions(); track action.key) {
+          <button
+            type="button"
+            class="sidebar-attendance__option"
+            [disabled]="!action.enabled || !action.actionId"
+            [attr.title]="action.disabledReason || null"
+            (click)="selectAction(action)"
+          >
+            <span class="sidebar-attendance__option-dot" [style.background]="actionColor(action)" aria-hidden="true"></span>
+            <span>
+              <strong>{{ action.label }}</strong>
+              @if (!action.enabled && action.disabledReason) {
+                <small>{{ action.disabledReason }}</small>
+              }
+            </span>
+            @if (action.enabled && action.actionId) {
+              <i class="ti ti-arrow-up-right" aria-hidden="true"></i>
+            } @else {
+              <i class="ti ti-lock" aria-hidden="true"></i>
+            }
+          </button>
+        } @empty {
+          <p class="sidebar-attendance__empty">{{ hint() || 'No hay cambios disponibles en este momento.' }}</p>
+        }
+      </div>
+    </div>
+  }
+
+  <p-dialog
+    header="Confirmar salida"
+    [visible]="pendingConfirmation() !== null"
+    (visibleChange)="!$event && cancelPendingAction()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    styleClass="sidebar-attendance-confirm-dialog"
+  >
+    <p>Vas a cerrar tu jornada de hoy. Después de marcar salida no podrás volver a ONLINE en esta fecha.</p>
+    <div class="sidebar-attendance__confirm-actions">
+      <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="cancelPendingAction()"></button>
+      <button pButton type="button" severity="danger" label="Confirmar salida" (click)="confirmPendingAction()"></button>
+    </div>
+  </p-dialog>
+
+  <p-dialog
+    [visible]="showLunchWait()"
+    [modal]="true"
+    [closable]="false"
+    [draggable]="false"
+    [resizable]="false"
+    styleClass="sidebar-attendance-lunch-dialog"
+  >
+    <div class="sidebar-attendance__lunch">
+      <i class="ti ti-clock" aria-hidden="true"></i>
+      <strong>Aún tienes gestión pendiente</strong>
+      <p>
+        Culmina tu gestión pendiente para poder empezar tu horario de almuerzo
+        <b>({{ lunchDurationLabel() }})</b>.
+      </p>
+      <button pButton type="button" label="Aceptar" (click)="acknowledgeLunch()"></button>
+    </div>
+  </p-dialog>
+</section>

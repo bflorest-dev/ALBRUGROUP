@@ -16,7 +16,10 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/ro
 import { filter } from 'rxjs';
 import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
+import { AttendanceActionId, AttendanceActionOption } from '../../../shared/models/schedule/estado-asistencia';
+import { TramoDiaVm } from '../../../shared/models/schedule/detalle-dia-response';
 import { SidebarDomainDefinition, SidebarItem, SidebarProviderOption } from './sidebar-item.model';
+import { SidebarAttendancePickerComponent } from './sidebar-attendance-picker.component';
 
 type SidebarDomain = SidebarDomainDefinition & {
   items: SidebarItem[];
@@ -39,13 +42,14 @@ const HOVER_OPEN_DELAY_MS = 200;
 
 @Component({
   selector: 'app-admin-sidebar-v2',
-  imports: [RouterLink, RouterLinkActive, BadgeModule, TooltipModule],
+  imports: [RouterLink, RouterLinkActive, BadgeModule, TooltipModule, SidebarAttendancePickerComponent],
   templateUrl: './admin-sidebar-v2.component.html',
   styleUrl: './admin-sidebar-v2.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminSidebarV2Component implements OnDestroy {
   @ViewChild('breadcrumbs') private breadcrumbs?: ElementRef<HTMLElement>;
+  @ViewChild(SidebarAttendancePickerComponent) private sidebarAttendancePicker?: SidebarAttendancePickerComponent;
 
   private readonly router = inject(Router);
   private breadcrumbScrollFrame?: number;
@@ -67,11 +71,22 @@ export class AdminSidebarV2Component implements OnDestroy {
   readonly canCorrectMerito = input(false);
   readonly providers = input<SidebarProviderOption[]>([]);
   readonly activeProviderId = input<number | null>(null);
+  readonly attendanceActions = input<AttendanceActionOption[]>([]);
+  readonly attendanceLoading = input(false);
+  readonly attendanceErrorMessage = input('');
+  readonly attendanceDisabled = input(false);
+  readonly attendanceHint = input('');
+  readonly attendanceTramos = input<TramoDiaVm[]>([]);
+  readonly attendanceTimerText = input<string | null>(null);
+  readonly attendanceTimerOver = input(false);
+  readonly attendanceLunchDuration = input<number | null>(null);
 
   readonly logoutRequested = output<void>();
   readonly correctMeritoRequested = output<void>();
   readonly deleteLeadsToggled = output<void>();
   readonly providerSelected = output<number>();
+  readonly attendanceActionSelected = output<AttendanceActionId>();
+  readonly attendanceRetry = output<void>();
 
   protected readonly openPanelId = signal<string | 'profile' | null>(null);
   protected readonly selectedPath = signal<SidebarItem[]>([]);
@@ -198,6 +213,25 @@ export class AdminSidebarV2Component implements OnDestroy {
     this.confirmPanelSelection();
   }
 
+  protected openAttendance(event?: Event): void {
+    this.rememberRailTrigger(event);
+    this.cancelClose();
+    this.cancelHoverOpen();
+
+    if (!this.isPanelOpen()) {
+      const committedDomainId = this.committedDomainId();
+      const domain =
+        this.domains().find((candidate) => candidate.id === committedDomainId) ??
+        this.domains().find((candidate) => this.hasActiveRoute(candidate.items)) ??
+        this.domains()[0];
+      if (!domain) return;
+      const path = committedDomainId === domain.id ? this.committedPath() : this.activeGroupPath(domain);
+      this.showDomain(domain, path);
+    }
+
+    window.setTimeout(() => this.sidebarAttendancePicker?.open(true));
+  }
+
   protected activateGroup(item: SidebarItem): void {
     if (!item.children?.length) return;
     const path = [...this.selectedPath(), item];
@@ -243,6 +277,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   protected closePanel(restoreFocus = false): void {
     this.cancelClose();
     this.cancelHoverOpen();
+    this.sidebarAttendancePicker?.close();
     this.openPanelId.set(null);
     this.selectedPath.set([]);
     if (restoreFocus) queueMicrotask(() => this.lastRailTrigger?.focus({ preventScroll: true }));

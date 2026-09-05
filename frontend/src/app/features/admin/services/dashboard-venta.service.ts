@@ -73,6 +73,34 @@ export interface DashboardVentaRankingAsesor {
   instaladasProvincia: number;
 }
 
+/**
+ * PREVENTAS DEL DÍA: cohorte (preventas que ingresaron en el período) por su estado actual. Los 6 buckets
+ * SUMAN `preventas`. `instaladas` = las de la cohorte que hoy están instaladas (cuadra la suma);
+ * `instaladasEnVentana` = auxiliar (además instalaron dentro del rango), ≤ instaladas.
+ */
+export interface DashboardVentaEnfoqueDia {
+  sinIngresar: number;
+  registradas: number;
+  programadas: number;
+  subsanables: number;
+  rechazadas: number;
+  instaladas: number;
+  instaladasEnVentana: number;
+}
+
+/**
+ * GESTIÓN GENERAL: acumulado sobre todos los cohortes. Vivos (sinIngresar/registradas/programadas/
+ * subsanables) = cartera al cierre; terminales (rechazadas/instaladas) = hecho ocurrido en el período.
+ */
+export interface DashboardVentaEnfoqueGeneral {
+  sinIngresar: number;
+  registradas: number;
+  programadas: number;
+  subsanables: number;
+  rechazadas: number;
+  instaladas: number;
+}
+
 export interface DashboardVentaResponse {
   proveedor: ProveedorRef;
   periodo: { desde: string; hasta: string };
@@ -81,6 +109,10 @@ export interface DashboardVentaResponse {
   zonas: DashboardVentaZonas;
   programacionActual: DashboardVentaProgramacion;
   ranking: DashboardVentaRankingAsesor[];
+  // Rediseño en cuadrante: contador único + los 2 enfoques.
+  preventas: number;
+  enfoqueDia: DashboardVentaEnfoqueDia;
+  enfoqueGeneral: DashboardVentaEnfoqueGeneral;
 }
 
 export interface DashboardVentaTramo {

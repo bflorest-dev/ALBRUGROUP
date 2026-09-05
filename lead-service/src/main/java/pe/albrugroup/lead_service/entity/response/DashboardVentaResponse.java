@@ -21,11 +21,51 @@ public record DashboardVentaResponse(
         List<EstadoLead> estadoLeads,
         Zonas zonas,
         ProgramacionActual programacionActual,
-        List<RankingAsesor> ranking
+        List<RankingAsesor> ranking,
+        // ── Rediseño en cuadrante: 2 enfoques de gestión (docs/PLAN_DASHBOARD_VENTA.md §2 bis) ──
+        // PREVENTAS es un contador ÚNICO compartido por ambos enfoques (= contadores.preventasCompletas).
+        long preventas,
+        EnfoqueDia enfoqueDia,
+        EnfoqueGeneral enfoqueGeneral
 ) {
     public record ProveedorRef(Long id, String nombre) {}
 
     public record PeriodoRef(LocalDate desde, LocalDate hasta) {}
+
+    /**
+     * PREVENTAS DEL DÍA — foto de las preventas NACIDAS en el período (cohorte {@code fechaIngresoEtapa ∈
+     * período}), clasificadas por su estado ACTUAL ({@code última}). Los 6 buckets **suman {@code preventas}**
+     * (partición exacta): cada preventa cae en exactamente uno. {@code instaladas} usa el estado actual
+     * (última == INSTALADO) — es la que cuadra la suma; {@code instaladasEnVentana} es el dato auxiliar
+     * "nació e instaló dentro de la ventana" ({@code fechaInstalacion ∈ período}), subconjunto de
+     * {@code instaladas} y coincidente con él cuando el período termina hoy.
+     */
+    public record EnfoqueDia(
+            long sinIngresar,
+            long registradas,
+            long programadas,
+            long subsanables,
+            long rechazadas,
+            long instaladas,
+            long instaladasEnVentana
+    ) {}
+
+    /**
+     * GESTIÓN GENERAL — acumulado sobre TODOS los cohortes (no importa cuándo nació la preventa). Los estados
+     * vivos (registradas/programadas/subsanables) son la cartera que sigue en ese estado AL CIERRE del período
+     * ({@code última == X} Y {@code ultimaTipificacionAt ≤ hasta}) — para gestionar lo que no debe quedarse ahí.
+     * Los terminales (rechazadas/instaladas) cuentan si el hecho ocurrió EN el período (no son acumulables).
+     * {@code sinIngresar} también es acumulado (leads que aún no se ingresan al cierre); se ancla en
+     * {@code fechaIngresoEtapa ≤ hasta} porque una última nula no tiene {@code ultimaTipificacionAt}.
+     */
+    public record EnfoqueGeneral(
+            long sinIngresar,
+            long registradas,
+            long programadas,
+            long subsanables,
+            long rechazadas,
+            long instaladas
+    ) {}
 
     /**
      * Dos grupos:
