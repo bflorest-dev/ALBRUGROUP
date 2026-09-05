@@ -1,9 +1,19 @@
-<section class="top-banner" aria-label="Informacion superior">
-  <div class="top-banner__main">
-    <ng-content select="[banner-main]" />
-  </div>
+@if (hasContent()) {
+  <section class="top-banner" aria-labelledby="top-banner-title">
+    <i [class]="icon() + ' top-banner__icon'" aria-hidden="true"></i>
 
-  <div class="top-banner__actions">
-    <ng-content select="[banner-actions]" />
-  </div>
-</section>
+    <div class="top-banner__copy">
+      <strong id="top-banner-title">{{ title() }}</strong>
+      @if (detail()) {
+        <span>{{ detail() }}</span>
+      }
+    </div>
+
+    @if (context()) {
+      <span class="top-banner__context">
+        <i class="ti ti-map-pin" aria-hidden="true"></i>
+        {{ context() }}
+      </span>
+    }
+  </section>
+}

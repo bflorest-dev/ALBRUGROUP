@@ -88,4 +88,18 @@ describe('SidebarAttendancePickerComponent', () => {
     expect(options[2].disabled).toBe(true);
     expect(options[2].textContent).toContain('Disponible más tarde');
   });
+
+  it('en modo guiado resalta OFFLINE y permite continuar trabajando', () => {
+    const fixture = createFixture();
+    fixture.componentRef.setInput('guidedActionId', 'REGISTRAR_SALIDA');
+    const cancelled: boolean[] = [];
+    fixture.componentInstance.guidanceCancelled.subscribe(() => cancelled.push(true));
+    fixture.componentInstance.open();
+    fixture.detectChanges();
+
+    const guided = fixture.nativeElement.querySelector('.sidebar-attendance__option.is-guided') as HTMLButtonElement;
+    expect(guided.textContent).toContain('Marcar salida');
+    (fixture.nativeElement.querySelector('.sidebar-attendance__guidance button') as HTMLButtonElement).click();
+    expect(cancelled).toEqual([true]);
+  });
 });

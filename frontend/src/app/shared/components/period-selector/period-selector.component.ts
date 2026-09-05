@@ -25,7 +25,8 @@ const HOVER_POPOVER_MS = 200;
  * endpoints piden desde/hasta, un dia suelto se emite como `desde === hasta`.
  *
  * El primer y tercer segmento abren sus calendarios por hover tras 200 ms. El clic en Hoy vuelve al
- * dia actual de inmediato; el clic en Mensual conserva la seleccion rapida del mes actual.
+ * dia actual de inmediato; el clic en Semanal aplica el rango sabado..hoy; el clic en Mensual
+ * conserva la seleccion rapida del mes actual.
  *
  * Cierre del calendario: al salir el mouse (con margen), al cerrar un rango de dos dias, y por clic
  * fuera / Escape que ya maneja el popover — necesario porque en tactil no existe `mouseleave`. El
@@ -111,6 +112,11 @@ export class PeriodSelectorComponent implements OnDestroy {
 
   protected onSegmentChange(value: MetricsPeriodo | null | undefined): void {
     if (!value || this.disabled()) {
+      return;
+    }
+    if (value === 'semana') {
+      this.emitirSemanaHastaHoy();
+      this.cerrar();
       return;
     }
     this.periodoChange.emit(value);
@@ -348,6 +354,13 @@ export class PeriodSelectorComponent implements OnDestroy {
     this.rangoChange.emit({ desde: this.hoy, hasta: this.hoy });
   }
 
+  private emitirSemanaHastaHoy(): void {
+    if (this.periodo() !== 'dia') {
+      this.periodoChange.emit('dia');
+    }
+    this.rangoChange.emit({ desde: this.inicioSemanaOperativa(), hasta: this.hoy });
+  }
+
   private formatLocal(date: Date): string {
     const mes = `${date.getMonth() + 1}`.padStart(2, '0');
     const dia = `${date.getDate()}`.padStart(2, '0');
@@ -357,6 +370,12 @@ export class PeriodSelectorComponent implements OnDestroy {
   private parse(iso: string): Date {
     const [anio, mes, numero] = iso.split('-').map(Number);
     return new Date(anio, mes - 1, numero);
+  }
+
+  private inicioSemanaOperativa(): string {
+    const hoy = new Date();
+    const diasDesdeSabado = (hoy.getDay() - 6 + 7) % 7;
+    return this.formatLocal(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - diasDesdeSabado));
   }
 
   private clamp(value: number, min: number, max: number): number {

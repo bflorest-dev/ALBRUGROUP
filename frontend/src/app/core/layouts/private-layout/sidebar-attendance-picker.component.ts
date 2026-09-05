@@ -19,6 +19,8 @@ import {
 } from '../../../shared/models/schedule/estado-asistencia';
 import { TramoDiaVm } from '../../../shared/models/schedule/detalle-dia-response';
 
+let nextSidebarAttendanceId = 0;
+
 @Component({
   selector: 'app-sidebar-attendance-picker',
   imports: [ButtonModule, DialogModule],
@@ -27,6 +29,7 @@ import { TramoDiaVm } from '../../../shared/models/schedule/detalle-dia-response
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SidebarAttendancePickerComponent {
+  protected readonly menuId = `sidebar-attendance-menu-${nextSidebarAttendanceId++}`;
   readonly statusLabel = input('OFFLINE');
   readonly statusColor = input('#8f96ad');
   readonly actions = input<AttendanceActionOption[]>([]);
@@ -39,9 +42,13 @@ export class SidebarAttendancePickerComponent {
   readonly timerOver = input(false);
   readonly lunchWaitVisible = input(false);
   readonly lunchDurationMinutes = input<number | null>(null);
+  readonly placement = input<'up' | 'down'>('up');
+  readonly compact = input(false);
+  readonly guidedActionId = input<AttendanceActionId | null>(null);
 
   readonly actionSelected = output<AttendanceActionId>();
   readonly retry = output<void>();
+  readonly guidanceCancelled = output<void>();
 
   protected readonly isOpen = signal(false);
   protected readonly pendingConfirmation = signal<AttendanceActionOption | null>(null);

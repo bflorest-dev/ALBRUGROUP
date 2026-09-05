@@ -6,6 +6,7 @@ import {
   OnDestroy,
   ViewChild,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -79,7 +80,9 @@ export class AdminSidebarV2Component implements OnDestroy {
   readonly attendanceTramos = input<TramoDiaVm[]>([]);
   readonly attendanceTimerText = input<string | null>(null);
   readonly attendanceTimerOver = input(false);
+  readonly attendanceLunchWaitVisible = input(false);
   readonly attendanceLunchDuration = input<number | null>(null);
+  readonly attendanceGuided = input(false);
 
   readonly logoutRequested = output<void>();
   readonly correctMeritoRequested = output<void>();
@@ -87,6 +90,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   readonly providerSelected = output<number>();
   readonly attendanceActionSelected = output<AttendanceActionId>();
   readonly attendanceRetry = output<void>();
+  readonly attendanceGuidanceCancelled = output<void>();
 
   protected readonly openPanelId = signal<string | 'profile' | null>(null);
   protected readonly selectedPath = signal<SidebarItem[]>([]);
@@ -133,6 +137,12 @@ export class AdminSidebarV2Component implements OnDestroy {
         this.syncCommittedContextWithRoute();
         this.closePanel();
       });
+
+    effect(() => {
+      if (this.attendanceGuided()) {
+        window.setTimeout(() => this.openAttendance());
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -145,6 +155,10 @@ export class AdminSidebarV2Component implements OnDestroy {
 
   @HostListener('document:keydown.escape')
   protected closeOnEscape(): void {
+    if (this.attendanceGuided()) {
+      this.attendanceGuidanceCancelled.emit();
+      return;
+    }
     this.closePanel(true);
   }
 
@@ -213,7 +227,7 @@ export class AdminSidebarV2Component implements OnDestroy {
     this.confirmPanelSelection();
   }
 
-  protected openAttendance(event?: Event): void {
+  openAttendance(event?: Event): void {
     this.rememberRailTrigger(event);
     this.cancelClose();
     this.cancelHoverOpen();
@@ -230,6 +244,10 @@ export class AdminSidebarV2Component implements OnDestroy {
     }
 
     window.setTimeout(() => this.sidebarAttendancePicker?.open(true));
+  }
+
+  dismissAttendance(): void {
+    this.closePanel();
   }
 
   protected activateGroup(item: SidebarItem): void {
@@ -262,6 +280,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   }
 
   protected scheduleClose(): void {
+    if (this.attendanceGuided()) return;
     this.cancelHoverOpen();
     this.cancelClose();
     this.closeTimer = setTimeout(() => this.closePanel(), 180);
@@ -281,6 +300,14 @@ export class AdminSidebarV2Component implements OnDestroy {
     this.openPanelId.set(null);
     this.selectedPath.set([]);
     if (restoreFocus) queueMicrotask(() => this.lastRailTrigger?.focus({ preventScroll: true }));
+  }
+
+  protected closeFromFocusLayer(): void {
+    if (this.attendanceGuided()) {
+      this.attendanceGuidanceCancelled.emit();
+      return;
+    }
+    this.closePanel();
   }
 
   protected itemKey(item: SidebarItem): string {

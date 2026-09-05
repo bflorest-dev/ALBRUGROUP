@@ -1,6 +1,7 @@
 <div
   class="admin-nav-v2"
   [class.admin-nav-v2--open]="isPanelOpen()"
+  [class.admin-nav-v2--guided]="attendanceGuided()"
   (mouseenter)="cancelClose()"
   (mouseleave)="scheduleClose()"
 >
@@ -12,7 +13,7 @@
     [disabled]="!isPanelOpen()"
     (mouseenter)="scheduleClose()"
     (mouseleave)="cancelClose()"
-    (click)="closePanel()"
+    (click)="closeFromFocusLayer()"
   ></button>
 
   <aside
@@ -175,9 +176,12 @@
           [tramos]="attendanceTramos()"
           [timerText]="attendanceTimerText()"
           [timerOver]="attendanceTimerOver()"
+          [lunchWaitVisible]="attendanceLunchWaitVisible()"
           [lunchDurationMinutes]="attendanceLunchDuration()"
+          [guidedActionId]="attendanceGuided() ? 'REGISTRAR_SALIDA' : null"
           (actionSelected)="attendanceActionSelected.emit($event)"
           (retry)="attendanceRetry.emit()"
+          (guidanceCancelled)="attendanceGuidanceCancelled.emit()"
         />
       </div>
 
@@ -191,7 +195,7 @@
           <strong>{{ domain.label }}</strong>
           <small>{{ domain.description }}</small>
         </span>
-        <button type="button" class="admin-nav-v2__close" aria-label="Cerrar navegación" (click)="closePanel(true)">
+        <button type="button" class="admin-nav-v2__close" aria-label="Cerrar navegación" (click)="closeFromFocusLayer()">
           <i class="ti ti-x" aria-hidden="true"></i>
         </button>
       </header>
@@ -262,9 +266,12 @@
           [tramos]="attendanceTramos()"
           [timerText]="attendanceTimerText()"
           [timerOver]="attendanceTimerOver()"
+          [lunchWaitVisible]="attendanceLunchWaitVisible()"
           [lunchDurationMinutes]="attendanceLunchDuration()"
+          [guidedActionId]="attendanceGuided() ? 'REGISTRAR_SALIDA' : null"
           (actionSelected)="attendanceActionSelected.emit($event)"
           (retry)="attendanceRetry.emit()"
+          (guidanceCancelled)="attendanceGuidanceCancelled.emit()"
         />
       </div>
 

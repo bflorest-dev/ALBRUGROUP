@@ -247,4 +247,36 @@ describe('AdminSidebarV2Component', () => {
     fixture.detectChanges();
     expect(emitted).toEqual(['INICIAR_ALMUERZO']);
   });
+
+  it('mantiene visible la asistencia durante la guía y permite cancelarla desde el fondo', async () => {
+    TestBed.configureTestingModule({
+      imports: [AdminSidebarV2Component],
+      providers: [provideRouter([])]
+    });
+    const fixture = TestBed.createComponent(AdminSidebarV2Component);
+    fixture.componentRef.setInput('items', items);
+    fixture.componentRef.setInput('domainDefinitions', domains);
+    fixture.componentRef.setInput('attendanceActions', [
+      {
+        key: 'offline',
+        actionId: 'REGISTRAR_SALIDA',
+        targetStatus: 'OFFLINE',
+        label: 'Marcar salida',
+        enabled: true
+      }
+    ] satisfies AttendanceActionOption[]);
+    const cancellations: boolean[] = [];
+    fixture.componentInstance.attendanceGuidanceCancelled.subscribe(() => cancellations.push(true));
+    fixture.componentRef.setInput('attendanceGuided', true);
+    fixture.detectChanges();
+
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__option.is-guided')).toBeTruthy();
+    (fixture.nativeElement.querySelector('.admin-nav-v2__focus-layer') as HTMLButtonElement).click();
+    expect(cancellations).toEqual([true]);
+  });
 });

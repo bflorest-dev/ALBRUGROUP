@@ -1,5 +1,5 @@
 <div [class]="'layout-shell ' + themeClass()" [class.layout-shell--sidebar-v2]="usesSidebarV2()">
-  <header class="mobile-topbar">
+  <header class="mobile-topbar" [class.logout-guidance-active]="logoutGuidanceActive()">
     <button
       type="button"
       class="mobile-menu-button"
@@ -13,7 +13,28 @@
       <strong>ALBRUGROUP</strong>
       <span>{{ primaryRoleLabel() }}</span>
     </div>
-    <span class="mobile-topbar__status" [style.background]="attendanceStatusColor()" aria-hidden="true"></span>
+    <app-sidebar-attendance-picker
+      #mobileAttendancePicker
+      class="mobile-topbar__attendance"
+      [statusLabel]="attendanceStatusLabel()"
+      [statusColor]="attendanceStatusColor()"
+      [actions]="attendanceActions()"
+      [isLoading]="isAttendanceLoading()"
+      [errorMessage]="attendancePickerErrorMessage()"
+      [disabled]="isAttendancePickerDisabled()"
+      [hint]="attendanceHint()"
+      [tramos]="attendanceTramos()"
+      [timerText]="attendanceTimerText()"
+      [timerOver]="attendanceTimerOver()"
+      [lunchWaitVisible]="isMobileViewport() && attendanceLunchWait()"
+      [lunchDurationMinutes]="attendanceLunchDuration()"
+      [placement]="'down'"
+      [compact]="true"
+      [guidedActionId]="isMobileViewport() && logoutGuidanceActive() ? 'REGISTRAR_SALIDA' : null"
+      (actionSelected)="submitAttendanceAction($event)"
+      (retry)="attendanceFacade.reload()"
+      (guidanceCancelled)="cancelLogoutGuidance()"
+    />
   </header>
 
   @if (mobileMenuOpen()) {
@@ -33,6 +54,7 @@
   @if (usesSidebarV2()) {
     <app-admin-sidebar-v2
       class="sidebar-v2-host"
+      [class.logout-guidance-active]="logoutGuidanceActive()"
       [items]="menuItems()"
       [domainDefinitions]="sidebarDomainDefinitions()"
       [displayName]="userDisplayName()"
@@ -47,7 +69,9 @@
       [attendanceTramos]="attendanceTramos()"
       [attendanceTimerText]="attendanceTimerText()"
       [attendanceTimerOver]="attendanceTimerOver()"
+      [attendanceLunchWaitVisible]="!isMobileViewport() && attendanceLunchWait()"
       [attendanceLunchDuration]="attendanceLunchDuration()"
+      [attendanceGuided]="!isMobileViewport() && logoutGuidanceActive()"
       [deleteLeadsVisible]="adminDeleteLeadsVisible()"
       [showDeleteLeadsAction]="isAdmin()"
       [canCorrectMerito]="canCorrectMerito()"
@@ -58,6 +82,7 @@
       (providerSelected)="seleccionarProveedor($event)"
       (attendanceActionSelected)="submitAttendanceAction($event)"
       (attendanceRetry)="attendanceFacade.reload()"
+      (attendanceGuidanceCancelled)="cancelLogoutGuidance()"
       (logoutRequested)="logout()"
     />
   }
@@ -341,62 +366,7 @@
   </aside>
 
   <main class="content">
-    <app-top-banner [class.logout-guidance-active]="logoutGuidanceActive()">
-      <div banner-main class="development-banner-copy">
-        <i class="pi pi-info-circle" aria-hidden="true"></i>
-        <span>Web en Desarrollo, para cualquier inconveniente comunicate con el area de Desarrollo.</span>
-      </div>
-
-      <div
-        banner-actions
-        pFocusTrap
-        [pFocusTrapDisabled]="!logoutGuidanceActive()"
-        class="attendance-banner-actions"
-        [class.is-guided]="logoutGuidanceActive()"
-        [attr.role]="logoutGuidanceActive() ? 'dialog' : null"
-        [attr.aria-modal]="logoutGuidanceActive() ? 'true' : null"
-        [attr.aria-labelledby]="logoutGuidanceActive() ? 'logout-guidance-title' : null"
-      >
-        @if (logoutGuidanceActive()) {
-          <div class="logout-guidance-copy" aria-live="assertive">
-            <span class="logout-guidance-copy__icon" aria-hidden="true">
-              <i class="pi pi-clock"></i>
-            </span>
-            <span class="logout-guidance-copy__body">
-              <strong id="logout-guidance-title">Tu jornada ya terminó</strong>
-              <span>Marca OFFLINE antes de cerrar sesión, o continúa trabajando.</span>
-            </span>
-            <button
-              type="button"
-              class="logout-guidance-copy__cancel"
-              [disabled]="isAttendanceLoading()"
-              (click)="cancelLogoutGuidance()"
-            >
-              Seguir trabajando
-            </button>
-          </div>
-        }
-
-        <app-attendance-status-picker
-          class="attendance-guidance-target"
-          [statusLabel]="attendanceStatusLabel()"
-          [statusColor]="attendanceStatusColor()"
-          [actions]="attendanceActions()"
-          [isLoading]="isAttendanceLoading()"
-          [errorMessage]="attendancePickerErrorMessage()"
-          [disabled]="isAttendancePickerDisabled()"
-          [hint]="attendanceHint()"
-          [tramos]="attendanceTramos()"
-          [timerText]="attendanceTimerText()"
-          [timerOver]="attendanceTimerOver()"
-          [lunchWaitVisible]="attendanceLunchWait()"
-          [lunchDurationMinutes]="attendanceLunchDuration()"
-          [guidedActionId]="logoutGuidanceActive() ? 'REGISTRAR_SALIDA' : null"
-          (actionSelected)="submitAttendanceAction($event)"
-          (retry)="attendanceFacade.reload()"
-        />
-      </div>
-    </app-top-banner>
+    <app-top-banner />
 
     <router-outlet />
   </main>

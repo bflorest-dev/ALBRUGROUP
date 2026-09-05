@@ -1,4 +1,9 @@
-<section class="sidebar-attendance" [style.--attendance-color]="statusColor()">
+<section
+  class="sidebar-attendance"
+  [class.sidebar-attendance--down]="placement() === 'down'"
+  [class.sidebar-attendance--compact]="compact()"
+  [style.--attendance-color]="statusColor()"
+>
   <button
     type="button"
     class="sidebar-attendance__trigger"
@@ -6,7 +11,7 @@
     [class.is-disabled]="disabled()"
     [disabled]="isLoading() || disabled()"
     [attr.aria-expanded]="isOpen()"
-    aria-controls="sidebar-attendance-menu"
+    [attr.aria-controls]="menuId"
     (click)="toggleOpen()"
   >
     <span class="sidebar-attendance__signal" aria-hidden="true"></span>
@@ -36,11 +41,24 @@
   }
 
   @if (isOpen() && !disabled()) {
-    <div id="sidebar-attendance-menu" class="sidebar-attendance__menu">
+    <div [id]="menuId" class="sidebar-attendance__menu">
       <header class="sidebar-attendance__menu-header">
         <span>Cambiar estado</span>
         <strong>{{ statusLabel() }}</strong>
       </header>
+
+      @if (guidedActionId()) {
+        <div class="sidebar-attendance__guidance" role="alert" aria-live="assertive">
+          <i class="ti ti-clock-exclamation" aria-hidden="true"></i>
+          <span>
+            <strong>Tu jornada ya terminó</strong>
+            <small>Marca OFFLINE antes de cerrar sesión.</small>
+          </span>
+          <button type="button" [disabled]="isLoading()" (click)="guidanceCancelled.emit()">
+            Seguir trabajando
+          </button>
+        </div>
+      }
 
       @if (tramos().length > 1) {
         <div class="sidebar-attendance__schedule">
@@ -61,6 +79,7 @@
           <button
             type="button"
             class="sidebar-attendance__option"
+            [class.is-guided]="action.actionId === guidedActionId()"
             [disabled]="!action.enabled || !action.actionId"
             [attr.title]="action.disabledReason || null"
             (click)="selectAction(action)"

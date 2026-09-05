@@ -16,12 +16,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { BadgeModule } from 'primeng/badge';
-import { FocusTrap } from 'primeng/focustrap';
 import { AttendanceFacade } from '../../facades/attendance.facade';
 import { AttendanceRealtimeService } from '../../services/attendance-realtime.service';
 import { AuthSessionService } from '../../services/auth-session.service';
 import { SessionService } from '../../services/session.service';
-import { AttendanceStatusPickerComponent } from '../../../shared/components/attendance-status-picker/attendance-status-picker.component';
 import { TopBannerComponent } from '../../../shared/components/top-banner/top-banner.component';
 import { formatLabel } from '../../../shared/utils/display-label';
 import { ATTENDANCE_STATUS_META, AttendanceActionId } from '../../../shared/models/schedule/estado-asistencia';
@@ -36,6 +34,7 @@ import { AdminSidebarV2Component } from './admin-sidebar-v2.component';
 import { SidebarDomainDefinition, SidebarItem } from './sidebar-item.model';
 import { sidebarDomainsForRole, sidebarV2EnabledForRole } from './sidebar-v2.config';
 import { shouldGuideAttendanceLogout } from './attendance-logout-guidance';
+import { SidebarAttendancePickerComponent } from './sidebar-attendance-picker.component';
 
 const ROLE_THEME_CLASS: Record<string, string> = {
   ADMINISTRADOR: 'theme-admin',
@@ -61,12 +60,11 @@ const ROLE_THEME_CLASS: Record<string, string> = {
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    AttendanceStatusPickerComponent,
     TopBannerComponent,
     BadgeModule,
-    FocusTrap,
     LeadMeritoCorreccionDrawerComponent,
-    AdminSidebarV2Component
+    AdminSidebarV2Component,
+    SidebarAttendancePickerComponent
   ],
   templateUrl: './private-layout.component.html',
   styleUrl: './private-layout.component.scss',
@@ -75,6 +73,8 @@ const ROLE_THEME_CLASS: Record<string, string> = {
 export class PrivateLayoutComponent implements AfterViewInit {
   @ViewChild('sidebar') private sidebar?: ElementRef<HTMLElement>;
   @ViewChild('sidebarMenu') private sidebarMenu?: ElementRef<HTMLElement>;
+  @ViewChild('mobileAttendancePicker') private mobileAttendancePicker?: SidebarAttendancePickerComponent;
+  @ViewChild(AdminSidebarV2Component) private sidebarV2?: AdminSidebarV2Component;
   @ViewChild(LeadMeritoCorreccionDrawerComponent) private meritoDrawer?: LeadMeritoCorreccionDrawerComponent;
   protected readonly attendanceFacade = inject(AttendanceFacade);
   private readonly authSessionService = inject(AuthSessionService);
@@ -100,6 +100,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
   protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
   protected readonly attendanceErrorMessage = signal('');
   protected readonly logoutGuidanceActive = signal(false);
+  protected readonly isMobileViewport = signal(window.innerWidth <= 900);
   private attendanceInitialized = false;
   private menuScrollUpdateScheduled = false;
   // Ultimo tick de salida ya procesado: al marcar OFFLINE (REGISTRAR_SALIDA) cerramos la sesion, y
@@ -182,7 +183,6 @@ export class PrivateLayoutComponent implements AfterViewInit {
     const session = this.session();
     return session?.nombreCompleto || session?.username || 'Usuario';
   });
-
   protected readonly menuItems = computed<SidebarItem[]>(() => {
     const session = this.session();
 
@@ -643,6 +643,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
   @HostListener('window:resize')
   protected onWindowResize(): void {
+    this.isMobileViewport.set(window.innerWidth <= 900);
     this.scheduleMenuScrollStateUpdate();
   }
 
@@ -762,6 +763,13 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
     if (this.shouldGuideLogout()) {
       this.logoutGuidanceActive.set(true);
+      queueMicrotask(() => {
+        if (this.isMobileViewport()) {
+          this.mobileAttendancePicker?.open(true);
+        } else {
+          this.sidebarV2?.openAttendance();
+        }
+      });
       return;
     }
 
@@ -773,6 +781,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
       return;
     }
     this.logoutGuidanceActive.set(false);
+    this.mobileAttendancePicker?.close();
+    this.sidebarV2?.dismissAttendance();
   }
 
   private async performLogout(): Promise<void> {
@@ -784,4 +794,5 @@ export class PrivateLayoutComponent implements AfterViewInit {
   private readAdminDeleteLeadsVisible(): boolean {
     return localStorage.getItem(STORAGE_KEYS.adminDeleteLeadsVisible) === 'true';
   }
+
 }

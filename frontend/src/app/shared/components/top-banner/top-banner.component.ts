@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 @Component({
   selector: 'app-top-banner',
@@ -6,4 +6,10 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   styleUrl: './top-banner.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TopBannerComponent {}
+export class TopBannerComponent {
+  readonly title = input('');
+  readonly detail = input('');
+  readonly context = input('');
+  readonly icon = input('ti ti-layout-dashboard');
+  protected readonly hasContent = computed(() => Boolean(this.title() || this.detail() || this.context()));
+}
