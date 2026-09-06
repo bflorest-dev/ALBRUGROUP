@@ -203,6 +203,35 @@ class AjusteJornadaServiceTest {
     }
 
     @Test
+    void corrimientoQueReemplazaBaseSeExponeComoBaseEfectiva() {
+        Horario horario = horario(true, LocalTime.of(8, 0), LocalTime.of(17, 0));
+        AjusteJornada corrimiento = AjusteJornada.builder()
+                .id(10L)
+                .idEmpleado(21L)
+                .horario(horario)
+                .fechaOperativa(LocalDate.of(2026, 6, 15))
+                .inicio(LocalDateTime.of(2026, 6, 15, 9, 0))
+                .fin(LocalDateTime.of(2026, 6, 15, 18, 0))
+                .estado(EstadoAjusteJornada.ACTIVO)
+                .origen(OrigenAjusteJornada.REEMPLAZO_BASE)
+                .razon(RazonAjuste.CORRIMIENTO_COMPENSABLE)
+                .motivo("Corrimiento por tardanza")
+                .creadoPor(99L)
+                .build();
+        when(excepcionRepository.findByHorarioIdAndFecha(7L, LocalDate.of(2026, 6, 15)))
+                .thenReturn(Optional.empty());
+
+        JornadaEfectivaResponse jornada = new JornadaEfectivaResolver(
+                horarioRepository, excepcionRepository, ajusteRepository, diaNoLaborableRepository, clock)
+                .resolver(horario, LocalDate.of(2026, 6, 15), List.of(corrimiento));
+
+        assertThat(jornada.getTramos()).hasSize(1);
+        assertThat(jornada.getTramos().get(0).getBase()).isTrue();
+        assertThat(jornada.getTramos().get(0).getOrigen())
+                .isEqualTo(OrigenAjusteJornada.REEMPLAZO_BASE);
+    }
+
+    @Test
     void horasExtraQueSeSolapanConElBaseSeRechaza() {
         // Defensa en profundidad: un ajuste ADITIVO (horas extra) que se solapa con el base NO debe
         // reclasificarse como corrimiento ni pisar el base; se rechaza.

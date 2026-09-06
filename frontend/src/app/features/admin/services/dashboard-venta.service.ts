@@ -141,7 +141,79 @@ export interface PageResponse<T> {
   content: T[];
 }
 
-export type MetricaVentaDetalle = 'PREVENTAS' | 'REGISTRADAS' | 'PROGRAMADAS' | 'RECHAZADAS' | 'INSTALADAS';
+export type MetricaVentaDetalle =
+  | 'PREVENTAS'
+  | 'SIN_INGRESAR'
+  | 'REGISTRADAS'
+  | 'PROGRAMADAS'
+  | 'SUBSANABLES'
+  | 'RECHAZADAS'
+  | 'INSTALADAS'
+  | 'PROGRAMACION_SUBTIP'
+  | 'RANKING'
+  | 'TRAMOS'
+  | 'COHORTE_ULTIMA'
+  | 'ZONA_REGISTRADAS'
+  | 'EMBUDO_REGISTRADAS'
+  | 'EMBUDO_INSTALADAS'
+  | 'EMBUDO_RECHAZADAS'
+  | 'EMBUDO_PROGRAMADAS_TOTAL'
+  | 'EMBUDO_PROGRAMADAS_INSTALADAS'
+  | 'EMBUDO_PROGRAMADAS_RECHAZADAS';
+
+export type EnfoqueVenta = 'DIA' | 'GENERAL';
+
+/** Fila UNIFICADA del detalle (superset). Cada campo nullable; el frontend muestra solo columnas con datos. */
+export interface VentaDetalleRow {
+  idLead: number;
+  lead: string | null;
+  usermeta: string | null;
+  numeroDocumento: string | null;
+  nombreCliente: string | null;
+  etapa: string | null;
+  tipificacion: string | null;
+  subtipificacion: string | null;
+  fechaIngresoEtapa: string | null;
+  fechaUltimaGestion: string | null;
+  fechaProgramacion: string | null;
+  horaProgramada: string | null;
+  fechaInstalacion: string | null;
+  fechaRechazo: string | null;
+  asesorMerito: string | null;
+  asesorUltimaGestion: string | null;
+  ultimoComentario: string | null;
+  ubigeo: string | null;
+  cargoFijo: number | null;
+}
+
+/** Página del detalle unificado + resumen de grupos (agrupación server-side, lista plana). */
+export interface VentaDetallePage {
+  page: number;
+  size: number;
+  totalPages: number;
+  totalElements: number;
+  content: VentaDetalleRow[];
+  grupos: { valor: string | null; cantidad: number }[];
+}
+
+/** Parámetros del drill-down unificado (metrica + calificadores + búsqueda/orden/agrupación/paginación). */
+export interface VentaDetalleQuery {
+  idProveedor: number;
+  metrica: MetricaVentaDetalle;
+  enfoque?: EnfoqueVenta;
+  zona?: string;
+  subtipificacion?: string;
+  tipificacion?: string;
+  idAsesor?: number;
+  desde?: string;
+  hasta?: string;
+  search?: string;
+  groupBy?: string;
+  sortBy?: string;
+  direction?: string;
+  page?: number;
+  size?: number;
+}
 
 /** Fila del detalle de un asesor (drill-down del ranking). */
 export interface VentaAsesorDetalle {
@@ -213,6 +285,27 @@ export class DashboardVentaService {
       params = params.set('hasta', hasta);
     }
     return this.http.get<PageResponse<VentaAsesorDetalle>>(`${this.baseUrl}/asesores-detalle`, { params });
+  }
+
+  /** Drill-down UNIFICADO: detalle de cualquier contador del dashboard con búsqueda/orden/agrupación. */
+  obtenerDetalleUnificado(q: VentaDetalleQuery): Observable<VentaDetallePage> {
+    let params = new HttpParams()
+      .set('idProveedor', q.idProveedor)
+      .set('metrica', q.metrica)
+      .set('pageNumber', q.page ?? 0)
+      .set('pageSize', q.size ?? 25)
+      .set('sortBy', q.sortBy ?? 'createdAt')
+      .set('direction', q.direction ?? 'desc');
+    if (q.enfoque) params = params.set('enfoque', q.enfoque);
+    if (q.zona) params = params.set('zona', q.zona);
+    if (q.subtipificacion) params = params.set('subtipificacion', q.subtipificacion);
+    if (q.tipificacion) params = params.set('tipificacion', q.tipificacion);
+    if (q.idAsesor != null) params = params.set('idAsesor', q.idAsesor);
+    if (q.desde) params = params.set('desde', q.desde);
+    if (q.hasta) params = params.set('hasta', q.hasta);
+    if (q.search?.trim()) params = params.set('search', q.search.trim());
+    if (q.groupBy) params = params.set('groupBy', q.groupBy);
+    return this.http.get<VentaDetallePage>(`${this.baseUrl}/detalle`, { params });
   }
 
   obtenerResumenDetalle(

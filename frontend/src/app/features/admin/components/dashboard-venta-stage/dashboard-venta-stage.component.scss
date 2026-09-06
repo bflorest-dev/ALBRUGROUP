@@ -274,9 +274,9 @@
   }
 }
 .vd-cuad__herolbl {
-  font-size: 13.5px;
-  font-weight: 700;
-  letter-spacing: -0.005em;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--ink);
 }
 .vd-cuad__herov {
@@ -362,8 +362,16 @@
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
+  // es un <button>: reset + afordancia de click (abre el drawer de detalle)
+  appearance: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+  cursor: pointer;
   &--tip { cursor: help; }
   &:hover { background: var(--soft); }
+  &:focus-visible { outline: 2px solid var(--vd-info); outline-offset: -2px; }
   &__v {
     font-size: 2.5rem;
     font-weight: 700;
@@ -398,6 +406,17 @@
   min-width: 150px;
   padding: 12px 16px;
   border-right: 1px solid var(--line);
+  // es un <button>: reset + afordancia de click
+  appearance: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s;
+  &:hover { background: var(--soft); }
+  &:focus-visible { outline: 2px solid var(--vd-info); outline-offset: -2px; }
   &:last-child { border-right: 0; }
   &__lbl { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
   &__v {
@@ -422,12 +441,25 @@
   grid-template-columns: 150px 1fr 38px 52px;
   align-items: center;
   gap: 11px;
-  padding: 9px 0;
+  padding: 9px 6px;
   border-top: 1px solid var(--line);
   &:first-child { border-top: 0; }
   &__lbl { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
   &__n { font-weight: 700; font-size: 15px; text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
   &__pct { font-size: 11.5px; font-weight: 600; color: var(--faint); text-align: right; }
+  // es un <button>: reset + afordancia de click
+  &--click {
+    appearance: none;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s;
+    &:hover { background: var(--soft); }
+    &:focus-visible { outline: 2px solid var(--vd-info); outline-offset: -2px; }
+  }
 }
 .vd-chip { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 .vd-bar {
@@ -492,6 +524,38 @@
   .ok { color: var(--vd-success); font-weight: 700; }
   .alert { color: var(--vd-danger); font-weight: 700; }
 }
+// Botón "Sin ubigeo: N" (solo cuando hay anomalía): drill a registradas sin ubigeo.
+.vd-znote__su {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 10.5px;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 5px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  &:focus-visible { outline: 2px solid var(--vd-danger); outline-offset: 2px; }
+}
+// Celda clicable de la tabla de territorio (Lima/Provincia de Registradas/Instaladas).
+.vd-zc {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  border-radius: 7px;
+  transition: background 0.15s;
+  &:hover { background: var(--soft); }
+  &:focus-visible { outline: 2px solid var(--vd-info); outline-offset: -1px; }
+}
 
 .vd-cf { padding: 14px 0 0; border-top: 1px dashed var(--line); margin-top: 12px; }
 .vd-cf__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 11px; }
@@ -519,8 +583,20 @@
   grid-template-columns: 145px 1fr 34px;
   align-items: center;
   gap: 11px;
-  padding: 8px 0;
+  padding: 8px 6px;
   border-top: 1px solid var(--line);
+  // es un <button>: reset + afordancia de click
+  appearance: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s;
+  &:hover { background: var(--soft); }
+  &:focus-visible { outline: 2px solid var(--vd-info); outline-offset: -2px; }
   &:first-child { border-top: 0; }
   &__lbl { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
   &__n { font-weight: 700; text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -541,6 +617,9 @@
 }
 
 .vd-tramos { padding: 15px 17px; }
+.vd-tramos--click { cursor: pointer; transition: border-color 0.15s; }
+.vd-tramos--click:hover { border-color: var(--line-strong); }
+.vd-tramos--click:focus-visible { outline: 2px solid var(--vd-info); outline-offset: 2px; }
 .vd-tr {
   width: 100%;
   border-collapse: collapse;

@@ -22,6 +22,14 @@ public enum MetricaVentaDetalle {
     PROGRAMACION_SUBTIP,
     RANKING,
     TRAMOS,
+    // Bloques de la sección "Distribución"
+    // COHORTE_ULTIMA: bloque "Por tipificación" (cohorte por fechaIngresoEtapa, filtrada por última tipificación
+    //   CRUDA vía el calificador `tipificacion`; null/vacío = bucket "sin ingresar"). A diferencia de RECHAZADAS,
+    //   no exige que el mayor rango haya alcanzado INGRESADO, así que su "No recuperable" es el crudo del cohorte.
+    // ZONA_REGISTRADAS: fila "Registradas" de "Por territorio" (anclada en ultimaTipificacionAt ∈ período con
+    //   última == INGRESADO, igual que Q2 `dashboardVentaEstado`); se acota por el calificador `zona`.
+    COHORTE_ULTIMA,
+    ZONA_REGISTRADAS,
     // Embudo (conversiones)
     EMBUDO_REGISTRADAS,
     EMBUDO_INSTALADAS,

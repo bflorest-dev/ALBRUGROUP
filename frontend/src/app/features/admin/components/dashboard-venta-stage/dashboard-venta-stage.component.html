@@ -80,7 +80,7 @@
           <button
             type="button"
             class="vd-cuad__hero"
-            (click)="abrirDetalleResumen('preventas')"
+            (click)="abrirPreventas()"
             aria-label="Ver detalle de Preventas"
           >
             <div class="vd-cuad__herolbl">Preventas</div>
@@ -100,14 +100,29 @@
 
             <div class="vd-rl" [pTooltip]="tipDelDia" tooltipPosition="top"><span class="vd-rl__t">Del día</span></div>
             @for (c of diaCells(); track c.key) {
-              <div class="vd-cell" [class.vd-cell--tip]="c.tip" [pTooltip]="c.tip" tooltipPosition="top">
+              <button
+                type="button"
+                class="vd-cell vd-cell--click"
+                [class.vd-cell--tip]="c.tip"
+                [pTooltip]="c.tip"
+                tooltipPosition="top"
+                (click)="abrirEstado(c.key, 'DIA', c.label)"
+                [attr.aria-label]="'Ver ' + c.label + ' del día'"
+              >
                 <span class="vd-cell__v">{{ c.value }}</span>
-              </div>
+              </button>
             }
 
             <div class="vd-rl" [pTooltip]="tipGeneral" tooltipPosition="top"><span class="vd-rl__t">General</span></div>
             @for (c of generalCells(); track c.key) {
-              <div class="vd-cell"><span class="vd-cell__v">{{ c.value }}</span></div>
+              <button
+                type="button"
+                class="vd-cell vd-cell--click"
+                (click)="abrirEstado(c.key, 'GENERAL', c.label)"
+                [attr.aria-label]="'Ver ' + c.label + ' en gestión general'"
+              >
+                <span class="vd-cell__v">{{ c.value }}</span>
+              </button>
             }
           </div>
         </div>
@@ -117,10 +132,10 @@
 
         <div class="vd-card vd-ribbon">
           @for (c of conversiones(); track c.label) {
-            <div class="vd-conv">
+            <button type="button" class="vd-conv vd-conv--click" (click)="abrirConversion(c)" [attr.aria-label]="'Ver ' + c.label">
               <div class="vd-conv__lbl">{{ c.label }}</div>
               <div class="vd-conv__v">{{ c.pct }}%<span class="vd-conv__f">{{ c.frac }}</span></div>
-            </div>
+            </button>
           }
         </div>
 
@@ -130,12 +145,12 @@
             <div class="vd-zone__head"><span class="vd-zone__ttl">Por tipificación</span></div>
             <div class="vd-estado__rows">
               @for (e of estadoRows(); track e.label) {
-                <div class="vd-er">
+                <button type="button" class="vd-er vd-er--click" (click)="abrirDistribucion(e)" [attr.aria-label]="'Ver leads: ' + e.label">
                   <span class="vd-er__lbl"><span class="vd-chip" [class]="'is-' + e.color"></span>{{ e.label }}</span>
                   <span class="vd-bar"><i [class]="'is-' + e.color" [style.width.%]="e.width"></i></span>
                   <span class="vd-er__n">{{ e.cantidad }}</span>
                   <span class="vd-er__pct">{{ e.pct }}%</span>
-                </div>
+                </button>
               }
             </div>
           </div>
@@ -167,8 +182,17 @@
                 @for (r of zonaRows(); track r.label) {
                   <tr>
                     <th>{{ r.label }}@if (r.hint) {<small>{{ r.hint }}</small>}</th>
-                    <td [class.dim]="zonaSel() === 'provincia'">{{ r.lima }}</td>
-                    <td [class.dim]="zonaSel() === 'lima'">{{ r.provincia }}</td>
+                    @if (r.drill) {
+                      <td [class.dim]="zonaSel() === 'provincia'">
+                        <button type="button" class="vd-zc" (click)="abrirZonaCelda(r, 'LIMA')" [attr.aria-label]="'Ver ' + r.label + ' de Lima'">{{ r.lima }}</button>
+                      </td>
+                      <td [class.dim]="zonaSel() === 'lima'">
+                        <button type="button" class="vd-zc" (click)="abrirZonaCelda(r, 'PROVINCIA')" [attr.aria-label]="'Ver ' + r.label + ' de Provincia'">{{ r.provincia }}</button>
+                      </td>
+                    } @else {
+                      <td [class.dim]="zonaSel() === 'provincia'">{{ r.lima }}</td>
+                      <td [class.dim]="zonaSel() === 'lima'">{{ r.provincia }}</td>
+                    }
                     <td class="z-tot">{{ r.total }}</td>
                   </tr>
                 }
@@ -176,7 +200,11 @@
             </table>
             <div class="vd-znote">
               Lima incluye Callao · Total = Lima + Provincia.
-              <b [class.ok]="sinUbigeo() === 0" [class.alert]="sinUbigeo() > 0">Sin ubigeo: {{ sinUbigeo() }}</b>
+              @if (sinUbigeo() > 0) {
+                <button type="button" class="vd-znote__su alert" (click)="abrirZonaRegistradas('SIN_UBIGEO', 'Sin ubigeo')" aria-label="Ver registradas sin ubigeo">Sin ubigeo: {{ sinUbigeo() }}</button>
+              } @else {
+                <b class="ok">Sin ubigeo: {{ sinUbigeo() }}</b>
+              }
             </div>
             @if (esAdmin) {
               <div class="vd-cf">
@@ -205,11 +233,11 @@
         <div class="vd-row3">
           <div class="vd-card vd-prog">
             @for (p of programacionRows(); track p.label) {
-              <div class="vd-pr">
+              <button type="button" class="vd-pr vd-pr--click" (click)="abrirProgramacion(p)" [attr.aria-label]="'Ver programados: ' + p.label">
                 <span class="vd-pr__lbl"><span class="vd-st"></span>{{ p.label }}</span>
                 <span class="vd-bar"><i class="is-secondary" [style.width.%]="p.width"></i></span>
                 <span class="vd-pr__n">{{ p.cantidad }}</span>
-              </div>
+              </button>
             }
             @if (!programacionRows().length) {
               <div class="vd-prog__empty">Sin leads programados.</div>
@@ -217,7 +245,8 @@
             <div class="vd-prog__tot"><span>Total programadas ahora</span><b>{{ programacionTotal() }}</b></div>
           </div>
 
-          <div class="vd-card vd-tramos">
+          <div class="vd-card vd-tramos vd-tramos--click" role="button" tabindex="0"
+               (click)="abrirTramos()" (keydown.enter)="abrirTramos()" aria-label="Ver leads con cita a futuro">
             <table class="vd-tr">
               <thead>
                 <tr><th>Tramo horario</th><th>Hoy</th><th>Mañana</th><th>Pasado</th></tr>
@@ -258,7 +287,7 @@
             </thead>
             <tbody>
               @for (a of rankingRows(); track a.idAsesor) {
-                <tr class="vd-rk-row" (click)="abrirDetalleAsesor(a)" [attr.title]="'Ver los leads de ' + a.nombre">
+                <tr class="vd-rk-row" (click)="abrirAsesor(a)" [attr.title]="'Ver los leads de ' + a.nombre">
                   <td>
                     <span class="vd-who">
                       <span class="vd-av" [style.background]="a.color">{{ a.inicial }}</span>{{ a.nombre }}
@@ -288,34 +317,12 @@
     </article>
   }
 
-  <!-- Modales de detalle (drill-down) -->
-  <app-dashboard-venta-detalle-modal
-    [(visible)]="detAsesorVisible"
-    [title]="'Leads del asesor'"
-    [contextLine]="detAsesorCtx()"
+  <!-- Drawer de detalle (drill-down unificado) -->
+  <app-dashboard-venta-detalle-drawer
+    [request]="detalleReq()"
     [accent]="providerAccent()"
-    [columns]="colsAsesor"
-    [rows]="detAsesorRowsView()"
-    [loading]="detAsesorLoading()"
-    [error]="detAsesorError()"
-    [page]="detAsesorPage()"
-    [size]="pageSize"
-    [totalElements]="detAsesorTotal()"
-    (pageChange)="onDetAsesorPage($event)"
-  />
-
-  <app-dashboard-venta-detalle-modal
-    [(visible)]="detResumenVisible"
-    [title]="detResumenTitle()"
-    [contextLine]="detResumenCtx()"
-    [accent]="providerAccent()"
-    [columns]="colsResumen"
-    [rows]="detResumenRowsView()"
-    [loading]="detResumenLoading()"
-    [error]="detResumenError()"
-    [page]="detResumenPage()"
-    [size]="pageSize"
-    [totalElements]="detResumenTotal()"
-    (pageChange)="onDetResumenPage($event)"
+    [proveedorNombre]="proveedorNombre()"
+    [periodoLabel]="periodoLabel()"
+    (closed)="cerrarDetalle()"
   />
 </section>

@@ -82,7 +82,9 @@ public class JornadaEfectivaResolver {
         if (tramoBase != null && !baseReemplazada) {
             tramos.add(tramoBase);
         }
-        ajustes.stream().map(this::toTramo).forEach(tramos::add);
+        ajustes.stream()
+                .map(ajuste -> toTramo(ajuste, reemplazaBaseEfectiva(ajuste, tramoBase)))
+                .forEach(tramos::add);
         tramos.sort(Comparator.comparing(TramoJornadaResponse::getInicio));
 
         LocalDateTime ahora = LocalDateTime.now(operationalClock);
@@ -154,13 +156,19 @@ public class JornadaEfectivaResolver {
                 .build();
     }
 
-    private TramoJornadaResponse toTramo(AjusteJornada ajuste) {
+    private boolean reemplazaBaseEfectiva(AjusteJornada ajuste, TramoJornadaResponse tramoBase) {
+        return tramoBase != null
+                && ajuste.getOrigen() == OrigenAjusteJornada.REEMPLAZO_BASE
+                && overlaps(ajuste.getInicio(), ajuste.getFin(), tramoBase.getInicio(), tramoBase.getFin());
+    }
+
+    private TramoJornadaResponse toTramo(AjusteJornada ajuste, boolean baseEfectiva) {
         return TramoJornadaResponse.builder()
                 .idAjuste(ajuste.getId())
                 .inicio(ajuste.getInicio())
                 .fin(ajuste.getFin())
                 .origen(ajuste.getOrigen())
-                .base(false)
+                .base(baseEfectiva)
                 .motivo(ajuste.getMotivo())
                 .build();
     }

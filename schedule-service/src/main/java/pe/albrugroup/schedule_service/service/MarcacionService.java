@@ -816,7 +816,7 @@ public class MarcacionService {
     }
 
     private OrigenTramo mapOrigenTramo(TramoJornadaResponse tramo) {
-        if (Boolean.TRUE.equals(tramo.getBase()) || tramo.getOrigen() == null) {
+        if (tramo.getOrigen() == null) {
             return OrigenTramo.BASE;
         }
         return switch (tramo.getOrigen()) {

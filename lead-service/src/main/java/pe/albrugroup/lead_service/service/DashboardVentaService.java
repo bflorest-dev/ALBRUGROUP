@@ -183,7 +183,7 @@ public class DashboardVentaService {
     @Transactional(readOnly = true)
     public VentaDetallePage obtenerDetalle(
             Long idProveedor, MetricaVentaDetalle metrica, EnfoqueVenta enfoque, String zona,
-            String subtipificacion, Long idAsesor, LocalDate desde, LocalDate hasta,
+            String subtipificacion, String tipificacion, Long idAsesor, LocalDate desde, LocalDate hasta,
             String search, String groupBy, PageRequest pageRequest) {
         validarProveedorVisibleParaSupervisorVentas(idProveedor);
         desactivarEquipoFilter();
@@ -198,7 +198,7 @@ public class DashboardVentaService {
         List<LocalDate> tramoDias = List.of(hoy, hoy.plusDays(1), hoy.plusDays(2));
 
         VentaMetricaSpec.Ctx ctx = new VentaMetricaSpec.Ctx(
-                inicio, fin, desdeR, hastaExcl, subtipificacion, idAsesor, tramoDias);
+                inicio, fin, desdeR, hastaExcl, subtipificacion, idAsesor, tramoDias, tipificacion);
 
         return ventaDetalleQueryRepository.buscar(
                 idProveedor, metrica, enfoque, zona, ctx, search, groupBy,

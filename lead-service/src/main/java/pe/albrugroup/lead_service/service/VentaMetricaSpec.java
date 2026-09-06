@@ -40,7 +40,8 @@ public final class VentaMetricaSpec {
             LocalDate hastaDateExcl,
             String subtipificacion,
             Long idAsesor,
-            List<LocalDate> tramoDias
+            List<LocalDate> tramoDias,
+            String codigoUltima
     ) {}
 
     /** Predicado JPQL de la métrica + los parámetros nombrados que usa (solo los que referencia el where). */
@@ -99,6 +100,31 @@ public final class VentaMetricaSpec {
                     w = "c.fechaInstalacion >= :desdeDate AND c.fechaInstalacion < :hastaDateExcl "
                             + "AND rv.ultimaCodigoTipificacion = :codigoInstalado";
                 }
+            }
+            case COHORTE_ULTIMA -> {
+                // Bloque "Por tipificación": cohorte (fechaIngresoEtapa ∈ período) por su ÚLTIMA cruda. Reproduce
+                // 1:1 el bucket de `estadoLeads`: null/vacío = "sin ingresar" (última NULL o 'SIN INGRESAR').
+                p.put("inicio", ctx.inicio());
+                p.put("fin", ctx.fin());
+                String codigo = ctx.codigoUltima();
+                if (codigo == null || codigo.isBlank()) {
+                    p.put("codigoSinIngresar", SIN_INGRESAR);
+                    w = "rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin "
+                            + "AND (rv.ultimaCodigoTipificacion IS NULL OR rv.ultimaCodigoTipificacion = :codigoSinIngresar)";
+                } else {
+                    p.put("codigoUltima", codigo);
+                    w = "rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin "
+                            + "AND rv.ultimaCodigoTipificacion = :codigoUltima";
+                }
+            }
+            case ZONA_REGISTRADAS -> {
+                // Fila "Registradas" de "Por territorio": mismo anclaje que Q2 dashboardVentaEstado
+                // (ultimaTipificacionAt ∈ período, última == INGRESADO). La zona la acota buscar() vía zonaClause.
+                p.put("inicio", ctx.inicio());
+                p.put("fin", ctx.fin());
+                p.put("codigoIngresado", INGRESADO);
+                w = "rv.ultimaTipificacionAt >= :inicio AND rv.ultimaTipificacionAt < :fin "
+                        + "AND rv.ultimaCodigoTipificacion = :codigoIngresado";
             }
             case PROGRAMACION_SUBTIP -> {
                 // Foto del estado actual (ignora período). Usa los parámetros base :etapaVenta y :codigoProgramado.

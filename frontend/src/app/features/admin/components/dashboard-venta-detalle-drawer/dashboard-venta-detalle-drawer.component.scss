@@ -1,0 +1,347 @@
+:host {
+  // paleta local oscura (poster), independiente del tema claro de la app
+  --deep: #0d1120;
+  --card: #161b2b;
+  --soft: #1e2436;
+  --ink: #eceefb;
+  --ink-2: #c3c9e2;
+  --muted: #9aa1bd;
+  --faint: #6d7597;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+}
+
+.dv-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(6, 9, 16, 0.55);
+  backdrop-filter: blur(2px);
+  animation: dv-fade 0.2s ease;
+}
+
+.dv-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1201;
+  width: min(1360px, 97vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--deep);
+  border-left: 1px solid var(--line-strong);
+  box-shadow: -30px 0 70px -30px rgba(0, 0, 0, 0.8);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  animation: dv-slide 0.32s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes dv-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dv-slide { from { transform: translateX(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .dv-scrim, .dv-drawer { animation: none; }
+}
+
+// ── header con banda de acento ──────────────────────────────────────────
+.dv-head {
+  position: relative;
+  padding: 18px 22px;
+  background: linear-gradient(
+    100deg,
+    var(--team-accent, #3a3f8f) 0%,
+    color-mix(in srgb, var(--team-accent, #3a3f8f) 34%, var(--deep)) 62%,
+    var(--deep) 100%
+  );
+  &__x {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(0, 0, 0, 0.2);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+    &:hover { background: rgba(0, 0, 0, 0.4); }
+  }
+  &__ey { font: 700 10.5px/1 sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: #fff; opacity: 0.85; }
+  &__t { margin: 6px 0 0; font: 800 1.5rem/1 sans-serif; letter-spacing: -0.02em; color: #fff; }
+  &__ctx { margin-top: 9px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+}
+.dv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: 600 11.5px/1 sans-serif;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 5px 11px;
+  border-radius: 999px;
+  &__dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; }
+}
+
+// ── toolbar ──────────────────────────────────────────────────────────────
+.dv-tb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.dv-search {
+  flex: 1;
+  min-width: 220px;
+  max-width: 460px;
+  position: relative;
+  input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--line-strong);
+    border-radius: 9px;
+    color: var(--ink);
+    font: 500 13px/1 sans-serif;
+    padding: 10px 12px 10px 34px;
+    &::placeholder { color: var(--faint); }
+    &:focus { outline: 2px solid color-mix(in srgb, var(--team-accent, #6ea4f0) 60%, transparent); outline-offset: 1px; }
+  }
+  svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); opacity: 0.6; }
+}
+// ── ORGANIZAR (botón + popover) ────────────────────────────────────────────
+.dv-org { position: relative; }
+.dv-org__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--ink-2);
+  font: 700 12.5px/1 sans-serif;
+  padding: 9px 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  svg { opacity: 0.75; }
+  &:hover { color: var(--ink); border-color: var(--line-strong); }
+  &.on {
+    color: var(--ink);
+    border-color: color-mix(in srgb, var(--team-accent, #6ea4f0) 55%, var(--line-strong));
+  }
+}
+.dv-org__badge {
+  font: 700 10.5px/1 sans-serif;
+  color: var(--deep);
+  background: var(--team-accent, #6ea4f0);
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.01em;
+}
+
+.dv-pop__veil {
+  position: fixed;
+  inset: 0;
+  z-index: 1210;
+  background: transparent;
+  &--top { z-index: 1220; }
+}
+.dv-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1211;
+  width: 268px;
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: 0 20px 48px -18px rgba(0, 0, 0, 0.75);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  animation: dv-pop 0.16s cubic-bezier(0.2, 0.7, 0.2, 1);
+  &__f { display: flex; flex-direction: column; gap: 5px; }
+  &__l { font: 700 10px/1 sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+  &__div { height: 1px; background: var(--line); margin: 1px 0; }
+  select {
+    background: var(--deep);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    color: var(--ink);
+    font: 600 12.5px/1 sans-serif;
+    padding: 9px 10px;
+    cursor: pointer;
+    &:focus { outline: 2px solid color-mix(in srgb, var(--team-accent, #6ea4f0) 60%, transparent); outline-offset: 1px; }
+  }
+  &__clear {
+    margin-top: 2px;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink-2);
+    font: 700 11.5px/1 sans-serif;
+    padding: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    &:not(:disabled):hover { color: var(--ink); border-color: var(--line-strong); }
+    &:disabled { opacity: 0.4; cursor: default; }
+  }
+}
+@keyframes dv-pop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .dv-pop { animation: none; } }
+
+.dv-hint {
+  margin: 0;
+  padding: 8px 22px 0;
+  font: 500 11px/1.4 sans-serif;
+  color: var(--faint);
+}
+
+// ── tabla ────────────────────────────────────────────────────────────────
+.dv-wrap { flex: 1; overflow: auto; padding-top: 6px; }
+// border-collapse:separate + border-spacing:0 — con `collapse` el fondo de un `th` sticky deja traslucir las
+// filas al hacer scroll (bug conocido en varios navegadores). Con `separate` la cabecera queda opaca.
+.dv-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.dv-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--deep);
+  text-align: left;
+  font: 700 11px/1.1 sans-serif;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line-strong);
+  white-space: nowrap;
+  &.sortable { cursor: pointer; user-select: none; }
+  &.sortable:hover { color: var(--ink-2); }
+  &.active { color: var(--ink); }
+  &.num { text-align: right; }
+  &.ico { text-align: center; width: 46px; }
+  .dv-th-ico { vertical-align: middle; opacity: 0.7; }
+  .dv-ar { color: var(--team-accent, #6ea4f0); font-size: 11px; margin-left: 4px; }
+}
+.dv-table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  font: 500 13px/1.3 sans-serif;
+  color: var(--ink-2);
+  white-space: nowrap;
+  vertical-align: top;
+  &.num { text-align: right; }
+  &.ico { text-align: center; }
+  // fecha+hora, doc+nombre, tipi+subtip: apilados verticalmente (ocupan una columna angosta, no dos anchos).
+  .dv-mono { display: block; font-family: 'Spline Sans Mono', ui-monospace, monospace; color: var(--ink); }
+  .dv-sub { display: block; color: var(--faint); font-size: 11px; }
+  // Texto largo (subtipificación, nombre) → una sola línea con puntos suspensivos; el título muestra el completo.
+  .dv-sub, .dv-ell { max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+.dv-table tbody tr:hover td { background: var(--card); }
+
+.dv-grp td {
+  background: var(--soft);
+  border-bottom: 1px solid var(--line-strong);
+  padding: 9px 14px;
+  position: sticky;
+  top: 35px;
+  z-index: 1;
+}
+.dv-grp__b { display: inline-flex; align-items: center; gap: 9px; font: 700 12px/1 sans-serif; color: var(--ink); }
+.dv-grp__dot { width: 8px; height: 8px; border-radius: 3px; background: var(--team-accent, #54cfcf); }
+.dv-grp__n {
+  font: 600 11px/1 'Spline Sans Mono', ui-monospace, monospace;
+  color: var(--muted);
+  background: var(--deep);
+  border: 1px solid var(--line);
+  padding: 3px 8px;
+  border-radius: 999px;
+  margin-left: 9px;
+}
+
+.dv-state { padding: 40px; text-align: center; color: var(--faint); font: 500 13px/1 sans-serif; }
+
+// ── footer ───────────────────────────────────────────────────────────────
+.dv-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 22px;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+  &__t { font: 500 12px/1 sans-serif; color: var(--muted); b { color: var(--ink); font-weight: 700; } }
+}
+.dv-pager {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  button {
+    background: var(--card);
+    border: 1px solid var(--line-strong);
+    color: var(--ink-2);
+    border-radius: 8px;
+    padding: 7px 11px;
+    font: 600 12px/1 sans-serif;
+    cursor: pointer;
+    &:disabled { opacity: 0.4; cursor: default; }
+    &:not(:disabled):hover { border-color: var(--team-accent, #6ea4f0); }
+  }
+}
+
+// ── comentario en icono ────────────────────────────────────────────────────
+.dv-cbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--team-accent, #6ea4f0);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  &:hover { background: var(--soft); border-color: var(--line-strong); color: var(--ink); }
+  &:focus-visible { outline: 2px solid color-mix(in srgb, var(--team-accent, #6ea4f0) 60%, transparent); outline-offset: 1px; }
+}
+.dv-cempty { color: var(--faint); }
+
+.dv-cpop {
+  position: fixed;
+  z-index: 1221;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: 0 22px 52px -18px rgba(0, 0, 0, 0.8);
+  padding: 13px 15px 15px;
+  animation: dv-pop 0.16s cubic-bezier(0.2, 0.7, 0.2, 1);
+  &__h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  &__t { font: 700 10px/1 sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+  &__who {
+    font: 600 11.5px/1.2 sans-serif;
+    color: var(--ink-2);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 190px;
+  }
+  &__b {
+    margin: 0;
+    font: 500 13px/1.5 sans-serif;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 240px;
+    overflow: auto;
+  }
+}

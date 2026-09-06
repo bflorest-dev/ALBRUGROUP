@@ -1,0 +1,210 @@
+@if (visible()) {
+  <div class="dv-scrim" (click)="cerrar()"></div>
+  <aside class="dv-drawer" [style.--team-accent]="accent" role="dialog" aria-modal="true">
+    <header class="dv-head">
+      <button type="button" class="dv-head__x" (click)="cerrar()" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+      <div class="dv-head__ey">Detalle · {{ subtitulo() }}</div>
+      <h2 class="dv-head__t">{{ titulo() }}</h2>
+      <div class="dv-head__ctx">
+        <span class="dv-chip"><span class="dv-chip__dot"></span>{{ proveedorNombre }}</span>
+        <span class="dv-chip">{{ periodoLabel }}</span>
+        <span class="dv-chip">{{ total() }} leads</span>
+      </div>
+    </header>
+
+    <div class="dv-tb">
+      <label class="dv-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+        </svg>
+        <input
+          type="text"
+          [ngModel]="search()"
+          (ngModelChange)="onSearch($event)"
+          placeholder="Buscar por documento, nombre o N° de lead…"
+        />
+      </label>
+
+      <div class="dv-org">
+        <button
+          type="button"
+          class="dv-org__btn"
+          [class.on]="organizeActive()"
+          (click)="toggleOrganize()"
+          aria-haspopup="true"
+          [attr.aria-expanded]="organizeOpen()"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M4 6h16M7 12h10M10 18h4" />
+          </svg>
+          Organizar
+          @if (organizeActive()) { <span class="dv-org__badge">{{ groupLabel() }}</span> }
+        </button>
+
+        @if (organizeOpen()) {
+          <div class="dv-pop__veil" (click)="toggleOrganize()"></div>
+          <div class="dv-pop dv-org__pop" role="dialog" aria-label="Organizar resultados">
+            <div class="dv-pop__f">
+              <span class="dv-pop__l">Agrupar por</span>
+              <select [ngModel]="groupBy()" (ngModelChange)="onGroup($event)">
+                @for (o of groupOpts; track o.value) {
+                  <option [value]="o.value">{{ o.label }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="dv-pop__div"></div>
+
+            <div class="dv-pop__f">
+              <span class="dv-pop__l">Ordenar por</span>
+              <select [ngModel]="sortBy()" (ngModelChange)="onSortField($event)">
+                <option value="">Predeterminado</option>
+                @for (o of sortOpts(); track o.value) {
+                  <option [value]="o.value">{{ o.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="dv-pop__f">
+              <span class="dv-pop__l">Mostrar primero</span>
+              <select [ngModel]="sortDir()" (ngModelChange)="onSortDir($event)">
+                <option value="desc">Más reciente / mayor</option>
+                <option value="asc">Más antiguo / menor</option>
+              </select>
+            </div>
+
+            <button type="button" class="dv-pop__clear" (click)="clearOrganize()" [disabled]="!organizeActive()">
+              Limpiar
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+    <p class="dv-hint">Solo aparecen las columnas con datos. También puedes ordenar tocando las cabeceras de fecha.</p>
+
+    <div class="dv-wrap">
+      <table class="dv-table">
+        <thead>
+          <tr>
+            @for (col of columns(); track col.key) {
+              <th
+                [class.num]="col.kind === 'money'"
+                [class.ico]="col.kind === 'comment'"
+                [class.sortable]="col.sortKey"
+                [class.active]="col.sortKey && sortBy() === col.sortKey"
+                (click)="sortByCol(col)"
+              >
+                @if (col.kind === 'comment') {
+                  <svg class="dv-th-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Comentario">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 9 9 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
+                  </svg>
+                } @else {
+                  {{ col.label }}
+                  @if (col.sortKey && sortBy() === col.sortKey) {
+                    <span class="dv-ar">{{ sortDir() === 'asc' ? '↑' : '↓' }}</span>
+                  }
+                }
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of viewRows(); track $index) {
+            @if (item.kind === 'group') {
+              <tr class="dv-grp">
+                <td [attr.colspan]="columns().length">
+                  <span class="dv-grp__b"><span class="dv-grp__dot"></span>{{ item.label }}</span>
+                  <span class="dv-grp__n">{{ item.count }}</span>
+                </td>
+              </tr>
+            } @else {
+              <tr>
+                @for (col of columns(); track col.key) {
+                  <td [class.num]="col.kind === 'money'" [class.ico]="col.kind === 'comment'">
+                    @switch (col.kind) {
+                      @case ('cliente') {
+                        <div class="dv-mono">{{ item.row.numeroDocumento || '—' }}</div>
+                        @if (item.row.nombreCliente) { <div class="dv-sub" [attr.title]="item.row.nombreCliente">{{ item.row.nombreCliente }}</div> }
+                      }
+                      @case ('tipi') {
+                        <div class="dv-ell">{{ item.row.tipificacion || '—' }}</div>
+                        @if (item.row.subtipificacion) { <div class="dv-sub" [attr.title]="item.row.subtipificacion">{{ item.row.subtipificacion }}</div> }
+                      }
+                      @case ('instant') {
+                        @if (col.key === 'fechaIngresoEtapa') {
+                          <span class="dv-mono">{{ instantDate(item.row.fechaIngresoEtapa) }}</span>
+                          <span class="dv-sub">{{ instantTime(item.row.fechaIngresoEtapa) }}</span>
+                        } @else {
+                          <span class="dv-mono">{{ instantDate(item.row.fechaUltimaGestion) }}</span>
+                          <span class="dv-sub">{{ instantTime(item.row.fechaUltimaGestion) }}</span>
+                        }
+                      }
+                      @case ('prog') {
+                        <span class="dv-mono">{{ localDate(item.row.fechaProgramacion) }}</span>
+                        <span class="dv-sub">{{ localTime(item.row.horaProgramada) }}</span>
+                      }
+                      @case ('localdate') {
+                        <span class="dv-mono">{{ localDate(col.key === 'fechaInstalacion' ? item.row.fechaInstalacion : item.row.fechaRechazo) }}</span>
+                      }
+                      @case ('money') {
+                        <span class="dv-mono">{{ item.row.cargoFijo != null ? ('S/ ' + item.row.cargoFijo) : '—' }}</span>
+                      }
+                      @case ('zona') { {{ zona(item.row) }} }
+                      @case ('asesor') {
+                        <span [attr.title]="item.row.asesorMerito">{{ aliasAsesor(item.row.asesorMerito) }}</span>
+                      }
+                      @case ('comment') {
+                        @if (item.row.ultimoComentario) {
+                          <button
+                            type="button"
+                            class="dv-cbtn"
+                            (click)="openComment($event, item.row)"
+                            aria-label="Ver comentario"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 9 9 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
+                            </svg>
+                          </button>
+                        } @else {
+                          <span class="dv-cempty">—</span>
+                        }
+                      }
+                      @default { {{ cellText(item.row, col.key) }} }
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+
+      @if (loading()) { <div class="dv-state">Cargando…</div> }
+      @else if (error()) { <div class="dv-state">No se pudo cargar el detalle.</div> }
+      @else if (!viewRows().length) { <div class="dv-state">Sin resultados.</div> }
+    </div>
+
+    <footer class="dv-foot">
+      <span class="dv-foot__t"><b>{{ total() }}</b> resultados</span>
+      <div class="dv-pager">
+        <button type="button" (click)="prev()" [disabled]="page() === 0">‹ Anterior</button>
+        <span class="dv-foot__t">{{ page() + 1 }} / {{ totalPages() }}</span>
+        <button type="button" (click)="next()" [disabled]="page() >= totalPages() - 1">Siguiente ›</button>
+      </div>
+    </footer>
+  </aside>
+
+  @if (comment(); as c) {
+    <div class="dv-pop__veil dv-pop__veil--top" (click)="closeComment()"></div>
+    <div class="dv-cpop" [style.top.px]="c.top" [style.left.px]="c.left" role="dialog" aria-label="Comentario">
+      <div class="dv-cpop__h">
+        <span class="dv-cpop__t">Comentario</span>
+        <span class="dv-cpop__who">{{ c.cliente }}</span>
+      </div>
+      <p class="dv-cpop__b">{{ c.text }}</p>
+    </div>
+  }
+}

@@ -101,6 +101,7 @@ public class DashboardVentaController {
             @RequestParam(required = false) EnfoqueVenta enfoque,
             @RequestParam(required = false) String zona,
             @RequestParam(required = false) String subtipificacion,
+            @RequestParam(required = false) String tipificacion,
             @RequestParam(required = false) Long idAsesor,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String groupBy,
@@ -109,7 +110,7 @@ public class DashboardVentaController {
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
         return ResponseEntity.ok(dashboardVentaService.obtenerDetalle(
-                idProveedor, metrica, enfoque, zona, subtipificacion, idAsesor, desde, hasta,
+                idProveedor, metrica, enfoque, zona, subtipificacion, tipificacion, idAsesor, desde, hasta,
                 search, groupBy, pageRequest));
     }
 }

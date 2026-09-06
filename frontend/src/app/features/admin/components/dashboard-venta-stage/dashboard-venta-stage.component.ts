@@ -17,15 +17,14 @@ import {
   DashboardVentaResponse,
   DashboardVentaService,
   DashboardVentaTramosResponse,
+  EnfoqueVenta,
   MetricaVentaDetalle,
-  ProveedorRef,
-  VentaAsesorDetalle,
-  VentaResumenDetalle
+  ProveedorRef
 } from '../../services/dashboard-venta.service';
 import {
-  DashboardVentaDetalleModalComponent,
-  DetalleColumna
-} from '../dashboard-venta-detalle-modal/dashboard-venta-detalle-modal.component';
+  DashboardVentaDetalleDrawerComponent,
+  DetalleDrawerReq
+} from '../dashboard-venta-detalle-drawer/dashboard-venta-detalle-drawer.component';
 
 type Vista = 'resumen' | 'asesores';
 type ZonaSel = 'total' | 'lima' | 'provincia';
@@ -44,6 +43,7 @@ interface ConversionVm {
   label: string;
   pct: number;
   frac: string;
+  metrica: MetricaVentaDetalle;
 }
 
 interface EstadoVm {
@@ -52,6 +52,7 @@ interface EstadoVm {
   cantidad: number;
   pct: number;
   width: number;
+  codigo: string | null;
 }
 
 interface ZonaRowVm {
@@ -60,10 +61,12 @@ interface ZonaRowVm {
   lima: number;
   provincia: number;
   total: number;
+  drill?: 'registradas' | 'instaladas';
 }
 
 interface ProgRowVm {
   label: string;
+  codigo: string | null;
   cantidad: number;
   width: number;
 }
@@ -131,7 +134,7 @@ const PROVEEDOR_ACCENT_DEFAULT = '#3a3f8f';
     SelectButtonModule,
     TooltipModule,
     PeriodSelectorComponent,
-    DashboardVentaDetalleModalComponent
+    DashboardVentaDetalleDrawerComponent
   ],
   templateUrl: './dashboard-venta-stage.component.html',
   styleUrl: './dashboard-venta-stage.component.scss',
@@ -205,13 +208,14 @@ export class DashboardVentaStageComponent implements OnInit {
     const c = this.data()?.contadores;
     if (!c) return [];
     // Las 6 conversiones usan el EMBUDO (mayor rango, anidado), NO los cards: así son monotónicas y ≤100%.
+    // Al hacer click, el drawer muestra el NUMERADOR (el subconjunto del embudo) de esa conversión.
     return [
-      { label: 'Preventas → Registradas', pct: this.pct(c.registradasFunnel, c.preventasCompletas), frac: `${c.registradasFunnel}/${c.preventasCompletas}` },
-      { label: 'Preventas → Instaladas', pct: this.pct(c.instaladasFunnel, c.preventasCompletas), frac: `${c.instaladasFunnel}/${c.preventasCompletas}` },
-      { label: 'Registradas → Instaladas', pct: this.pct(c.instaladasFunnel, c.registradasFunnel), frac: `${c.instaladasFunnel}/${c.registradasFunnel}` },
-      { label: 'Preventas → Rechazadas', pct: this.pct(c.rechazadasFunnel, c.preventasCompletas), frac: `${c.rechazadasFunnel}/${c.preventasCompletas}` },
-      { label: 'Programadas → Instaladas', pct: this.pct(c.programadasInstaladas, c.programadasTotal), frac: `${c.programadasInstaladas}/${c.programadasTotal}` },
-      { label: 'Programadas → Rechazadas', pct: this.pct(c.programadasRechazadas, c.programadasTotal), frac: `${c.programadasRechazadas}/${c.programadasTotal}` }
+      { label: 'Preventas → Registradas', pct: this.pct(c.registradasFunnel, c.preventasCompletas), frac: `${c.registradasFunnel}/${c.preventasCompletas}`, metrica: 'EMBUDO_REGISTRADAS' },
+      { label: 'Preventas → Instaladas', pct: this.pct(c.instaladasFunnel, c.preventasCompletas), frac: `${c.instaladasFunnel}/${c.preventasCompletas}`, metrica: 'EMBUDO_INSTALADAS' },
+      { label: 'Registradas → Instaladas', pct: this.pct(c.instaladasFunnel, c.registradasFunnel), frac: `${c.instaladasFunnel}/${c.registradasFunnel}`, metrica: 'EMBUDO_INSTALADAS' },
+      { label: 'Preventas → Rechazadas', pct: this.pct(c.rechazadasFunnel, c.preventasCompletas), frac: `${c.rechazadasFunnel}/${c.preventasCompletas}`, metrica: 'EMBUDO_RECHAZADAS' },
+      { label: 'Programadas → Instaladas', pct: this.pct(c.programadasInstaladas, c.programadasTotal), frac: `${c.programadasInstaladas}/${c.programadasTotal}`, metrica: 'EMBUDO_PROGRAMADAS_INSTALADAS' },
+      { label: 'Programadas → Rechazadas', pct: this.pct(c.programadasRechazadas, c.programadasTotal), frac: `${c.programadasRechazadas}/${c.programadasTotal}`, metrica: 'EMBUDO_PROGRAMADAS_RECHAZADAS' }
     ];
   });
 
@@ -240,13 +244,13 @@ export class DashboardVentaStageComponent implements OnInit {
       if (s.key === 'instaladas' && e && e.instaladasEnVentana < e.instaladas) {
         tip = `De estas ${e.instaladas}, ${e.instaladasEnVentana} se instalaron dentro de la fecha o rango elegido.`;
       }
-      return { key: s.key, value: e ? e[s.key] : 0, tip };
+      return { key: s.key, label: s.label, value: e ? e[s.key] : 0, tip };
     });
   });
 
   protected readonly generalCells = computed(() => {
     const e = this.data()?.enfoqueGeneral ?? null;
-    return this.cuadranteStates.map((s) => ({ key: s.key, value: e ? e[s.key] : 0 }));
+    return this.cuadranteStates.map((s) => ({ key: s.key, label: s.label, value: e ? e[s.key] : 0 }));
   });
 
   // ── Estado por tipificación ──────────────────────────────────────────────────────────────────
@@ -267,7 +271,8 @@ export class DashboardVentaStageComponent implements OnInit {
           cantidad: e.cantidad,
           pct: this.pct(e.cantidad, total),
           width: this.w(e.cantidad, max),
-          orden: meta.orden
+          orden: meta.orden,
+          codigo: e.codigo
         };
       })
       .sort((a, b) => a.orden - b.orden);
@@ -278,8 +283,8 @@ export class DashboardVentaStageComponent implements OnInit {
     const z = this.data()?.zonas;
     if (!z) return [];
     return [
-      { label: 'Registradas', lima: z.lima.registradas, provincia: z.provincia.registradas, total: z.lima.registradas + z.provincia.registradas },
-      { label: 'Instaladas', lima: z.lima.instaladas, provincia: z.provincia.instaladas, total: z.lima.instaladas + z.provincia.instaladas },
+      { label: 'Registradas', drill: 'registradas', lima: z.lima.registradas, provincia: z.provincia.registradas, total: z.lima.registradas + z.provincia.registradas },
+      { label: 'Instaladas', drill: 'instaladas', lima: z.lima.instaladas, provincia: z.provincia.instaladas, total: z.lima.instaladas + z.provincia.instaladas },
       { label: '…e instaladas en el mes', hint: 'registró e instaló en el período', lima: z.lima.registradasEInstaladas, provincia: z.provincia.registradasEInstaladas, total: z.lima.registradasEInstaladas + z.provincia.registradasEInstaladas }
     ];
   });
@@ -305,7 +310,7 @@ export class DashboardVentaStageComponent implements OnInit {
     const max = Math.max(1, ...p.porSubtipificacion.map((s) => s.cantidad));
     return [...p.porSubtipificacion]
       .sort((a, b) => b.cantidad - a.cantidad)
-      .map((s) => ({ label: this.subtipLabel(s.codigo), cantidad: s.cantidad, width: this.w(s.cantidad, max) }));
+      .map((s) => ({ label: this.subtipLabel(s.codigo), codigo: s.codigo, cantidad: s.cantidad, width: this.w(s.cantidad, max) }));
   });
 
   protected readonly programacionTotal = computed(() => this.data()?.programacionActual.total ?? 0);
@@ -355,136 +360,65 @@ export class DashboardVentaStageComponent implements OnInit {
     });
   });
 
-  // ── Modales de detalle (drill-down) ──────────────────────────────────────────────────────────
-  protected readonly colsAsesor: DetalleColumna[] = [
-    { header: 'Lead', kind: 'stack', primary: 'lead', secondary: 'usermeta', prefixSecondary: '@', emphasis: true },
-    { header: 'Documento', kind: 'text', field: 'numeroDocumento' },
-    { header: 'Nombre', kind: 'text', field: 'nombreCliente', truncate: true },
-    { header: 'Etapa', kind: 'text', field: 'etapa' },
-    { header: 'Tipificación', kind: 'stack', primary: 'tipificacion', secondary: 'subtipificacion', truncate: true },
-    { header: 'Coment.', kind: 'comment', field: 'ultimoComentario' }
-  ];
-  protected readonly colsResumen: DetalleColumna[] = [
-    { header: 'Fecha registro', kind: 'datetime', field: 'fechaRegistro' },
-    { header: 'Cliente', kind: 'stack', primary: 'numeroDocumento', secondary: 'lead', emphasis: true },
-    { header: 'Nombre', kind: 'text', field: 'nombreCliente', truncate: true },
-    { header: 'Tipificación', kind: 'stack', primary: 'tipificacion', secondary: 'subtipificacion', truncate: true },
-    { header: 'Última gestión', kind: 'datetime', field: 'fechaUltimaGestion' },
-    { header: 'Días', kind: 'dias', fromField: 'fechaRegistro', toField: 'fechaUltimaGestion' }
-  ];
-  private readonly metricaPorKey: Record<string, MetricaVentaDetalle> = {
-    preventas: 'PREVENTAS',
+  // ── Drawer de detalle (drill-down unificado) ─────────────────────────────────────────────────
+  protected readonly detalleReq = signal<DetalleDrawerReq | null>(null);
+
+  private readonly STATE_METRICA: Record<string, MetricaVentaDetalle> = {
+    sinIngresar: 'SIN_INGRESAR',
     registradas: 'REGISTRADAS',
     programadas: 'PROGRAMADAS',
+    subsanables: 'SUBSANABLES',
     rechazadas: 'RECHAZADAS',
     instaladas: 'INSTALADAS'
   };
-  private readonly metricaLabel: Record<MetricaVentaDetalle, string> = {
-    PREVENTAS: 'Preventas',
-    REGISTRADAS: 'Registradas',
-    PROGRAMADAS: 'Programadas',
-    RECHAZADAS: 'Rechazadas',
-    INSTALADAS: 'Instaladas'
-  };
 
-  // Asesor
-  protected readonly detAsesorVisible = signal(false);
-  protected readonly detAsesorLoading = signal(false);
-  protected readonly detAsesorError = signal(false);
-  protected readonly detAsesorCtx = signal('');
-  protected readonly detAsesorPage = signal(0);
-  protected readonly detAsesorTotal = signal(0);
-  private readonly detAsesorRows = signal<VentaAsesorDetalle[]>([]);
-  protected readonly detAsesorRowsView = computed(
-    () => this.detAsesorRows() as unknown as Record<string, unknown>[]
-  );
-  private detAsesorId: number | null = null;
-
-  // Resumen
-  protected readonly detResumenVisible = signal(false);
-  protected readonly detResumenLoading = signal(false);
-  protected readonly detResumenError = signal(false);
-  protected readonly detResumenTitle = signal('');
-  protected readonly detResumenCtx = signal('');
-  protected readonly detResumenPage = signal(0);
-  protected readonly detResumenTotal = signal(0);
-  private readonly detResumenRows = signal<VentaResumenDetalle[]>([]);
-  protected readonly detResumenRowsView = computed(
-    () => this.detResumenRows() as unknown as Record<string, unknown>[]
-  );
-  private detResumenMetrica: MetricaVentaDetalle | null = null;
-
-  protected readonly pageSize = 25;
-
-  protected abrirDetalleAsesor(a: RankingVm): void {
-    this.detAsesorId = a.idAsesor;
-    this.detAsesorCtx.set(`${this.proveedorNombre()} · ${a.nombre} · ${this.periodoLabel()}`);
-    this.detAsesorPage.set(0);
-    this.detAsesorVisible.set(true);
-    void this.cargarDetAsesor();
-  }
-
-  protected onDetAsesorPage(page: number): void {
-    this.detAsesorPage.set(page);
-    void this.cargarDetAsesor();
-  }
-
-  private async cargarDetAsesor(): Promise<void> {
+  private abrir(metrica: MetricaVentaDetalle, titulo: string, subtitulo: string, extra: Partial<DetalleDrawerReq> = {}): void {
     const idProveedor = this.proveedorId();
-    const idAsesor = this.detAsesorId;
-    if (idProveedor === null || idAsesor === null) return;
-    this.detAsesorLoading.set(true);
-    this.detAsesorError.set(false);
+    if (idProveedor === null) return;
     const range = resolveMetricsRange(this.periodo(), this.dia(), this.hasta());
-    try {
-      const resp = await firstValueFrom(
-        this.service.obtenerAsesoresDetalle(idProveedor, idAsesor, range.desde, range.hasta, this.detAsesorPage(), this.pageSize)
-      );
-      this.detAsesorRows.set(resp.content);
-      this.detAsesorTotal.set(resp.totalElements);
-    } catch {
-      this.detAsesorError.set(true);
-      this.detAsesorRows.set([]);
-    } finally {
-      this.detAsesorLoading.set(false);
-    }
+    this.detalleReq.set({ idProveedor, metrica, titulo, subtitulo, desde: range.desde, hasta: range.hasta, ...extra });
   }
 
-  protected abrirDetalleResumen(key: string): void {
-    const metrica = this.metricaPorKey[key];
+  protected abrirPreventas(): void {
+    this.abrir('PREVENTAS', 'Preventas', 'Preventas del período');
+  }
+  protected abrirEstado(key: string, enfoque: EnfoqueVenta, label: string): void {
+    const metrica = this.STATE_METRICA[key];
     if (!metrica) return;
-    this.detResumenMetrica = metrica;
-    this.detResumenTitle.set(this.metricaLabel[metrica]);
-    this.detResumenCtx.set(`${this.proveedorNombre()} · ${this.metricaLabel[metrica]} · ${this.periodoLabel()}`);
-    this.detResumenPage.set(0);
-    this.detResumenVisible.set(true);
-    void this.cargarDetResumen();
+    this.abrir(metrica, label, enfoque === 'DIA' ? 'Del día' : 'Gestión general', { enfoque });
   }
-
-  protected onDetResumenPage(page: number): void {
-    this.detResumenPage.set(page);
-    void this.cargarDetResumen();
+  protected abrirConversion(c: ConversionVm): void {
+    this.abrir(c.metrica, c.label, 'Conversión (embudo)');
   }
-
-  private async cargarDetResumen(): Promise<void> {
-    const idProveedor = this.proveedorId();
-    const metrica = this.detResumenMetrica;
-    if (idProveedor === null || metrica === null) return;
-    this.detResumenLoading.set(true);
-    this.detResumenError.set(false);
-    const range = resolveMetricsRange(this.periodo(), this.dia(), this.hasta());
-    try {
-      const resp = await firstValueFrom(
-        this.service.obtenerResumenDetalle(idProveedor, metrica, range.desde, range.hasta, this.detResumenPage(), this.pageSize)
-      );
-      this.detResumenRows.set(resp.content);
-      this.detResumenTotal.set(resp.totalElements);
-    } catch {
-      this.detResumenError.set(true);
-      this.detResumenRows.set([]);
-    } finally {
-      this.detResumenLoading.set(false);
-    }
+  protected abrirProgramacion(p: ProgRowVm): void {
+    this.abrir('PROGRAMACION_SUBTIP', p.label, 'Programados ahora', { subtipificacion: p.codigo ?? undefined });
+  }
+  // Distribución "Por tipificación": cohorte del período por su última cruda (null = sin ingresar).
+  protected abrirDistribucion(e: EstadoVm): void {
+    this.abrir('COHORTE_ULTIMA', e.label, 'Por tipificación', { tipificacion: e.codigo ?? undefined });
+  }
+  // Zonas "Registradas": ancla en última gestión del período (última == INGRESADO), acotado por zona.
+  protected abrirZonaRegistradas(zona: 'LIMA' | 'PROVINCIA' | 'SIN_UBIGEO', label: string): void {
+    this.abrir('ZONA_REGISTRADAS', 'Registradas', label, { zona });
+  }
+  // Zonas "Instaladas": instaladas del período por fechaInstalacion (enfoque GENERAL), acotado por zona.
+  protected abrirZonaInstaladas(zona: 'LIMA' | 'PROVINCIA', label: string): void {
+    this.abrir('INSTALADAS', 'Instaladas', label, { enfoque: 'GENERAL', zona });
+  }
+  // Despacha el drill de una celda (Lima/Provincia) según la fila de la tabla de territorio.
+  protected abrirZonaCelda(row: ZonaRowVm, zona: 'LIMA' | 'PROVINCIA'): void {
+    const label = zona === 'LIMA' ? 'Lima' : 'Provincia';
+    if (row.drill === 'registradas') this.abrirZonaRegistradas(zona, label);
+    else if (row.drill === 'instaladas') this.abrirZonaInstaladas(zona, label);
+  }
+  protected abrirTramos(): void {
+    this.abrir('TRAMOS', 'Con cita a futuro', 'Hoy · Mañana · Pasado');
+  }
+  protected abrirAsesor(a: RankingVm): void {
+    this.abrir('RANKING', a.nombre, 'Preventas del asesor', { idAsesor: a.idAsesor });
+  }
+  protected cerrarDetalle(): void {
+    this.detalleReq.set(null);
   }
 
   async ngOnInit(): Promise<void> {

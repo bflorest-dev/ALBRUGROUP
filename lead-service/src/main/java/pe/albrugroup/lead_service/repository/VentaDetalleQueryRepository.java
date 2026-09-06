@@ -50,14 +50,15 @@ public class VentaDetalleQueryRepository {
                 SELECT MAX(e2.id) FROM Evento e2
                 WHERE e2.idLead = l.id AND e2.etapa = :etapaVenta AND e2.fechaRechazo IS NOT NULL)
             LEFT JOIN Evento ultTip ON ultTip.id = (
-                SELECT MAX(e3.id) FROM Evento e3 WHERE e3.idLead = l.id AND e3.accion = :accionTip)
+                SELECT MAX(e3.id) FROM Evento e3
+                WHERE e3.idLead = l.id AND e3.accion = :accionTip AND e3.etapa = :etapaVenta)
             """;
 
     private static final String SELECT_ROW = """
             SELECT new pe.albrugroup.lead_service.entity.response.VentaDetalleResponse(
                 l.id, l.lead, l.usermeta,
                 dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
-                l.etapa, l.codigoTipificacion, l.codigoSubtipificacion,
+                l.etapa, rv.ultimaCodigoTipificacion, rv.ultimaCodigoSubtipificacion,
                 rv.fechaIngresoEtapa, rv.fechaUltimaGestion,
                 prog.fechaProgramacion, prog.horaProgramada,
                 c.fechaInstalacion, rech.fechaRechazo,
@@ -78,12 +79,12 @@ public class VentaDetalleQueryRepository {
             Map.entry("fechaRechazo", "rech.fechaRechazo"),
             Map.entry("nombreCliente", "dp.nombreTitularServicio"),
             Map.entry("numeroDocumento", "dp.numeroDocumentoTitularServicio"),
-            Map.entry("tipificacion", "l.codigoTipificacion"),
+            Map.entry("tipificacion", "rv.ultimaCodigoTipificacion"),
             Map.entry("lead", "l.lead"));
 
     private static final Map<String, String> GROUP = Map.of(
-            "tipificacion", "l.codigoTipificacion",
-            "subtipificacion", "l.codigoSubtipificacion",
+            "tipificacion", "rv.ultimaCodigoTipificacion",
+            "subtipificacion", "rv.ultimaCodigoSubtipificacion",
             "etapa", "l.etapa",
             "asesorMerito", "rp.nombreAsesorMerito",
             "fechaInstalacion", "c.fechaInstalacion",
