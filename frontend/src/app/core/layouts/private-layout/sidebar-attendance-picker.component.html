@@ -41,74 +41,91 @@
   }
 
   @if (isOpen() && !disabled()) {
-    <div [id]="menuId" class="sidebar-attendance__menu">
-      <header class="sidebar-attendance__menu-header">
-        <span>Cambiar estado</span>
-        <strong>{{ statusLabel() }}</strong>
-      </header>
+    <div
+      [id]="menuId"
+      class="sidebar-attendance__menu"
+      [class.is-confirming]="pendingConfirmation() !== null"
+    >
+      @if (pendingConfirmation(); as action) {
+        <div
+          class="sidebar-attendance__confirm-stage"
+          role="alertdialog"
+          aria-modal="true"
+          [attr.aria-labelledby]="menuId + '-confirm-title'"
+          [attr.aria-describedby]="menuId + '-confirm-description'"
+        >
+          <header class="sidebar-attendance__confirm-header">
+            <button type="button" class="sidebar-attendance__confirm-back" (click)="cancelPendingAction()">
+              <i class="ti ti-arrow-left" aria-hidden="true"></i>
+              Volver
+            </button>
+            <strong>OFFLINE</strong>
+          </header>
 
-      @if (guidedActionId()) {
-        <div class="sidebar-attendance__guidance" role="alert" aria-live="assertive">
-          <i class="ti ti-clock-exclamation" aria-hidden="true"></i>
-          <span>
-            <strong>Tu jornada ya terminó</strong>
-            <small>Marca OFFLINE antes de cerrar sesión.</small>
-          </span>
-          <button type="button" [disabled]="isLoading()" (click)="guidanceCancelled.emit()">
-            Seguir trabajando
-          </button>
-        </div>
-      }
+          <div class="sidebar-attendance__confirm-copy">
+            <span
+              class="sidebar-attendance__option-dot"
+              [style.background]="actionColor(action)"
+              aria-hidden="true"
+            ></span>
+            <span>
+              <strong [id]="menuId + '-confirm-title'">¿Confirmar fin de jornada?</strong>
+              <small [id]="menuId + '-confirm-description'">
+                Tu jornada quedará cerrada y no podrás volver a ONLINE hoy.
+              </small>
+            </span>
+          </div>
 
-      @if (tramos().length > 1) {
-        <div class="sidebar-attendance__schedule">
-          <span>Jornada de hoy</span>
-          <div>
-            @for (tramo of tramos(); track tramo.rango) {
-              <span class="sidebar-attendance__shift" [class.is-current]="tramo.vigente">
-                <span [style.background]="tramoColor(tramo.tipo)" aria-hidden="true"></span>
-                {{ tramo.rango }}
-              </span>
-            }
+          <div class="sidebar-attendance__confirm-actions">
+            <button type="button" class="sidebar-attendance__confirm-cancel" (click)="cancelPendingAction()">
+              Cancelar
+            </button>
+            <button type="button" class="sidebar-attendance__confirm-submit" (click)="confirmPendingAction()">
+              <i class="ti ti-logout-2" aria-hidden="true"></i>
+              Confirmar salida
+            </button>
           </div>
         </div>
-      }
+      } @else {
+        <header class="sidebar-attendance__menu-header">
+          <span>Cambiar estado</span>
+          <strong>{{ statusLabel() }}</strong>
+        </header>
 
-      <div class="sidebar-attendance__options">
-        @for (action of actions(); track action.key) {
-          @if (pendingConfirmation()?.key === action.key) {
-            <div
-              class="sidebar-attendance__inline-confirm"
-              role="alert"
-              [attr.aria-labelledby]="menuId + '-confirm-title'"
-            >
-              <div class="sidebar-attendance__inline-confirm-copy">
-                <span
-                  class="sidebar-attendance__option-dot"
-                  [style.background]="actionColor(action)"
-                  aria-hidden="true"
-                ></span>
-                <span>
-                  <strong [id]="menuId + '-confirm-title'">¿Confirmar fin de jornada?</strong>
-                  <small>Tu jornada quedará cerrada y no podrás volver a ONLINE hoy.</small>
+        @if (guidedActionId()) {
+          <div class="sidebar-attendance__guidance" role="alert" aria-live="assertive">
+            <i class="ti ti-clock-exclamation" aria-hidden="true"></i>
+            <span>
+              <strong>Tu jornada ya terminó</strong>
+              <small>Marca OFFLINE antes de cerrar sesión.</small>
+            </span>
+            <button type="button" [disabled]="isLoading()" (click)="guidanceCancelled.emit()">
+              Seguir trabajando
+            </button>
+          </div>
+        }
+
+        @if (tramos().length > 1) {
+          <div class="sidebar-attendance__schedule">
+            <span>Jornada de hoy</span>
+            <div>
+              @for (tramo of tramos(); track tramo.rango) {
+                <span class="sidebar-attendance__shift" [class.is-current]="tramo.vigente">
+                  <span [style.background]="tramoColor(tramo.tipo)" aria-hidden="true"></span>
+                  {{ tramo.rango }}
                 </span>
-              </div>
-              <div class="sidebar-attendance__inline-confirm-actions">
-                <button type="button" class="sidebar-attendance__confirm-cancel" (click)="cancelPendingAction()">
-                  Cancelar
-                </button>
-                <button type="button" class="sidebar-attendance__confirm-submit" (click)="confirmPendingAction()">
-                  <i class="ti ti-logout-2" aria-hidden="true"></i>
-                  Confirmar salida
-                </button>
-              </div>
+              }
             </div>
-          } @else {
+          </div>
+        }
+
+        <div class="sidebar-attendance__options">
+          @for (action of actions(); track action.key) {
             <button
               type="button"
               class="sidebar-attendance__option"
               [class.is-guided]="action.actionId === guidedActionId()"
-              [disabled]="pendingConfirmation() !== null || !action.enabled || !action.actionId"
+              [disabled]="!action.enabled || !action.actionId"
               [attr.data-action-key]="action.key"
               [attr.title]="action.disabledReason || null"
               (click)="selectAction(action)"
@@ -126,11 +143,11 @@
                 <i class="ti ti-lock" aria-hidden="true"></i>
               }
             </button>
+          } @empty {
+            <p class="sidebar-attendance__empty">{{ hint() || 'No hay cambios disponibles en este momento.' }}</p>
           }
-        } @empty {
-          <p class="sidebar-attendance__empty">{{ hint() || 'No hay cambios disponibles en este momento.' }}</p>
-        }
-      </div>
+        </div>
+      }
     </div>
   }
 

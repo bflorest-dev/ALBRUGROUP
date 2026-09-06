@@ -68,16 +68,14 @@ describe('SidebarAttendancePickerComponent', () => {
 
     expect(emitted).toEqual([]);
     expect(fixture.componentInstance['pendingConfirmation']()).toEqual(actions[1]);
-    expect(fixture.nativeElement.querySelector('.sidebar-attendance__inline-confirm')).toBeTruthy();
-    expect(
-      (fixture.nativeElement.querySelector('[data-action-key="lunch"]') as HTMLButtonElement).disabled
-    ).toBe(true);
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__confirm-stage')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__options')).toBeNull();
 
     fixture.componentInstance['confirmPendingAction']();
     expect(emitted).toEqual(['REGISTRAR_SALIDA']);
   });
 
-  it('cancela la confirmación inline con Escape sin cerrar el selector', () => {
+  it('cancela la confirmación con Escape sin cerrar el selector', () => {
     const fixture = createFixture();
     fixture.componentInstance.open();
     fixture.detectChanges();
@@ -89,7 +87,7 @@ describe('SidebarAttendancePickerComponent', () => {
 
     expect(fixture.componentInstance['pendingConfirmation']()).toBeNull();
     expect(fixture.nativeElement.querySelector('.sidebar-attendance__menu')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.sidebar-attendance__inline-confirm')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__confirm-stage')).toBeNull();
   });
 
   it('muestra el cronómetro activo y conserva bloqueadas las acciones no disponibles', () => {
@@ -120,5 +118,25 @@ describe('SidebarAttendancePickerComponent', () => {
     expect(guided.textContent).toContain('Marcar salida');
     (fixture.nativeElement.querySelector('.sidebar-attendance__guidance button') as HTMLButtonElement).click();
     expect(cancelled).toEqual([true]);
+  });
+
+  it('oculta la guía mientras confirma OFFLINE y la recupera al cancelar', () => {
+    const fixture = createFixture();
+    fixture.componentRef.setInput('guidedActionId', 'REGISTRAR_SALIDA');
+    fixture.componentInstance.open();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__guidance')).toBeTruthy();
+    (fixture.nativeElement.querySelector('[data-action-key="offline"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__guidance')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__confirm-stage')).toBeTruthy();
+
+    (fixture.nativeElement.querySelector('.sidebar-attendance__confirm-cancel') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__confirm-stage')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.sidebar-attendance__guidance')).toBeTruthy();
   });
 });
