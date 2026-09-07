@@ -75,11 +75,10 @@ export class PeriodSelectorComponent implements OnDestroy {
   private readonly hoy = this.formatLocal(new Date());
 
   protected readonly diaLabel = computed(() => {
-    // Con "Mensual" activo, el primer segmento muestra el mes en curso (informativo, como el rango que
-    // deja "Semanal"). Clic en él vuelve a Hoy (emitirHoy). El período 'mes' siempre es el mes actual:
-    // elegir un mes concreto en el calendario se emite como rango 'dia', no como 'mes'.
+    // Con "Mensual" activo (período 'mes' = mes en curso), el primer segmento muestra el mes en curso,
+    // informativo como el rango que deja "Semanal". Clic en él vuelve a Hoy (emitirHoy).
     if (this.periodo() === 'mes') {
-      return MESES_LARGO[new Date().getMonth()];
+      return this.mesLabel(this.hoy);
     }
     if (this.periodo() !== 'dia') {
       return 'Hoy';
@@ -92,8 +91,33 @@ export class PeriodSelectorComponent implements OnDestroy {
     if (!hasta || hasta === desde) {
       return this.fechaCorta(desde);
     }
+    // Elegir un mes en el calendario se emite como rango 'dia' [1..fin de mes]; si el rango es un mes
+    // completo se muestra su nombre (cualquier mes, no solo el actual), no las dos fechas.
+    if (this.esMesCompleto(desde, hasta)) {
+      return this.mesLabel(desde);
+    }
     return `${this.fechaCorta(desde)} – ${this.fechaCorta(hasta)}`;
   });
+
+  /** Etiqueta de un mes a partir de un ISO `YYYY-MM-DD`: nombre, más el año si no es el año en curso. */
+  private mesLabel(iso: string): string {
+    const [anio, mes] = iso.split('-').map(Number);
+    const nombre = MESES_LARGO[mes - 1];
+    return anio === new Date().getFullYear() ? nombre : `${nombre} ${anio}`;
+  }
+
+  /** `true` si `[desde, hasta]` cubre exactamente un mes calendario (día 1 al último, mismo mes/año). */
+  private esMesCompleto(desde: string, hasta: string | null): boolean {
+    if (!hasta) {
+      return false;
+    }
+    const [ay, am, ad] = desde.split('-').map(Number);
+    const [by, bm, bd] = hasta.split('-').map(Number);
+    if (ay !== by || am !== bm || ad !== 1) {
+      return false;
+    }
+    return bd === new Date(by, bm, 0).getDate(); // new Date(y, bm, 0) = último día del mes 1-based bm
+  }
 
   // `computed` memoiza: la referencia se mantiene estable entre ciclos de deteccion, requisito de
   // PrimeNG + OnPush (ver primeng-loop-fix.md). Solo se renderizan los segmentos de `periodos`, en su orden.
