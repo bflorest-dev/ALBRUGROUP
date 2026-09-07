@@ -9,6 +9,7 @@ import { SessionService } from './session.service';
 const PROVIDER_SCOPED_ROLES = new Set([
   'ASESOR_BACKOFFICE',
   'SUPERVISOR_BACKOFFICE',
+  'MONITOR',
   'ASESOR_POSTVENTA',
   'SUPERVISOR_POSTVENTA'
 ]);

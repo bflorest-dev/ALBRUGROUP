@@ -432,7 +432,11 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ];
     }
 
-    if (session.primaryRole === 'ASESOR_BACKOFFICE' || session.primaryRole === 'SUPERVISOR_BACKOFFICE') {
+    if (
+      session.primaryRole === 'ASESOR_BACKOFFICE'
+      || session.primaryRole === 'SUPERVISOR_BACKOFFICE'
+      || session.primaryRole === 'MONITOR'
+    ) {
       return [
         { domainId: 'workspace', label: 'Plataforma', route: '/app/backoffice/plataforma', icon: 'pi pi-desktop', exact: true },
         { domainId: 'workspace', label: 'Programados', route: '/app/backoffice/programados', icon: 'pi pi-calendar-clock', exact: true },

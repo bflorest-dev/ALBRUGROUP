@@ -20,4 +20,8 @@ describe('sidebar V2 role configuration', () => {
     expect(sidebarV2EnabledForRole('ROL_NO_CONFIGURADO')).toBe(false);
     expect(sidebarDomainsForRole('ROL_NO_CONFIGURADO')).toEqual([]);
   });
+
+  it('trata MONITOR con el mismo sidebar de backoffice', () => {
+    expect(sidebarDomainsForRole('MONITOR')).toEqual(sidebarDomainsForRole('ASESOR_BACKOFFICE'));
+  });
 });

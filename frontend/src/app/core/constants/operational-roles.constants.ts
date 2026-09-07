@@ -10,5 +10,6 @@ export const OPERATIONAL_ROLES: ReadonlySet<string> = new Set([
 ]);
 
 export const ALWAYS_OPERATIONAL_ROLES: ReadonlySet<string> = new Set([
-  'ADMINISTRADOR'
+  'ADMINISTRADOR',
+  'MONITOR'
 ]);

@@ -13,7 +13,7 @@ import java.util.Set;
  * Aplica el filtro por equipo a los catálogos (campañas/proveedores) reutilizando los listados
  * cacheados (que se devuelven completos) y filtrándolos en memoria por los proveedores visibles
  * del usuario. Mantiene la cache intacta (clave por `activo`) sin multiplicarla por equipo.
- * Visibilidad global (ADMIN/COMMUNITY/MONITOR) → sin filtro (proveedorIdsVisibles == null).
+ * Visibilidad global (ADMIN/COMMUNITY) → sin filtro (proveedorIdsVisibles == null).
  */
 @Service
 @RequiredArgsConstructor

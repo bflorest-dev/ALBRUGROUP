@@ -157,6 +157,7 @@ const ROLE_CONFIGS: Record<string, SidebarV2RoleConfig> = {
   SUPERVISOR_VENTAS: salesSupervisorConfig,
   ASESOR_BACKOFFICE: backofficeConfig,
   SUPERVISOR_BACKOFFICE: backofficeConfig,
+  MONITOR: backofficeConfig,
   ASESOR_POSTVENTA: postventaConfig,
   SUPERVISOR_POSTVENTA: postventaConfig,
   COMMUNITY: {
@@ -172,16 +173,6 @@ const ROLE_CONFIGS: Record<string, SidebarV2RoleConfig> = {
         label: 'Resultados',
         description: 'Finanzas, métricas e indicadores',
         icon: 'ti ti-chart-histogram'
-      }
-    ]
-  },
-  MONITOR: {
-    domains: [
-      {
-        id: 'monitoring',
-        label: 'Monitoreo',
-        description: 'Vista operativa y seguimiento general',
-        icon: 'ti ti-radar'
       }
     ]
   }

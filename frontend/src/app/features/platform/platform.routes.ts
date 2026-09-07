@@ -445,7 +445,7 @@ export const PLATFORM_ROUTES: Routes = [
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
       section: 'plataforma'
     }
   },
@@ -459,7 +459,7 @@ export const PLATFORM_ROUTES: Routes = [
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
       section: 'programados'
     }
   },
@@ -468,7 +468,7 @@ export const PLATFORM_ROUTES: Routes = [
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
       section: 'subsanables'
     }
   },
@@ -477,7 +477,7 @@ export const PLATFORM_ROUTES: Routes = [
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
       section: 'rechazados'
     }
   },
@@ -486,7 +486,7 @@ export const PLATFORM_ROUTES: Routes = [
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
       section: 'instalados'
     }
   },
@@ -495,7 +495,7 @@ export const PLATFORM_ROUTES: Routes = [
     component: DashboardVentaStageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE']
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR']
     }
   },
   {
@@ -572,12 +572,8 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'monitor',
-    component: RolePlatformPageComponent,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['MONITOR'],
-      title: 'MONITOR Platform'
-    }
+    pathMatch: 'full',
+    redirectTo: 'backoffice/plataforma'
   },
   {
     path: 'supervisor-ventas',

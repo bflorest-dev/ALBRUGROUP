@@ -468,31 +468,6 @@ public class DataLoader {
         );
         saveRol("SUPERVISOR_VENTAS", "Ventas - Supervision de leads asignados", supervisorVentasPermisos);
 
-        // TODO
-
-        // MONITOR
-        Set<Permiso> monitorPermisos = Set.of(
-                getPermiso("READ_EVENTOS"),
-                getPermiso("READ_EVENTOS_LEADS"),
-                getPermiso("READ_EVENTOS_RECRUITMENT"),
-                getPermiso("READ_EMPLEADOS"),
-                getPermiso("READ_CONTRATOS"),
-                getPermiso("READ_POSTULACIONES"),
-                getPermiso("READ_POSTULACIONES_RECLUTAMIENTO"),
-                getPermiso("READ_POSTULACIONES_CAPACITACION"),
-                getPermiso("READ_OFERTAS_LABORALES"),
-                getPermiso("READ_GRUPOS_CAPACITACION"),
-                getPermiso("READ_HORARIOS"),
-                getPermiso("READ_ASISTENCIAS_MONITOR"),
-                getPermiso("READ_ASISTENCIAS_SELF"),
-                getPermiso("READ_ASISTENCIAS"),
-                getPermiso("READ_ASISTENCIAS_CUMPLIMIENTO"),
-                getPermiso("VER_TODOS_LOS_EQUIPOS")
-
-
-        );
-        saveRol("MONITOR", "Monitoreo - Consulta transversal de la operacion", monitorPermisos);
-
         // BACKOFFICE
         Set<Permiso> backofficePermisos = Set.of(
                 getPermiso("READ_LEADS_VENTA"),
@@ -514,6 +489,7 @@ public class DataLoader {
         );
         saveRol("ASESOR_BACKOFFICE", "Backoffice - Gestion operativa comercial", backofficePermisos);
         saveRol("SUPERVISOR_BACKOFFICE", "Backoffice - Supervision operativa comercial", backofficePermisos);
+        saveRol("MONITOR", "Backoffice - Monitor siempre operativo por proveedor", backofficePermisos);
 
         // ASESOR POSTVENTA
         Set<Permiso> postventaPermisos = Set.of(

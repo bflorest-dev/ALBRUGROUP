@@ -102,7 +102,7 @@ export class DailyLeadsFacade {
    * Roles con visibilidad global de equipos (backend: VER_TODOS_LOS_EQUIPOS) que llegan a esta
    * vista. Solo ellos agrupan por equipo; el GTR está acotado por backend a su único equipo.
    */
-  private static readonly ROLES_VISIBILIDAD_GLOBAL = new Set(['ADMINISTRADOR', 'COMMUNITY', 'MONITOR']);
+  private static readonly ROLES_VISIBILIDAD_GLOBAL = new Set(['ADMINISTRADOR', 'COMMUNITY']);
   readonly canGroupByTeam = computed(() => {
     const role = this.session.primaryRole();
     return !!role && DailyLeadsFacade.ROLES_VISIBILIDAD_GLOBAL.has(role);

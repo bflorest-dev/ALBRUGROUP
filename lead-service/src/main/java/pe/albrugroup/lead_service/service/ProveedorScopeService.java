@@ -32,7 +32,7 @@ public class ProveedorScopeService {
     public static final String HEADER_PROVEEDOR = "X-Proveedor-Id";
 
     private static final String ADMINISTRADOR = "ADMINISTRADOR";
-    private static final Set<String> ROLES_BACKOFFICE = Set.of("ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE");
+    private static final Set<String> ROLES_BACKOFFICE = Set.of("ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE", "MONITOR");
     private static final Set<String> ROLES_POSTVENTA = Set.of("ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA");
 
     private final UsuarioProveedorRepository repository;

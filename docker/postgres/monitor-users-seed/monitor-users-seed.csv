@@ -1,0 +1,2 @@
+empleado_id,usuario_id,contrato_id,horario_id,nombres,apellidos,puesto_trabajo,numero_documento,correo_personal,username,celular_personal,fecha_nacimiento,direccion,cuenta_bancaria,cuenta_interbancaria,hora_entrada,hora_salida,inicio_almuerzo,fin_almuerzo
+950001,951001,952001,953001,Monitor,Backoffice,MONITOR,79000001,monitor.backoffice01@gmail.com,MONITOR01@albru.monitor.pe,959000001,2000-01-01,Direccion Monitor 01,12345950001,00212345950000000001,06:00,22:00,,

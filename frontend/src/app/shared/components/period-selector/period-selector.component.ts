@@ -8,6 +8,10 @@ import { MetricsRango } from '../../utils/metrics-period';
 export type MetricsPeriodo = 'dia' | 'semana' | 'mes';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'set', 'oct', 'nov', 'dic'];
+const MESES_LARGO = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Setiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
 
 /** Margen antes de cerrar al salir el mouse: evita cierres bruscos al cruzar hacia el calendario. */
 const CIERRE_MS = 320;
@@ -71,6 +75,12 @@ export class PeriodSelectorComponent implements OnDestroy {
   private readonly hoy = this.formatLocal(new Date());
 
   protected readonly diaLabel = computed(() => {
+    // Con "Mensual" activo, el primer segmento muestra el mes en curso (informativo, como el rango que
+    // deja "Semanal"). Clic en él vuelve a Hoy (emitirHoy). El período 'mes' siempre es el mes actual:
+    // elegir un mes concreto en el calendario se emite como rango 'dia', no como 'mes'.
+    if (this.periodo() === 'mes') {
+      return MESES_LARGO[new Date().getMonth()];
+    }
     if (this.periodo() !== 'dia') {
       return 'Hoy';
     }

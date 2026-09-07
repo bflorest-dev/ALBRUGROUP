@@ -19,7 +19,7 @@ interface AmbitoOption {
 }
 
 const ROLES_POR_AMBITO: Record<AmbitoProveedor, ReadonlySet<string>> = {
-  BACKOFFICE: new Set(['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE']),
+  BACKOFFICE: new Set(['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR']),
   POSTVENTA: new Set(['ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA'])
 };
 

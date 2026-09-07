@@ -13,5 +13,5 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
   ASESOR_POSTVENTA: '/app/postventa',
   SUPERVISOR_POSTVENTA: '/app/postventa',
   COMMUNITY: '/app/community',
-  MONITOR: '/app/monitor'
+  MONITOR: '/app/backoffice/plataforma'
 };

@@ -40,7 +40,7 @@ public class EquipoService implements IEquipo {
     private final SessionInvalidationService sessionInvalidationService;
 
     // Roles operativos: su acceso a datos se particiona por equipo. Por defecto pertenecen a
-    // exactamente un equipo (salvo los listados en ROLES_MULTIEQUIPO). ADMIN/COMMUNITY/MONITOR no
+    // exactamente un equipo (salvo los listados en ROLES_MULTIEQUIPO). ADMIN/COMMUNITY no
     // son operativos (acceso global por permiso) y van sin equipo. BACKOFFICE y POSTVENTA ya NO se
     // particionan por equipo sino por proveedor (ver ROLES_GESTIONADOS_POR_PROVEEDOR y lead-service).
     private static final Set<String> ROLES_OPERATIVOS = Set.of(
@@ -62,6 +62,7 @@ public class EquipoService implements IEquipo {
     // fallback por equipo de lead-service sigue protegiendo a quien aún no tiene proveedor asignado).
     private static final Set<String> ROLES_GESTIONADOS_POR_PROVEEDOR = Set.of(
             "ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE",
+            "MONITOR",
             "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA"
     );
 
