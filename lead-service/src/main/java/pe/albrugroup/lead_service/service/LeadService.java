@@ -5296,6 +5296,11 @@ public class LeadService {
         };
     }
 
+    /** Reutiliza exactamente las reglas de captura completa en el flujo administrativo historico. */
+    public void validarPreventaCompletaParaSubsanacion(Lead lead) {
+        validarPreventaCompleta(lead);
+    }
+
     private void validarPreventaCompleta(Lead lead) {
         DatosPreventa datosPreventa = lead.getDatosPreventa();
         Direccion direccion = lead.getDireccion();

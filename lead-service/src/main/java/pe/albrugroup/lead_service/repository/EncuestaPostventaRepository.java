@@ -20,6 +20,7 @@ public interface EncuestaPostventaRepository extends JpaRepository<EncuestaPostv
 
     Page<EncuestaPostventa> findByLeadIdOrderByCreatedAtDesc(Long idLead, Pageable pageable);
     List<EncuestaPostventa> findByLeadId(Long idLead);
+    long countByLeadId(Long idLead);
 
     Optional<EncuestaPostventa> findFirstByLeadIdAndTipoEncuestaAndEstadoOrderByFechaProgramadaAscCreatedAtAscIdAsc(
             Long idLead,

@@ -2,7 +2,6 @@ package pe.albrugroup.lead_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
@@ -31,8 +30,15 @@ public class Contacto {
     // Último nombre conocido (cache para bandejas/lupa sin cargar la oportunidad).
     private String nombreConocido;
 
-    @CreationTimestamp @Column(updatable = false)
+    @Column
     private Instant createdAt;
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @PrePersist
+    void assignCreatedAt() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+    }
 }

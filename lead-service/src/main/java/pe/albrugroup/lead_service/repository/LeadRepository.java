@@ -170,6 +170,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Lead> findByIdAndEtapa(Long id, Etapa etapa);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT l FROM Lead l WHERE l.id = :id")
+    Optional<Lead> findByIdForSubsanacion(@Param("id") Long id);
+
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(
                 l.id,

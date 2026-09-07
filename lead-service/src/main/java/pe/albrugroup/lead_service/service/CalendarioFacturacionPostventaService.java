@@ -20,6 +20,7 @@ import pe.albrugroup.lead_service.service.facturacion.CalculadoraFacturacionPost
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -32,20 +33,30 @@ public class CalendarioFacturacionPostventaService {
 
     @Transactional
     public void inicializarGestionPostventa(Lead lead, LocalDate fechaInstalacion) {
+        inicializarGestionPostventa(lead, fechaInstalacion, null);
+    }
+
+    /**
+     * Variante historica usada por subsanacion. Mantiene las reglas de calculo normales, pero permite
+     * fijar el timestamp operativo de los artefactos iniciales sin alterar la fecha real de auditoria.
+     */
+    @Transactional
+    public void inicializarGestionPostventa(Lead lead, LocalDate fechaInstalacion, Instant createdAt) {
         if (calendarioRepository.findByLeadId(lead.getId()).isPresent()) {
             return;
         }
 
         CalculadoraFacturacionPostventa calculadora = calculadoraResolver.resolver(lead.getNombreProveedorSnapshot());
-        CalendarioFacturacionPostventa calendario = calendarioRepository.save(
-                calculadora.crearCalendario(lead, fechaInstalacion)
-        );
+        CalendarioFacturacionPostventa calendarioNuevo = calculadora.crearCalendario(lead, fechaInstalacion);
+        calendarioNuevo.setCreatedAt(createdAt);
+        CalendarioFacturacionPostventa calendario = calendarioRepository.save(calendarioNuevo);
 
         PeriodoFacturacionPostventa primerPeriodo = calculadora.crearPeriodo(calendario, 1);
         primerPeriodo.setEstado(EstadoPeriodoFacturacionPostventa.ABIERTO);
+        primerPeriodo.setCreatedAt(createdAt);
         periodoRepository.save(primerPeriodo);
 
-        encuestaRepository.save(crearEncuestaInicial(lead));
+        encuestaRepository.save(crearEncuestaInicial(lead, createdAt));
     }
 
     @Transactional
@@ -79,7 +90,13 @@ public class CalendarioFacturacionPostventaService {
     }
 
     private EncuestaPostventa crearEncuestaInicial(Lead lead) {
-        LocalDateTime ahora = LocalDateTime.now(OperationalDateTime.ZONE);
+        return crearEncuestaInicial(lead, null);
+    }
+
+    private EncuestaPostventa crearEncuestaInicial(Lead lead, Instant createdAt) {
+        LocalDateTime ahora = createdAt == null
+                ? LocalDateTime.now(OperationalDateTime.ZONE)
+                : LocalDateTime.ofInstant(createdAt, OperationalDateTime.ZONE);
         return EncuestaPostventa.builder()
                 .lead(lead)
                 .tipoEncuesta(TipoEncuestaPostventa.SATISFACCION_ASESOR)
@@ -88,6 +105,7 @@ public class CalendarioFacturacionPostventaService {
                 .fechaProgramada(ahora)
                 .fechaLimite(ahora.plusHours(48))
                 .numeroEncuesta(1)
+                .createdAt(createdAt)
                 .build();
     }
 }

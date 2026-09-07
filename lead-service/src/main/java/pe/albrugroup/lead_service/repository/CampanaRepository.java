@@ -21,6 +21,10 @@ public interface CampanaRepository extends JpaRepository<Campana, Long> {
     @Query("SELECT c FROM Campana c WHERE c.id = :id AND c.activo = true")
     Optional<Campana> findActiveByIdForUpdate(@Param("id") Long id);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Campana c WHERE c.id = :id")
+    Optional<Campana> findByIdForSubsanacion(@Param("id") Long id);
+
     @Query("SELECT c FROM Campana c WHERE (:activo IS NULL OR c.activo = :activo)")
     List<Campana> listarPorActivo(@Param("activo") Boolean activo);
 
@@ -34,4 +38,14 @@ public interface CampanaRepository extends JpaRepository<Campana, Long> {
             ORDER BY c.nombre ASC
             """)
     List<Campana> listarActivasPorEquipo(@Param("idEquipo") Long idEquipo);
+
+    @Query("""
+            SELECT c
+            FROM Campana c
+            JOIN c.proveedor p
+            JOIN EquipoProveedor ep ON ep.proveedor = p
+            WHERE ep.idEquipo = :idEquipo
+            ORDER BY c.nombre ASC
+            """)
+    List<Campana> listarTodasPorEquipo(@Param("idEquipo") Long idEquipo);
 }

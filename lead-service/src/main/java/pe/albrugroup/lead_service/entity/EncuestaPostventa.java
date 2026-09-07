@@ -16,7 +16,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.lead_service.entity.enums.EstadoEncuestaPostventa;
 import pe.albrugroup.lead_service.entity.enums.PrioridadEncuestaPostventa;
@@ -72,10 +71,16 @@ public class EncuestaPostventa {
     private Long idAsesorEncuesta;
     private String nombreAsesorEncuesta;
 
-    @CreationTimestamp
     @jakarta.persistence.Column(updatable = false)
     private Instant createdAt;
 
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @jakarta.persistence.PrePersist
+    void assignCreatedAt() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+    }
 }

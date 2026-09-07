@@ -32,4 +32,13 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
             @Param("soloVigentes") boolean soloVigentes,
             @Param("fechaActual") LocalDate fechaActual
     );
+
+    @Query("""
+            SELECT p
+            FROM Plan p
+            JOIN FETCH p.proveedor pr
+            WHERE (:idProveedor IS NULL OR pr.id = :idProveedor)
+            ORDER BY pr.nombre ASC, p.nombre ASC
+            """)
+    List<Plan> listarTodosPorProveedor(@Param("idProveedor") Long idProveedor);
 }

@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
@@ -79,8 +78,15 @@ public class LeadEtapaResumen {
     private String nombreAsesorUltimaGestion;
     private Instant fechaUltimaGestion;
 
-    @CreationTimestamp @Column(updatable = false)
+    @Column(updatable = false)
     private Instant createdAt;
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @PrePersist
+    void assignCreatedAt() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+    }
 }

@@ -2,6 +2,7 @@ package pe.albrugroup.lead_service.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.PeriodoFacturacionPostventa;
@@ -51,6 +52,11 @@ public interface PeriodoFacturacionPostventaRepository extends JpaRepository<Per
     );
 
     List<PeriodoFacturacionPostventa> findByLeadIdOrderByNumeroPeriodoAsc(Long idLead);
+    long countByLeadId(Long idLead);
+
+    @Modifying
+    @Query("DELETE FROM PeriodoFacturacionPostventa p WHERE p.lead.id = :idLead")
+    void deleteByLeadId(@Param("idLead") Long idLead);
 
     Optional<PeriodoFacturacionPostventa> findTopByLeadIdOrderByNumeroPeriodoDesc(Long idLead);
 

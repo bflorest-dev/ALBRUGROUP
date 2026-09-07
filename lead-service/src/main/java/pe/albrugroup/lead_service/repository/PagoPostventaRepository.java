@@ -12,12 +12,15 @@ import pe.albrugroup.lead_service.entity.PagoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPagoPostventa;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface PagoPostventaRepository extends JpaRepository<PagoPostventa, Long> {
 
     Page<PagoPostventa> findByLeadIdOrderByCreatedAtDesc(Long idLead, Pageable pageable);
+    List<PagoPostventa> findAllByLeadId(Long idLead);
+    long countByLeadId(Long idLead);
 
     Page<PagoPostventa> findByPeriodoFacturacionPostventaIdOrderByCreatedAtDesc(Long idPeriodoFacturacion, Pageable pageable);
 

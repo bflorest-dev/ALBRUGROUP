@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.EntregaCredencialPlataforma;
@@ -25,6 +26,11 @@ public interface EntregaCredencialPlataformaRepository extends JpaRepository<Ent
 
     @EntityGraph(attributePaths = {"credencial", "credencial.paquete", "credencial.paquete.plataforma"})
     List<EntregaCredencialPlataforma> findByLeadIdOrderByCreatedAtDesc(Long idLead);
+    long countByLeadId(Long idLead);
+
+    @Modifying
+    @Query("DELETE FROM EntregaCredencialPlataforma e WHERE e.lead.id = :idLead")
+    void deleteByLeadId(@Param("idLead") Long idLead);
 
     @Query("""
             SELECT COALESCE(SUM(e.cantidadUsuariosAsignados), 0)

@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
@@ -140,9 +139,16 @@ public class Lead {
     // La atribución histórica por etapa (mérito/fechas) y la primera tipificación viven ahora en
     // LeadEtapaResumen (una fila por (idLead, etapa)); el Lead solo conserva su estado operativo vivo.
 
-    @CreationTimestamp @Column(updatable = false)
+    @Column
     private Instant createdAt;
     private Instant lastEntryAt;
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @PrePersist
+    void assignCreatedAt() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+    }
 }

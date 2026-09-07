@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.CalendarioFacturacionPostventa;
@@ -17,6 +18,11 @@ import java.util.Optional;
 public interface CalendarioFacturacionPostventaRepository extends JpaRepository<CalendarioFacturacionPostventa, Long> {
 
     Optional<CalendarioFacturacionPostventa> findByLeadId(Long idLead);
+    long countByLeadId(Long idLead);
+
+    @Modifying
+    @Query("DELETE FROM CalendarioFacturacionPostventa c WHERE c.lead.id = :idLead")
+    void deleteByLeadId(@Param("idLead") Long idLead);
 
     @EntityGraph(attributePaths = {
             "lead",
