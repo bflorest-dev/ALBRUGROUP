@@ -119,6 +119,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   private planSnapshot: Record<string, unknown> | null = null;
   private previousBodyOverflow = '';
   private previousRootOverflow = '';
+  private readonly pickerDateCache = new Map<string, Date | null>();
 
   constructor(@Inject(DOCUMENT) private readonly document: Document) {}
 
@@ -137,6 +138,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
         this.commentOpen.set(false);
       } else {
         this.restoreBodyScroll();
+        this.pickerDateCache.clear();
       }
     }
   }
@@ -388,9 +390,13 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   protected pickerDate(value: unknown): Date | null {
     if (value instanceof Date) return value;
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const cached = this.pickerDateCache.get(value);
+    if (cached !== undefined) return cached;
     const [year, month, day] = value.split('-').map(Number);
     const date = new Date(year, month - 1, day);
-    return Number.isNaN(date.getTime()) ? null : date;
+    const result = Number.isNaN(date.getTime()) ? null : date;
+    this.pickerDateCache.set(value, result);
+    return result;
   }
 
   protected setDateValue(form: FormGroup, control: string, value: Date | string | null): void {
