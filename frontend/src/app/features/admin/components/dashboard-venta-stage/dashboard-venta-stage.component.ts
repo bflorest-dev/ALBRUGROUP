@@ -11,7 +11,7 @@ import {
   MetricsPeriodo,
   PeriodSelectorComponent
 } from '../../../../shared/components/period-selector/period-selector.component';
-import { MetricsRango, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
+import { MetricsRango, localToday, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { SessionService } from '../../../../core/services/session.service';
 import {
   DashboardVentaResponse,
@@ -149,7 +149,9 @@ export class DashboardVentaStageComponent implements OnInit {
   protected readonly proveedorId = signal<number | null>(null);
   protected readonly vista = signal<Vista>('resumen');
   protected readonly periodo = signal<MetricsPeriodo>('dia');
-  protected readonly dia = signal<string | null>(null);
+  // "Hoy" arranca con el día actual explícito: sin él, resolveMetricsRange devuelve {} y el backend
+  // cae a "mes en curso", mostrando el cohorte del mes bajo la etiqueta "Hoy". Debe mandar desde=hasta=hoy.
+  protected readonly dia = signal<string | null>(localToday());
   protected readonly hasta = signal<string | null>(null);
   protected readonly zonaSel = signal<ZonaSel>('total');
 
@@ -184,7 +186,9 @@ export class DashboardVentaStageComponent implements OnInit {
     const p = this.periodo();
     if (p === 'mes') return 'Mensual';
     if (p === 'semana') return 'Semanal';
-    return this.dia() ?? 'Hoy';
+    const d = this.dia();
+    // Un día suelto (sin rango) que es hoy se muestra como "Hoy"; cualquier otro, como su fecha.
+    return !d || (d === localToday() && !this.hasta()) ? 'Hoy' : d;
   });
   protected readonly tituloVista = computed(() =>
     this.vista() === 'resumen' ? 'Resumen de venta' : 'Rendimiento por asesor'
@@ -453,6 +457,10 @@ export class DashboardVentaStageComponent implements OnInit {
     this.periodo.set(p);
     if (p !== 'dia') {
       this.dia.set(null);
+      this.hasta.set(null);
+    } else {
+      // Volver a "Hoy" reancla en el día actual (no dejar el rango vacío → mes en curso).
+      this.dia.set(localToday());
       this.hasta.set(null);
     }
     void this.cargar();

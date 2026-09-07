@@ -3,8 +3,6 @@ package pe.albrugroup.lead_service.service;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Session;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
@@ -15,9 +13,6 @@ import pe.albrugroup.lead_service.entity.enums.EnfoqueVenta;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.MetricaVentaDetalle;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
-import pe.albrugroup.lead_service.entity.response.PageResponse;
-import pe.albrugroup.lead_service.entity.response.VentaAsesorDetalleResponse;
-import pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.Contadores;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.EnfoqueDia;
@@ -124,57 +119,6 @@ public class DashboardVentaService {
         return out;
     }
 
-    /** DETALLE paginado de los leads de un ASESOR (drill-down del ranking). Filtra proveedor + período. */
-    @Transactional(readOnly = true)
-    public PageResponse<VentaAsesorDetalleResponse> obtenerAsesoresDetalle(
-            Long idProveedor, Long idAsesor, LocalDate desde, LocalDate hasta, PageRequest pageRequest) {
-        validarProveedorVisibleParaSupervisorVentas(idProveedor);
-        desactivarEquipoFilter();
-        Rango r = resolverRango(desde, hasta);
-        Pageable pageable = org.springframework.data.domain.PageRequest.of(
-                pageRequest.getPageNumber(), pageRequest.getPageSize());
-        Page<VentaAsesorDetalleResponse> page = resumenRepository.dashboardVentaAsesorDetalle(
-                Etapa.VENTA, Etapa.PREVENTA, idProveedor, r.inicio(), r.fin(), idAsesor, Accion.TIPIFICACION, pageable);
-        return PageResponse.from(page);
-    }
-
-    /** DETALLE paginado de los leads de una MÉTRICA del resumen (drill-down de un contador). */
-    @Transactional(readOnly = true)
-    public PageResponse<VentaResumenDetalleResponse> obtenerResumenDetalle(
-            Long idProveedor, MetricaVentaDetalle metrica, LocalDate desde, LocalDate hasta, PageRequest pageRequest) {
-        validarProveedorVisibleParaSupervisorVentas(idProveedor);
-        desactivarEquipoFilter();
-        Pageable pageable = org.springframework.data.domain.PageRequest.of(
-                pageRequest.getPageNumber(), pageRequest.getPageSize());
-
-        LocalDate desdeR = desde != null ? desde : OperationalDateTime.currentMonth().atDay(1);
-        LocalDate hastaR = hasta != null ? hasta : OperationalDateTime.today();
-
-        Instant inicio = OperationalDateTime.startOfDay(desdeR);
-        Instant fin = OperationalDateTime.endExclusiveOfDay(hastaR);
-
-        // Cada métrica se ancla como su card: PREVENTAS por fechaIngresoEtapa; REG/PROG/RECH por
-        // ultimaTipificacionAt; INSTALADAS por fechaInstalacion. Así cada lista cuadra con su contador.
-        Page<VentaResumenDetalleResponse> page = switch (metrica) {
-            case INSTALADAS -> resumenRepository.dashboardVentaInstaladasDetalle(
-                    Etapa.VENTA, idProveedor, TIPIFICACION_INSTALADO, desdeR, hastaR.plusDays(1), pageable);
-            case PREVENTAS -> resumenRepository.dashboardVentaPreventasDetalle(
-                    Etapa.VENTA, idProveedor, inicio, fin,
-                    TIPIFICACION_NO_RECUPERABLE, TIPIFICACIONES_INGRESADO_O_MAS, pageable);
-            case REGISTRADAS, PROGRAMADAS, RECHAZADAS -> resumenRepository.dashboardVentaEstadoDetalle(
-                    Etapa.VENTA, idProveedor, inicio, fin,
-                    metrica == MetricaVentaDetalle.REGISTRADAS,
-                    metrica == MetricaVentaDetalle.PROGRAMADAS,
-                    metrica == MetricaVentaDetalle.RECHAZADAS,
-                    TIPIFICACION_INGRESADO, TIPIFICACION_PROGRAMADO,
-                    TIPIFICACIONES_RECHAZO, TIPIFICACIONES_INGRESADO_O_MAS, pageable);
-            // Las métricas nuevas (cuadrante por enfoque, embudo, ranking, tramos) usan el detalle unificado
-            // (obtenerDetalle). Este endpoint legacy solo cubre los 5 cards originales.
-            default -> throw new IllegalArgumentException("Métrica sin detalle legacy: " + metrica);
-        };
-        return PageResponse.from(page);
-    }
-
     /**
      * DETALLE UNIFICADO (drill-down) de cualquier contador del dashboard: una fila superset por lead, con
      * búsqueda, orden y agrupación server-side (lista plana + resumen de grupos). El anclaje/predicado de la
@@ -204,14 +148,6 @@ public class DashboardVentaService {
                 idProveedor, metrica, enfoque, zona, ctx, search, groupBy,
                 pageRequest.getSortBy(), pageRequest.getDirection(),
                 pageRequest.getPageNumber(), pageRequest.getPageSize());
-    }
-
-    private record Rango(Instant inicio, Instant fin) {}
-
-    private Rango resolverRango(LocalDate desde, LocalDate hasta) {
-        LocalDate d = desde != null ? desde : OperationalDateTime.currentMonth().atDay(1);
-        LocalDate h = hasta != null ? hasta : OperationalDateTime.today();
-        return new Rango(OperationalDateTime.startOfDay(d), OperationalDateTime.endExclusiveOfDay(h));
     }
 
     private void desactivarEquipoFilter() {

@@ -16,10 +16,7 @@ import pe.albrugroup.lead_service.entity.enums.MetricaVentaDetalle;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaTramosResponse;
-import pe.albrugroup.lead_service.entity.response.PageResponse;
-import pe.albrugroup.lead_service.entity.response.VentaAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.VentaDetallePage;
-import pe.albrugroup.lead_service.entity.response.VentaResumenDetalleResponse;
 import pe.albrugroup.lead_service.service.DashboardVentaService;
 
 import java.time.LocalDate;
@@ -62,37 +59,9 @@ public class DashboardVentaController {
         return ResponseEntity.ok(dashboardVentaService.obtenerTramos(idProveedor));
     }
 
-    // Drill-down: leads detrás del contador de un ASESOR del ranking (paginado, 25/pág. desde el frontend).
-    @GetMapping("/dashboard/asesores-detalle")
-    @PreAuthorize("hasAuthority('READ_DASHBOARD_VENTA')")
-    public ResponseEntity<PageResponse<VentaAsesorDetalleResponse>> obtenerAsesorDetalle(
-            @RequestParam Long idProveedor,
-            @RequestParam Long idAsesor,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
-            @Valid @ModelAttribute PageRequest pageRequest
-    ) {
-        return ResponseEntity.ok(
-                dashboardVentaService.obtenerAsesoresDetalle(idProveedor, idAsesor, desde, hasta, pageRequest));
-    }
-
-    // Drill-down: leads detrás de un contador del RESUMEN (Preventas/Registradas/…/Instaladas), paginado.
-    @GetMapping("/dashboard/resumen-detalle")
-    @PreAuthorize("hasAuthority('READ_DASHBOARD_VENTA')")
-    public ResponseEntity<PageResponse<VentaResumenDetalleResponse>> obtenerResumenDetalle(
-            @RequestParam Long idProveedor,
-            @RequestParam MetricaVentaDetalle metrica,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
-            @Valid @ModelAttribute PageRequest pageRequest
-    ) {
-        return ResponseEntity.ok(
-                dashboardVentaService.obtenerResumenDetalle(idProveedor, metrica, desde, hasta, pageRequest));
-    }
-
     // Drill-down UNIFICADO: una fila superset por lead detrás de CUALQUIER contador del dashboard, con
-    // búsqueda, orden y agrupación server-side (lista plana + resumen de grupos). Reemplazará a resumen-detalle
-    // y asesores-detalle cuando el frontend migre al drawer.
+    // búsqueda, orden y agrupación server-side (lista plana + resumen de grupos). Único endpoint de detalle
+    // (los legacy resumen-detalle/asesores-detalle se eliminaron al migrar el frontend al drawer).
     @GetMapping("/dashboard/detalle")
     @PreAuthorize("hasAuthority('READ_DASHBOARD_VENTA')")
     public ResponseEntity<VentaDetallePage> obtenerDetalleUnificado(

@@ -91,10 +91,8 @@ class DashboardVentaServiceTest {
                 .isInstanceOf(ForbiddenException.class);
         assertThatThrownBy(() -> dashboardVentaService.obtenerTramos(2L))
                 .isInstanceOf(ForbiddenException.class);
-        assertThatThrownBy(() -> dashboardVentaService.obtenerAsesoresDetalle(2L, 10L, null, null, pageRequest))
-                .isInstanceOf(ForbiddenException.class);
-        assertThatThrownBy(() -> dashboardVentaService.obtenerResumenDetalle(
-                2L, MetricaVentaDetalle.PREVENTAS, null, null, pageRequest))
+        assertThatThrownBy(() -> dashboardVentaService.obtenerDetalle(
+                2L, MetricaVentaDetalle.PREVENTAS, null, null, null, null, null, null, null, null, null, pageRequest))
                 .isInstanceOf(ForbiddenException.class);
 
         verify(proveedorRepository, never()).findById(2L);
