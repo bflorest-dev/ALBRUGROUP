@@ -12,6 +12,7 @@ import {
   output,
   signal
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs';
@@ -53,6 +54,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   @ViewChild(SidebarAttendancePickerComponent) private sidebarAttendancePicker?: SidebarAttendancePickerComponent;
 
   private readonly router = inject(Router);
+  private readonly document = inject(DOCUMENT);
   private breadcrumbScrollFrame?: number;
   private clockTimer?: ReturnType<typeof setInterval>;
   private closeTimer?: ReturnType<typeof setTimeout>;
@@ -163,6 +165,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   }
 
   protected openDomain(domain: SidebarDomain, event?: Event): void {
+    if (event?.type === 'mouseenter' && this.document.body.classList.contains('venta-drawer-v2-open')) return;
     this.rememberRailTrigger(event);
     this.cancelClose();
     const committedDomainId = this.committedDomainId();
@@ -193,6 +196,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   }
 
   protected openRail(): void {
+    if (this.document.body.classList.contains('venta-drawer-v2-open')) return;
     this.cancelClose();
     if (this.isPanelOpen()) return;
 

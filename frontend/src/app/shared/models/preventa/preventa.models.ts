@@ -422,7 +422,10 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   sot?: string | null;
   customerId?: string | null;
   requiereSecSotVenta?: boolean | null;
+  tipificacionActual?: string | null;
+  subtipificacionActual?: string | null;
   nombreAsesorMeritoPreventa?: string | null;
+  nombreAsesorMeritoVenta?: string | null;
   urbanizacion?: string | null;
   numero?: string | null;
   manzana?: string | null;
@@ -447,9 +450,42 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   fechaProgramacion?: string | null;
   fechaRechazo?: string | null;
   horaProgramada?: string | null;
+  plan?: LeadPlanDetalleResponse | null;
+  promocionInterna?: LeadPromocionDetalleResponse | null;
   // Config de campos de captura resuelta por el backend: por cada campo configurable, si se muestra
   // y si es obligatorio para cerrar la venta.
   camposConfig?: CampoConfigItem[] | null;
+}
+
+export interface LeadPlanDetalleResponse {
+  id?: number | null;
+  nombre?: string | null;
+  precio?: number | null;
+  precioPromocional?: number | null;
+  mesesPromocionPrecio?: number | null;
+  vigenciaDesde?: string | null;
+  vigenciaHasta?: string | null;
+  nombreProveedor?: string | null;
+  internet?: { id?: number | null; velocidad?: number | null; unidad?: string | null; tecnologia?: string | null } | null;
+  television?: { id?: number | null; nombre?: string | null; cantidadCanales?: number | null } | null;
+  telefono?: { id?: number | null; minutos?: number | null; descripcion?: string | null } | null;
+  velocidadPromocional?: number | null;
+  mesesPromocionVelocidad?: number | null;
+  nombreZona?: string | null;
+  adicionalesIncluidos?: Array<{
+    idAdicional?: number | null;
+    nombreAdicional?: string | null;
+    cantidadIncluida?: number | null;
+    permiteCompraAdicional?: boolean | null;
+    cantidadMaximaAdicional?: number | null;
+  }> | null;
+}
+
+export interface LeadPromocionDetalleResponse {
+  id?: number | null;
+  reglaComercial?: string | null;
+  nombreProveedor?: string | null;
+  nombreZona?: string | null;
 }
 
 export interface LeadAdicionalDetalleResponse {

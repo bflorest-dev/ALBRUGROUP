@@ -923,6 +923,61 @@
     />
   </p-card>
 
+  @if (useVentaDrawerV2) {
+    <app-venta-drawer-v2
+      [visible]="detailDrawerOpen()"
+      [mode]="drawerMode()"
+      [detail]="detail()"
+      [datosForm]="datosForm"
+      [direccionForm]="direccionForm"
+      [ofertaForm]="ofertaForm"
+      [tipificacionForm]="tipificacionForm"
+      [camposVisibles]="camposVisibles()"
+      [tipoDocumentoOptions]="tipoDocumentoOptions"
+      [tipoDomicilioOptions]="tipoDomicilioOptions"
+      [tipoViaOptions]="tipoViaOptions"
+      [departamentos]="departamentos()"
+      [provinciasDomicilio]="provinciasDomicilio()"
+      [distritosDomicilio]="distritosDomicilio()"
+      [providerOptions]="ofertaProviderOptions()"
+      [planOptions]="planOptions()"
+      [promocionOptions]="promocionOptions()"
+      [adicionales]="adicionales()"
+      [selectedAdditionals]="adicionalesSeleccionadosView()"
+      [additionalsTotal]="ofertaAdditionalsTotal()"
+      [offerLocked]="ofertaBloqueada()"
+      [offerNoticeText]="ofertaNoticeText()"
+      [tipificaciones]="tipificaciones()"
+      [subtipificaciones]="subtipificaciones()"
+      [requiresProgramming]="requiresProgramming()"
+      [requiresInstallDate]="requiresInstallDate()"
+      [requiresRejectionDate]="requiresRejectionDate()"
+      [requiresSecSot]="requiresSecSot()"
+      [requiresCustomerId]="requiresCustomerId()"
+      [canMutate]="canMutateOperationalData()"
+      [saving]="isSaving()"
+      [eventos]="eventos()"
+      [historyLoading]="historialLoading()"
+      [historyError]="historialError()"
+      [saveChanges]="saveVentaDrawerChanges"
+      (closeRequested)="requestCloseDetail()"
+      (callStarted)="registrarLlamadaOperativa()"
+      (callError)="showCallError($event)"
+      (chatRequested)="registrarChat()"
+      (tipoDocumentoChange)="onTipoDocumentoChanged()"
+      (departamentoDomicilioChange)="onDepartamentoDomicilioChanged()"
+      (provinciaDomicilioChange)="onProvinciaDomicilioChanged()"
+      (distritoDomicilioChange)="onDistritoDomicilioChanged()"
+      (ofertaProviderChange)="onOfertaProviderChanged($event)"
+      (planChange)="onPlanChanged()"
+      (incrementarAdicional)="incrementarAdicional($event)"
+      (disminuirAdicional)="disminuirAdicional($event)"
+      (tipificacionSelected)="onTipificacionSelected($event)"
+      (subtipificacionSelected)="onSubtipificacionSelected($event)"
+      (tipifyRequested)="tipificar()"
+      (retryHistory)="retryHistorial()"
+    />
+  }
   <p-drawer
     [visible]="correctionDrawerOpen()"
     (visibleChange)="!$event && closeCorrection()"
@@ -1013,6 +1068,7 @@
     }
   </p-drawer>
 
+  @if (!useVentaDrawerV2) {
   <p-drawer
     [visible]="detailDrawerOpen()"
     (visibleChange)="!$event && requestCloseDetail()"
@@ -1414,4 +1470,5 @@
       </div>
     }
   </p-drawer>
+  }
 </section>

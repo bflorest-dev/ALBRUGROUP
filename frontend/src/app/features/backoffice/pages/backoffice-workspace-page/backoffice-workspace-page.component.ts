@@ -32,6 +32,7 @@ import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asis
 import { LeadCommercialDataTabsComponent } from '../../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
 import { LeadPlanSummaryComponent } from '../../../../shared/components/lead-plan-summary/lead-plan-summary.component';
 import { PhoneActionButtonComponent } from '../../../../shared/components/phone-action-button/phone-action-button.component';
+import { VentaDrawerV2Component } from '../../../../shared/components/venta-drawer-v2/venta-drawer-v2.component';
 import { SectionHeaderComponent } from '../../../../shared/components/section-header/section-header.component';
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { MetricsRango, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
@@ -145,6 +146,7 @@ const HISTORIAL_MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago',
     LeadCommercialDataTabsComponent,
     LeadPlanSummaryComponent,
     PhoneActionButtonComponent,
+    VentaDrawerV2Component,
     SectionHeaderComponent,
     PeriodSelectorComponent,
     TipificationStackComponent
@@ -262,6 +264,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly ubigeoDomicilioError = signal<string | null>(null);
   private readonly adicionalesDirty = signal(false);
   protected readonly detailDrawerOpen = signal(false);
+  protected readonly useVentaDrawerV2 = true;
   protected readonly correctionDrawerOpen = signal(false);
   protected readonly correctionTarget = signal<CorreccionInstalacionRow | null>(null);
   protected readonly drawerMode = signal<DrawerMode>('gestion');
@@ -476,6 +479,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     sot: [''],
     customerId: ['']
   });
+
+  protected readonly saveVentaDrawerChanges = async (): Promise<boolean> => {
+    const lead = this.detail();
+    return lead ? this.performSave(lead) : false;
+  };
 
   protected readonly correctionForm = this.fb.group({
     sec: ['', [Validators.required, Validators.pattern(/^\d{9}$/)]],
