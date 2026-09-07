@@ -190,6 +190,17 @@ export class DashboardVentaStageComponent implements OnInit {
     // Un día suelto (sin rango) que es hoy se muestra como "Hoy"; cualquier otro, como su fecha.
     return !d || (d === localToday() && !this.hasta()) ? 'Hoy' : d;
   });
+  /**
+   * Etiqueta de la fila del cohorte (enfoque DÍA), acorde al período: "Del día" solo cuando es un día
+   * suelto; con un rango/semana/mes esa fila muestra los que ingresaron en TODO el período, no en un día.
+   */
+  protected readonly enfoqueDiaLabel = computed(() => {
+    const p = this.periodo();
+    if (p === 'mes') return 'Del mes';
+    if (p === 'semana') return 'De la semana';
+    const hasta = this.hasta();
+    return hasta && hasta !== this.dia() ? 'Del período' : 'Del día';
+  });
   protected readonly tituloVista = computed(() =>
     this.vista() === 'resumen' ? 'Resumen de venta' : 'Rendimiento por asesor'
   );
@@ -389,7 +400,7 @@ export class DashboardVentaStageComponent implements OnInit {
   protected abrirEstado(key: string, enfoque: EnfoqueVenta, label: string): void {
     const metrica = this.STATE_METRICA[key];
     if (!metrica) return;
-    this.abrir(metrica, label, enfoque === 'DIA' ? 'Del día' : 'Gestión general', { enfoque });
+    this.abrir(metrica, label, enfoque === 'DIA' ? this.enfoqueDiaLabel() : 'Gestión general', { enfoque });
   }
   protected abrirConversion(c: ConversionVm): void {
     this.abrir(c.metrica, c.label, 'Conversión (embudo)');

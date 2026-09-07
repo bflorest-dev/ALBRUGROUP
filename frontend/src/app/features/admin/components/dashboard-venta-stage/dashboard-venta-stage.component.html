@@ -86,7 +86,7 @@
             <div class="vd-cuad__herolbl">Preventas</div>
             <div class="vd-cuad__herov">{{ preventas() }}</div>
             <div class="vd-cuad__heronote">Las que ingresaron en la fecha o rango elegido.</div>
-            <div class="vd-cuad__herosigma">La fila <b>Del día</b> reparte este total entre los estados.</div>
+            <div class="vd-cuad__herosigma">La fila <b>{{ enfoqueDiaLabel() }}</b> reparte este total entre los estados.</div>
           </button>
 
           <div class="vd-cuad__matrix">
@@ -98,7 +98,7 @@
               </div>
             }
 
-            <div class="vd-rl" [pTooltip]="tipDelDia" tooltipPosition="top"><span class="vd-rl__t">Del día</span></div>
+            <div class="vd-rl" [pTooltip]="tipDelDia" tooltipPosition="top"><span class="vd-rl__t">{{ enfoqueDiaLabel() }}</span></div>
             @for (c of diaCells(); track c.key) {
               <button
                 type="button"
@@ -107,7 +107,7 @@
                 [pTooltip]="c.tip"
                 tooltipPosition="top"
                 (click)="abrirEstado(c.key, 'DIA', c.label)"
-                [attr.aria-label]="'Ver ' + c.label + ' del día'"
+                [attr.aria-label]="'Ver ' + c.label + ' — ' + enfoqueDiaLabel()"
               >
                 <span class="vd-cell__v">{{ c.value }}</span>
               </button>
@@ -127,7 +127,7 @@
           </div>
         </div>
         <p class="vd-cuadfoot">
-          La fila <b>Del día</b> suma el total de Preventas. Pasa el cursor por cada título para ver qué mide.
+          La fila <b>{{ enfoqueDiaLabel() }}</b> suma el total de Preventas. Pasa el cursor por cada título para ver qué mide.
         </p>
 
         <div class="vd-card vd-ribbon">

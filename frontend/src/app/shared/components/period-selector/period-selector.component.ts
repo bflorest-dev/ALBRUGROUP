@@ -49,6 +49,12 @@ export class PeriodSelectorComponent implements OnDestroy {
   /** Algunas bandejas, como Programados, necesitan elegir fechas futuras. */
   readonly allowFuture = input(false);
   readonly disabled = input(false);
+  /**
+   * Segmentos a mostrar y en qué orden. Default = los tres. Permite acotar el control a un subconjunto
+   * (ej. `['dia']` = solo día/rango, `['dia','mes']` sin semanal). Incluir `'dia'` es lo natural si se
+   * quiere calendario: la selección de un mes concreto se resuelve como rango de días sobre `'dia'`.
+   */
+  readonly periodos = input<MetricsPeriodo[]>(['dia', 'semana', 'mes']);
 
   readonly periodoChange = output<MetricsPeriodo>();
   /** Rango elegido en el calendario. Un dia suelto llega como `desde === hasta`. */
@@ -80,12 +86,14 @@ export class PeriodSelectorComponent implements OnDestroy {
   });
 
   // `computed` memoiza: la referencia se mantiene estable entre ciclos de deteccion, requisito de
-  // PrimeNG + OnPush (ver primeng-loop-fix.md).
-  protected readonly segments = computed(() => [
-    { label: this.diaLabel(), value: 'dia' as MetricsPeriodo },
-    { label: 'Semanal', value: 'semana' as MetricsPeriodo },
-    { label: 'Mensual', value: 'mes' as MetricsPeriodo }
-  ]);
+  // PrimeNG + OnPush (ver primeng-loop-fix.md). Solo se renderizan los segmentos de `periodos`, en su orden.
+  protected readonly segments = computed(() =>
+    this.periodos().map((v) => ({ label: this.segmentLabel(v), value: v }))
+  );
+
+  private segmentLabel(v: MetricsPeriodo): string {
+    return v === 'dia' ? this.diaLabel() : v === 'semana' ? 'Semanal' : 'Mensual';
+  }
 
   protected readonly maxDate = computed<Date | null>(() => this.allowFuture() ? null : new Date());
 
@@ -136,7 +144,7 @@ export class PeriodSelectorComponent implements OnDestroy {
     if (!clicked) {
       return;
     }
-    if (clicked === this.host.nativeElement.querySelector('.p-togglebutton')) {
+    if (clicked === this.botonDe('dia')) {
       this.emitirHoy();
       this.cerrar();
     } else {
@@ -150,9 +158,8 @@ export class PeriodSelectorComponent implements OnDestroy {
       return;
     }
     const target = (event.target as HTMLElement)?.closest('.p-togglebutton') as HTMLElement | null;
-    const buttons = this.host.nativeElement.querySelectorAll('.p-togglebutton');
-    const isOverDia = target === buttons[0];
-    const isOverMes = target === buttons[2];
+    const isOverDia = !!target && target === this.botonDe('dia');
+    const isOverMes = !!target && target === this.botonDe('mes');
     const nextSegment = isOverDia ? 'dia' : isOverMes ? 'mes' : null;
 
     if (nextSegment && this.hoverSegment !== nextSegment) {
@@ -232,9 +239,23 @@ export class PeriodSelectorComponent implements OnDestroy {
     if (this.botonAncla?.isConnected) {
       return this.botonAncla;
     }
-    const boton = this.host.nativeElement.querySelector('.p-togglebutton') as HTMLElement | null;
+    const boton = this.botonDe('dia');
     this.botonAncla = boton;
     return boton;
+  }
+
+  /**
+   * Botón segmentado de un período, buscado por su posición en `segments()` (no por índice fijo): al
+   * poder ocultarse segmentos, `buttons[0]`/`buttons[2]` ya no son día/mes de forma fiable. `null` si
+   * ese segmento no se está mostrando.
+   */
+  private botonDe(v: MetricsPeriodo): HTMLElement | null {
+    const idx = this.segments().findIndex((s) => s.value === v);
+    if (idx < 0) {
+      return null;
+    }
+    const buttons = this.host.nativeElement.querySelectorAll('.p-togglebutton');
+    return (buttons[idx] as HTMLElement) ?? null;
   }
 
   /** Posicion X del borde del elemento en coordenadas de documento, sumando `offsetLeft` (sin transform). */
