@@ -1,0 +1,280 @@
+<div class="subsanacion-scrim" (click)="cerrarDrawer()"></div>
+
+<aside class="subsanacion-drawer" [attr.data-bit-theme]="tema()" aria-label="Subsanación histórica de lead">
+  <header class="subsanacion-head">
+    <div>
+      <button type="button" class="back-link" (click)="cerrarDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+        Volver a Bitácora
+      </button>
+      <h2>{{ modo() === 'NUEVO' ? 'Subsanar lead omitido' : 'Reconstruir flujo histórico' }}</h2>
+      <p>
+        {{ modo() === 'NUEVO'
+          ? 'Crea el expediente con la línea temporal ideal del día en que debió gestionarse.'
+          : 'Reemplaza el flujo operativo del expediente y conserva la evidencia anterior en un acta inmutable.' }}
+      </p>
+    </div>
+    <button type="button" class="icon-close" (click)="cerrarDrawer()" aria-label="Cerrar subsanación">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </header>
+
+  @if (cargando()) {
+    <div class="state-message"><span class="spinner"></span><span>Cargando expediente e impacto…</span></div>
+  } @else if (resultado(); as acta) {
+    <section class="success-state" aria-live="polite">
+      <div class="success-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5 9.5 17 19 7.5"/></svg>
+      </div>
+      <h3>Expediente subsanado</h3>
+      <p>La operación terminó en POSTVENTA y quedó registrada como acta #{{ acta.idSubsanacion }}.</p>
+      <div class="result-ledger">
+        <div><span>Lead</span><b class="mono">#{{ acta.idLead }}</b></div>
+        <div><span>Fecha de gestión</span><b class="mono">{{ acta.fechaGestion }}</b></div>
+        <div><span>Fecha de instalación</span><b class="mono">{{ acta.fechaInstalacion }}</b></div>
+        <div><span>Administrador</span><b>{{ acta.nombreAdmin }}</b></div>
+      </div>
+      <div class="result-timeline">
+        @for (hito of acta.lineaTiempo; track hito.fecha) {
+          <div><span class="time mono">{{ hito.fecha.slice(11, 16) }}</span><span>{{ hito.accion }}</span><small>{{ hito.etapa }}</small></div>
+        }
+      </div>
+      <div class="success-actions">
+        <button type="button" class="btn secondary" (click)="cerrarDrawer()">Cerrar</button>
+        <button type="button" class="btn primary" (click)="abrirLeadResultado()">Abrir expediente</button>
+      </div>
+    </section>
+  } @else {
+    <nav class="stepper" aria-label="Pasos de subsanación">
+      @for (nombre of pasos; track nombre; let i = $index) {
+        <button type="button" [class.active]="paso() === i" [class.done]="paso() > i" [disabled]="i > paso()" (click)="irPaso(i)">
+          <span class="step-index mono">{{ i + 1 }}</span><span>{{ nombre }}</span>
+        </button>
+      }
+    </nav>
+
+    <div class="subsanacion-body">
+      @if (paso() === 0) {
+        <section class="flow-section" [formGroup]="identidadForm">
+          <div class="section-heading">
+            <h3>Identidad del contacto</h3>
+            <p>El teléfono identifica la oportunidad. En un expediente existente no puede modificarse.</p>
+          </div>
+          <div class="field-grid three">
+            <label class="field"><span>Prefijo</span><input class="mono" formControlName="prefijo" placeholder="+51" /></label>
+            <label class="field span2"><span>Teléfono</span><input class="mono" formControlName="lead" (blur)="verificarDuplicado()" placeholder="999888777" /></label>
+            <label class="field span3"><span>Usermeta <small>opcional, sin &#64;</small></span><input formControlName="usermeta" /></label>
+          </div>
+
+          @if (verificandoTelefono()) {
+            <div class="inline-status"><span class="spinner"></span>Verificando que el teléfono no esté registrado…</div>
+          }
+          @if (duplicado(); as existente) {
+            <div class="warning-block">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+              <div><b>Este teléfono ya tiene un expediente.</b><span>{{ existente.titular || 'Titular no registrado' }}</span></div>
+              <button type="button" (click)="usarLeadExistente()">Subsanar el existente</button>
+            </div>
+          }
+
+          @if (preparacion(); as prep) {
+            <div class="impact-strip">
+              <div><span>Etapa actual</span><b>{{ prep.impacto.etapa || '—' }}</b></div>
+              <div><span>Eventos</span><b class="mono">{{ prep.impacto.eventos }}</b></div>
+              <div><span>Resúmenes</span><b class="mono">{{ prep.impacto.resumenesEtapa }}</b></div>
+              <div><span>Artefactos Postventa</span><b class="mono">{{ impactoPostventa() }}</b></div>
+              <div><span>Oportunidades hermanas</span><b class="mono">{{ prep.impacto.oportunidadesHermanas }}</b></div>
+            </div>
+          }
+        </section>
+      }
+
+      @if (paso() === 1) {
+        <section class="flow-section" [formGroup]="fechasForm">
+          <div class="section-heading">
+            <h3>Fechas históricas</h3>
+            <p>Estas fechas determinan las métricas. La ejecución real quedará separada en el acta.</p>
+          </div>
+          <div class="field-grid two">
+            <label class="field"><span>Fecha de gestión</span><input class="mono" type="date" formControlName="fechaGestion" [min]="fechaGestionMin" [max]="fechaGestionMax" (change)="cambiarFechaGestion()" /><small>Desde {{ fechaGestionMin }} hasta ayer.</small></label>
+            <label class="field"><span>Fecha de instalación</span><input class="mono" type="date" formControlName="fechaInstalacion" [min]="fechasForm.controls.fechaGestion.value || fechaGestionMin" [max]="fechaInstalacionMax" (change)="cambiarFechaInstalacion()" /><small>Entre la gestión y hoy.</small></label>
+          </div>
+          <div class="canonical-timeline">
+            <div><time class="mono">09:00</time><span>Subsanación</span><small>Evidencia administrativa</small></div>
+            <div><time class="mono">09:01</time><span>Registro</span><small>Ingreso a PREVENTA</small></div>
+            <div><time class="mono">09:02</time><span>Asignación</span><small>Administrador responsable</small></div>
+            <div><time class="mono">09:03</time><span>Preventa completa</span><small>Salida a VENTA</small></div>
+            <div><time class="mono">09:04</time><span>Venta instalada</span><small>Ingreso a POSTVENTA</small></div>
+          </div>
+        </section>
+      }
+
+      @if (paso() === 2) {
+        <section class="flow-section">
+          <div class="section-heading">
+            <h3>Expediente completo</h3>
+            <p>Los valores actuales se conservan como referencia; cualquier cambio quedará destacado en la revisión.</p>
+          </div>
+          <div class="subsection" [formGroup]="datosForm">
+            <h4>Titular y contacto</h4>
+            <div class="field-grid two">
+              <label class="field"><span>Tipo de documento</span><select formControlName="tipoDocumento"><option value="">Selecciona</option>@for (item of tiposDocumento; track item) { <option [value]="item">{{ item }}</option> }</select></label>
+              <label class="field"><span>N.º documento</span><input class="mono" formControlName="numeroDocumentoTitularServicio" /></label>
+              <label class="field span2"><span>Nombre del titular</span><input formControlName="nombreTitularServicio" /></label>
+              <label class="field"><span>Celular de registro</span><input class="mono" formControlName="celularRegistro" /></label>
+              <label class="field"><span>Celular de referencia</span><input class="mono" formControlName="celularReferencia" /></label>
+              <label class="field span2"><span>Correo</span><input type="email" formControlName="correo" /></label>
+              <label class="field"><span>Fecha de nacimiento</span><input class="mono" type="date" formControlName="fechaNacimiento" /></label>
+              <label class="field"><span>Parentesco</span><select formControlName="parentesco"><option value="">Selecciona</option>@for (item of parentescos; track item) { <option [value]="item">{{ item }}</option> }</select></label>
+              <label class="field span2"><span>Ubigeo de nacimiento <small>opcional</small></span><input class="mono" formControlName="ubigeoNacimiento" /></label>
+              <label class="field"><span>Nombre de la madre</span><input formControlName="nombreMadre" /></label>
+              <label class="field"><span>Nombre del padre</span><input formControlName="nombrePadre" /></label>
+              <label class="field"><span>Doc. titular del celular</span><input class="mono" formControlName="numeroDocumentoTitularCelularRegistro" /></label>
+              <label class="field"><span>Nombre titular del celular</span><input formControlName="nombreTitularCelularRegistro" /></label>
+            </div>
+          </div>
+          <div class="subsection" [formGroup]="direccionForm">
+            <h4>Dirección de instalación</h4>
+            <div class="field-grid two">
+              <label class="field"><span>Ubigeo domicilio</span><input class="mono" formControlName="ubigeoDomicilio" /></label>
+              <label class="field"><span>Tipo de domicilio</span><select formControlName="tipoDomicilio"><option value="">Selecciona</option>@for (item of tiposDomicilio; track item) { <option [value]="item">{{ item }}</option> }</select></label>
+              <label class="field"><span>Tipo de vía <small>opcional</small></span><select formControlName="tipoVia"><option value="">Sin vía</option>@for (item of tiposVia; track item) { <option [value]="item">{{ item }}</option> }</select></label>
+              <label class="field"><span>Vía</span><input formControlName="via" /></label>
+              <label class="field span2"><span>Dirección</span><input formControlName="direccion" /></label>
+              <label class="field span2"><span>Referencia</span><input formControlName="referencia" /></label>
+              <label class="field"><span>Latitud</span><input class="mono" formControlName="latitud" /></label>
+              <label class="field"><span>Longitud</span><input class="mono" formControlName="longitud" /></label>
+              <label class="field"><span>Urbanización</span><input formControlName="urbanizacion" /></label>
+              <label class="field"><span>Número</span><input formControlName="numero" /></label>
+              <label class="field"><span>Manzana</span><input formControlName="manzana" /></label>
+              <label class="field"><span>Lote</span><input formControlName="lote" /></label>
+              <label class="field"><span>Edificio</span><input formControlName="nombreEdificio" /></label>
+              <label class="field"><span>Condominio</span><input formControlName="nombreCondominio" /></label>
+              <label class="field"><span>Plano</span><input formControlName="plano" /></label>
+              <label class="field"><span>Piso / interior</span><span class="field-pair"><input formControlName="piso" placeholder="Piso" /><input formControlName="interior" placeholder="Interior" /></span></label>
+            </div>
+          </div>
+        </section>
+      }
+
+      @if (paso() === 3) {
+        <section class="flow-section" [formGroup]="comercialForm">
+          <div class="section-heading">
+            <h3>Flujo comercial ideal</h3>
+            <p>Las opciones históricas aparecen identificadas. Los planes fuera de vigencia permanecen deshabilitados.</p>
+          </div>
+          <div class="field-grid two">
+            <label class="field"><span>Equipo</span><select formControlName="idEquipo" (change)="cambiarEquipo()"><option [ngValue]="null">Selecciona</option>@for (item of equipos(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+            <label class="field"><span>Base</span><select formControlName="base"><option value="">Selecciona</option>@for (item of bases; track item) { <option [value]="item">{{ item }}</option> }</select></label>
+            <label class="field"><span>Proveedor</span><select formControlName="idProveedor" (change)="cambiarProveedor()"><option [ngValue]="null">Selecciona</option>@for (item of opciones()?.proveedores ?? []; track item.id) { <option [ngValue]="item.id">{{ item.nombre }}{{ item.activo ? '' : ' · histórico' }}</option> }</select></label>
+            <label class="field"><span>Campaña</span><select formControlName="idCampana"><option [ngValue]="null">Selecciona</option>@for (item of opciones()?.campanas ?? []; track item.id) { <option [ngValue]="item.id">{{ item.nombre }}{{ item.activo ? '' : ' · histórica' }}</option> }</select></label>
+            <label class="field span2"><span>Plan</span><select formControlName="idPlan" (change)="validarPlanSeleccionado()"><option [ngValue]="null">Selecciona</option>@for (item of opciones()?.planes ?? []; track item.id) { <option [ngValue]="item.id" [disabled]="!item.compatibleHistoricamente">{{ item.nombre }} · S/ {{ item.precio ?? 0 }}{{ item.activo ? '' : ' · histórico' }}{{ item.compatibleHistoricamente ? '' : ' · fuera de vigencia' }}</option> }</select></label>
+            <label class="field span2"><span>Tipificación PREVENTA</span><select formControlName="preventa"><option value="">Selecciona la matriz de cierre</option>@for (item of opciones()?.preventa ?? []; track item.idSubtipificacion) { <option [value]="matrizKey(item)">{{ opcionMatriz(item) }}</option> }</select></label>
+            <label class="field span2"><span>Tipificación VENTA</span><select formControlName="venta" (change)="cambiarTipificacionVenta()"><option value="">Selecciona la matriz de instalación</option>@for (item of opciones()?.venta ?? []; track item.idSubtipificacion) { <option [value]="matrizKey(item)">{{ opcionMatriz(item) }}</option> }</select></label>
+          </div>
+          @if (cargandoOpciones()) { <div class="inline-status"><span class="spinner"></span>Validando matrices y opciones históricas…</div> }
+          @if (requiereCustomerId() || requiereSecSot()) {
+            <div class="commercial-codes">
+              <h4>Códigos de instalación requeridos</h4>
+              <div class="field-grid three">
+                @if (requiereSecSot()) { <label class="field"><span>SEC</span><input class="mono" formControlName="sec" maxlength="9" /></label> }
+                @if (requiereSecSot()) { <label class="field"><span>SOT</span><input class="mono" formControlName="sot" maxlength="8" /></label> }
+                @if (requiereCustomerId()) { <label class="field"><span>Customer ID</span><input class="mono" formControlName="customerId" maxlength="8" /></label> }
+              </div>
+            </div>
+          }
+        </section>
+      }
+
+      @if (paso() === 4) {
+        <section class="flow-section review-section">
+          <div class="section-heading">
+            <h3>Revisión de la subsanación</h3>
+            <p>Esta es la primera confirmación. Comprueba el estado final antes de abrir el acta.</p>
+          </div>
+          <div class="review-ledger">
+            <div><span>Modo</span><b>{{ modo() }}</b></div>
+            <div><span>Lead</span><b class="mono">{{ identidadForm.getRawValue().prefijo }} {{ identidadForm.getRawValue().lead }}</b></div>
+            <div><span>Gestión</span><b class="mono">{{ fechasForm.controls.fechaGestion.value }}</b></div>
+            <div><span>Instalación</span><b class="mono">{{ fechasForm.controls.fechaInstalacion.value }}</b></div>
+            <div><span>Equipo</span><b>{{ nombreEquipo(comercialForm.controls.idEquipo.value) }}</b></div>
+            <div><span>Proveedor</span><b>{{ nombreProveedor(comercialForm.controls.idProveedor.value) }}</b></div>
+            <div><span>Campaña</span><b>{{ nombreCampana(comercialForm.controls.idCampana.value) }}</b></div>
+            <div><span>Plan</span><b>{{ nombrePlan(comercialForm.controls.idPlan.value) }}</b></div>
+          </div>
+          @if (cambios().length) {
+            <div class="review-group">
+              <h4>{{ cambios().length }} campos cambiarán</h4>
+              <div class="diff-list">
+                @for (cambio of cambios(); track cambio.label) {
+                  <div><span>{{ cambio.label }}</span><s>{{ cambio.antes }}</s><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg><b>{{ cambio.despues }}</b></div>
+                }
+              </div>
+            </div>
+          }
+          @if (preparacion(); as prep) {
+            <div class="review-group destructive">
+              <h4>Estado operativo que será reemplazado</h4>
+              <div class="impact-strip compact">
+                <div><span>Eventos</span><b class="mono">{{ prep.impacto.eventos }}</b></div>
+                <div><span>Resúmenes</span><b class="mono">{{ prep.impacto.resumenesEtapa }}</b></div>
+                <div><span>Postventa</span><b class="mono">{{ impactoPostventa() }}</b></div>
+                <div><span>Hermanas</span><b class="mono">{{ prep.impacto.oportunidadesHermanas }}</b></div>
+              </div>
+            </div>
+          }
+          <label class="field reason-field"><span>Motivo de la subsanación <small>obligatorio; quedará en el acta</small></span><textarea [formControl]="motivoControl" rows="3" maxlength="1000" placeholder="Describe qué ocurrió y por qué estas fechas y datos representan la gestión correcta."></textarea><small class="counter mono">{{ motivoControl.value?.length ?? 0 }}/1000</small></label>
+        </section>
+      }
+
+      @if (error(); as message) {
+        <div class="flow-error" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>{{ message }}</span></div>
+      }
+    </div>
+
+    <footer class="subsanacion-footer">
+      <div class="step-caption"><span class="mono">{{ paso() + 1 }}/5</span><b>{{ pasos[paso()] }}</b></div>
+      <div class="footer-actions">
+        @if (paso() > 0) { <button type="button" class="btn secondary" (click)="retroceder()">Anterior</button> }
+        @if (paso() < 4) {
+          <button type="button" class="btn primary" [disabled]="verificandoTelefono() || cargandoOpciones()" (click)="avanzar()">Continuar</button>
+        } @else {
+          <button type="button" class="btn primary" (click)="abrirConfirmacion()">Revisar acta</button>
+        }
+      </div>
+    </footer>
+  }
+</aside>
+
+@if (confirmacionAbierta()) {
+  <div class="confirm-scrim" (click)="cerrarConfirmacion()">
+    <section class="confirm-sheet" role="dialog" aria-modal="true" aria-labelledby="subsanacionActaTitle" (click)="$event.stopPropagation()">
+      <header>
+        <span class="seal mono">ACTA DE SUBSANACIÓN</span>
+        <span class="confirmation-count">Confirmación 2 de 2</span>
+        <h3 id="subsanacionActaTitle">Reconstruir el expediente {{ identidadForm.getRawValue().lead }}</h3>
+        <p>Se crearán exactamente cinco eventos y tres resúmenes. La evidencia anterior permanecerá en esta acta.</p>
+      </header>
+      <div class="confirm-body">
+        <div class="confirm-summary">
+          <div><span>Gestión</span><b class="mono">{{ fechasForm.controls.fechaGestion.value }} · 09:00–09:04</b></div>
+          <div><span>Resultado</span><b>POSTVENTA · NUEVO · sin asesor</b></div>
+          <div><span>Motivo</span><b>{{ motivoControl.value }}</b></div>
+        </div>
+        @if (preparacion()?.impacto?.requiereConfirmacionPostventa) {
+          <label class="confirmation-check"><input type="checkbox" [checked]="confirmarPostventa()" (change)="confirmarPostventa.set($any($event.target).checked)" /><span><b>Confirmo la reconstrucción de Postventa.</b> Calendario, periodos, pagos, encuestas y entregas dependientes serán reemplazados cuando existan.</span></label>
+        }
+        @if (preparacion()?.impacto?.requiereConfirmacionContacto && identidadModificada()) {
+          <label class="confirmation-check"><input type="checkbox" [checked]="confirmarContacto()" (change)="confirmarContacto.set($any($event.target).checked)" /><span><b>Confirmo el impacto sobre el Contacto.</b> Prefijo o usermeta se sincronizarán en sus oportunidades hermanas.</span></label>
+        }
+        <div class="irreversible"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>La reconstrucción operativa no puede deshacerse desde la interfaz.</span></div>
+      </div>
+      <footer>
+        <button type="button" class="btn secondary" [disabled]="enviando()" (click)="cerrarConfirmacion()">Volver</button>
+        <button type="button" class="btn primary danger" [disabled]="!puedeConfirmar()" (click)="ejecutar()">
+          @if (enviando()) { <span class="spinner light"></span>Reconstruyendo… } @else { Confirmar y reconstruir }
+        </button>
+      </footer>
+    </section>
+  </div>
+}

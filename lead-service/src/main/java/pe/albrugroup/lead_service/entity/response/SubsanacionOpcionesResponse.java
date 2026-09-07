@@ -20,7 +20,7 @@ public class SubsanacionOpcionesResponse {
     private List<TipificacionOpcion> preventa;
     private List<TipificacionOpcion> venta;
 
-    public record ProveedorOpcion(Long id, String nombre, boolean activo) { }
+    public record ProveedorOpcion(Long id, String nombre, boolean activo, boolean requiereSecSotVenta) { }
 
     public record CampanaOpcion(Long id, String nombre, Long idProveedor, String proveedor, boolean activo) { }
 
@@ -32,7 +32,9 @@ public class SubsanacionOpcionesResponse {
             String proveedor,
             LocalDate vigenciaDesde,
             LocalDate vigenciaHasta,
-            boolean activo
+            boolean activo,
+            boolean compatibleHistoricamente,
+            String razonIncompatibilidad
     ) { }
 
     public record TipificacionOpcion(

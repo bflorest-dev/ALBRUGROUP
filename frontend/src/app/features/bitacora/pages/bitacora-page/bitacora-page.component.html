@@ -8,15 +8,21 @@
       <h1>Bitácora</h1>
       <p>Encuentra cualquier lead, entiende dónde y cómo está, y corrige lo que se registró mal. Cada gestión queda sellada con un evento de corrección irreversible.</p>
     </div>
-    <button type="button" class="theme-toggle" (click)="toggleTheme()">
-      @if (theme() === 'dark') {
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
-        <span>Oscuro</span>
-      } @else {
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-        <span>Claro</span>
-      }
-    </button>
+    <div class="head-actions">
+      <button type="button" class="subsanar-entry" (click)="abrirSubsanacionNueva()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 5v14M5 12h14"/><path d="M4 4h16v16H4z"/></svg>
+        Subsanar lead omitido
+      </button>
+      <button type="button" class="theme-toggle" (click)="toggleTheme()">
+        @if (theme() === 'dark') {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+          <span>Oscuro</span>
+        } @else {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <span>Claro</span>
+        }
+      </button>
+    </div>
   </header>
 
   <!-- ── Buscador ─────────────────────────────────────── -->
@@ -60,6 +66,7 @@
       <div class="placeholder">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M9 15.5a4 4 0 0 1 6 0"/></svg>
         <p>Ningún expediente coincide con «{{ f.termino() }}». Prueba con otro dato.</p>
+        <button type="button" class="empty-action" (click)="abrirSubsanacionNueva()">Subsanar como lead omitido</button>
       </div>
     } @else {
       <div class="tablecard">
@@ -158,10 +165,11 @@
 
       <div class="integrity">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 2 4 5v6c0 5 3.4 8 8 11 4.6-3 8-6 8-11V5Z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
-        <div>
+        <div class="integrity-copy">
           <div class="t">Corrección de expediente</div>
           <div class="di">Estás editando con visibilidad total. Al guardar, el lead quedará marcado con un evento de corrección permanente.</div>
         </div>
+        <button type="button" class="rebuild-action" (click)="abrirSubsanacionExistente()">Reconstruir flujo histórico</button>
       </div>
 
       @if (f.cluster()?.idContacto) {
@@ -389,6 +397,11 @@
                         {{ ev.nombreActor }}
                       </div>
                     }
+                    @if (idActaSubsanacion(ev)) {
+                      <button type="button" class="acta-event-link" [disabled]="cargandoActaSubsanacion()" (click)="abrirActaSubsanacion(ev)">
+                        @if (cargandoActaSubsanacion()) { Consultando… } @else { Abrir acta inmutable }
+                      </button>
+                    }
                     @if (esCorreccion(ev)) {
                       <span class="locked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>no eliminable</span>
                     } @else {
@@ -431,6 +444,7 @@
       </div>
 
       @if (f.error()) { <div class="drawer-error">{{ f.error() }}</div> }
+      @if (errorActaSubsanacion()) { <div class="drawer-error">{{ errorActaSubsanacion() }}</div> }
     }
   </aside>
 
@@ -479,6 +493,36 @@
           <button type="button" class="btn ghost" (click)="cerrarActa()">Volver</button>
           <button type="button" class="btn primary" (click)="confirmarCorreccion()">Confirmar corrección</button>
         </div>
+      </div>
+    </div>
+  }
+
+  @if (actaSubsanacion(); as acta) {
+    <div class="acta-scrim" (click)="cerrarActaSubsanacion()">
+      <div class="acta acta-subsanacion" role="dialog" aria-modal="true" aria-labelledby="actaSubsanacionTitle" (click)="$event.stopPropagation()">
+        <div class="ah">
+          <div class="seal">ACTA DE<br />SUBSANACIÓN</div>
+          <div class="k">Evidencia inmutable · #{{ acta.idSubsanacion }}</div>
+          <h3 id="actaSubsanacionTitle">Flujo histórico reconstruido</h3>
+          <p>Ejecutado realmente el {{ fechaHora(acta.ejecutadoAt) }} por {{ acta.nombreAdmin }}.</p>
+        </div>
+        <div class="abody">
+          <div class="dgt">Identificación</div>
+          <div class="del-list">
+            <div class="del-item"><span class="acc">Lead</span><span class="di mono">#{{ acta.idLead }}</span><span class="when">{{ acta.modo }}</span></div>
+            <div class="del-item"><span class="acc">Gestión</span><span class="di mono">{{ acta.fechaGestion }}</span><span class="when">09:00–09:04</span></div>
+            <div class="del-item"><span class="acc">Instalación</span><span class="di mono">{{ acta.fechaInstalacion }}</span><span class="when">POSTVENTA</span></div>
+            <div class="del-item"><span class="acc">Administrador</span><span class="di">{{ acta.nombreAdmin }}</span><span class="when">{{ acta.rolAdmin }}</span></div>
+          </div>
+          <div class="reason acta-reason"><label>Motivo registrado</label><p>{{ acta.motivo }}</p></div>
+          <div class="dgt">Resultado de reconstrucción</div>
+          <div class="del-list">
+            <div class="del-item"><span class="acc">Eventos</span><span class="di">5 eventos operativos exactos</span><span class="when">{{ acta.eventosReemplazados }} reemplazados</span></div>
+            <div class="del-item"><span class="acc">Resúmenes</span><span class="di">PREVENTA · VENTA · POSTVENTA</span><span class="when">{{ acta.resumenesReemplazados }} reemplazados</span></div>
+            <div class="del-item"><span class="acc">Postventa</span><span class="di">Dependencias recreadas</span><span class="when">{{ acta.artefactosPostventaReemplazados }} reemplazadas</span></div>
+          </div>
+        </div>
+        <div class="af"><button type="button" class="btn primary" (click)="cerrarActaSubsanacion()">Cerrar acta</button></div>
       </div>
     </div>
   }
@@ -545,5 +589,18 @@
         </div>
       </div>
     </div>
+  }
+
+  @if (subsanacionModo(); as modo) {
+    <app-subsanacion-drawer
+      [modo]="modo"
+      [idLead]="subsanacionIdLead()"
+      [telefonoInicial]="subsanacionTelefonoInicial()"
+      [tema]="theme()"
+      (cerrar)="cerrarSubsanacion()"
+      (completada)="subsanacionCompletada($event)"
+      (cambiarAExistente)="cambiarASubsanacionExistente($event)"
+      (abrirExpediente)="abrirExpedienteSubsanado($event)"
+    />
   }
 </div>

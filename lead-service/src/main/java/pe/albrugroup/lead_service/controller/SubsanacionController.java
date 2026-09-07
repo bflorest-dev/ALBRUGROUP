@@ -9,11 +9,14 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.lead_service.entity.request.SubsanacionRequest;
 import pe.albrugroup.lead_service.entity.response.SubsanacionLeadBusquedaResponse;
+import pe.albrugroup.lead_service.entity.response.SubsanacionActaResumenResponse;
 import pe.albrugroup.lead_service.entity.response.SubsanacionOpcionesResponse;
+import pe.albrugroup.lead_service.entity.response.SubsanacionPreparacionResponse;
 import pe.albrugroup.lead_service.entity.response.SubsanacionResponse;
 import pe.albrugroup.lead_service.service.SubsanacionService;
 
 import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @Validated
@@ -34,9 +37,20 @@ public class SubsanacionController {
     @GetMapping("/opciones")
     public ResponseEntity<SubsanacionOpcionesResponse> obtenerOpciones(
             @RequestParam Long idEquipo,
-            @RequestParam(required = false) Long idProveedor
+            @RequestParam(required = false) Long idProveedor,
+            @RequestParam(required = false) LocalDate fechaGestion
     ) {
-        return ResponseEntity.ok(subsanacionService.obtenerOpciones(idEquipo, idProveedor));
+        return ResponseEntity.ok(subsanacionService.obtenerOpciones(idEquipo, idProveedor, fechaGestion));
+    }
+
+    @GetMapping("/leads/{idLead}/preparacion")
+    public ResponseEntity<SubsanacionPreparacionResponse> preparar(@PathVariable Long idLead) {
+        return ResponseEntity.ok(subsanacionService.preparar(idLead));
+    }
+
+    @GetMapping("/leads/{idLead}/actas")
+    public ResponseEntity<List<SubsanacionActaResumenResponse>> listarActas(@PathVariable Long idLead) {
+        return ResponseEntity.ok(subsanacionService.listarActas(idLead));
     }
 
     @PostMapping

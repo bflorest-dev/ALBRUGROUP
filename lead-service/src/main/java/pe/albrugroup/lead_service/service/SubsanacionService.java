@@ -13,7 +13,9 @@ import pe.albrugroup.lead_service.entity.enums.*;
 import pe.albrugroup.lead_service.entity.request.SubsanacionRequest;
 import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
 import pe.albrugroup.lead_service.entity.response.SubsanacionLeadBusquedaResponse;
+import pe.albrugroup.lead_service.entity.response.SubsanacionActaResumenResponse;
 import pe.albrugroup.lead_service.entity.response.SubsanacionOpcionesResponse;
+import pe.albrugroup.lead_service.entity.response.SubsanacionPreparacionResponse;
 import pe.albrugroup.lead_service.entity.response.SubsanacionResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.ConflictException;
@@ -68,7 +70,7 @@ public class SubsanacionService {
     }
 
     @Transactional(readOnly = true)
-    public SubsanacionOpcionesResponse obtenerOpciones(Long idEquipo, Long idProveedor) {
+    public SubsanacionOpcionesResponse obtenerOpciones(Long idEquipo, Long idProveedor, LocalDate fechaGestion) {
         if (idEquipo == null || idEquipo <= 0) {
             throw new BadRequestException("Selecciona un equipo valido");
         }
@@ -81,7 +83,8 @@ public class SubsanacionService {
                 .map(relacion -> new SubsanacionOpcionesResponse.ProveedorOpcion(
                         relacion.getProveedor().getId(),
                         relacion.getProveedor().getNombre(),
-                        Boolean.TRUE.equals(relacion.getProveedor().getActivo())))
+                        Boolean.TRUE.equals(relacion.getProveedor().getActivo()),
+                        Boolean.TRUE.equals(relacion.getProveedor().getRequiereSecSotVenta())))
                 .distinct()
                 .sorted(Comparator.comparing(SubsanacionOpcionesResponse.ProveedorOpcion::nombre,
                         Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
@@ -105,7 +108,8 @@ public class SubsanacionService {
                 .filter(p -> p.getProveedor() != null && proveedoresPermitidos.contains(p.getProveedor().getId()))
                 .map(p -> new SubsanacionOpcionesResponse.PlanOpcion(
                         p.getId(), p.getNombre(), p.getPrecio(), p.getProveedor().getId(), p.getProveedor().getNombre(),
-                        p.getVigenciaDesde(), p.getVigenciaHasta(), Boolean.TRUE.equals(p.getActivo())))
+                        p.getVigenciaDesde(), p.getVigenciaHasta(), Boolean.TRUE.equals(p.getActivo()),
+                        esPlanCompatibleEnFecha(p, fechaGestion), razonIncompatibilidadPlan(p, fechaGestion)))
                 .toList();
 
         return SubsanacionOpcionesResponse.builder()
@@ -124,6 +128,35 @@ public class SubsanacionService {
     public SubsanacionResponse obtener(Long idSubsanacion) {
         return toResponse(auditoriaRepository.findById(idSubsanacion)
                 .orElseThrow(() -> new NotFoundException(SubsanacionAuditoria.class, idSubsanacion)));
+    }
+
+    @Transactional(readOnly = true)
+    public SubsanacionPreparacionResponse preparar(Long idLead) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        return SubsanacionPreparacionResponse.builder()
+                .idLead(lead.getId())
+                .idContacto(lead.getContacto() == null ? null : lead.getContacto().getId())
+                .idEquipo(lead.getIdEquipo())
+                .idCampana(lead.getCampana() == null ? null : lead.getCampana().getId())
+                .idProveedor(resolverProveedorId(lead))
+                .idPlan(lead.getPlan() == null ? null : lead.getPlan().getId())
+                .fechaInstalacionActual(calendarioRepository.findByLeadId(idLead)
+                        .map(CalendarioFacturacionPostventa::getFechaInstalacion).orElse(null))
+                .detalle(leadService.obtenerDetalleParaCorreccion(idLead))
+                .contacto(leadService.obtenerClusterContacto(idLead))
+                .impacto(toBusqueda(lead))
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SubsanacionActaResumenResponse> listarActas(Long idLead) {
+        if (!leadRepository.existsById(idLead)) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+        return auditoriaRepository.findByIdLeadOrderByEjecutadoAtDesc(idLead).stream()
+                .map(this::toActaResumen)
+                .toList();
     }
 
     @Transactional
@@ -234,6 +267,9 @@ public class SubsanacionService {
         }
         if (!Objects.equals(campana.getProveedor().getId(), plan.getProveedor().getId())) {
             throw new ConflictException("La campana y el plan deben pertenecer al mismo proveedor");
+        }
+        if (!esPlanCompatibleEnFecha(plan, request.getFechaGestion())) {
+            throw new ConflictException(razonIncompatibilidadPlan(plan, request.getFechaGestion()));
         }
 
         Matriz preventa = resolverMatriz(request.getIdEquipo(), Etapa.PREVENTA,
@@ -793,6 +829,38 @@ public class SubsanacionService {
                         new SubsanacionResponse.Hito(Accion.TIPIFICACION, Etapa.PREVENTA, at(a.getFechaGestion(), 9, 3)),
                         new SubsanacionResponse.Hito(Accion.TIPIFICACION, Etapa.VENTA, at(a.getFechaGestion(), 9, 4))))
                 .build();
+    }
+
+    private SubsanacionActaResumenResponse toActaResumen(SubsanacionAuditoria a) {
+        return SubsanacionActaResumenResponse.builder()
+                .idSubsanacion(a.getId()).requestId(a.getRequestId()).idLead(a.getIdLead()).modo(a.getModo())
+                .idAdmin(a.getIdAdmin()).nombreAdmin(a.getNombreAdmin()).rolAdmin(a.getRolAdmin())
+                .fechaGestion(a.getFechaGestion()).fechaInstalacion(a.getFechaInstalacion())
+                .motivo(a.getMotivo()).ejecutadoAt(a.getEjecutadoAt())
+                .build();
+    }
+
+    private Long resolverProveedorId(Lead lead) {
+        if (lead.getPlan() != null && lead.getPlan().getProveedor() != null) {
+            return lead.getPlan().getProveedor().getId();
+        }
+        return lead.getCampana() == null || lead.getCampana().getProveedor() == null
+                ? null : lead.getCampana().getProveedor().getId();
+    }
+
+    private boolean esPlanCompatibleEnFecha(Plan plan, LocalDate fechaGestion) {
+        if (fechaGestion == null) {
+            return true;
+        }
+        return (plan.getVigenciaDesde() == null || !fechaGestion.isBefore(plan.getVigenciaDesde()))
+                && (plan.getVigenciaHasta() == null || !fechaGestion.isAfter(plan.getVigenciaHasta()));
+    }
+
+    private String razonIncompatibilidadPlan(Plan plan, LocalDate fechaGestion) {
+        if (fechaGestion == null || esPlanCompatibleEnFecha(plan, fechaGestion)) {
+            return null;
+        }
+        return "El plan no estuvo vigente en la fecha de gestion seleccionada";
     }
 
     private Instant at(LocalDate fecha, int hora, int minuto) {

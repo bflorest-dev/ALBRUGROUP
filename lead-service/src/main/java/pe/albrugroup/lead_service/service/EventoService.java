@@ -65,7 +65,8 @@ public class EventoService {
             Accion.TIPIFICACION,
             Accion.ASIGNACION,
             Accion.CONTACTO,
-            Accion.CORRECCION
+            Accion.CORRECCION,
+            Accion.SUBSANACION
     );
     private static final Set<String> LEADS_DIARIOS_SORT_FIELDS = Set.of(
             "createdAt",

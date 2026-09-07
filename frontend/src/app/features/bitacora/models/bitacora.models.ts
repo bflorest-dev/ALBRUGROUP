@@ -87,7 +87,8 @@ export type BitacoraAccion =
   | 'ACTUALIZACION_DIRECCION'
   | 'ACTUALIZACION_OFERTA_COMERCIAL'
   | 'VALIDACION'
-  | 'CORRECCION';
+  | 'CORRECCION'
+  | 'SUBSANACION';
 
 /** Un cambio de campo listado en el acta de confirmación (antes → después). */
 export interface BitacoraFieldChange {

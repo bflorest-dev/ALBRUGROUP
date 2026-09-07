@@ -7,6 +7,10 @@ import { providerLogo } from '../../../../shared/utils/provider-logo';
 import { LeadDetalleResponse, EventoResponse } from '../../../../shared/models/preventa/preventa.models';
 import { BitacoraFacade, BitacoraTab } from '../../facades/bitacora.facade';
 import { BitacoraAccion, BitacoraBusquedaResponse } from '../../models/bitacora.models';
+import { SubsanacionModo, SubsanacionResponse } from '../../models/subsanacion.models';
+import { SubsanacionDrawerComponent } from '../../components/subsanacion-drawer/subsanacion-drawer.component';
+import { SubsanacionService } from '../../services/subsanacion.service';
+import { finalize } from 'rxjs';
 
 type FiltroChip = { label: string; accion: BitacoraAccion | null };
 type AccionMeta = { cls: string; label: string };
@@ -29,13 +33,14 @@ const ACCION_META: Record<string, AccionMeta> = {
   ACTUALIZACION_DIRECCION: { cls: 'asig', label: 'Actualización de dirección' },
   ACTUALIZACION_OFERTA_COMERCIAL: { cls: 'asig', label: 'Actualización de oferta' },
   VALIDACION: { cls: 'asig', label: 'Validación' },
-  CORRECCION: { cls: 'corr', label: 'Corrección' }
+  CORRECCION: { cls: 'corr', label: 'Corrección' },
+  SUBSANACION: { cls: 'sub', label: 'Subsanación' }
 };
 
 @Component({
   selector: 'app-bitacora-page',
   standalone: true,
-  imports: [ReactiveFormsModule, TooltipModule],
+  imports: [ReactiveFormsModule, TooltipModule, SubsanacionDrawerComponent],
   providers: [BitacoraFacade],
   templateUrl: './bitacora-page.component.html',
   styleUrl: './bitacora-page.component.scss',
@@ -44,18 +49,26 @@ const ACCION_META: Record<string, AccionMeta> = {
 export class BitacoraPageComponent implements OnInit {
   protected readonly f = inject(BitacoraFacade);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly subsanacionApi = inject(SubsanacionService);
 
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly pickerControl = new FormControl('', { nonNullable: true });
   protected readonly theme = signal<'light' | 'dark'>('light');
   protected readonly actaAbierta = signal(false);
   protected readonly motivoControl = new FormControl('', { nonNullable: true });
+  protected readonly subsanacionModo = signal<SubsanacionModo | null>(null);
+  protected readonly subsanacionIdLead = signal<number | null>(null);
+  protected readonly subsanacionTelefonoInicial = signal('');
+  protected readonly actaSubsanacion = signal<SubsanacionResponse | null>(null);
+  protected readonly cargandoActaSubsanacion = signal(false);
+  protected readonly errorActaSubsanacion = signal<string | null>(null);
 
   protected readonly filtros: FiltroChip[] = [
     { label: 'Tipificación', accion: 'TIPIFICACION' },
     { label: 'Registro', accion: 'REGISTRO' },
     { label: 'Asignación', accion: 'ASIGNACION' },
     { label: 'Corrección', accion: 'CORRECCION' },
+    { label: 'Subsanación', accion: 'SUBSANACION' },
     { label: 'Todo', accion: null }
   ];
 
@@ -108,6 +121,76 @@ export class BitacoraPageComponent implements OnInit {
 
   protected abrir(row: BitacoraBusquedaResponse): void {
     this.f.abrirLead(row.idLead);
+  }
+
+  protected abrirSubsanacionNueva(): void {
+    const telefono = this.searchControl.value.replace(/\D/g, '');
+    this.f.cerrarDrawer();
+    this.subsanacionIdLead.set(null);
+    this.subsanacionTelefonoInicial.set(telefono.length >= 6 ? telefono : '');
+    this.subsanacionModo.set('NUEVO');
+  }
+
+  protected abrirSubsanacionExistente(): void {
+    const idLead = this.f.detalle()?.id;
+    if (!idLead) return;
+    if (this.f.hayCambios()) {
+      this.f.error.set('Guarda o descarta la corrección en curso antes de reconstruir el flujo histórico.');
+      return;
+    }
+    this.f.cerrarDrawer();
+    this.subsanacionIdLead.set(idLead);
+    this.subsanacionTelefonoInicial.set('');
+    this.subsanacionModo.set('EXISTENTE');
+  }
+
+  protected cambiarASubsanacionExistente(idLead: number): void {
+    this.subsanacionModo.set(null);
+    queueMicrotask(() => {
+      this.subsanacionIdLead.set(idLead);
+      this.subsanacionTelefonoInicial.set('');
+      this.subsanacionModo.set('EXISTENTE');
+    });
+  }
+
+  protected cerrarSubsanacion(): void {
+    this.subsanacionModo.set(null);
+    this.subsanacionIdLead.set(null);
+    this.subsanacionTelefonoInicial.set('');
+  }
+
+  protected subsanacionCompletada(_resultado: SubsanacionResponse): void {
+    this.buscarAhora();
+  }
+
+  protected abrirExpedienteSubsanado(idLead: number): void {
+    this.cerrarSubsanacion();
+    this.f.abrirLead(idLead);
+    this.f.setTab('historial');
+  }
+
+  protected idActaSubsanacion(evento: EventoResponse): number | null {
+    if ((evento.accion ?? '').toUpperCase() !== 'SUBSANACION') return null;
+    const match = (evento.comentario ?? '').match(/Subsanacion #(\d+)/i);
+    return match ? Number(match[1]) : null;
+  }
+
+  protected abrirActaSubsanacion(evento: EventoResponse): void {
+    const id = this.idActaSubsanacion(evento);
+    if (!id) return;
+    this.errorActaSubsanacion.set(null);
+    this.cargandoActaSubsanacion.set(true);
+    this.subsanacionApi.obtenerActa(id)
+      .pipe(finalize(() => this.cargandoActaSubsanacion.set(false)))
+      .subscribe({
+        next: (acta) => this.actaSubsanacion.set(acta),
+        error: () => this.errorActaSubsanacion.set('No se pudo recuperar el acta de subsanación.')
+      });
+  }
+
+  protected cerrarActaSubsanacion(): void {
+    this.actaSubsanacion.set(null);
+    this.errorActaSubsanacion.set(null);
   }
 
   protected setTab(tab: BitacoraTab): void {
@@ -172,7 +255,8 @@ export class BitacoraPageComponent implements OnInit {
   }
 
   protected esCorreccion(evento: EventoResponse): boolean {
-    return (evento.accion ?? '').toUpperCase() === 'CORRECCION';
+    const accion = (evento.accion ?? '').toUpperCase();
+    return accion === 'CORRECCION' || accion === 'SUBSANACION';
   }
 
   protected eventoTitulo(evento: EventoResponse): string {

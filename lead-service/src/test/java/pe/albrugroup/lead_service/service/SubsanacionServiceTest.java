@@ -207,6 +207,28 @@ class SubsanacionServiceTest {
     }
 
     @Test
+    void rechazaPlanFueraDeVigenciaParaLaFechaHistoricaElegida() {
+        Proveedor proveedor = Proveedor.builder().id(1L).nombre("Proveedor").build();
+        Campana campana = Campana.builder().id(2L).proveedor(proveedor).build();
+        Plan plan = Plan.builder()
+                .id(3L)
+                .proveedor(proveedor)
+                .vigenciaDesde(request.getFechaGestion().minusMonths(2))
+                .vigenciaHasta(request.getFechaGestion().minusDays(1))
+                .build();
+
+        when(campanaRepository.findByIdForSubsanacion(2L)).thenReturn(Optional.of(campana));
+        when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
+        when(equipoProveedorRepository.existsByIdEquipoAndProveedorId(7L, 1L)).thenReturn(true);
+
+        ConflictException error = assertThrows(ConflictException.class, () -> service.subsanar(request));
+
+        assertTrue(error.getMessage().contains("vigente"));
+        verifyNoInteractions(tipificacionRepository, subtipificacionRepository);
+        verify(leadRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     void leadExistenteEnPostventaExigeConfirmacionAntesDeEliminarInformacion() {
         request.setModo(ModoSubsanacion.EXISTENTE);
         request.setIdLead(42L);

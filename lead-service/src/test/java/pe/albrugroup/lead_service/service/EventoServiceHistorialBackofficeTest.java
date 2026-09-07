@@ -49,7 +49,7 @@ class EventoServiceHistorialBackofficeTest {
     @InjectMocks private EventoService eventoService;
 
     @Test
-    void todoConsultaSoloLasCuatroAccionesPermitidasEnVenta() {
+    void todoConsultaLasAccionesPermitidasIncluidaSubsanacionEnVenta() {
         PageRequest request = request();
         Pageable pageable = Pageable.unpaged();
         prepararConsultaGlobal(25L, request, pageable);
@@ -70,12 +70,13 @@ class EventoServiceHistorialBackofficeTest {
                 Accion.TIPIFICACION,
                 Accion.ASIGNACION,
                 Accion.CONTACTO,
-                Accion.CORRECCION
+                Accion.CORRECCION,
+                Accion.SUBSANACION
         );
     }
 
     @ParameterizedTest
-    @EnumSource(value = Accion.class, names = {"TIPIFICACION", "ASIGNACION", "CONTACTO", "CORRECCION"})
+    @EnumSource(value = Accion.class, names = {"TIPIFICACION", "ASIGNACION", "CONTACTO", "CORRECCION", "SUBSANACION"})
     void filtraCadaAccionPermitida(Accion accion) {
         PageRequest request = request();
         Pageable pageable = Pageable.unpaged();
