@@ -4711,6 +4711,7 @@ public class LeadService {
         LeadPlanDetalleResponse plan = toLeadPlanDetalleResponse(lead.getPlan());
         LeadPromocionDetalleResponse promocionInterna = toLeadPromocionDetalleResponse(lead.getPromocionInterna());
         LeadEtapaResumen resumenVenta = leadEtapaResumenRepository.findByIdLeadAndEtapa(lead.getId(), Etapa.VENTA).orElse(null);
+        LeadEtapaResumen resumenPreventa = leadEtapaResumenRepository.findByIdLeadAndEtapa(lead.getId(), Etapa.PREVENTA).orElse(null);
         Evento ultimaProgramacionVenta = eventoRepository
                 .findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(lead.getId(), Accion.TIPIFICACION, TIPIFICACION_PROGRAMADO)
                 .orElse(null);
@@ -4783,7 +4784,7 @@ public class LeadService {
                 requiereSecSotVenta(lead),
                 resumenVenta == null ? null : resumenVenta.getUltimaCodigoTipificacion(),
                 resumenVenta == null ? null : resumenVenta.getUltimaCodigoSubtipificacion(),
-                resumenVenta == null ? null : resumenVenta.getNombreAsesorMerito(),
+                resumenPreventa == null ? null : resumenPreventa.getNombreAsesorMerito(),
                 lead.getPlan() == null ? null : lead.getPlan().getId(),
                 lead.getNombrePlanSnapshot(),
                 lead.getNombreProveedorSnapshot(),

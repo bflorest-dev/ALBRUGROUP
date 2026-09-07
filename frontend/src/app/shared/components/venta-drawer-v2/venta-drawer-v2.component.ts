@@ -273,7 +273,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   }
 
   protected salesAdvisor(): string {
-    return this.display(this.detail?.nombreAsesorMeritoVenta, 'Sin registrar');
+    return this.display(this.detail?.nombreAsesorMeritoPreventa, 'Sin registrar');
   }
 
   private latestVentaTipification(): EventoResponse | null {

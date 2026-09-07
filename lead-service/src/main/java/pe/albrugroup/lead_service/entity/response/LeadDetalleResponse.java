@@ -78,7 +78,7 @@ public class LeadDetalleResponse {
     private Boolean requiereSecSotVenta;
     private String tipificacionActual;
     private String subtipificacionActual;
-    private String nombreAsesorMeritoVenta;
+    private String nombreAsesorMeritoPreventa;
     private Long idPlan;
     private String nombrePlan;
     private String nombreProveedorPlan;
