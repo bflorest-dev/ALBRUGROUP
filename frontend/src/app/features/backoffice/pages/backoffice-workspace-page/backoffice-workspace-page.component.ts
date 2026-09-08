@@ -2611,7 +2611,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected lastTipificationComment(row: LeadVentaResponse): string {
-    return (row.ultimoComentarioTipificacion ?? '').trim();
+    return (row.comentario ?? '').trim();
   }
 
   protected isLeadActionLoading(idLead: number): boolean {

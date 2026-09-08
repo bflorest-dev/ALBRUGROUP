@@ -233,7 +233,6 @@
                 <label><span>Tipificación</span><p-select formControlName="codigoTipificacion" [options]="tipificaciones" optionLabel="codigo" optionValue="codigo" placeholder="Seleccionar" appendTo="body" (onChange)="tipificacionSelected.emit($event.value)" /></label>
                 <label><span>Subtipificación</span><p-select formControlName="codigoSubtipificacion" [options]="subtipificaciones" optionLabel="codigo" optionValue="codigo" placeholder="Seleccionar" appendTo="body" (onChange)="subtipificacionSelected.emit($event.value)" /></label>
                 <div class="venta-v2__dock-actions">
-                  <button class="venta-v2__comment-button" type="button" [class.is-active]="commentOpen()" (click)="commentOpen.set(!commentOpen())"><i class="pi pi-comment" aria-hidden="true"></i><span>{{ commentOpen() ? 'Ocultar nota' : 'Agregar nota' }}</span></button>
                   <button pButton type="submit" icon="pi pi-check" label="Tipificar" [loading]="saving" [disabled]="!canMutate"></button>
                 </div>
               </div>
@@ -250,7 +249,7 @@
                   @if (requiresSecSot || requiresCustomerId) { <label><span>SOT</span><input pInputText formControlName="sot" inputmode="numeric" maxlength="8" (input)="setDigits('sot', $any($event.target).value, 8)" /></label> }
                 </div>
               }
-              @if (commentOpen()) { <label class="venta-v2__comment"><span>Comentario</span><input pInputText formControlName="comentario" placeholder="Agrega contexto útil para la siguiente gestión" /></label> }
+              <label class="venta-v2__comment"><span>Comentario</span><input pInputText formControlName="comentario" placeholder="Agrega contexto útil para la siguiente gestión" /></label>
             </form>
           </footer>
         }

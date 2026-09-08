@@ -1384,7 +1384,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 pl.velocidadPromocional,
                 pl.mesesPromocionVelocidad,
                 ultTip.createdAt,
-                ultTip.comentario
+                ultTip.comentario,
+                l.comentario
             )
             FROM Lead l
             LEFT JOIN Evento ultTip ON ultTip.id = (
@@ -1784,7 +1785,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 pl.velocidadPromocional,
                 pl.mesesPromocionVelocidad,
                 e.createdAt,
-                e.comentario
+                e.comentario,
+                l.comentario
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
@@ -1932,7 +1934,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 pl.velocidadPromocional,
                 pl.mesesPromocionVelocidad,
                 e.createdAt,
-                e.comentario
+                e.comentario,
+                l.comentario
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id

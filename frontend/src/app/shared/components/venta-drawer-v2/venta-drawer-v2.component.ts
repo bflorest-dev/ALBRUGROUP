@@ -111,7 +111,6 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   protected readonly summaryOpen = signal(true);
   protected readonly editingSection = signal<EditableSection>(null);
   protected readonly planEditing = signal(false);
-  protected readonly commentOpen = signal(false);
   protected readonly coordinatePasteMessage = signal<string | null>(null);
   protected readonly historyFilter = signal<'TODO' | 'TIPIFICACION' | 'ASIGNACION'>('TODO');
   protected readonly sectionSaving = signal(false);
@@ -136,7 +135,6 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
         this.summaryOpen.set(true);
         this.editingSection.set(null);
         this.planEditing.set(false);
-        this.commentOpen.set(!!this.tipificacionForm.get('comentario')?.value?.trim());
       } else {
         this.restoreBodyScroll();
         this.pickerDateCache.clear();

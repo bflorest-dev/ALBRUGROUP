@@ -267,6 +267,7 @@ export interface LeadVentaResponse {
   mesesPromocionVelocidad?: number | null;
   // Fecha/hora de la ultima tipificacion del lead.
   ultimaTipificacionAt?: string | null;
+  comentario?: string | null;
 }
 
 export interface LeadInstaladoBackofficeResponse {

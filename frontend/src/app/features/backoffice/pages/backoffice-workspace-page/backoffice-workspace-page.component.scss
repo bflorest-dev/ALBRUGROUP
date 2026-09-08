@@ -1331,6 +1331,57 @@ app-lead-commercial-data-tabs {
   }
 }
 
+// Columnas que NUNCA desaparecen: col-fecha-ingreso, col-fecha-operativa,
+// col-documento, col-sec-sot, col-asignado, col-actions.
+// El resto desaparece en orden de menor a mayor impacto operativo.
+
+// Tier 1 (≤1280px): col-asesor-venta + col-tiempo-transcurrido.
+@media (max-width: 1280px) {
+  .backoffice-page {
+    --backoffice-table-min-width: 1100px;
+  }
+
+  .col-asesor-venta,
+  .col-tiempo-transcurrido {
+    display: none;
+  }
+}
+
+// Tier 2 (≤1100px): + col-proveedor + col-estado.
+@media (max-width: 1100px) {
+  .backoffice-page {
+    --backoffice-table-min-width: 900px;
+  }
+
+  .col-proveedor,
+  .col-estado {
+    display: none;
+  }
+}
+
+// Tier 3 (≤880px): + col-plan + col-gestion.
+@media (max-width: 880px) {
+  .backoffice-page {
+    --backoffice-table-min-width: 780px;
+  }
+
+  .col-plan,
+  .col-gestion {
+    display: none;
+  }
+}
+
+// Tier 4 (≤760px): + col-tipificacion. Solo quedan las 6 columnas prioritarias.
+@media (max-width: 760px) {
+  .backoffice-page {
+    --backoffice-table-min-width: 650px;
+  }
+
+  .col-tipificacion {
+    display: none;
+  }
+}
+
 @media (max-width: 720px) {
   .drawer-head,
   .drawer-tipification__main,
