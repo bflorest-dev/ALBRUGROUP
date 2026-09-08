@@ -279,4 +279,46 @@ describe('AdminSidebarV2Component', () => {
     (fixture.nativeElement.querySelector('.admin-nav-v2__focus-layer') as HTMLButtonElement).click();
     expect(cancellations).toEqual([true]);
   });
+
+  it('muestra modos de trabajo duales y emite el cambio elegido', () => {
+    TestBed.configureTestingModule({
+      imports: [AdminSidebarV2Component],
+      providers: [provideRouter([])]
+    });
+
+    const fixture = TestBed.createComponent(AdminSidebarV2Component);
+    fixture.componentRef.setInput('items', items);
+    fixture.componentRef.setInput('domainDefinitions', domains);
+    fixture.componentRef.setInput('activeRole', 'ASESOR_POSTVENTA');
+    fixture.componentRef.setInput('roleModes', [
+      {
+        role: 'ASESOR_POSTVENTA',
+        label: 'Postventa',
+        description: 'Gestionar cartera postventa',
+        icon: 'ti ti-headset'
+      },
+      {
+        role: 'ASESOR_BACKOFFICE',
+        label: 'Backoffice',
+        description: 'Gestionar operación comercial',
+        icon: 'ti ti-briefcase'
+      }
+    ]);
+    const emitted: string[] = [];
+    fixture.componentInstance.roleModeSelected.subscribe((role) => emitted.push(role));
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.admin-nav-v2__profile-trigger') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const actions = fixture.nativeElement.querySelectorAll('.admin-nav-v2__profile-action') as NodeListOf<HTMLButtonElement>;
+    expect(actions[0].textContent).toContain('Postventa');
+    expect(actions[0].classList).toContain('is-active');
+    expect(actions[1].textContent).toContain('Backoffice');
+
+    actions[1].click();
+    fixture.detectChanges();
+
+    expect(emitted).toEqual(['ASESOR_BACKOFFICE']);
+  });
 });

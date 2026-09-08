@@ -237,7 +237,7 @@ export class PresenceService {
   }
 
   private shouldSuppressHeartbeat(): boolean {
-    const role = this.sessionService.session()?.primaryRole;
+    const role = this.sessionService.getActiveRole();
     if (!role || !OPERATIONAL_ROLES.has(role)) {
       return false;
     }

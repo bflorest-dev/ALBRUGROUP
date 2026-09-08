@@ -11,7 +11,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, filter, map, of, startWith, switchMap } from 'rxjs';
-import { ROLE_HOME_ROUTES } from '../../../../core/constants/role.constants';
+import { ROLE_HOME_ROUTES, resolveDefaultActiveRole } from '../../../../core/constants/role.constants';
 import { IdleSessionService } from '../../../../core/services/idle-session.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { TokenService } from '../../../../core/services/token.service';
@@ -155,7 +155,8 @@ export class LoginPageComponent {
 
   private handleLoginSuccess(response: LoginResponse): void {
     const primaryRole = response.roles[0] ?? null;
-    const homeRoute = primaryRole ? ROLE_HOME_ROUTES[primaryRole] ?? '/app/admin' : '/app/admin';
+    const activeRole = resolveDefaultActiveRole(response.roles);
+    const homeRoute = activeRole ? ROLE_HOME_ROUTES[activeRole] ?? '/app/admin' : '/app/admin';
 
     this.tokenService.setTokens(response.token, response.refreshToken);
     this.sessionService.setSession({
@@ -164,6 +165,7 @@ export class LoginPageComponent {
       nombreCompleto: response.nombreCompleto,
       roles: response.roles,
       primaryRole,
+      activeRole,
       homeRoute
     });
     this.idleSessionService.markActivity();

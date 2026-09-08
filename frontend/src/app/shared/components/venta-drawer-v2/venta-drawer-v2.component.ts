@@ -136,7 +136,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
         this.summaryOpen.set(true);
         this.editingSection.set(null);
         this.planEditing.set(false);
-        this.commentOpen.set(false);
+        this.commentOpen.set(!!this.tipificacionForm.get('comentario')?.value?.trim());
       } else {
         this.restoreBodyScroll();
         this.pickerDateCache.clear();
@@ -314,6 +314,13 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
       day: '2-digit', month: 'short', year: 'numeric',
       ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {})
     }).format(date);
+  }
+
+  protected onSummaryCopy(event: ClipboardEvent): void {
+    const selection = this.document.getSelection();
+    if (!selection || !event.clipboardData) return;
+    event.preventDefault();
+    event.clipboardData.setData('text/plain', selection.toString());
   }
 
   protected money(value?: number | null): string {

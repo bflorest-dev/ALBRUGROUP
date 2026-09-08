@@ -98,7 +98,8 @@ describe('AttendanceFacade schedule automation', () => {
           provide: SessionService,
           useValue: {
             session: signal({ primaryRole: 'ASESOR_VENTAS' }),
-            getSession: vi.fn(() => ({ primaryRole: 'ASESOR_VENTAS' }))
+            getSession: vi.fn(() => ({ primaryRole: 'ASESOR_VENTAS' })),
+            getActiveRole: vi.fn(() => 'ASESOR_VENTAS')
           }
         }
       ]

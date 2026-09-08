@@ -447,6 +447,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   mesesPermanenciaSnapshot?: number | null;
   adicionales?: LeadAdicionalDetalleResponse[] | null;
   totalAsignaciones?: number | null;
+  fechaIngresoEtapa?: string | null;
   fechaProgramacion?: string | null;
   fechaRechazo?: string | null;
   horaProgramada?: string | null;
@@ -456,6 +457,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   // y si es obligatorio para cerrar la venta.
   camposConfig?: CampoConfigItem[] | null;
   ofertaComercialActualizadaVenta?: boolean;
+  comentario?: string | null;
 }
 
 export interface LeadPlanDetalleResponse {

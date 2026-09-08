@@ -4,7 +4,7 @@
 
     <div class="venta-v2__stage" role="dialog" aria-modal="true" aria-labelledby="venta-v2-title">
       <aside class="venta-v2__summary" [class.venta-v2__summary--closed]="!summaryOpen()" aria-label="Resumen del lead">
-        <div class="venta-v2__summary-sheet">
+        <div class="venta-v2__summary-sheet" (copy)="onSummaryCopy($event)">
           <div class="venta-v2__summary-kicker">
             <span>Resumen comercial</span>
             <span class="venta-v2__summary-id">#{{ detail?.id }}</span>
@@ -17,7 +17,7 @@
             @if (detail?.customerId) { <div><dt>Customer ID</dt><dd>{{ detail?.customerId }}</dd></div> }
             @if (detail?.sec) { <div><dt>SEC</dt><dd>{{ detail?.sec }}</dd></div> }
             @if (detail?.sot) { <div><dt>SOT</dt><dd>{{ detail?.sot }}</dd></div> }
-            <div><dt>Fecha de ingreso</dt><dd>{{ formatDate(detail?.fechaAsignacion, true) }}</dd></div>
+            <div><dt>Fecha de ingreso</dt><dd>{{ formatDate(detail?.fechaIngresoEtapa, true) }}</dd></div>
             @if (operationalDate(); as date) { <div><dt>{{ date.label }}</dt><dd>{{ formatDate(date.value) }}</dd></div> }
           </dl>
         </div>

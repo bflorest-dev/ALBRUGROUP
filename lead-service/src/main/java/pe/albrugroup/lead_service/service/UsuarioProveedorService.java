@@ -45,6 +45,14 @@ public class UsuarioProveedorService {
             throw new BadRequestException("Solo se pueden asignar proveedores activos");
         }
 
+        reemplazarProveedores(idEmpleado, ambito, proveedores);
+        if (ambito == AmbitoProveedor.POSTVENTA) {
+            reemplazarProveedores(idEmpleado, AmbitoProveedor.BACKOFFICE, proveedores);
+        }
+        return listarProveedoresDeEmpleado(idEmpleado, ambito);
+    }
+
+    private void reemplazarProveedores(Long idEmpleado, AmbitoProveedor ambito, List<Proveedor> proveedores) {
         repository.deleteByIdEmpleadoAndAmbito(idEmpleado, ambito);
         repository.flush();
         proveedores.forEach(proveedor -> repository.save(UsuarioProveedor.builder()
@@ -53,7 +61,6 @@ public class UsuarioProveedorService {
                 .ambito(ambito)
                 .activo(true)
                 .build()));
-        return listarProveedoresDeEmpleado(idEmpleado, ambito);
     }
 
     /** Todas las asignaciones del ámbito, agrupadas por empleado (para el grid de administración). */

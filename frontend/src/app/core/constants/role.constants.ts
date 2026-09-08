@@ -15,3 +15,28 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
   COMMUNITY: '/app/community',
   MONITOR: '/app/backoffice/plataforma'
 };
+
+export type OperationalScope = 'BACKOFFICE' | 'POSTVENTA';
+
+export const POSTVENTA_ROLE = 'ASESOR_POSTVENTA';
+export const POSTVENTA_BACKOFFICE_ROLE = 'ASESOR_BACKOFFICE';
+
+export function resolveDefaultActiveRole(roles: readonly string[]): string | null {
+  if (roles.includes(POSTVENTA_ROLE)) {
+    return POSTVENTA_ROLE;
+  }
+  return roles[0] ?? null;
+}
+
+export function operationalScopeForRole(role?: string | null): OperationalScope | null {
+  if (!role) {
+    return null;
+  }
+  if (role === 'ASESOR_BACKOFFICE' || role === 'SUPERVISOR_BACKOFFICE' || role === 'MONITOR') {
+    return 'BACKOFFICE';
+  }
+  if (role === 'ASESOR_POSTVENTA' || role === 'SUPERVISOR_POSTVENTA') {
+    return 'POSTVENTA';
+  }
+  return null;
+}

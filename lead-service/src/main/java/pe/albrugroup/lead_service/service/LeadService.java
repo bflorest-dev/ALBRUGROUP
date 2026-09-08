@@ -2362,6 +2362,9 @@ public class LeadService {
         validarFechaRechazoVenta(tipificacion.getCodigo(), request.getFechaRechazo());
         aplicarSecSotVentaSiCorresponde(lead, tipificacion, subtipificacion, request.getSec(), request.getSot());
         aplicarCustomerIdVentaSiCorresponde(lead, subtipificacion, request.getCustomerId());
+        if (request.getComentario() != null && !request.getComentario().isBlank()) {
+            lead.setComentario(request.getComentario());
+        }
 
         // Atribucion de venta (merito de VENTA): el responsable y la fecha se resuelven por
         // comportamientos de la subtipificacion; no por codigos de matriz.
@@ -4795,6 +4798,7 @@ public class LeadService {
                 lead.getPrecioFinal(),
                 lead.getDiaCorteFacturacion(),
                 lead.getMesesPermanenciaSnapshot(),
+                resumenVenta == null ? null : resumenVenta.getFechaIngresoEtapa(),
                 ultimaProgramacionVenta == null ? null : ultimaProgramacionVenta.getFechaProgramacion(),
                 ultimaProgramacionVenta == null ? null : ultimaProgramacionVenta.getHoraProgramada(),
                 plan,
@@ -4805,7 +4809,8 @@ public class LeadService {
                 lead.getEtapa() != Etapa.PREVENTA,
                 resolverConfigCamposCaptura(lead),
                 obtenerProveedorFallbackDeEquipo(lead.getIdEquipo()),
-                ofertaComercialActualizadaEnCicloActualVenta(lead)
+                ofertaComercialActualizadaEnCicloActualVenta(lead),
+                lead.getComentario()
         );
     }
 

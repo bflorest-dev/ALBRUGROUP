@@ -1,6 +1,6 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { STORAGE_KEYS } from '../constants/storage.constants';
-import { ROLE_HOME_ROUTES } from '../constants/role.constants';
+import { ROLE_HOME_ROUTES, resolveDefaultActiveRole } from '../constants/role.constants';
 import { UserSession } from '../../shared/models/auth/user-session';
 import { TokenService } from './token.service';
 import { AsesorVentasWorkspaceStateService } from './asesor-ventas-workspace-state.service';
@@ -12,10 +12,11 @@ export class SessionService {
   private readonly sessionState = signal<UserSession | null>(this.readStoredSession());
   private readonly asesorVentasWorkspaceState = inject(AsesorVentasWorkspaceStateService);
   readonly session = this.sessionState.asReadonly();
-  readonly primaryRole = computed(() => this.sessionState()?.primaryRole ?? null);
+  readonly activeRole = computed(() => this.sessionState()?.activeRole ?? this.sessionState()?.primaryRole ?? null);
+  readonly primaryRole = this.activeRole;
   readonly homeRoute = computed(() => {
-    const primaryRole = this.primaryRole();
-    return primaryRole ? ROLE_HOME_ROUTES[primaryRole] ?? '/app/admin' : '/auth/access';
+    const activeRole = this.activeRole();
+    return activeRole ? ROLE_HOME_ROUTES[activeRole] ?? '/app/admin' : '/auth/access';
   });
 
   constructor(private readonly tokenService: TokenService) {
@@ -40,11 +41,37 @@ export class SessionService {
   }
 
   setSession(session: UserSession): void {
-    this.sessionState.set(session);
+    this.sessionState.set(this.normalizeSession(session));
   }
 
   getPrimaryRole(): string | null {
-    return this.primaryRole();
+    return this.activeRole();
+  }
+
+  getActiveRole(): string | null {
+    return this.activeRole();
+  }
+
+  hasRole(role: string): boolean {
+    return this.sessionState()?.roles.includes(role) ?? false;
+  }
+
+  hasAnyRole(roles: readonly string[]): boolean {
+    const sessionRoles = this.sessionState()?.roles ?? [];
+    return roles.some((role) => sessionRoles.includes(role));
+  }
+
+  setActiveRole(role: string): boolean {
+    const session = this.sessionState();
+    if (!session?.roles.includes(role)) {
+      return false;
+    }
+    this.sessionState.set({
+      ...session,
+      activeRole: role,
+      homeRoute: ROLE_HOME_ROUTES[role] ?? session.homeRoute
+    });
+    return true;
   }
 
   getHomeRoute(): string {
@@ -66,10 +93,27 @@ export class SessionService {
     }
 
     try {
-      return JSON.parse(session) as UserSession;
+      return this.normalizeSession(JSON.parse(session) as UserSession);
     } catch {
       localStorage.removeItem(STORAGE_KEYS.session);
       return null;
     }
+  }
+
+  private normalizeSession(session: UserSession): UserSession {
+    const roles = session.roles ?? [];
+    const primaryRole = session.primaryRole && roles.includes(session.primaryRole)
+      ? session.primaryRole
+      : roles[0] ?? null;
+    const activeRole = session.activeRole && roles.includes(session.activeRole)
+      ? session.activeRole
+      : resolveDefaultActiveRole(roles);
+    return {
+      ...session,
+      roles,
+      primaryRole,
+      activeRole,
+      homeRoute: activeRole ? ROLE_HOME_ROUTES[activeRole] ?? session.homeRoute : session.homeRoute
+    };
   }
 }

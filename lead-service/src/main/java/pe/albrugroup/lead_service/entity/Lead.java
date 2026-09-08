@@ -87,6 +87,9 @@ public class Lead {
     private Long idSubtipificacion;
     private String codigoSubtipificacion;
 
+    @Column(columnDefinition = "TEXT")
+    private String comentario;
+
     private String numeroDocumentoTitularServicioSnapshot;
     private String direccionSnapshot;
     @Column(length = 9)

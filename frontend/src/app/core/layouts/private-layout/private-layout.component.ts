@@ -26,12 +26,13 @@ import { ATTENDANCE_STATUS_META, AttendanceActionId } from '../../../shared/mode
 import { AsesorVentasWorkspaceStateService } from '../../services/asesor-ventas-workspace-state.service';
 import { STORAGE_KEYS } from '../../constants/storage.constants';
 import { ALWAYS_OPERATIONAL_ROLES } from '../../constants/operational-roles.constants';
+import { POSTVENTA_BACKOFFICE_ROLE, POSTVENTA_ROLE, ROLE_HOME_ROUTES } from '../../constants/role.constants';
 import { GtrAgendadosAlertFacade } from '../../../features/gtr/facades/gtr-agendados-alert.facade';
 import { EquiposNavService } from '../../services/equipos-nav.service';
 import { CurrentUserProviderScopeService } from '../../services/current-user-provider-scope.service';
 import { LeadMeritoCorreccionDrawerComponent } from '../../../shared/components/lead-merito-correccion-drawer/lead-merito-correccion-drawer.component';
 import { AdminSidebarV2Component } from './admin-sidebar-v2.component';
-import { SidebarDomainDefinition, SidebarItem } from './sidebar-item.model';
+import { SidebarDomainDefinition, SidebarItem, SidebarRoleModeOption } from './sidebar-item.model';
 import { sidebarDomainsForRole, sidebarV2EnabledForRole } from './sidebar-v2.config';
 import { shouldGuideAttendanceLogout } from './attendance-logout-guidance';
 import { SidebarAttendancePickerComponent } from './sidebar-attendance-picker.component';
@@ -107,18 +108,19 @@ export class PrivateLayoutComponent implements AfterViewInit {
   // este contador evita re-disparar el logout en un layout recreado tras un re-login.
   private handledSalidaTick = this.attendanceFacade.salidaSuccessTick();
   protected readonly session = this.sessionService.session;
-  protected readonly isAdmin = computed(() => this.session()?.primaryRole === 'ADMINISTRADOR');
-  protected readonly usesSidebarV2 = computed(() => sidebarV2EnabledForRole(this.session()?.primaryRole));
+  protected readonly activeRole = this.sessionService.activeRole;
+  protected readonly isAdmin = computed(() => this.activeRole() === 'ADMINISTRADOR');
+  protected readonly usesSidebarV2 = computed(() => sidebarV2EnabledForRole(this.activeRole()));
   protected readonly sidebarDomainDefinitions = computed<SidebarDomainDefinition[]>(() =>
-    sidebarDomainsForRole(this.session()?.primaryRole)
+    sidebarDomainsForRole(this.activeRole())
   );
   protected readonly canCorrectMerito = computed(() => {
-    const primaryRole = this.session()?.primaryRole;
-    return primaryRole === 'ADMINISTRADOR' || primaryRole === 'SUPERVISOR_VENTAS';
+    const activeRole = this.activeRole();
+    return activeRole === 'ADMINISTRADOR' || activeRole === 'SUPERVISOR_VENTAS';
   });
   protected readonly isAlwaysOnlineRole = computed(() => {
-    const primaryRole = this.session()?.primaryRole;
-    return Boolean(primaryRole && ALWAYS_OPERATIONAL_ROLES.has(primaryRole));
+    const activeRole = this.activeRole();
+    return Boolean(activeRole && ALWAYS_OPERATIONAL_ROLES.has(activeRole));
   });
   protected readonly attendanceStatusLabel = computed(() => {
     if (this.isAlwaysOnlineRole()) return 'ONLINE';
@@ -126,7 +128,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     // defecto (que ademas dispararia el vaciado de la bandeja). Solo pintamos el estado real una vez
     // confirmado.
     if (!this.attendanceFacade.statusConfirmed()) return 'Verificando';
-    if (this.session()?.primaryRole === 'COMMUNITY') {
+    if (this.activeRole() === 'COMMUNITY') {
       return ATTENDANCE_STATUS_META[this.attendanceFacade.rawStatus()].label;
     }
     return this.attendanceFacade.currentStatusMeta().label;
@@ -135,7 +137,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     if (this.isAlwaysOnlineRole()) return '#37c676';
     // Gris neutro mientras no haya confirmacion (coherente con "Verificando").
     if (!this.attendanceFacade.statusConfirmed()) return '#8f96ad';
-    if (this.session()?.primaryRole === 'COMMUNITY') {
+    if (this.activeRole() === 'COMMUNITY') {
       return ATTENDANCE_STATUS_META[this.attendanceFacade.rawStatus()].color;
     }
     return this.attendanceFacade.currentStatusMeta().color;
@@ -175,22 +177,43 @@ export class PrivateLayoutComponent implements AfterViewInit {
     })
   );
   protected readonly themeClass = computed(() => {
-    const primaryRole = this.session()?.primaryRole;
-    return primaryRole ? ROLE_THEME_CLASS[primaryRole] ?? 'theme-admin' : 'theme-admin';
+    const activeRole = this.activeRole();
+    return activeRole ? ROLE_THEME_CLASS[activeRole] ?? 'theme-admin' : 'theme-admin';
   });
-  protected readonly primaryRoleLabel = computed(() => formatLabel(this.session()?.primaryRole));
+  protected readonly primaryRoleLabel = computed(() => formatLabel(this.activeRole()));
+  protected readonly roleModes = computed<SidebarRoleModeOption[]>(() => {
+    const roles = this.session()?.roles ?? [];
+    if (!roles.includes(POSTVENTA_ROLE) || !roles.includes(POSTVENTA_BACKOFFICE_ROLE)) {
+      return [];
+    }
+    return [
+      {
+        role: POSTVENTA_ROLE,
+        label: 'Postventa',
+        description: 'Gestionar cartera postventa',
+        icon: 'ti ti-headset'
+      },
+      {
+        role: POSTVENTA_BACKOFFICE_ROLE,
+        label: 'Backoffice',
+        description: 'Gestionar operación comercial',
+        icon: 'ti ti-briefcase'
+      }
+    ];
+  });
   protected readonly userDisplayName = computed(() => {
     const session = this.session();
     return session?.nombreCompleto || session?.username || 'Usuario';
   });
   protected readonly menuItems = computed<SidebarItem[]>(() => {
     const session = this.session();
+    const activeRole = this.activeRole();
 
     if (!session) {
       return [];
     }
 
-    if (session.primaryRole === 'ADMINISTRADOR') {
+    if (activeRole === 'ADMINISTRADOR') {
       const colaboradoresChildren: SidebarItem[] = [
         ...this.equiposNav.activeTeams().map((team) => ({
           label: team.nombre,
@@ -314,21 +337,21 @@ export class PrivateLayoutComponent implements AfterViewInit {
       return items;
     }
 
-    if (session.primaryRole === 'RRHH') {
+    if (activeRole === 'RRHH') {
       return [
         { label: 'Asistencia', route: '/app/rrhh/asistencia', icon: 'pi pi-clock', exact: true },
         { label: 'Personal', route: '/app/rrhh/personal', icon: 'pi pi-users', exact: true }
       ];
     }
 
-    if (session.primaryRole === 'RECLUTADOR') {
+    if (activeRole === 'RECLUTADOR') {
       return [
         { label: 'Grupos de capacitacion', route: '/app/reclutador/grupos-capacitacion', icon: 'pi pi-users' },
         { label: 'Postulantes', route: '/app/reclutador/postulantes', icon: 'pi pi-list-check' }
       ];
     }
 
-    if (session.primaryRole === 'COMMUNITY') {
+    if (activeRole === 'COMMUNITY') {
       return [
         {
           domainId: 'workspace',
@@ -357,7 +380,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ];
     }
 
-    if (session.primaryRole === 'ASESOR_VENTAS' || session.primaryRole === 'OJT') {
+    if (activeRole === 'ASESOR_VENTAS' || activeRole === 'OJT') {
       const items = [
         {
           domainId: 'workspace',
@@ -381,7 +404,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
           exact: true
         }
       ];
-      if (session.primaryRole === 'ASESOR_VENTAS') {
+      if (activeRole === 'ASESOR_VENTAS') {
         items.splice(2, 0, {
           domainId: 'workspace',
           label: 'Horario',
@@ -393,7 +416,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
       return items;
     }
 
-    if (session.primaryRole === 'SUPERVISOR_VENTAS') {
+    if (activeRole === 'SUPERVISOR_VENTAS') {
       return [
         {
           domainId: 'workspace',
@@ -413,7 +436,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ];
     }
 
-    if (session.primaryRole === 'ASESOR_GTR' || session.primaryRole === 'SUPERVISOR_GTR') {
+    if (activeRole === 'ASESOR_GTR' || activeRole === 'SUPERVISOR_GTR') {
       return [
         { domainId: 'workspace', label: 'Plataforma', route: '/app/gtr/plataforma', icon: 'pi pi-desktop', exact: true },
         {
@@ -433,9 +456,9 @@ export class PrivateLayoutComponent implements AfterViewInit {
     }
 
     if (
-      session.primaryRole === 'ASESOR_BACKOFFICE'
-      || session.primaryRole === 'SUPERVISOR_BACKOFFICE'
-      || session.primaryRole === 'MONITOR'
+      activeRole === 'ASESOR_BACKOFFICE'
+      || activeRole === 'SUPERVISOR_BACKOFFICE'
+      || activeRole === 'MONITOR'
     ) {
       return [
         { domainId: 'workspace', label: 'Plataforma', route: '/app/backoffice/plataforma', icon: 'pi pi-desktop', exact: true },
@@ -447,7 +470,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ];
     }
 
-    if (session.primaryRole === 'ASESOR_POSTVENTA' || session.primaryRole === 'SUPERVISOR_POSTVENTA') {
+    if (activeRole === 'ASESOR_POSTVENTA' || activeRole === 'SUPERVISOR_POSTVENTA') {
       return [
         {
           domainId: 'workspace',
@@ -526,7 +549,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     // El submenu de COLABORADORES se arma con los equipos activos; se cargan una
     // sola vez cuando la sesion es de ADMINISTRADOR.
     effect(() => {
-      if (this.session()?.primaryRole === 'ADMINISTRADOR') {
+      if (this.activeRole() === 'ADMINISTRADOR') {
         this.equiposNav.ensureLoaded();
       }
     });
@@ -544,7 +567,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
         untracked(() => void this.performLogout());
         return;
       }
-      if (this.session()?.primaryRole === 'COMMUNITY') {
+      if (this.activeRole() === 'COMMUNITY') {
         return;
       }
       untracked(() => void this.performLogout());
@@ -565,7 +588,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
     effect(() => {
       const session = this.session();
 
-      if (session?.primaryRole === 'ASESOR_GTR' || session?.primaryRole === 'SUPERVISOR_GTR') {
+      const activeRole = this.activeRole();
+      if (activeRole === 'ASESOR_GTR' || activeRole === 'SUPERVISOR_GTR') {
         this.gtrAgendadosAlertFacade.start();
       } else {
         this.gtrAgendadosAlertFacade.stop();
@@ -573,7 +597,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
       if (
         !session ||
-        Boolean(session.primaryRole && ALWAYS_OPERATIONAL_ROLES.has(session.primaryRole)) ||
+        Boolean(activeRole && ALWAYS_OPERATIONAL_ROLES.has(activeRole)) ||
         this.attendanceInitialized
       ) {
         return;
@@ -645,6 +669,17 @@ export class PrivateLayoutComponent implements AfterViewInit {
     this.profileMenuOpen.set(false);
   }
 
+  protected seleccionarModoTrabajo(role: string): void {
+    if (!this.sessionService.setActiveRole(role)) {
+      return;
+    }
+    this.providerScope.resetForOperationalScopeChange();
+    this.profileMenuOpen.set(false);
+    const route = ROLE_HOME_ROUTES[role] ?? this.sessionService.getHomeRoute();
+    void this.providerScope.load();
+    void this.router.navigate([route]);
+  }
+
   @HostListener('window:resize')
   protected onWindowResize(): void {
     this.isMobileViewport.set(window.innerWidth <= 900);
@@ -703,7 +738,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     this.attendanceErrorMessage.set('');
     if (
       actionId === 'REGISTRAR_SALIDA' &&
-      (this.session()?.primaryRole === 'ASESOR_VENTAS' || this.session()?.primaryRole === 'OJT') &&
+      (this.activeRole() === 'ASESOR_VENTAS' || this.activeRole() === 'OJT') &&
       this.asesorVentasState.assignedLeadCount() > 0
     ) {
       this.attendanceErrorMessage.set('No puedes marcar OFFLINE mientras tengas Leads en tu bandeja.');

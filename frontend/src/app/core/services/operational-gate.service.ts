@@ -28,12 +28,12 @@ export class OperationalGateService {
   private readonly sessionService = inject(SessionService);
   private readonly activatedFlows = signal<Record<string, boolean>>({});
 
-  private readonly primaryRole = computed(() => this.sessionService.session()?.primaryRole ?? '');
+  private readonly activeRole = computed(() => this.sessionService.getActiveRole() ?? '');
   private readonly attendanceDetail = computed(() => this.attendanceFacade.attendanceDetail());
-  private readonly isCommunityRole = computed(() => this.primaryRole() === COMMUNITY_ROLE);
+  private readonly isCommunityRole = computed(() => this.activeRole() === COMMUNITY_ROLE);
   /** Rol siempre operativo (no marca asistencia): ver ALWAYS_OPERATIONAL_ROLES. */
   private readonly isAlwaysOperationalRole = computed(() =>
-    ALWAYS_OPERATIONAL_ROLES.has(this.primaryRole())
+    ALWAYS_OPERATIONAL_ROLES.has(this.activeRole())
   );
   private readonly communityHasScheduleToday = computed(
     () => this.isCommunityRole() && this.attendanceFacade.statusConfirmed() && this.attendanceDetail()?.tieneHorario === true

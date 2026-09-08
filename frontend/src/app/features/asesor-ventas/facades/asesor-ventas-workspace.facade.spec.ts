@@ -109,7 +109,8 @@ describe('AsesorVentasWorkspaceFacade', () => {
         {
           provide: SessionService,
           useValue: {
-            getSession: vi.fn(() => ({ empleadoId: 7, primaryRole: 'ASESOR_VENTAS' }))
+            getSession: vi.fn(() => ({ empleadoId: 7, primaryRole: 'ASESOR_VENTAS' })),
+            getActiveRole: vi.fn(() => 'ASESOR_VENTAS')
           }
         },
         {

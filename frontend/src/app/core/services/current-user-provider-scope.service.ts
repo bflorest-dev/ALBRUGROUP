@@ -3,6 +3,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { API_CONSTANTS } from '../constants/api.constants';
 import { STORAGE_KEYS } from '../constants/storage.constants';
+import { operationalScopeForRole } from '../constants/role.constants';
 import { SessionService } from './session.service';
 
 /** Roles cuya bandeja se acota por proveedor (no por equipo). */
@@ -56,8 +57,12 @@ export class CurrentUserProviderScopeService {
   }
 
   private isProviderScoped(): boolean {
-    const role = this.sessionService.getPrimaryRole();
+    const role = this.sessionService.getActiveRole();
     return !!role && PROVIDER_SCOPED_ROLES.has(role);
+  }
+
+  operationalScope(): 'BACKOFFICE' | 'POSTVENTA' | null {
+    return operationalScopeForRole(this.sessionService.getActiveRole());
   }
 
   /** Carga (una vez) los proveedores del usuario y fija un proveedor activo válido. */
@@ -87,6 +92,11 @@ export class CurrentUserProviderScopeService {
     this.loaded = false;
     this.proveedoresState.set([]);
     this.activeIdState.set(null);
+  }
+
+  resetForOperationalScopeChange(): void {
+    this.loaded = false;
+    this.proveedoresState.set([]);
   }
 
   /** Si el activo guardado ya no está entre los asignados, cae al primero disponible. */

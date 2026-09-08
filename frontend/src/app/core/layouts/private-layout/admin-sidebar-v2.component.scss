@@ -494,7 +494,8 @@ section:focus-visible {
   border-color: rgba(255, 255, 255, .08);
 }
 
-.admin-nav-v2__item.is-active {
+.admin-nav-v2__item.is-active,
+.admin-nav-v2__profile-action.is-active {
   background: var(--admin-panel-bg-deep);
   border-color: color-mix(in srgb, var(--admin-signal) 52%, transparent);
   box-shadow: inset 2px 0 0 var(--admin-signal);

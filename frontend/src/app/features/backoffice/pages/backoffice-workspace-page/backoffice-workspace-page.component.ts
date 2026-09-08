@@ -251,6 +251,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly selectedTipificacionCode = signal('');
   protected readonly selectedSubtipificacionCode = signal('');
   protected readonly tipificacionCommentPlaceholder = signal('Agrega una nota si ayuda a la siguiente gestion');
+  private readonly loadedComentario = signal('');
   protected readonly planes = signal<PlanResponse[]>([]);
   protected readonly ofertaPlanes = signal<PlanResponse[]>([]);
   protected readonly promociones = signal<PromocionComercialResponse[]>([]);
@@ -1521,7 +1522,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.leadService.tipificarLead(detail.id, {
           codigoTipificacion: raw.codigoTipificacion,
           codigoSubtipificacion: raw.codigoSubtipificacion,
-          comentario: raw.comentario || null,
+          comentario: (raw.comentario ?? '').trim() !== this.loadedComentario() ? (raw.comentario || null) : null,
           fechaInstalacion: this.requiresInstallDate() ? raw.fechaInstalacion || null : null,
           fechaProgramacion: this.requiresProgramming() ? raw.fechaProgramacion || null : null,
           fechaRechazo: this.requiresRejectionDate() ? raw.fechaRechazo || null : null,
@@ -3632,12 +3633,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const codigoSubtipificacion = sourceRow?.codigoSubtipificacion ?? '';
     const comentarioPrevio = (sourceRow?.ultimoComentarioTipificacion ?? '').trim();
     this.tipificacionCommentPlaceholder.set(comentarioPrevio || 'Agrega una nota si ayuda a la siguiente gestion');
+    const comentarioCargado = (detail.comentario ?? '').trim();
+    this.loadedComentario.set(comentarioCargado);
     this.selectedTipificacionCode.set(codigoTipificacion);
     this.selectedSubtipificacionCode.set(codigoSubtipificacion);
     this.tipificacionForm.reset({
       codigoTipificacion,
       codigoSubtipificacion,
-      comentario: '',
+      comentario: comentarioCargado,
       fechaInstalacion: sourceRow?.fechaInstalacion ?? '',
       fechaProgramacion: detail.fechaProgramacion ?? sourceRow?.fechaProgramacion ?? '',
       fechaRechazo: detail.fechaRechazo ?? sourceRow?.fechaRechazo ?? '',

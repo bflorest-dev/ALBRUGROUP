@@ -302,7 +302,7 @@ export class AttendanceFacade {
   readonly currentStatus = computed<EstadoAsistencia>(
     () => {
       const raw = this.rawStatus();
-      if (this.sessionService.session()?.primaryRole === 'COMMUNITY') {
+      if (this.sessionService.getActiveRole() === 'COMMUNITY') {
         return raw;
       }
       return raw === 'ONLINE' && !this.isOperational() ? 'OFFLINE' : raw;
@@ -506,7 +506,8 @@ export class AttendanceFacade {
 
       // Roles siempre operativos no marcan asistencia; su badge es fijo ONLINE en el layout
       // (isAlwaysOnlineRole). Coherente con el guard de initialize() en private-layout.
-      if (Boolean(session.primaryRole && ALWAYS_OPERATIONAL_ROLES.has(session.primaryRole))) {
+      const activeRole = this.sessionService.getActiveRole();
+      if (Boolean(activeRole && ALWAYS_OPERATIONAL_ROLES.has(activeRole))) {
         return;
       }
 
@@ -636,7 +637,7 @@ export class AttendanceFacade {
    * posterior); aqui solo ASESOR_VENTAS/OJT tienen conteo confiable.
    */
   private isBandejaVacia(): boolean {
-    const role = this.sessionService.getSession()?.primaryRole;
+    const role = this.sessionService.getActiveRole();
     const gestionaLeads = role === 'ASESOR_VENTAS' || role === 'OJT';
     if (!gestionaLeads) {
       return true;
@@ -708,7 +709,7 @@ export class AttendanceFacade {
   }
 
   private async syncSalesAdvisorDisponibilidad(status: EstadoAsistencia): Promise<void> {
-    const primaryRole = this.sessionService.getSession()?.primaryRole;
+    const primaryRole = this.sessionService.getActiveRole();
     if (primaryRole !== 'ASESOR_VENTAS' && primaryRole !== 'OJT') {
       return;
     }

@@ -20,7 +20,7 @@ import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
 import { AttendanceActionId, AttendanceActionOption } from '../../../shared/models/schedule/estado-asistencia';
 import { TramoDiaVm } from '../../../shared/models/schedule/detalle-dia-response';
-import { SidebarDomainDefinition, SidebarItem, SidebarProviderOption } from './sidebar-item.model';
+import { SidebarDomainDefinition, SidebarItem, SidebarProviderOption, SidebarRoleModeOption } from './sidebar-item.model';
 import { SidebarAttendancePickerComponent } from './sidebar-attendance-picker.component';
 
 type SidebarDomain = SidebarDomainDefinition & {
@@ -74,6 +74,8 @@ export class AdminSidebarV2Component implements OnDestroy {
   readonly canCorrectMerito = input(false);
   readonly providers = input<SidebarProviderOption[]>([]);
   readonly activeProviderId = input<number | null>(null);
+  readonly roleModes = input<SidebarRoleModeOption[]>([]);
+  readonly activeRole = input<string | null>(null);
   readonly attendanceActions = input<AttendanceActionOption[]>([]);
   readonly attendanceLoading = input(false);
   readonly attendanceErrorMessage = input('');
@@ -90,6 +92,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   readonly correctMeritoRequested = output<void>();
   readonly deleteLeadsToggled = output<void>();
   readonly providerSelected = output<number>();
+  readonly roleModeSelected = output<string>();
   readonly attendanceActionSelected = output<AttendanceActionId>();
   readonly attendanceRetry = output<void>();
   readonly attendanceGuidanceCancelled = output<void>();
@@ -341,6 +344,14 @@ export class AdminSidebarV2Component implements OnDestroy {
 
   protected selectProvider(providerId: number): void {
     this.providerSelected.emit(providerId);
+    this.closePanel();
+  }
+
+  protected selectRoleMode(role: string): void {
+    if (role === this.activeRole()) {
+      return;
+    }
+    this.roleModeSelected.emit(role);
     this.closePanel();
   }
 

@@ -89,6 +89,7 @@ public class LeadDetalleResponse {
     private BigDecimal precioFinal;
     private Integer diaCorteFacturacion;
     private Integer mesesPermanenciaSnapshot;
+    private Instant fechaIngresoEtapa;
     private LocalDate fechaProgramacion;
     private LocalTime horaProgramada;
     private LeadPlanDetalleResponse plan;
@@ -108,4 +109,6 @@ public class LeadDetalleResponse {
     // Fuente autoritativa para que Backoffice no vuelva a ofrecer la edición cuando el backend ya
     // registró la única actualización permitida dentro del ciclo actual de VENTA.
     private boolean ofertaComercialActualizadaVenta;
+    // Último comentario libre dejado por el asesor durante la gestión.
+    private String comentario;
 }

@@ -1816,7 +1816,7 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   private isSalesAdvisorOrOjt(): boolean {
-    const primaryRole = this.sessionService.getSession()?.primaryRole;
+    const primaryRole = this.sessionService.getActiveRole();
     return primaryRole === 'ASESOR_VENTAS' || primaryRole === 'OJT';
   }
 

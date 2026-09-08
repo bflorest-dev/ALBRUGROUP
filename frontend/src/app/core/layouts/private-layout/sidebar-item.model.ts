@@ -23,3 +23,10 @@ export type SidebarProviderOption = {
   id: number;
   nombre: string;
 };
+
+export type SidebarRoleModeOption = {
+  role: string;
+  label: string;
+  description: string;
+  icon: string;
+};

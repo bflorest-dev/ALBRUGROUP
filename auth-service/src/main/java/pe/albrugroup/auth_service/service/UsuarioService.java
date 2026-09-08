@@ -58,7 +58,7 @@ public class UsuarioService implements IUsuario {
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado por EmpleadoID", empleadoId));
 
         PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
-        Rol rol = obtenerRol(puestoTrabajo);
+        Set<Rol> roles = obtenerRoles(puestoTrabajo);
 
         String nuevoUsername = usernameGenerator(
                 request.getNombres(),
@@ -72,7 +72,7 @@ public class UsuarioService implements IUsuario {
         usuario.setUsername(nuevoUsername);
         usuario.setDni(request.getDni().trim());
         usuario.setNombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()));
-        usuario.setRoles(new HashSet<>(Set.of(rol)));
+        usuario.setRoles(new HashSet<>(roles));
         Usuario guardado = usuarioRepository.save(usuario);
         return Mapper.toResponse(guardado);
     }
@@ -135,8 +135,8 @@ public class UsuarioService implements IUsuario {
         }
 
         PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
-        Rol rol = obtenerRol(puestoTrabajo);
-        log.info("Rol asignado: {}", rol.getNombre());
+        Set<Rol> roles = obtenerRoles(puestoTrabajo);
+        log.info("Roles asignados: {}", roles.stream().map(Rol::getNombre).toList());
 
         String plainPassword = passwordGenerator();
         Usuario usuario = Usuario.builder()
@@ -152,19 +152,19 @@ public class UsuarioService implements IUsuario {
                 .nombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()))
                 .activo(true)
                 .passwordInicializada(false)
-                .roles(new HashSet<>(Set.of(rol)))
+                .roles(new HashSet<>(roles))
                 .build();
 
         Usuario guardado = usuarioRepository.save(usuario);
         log.info("Usuario registrado: {} (ID: {})", guardado.getUsername(), guardado.getId());
-        log.info("Rol asignado: {}", rol.getNombre());
+        log.info("Roles asignados: {}", roles.stream().map(Rol::getNombre).toList());
 
         return new RegistroUsuarioResult(guardado, plainPassword);
     }
 
     private void actualizarUsuarioExistente(Usuario usuario, RegistrarUsuarioRequest request) {
         PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
-        Rol rol = obtenerRol(puestoTrabajo);
+        Set<Rol> roles = obtenerRoles(puestoTrabajo);
 
         String nuevoUsername = usernameGenerator(
                 request.getNombres(),
@@ -181,8 +181,16 @@ public class UsuarioService implements IUsuario {
         usuario.setDni(request.getDni().trim());
         usuario.setNombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()));
         usuario.setActivo(true);
-        usuario.setRoles(new HashSet<>(Set.of(rol)));
+        usuario.setRoles(new HashSet<>(roles));
         usuarioRepository.save(usuario);
+    }
+
+    private Set<Rol> obtenerRoles(PuestoTrabajo puestoTrabajo) {
+        Rol rolPrincipal = obtenerRol(puestoTrabajo);
+        if (puestoTrabajo == PuestoTrabajo.ASESOR_POSTVENTA) {
+            return Set.of(rolPrincipal, obtenerRol(PuestoTrabajo.ASESOR_BACKOFFICE));
+        }
+        return Set.of(rolPrincipal);
     }
 
     private Rol obtenerRol(PuestoTrabajo puestoTrabajo) {

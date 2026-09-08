@@ -3,9 +3,8 @@ import { inject } from '@angular/core';
 import { CurrentUserProviderScopeService } from '../services/current-user-provider-scope.service';
 
 /**
- * Adjunta el proveedor activo (header X-Proveedor-Id) a las requests a /leads para que las bandejas
- * de BACKOFFICE / POSTVENTA queden acotadas a un solo proveedor y nunca se mezclen. Si el usuario no
- * está acotado por proveedor (no hay activo), no toca la request.
+ * Adjunta el proveedor y ámbito activos a las requests a /leads para que las bandejas
+ * de BACKOFFICE / POSTVENTA queden acotadas y nunca se mezclen.
  */
 export const proveedorScopeInterceptor: HttpInterceptorFn = (req, next) => {
   if (!req.url.includes('/leads')) {
@@ -13,14 +12,20 @@ export const proveedorScopeInterceptor: HttpInterceptorFn = (req, next) => {
   }
   const providerScope = inject(CurrentUserProviderScopeService);
   const activeId = providerScope.activeId();
-  if (activeId === null) {
+  const operationalScope = providerScope.operationalScope();
+  if (activeId === null && operationalScope === null) {
     return next(req);
+  }
+  const headers: Record<string, string> = {};
+  if (activeId !== null) {
+    headers['X-Proveedor-Id'] = String(activeId);
+  }
+  if (operationalScope !== null) {
+    headers['X-Operational-Scope'] = operationalScope;
   }
   return next(
     req.clone({
-      setHeaders: {
-        'X-Proveedor-Id': String(activeId)
-      }
+      setHeaders: headers
     })
   );
 };

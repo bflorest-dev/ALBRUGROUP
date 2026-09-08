@@ -4,5 +4,6 @@ export interface UserSession {
   nombreCompleto?: string;
   roles: string[];
   primaryRole: string | null;
+  activeRole?: string | null;
   homeRoute: string;
 }

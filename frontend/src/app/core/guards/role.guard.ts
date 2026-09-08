@@ -8,18 +8,22 @@ export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const idleSessionService = inject(IdleSessionService);
   const sessionService = inject(SessionService);
   const allowedRoles = route.data['roles'] as string[] | undefined;
-  const primaryRole = sessionService.getPrimaryRole();
+  const activeRole = sessionService.getActiveRole();
 
   if (idleSessionService.hasExpired()) {
     idleSessionService.expireSession();
     return router.createUrlTree(['/auth/access']);
   }
 
-  if (!primaryRole) {
+  if (!activeRole) {
     return router.createUrlTree(['/auth/access']);
   }
 
-  if (!allowedRoles?.includes(primaryRole)) {
+  if (!allowedRoles?.includes(activeRole)) {
+    const matchingRole = allowedRoles?.find((role) => sessionService.hasRole(role));
+    if (matchingRole && sessionService.setActiveRole(matchingRole)) {
+      return true;
+    }
     const homeRoute = sessionService.getHomeRoute();
     return router.createUrlTree([homeRoute]);
   }
