@@ -5850,15 +5850,15 @@ public class LeadService {
     }
 
     private RankingEquipoScope resolverEquiposRanking(Long idEquipoSolicitado) {
+        // Si el request vino en modo BACKOFFICE, el proveedorFilter del interceptor manda incluso si
+        // el usuario dual heredo permisos globales desde POSTVENTA.
+        if (esBackofficeAcotadoPorProveedor()) {
+            return new RankingEquipoScope(false, List.of(-1L));
+        }
         if (currentUser.tieneVisibilidadGlobalEquipos()) {
             return idEquipoSolicitado == null
                     ? new RankingEquipoScope(false, List.of(-1L))
                     : new RankingEquipoScope(true, List.of(idEquipoSolicitado));
-        }
-        // BACKOFFICE acotado por proveedor: no se filtra por equipo (que estaría vacío); el proveedorFilter
-        // del interceptor ya acota los leads al proveedor activo.
-        if (esBackofficeAcotadoPorProveedor()) {
-            return new RankingEquipoScope(false, List.of(-1L));
         }
 
         List<Long> equiposUsuario = currentUser.equipos();
@@ -5874,11 +5874,11 @@ public class LeadService {
     }
 
     private RankingEquipoScope resolverEquiposActuales() {
-        if (currentUser.tieneVisibilidadGlobalEquipos()) {
-            return new RankingEquipoScope(false, List.of(-1L));
-        }
         // BACKOFFICE acotado por proveedor: el proveedorFilter ya acota; no se filtra por equipo.
         if (esBackofficeAcotadoPorProveedor()) {
+            return new RankingEquipoScope(false, List.of(-1L));
+        }
+        if (currentUser.tieneVisibilidadGlobalEquipos()) {
             return new RankingEquipoScope(false, List.of(-1L));
         }
         List<Long> equiposUsuario = currentUser.equipos();
@@ -5890,10 +5890,14 @@ public class LeadService {
 
     // Coincide con EquipoFilterInterceptor: un BACKOFFICE con proveedores asignados queda acotado por el
     // proveedorFilter (Hibernate), por lo que las queries de bandeja NO deben filtrar además por equipo.
-    // Sin proveedores asignados (aún no migrado) devuelve false y se conserva el filtro por equipo (fallback).
+    // Con ambito explicito, incluso un scope vacio debe ganar para evitar que permisos globales heredados
+    // abran la bandeja.
     private boolean esBackofficeAcotadoPorProveedor() {
-        return proveedorScopeService.ambitoActual() == AmbitoProveedor.BACKOFFICE
-                && !proveedorScopeService.resolverScope(AmbitoProveedor.BACKOFFICE).vacio();
+        if (proveedorScopeService.ambitoActual() != AmbitoProveedor.BACKOFFICE) {
+            return false;
+        }
+        ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(AmbitoProveedor.BACKOFFICE);
+        return !scope.vacio() || proveedorScopeService.ambitoSolicitadoExplicitamente();
     }
 
     private double calcularPorcentajeRanking(long cantidad, long total) {

@@ -44,17 +44,14 @@ public class EquipoFilterInterceptor implements HandlerInterceptor {
         if (auth == null || !(auth.getPrincipal() instanceof UserSession)) {
             return true;
         }
-        if (currentUser.tieneVisibilidadGlobalEquipos()) {
-            return true;
-        }
         AmbitoProveedor ambito = proveedorScopeService.ambitoActual();
         if (ambito != null) {
             ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(ambito);
-            // Dual-run: solo si ya tiene proveedores asignados se migra a scope por proveedor.
-            // Sin asignaciones cae al filtro por equipo de abajo (comportamiento previo intacto).
+            // Dual-run: con ambito explicito el scope por proveedor es obligatorio y puede cerrar en
+            // vacio; sin ambito explicito, un usuario aun no migrado conserva el fallback por equipo.
             // Aplica a BACKOFFICE y POSTVENTA: la bandeja de postventa va por calendario (no por este
             // filtro), pero las consultas de Lead (detalle, búsqueda) quedan acotadas por proveedor.
-            if (!scope.vacio()) {
+            if (!scope.vacio() || proveedorScopeService.ambitoSolicitadoExplicitamente()) {
                 try {
                     entityManager.unwrap(Session.class)
                             .enableFilter("proveedorFilter")
@@ -64,6 +61,9 @@ public class EquipoFilterInterceptor implements HandlerInterceptor {
                 }
                 return true;
             }
+        }
+        if (currentUser.tieneVisibilidadGlobalEquipos()) {
+            return true;
         }
         List<Long> equipos = currentUser.equipos();
         List<Long> valores = (equipos == null || equipos.isEmpty()) ? List.of(-1L) : equipos;

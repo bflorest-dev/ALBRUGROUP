@@ -72,6 +72,11 @@ public class ProveedorScopeService {
         return proveedoresAsignados(currentUser.empleadoID(), ambito);
     }
 
+    public boolean ambitoSolicitadoExplicitamente() {
+        String raw = request == null ? null : request.getHeader(HEADER_AMBITO);
+        return raw != null && !raw.isBlank();
+    }
+
     /**
      * Scope efectivo para el ámbito dado del usuario actual. Si el header trae un proveedor válido
      * dentro de los asignados, el scope se reduce a ese único proveedor; si no, cubre todos los
@@ -82,11 +87,17 @@ public class ProveedorScopeService {
         if (ambito == null) {
             return Scope.sinRestriccion();
         }
+        List<String> roles = currentUser.roles();
         List<Proveedor> asignados = proveedoresAsignados(currentUser.empleadoID(), ambito);
         Long activo = proveedorActivoHeader();
-        List<Proveedor> efectivos = (activo != null && asignados.stream().anyMatch(p -> activo.equals(p.getId())))
-                ? asignados.stream().filter(p -> activo.equals(p.getId())).toList()
-                : asignados;
+        List<Proveedor> efectivos;
+        if (activo != null) {
+            efectivos = asignados.stream().filter(p -> activo.equals(p.getId())).toList();
+        } else if (ambitoSolicitadoExplicitamente() && usuarioDualPostventaBackoffice(roles)) {
+            efectivos = List.of();
+        } else {
+            efectivos = asignados;
+        }
         return new Scope(
                 true,
                 efectivos.stream().map(Proveedor::getId).collect(Collectors.toSet()),
@@ -142,6 +153,10 @@ public class ProveedorScopeService {
         if (!autorizado) {
             throw new ForbiddenException("El usuario no tiene rol para el ambito operacional solicitado");
         }
+    }
+
+    private boolean usuarioDualPostventaBackoffice(List<String> roles) {
+        return roles.contains("ASESOR_POSTVENTA") && roles.contains("ASESOR_BACKOFFICE");
     }
 
     private String normalizarNombre(String nombre) {

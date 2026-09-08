@@ -669,14 +669,14 @@ export class PrivateLayoutComponent implements AfterViewInit {
     this.profileMenuOpen.set(false);
   }
 
-  protected seleccionarModoTrabajo(role: string): void {
+  protected async seleccionarModoTrabajo(role: string): Promise<void> {
     if (!this.sessionService.setActiveRole(role)) {
       return;
     }
     this.providerScope.resetForOperationalScopeChange();
     this.profileMenuOpen.set(false);
     const route = ROLE_HOME_ROUTES[role] ?? this.sessionService.getHomeRoute();
-    void this.providerScope.load();
+    await this.providerScope.load();
     void this.router.navigate([route]);
   }
 
