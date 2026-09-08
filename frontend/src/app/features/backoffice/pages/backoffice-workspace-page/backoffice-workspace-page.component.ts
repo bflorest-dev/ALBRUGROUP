@@ -563,7 +563,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return detail?.etapa === 'VENTA' && !detail.idPlan;
   });
 
-  protected readonly ofertaBloqueada = computed(() => this.ofertaYaRegistrada());
+  protected readonly ofertaBloqueada = computed(() =>
+    this.detail()?.ofertaComercialActualizadaVenta === true || this.ofertaYaRegistrada()
+  );
 
   protected readonly ofertaNoticeSeverity = computed<'info' | 'warn'>(() => (this.ofertaBloqueada() ? 'info' : 'warn'));
 

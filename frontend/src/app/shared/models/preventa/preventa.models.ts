@@ -455,6 +455,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   // Config de campos de captura resuelta por el backend: por cada campo configurable, si se muestra
   // y si es obligatorio para cerrar la venta.
   camposConfig?: CampoConfigItem[] | null;
+  ofertaComercialActualizadaVenta?: boolean;
 }
 
 export interface LeadPlanDetalleResponse {

@@ -246,6 +246,9 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   }
 
   protected providerLabel(): string {
+    if (this.planEditing()) {
+      return this.display(this.selectedPlan()?.nombreProveedor, 'Proveedor');
+    }
     return this.display(
       this.detail?.nombreProveedorPlan ?? this.detail?.nombreProveedorCampana ?? this.detail?.nombreProveedorEquipo,
       'Proveedor'
@@ -313,13 +316,36 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
     return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', minimumFractionDigits: 2 }).format(value ?? 0);
   }
 
+  protected previewPlanPrice(): number {
+    if (this.planEditing()) {
+      return Number(this.selectedPlan()?.precio ?? 0);
+    }
+    return Number(this.detail?.precioPlan ?? this.selectedPlan()?.precio ?? 0);
+  }
+
+  protected previewAdditionalsPrice(): number {
+    if (this.planEditing()) {
+      return Number(this.additionalsTotal ?? 0);
+    }
+    return Number(this.detail?.precioAdicionales ?? this.additionalsTotal ?? 0);
+  }
+
+  protected previewTotal(): number {
+    if (this.planEditing()) {
+      return this.previewPlanPrice() + this.previewAdditionalsPrice();
+    }
+    return Number(this.detail?.precioFinal ?? (this.previewPlanPrice() + this.previewAdditionalsPrice()));
+  }
+
   protected selectedPlan(): Array<Partial<PlanResponse> & { id: number; nombre: string }> [number] | null {
-    const id = Number(this.ofertaForm.get('idPlan')?.value || this.detail?.idPlan || 0);
+    const formValue = this.ofertaForm.get('idPlan')?.value;
+    const id = Number(this.planEditing() ? (formValue ?? 0) : (formValue ?? this.detail?.idPlan ?? 0));
     return this.planOptions.find((plan) => plan.id === id) ?? null;
   }
 
   protected selectedPromotion(): Array<Partial<PromocionComercialResponse> & { id: number; reglaComercial: string }> [number] | null {
-    const id = Number(this.ofertaForm.get('idPromocionInterna')?.value || this.detail?.idPromocionInterna || 0);
+    const formValue = this.ofertaForm.get('idPromocionInterna')?.value;
+    const id = Number(this.planEditing() ? (formValue ?? 0) : (formValue ?? this.detail?.idPromocionInterna ?? 0));
     return this.promocionOptions.find((promotion) => promotion.id === id) ?? null;
   }
 

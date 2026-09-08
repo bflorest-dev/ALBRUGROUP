@@ -49,6 +49,17 @@ app-venta-drawer-v2 {
   .venta-v2__mini-title i,
   .venta-v2__notice i { flex: 0 0 auto; margin-top: .08em; color: var(--venta-accent); }
   .venta-v2__notice { margin: .85rem 0 0; color: var(--venta-muted); font-size: .8rem; line-height: 1.45; }
+  .venta-v2__ledger.is-preview { border-color: color-mix(in srgb, var(--venta-accent) 38%, var(--venta-line)); }
+  .venta-v2__ledger .venta-v2__ledger-preview {
+    align-items: baseline;
+    gap: .55rem;
+    margin-bottom: .25rem;
+    padding-bottom: .55rem;
+    border-bottom: 1px solid var(--venta-line);
+    color: var(--venta-accent);
+  }
+  .venta-v2__ledger-preview span { font-weight: 750; }
+  .venta-v2__ledger-preview small { color: var(--venta-muted); font-size: .76rem; }
   .venta-v2__dock form { display: grid; gap: .65rem; }
   .venta-v2__dock-primary { display: grid; grid-template-columns: minmax(12rem, 1fr) minmax(12rem, 1fr) auto; gap: .65rem; align-items: end; }
   .venta-v2__dock-actions { display: flex; align-items: center; gap: .55rem; }

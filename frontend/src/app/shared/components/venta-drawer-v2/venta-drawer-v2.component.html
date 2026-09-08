@@ -178,7 +178,14 @@
                   <section><div class="venta-v2__mini-title"><i class="pi pi-sparkles"></i><span>Promoción aplicada</span></div><strong>{{ display(selectedPromotion()?.reglaComercial || detail?.nombrePromocionInterna, 'Sin promoción') }}</strong></section>
                   <section><div class="venta-v2__mini-title"><i class="pi pi-plus-circle"></i><span>Adicionales</span></div>@if (selectedAdditionals.length) { @for (item of selectedAdditionals; track item.idAdicional) { <div class="venta-v2__additional"><span>{{ item.nombre }} × {{ item.cantidad }}</span><strong>{{ money((item.precioUnitario || 0) * item.cantidad) }}</strong>@if (planEditing()) { <button type="button" (click)="disminuirAdicional.emit({ id: item.idAdicional, nombre: item.nombre, precioUnitario: item.precioUnitario ?? undefined })">−</button> }</div> } } @else { <p>Sin adicionales</p> } @if (planEditing()) { @for (item of availableAdditionals(); track item.id) { <button class="venta-v2__add-additional" type="button" (click)="incrementarAdicional.emit(item)">+ {{ item.nombre }}</button> } }</section>
                 </div>
-                <div class="venta-v2__ledger"><div><span>Precio base</span><strong>{{ money(detail?.precioPlan || selectedPlan()?.precio) }}</strong></div><div><span>Adicionales</span><strong>{{ money(additionalsTotal || detail?.precioAdicionales) }}</strong></div><div class="is-total"><span>Total mensual</span><strong>{{ money(detail?.precioFinal || (detail?.precioPlan || 0) + (detail?.precioAdicionales || 0)) }}</strong></div></div>
+                <div class="venta-v2__ledger" [class.is-preview]="planEditing()">
+                  @if (planEditing()) {
+                    <div class="venta-v2__ledger-preview" aria-live="polite"><span>Vista previa</span><small>Se confirma al aplicar la oferta</small></div>
+                  }
+                  <div><span>Precio base</span><strong>{{ money(previewPlanPrice()) }}</strong></div>
+                  <div><span>Adicionales</span><strong>{{ money(previewAdditionalsPrice()) }}</strong></div>
+                  <div class="is-total"><span>{{ planEditing() ? 'Total estimado' : 'Total mensual' }}</span><strong>{{ money(previewTotal()) }}</strong></div>
+                </div>
                 @if (offerNoticeText) { <p class="venta-v2__notice"><i class="pi pi-info-circle" aria-hidden="true"></i><span>{{ offerNoticeText }}</span></p> }
               </section>
             }

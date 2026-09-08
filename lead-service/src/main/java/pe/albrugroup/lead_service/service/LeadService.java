@@ -4804,7 +4804,8 @@ public class LeadService {
                 lead.getEtapa(),
                 lead.getEtapa() != Etapa.PREVENTA,
                 resolverConfigCamposCaptura(lead),
-                obtenerProveedorFallbackDeEquipo(lead.getIdEquipo())
+                obtenerProveedorFallbackDeEquipo(lead.getIdEquipo()),
+                ofertaComercialActualizadaEnCicloActualVenta(lead)
         );
     }
 
@@ -5147,8 +5148,14 @@ public class LeadService {
     }
 
     private void validarOfertaComercialEditableEnCicloActualVenta(Lead lead) {
+        if (ofertaComercialActualizadaEnCicloActualVenta(lead)) {
+            throw new ConflictException("La oferta comercial ya fue actualizada en el ciclo actual de VENTA");
+        }
+    }
+
+    private boolean ofertaComercialActualizadaEnCicloActualVenta(Lead lead) {
         if (lead.getPlan() == null) {
-            return;
+            return false;
         }
         List<Evento> eventos = eventoRepository.findAllByIdLeadOrderByCreatedAtDesc(lead.getId());
         for (Evento evento : eventos) {
@@ -5156,9 +5163,10 @@ public class LeadService {
                 break;
             }
             if (evento.getAccion() == Accion.ACTUALIZACION_OFERTA_COMERCIAL) {
-                throw new ConflictException("La oferta comercial ya fue actualizada en el ciclo actual de VENTA");
+                return true;
             }
         }
+        return false;
     }
 
     private void reemplazarAdicionales(Lead lead, List<LeadOfertaAdicionalRequest> adicionalesRequest) {
