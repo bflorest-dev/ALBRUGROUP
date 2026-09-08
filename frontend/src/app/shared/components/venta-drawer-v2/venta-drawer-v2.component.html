@@ -156,6 +156,30 @@
                     }
                   </div>
                 </section>
+                <section class="venta-v2__section venta-v2__geolocation">
+                  <div class="venta-v2__section-head">
+                    <div><i class="pi pi-map-marker" aria-hidden="true"></i><span><strong>Geolocalización</strong><small>Selecciona cada coordenada para copiarla en la plataforma</small></span></div>
+                    @if (!readOnly) {
+                      @if (editingSection() === 'geolocalizacion') {
+                        <div class="venta-v2__edit-actions"><button type="button" (click)="cancelSectionEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applySectionEdit()">Aplicar</button></div>
+                      } @else {
+                        <button class="venta-v2__edit" type="button" (click)="startSectionEdit('geolocalizacion')"><i class="pi pi-pencil" aria-hidden="true"></i><span>Editar</span></button>
+                      }
+                    }
+                  </div>
+                  <div class="venta-v2__fields venta-v2__coordinate-fields">
+                    <label class="span-2"><span>Latitud</span><strong class="venta-v2__coordinate-value">{{ display(direccionForm.get('latitud')?.value) }}</strong></label>
+                    <label class="span-2"><span>Longitud</span><strong class="venta-v2__coordinate-value">{{ display(direccionForm.get('longitud')?.value) }}</strong></label>
+                  </div>
+                  @if (editingSection() === 'geolocalizacion') {
+                    <div class="venta-v2__coordinate-actions">
+                      @if (coordinatePasteMessage()) {
+                        <p class="venta-v2__coordinate-message" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><span>{{ coordinatePasteMessage() }}</span></p>
+                      }
+                      <button class="venta-v2__paste-coordinates" type="button" (click)="pasteCoordinatesFromClipboard()"><i class="pi pi-clipboard" aria-hidden="true"></i><span>Pegar coordenadas</span></button>
+                    </div>
+                  }
+                </section>
               </form>
             }
 

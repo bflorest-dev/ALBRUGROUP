@@ -31,7 +31,7 @@ import { PhoneActionButtonComponent } from '../phone-action-button/phone-action-
 
 export type VentaDrawerMode = 'gestion' | 'consulta';
 type VentaDrawerTab = 'datos' | 'direccion' | 'plan' | 'historial';
-type EditableSection = 'identidad' | 'contacto' | 'proveedor' | 'ubicacion' | 'detalle-direccion' | null;
+type EditableSection = 'identidad' | 'contacto' | 'proveedor' | 'ubicacion' | 'detalle-direccion' | 'geolocalizacion' | null;
 type ProviderOption = { id: number; nombre: string };
 type AdditionalSelection = { idAdicional: number; nombre: string; precioUnitario?: number | null; cantidad: number };
 type HistoryGroup = { key: string; label: string; events: EventoResponse[] };
@@ -112,6 +112,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   protected readonly editingSection = signal<EditableSection>(null);
   protected readonly planEditing = signal(false);
   protected readonly commentOpen = signal(false);
+  protected readonly coordinatePasteMessage = signal<string | null>(null);
   protected readonly historyFilter = signal<'TODO' | 'TIPIFICACION' | 'ASIGNACION'>('TODO');
   protected readonly sectionSaving = signal(false);
 
@@ -170,6 +171,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
     this.activeTab.set(tab);
     this.editingSection.set(null);
     this.planEditing.set(false);
+    this.coordinatePasteMessage.set(null);
   }
 
   protected startSectionEdit(section: Exclude<EditableSection, null>): void {
@@ -185,6 +187,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
     }
     this.sectionSnapshot = null;
     this.editingSection.set(null);
+    this.coordinatePasteMessage.set(null);
   }
 
   protected async applySectionEdit(): Promise<void> {
@@ -194,6 +197,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
       if (await this.saveChanges()) {
         this.sectionSnapshot = null;
         this.editingSection.set(null);
+        this.coordinatePasteMessage.set(null);
       }
     } finally {
       this.sectionSaving.set(false);
@@ -411,6 +415,67 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   protected setDigits(control: string, value: string, max: number): void {
     this.tipificacionForm.get(control)?.setValue(value.replace(/\D/g, '').slice(0, max));
     this.tipificacionForm.get(control)?.markAsDirty();
+  }
+
+  protected async pasteCoordinatesFromClipboard(): Promise<void> {
+    this.coordinatePasteMessage.set(null);
+
+    if (!navigator.clipboard?.readText) {
+      this.coordinatePasteMessage.set('No pudimos acceder al portapapeles. Revisa el permiso e intenta nuevamente.');
+      return;
+    }
+
+    let pasted: string;
+    try {
+      pasted = await navigator.clipboard.readText();
+    } catch {
+      this.coordinatePasteMessage.set('No pudimos acceder al portapapeles. Revisa el permiso e intenta nuevamente.');
+      return;
+    }
+
+    const coordinates = this.extractCoordinatePair(pasted);
+    if (!coordinates) {
+      this.coordinatePasteMessage.set('Copia la latitud y longitud juntas e intenta nuevamente.');
+      return;
+    }
+
+    this.direccionForm.get('latitud')?.setValue(coordinates.latitud);
+    this.direccionForm.get('longitud')?.setValue(coordinates.longitud);
+    this.direccionForm.get('latitud')?.markAsDirty();
+    this.direccionForm.get('longitud')?.markAsDirty();
+  }
+
+  private extractCoordinatePair(value: string): { latitud: string; longitud: string } | null {
+    const matches = value.match(/-?\d+(?:[.,]\d+)?/g);
+    if (!matches || matches.length < 2) return null;
+
+    const latitud = this.normalizeCoordinate(matches[0]);
+    const longitud = this.normalizeCoordinate(matches[1]);
+    const latitudNumber = Number(latitud);
+    const longitudNumber = Number(longitud);
+    if (
+      !Number.isFinite(latitudNumber) || latitudNumber < -90 || latitudNumber > 90
+      || !Number.isFinite(longitudNumber) || longitudNumber < -180 || longitudNumber > 180
+    ) {
+      return null;
+    }
+    return { latitud, longitud };
+  }
+
+  private normalizeCoordinate(value: string): string {
+    const normalizedSeparator = value.replace(',', '.');
+    const sign = normalizedSeparator.trimStart().startsWith('-') ? '-' : '';
+    const unsigned = normalizedSeparator.replace(/-/g, '');
+    const [integerPart = '', ...decimalParts] = unsigned.split('.');
+    const integerDigits = integerPart.replace(/\D/g, '').slice(0, 3);
+    const decimalDigits = decimalParts.join('').replace(/\D/g, '').slice(0, 40);
+    if (!integerDigits && !decimalDigits) return sign;
+    return this.stripTrailingCoordinateZeros(`${sign}${integerDigits}${decimalDigits ? `.${decimalDigits}` : ''}`);
+  }
+
+  private stripTrailingCoordinateZeros(value: string): string {
+    if (!value.includes('.')) return value;
+    return value.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
   }
 
   protected pickerDate(value: unknown): Date | null {

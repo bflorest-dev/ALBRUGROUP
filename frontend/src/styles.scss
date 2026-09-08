@@ -60,6 +60,15 @@ app-venta-drawer-v2 {
   }
   .venta-v2__ledger-preview span { font-weight: 750; }
   .venta-v2__ledger-preview small { color: var(--venta-muted); font-size: .76rem; }
+  .venta-v2__coordinate-fields label:last-child { border-right: 0; }
+  .venta-v2__coordinate-value { cursor: text; user-select: all; }
+  .venta-v2__coordinate-value::selection { color: #fff; background: var(--venta-accent); }
+  .venta-v2__coordinate-actions { display: flex; align-items: center; gap: 1rem; padding: .7rem 1rem; background: var(--venta-surface); }
+  .venta-v2__paste-coordinates { display: inline-flex; align-items: center; justify-content: center; gap: .48rem; min-height: 2.4rem; margin-inline-start: auto; padding: 0 .8rem; border: 1px solid var(--venta-line); border-radius: .32rem; color: var(--venta-ink); background: #fff; font: inherit; font-size: .76rem; font-weight: 650; }
+  .venta-v2__paste-coordinates:hover { border-color: color-mix(in srgb, var(--venta-accent) 45%, var(--venta-line)); color: var(--venta-accent); }
+  .venta-v2__paste-coordinates:focus-visible { outline: 2px solid var(--venta-accent); outline-offset: 2px; }
+  .venta-v2__coordinate-message { display: flex; align-items: flex-start; gap: .5rem; min-width: 0; margin: 0; color: #9a3412; font-size: .76rem; line-height: 1.4; }
+  .venta-v2__coordinate-message i { flex: 0 0 auto; margin-top: .08em; }
   .venta-v2__dock form { display: grid; gap: .65rem; }
   .venta-v2__dock-primary { display: grid; grid-template-columns: minmax(12rem, 1fr) minmax(12rem, 1fr) auto; gap: .65rem; align-items: end; }
   .venta-v2__dock-actions { display: flex; align-items: center; gap: .55rem; }
