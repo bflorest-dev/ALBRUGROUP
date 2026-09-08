@@ -49,6 +49,20 @@ app-venta-drawer-v2 {
   .venta-v2__mini-title i,
   .venta-v2__notice i { flex: 0 0 auto; margin-top: .08em; color: var(--venta-accent); }
   .venta-v2__notice { margin: .85rem 0 0; color: var(--venta-muted); font-size: .8rem; line-height: 1.45; }
+  .venta-v2__dock form { display: grid; gap: .65rem; }
+  .venta-v2__dock-primary { display: grid; grid-template-columns: minmax(12rem, 1fr) minmax(12rem, 1fr) auto; gap: .65rem; align-items: end; }
+  .venta-v2__dock-actions { display: flex; align-items: center; gap: .55rem; }
+  .venta-v2__dock-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: .55rem; padding-top: .65rem; border-top: 1px solid var(--venta-line); }
+  .venta-v2__dock label { min-width: 0; }
+  .venta-v2__dock .venta-v2__comment { width: 100%; }
+}
+
+@media (max-width: 62rem) {
+  app-venta-drawer-v2 {
+    .venta-v2__dock-primary { grid-template-columns: minmax(10rem, 1fr) minmax(10rem, 1fr); }
+    .venta-v2__dock-actions { grid-column: 1 / -1; justify-content: flex-end; }
+    .venta-v2__dock-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
 }
 
 app-employee-access-panel .employee-table {

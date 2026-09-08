@@ -99,9 +99,6 @@
 .venta-v2__state { display: flex; justify-content: center; align-items: center; gap: .6rem; min-height: 15rem; color: var(--venta-muted); font-size: .82rem; }
 
 .venta-v2__dock { padding: .65rem .8rem .7rem; background: #fff; border-top: 1px solid var(--venta-line); box-shadow: 0 -.6rem 1.5rem rgba(15,31,51,.055); }
-.venta-v2__dock form { display: flex; flex-wrap: wrap; align-items: end; gap: .55rem; }
-.venta-v2__dock label { min-width: 9.5rem; flex: 1 1 9.5rem; }
-.venta-v2__dock .venta-v2__comment { order: 10; flex-basis: 100%; }
 .venta-v2__comment-button { display: inline-flex; align-items: center; gap: .48rem; height: 2.45rem; padding: 0 .68rem; border: 1px solid var(--venta-line); border-radius: .35rem; color: var(--venta-muted); background: #fff; font: inherit; font-size: .76rem; }
 
 :host ::ng-deep .venta-v2 :is(.p-select, .p-inputtext, .p-datepicker) { width: 100%; min-height: 2.4rem; border-radius: .32rem; font-size: .8rem; }

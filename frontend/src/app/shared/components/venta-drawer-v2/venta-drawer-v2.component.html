@@ -198,19 +198,27 @@
         @if (!readOnly) {
           <footer class="venta-v2__dock">
             <form [formGroup]="tipificacionForm" (ngSubmit)="tipifyRequested.emit()">
-              <label><span>Tipificación</span><p-select formControlName="codigoTipificacion" [options]="tipificaciones" optionLabel="codigo" optionValue="codigo" placeholder="Seleccionar" appendTo="body" (onChange)="tipificacionSelected.emit($event.value)" /></label>
-              <label><span>Subtipificación</span><p-select formControlName="codigoSubtipificacion" [options]="subtipificaciones" optionLabel="codigo" optionValue="codigo" placeholder="Seleccionar" appendTo="body" (onChange)="subtipificacionSelected.emit($event.value)" /></label>
-              @if (requiresProgramming) {
-                <label><span>Fecha</span><p-datepicker [ngModel]="pickerDate(tipificacionForm.get('fechaProgramacion')?.value)" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy" [showIcon]="true" iconDisplay="input" [showButtonBar]="true" [readonlyInput]="false" appendTo="body" [baseZIndex]="1400" panelStyleClass="venta-v2-calendar" (ngModelChange)="setDateValue(tipificacionForm, 'fechaProgramacion', $event)" /></label>
-                <label><span>Hora</span><p-datepicker formControlName="horaProgramada" dataType="string" [timeOnly]="true" hourFormat="24" [stepMinute]="5" [showIcon]="true" icon="pi pi-clock" iconDisplay="input" [readonlyInput]="false" appendTo="body" [baseZIndex]="1400" panelStyleClass="venta-v2-time" /></label>
+              <div class="venta-v2__dock-primary">
+                <label><span>Tipificación</span><p-select formControlName="codigoTipificacion" [options]="tipificaciones" optionLabel="codigo" optionValue="codigo" placeholder="Seleccionar" appendTo="body" (onChange)="tipificacionSelected.emit($event.value)" /></label>
+                <label><span>Subtipificación</span><p-select formControlName="codigoSubtipificacion" [options]="subtipificaciones" optionLabel="codigo" optionValue="codigo" placeholder="Seleccionar" appendTo="body" (onChange)="subtipificacionSelected.emit($event.value)" /></label>
+                <div class="venta-v2__dock-actions">
+                  <button class="venta-v2__comment-button" type="button" [class.is-active]="commentOpen()" (click)="commentOpen.set(!commentOpen())"><i class="pi pi-comment" aria-hidden="true"></i><span>{{ commentOpen() ? 'Ocultar nota' : 'Agregar nota' }}</span></button>
+                  <button pButton type="submit" icon="pi pi-check" label="Tipificar" [loading]="saving" [disabled]="!canMutate"></button>
+                </div>
+              </div>
+              @if (requiresProgramming || requiresInstallDate || requiresRejectionDate || requiresCustomerId || requiresSecSot) {
+                <div class="venta-v2__dock-fields">
+                  @if (requiresProgramming) {
+                    <label><span>Fecha</span><p-datepicker [ngModel]="pickerDate(tipificacionForm.get('fechaProgramacion')?.value)" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy" [showIcon]="true" iconDisplay="input" [showButtonBar]="true" [readonlyInput]="false" appendTo="body" [baseZIndex]="1400" panelStyleClass="venta-v2-calendar" (ngModelChange)="setDateValue(tipificacionForm, 'fechaProgramacion', $event)" /></label>
+                    <label><span>Hora</span><p-datepicker formControlName="horaProgramada" dataType="string" [timeOnly]="true" hourFormat="24" [stepMinute]="5" [showIcon]="true" icon="pi pi-clock" iconDisplay="input" [readonlyInput]="false" appendTo="body" [baseZIndex]="1400" panelStyleClass="venta-v2-time" /></label>
+                  }
+                  @if (requiresInstallDate) { <label><span>Instalación</span><p-datepicker [ngModel]="pickerDate(tipificacionForm.get('fechaInstalacion')?.value)" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy" [showIcon]="true" iconDisplay="input" [showButtonBar]="true" [readonlyInput]="false" appendTo="body" [baseZIndex]="1400" panelStyleClass="venta-v2-calendar" (ngModelChange)="setDateValue(tipificacionForm, 'fechaInstalacion', $event)" /></label> }
+                  @if (requiresRejectionDate) { <label><span>Rechazo</span><p-datepicker [ngModel]="pickerDate(tipificacionForm.get('fechaRechazo')?.value)" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy" [showIcon]="true" iconDisplay="input" [showButtonBar]="true" [readonlyInput]="false" appendTo="body" [baseZIndex]="1400" panelStyleClass="venta-v2-calendar" (ngModelChange)="setDateValue(tipificacionForm, 'fechaRechazo', $event)" /></label> }
+                  @if (requiresCustomerId) { <label><span>Customer ID</span><input pInputText formControlName="customerId" inputmode="numeric" maxlength="8" (input)="setDigits('customerId', $any($event.target).value, 8)" /></label> }
+                  @if (requiresSecSot) { <label><span>SEC</span><input pInputText formControlName="sec" inputmode="numeric" maxlength="9" (input)="setDigits('sec', $any($event.target).value, 9)" /></label> }
+                  @if (requiresSecSot || requiresCustomerId) { <label><span>SOT</span><input pInputText formControlName="sot" inputmode="numeric" maxlength="8" (input)="setDigits('sot', $any($event.target).value, 8)" /></label> }
+                </div>
               }
-              @if (requiresInstallDate) { <label><span>Instalación</span><p-datepicker [ngModel]="pickerDate(tipificacionForm.get('fechaInstalacion')?.value)" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy" [showIcon]="true" iconDisplay="input" [showButtonBar]="true" [readonlyInput]="false" appendTo="body" [baseZIndex]="1400" panelStyleClass="venta-v2-calendar" (ngModelChange)="setDateValue(tipificacionForm, 'fechaInstalacion', $event)" /></label> }
-              @if (requiresRejectionDate) { <label><span>Rechazo</span><p-datepicker [ngModel]="pickerDate(tipificacionForm.get('fechaRechazo')?.value)" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy" [showIcon]="true" iconDisplay="input" [showButtonBar]="true" [readonlyInput]="false" appendTo="body" [baseZIndex]="1400" panelStyleClass="venta-v2-calendar" (ngModelChange)="setDateValue(tipificacionForm, 'fechaRechazo', $event)" /></label> }
-              @if (requiresCustomerId) { <label><span>Customer ID</span><input pInputText formControlName="customerId" inputmode="numeric" maxlength="8" (input)="setDigits('customerId', $any($event.target).value, 8)" /></label> }
-              @if (requiresSecSot) { <label><span>SEC</span><input pInputText formControlName="sec" inputmode="numeric" maxlength="9" (input)="setDigits('sec', $any($event.target).value, 9)" /></label> }
-              @if (requiresSecSot || requiresCustomerId) { <label><span>SOT</span><input pInputText formControlName="sot" inputmode="numeric" maxlength="8" (input)="setDigits('sot', $any($event.target).value, 8)" /></label> }
-              <button class="venta-v2__comment-button" type="button" [class.is-active]="commentOpen()" (click)="commentOpen.set(!commentOpen())"><i class="pi pi-comment"></i><span>{{ commentOpen() ? 'Ocultar nota' : 'Agregar nota' }}</span></button>
-              <button pButton type="submit" icon="pi pi-check" label="Tipificar" [loading]="saving" [disabled]="!canMutate"></button>
               @if (commentOpen()) { <label class="venta-v2__comment"><span>Comentario</span><input pInputText formControlName="comentario" placeholder="Agrega contexto útil para la siguiente gestión" /></label> }
             </form>
           </footer>
