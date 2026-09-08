@@ -41,6 +41,16 @@ body.venta-drawer-v2-open {
   }
 }
 
+app-venta-drawer-v2 {
+  .venta-v2__edit { display: inline-flex; align-items: center; gap: .42rem; }
+  .venta-v2__mini-title,
+  .venta-v2__notice { display: flex; align-items: flex-start; gap: .5rem; }
+  .venta-v2__mini-title { margin-bottom: .65rem; color: var(--venta-muted); font-size: .8rem; font-weight: 650; }
+  .venta-v2__mini-title i,
+  .venta-v2__notice i { flex: 0 0 auto; margin-top: .08em; color: var(--venta-accent); }
+  .venta-v2__notice { margin: .85rem 0 0; color: var(--venta-muted); font-size: .8rem; line-height: 1.45; }
+}
+
 app-employee-access-panel .employee-table {
   --employee-col: 20%;
   --role-col: 10%;

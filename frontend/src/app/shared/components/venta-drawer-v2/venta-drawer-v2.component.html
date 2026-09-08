@@ -32,7 +32,7 @@
             [attr.aria-expanded]="summaryOpen()"
             (click)="summaryOpen.set(!summaryOpen())"
           >
-            <i class="pi pi-file" aria-hidden="true"></i>
+            <i [class]="summaryOpen() ? 'pi pi-chevron-left' : 'pi pi-chevron-right'" aria-hidden="true"></i>
           </button>
           <div class="venta-v2__provider">
             <span>{{ providerLabel() }}</span>
@@ -88,7 +88,7 @@
                     @if (!readOnly) {
                       @if (editingSection() === 'identidad') {
                         <div class="venta-v2__edit-actions"><button type="button" (click)="cancelSectionEdit()">Cancelar</button><button type="button" class="is-primary" [disabled]="sectionSaving()" (click)="applySectionEdit()">Aplicar</button></div>
-                      } @else { <button class="venta-v2__edit" type="button" (click)="startSectionEdit('identidad')"><i class="pi pi-pencil"></i> Editar</button> }
+                      } @else { <button class="venta-v2__edit" type="button" (click)="startSectionEdit('identidad')"><i class="pi pi-pencil" aria-hidden="true"></i><span>Editar</span></button> }
                     }
                   </div>
                   <div class="venta-v2__fields">
@@ -105,7 +105,7 @@
                     <div><i class="pi pi-phone" aria-hidden="true"></i><span><strong>Contacto</strong><small>Canales disponibles para la gestión</small></span></div>
                     @if (!readOnly) {
                       @if (editingSection() === 'contacto') { <div class="venta-v2__edit-actions"><button type="button" (click)="cancelSectionEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applySectionEdit()">Aplicar</button></div> }
-                      @else { <button class="venta-v2__edit" type="button" (click)="startSectionEdit('contacto')"><i class="pi pi-pencil"></i> Editar</button> }
+                      @else { <button class="venta-v2__edit" type="button" (click)="startSectionEdit('contacto')"><i class="pi pi-pencil" aria-hidden="true"></i><span>Editar</span></button> }
                     }
                   </div>
                   <div class="venta-v2__fields">
@@ -119,7 +119,7 @@
                   <section class="venta-v2__section">
                     <div class="venta-v2__section-head">
                       <div><i class="pi pi-database" aria-hidden="true"></i><span><strong>Datos según proveedor</strong><small>Información adicional requerida por la oferta</small></span></div>
-                      @if (!readOnly) { @if (editingSection() === 'proveedor') { <div class="venta-v2__edit-actions"><button type="button" (click)="cancelSectionEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applySectionEdit()">Aplicar</button></div> } @else { <button class="venta-v2__edit" type="button" (click)="startSectionEdit('proveedor')"><i class="pi pi-pencil"></i> Editar</button> } }
+                      @if (!readOnly) { @if (editingSection() === 'proveedor') { <div class="venta-v2__edit-actions"><button type="button" (click)="cancelSectionEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applySectionEdit()">Aplicar</button></div> } @else { <button class="venta-v2__edit" type="button" (click)="startSectionEdit('proveedor')"><i class="pi pi-pencil" aria-hidden="true"></i><span>Editar</span></button> } }
                     </div>
                     <div class="venta-v2__fields">
                       @if (showConfiguredField('NOMBRE_MADRE', datosForm, 'nombreMadre')) { <label><span>Nombre de madre</span>@if (editingSection() === 'proveedor') { <input pInputText formControlName="nombreMadre" /> } @else { <strong>{{ display(datosForm.get('nombreMadre')?.value) }}</strong> }</label> }
@@ -135,7 +135,7 @@
             @if (activeTab() === 'direccion') {
               <form class="venta-v2__record" [formGroup]="direccionForm">
                 <section class="venta-v2__section">
-                  <div class="venta-v2__section-head"><div><i class="pi pi-map" aria-hidden="true"></i><span><strong>Ubicación</strong><small>Jerarquía geográfica del domicilio</small></span></div>@if (!readOnly) { @if (editingSection() === 'ubicacion') { <div class="venta-v2__edit-actions"><button type="button" (click)="cancelSectionEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applySectionEdit()">Aplicar</button></div> } @else { <button class="venta-v2__edit" type="button" (click)="startSectionEdit('ubicacion')"><i class="pi pi-pencil"></i> Editar</button> } }</div>
+                  <div class="venta-v2__section-head"><div><i class="pi pi-map" aria-hidden="true"></i><span><strong>Ubicación</strong><small>Jerarquía geográfica del domicilio</small></span></div>@if (!readOnly) { @if (editingSection() === 'ubicacion') { <div class="venta-v2__edit-actions"><button type="button" (click)="cancelSectionEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applySectionEdit()">Aplicar</button></div> } @else { <button class="venta-v2__edit" type="button" (click)="startSectionEdit('ubicacion')"><i class="pi pi-pencil" aria-hidden="true"></i><span>Editar</span></button> } }</div>
                   <div class="venta-v2__fields">
                     <label><span>Departamento</span>@if (editingSection() === 'ubicacion') { <p-select formControlName="idDepartamentoDomicilio" [options]="departamentos" optionLabel="nombre" optionValue="id" appendTo="body" (onChange)="departamentoDomicilioChange.emit()" /> } @else { <strong>{{ display(detail?.departamentoDomicilio) }}</strong> }</label>
                     <label><span>Provincia</span>@if (editingSection() === 'ubicacion') { <p-select formControlName="idProvinciaDomicilio" [options]="provinciasDomicilio" optionLabel="nombre" optionValue="id" appendTo="body" (onChange)="provinciaDomicilioChange.emit()" /> } @else { <strong>{{ display(detail?.provinciaDomicilio) }}</strong> }</label>
@@ -144,7 +144,7 @@
                   </div>
                 </section>
                 <section class="venta-v2__section">
-                  <div class="venta-v2__section-head"><div><i class="pi pi-home" aria-hidden="true"></i><span><strong>Detalle del domicilio</strong><small>Dirección de instalación y referencias</small></span></div>@if (!readOnly) { @if (editingSection() === 'detalle-direccion') { <div class="venta-v2__edit-actions"><button type="button" (click)="cancelSectionEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applySectionEdit()">Aplicar</button></div> } @else { <button class="venta-v2__edit" type="button" (click)="startSectionEdit('detalle-direccion')"><i class="pi pi-pencil"></i> Editar</button> } }</div>
+                  <div class="venta-v2__section-head"><div><i class="pi pi-home" aria-hidden="true"></i><span><strong>Detalle del domicilio</strong><small>Dirección de instalación y referencias</small></span></div>@if (!readOnly) { @if (editingSection() === 'detalle-direccion') { <div class="venta-v2__edit-actions"><button type="button" (click)="cancelSectionEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applySectionEdit()">Aplicar</button></div> } @else { <button class="venta-v2__edit" type="button" (click)="startSectionEdit('detalle-direccion')"><i class="pi pi-pencil" aria-hidden="true"></i><span>Editar</span></button> } }</div>
                   <div class="venta-v2__fields">
                     <label><span>Tipo de domicilio</span>@if (editingSection() === 'detalle-direccion') { <p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" appendTo="body" /> } @else { <strong>{{ display(direccionForm.get('tipoDomicilio')?.value) }}</strong> }</label>
                     <label><span>Tipo de vía</span>@if (editingSection() === 'detalle-direccion') { <p-select formControlName="tipoVia" [options]="tipoViaOptions" appendTo="body" /> } @else { <strong>{{ display(direccionForm.get('tipoVia')?.value) }}</strong> }</label>
@@ -161,7 +161,7 @@
 
             @if (activeTab() === 'plan') {
               <section class="venta-v2__plan">
-                <div class="venta-v2__plan-head"><div><span>Composición comercial</span><h3>{{ display(selectedPlan()?.nombre || detail?.nombrePlan, 'Plan sin registrar') }}</h3><small>{{ providerLabel() }}</small></div>@if (!readOnly && !offerLocked) { @if (planEditing()) { <div class="venta-v2__edit-actions"><button type="button" (click)="cancelPlanEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applyPlanEdit()">Aplicar oferta</button></div> } @else { <button class="venta-v2__edit" type="button" (click)="startPlanEdit()"><i class="pi pi-pencil"></i> Editar oferta</button> } }</div>
+                <div class="venta-v2__plan-head"><div><span>Composición comercial</span><h3>{{ display(selectedPlan()?.nombre || detail?.nombrePlan, 'Plan sin registrar') }}</h3><small>{{ providerLabel() }}</small></div>@if (!readOnly && !offerLocked) { @if (planEditing()) { <div class="venta-v2__edit-actions"><button type="button" (click)="cancelPlanEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applyPlanEdit()">Aplicar oferta</button></div> } @else { <button class="venta-v2__edit" type="button" (click)="startPlanEdit()"><i class="pi pi-pencil" aria-hidden="true"></i><span>Editar oferta</span></button> } }</div>
                 @if (planEditing()) {
                   <form class="venta-v2__plan-editor" [formGroup]="ofertaForm">
                     <label><span>Proveedor</span><p-select formControlName="idProveedor" [options]="providerOptions" optionLabel="nombre" optionValue="id" appendTo="body" (onChange)="ofertaProviderChange.emit($event.value)" /></label>
@@ -179,7 +179,7 @@
                   <section><div class="venta-v2__mini-title"><i class="pi pi-plus-circle"></i><span>Adicionales</span></div>@if (selectedAdditionals.length) { @for (item of selectedAdditionals; track item.idAdicional) { <div class="venta-v2__additional"><span>{{ item.nombre }} × {{ item.cantidad }}</span><strong>{{ money((item.precioUnitario || 0) * item.cantidad) }}</strong>@if (planEditing()) { <button type="button" (click)="disminuirAdicional.emit({ id: item.idAdicional, nombre: item.nombre, precioUnitario: item.precioUnitario ?? undefined })">−</button> }</div> } } @else { <p>Sin adicionales</p> } @if (planEditing()) { @for (item of availableAdditionals(); track item.id) { <button class="venta-v2__add-additional" type="button" (click)="incrementarAdicional.emit(item)">+ {{ item.nombre }}</button> } }</section>
                 </div>
                 <div class="venta-v2__ledger"><div><span>Precio base</span><strong>{{ money(detail?.precioPlan || selectedPlan()?.precio) }}</strong></div><div><span>Adicionales</span><strong>{{ money(additionalsTotal || detail?.precioAdicionales) }}</strong></div><div class="is-total"><span>Total mensual</span><strong>{{ money(detail?.precioFinal || (detail?.precioPlan || 0) + (detail?.precioAdicionales || 0)) }}</strong></div></div>
-                @if (offerNoticeText) { <p class="venta-v2__notice"><i class="pi pi-info-circle"></i>{{ offerNoticeText }}</p> }
+                @if (offerNoticeText) { <p class="venta-v2__notice"><i class="pi pi-info-circle" aria-hidden="true"></i><span>{{ offerNoticeText }}</span></p> }
               </section>
             }
 
