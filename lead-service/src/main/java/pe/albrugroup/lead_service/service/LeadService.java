@@ -13,6 +13,7 @@ import pe.albrugroup.lead_service.entity.enums.CampoConfigurable;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.ModoConteo;
 import pe.albrugroup.lead_service.entity.enums.OrdenRankingAsesor;
+import pe.albrugroup.lead_service.entity.enums.OrigenFilaBandejaVenta;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.CampoFechaListadoVenta;
@@ -24,6 +25,7 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
 import pe.albrugroup.lead_service.entity.enums.TipoNumeroLlamada;
+import pe.albrugroup.lead_service.entity.enums.TipoFechaRelevanteVenta;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionMasivaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
@@ -47,6 +49,7 @@ import pe.albrugroup.lead_service.entity.response.AsesorLeadsPendientesResponse;
 import pe.albrugroup.lead_service.entity.response.CampoConfigResponse;
 import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import pe.albrugroup.lead_service.entity.response.AsesorSinLeadsResponse;
+import pe.albrugroup.lead_service.entity.response.LeadBandejaVentaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPendienteResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionMasivaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionResultadoResponse;
@@ -197,11 +200,6 @@ public class LeadService {
     private static final String TIPIFICACION_INSTALADO = "INSTALADO";
     private static final String TIPIFICACION_SUBSANABLE = "SUBSANABLE";
     private static final String TIPIFICACION_NO_RECUPERABLE = "NO RECUPERABLE";
-    private static final Set<String> TIPIFICACIONES_SEPARADAS_PLATAFORMA = Set.of(
-            TIPIFICACION_PROGRAMADO,
-            TIPIFICACION_SUBSANABLE,
-            TIPIFICACION_NO_RECUPERABLE
-    );
     private static final Pattern NUMERO_LLAMADA_PATTERN = Pattern.compile("^9\\d{8}$");
     private static final String SUBTIPIFICACION_PROGRAMACION_CANCELADA = "PROGRAMACION_CANCELADA";
     // "Cerró la preventa hacia venta": las subtipis con este comportamiento (COMPLETA y los PENDIENTE
@@ -284,6 +282,15 @@ public class LeadService {
             "INGRESO", "ULTIMA_GESTION"
     );
     private static final Set<String> GROUP_BY_PLATAFORMA_PERMITIDOS = Set.of(
+            "ESTADO", "PLAN", "TIPIFICACION", "ULTIMO_GESTOR"
+    );
+    private static final Set<String> LEAD_BANDEJA_VENTA_NORMALIZADA_SORT_FIELDS = Set.of(
+            "fechaRelevante", "lead", "estado", "tipificacion"
+    );
+    private static final Set<String> CAMPO_FECHA_BANDEJA_VENTA_NORMALIZADA_PERMITIDOS = Set.of(
+            "PROGRAMACION", "RECHAZO", "INSTALACION", "TIPIFICACION", "TIPIFICACION_INSTALADO", "INGRESO", "ULTIMA_GESTION"
+    );
+    private static final Set<String> GROUP_BY_BANDEJA_VENTA_NORMALIZADA_PERMITIDOS = Set.of(
             "ESTADO", "PLAN", "TIPIFICACION", "ULTIMO_GESTOR"
     );
     private static final Set<String> LEAD_CORRECCION_INSTALACION_SORT_FIELDS = Set.of(
@@ -851,7 +858,6 @@ public class LeadService {
                 Set.of(TIPIFICACION_SUBSANABLE, TIPIFICACION_NO_RECUPERABLE),
                 Etapa.PREVENTA,
                 modoEfectivo.excluirTipificacionesSeparadas(),
-                TIPIFICACIONES_SEPARADAS_PLATAFORMA,
                 equipos.filtrar(),
                 equipos.ids(),
                 groupByName,
@@ -865,6 +871,161 @@ public class LeadService {
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
         return PageResponse.from(leads);
+    }
+
+    public PageResponse<LeadBandejaVentaResponse> listarBandejaVentaNormalizada(
+            List<String> codigosTipificacion,
+            List<String> codigosSubtipificacion,
+            boolean sinSubtipificacion,
+            OrigenFilaBandejaVenta origen,
+            List<Etapa> etapasActuales,
+            Long idEquipo,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            CampoFechaListadoVenta campoFecha,
+            TipoGrupoVenta groupBy,
+            PageRequest pageRequest
+    ) {
+        OrigenFilaBandejaVenta origenEfectivo = origen == null ? OrigenFilaBandejaVenta.ESTADO_ACTUAL : origen;
+        CampoFechaListadoVenta campo = campoFecha == null
+                ? defaultCampoFechaBandejaVenta(origenEfectivo)
+                : campoFecha;
+        if (!CAMPO_FECHA_BANDEJA_VENTA_NORMALIZADA_PERMITIDOS.contains(campo.name())) {
+            throw new BadRequestException("Campo de fecha no permitido para bandeja normalizada: " + campo);
+        }
+        String groupByName = groupBy == null ? "SIN_AGRUPAR" : groupBy.name();
+        if (!"SIN_AGRUPAR".equals(groupByName) && !GROUP_BY_BANDEJA_VENTA_NORMALIZADA_PERMITIDOS.contains(groupByName)) {
+            throw new BadRequestException("Agrupador no permitido para bandeja normalizada: " + groupBy);
+        }
+        String rawSort = pageRequest.getSortBy();
+        String sortBy = "createdAt".equals(rawSort) || "lastEntryAt".equals(rawSort) ? "fechaRelevante" : rawSort;
+        LeadOrderingRules.validarDirection(pageRequest.getDirection());
+        if (!LEAD_BANDEJA_VENTA_NORMALIZADA_SORT_FIELDS.contains(sortBy)) {
+            throw new BadRequestException("Campo de ordenamiento no permitido: " + rawSort);
+        }
+        boolean sortDesc = LeadOrderingRules.isDesc(pageRequest);
+        RangoFechas rango = campo == CampoFechaListadoVenta.PROGRAMACION
+                ? resolverRangoFuturo(fechaDesde, fechaHasta, 30)
+                : resolverRangoUltimosDias(fechaDesde, fechaHasta, 30);
+        Instant tsDesde = OperationalDateTime.startOfDay(rango.desde());
+        Instant tsHasta = OperationalDateTime.endExclusiveOfDay(rango.hasta());
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
+        List<String> tips = normalizarCodigosBandeja(codigosTipificacion);
+        List<String> subtips = normalizarCodigosBandeja(codigosSubtipificacion);
+        boolean filtrarTipificaciones = !tips.isEmpty();
+        boolean filtrarSubtipificaciones = !subtips.isEmpty() || sinSubtipificacion;
+        List<String> tipsQuery = filtrarTipificaciones ? tips : List.of("__SIN_FILTRO__");
+        List<String> subtipsQuery = !subtips.isEmpty() ? subtips : List.of("__SIN_FILTRO__");
+        org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(
+                pageRequest.getPageNumber(),
+                pageRequest.getPageSize()
+        );
+
+        Page<LeadBandejaVentaResponse> leads = origenEfectivo == OrigenFilaBandejaVenta.EVENTO_TIPIFICACION
+                ? leadRepository.listarBandejaVentaNormalizadaPorEvento(
+                Accion.TIPIFICACION,
+                Etapa.VENTA,
+                Etapa.PREVENTA,
+                origenEfectivo,
+                etapasActualesBandejaVenta(etapasActuales),
+                filtrarTipificaciones,
+                tipsQuery,
+                filtrarSubtipificaciones,
+                subtipsQuery,
+                sinSubtipificacion,
+                campo.name(),
+                rango.desde(),
+                rango.hasta(),
+                tsDesde,
+                tsHasta,
+                equipos.filtrar(),
+                equipos.ids(),
+                groupByName,
+                sortBy,
+                sortDesc,
+                estadoOrden.nuevo(),
+                estadoOrden.enGestion(),
+                estadoOrden.asignado(),
+                estadoOrden.gestionado(),
+                pageable
+        )
+                : leadRepository.listarBandejaVentaNormalizadaActual(
+                Accion.TIPIFICACION,
+                Etapa.VENTA,
+                Etapa.PREVENTA,
+                origenEfectivo,
+                filtrarTipificaciones,
+                tipsQuery,
+                filtrarSubtipificaciones,
+                subtipsQuery,
+                sinSubtipificacion,
+                campo.name(),
+                rango.desde(),
+                rango.hasta(),
+                tsDesde,
+                tsHasta,
+                equipos.filtrar(),
+                equipos.ids(),
+                groupByName,
+                sortBy,
+                sortDesc,
+                estadoOrden.nuevo(),
+                estadoOrden.enGestion(),
+                estadoOrden.asignado(),
+                estadoOrden.gestionado(),
+                pageable
+        );
+        leads.getContent().forEach(lead -> normalizarFechaRelevanteBandejaVenta(lead, campo));
+        return PageResponse.from(leads);
+    }
+
+    private CampoFechaListadoVenta defaultCampoFechaBandejaVenta(OrigenFilaBandejaVenta origen) {
+        return origen == OrigenFilaBandejaVenta.EVENTO_TIPIFICACION
+                ? CampoFechaListadoVenta.TIPIFICACION
+                : CampoFechaListadoVenta.INGRESO;
+    }
+
+    private List<String> normalizarCodigosBandeja(List<String> codigos) {
+        if (codigos == null) {
+            return List.of();
+        }
+        return codigos.stream()
+                .filter(Objects::nonNull)
+                .map(codigo -> codigo.trim().toUpperCase(Locale.ROOT))
+                .filter(codigo -> !codigo.isBlank())
+                .distinct()
+                .toList();
+    }
+
+    private List<Etapa> etapasActualesBandejaVenta(List<Etapa> etapasActuales) {
+        if (etapasActuales == null || etapasActuales.isEmpty()) {
+            return List.of(Etapa.VENTA, Etapa.PREVENTA, Etapa.POSTVENTA, Etapa.COBRANZA);
+        }
+        return etapasActuales.stream().filter(Objects::nonNull).distinct().toList();
+    }
+
+    private void normalizarFechaRelevanteBandejaVenta(LeadBandejaVentaResponse lead, CampoFechaListadoVenta campo) {
+        TipoFechaRelevanteVenta tipo = switch (campo) {
+            case PROGRAMACION -> TipoFechaRelevanteVenta.PROGRAMACION;
+            case RECHAZO -> TipoFechaRelevanteVenta.RECHAZO;
+            case INSTALACION -> TipoFechaRelevanteVenta.INSTALACION;
+            case TIPIFICACION, TIPIFICACION_INSTALADO -> TipoFechaRelevanteVenta.TIPIFICACION;
+            case INGRESO -> TipoFechaRelevanteVenta.INGRESO;
+            case ULTIMA_GESTION -> TipoFechaRelevanteVenta.ULTIMA_GESTION;
+        };
+        lead.setTipoFechaRelevante(tipo);
+        switch (tipo) {
+            case PROGRAMACION -> {
+                lead.setFechaRelevante(lead.getFechaProgramacion());
+                lead.setHoraRelevante(lead.getHoraProgramada());
+            }
+            case RECHAZO -> lead.setFechaRelevante(lead.getFechaRechazo());
+            case INSTALACION -> lead.setFechaRelevante(lead.getFechaInstalacion());
+            case TIPIFICACION -> lead.setFechaRelevanteAt(lead.getFechaTipificacion());
+            case INGRESO -> lead.setFechaRelevanteAt(lead.getFechaIngresoEtapa() == null ? lead.getLastEntryAt() : lead.getFechaIngresoEtapa());
+            case ULTIMA_GESTION -> lead.setFechaRelevanteAt(lead.getFechaUltimaGestion());
+        }
     }
 
     private RangoOperativoVenta resolverRangoOperativoVenta(
@@ -4475,35 +4636,35 @@ public class LeadService {
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorEstado(
                                 Etapa.VENTA, searchPattern, buscarPorUsermeta, fechaDesde, fechaHasta, filtrarAsesor, idAsesor,
-                                modoListado.excluirTipificacionesSeparadas(), TIPIFICACIONES_SEPARADAS_PLATAFORMA,
+                                modoListado.excluirTipificacionesSeparadas(),
                                 equipos.filtrar(), equipos.ids()),
                         "Sin estado"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorProveedor(
                                 Etapa.VENTA, searchPattern, buscarPorUsermeta, fechaDesde, fechaHasta, filtrarAsesor, idAsesor,
-                                modoListado.excluirTipificacionesSeparadas(), TIPIFICACIONES_SEPARADAS_PLATAFORMA,
+                                modoListado.excluirTipificacionesSeparadas(),
                                 equipos.filtrar(), equipos.ids()),
                         "Sin proveedor"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorPlan(
                                 Etapa.VENTA, searchPattern, buscarPorUsermeta, fechaDesde, fechaHasta, filtrarAsesor, idAsesor,
-                                modoListado.excluirTipificacionesSeparadas(), TIPIFICACIONES_SEPARADAS_PLATAFORMA,
+                                modoListado.excluirTipificacionesSeparadas(),
                                 equipos.filtrar(), equipos.ids()),
                         "Sin plan"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorUltimoGestor(
                                 Etapa.VENTA, searchPattern, buscarPorUsermeta, fechaDesde, fechaHasta, filtrarAsesor, idAsesor,
-                                modoListado.excluirTipificacionesSeparadas(), TIPIFICACIONES_SEPARADAS_PLATAFORMA,
+                                modoListado.excluirTipificacionesSeparadas(),
                                 equipos.filtrar(), equipos.ids()),
                         "Sin gestor"
                 ),
                 mapearAgrupacionesVentaTipificacion(
                         leadRepository.agruparVentaPorTipificacion(
                                 Etapa.VENTA, searchPattern, buscarPorUsermeta, fechaDesde, fechaHasta, filtrarAsesor, idAsesor,
-                                modoListado.excluirTipificacionesSeparadas(), TIPIFICACIONES_SEPARADAS_PLATAFORMA,
+                                modoListado.excluirTipificacionesSeparadas(),
                                 equipos.filtrar(), equipos.ids())
                 )
         );

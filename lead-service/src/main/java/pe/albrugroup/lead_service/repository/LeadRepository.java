@@ -15,6 +15,7 @@ import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
+import pe.albrugroup.lead_service.entity.response.LeadBandejaVentaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
@@ -1406,6 +1407,242 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     );
 
     @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadBandejaVentaResponse(
+                l.id, ultTip.id, :origenFila, l.etapa, l.estado, l.estadoClientePostventa,
+                l.prefijo, l.lead, l.usermeta, dp.tipoDocumento,
+                COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
+                dp.nombreTitularServicio, l.base, l.idTipificacion, l.codigoTipificacion,
+                l.idSubtipificacion, l.codigoSubtipificacion, l.codigoTipificacion, l.codigoSubtipificacion,
+                l.nombreProveedorSnapshot, l.nombrePlanSnapshot, l.precioPlanSnapshot,
+                l.nombrePromocionInternaSnapshot, l.precioAdicionalesSnapshot, l.precioFinal,
+                l.diaCorteFacturacion, l.mesesPermanenciaSnapshot, l.createdAt, l.lastEntryAt,
+                r.fechaIngresoEtapa, l.updatedAt, l.sec, l.sot, l.customerId,
+                COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
+                rp.nombreAsesorMerito, r.nombreAsesorUltimaGestion, r.fechaUltimaGestion,
+                ultTip.idActor, ultTip.nombreActor, prog.fechaProgramacion, prog.horaProgramada,
+                rechazo.fechaRechazo, instalado.fechaInstalacion, ultTip.createdAt, ultTip.comentario,
+                l.comentario, null, null, null, null
+            )
+            FROM Lead l
+            LEFT JOIN Evento ultTip ON ultTip.id = (
+                SELECT MAX(ev.id)
+                FROM Evento ev
+                WHERE ev.idLead = l.id AND ev.accion = :accionTipificacion
+            )
+            LEFT JOIN Evento prog ON prog.id = (
+                SELECT MAX(ev.id)
+                FROM Evento ev
+                WHERE ev.idLead = l.id AND ev.accion = :accionTipificacion
+                  AND ev.etapa = :etapaVenta AND ev.tipificacion = l.codigoTipificacion
+                  AND (ev.subtipificacion = l.codigoSubtipificacion OR (ev.subtipificacion IS NULL AND l.codigoSubtipificacion IS NULL))
+                  AND ev.fechaProgramacion IS NOT NULL AND ev.horaProgramada IS NOT NULL
+            )
+            LEFT JOIN Evento rechazo ON rechazo.id = (
+                SELECT MAX(ev.id)
+                FROM Evento ev
+                WHERE ev.idLead = l.id AND ev.accion = :accionTipificacion
+                  AND ev.etapa = :etapaVenta AND ev.tipificacion = l.codigoTipificacion
+                  AND (ev.subtipificacion = l.codigoSubtipificacion OR (ev.subtipificacion IS NULL AND l.codigoSubtipificacion IS NULL))
+                  AND ev.fechaRechazo IS NOT NULL
+            )
+            LEFT JOIN Evento instalado ON instalado.id = (
+                SELECT MAX(ev.id)
+                FROM Evento ev
+                WHERE ev.idLead = l.id AND ev.accion = :accionTipificacion
+                  AND ev.etapa = :etapaVenta AND ev.tipificacion = l.codigoTipificacion
+                  AND (ev.subtipificacion = l.codigoSubtipificacion OR (ev.subtipificacion IS NULL AND l.codigoSubtipificacion IS NULL))
+                  AND ev.fechaInstalacion IS NOT NULL
+            )
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            LEFT JOIN EquipoProveedor epFallback ON epFallback.idEquipo = l.idEquipo AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.matriz.etapa = l.etapa AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = l.codigoSubtipificacion
+            WHERE l.etapa = :etapaVenta
+              AND (:filtrarTipificaciones = false OR l.codigoTipificacion IN :codigosTipificacion)
+              AND (:filtrarSubtipificaciones = false OR l.codigoSubtipificacion IN :codigosSubtipificacion OR (:sinSubtipificacion = true AND l.codigoSubtipificacion IS NULL))
+              AND (
+                    (:campoFecha = 'PROGRAMACION' AND prog.fechaProgramacion BETWEEN :fechaDesde AND :fechaHasta)
+                    OR (:campoFecha = 'RECHAZO' AND rechazo.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta)
+                    OR (:campoFecha = 'INSTALACION' AND instalado.fechaInstalacion BETWEEN :fechaDesde AND :fechaHasta)
+                    OR (:campoFecha IN ('TIPIFICACION', 'TIPIFICACION_INSTALADO') AND ultTip.createdAt >= :tsDesde AND ultTip.createdAt < :tsHasta)
+                    OR (:campoFecha = 'INGRESO' AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :tsDesde AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) < :tsHasta)
+                    OR (:campoFecha = 'ULTIMA_GESTION' AND r.fechaUltimaGestion >= :tsDesde AND r.fechaUltimaGestion < :tsHasta)
+              )
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            ORDER BY
+              CASE WHEN :groupBy = 'ESTADO' THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END ASC,
+              CASE WHEN :groupBy = 'PLAN' THEN l.nombrePlanSnapshot END ASC,
+              CASE WHEN :groupBy = 'ULTIMO_GESTOR' THEN r.nombreAsesorUltimaGestion END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN tAct.orden END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN sAct.orden END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'PROGRAMACION' THEN prog.fechaProgramacion END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'PROGRAMACION' THEN prog.fechaProgramacion END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'RECHAZO' THEN rechazo.fechaRechazo END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'RECHAZO' THEN rechazo.fechaRechazo END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'INSTALACION' THEN instalado.fechaInstalacion END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'INSTALACION' THEN instalado.fechaInstalacion END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha IN ('TIPIFICACION', 'TIPIFICACION_INSTALADO') THEN ultTip.createdAt END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha IN ('TIPIFICACION', 'TIPIFICACION_INSTALADO') THEN ultTip.createdAt END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'INGRESO' THEN COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'INGRESO' THEN COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'ULTIMA_GESTION' THEN r.fechaUltimaGestion END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'ULTIMA_GESTION' THEN r.fechaUltimaGestion END DESC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = false THEN l.lead END ASC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = true THEN l.lead END DESC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = false THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END ASC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = true THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END DESC,
+              CASE WHEN :sortBy = 'tipificacion' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END ELSE 0 END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN tAct.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN tAct.orden END DESC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN sAct.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN sAct.orden END DESC,
+              COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) DESC,
+              l.id DESC
+            """)
+    Page<LeadBandejaVentaResponse> listarBandejaVentaNormalizadaActual(
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("origenFila") pe.albrugroup.lead_service.entity.enums.OrigenFilaBandejaVenta origenFila,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("codigosTipificacion") Collection<String> codigosTipificacion,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
+            @Param("sinSubtipificacion") boolean sinSubtipificacion,
+            @Param("campoFecha") String campoFecha,
+            @Param("fechaDesde") java.time.LocalDate fechaDesde,
+            @Param("fechaHasta") java.time.LocalDate fechaHasta,
+            @Param("tsDesde") Instant tsDesde,
+            @Param("tsHasta") Instant tsHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("groupBy") String groupBy,
+            @Param("sortBy") String sortBy,
+            @Param("sortDesc") boolean sortDesc,
+            @Param("estadoNuevo") EstadoSeguimiento estadoNuevo,
+            @Param("estadoEnGestion") EstadoSeguimiento estadoEnGestion,
+            @Param("estadoAsignado") EstadoSeguimiento estadoAsignado,
+            @Param("estadoGestionado") EstadoSeguimiento estadoGestionado,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadBandejaVentaResponse(
+                l.id, e.id, :origenFila, l.etapa, l.estado, l.estadoClientePostventa,
+                l.prefijo, l.lead, l.usermeta, dp.tipoDocumento,
+                COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
+                dp.nombreTitularServicio, l.base, l.idTipificacion, l.codigoTipificacion,
+                l.idSubtipificacion, l.codigoSubtipificacion, e.tipificacion, e.subtipificacion,
+                l.nombreProveedorSnapshot, l.nombrePlanSnapshot, l.precioPlanSnapshot,
+                l.nombrePromocionInternaSnapshot, l.precioAdicionalesSnapshot, l.precioFinal,
+                l.diaCorteFacturacion, l.mesesPermanenciaSnapshot, l.createdAt, l.lastEntryAt,
+                r.fechaIngresoEtapa, l.updatedAt, l.sec, l.sot, l.customerId,
+                COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
+                rp.nombreAsesorMerito, r.nombreAsesorUltimaGestion, r.fechaUltimaGestion,
+                e.idActor, e.nombreActor, e.fechaProgramacion, e.horaProgramada,
+                e.fechaRechazo, e.fechaInstalacion, e.createdAt, e.comentario,
+                l.comentario, null, null, null, null
+            )
+            FROM Lead l
+            JOIN Evento e ON e.idLead = l.id
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            LEFT JOIN EquipoProveedor epFallback ON epFallback.idEquipo = l.idEquipo AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = e.tipificacion AND tAct.matriz.etapa = :etapaVenta AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = e.subtipificacion
+            WHERE e.accion = :accionTipificacion
+              AND e.etapa = :etapaVenta
+              AND l.etapa IN :etapasActuales
+              AND (:filtrarTipificaciones = false OR e.tipificacion IN :codigosTipificacion)
+              AND (:filtrarSubtipificaciones = false OR e.subtipificacion IN :codigosSubtipificacion OR (:sinSubtipificacion = true AND e.subtipificacion IS NULL))
+              AND (
+                    (:campoFecha = 'PROGRAMACION' AND e.fechaProgramacion BETWEEN :fechaDesde AND :fechaHasta)
+                    OR (:campoFecha = 'RECHAZO' AND e.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta)
+                    OR (:campoFecha = 'INSTALACION' AND e.fechaInstalacion BETWEEN :fechaDesde AND :fechaHasta)
+                    OR (:campoFecha IN ('TIPIFICACION', 'TIPIFICACION_INSTALADO') AND e.createdAt >= :tsDesde AND e.createdAt < :tsHasta)
+                    OR (:campoFecha = 'INGRESO' AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :tsDesde AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) < :tsHasta)
+                    OR (:campoFecha = 'ULTIMA_GESTION' AND r.fechaUltimaGestion >= :tsDesde AND r.fechaUltimaGestion < :tsHasta)
+              )
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND e.createdAt = (
+                  SELECT MAX(es.createdAt)
+                  FROM Evento es
+                  WHERE es.idLead = l.id
+                    AND es.accion = :accionTipificacion
+                    AND es.etapa = :etapaVenta
+                    AND (:filtrarTipificaciones = false OR es.tipificacion IN :codigosTipificacion)
+                    AND (:filtrarSubtipificaciones = false OR es.subtipificacion IN :codigosSubtipificacion OR (:sinSubtipificacion = true AND es.subtipificacion IS NULL))
+              )
+            ORDER BY
+              CASE WHEN :groupBy = 'ESTADO' THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END ASC,
+              CASE WHEN :groupBy = 'PLAN' THEN l.nombrePlanSnapshot END ASC,
+              CASE WHEN :groupBy = 'ULTIMO_GESTOR' THEN e.nombreActor END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN tAct.orden END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN sAct.orden END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'PROGRAMACION' THEN e.fechaProgramacion END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'PROGRAMACION' THEN e.fechaProgramacion END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'RECHAZO' THEN e.fechaRechazo END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'RECHAZO' THEN e.fechaRechazo END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'INSTALACION' THEN e.fechaInstalacion END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'INSTALACION' THEN e.fechaInstalacion END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha IN ('TIPIFICACION', 'TIPIFICACION_INSTALADO') THEN e.createdAt END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha IN ('TIPIFICACION', 'TIPIFICACION_INSTALADO') THEN e.createdAt END DESC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = false THEN l.lead END ASC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = true THEN l.lead END DESC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = false THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END ASC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = true THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END DESC,
+              CASE WHEN :sortBy = 'tipificacion' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END ELSE 0 END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN tAct.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN tAct.orden END DESC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN sAct.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN sAct.orden END DESC,
+              e.createdAt DESC,
+              l.id DESC
+            """)
+    Page<LeadBandejaVentaResponse> listarBandejaVentaNormalizadaPorEvento(
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("origenFila") pe.albrugroup.lead_service.entity.enums.OrigenFilaBandejaVenta origenFila,
+            @Param("etapasActuales") Collection<Etapa> etapasActuales,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("codigosTipificacion") Collection<String> codigosTipificacion,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
+            @Param("sinSubtipificacion") boolean sinSubtipificacion,
+            @Param("campoFecha") String campoFecha,
+            @Param("fechaDesde") java.time.LocalDate fechaDesde,
+            @Param("fechaHasta") java.time.LocalDate fechaHasta,
+            @Param("tsDesde") Instant tsDesde,
+            @Param("tsHasta") Instant tsHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("groupBy") String groupBy,
+            @Param("sortBy") String sortBy,
+            @Param("sortDesc") boolean sortDesc,
+            @Param("estadoNuevo") EstadoSeguimiento estadoNuevo,
+            @Param("estadoEnGestion") EstadoSeguimiento estadoEnGestion,
+            @Param("estadoAsignado") EstadoSeguimiento estadoAsignado,
+            @Param("estadoGestionado") EstadoSeguimiento estadoGestionado,
+            Pageable pageable
+    );
+
+    @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadResponse(
                 l.id,
                 l.prefijo,
@@ -1526,7 +1763,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                         AND ((:sinValor = true AND COALESCE(l.codigoTipificacion, '') = '') OR l.codigoTipificacion IN :valoresGrupo))
               )
               AND (:excluirTipificacionesSeparadas = false
-                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
+                   OR (
+                        tAct.orden > 1
+                        AND tAct.orden < (
+                            SELECT tProg.orden
+                            FROM Tipificacion tProg
+                            WHERE tProg.codigo = :codigoProgramado
+                              AND tProg.matriz.etapa = :etapa
+                              AND tProg.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                        )
+                   ))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY
               CASE WHEN :groupBy = 'ESTADO' THEN
@@ -1583,7 +1829,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("tipificacionesFechaRechazo") Collection<String> tipificacionesFechaRechazo,
             @Param("etapaPreventa") Etapa etapaPreventa,
             @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
-            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
             @Param("groupBy") String groupBy,
@@ -1604,7 +1849,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    COUNT(l.id) AS cantidad
             FROM Lead l
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN EquipoProveedor epFallback ON epFallback.idEquipo = l.idEquipo AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.matriz.etapa = l.etapa AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
             WHERE l.etapa = :etapa
               AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
               AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :fechaDesde
@@ -1620,7 +1872,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
               AND (:excluirTipificacionesSeparadas = false
-                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
+                   OR (
+                        tAct.orden > 1
+                        AND tAct.orden < (
+                            SELECT tProg.orden
+                            FROM Tipificacion tProg
+                            WHERE tProg.codigo = 'PROGRAMADO'
+                              AND tProg.matriz.etapa = :etapa
+                              AND tProg.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                        )
+                   ))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.estado
             """)
@@ -1633,7 +1894,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarAsesor") boolean filtrarAsesor,
             @Param("idAsesor") Long idAsesor,
             @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
-            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1646,7 +1906,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    COUNT(l.id) AS cantidad
             FROM Lead l
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN EquipoProveedor epFallback ON epFallback.idEquipo = l.idEquipo AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.matriz.etapa = l.etapa AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
             WHERE l.etapa = :etapa
               AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
               AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :fechaDesde
@@ -1662,7 +1929,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
               AND (:excluirTipificacionesSeparadas = false
-                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
+                   OR (
+                        tAct.orden > 1
+                        AND tAct.orden < (
+                            SELECT tProg.orden
+                            FROM Tipificacion tProg
+                            WHERE tProg.codigo = 'PROGRAMADO'
+                              AND tProg.matriz.etapa = :etapa
+                              AND tProg.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                        )
+                   ))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.nombreProveedorSnapshot
             """)
@@ -1675,7 +1951,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarAsesor") boolean filtrarAsesor,
             @Param("idAsesor") Long idAsesor,
             @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
-            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1688,7 +1963,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    COUNT(l.id) AS cantidad
             FROM Lead l
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN EquipoProveedor epFallback ON epFallback.idEquipo = l.idEquipo AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.matriz.etapa = l.etapa AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
             WHERE l.etapa = :etapa
               AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
               AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :fechaDesde
@@ -1704,7 +1986,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
               AND (:excluirTipificacionesSeparadas = false
-                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
+                   OR (
+                        tAct.orden > 1
+                        AND tAct.orden < (
+                            SELECT tProg.orden
+                            FROM Tipificacion tProg
+                            WHERE tProg.codigo = 'PROGRAMADO'
+                              AND tProg.matriz.etapa = :etapa
+                              AND tProg.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                        )
+                   ))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.nombrePlanSnapshot
             """)
@@ -1717,7 +2008,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarAsesor") boolean filtrarAsesor,
             @Param("idAsesor") Long idAsesor,
             @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
-            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1730,7 +2020,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    COUNT(l.id) AS cantidad
             FROM Lead l
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN EquipoProveedor epFallback ON epFallback.idEquipo = l.idEquipo AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.matriz.etapa = l.etapa AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
             WHERE l.etapa = :etapa
               AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
               AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :fechaDesde
@@ -1746,7 +2043,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
               AND (:excluirTipificacionesSeparadas = false
-                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
+                   OR (
+                        tAct.orden > 1
+                        AND tAct.orden < (
+                            SELECT tProg.orden
+                            FROM Tipificacion tProg
+                            WHERE tProg.codigo = 'PROGRAMADO'
+                              AND tProg.matriz.etapa = :etapa
+                              AND tProg.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                        )
+                   ))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY r.nombreAsesorUltimaGestion
             """)
@@ -1759,7 +2065,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarAsesor") boolean filtrarAsesor,
             @Param("idAsesor") Long idAsesor,
             @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
-            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1772,7 +2077,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    COUNT(l.id) AS cantidad
             FROM Lead l
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN EquipoProveedor epFallback ON epFallback.idEquipo = l.idEquipo AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.matriz.etapa = l.etapa AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
             WHERE l.etapa = :etapa
               AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
               AND COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :fechaDesde
@@ -1788,7 +2100,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
               AND (:excluirTipificacionesSeparadas = false
-                   OR COALESCE(l.codigoTipificacion, '') NOT IN :tipificacionesSeparadas)
+                   OR (
+                        tAct.orden > 1
+                        AND tAct.orden < (
+                            SELECT tProg.orden
+                            FROM Tipificacion tProg
+                            WHERE tProg.codigo = 'PROGRAMADO'
+                              AND tProg.matriz.etapa = :etapa
+                              AND tProg.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                        )
+                   ))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.codigoTipificacion
             """)
@@ -1801,7 +2122,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarAsesor") boolean filtrarAsesor,
             @Param("idAsesor") Long idAsesor,
             @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
-            @Param("tipificacionesSeparadas") Collection<String> tipificacionesSeparadas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );

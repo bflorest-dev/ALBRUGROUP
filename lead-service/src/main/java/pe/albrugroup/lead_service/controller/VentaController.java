@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.CampoFechaListadoVenta;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.OrigenFilaBandejaVenta;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
@@ -27,6 +28,7 @@ import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTomaVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
+import pe.albrugroup.lead_service.entity.response.LeadBandejaVentaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse;
@@ -90,6 +92,36 @@ public class VentaController {
     ) {
         var response = leadService.buscarContextoLeadVenta(lead);
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @GetMapping("/bandeja") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<PageResponse<LeadBandejaVentaResponse>> listarBandejaVentaNormalizada(
+            @RequestParam(required = false) List<String> codigosTipificacion,
+            @RequestParam(required = false) List<String> codigosSubtipificacion,
+            @RequestParam(required = false, defaultValue = "false") boolean sinSubtipificacion,
+            @RequestParam(required = false, defaultValue = "ESTADO_ACTUAL") OrigenFilaBandejaVenta origen,
+            @RequestParam(required = false) List<Etapa> etapasActuales,
+            @RequestParam(required = false) Long idEquipo,
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false) CampoFechaListadoVenta campoFecha,
+            @RequestParam(required = false) TipoGrupoVenta groupBy,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = leadService.listarBandejaVentaNormalizada(
+                codigosTipificacion,
+                codigosSubtipificacion,
+                sinSubtipificacion,
+                origen,
+                etapasActuales,
+                idEquipo,
+                fechaDesde,
+                fechaHasta,
+                campoFecha,
+                groupBy,
+                pageRequest
+        );
+        return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     // 2. Listar los Leads PROGRAMADOS compartidos, ordenados por fecha y hora de programacion.
     @GetMapping("/programados/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
