@@ -367,13 +367,20 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                        0L)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
             LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            LEFT JOIN Tipificacion tPrimera ON tPrimera.codigo = r.primeraCodigoTipificacion AND tPrimera.etapa = :etapaResumen AND tPrimera.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tPrimera ON tPrimera.codigo = r.primeraCodigoTipificacion AND tPrimera.matriz.etapa = :etapaResumen AND tPrimera.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
             LEFT JOIN Subtipificacion sPrimera ON sPrimera.tipificacion = tPrimera AND sPrimera.codigo = r.primeraCodigoSubtipificacion
-            LEFT JOIN Tipificacion tMayor ON tMayor.codigo = r.mayorRangoCodigoTipificacion AND tMayor.etapa = :etapaResumen AND tMayor.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tMayor ON tMayor.codigo = r.mayorRangoCodigoTipificacion AND tMayor.matriz.etapa = :etapaResumen AND tMayor.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
             LEFT JOIN Subtipificacion sMayor ON sMayor.tipificacion = tMayor AND sMayor.codigo = r.mayorRangoCodigoSubtipificacion
-            LEFT JOIN Tipificacion tUltima ON tUltima.codigo = r.ultimaCodigoTipificacion AND tUltima.etapa = :etapaResumen AND tUltima.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tUltima ON tUltima.codigo = r.ultimaCodigoTipificacion AND tUltima.matriz.etapa = :etapaResumen AND tUltima.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
             LEFT JOIN Subtipificacion sUltima ON sUltima.tipificacion = tUltima AND sUltima.codigo = r.ultimaCodigoSubtipificacion
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
@@ -957,6 +964,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT COUNT(DISTINCT e.idLead)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
@@ -1380,14 +1395,22 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT e, l
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE e.idActor = :idAsesor
               AND e.accion = :accion
               AND e.etapa = :etapa
               AND EXISTS (
                   SELECT 1 FROM Subtipificacion sc
                   JOIN sc.tipificacion tc
-                  WHERE tc.idEquipo = l.idEquipo
-                    AND tc.etapa = e.etapa
+                  WHERE tc.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                    AND tc.matriz.etapa = e.etapa
                     AND tc.codigo = e.tipificacion
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
@@ -1400,14 +1423,22 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT COUNT(e)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE e.idActor = :idAsesor
               AND e.accion = :accion
               AND e.etapa = :etapa
               AND EXISTS (
                   SELECT 1 FROM Subtipificacion sc
                   JOIN sc.tipificacion tc
-                  WHERE tc.idEquipo = l.idEquipo
-                    AND tc.etapa = e.etapa
+                  WHERE tc.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                    AND tc.matriz.etapa = e.etapa
                     AND tc.codigo = e.tipificacion
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
@@ -1429,14 +1460,22 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT e
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE e.idActor = :idAsesor
               AND e.accion = :accion
               AND e.etapa = :etapa
               AND EXISTS (
                   SELECT 1 FROM Subtipificacion sc
                   JOIN sc.tipificacion tc
-                  WHERE tc.idEquipo = l.idEquipo
-                    AND tc.etapa = e.etapa
+                  WHERE tc.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                    AND tc.matriz.etapa = e.etapa
                     AND tc.codigo = e.tipificacion
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
@@ -1458,14 +1497,22 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT MIN(e.createdAt)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE e.idLead = :idLead
               AND e.accion = :accion
               AND e.etapa = :etapa
               AND EXISTS (
                   SELECT 1 FROM Subtipificacion sc
                   JOIN sc.tipificacion tc
-                  WHERE tc.idEquipo = l.idEquipo
-                    AND tc.etapa = e.etapa
+                  WHERE tc.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                    AND tc.matriz.etapa = e.etapa
                     AND tc.codigo = e.tipificacion
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
@@ -1484,7 +1531,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT e, s.etapaCambio
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
-            JOIN Tipificacion t ON t.etapa = e.etapa AND t.idEquipo = l.idEquipo AND t.codigo = e.tipificacion
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
+            JOIN Tipificacion t ON t.matriz.etapa = e.etapa AND t.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id) AND t.codigo = e.tipificacion
             JOIN Subtipificacion s ON s.tipificacion = t AND s.codigo = e.subtipificacion
             WHERE e.idLead = :idLead
               AND e.accion = :accion
@@ -1643,12 +1698,20 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                    COUNT(DISTINCT e.idLead) AS cantidad
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE e.accion = :accion
               AND EXISTS (
                   SELECT 1 FROM Subtipificacion sc
                   JOIN sc.tipificacion tc
-                  WHERE tc.idEquipo = l.idEquipo
-                    AND tc.etapa = e.etapa
+                  WHERE tc.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                    AND tc.matriz.etapa = e.etapa
                     AND tc.codigo = e.tipificacion
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
@@ -1672,6 +1735,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT COUNT(DISTINCT e.idLead)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE e.etapa = :etapa
               AND e.accion IN :acciones
               AND e.createdAt >= :fechaDesde
@@ -1679,8 +1750,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND NOT EXISTS (
                   SELECT 1 FROM Subtipificacion sc
                   JOIN sc.tipificacion tc
-                  WHERE tc.idEquipo = l.idEquipo
-                    AND tc.etapa = e.etapa
+                  WHERE tc.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                    AND tc.matriz.etapa = e.etapa
                     AND tc.codigo = e.tipificacion
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
@@ -1701,6 +1772,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT COUNT(e)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE e.accion = :accion
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
@@ -1718,12 +1797,20 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT COUNT(DISTINCT e.idLead)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE e.accion = :accion
               AND EXISTS (
                   SELECT 1 FROM Subtipificacion sc
                   JOIN sc.tipificacion tc
-                  WHERE tc.idEquipo = l.idEquipo
-                    AND tc.etapa = e.etapa
+                  WHERE tc.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                    AND tc.matriz.etapa = e.etapa
                     AND tc.codigo = e.tipificacion
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
@@ -1746,13 +1833,21 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT COUNT(DISTINCT e.idLead)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE e.idCampana = :idCampana
               AND e.accion = :accion
               AND EXISTS (
                   SELECT 1 FROM Subtipificacion sc
                   JOIN sc.tipificacion tc
-                  WHERE tc.idEquipo = l.idEquipo
-                    AND tc.etapa = e.etapa
+                  WHERE tc.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                    AND tc.matriz.etapa = e.etapa
                     AND tc.codigo = e.tipificacion
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
@@ -1797,8 +1892,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND EXISTS (
                   SELECT 1 FROM Subtipificacion sc
                   JOIN sc.tipificacion tc
-                  WHERE tc.idEquipo = l.idEquipo
-                    AND tc.etapa = e.etapa
+                  WHERE tc.matriz.proveedor.id = p.id
+                    AND tc.matriz.etapa = e.etapa
                     AND tc.codigo = e.tipificacion
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos

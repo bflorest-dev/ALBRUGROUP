@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pe.albrugroup.lead_service.entity.MatrizTipificacion;
+import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Tipificacion;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
@@ -16,11 +18,14 @@ import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import pe.albrugroup.lead_service.entity.response.SubtipificacionResponse;
 import pe.albrugroup.lead_service.entity.response.TipificacionResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.repository.MatrizTipificacionRepository;
+import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
 import pe.albrugroup.lead_service.service.mapper.TipificacionMapper;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,20 +42,36 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class TipificacionServiceMatrizTest {
 
-    private static final Long EQUIPO = 1L;
-    private static final Long EQUIPO_B = 2L;
+    private static final Long PROVEEDOR = 1L;
+    private static final Long PROVEEDOR_B = 2L;
 
     @Mock private TipificacionRepository tipificacionRepository;
     @Mock private SubtipificacionRepository subtipificacionRepository;
+    @Mock private MatrizTipificacionRepository matrizTipificacionRepository;
+    @Mock private ProveedorRepository proveedorRepository;
     @Mock private TipificacionMapper mapper;
 
     private TipificacionService service;
     private final AtomicLong tipificacionId = new AtomicLong(100);
     private final AtomicLong subtipificacionId = new AtomicLong(200);
+    private MatrizTipificacion matrizProveedor;
+    private MatrizTipificacion matrizProveedorB;
 
     @BeforeEach
     void setUp() {
-        service = new TipificacionService(tipificacionRepository, subtipificacionRepository, mapper);
+        matrizProveedor = matrizCabecera(10L, PROVEEDOR);
+        matrizProveedorB = matrizCabecera(20L, PROVEEDOR_B);
+        service = new TipificacionService(
+                tipificacionRepository,
+                subtipificacionRepository,
+                matrizTipificacionRepository,
+                proveedorRepository,
+                mapper
+        );
+        lenient().when(matrizTipificacionRepository.findByEtapaAndProveedorId(Etapa.PREVENTA, PROVEEDOR))
+                .thenReturn(Optional.of(matrizProveedor));
+        lenient().when(matrizTipificacionRepository.findByEtapaAndProveedorId(Etapa.PREVENTA, PROVEEDOR_B))
+                .thenReturn(Optional.of(matrizProveedorB));
         lenient().when(tipificacionRepository.save(any(Tipificacion.class))).thenAnswer(invocation -> {
             Tipificacion entity = invocation.getArgument(0);
             if (entity.getId() == null) {
@@ -71,7 +92,7 @@ class TipificacionServiceMatrizTest {
     void guardaEdicionesYRecalculaOrdenDesdeLaPosicion() {
         Tipificacion primera = tipificacion(1L, "PRIMERA", 1, true);
         Tipificacion segunda = tipificacion(2L, "SEGUNDA", 2, true);
-        when(tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(Etapa.PREVENTA, EQUIPO))
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR))
                 .thenReturn(List.of(primera, segunda));
         when(subtipificacionRepository.findByTipificacionInOrderByTipificacion_IdAscOrdenAsc(List.of(primera, segunda)))
                 .thenReturn(List.of());
@@ -93,7 +114,7 @@ class TipificacionServiceMatrizTest {
     void permiteIntercambiarCodigosEnUnaSolaMatriz() {
         Tipificacion primera = tipificacion(1L, "PRIMERA", 1, true);
         Tipificacion segunda = tipificacion(2L, "SEGUNDA", 2, true);
-        when(tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(Etapa.PREVENTA, EQUIPO))
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR))
                 .thenReturn(List.of(primera, segunda));
         when(subtipificacionRepository.findByTipificacionInOrderByTipificacion_IdAscOrdenAsc(List.of(primera, segunda)))
                 .thenReturn(List.of());
@@ -114,7 +135,7 @@ class TipificacionServiceMatrizTest {
         Tipificacion conservar = tipificacion(1L, "CONSERVAR", 1, true);
         Tipificacion retirar = tipificacion(2L, "RETIRAR", 2, true);
         Subtipificacion retirarSub = subtipificacion(20L, retirar, "RETIRAR_SUB", 1, true);
-        when(tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(Etapa.PREVENTA, EQUIPO))
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR))
                 .thenReturn(List.of(conservar, retirar));
         when(subtipificacionRepository.findByTipificacionInOrderByTipificacion_IdAscOrdenAsc(List.of(conservar, retirar)))
                 .thenReturn(List.of(retirarSub));
@@ -134,7 +155,7 @@ class TipificacionServiceMatrizTest {
         Tipificacion origen = tipificacion(1L, "ORIGEN", 1, true);
         Tipificacion destino = tipificacion(2L, "DESTINO", 2, true);
         Subtipificacion movida = subtipificacion(10L, origen, "MOVIDA", 1, true);
-        when(tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(Etapa.PREVENTA, EQUIPO))
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR))
                 .thenReturn(List.of(origen, destino));
         when(subtipificacionRepository.findByTipificacionInOrderByTipificacion_IdAscOrdenAsc(List.of(origen, destino)))
                 .thenReturn(List.of(movida));
@@ -175,35 +196,35 @@ class TipificacionServiceMatrizTest {
     }
 
     @Test
-    void catalogoVacioCuandoElEquipoNoTieneMatriz() {
-        when(tipificacionRepository.findByEtapaAndIdEquipoAndActivoTrueOrderByOrdenAsc(Etapa.PREVENTA, EQUIPO_B))
+    void catalogoVacioCuandoElProveedorNoTieneMatriz() {
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndActivoTrueOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR_B))
                 .thenReturn(List.of());
 
-        CatalogoResponse catalogo = service.getCatalogo(Etapa.PREVENTA, EQUIPO_B);
+        CatalogoResponse catalogo = service.getCatalogo(Etapa.PREVENTA, PROVEEDOR_B);
 
         assertThat(catalogo.getTipificaciones()).isEmpty();
     }
 
     @Test
-    void guardarMatrizSellaElEquipoYSoloLeeLaMatrizDeEseEquipo() {
-        when(tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(Etapa.PREVENTA, EQUIPO))
+    void guardarMatrizSellaElProveedorYSoloLeeLaMatrizDeEseProveedor() {
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR))
                 .thenReturn(List.of());
 
         service.guardarMatrizCatalogo(matriz(
                 tipRequest(null, "NUEVA", "Nueva", List.of())
         ));
 
-        // El archivado solo mira la matriz de este equipo: nunca lee por etapa sola.
-        verify(tipificacionRepository).findByEtapaAndIdEquipoOrderByOrdenAsc(Etapa.PREVENTA, EQUIPO);
+        // El archivado solo mira la matriz de este proveedor: nunca lee por etapa sola.
+        verify(tipificacionRepository).findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR);
         verify(tipificacionRepository).save(argThat(t ->
-                "NUEVA".equals(t.getCodigo()) && EQUIPO.equals(t.getIdEquipo())));
+                "NUEVA".equals(t.getCodigo()) && PROVEEDOR.equals(t.getMatriz().getProveedor().getId())));
     }
 
     @Test
     void clonarMatrizCopiaLaMatrizDelOrigenAlDestino() {
         Tipificacion origenTip = tipificacion(1L, "BASE", 1, true);
         Subtipificacion origenSub = subtipificacion(10L, origenTip, "BASE_SUB", 1, true);
-        when(tipificacionRepository.findByEtapaAndIdEquipoAndActivoTrueOrderByOrdenAsc(Etapa.PREVENTA, EQUIPO))
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndActivoTrueOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR))
                 .thenReturn(List.of(origenTip));
         when(subtipificacionRepository
                 .findByTipificacionInAndActivoTrueOrderByTipificacion_IdAscOrdenAsc(List.of(origenTip)))
@@ -218,22 +239,22 @@ class TipificacionServiceMatrizTest {
                 .subtipificaciones(List.of(subResp)).build());
 
         // El destino aún no tiene matriz en esta etapa.
-        when(tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(Etapa.PREVENTA, EQUIPO_B))
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR_B))
                 .thenReturn(List.of());
 
-        service.clonarMatriz(Etapa.PREVENTA, EQUIPO, EQUIPO_B);
+        service.clonarMatriz(Etapa.PREVENTA, PROVEEDOR, PROVEEDOR_B);
 
         verify(tipificacionRepository).save(argThat(t ->
-                "BASE".equals(t.getCodigo()) && EQUIPO_B.equals(t.getIdEquipo())));
+                "BASE".equals(t.getCodigo()) && PROVEEDOR_B.equals(t.getMatriz().getProveedor().getId())));
         verify(subtipificacionRepository).save(argThat(s ->
                 "BASE_SUB".equals(s.getCodigo())
                         && s.getTipificacion() != null
-                        && EQUIPO_B.equals(s.getTipificacion().getIdEquipo())));
+                        && PROVEEDOR_B.equals(s.getTipificacion().getMatriz().getProveedor().getId())));
     }
 
     @Test
     void guardarMatrizPersisteLosComportamientosDeLaSubtipi() {
-        when(tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(Etapa.PREVENTA, EQUIPO))
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR))
                 .thenReturn(List.of());
 
         SubtipificacionCatalogoRequest sub = SubtipificacionCatalogoRequest.builder()
@@ -288,7 +309,7 @@ class TipificacionServiceMatrizTest {
     private MatrizCatalogoRequest matriz(TipificacionCatalogoRequest... tipificaciones) {
         return MatrizCatalogoRequest.builder()
                 .etapa(Etapa.PREVENTA)
-                .idEquipo(EQUIPO)
+                .idProveedor(PROVEEDOR)
                 .tipificaciones(List.of(tipificaciones))
                 .build();
     }
@@ -321,13 +342,22 @@ class TipificacionServiceMatrizTest {
     private Tipificacion tipificacion(Long id, String codigo, int orden, boolean activo) {
         Tipificacion entity = new Tipificacion();
         entity.setId(id);
-        entity.setEtapa(Etapa.PREVENTA);
-        entity.setIdEquipo(EQUIPO);
+        entity.setMatriz(matrizProveedor);
         entity.setCodigo(codigo);
         entity.setDescripcion(codigo);
         entity.setOrden(orden);
         entity.setActivo(activo);
         return entity;
+    }
+
+    private MatrizTipificacion matrizCabecera(Long id, Long idProveedor) {
+        Proveedor proveedor = Proveedor.builder().id(idProveedor).nombre("Proveedor " + idProveedor).activo(true).build();
+        MatrizTipificacion matriz = new MatrizTipificacion();
+        matriz.setId(id);
+        matriz.setEtapa(Etapa.PREVENTA);
+        matriz.setProveedor(proveedor);
+        matriz.setActivo(Boolean.TRUE);
+        return matriz;
     }
 
     private Subtipificacion subtipificacion(

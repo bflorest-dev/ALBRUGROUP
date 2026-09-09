@@ -49,9 +49,9 @@ export class AdminTipificacionesPageComponent implements OnInit {
 
   private async init(): Promise<void> {
     try {
-      await this.facade.loadEquipos();
+      await this.facade.loadProveedores();
     } catch {
-      this.notify('error', 'No se pudieron cargar los equipos.');
+      this.notify('error', 'No se pudieron cargar los proveedores.');
     }
     await this.load();
   }
@@ -64,17 +64,17 @@ export class AdminTipificacionesPageComponent implements OnInit {
     await this.load();
   }
 
-  protected async onEquipoChange(idEquipo: number): Promise<void> {
+  protected async onProveedorChange(idProveedor: number): Promise<void> {
     if (!this.confirmDiscardChanges()) {
       return;
     }
-    this.facade.changeEquipo(idEquipo);
+    this.facade.changeProveedor(idProveedor);
     await this.load();
   }
 
-  protected async clonarDesde(idEquipoOrigen: number): Promise<void> {
-    const origen = this.facade.equipoLabel(idEquipoOrigen);
-    const destino = this.facade.equipoLabel(this.facade.selectedEquipo());
+  protected async clonarDesde(idProveedorOrigen: number): Promise<void> {
+    const origen = this.facade.proveedorLabel(idProveedorOrigen);
+    const destino = this.facade.proveedorLabel(this.facade.selectedProveedor());
     const mensaje = this.facade.drafts().length > 0
       ? `Esto reemplazará la matriz de ${destino} con una copia de ${origen}. ¿Continuar?`
       : `Se copiará la matriz de ${origen} a ${destino}.`;
@@ -82,7 +82,7 @@ export class AdminTipificacionesPageComponent implements OnInit {
       return;
     }
     try {
-      await this.facade.clonarDesde(idEquipoOrigen);
+      await this.facade.clonarDesde(idProveedorOrigen);
       this.notify('success', `Matriz copiada desde ${origen}.`);
     } catch {
       this.notify('error', 'No se pudo clonar la matriz. Intenta nuevamente.');

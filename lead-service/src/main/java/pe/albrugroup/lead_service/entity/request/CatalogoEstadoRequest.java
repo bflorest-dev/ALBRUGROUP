@@ -25,7 +25,7 @@ public class CatalogoEstadoRequest {
     private Etapa etapa;
 
     @NotNull
-    private Long idEquipo;
+    private Long idProveedor;
 
     @Builder.Default
     private List<Long> tipificacionesActivar = new ArrayList<>();

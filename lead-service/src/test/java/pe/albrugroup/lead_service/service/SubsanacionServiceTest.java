@@ -92,9 +92,9 @@ class SubsanacionServiceTest {
         when(campanaRepository.findByIdForSubsanacion(2L)).thenReturn(Optional.of(campana));
         when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
         when(equipoProveedorRepository.existsByIdEquipoAndProveedorId(7L, 1L)).thenReturn(true);
-        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigo(Etapa.PREVENTA, 7L, "PREVENTA"))
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigo(Etapa.PREVENTA, 1L, "PREVENTA"))
                 .thenReturn(Optional.of(tipiPreventa));
-        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigo(Etapa.VENTA, 7L, "INSTALADO"))
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigo(Etapa.VENTA, 1L, "INSTALADO"))
                 .thenReturn(Optional.of(tipiVenta));
         when(subtipificacionRepository.findByTipificacionIdAndCodigo(10L, "COMPLETA"))
                 .thenReturn(Optional.of(subPreventa));
@@ -246,9 +246,9 @@ class SubsanacionServiceTest {
         when(campanaRepository.findByIdForSubsanacion(2L)).thenReturn(Optional.of(campana));
         when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
         when(equipoProveedorRepository.existsByIdEquipoAndProveedorId(7L, 1L)).thenReturn(true);
-        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigo(Etapa.PREVENTA, 7L, "PREVENTA"))
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigo(Etapa.PREVENTA, 1L, "PREVENTA"))
                 .thenReturn(Optional.of(tipiPreventa));
-        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigo(Etapa.VENTA, 7L, "INSTALADO"))
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigo(Etapa.VENTA, 1L, "INSTALADO"))
                 .thenReturn(Optional.of(tipiVenta));
         when(subtipificacionRepository.findByTipificacionIdAndCodigo(10L, "COMPLETA"))
                 .thenReturn(Optional.of(subPreventa));
@@ -293,12 +293,19 @@ class SubsanacionServiceTest {
     private Tipificacion tipificacion(Long id, Etapa etapa, String codigo, int orden, boolean activo) {
         Tipificacion t = new Tipificacion();
         t.setId(id);
-        t.setEtapa(etapa);
-        t.setIdEquipo(7L);
+        t.setMatriz(matriz(etapa, 1L));
         t.setCodigo(codigo);
         t.setOrden(orden);
         t.setActivo(activo);
         return t;
+    }
+
+    private MatrizTipificacion matriz(Etapa etapa, Long idProveedor) {
+        MatrizTipificacion matriz = new MatrizTipificacion();
+        matriz.setEtapa(etapa);
+        matriz.setProveedor(Proveedor.builder().id(idProveedor).nombre("Proveedor " + idProveedor).build());
+        matriz.setActivo(Boolean.TRUE);
+        return matriz;
     }
 
     private Subtipificacion subtipificacion(

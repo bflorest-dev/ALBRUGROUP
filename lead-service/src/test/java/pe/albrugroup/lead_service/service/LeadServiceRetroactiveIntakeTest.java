@@ -15,6 +15,7 @@ import pe.albrugroup.lead_service.entity.DatosPreventa;
 import pe.albrugroup.lead_service.entity.Direccion;
 import pe.albrugroup.lead_service.entity.EquipoProveedor;
 import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.MatrizTipificacion;
 import pe.albrugroup.lead_service.entity.Plan;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
@@ -686,9 +687,9 @@ class LeadServiceRetroactiveIntakeTest {
 
         when(currentUser.empleadoID()).thenReturn(7L);
         when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
-        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
                 Etapa.PREVENTA,
-                10L,
+                1L,
                 "PREVENTA_COMPLETA"
         )).thenReturn(Optional.of(tipificacion));
         when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
@@ -713,9 +714,9 @@ class LeadServiceRetroactiveIntakeTest {
 
         when(currentUser.empleadoID()).thenReturn(7L);
         when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
-        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
                 Etapa.PREVENTA,
-                10L,
+                1L,
                 "PREVENTA_COMPLETA"
         )).thenReturn(Optional.of(tipificacion));
         when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
@@ -740,9 +741,9 @@ class LeadServiceRetroactiveIntakeTest {
 
         when(currentUser.empleadoID()).thenReturn(7L);
         when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
-        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
                 Etapa.PREVENTA,
-                10L,
+                1L,
                 "PREVENTA_COMPLETA"
         )).thenReturn(Optional.of(tipificacion));
         when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
@@ -766,16 +767,16 @@ class LeadServiceRetroactiveIntakeTest {
 
         when(currentUser.empleadoID()).thenReturn(7L);
         when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
-        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
                 Etapa.PREVENTA,
-                10L,
+                1L,
                 "PREVENTA_COMPLETA"
         )).thenReturn(Optional.of(tipificacion));
         when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
                 80L,
                 "VENTA_CERRADA"
         )).thenReturn(Optional.of(subtipificacion));
-        when(equipoCampoService.resolverConfig(10L)).thenReturn(List.of());
+        when(equipoCampoService.resolverConfigPorProveedor(1L)).thenReturn(List.of());
         when(leadRepository.save(lead)).thenReturn(lead);
 
         leadService.tipificarLead(25202L, request);
@@ -797,9 +798,9 @@ class LeadServiceRetroactiveIntakeTest {
 
         when(currentUser.empleadoID()).thenReturn(7L);
         when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
-        when(tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
                 Etapa.PREVENTA,
-                10L,
+                1L,
                 "PREVENTA_COMPLETA"
         )).thenReturn(Optional.of(tipificacion));
         when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
@@ -860,7 +861,10 @@ class LeadServiceRetroactiveIntakeTest {
                         .direccion("Av Lima 123")
                         .referencia("Frente al parque")
                         .build())
-                .plan(Plan.builder().id(5L).build())
+                .plan(Plan.builder()
+                        .id(5L)
+                        .proveedor(Proveedor.builder().id(1L).nombre("Proveedor").build())
+                        .build())
                 .build();
     }
 
@@ -874,12 +878,19 @@ class LeadServiceRetroactiveIntakeTest {
     private Tipificacion tipificacionPreventaCompleta() {
         Tipificacion tipificacion = new Tipificacion();
         tipificacion.setId(80L);
-        tipificacion.setIdEquipo(10L);
-        tipificacion.setEtapa(Etapa.PREVENTA);
+        tipificacion.setMatriz(matriz(Etapa.PREVENTA, 1L));
         tipificacion.setCodigo("PREVENTA_COMPLETA");
         tipificacion.setOrden(8);
         tipificacion.setActivo(true);
         return tipificacion;
+    }
+
+    private MatrizTipificacion matriz(Etapa etapa, Long idProveedor) {
+        MatrizTipificacion matriz = new MatrizTipificacion();
+        matriz.setEtapa(etapa);
+        matriz.setProveedor(Proveedor.builder().id(idProveedor).nombre("Proveedor " + idProveedor).build());
+        matriz.setActivo(Boolean.TRUE);
+        return matriz;
     }
 
     private Subtipificacion subtipificacionCierrePreventa(Tipificacion tipificacion) {

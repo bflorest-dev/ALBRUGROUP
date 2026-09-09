@@ -270,6 +270,17 @@ export class AsesorVentasWorkspaceFacade {
   });
   readonly ofertaProviderOptions = computed<OfertaProviderOption[]>(() => {
     const providersById = new Map<number, OfertaProviderOption>();
+    for (const proveedor of this.detail()?.proveedoresEquipo ?? []) {
+      if (proveedor.id) {
+        providersById.set(proveedor.id, {
+          id: proveedor.id,
+          nombre: proveedor.nombre ?? `Proveedor ${proveedor.id}`
+        });
+      }
+    }
+    if (providersById.size) {
+      return [...providersById.values()].sort((left, right) => left.nombre.localeCompare(right.nombre));
+    }
     for (const plan of this.planes()) {
       if (plan.idProveedor) {
         providersById.set(plan.idProveedor, {
@@ -500,7 +511,6 @@ export class AsesorVentasWorkspaceFacade {
       await firstValueFrom(this.preventaService.iniciarGestionLead(idLead));
       const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
       this.detail.set(detail);
-      await this.cargarCatalogoDelLead(idLead);
       // Atención GTR: el lead sigue en otra etapa. Es opcional tipificarlo, así que no lo marcamos
       // como obligatorio de la sesión; solo las oportunidades que el asesor cree serán obligatorias.
       if (detail.atencionOtraEtapa) {
@@ -508,7 +518,8 @@ export class AsesorVentasWorkspaceFacade {
         this.oportunidadesActivasSesion.delete(idLead);
       }
       this.patchForms(detail);
-      await this.refreshOfferCatalogs(detail.idPlan ?? 0);
+      await this.refreshOfferCatalogs(detail.idPlan ?? 0, this.resolveProveedorOfertaInicial(detail));
+      await this.cargarCatalogoDelLead(idLead, this.selectedOfertaProviderId());
       this.detailDialogOpen.set(true);
       this.isManagingLead.set(true);
       this.workspaceState.setManagingLeadState(idLead);
@@ -555,7 +566,8 @@ export class AsesorVentasWorkspaceFacade {
       const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
       this.detail.set(detail);
       this.patchForms(detail);
-      await this.refreshOfferCatalogs(detail.idPlan ?? 0);
+      await this.refreshOfferCatalogs(detail.idPlan ?? 0, this.resolveProveedorOfertaInicial(detail));
+      await this.cargarCatalogoDelLead(idLead, this.selectedOfertaProviderId());
       this.isManagingLead.set(true);
       this.workspaceState.setManagingLeadState(idLead);
       await this.cargarOportunidadesContacto(idLead);
@@ -872,7 +884,8 @@ export class AsesorVentasWorkspaceFacade {
       codigoTipificacion: raw.codigoTipificacion,
       codigoSubtipificacion: raw.codigoSubtipificacion,
       comentario: this.showComment() ? raw.comentario || null : null,
-      horaProgramada: this.requiresScheduledTime() ? raw.horaProgramada || null : null
+      horaProgramada: this.requiresScheduledTime() ? raw.horaProgramada || null : null,
+      idProveedor: this.selectedOfertaProviderId()
     };
 
     // Al cerrar una venta NO confiamos en el flag "dirty": forzamos el guardado de
@@ -1076,8 +1089,17 @@ export class AsesorVentasWorkspaceFacade {
 
   async onPlanChanged(): Promise<void> {
     const idPlan = this.ofertaForm.controls.idPlan.value;
+    const plan = this.planes().find((item) => item.id === idPlan);
+    const idProveedor = plan?.idProveedor ?? this.selectedOfertaProviderId();
+    this.selectedOfertaProviderId.set(idProveedor ?? null);
+    this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
     this.ofertaForm.controls.idPromocionInterna.setValue(0);
-    await this.refreshPlanPromotions(idPlan);
+    await Promise.all([
+      this.refreshPlanPromotions(idPlan),
+      idProveedor ? this.refreshProviderAdditionals(idProveedor) : Promise.resolve(this.adicionales.set([])),
+      idProveedor ? this.ensureProviderCamposConfig(idProveedor) : Promise.resolve()
+    ]);
+    await this.cargarCatalogoProveedorActual();
   }
 
   async onOfertaProviderChanged(idProveedor: number): Promise<void> {
@@ -1091,6 +1113,7 @@ export class AsesorVentasWorkspaceFacade {
     this.promociones.set([]);
     this.adicionales.set([]);
     this.ofertaForm.markAsDirty();
+    await this.cargarCatalogoProveedorActual();
     if (idProveedor) {
       try {
         await Promise.all([
@@ -1425,9 +1448,9 @@ export class AsesorVentasWorkspaceFacade {
 
       this.selectedLeadId.set(idLead);
       this.detail.set(detail);
-      await this.cargarCatalogoDelLead(idLead);
       this.patchForms(detail);
-      await this.refreshOfferCatalogs(detail.idPlan ?? 0);
+      await this.refreshOfferCatalogs(detail.idPlan ?? 0, this.resolveProveedorOfertaInicial(detail));
+      await this.cargarCatalogoDelLead(idLead, this.selectedOfertaProviderId());
       this.detailDialogOpen.set(true);
       this.isManagingLead.set(true);
       this.workspaceState.setManagingLeadState(idLead);
@@ -1531,18 +1554,31 @@ export class AsesorVentasWorkspaceFacade {
     this.departamentos.set(departamentos);
   }
 
-  // Catálogo de tipificaciones del equipo del lead (lo resuelve el backend desde el lead).
-  private async cargarCatalogoDelLead(idLead: number): Promise<void> {
-    this.catalogo.set(await firstValueFrom(this.preventaService.getCatalogoTipificaciones(idLead, 'PREVENTA')));
+  // Catálogo de tipificaciones del proveedor efectivo del lead. En PREVENTA puede venir del plan,
+  // del selector de Oferta Comercial o del fallback del equipo.
+  private async cargarCatalogoDelLead(idLead: number, idProveedor?: number | null): Promise<void> {
+    this.catalogo.set(await firstValueFrom(this.preventaService.getCatalogoTipificaciones(idLead, 'PREVENTA', idProveedor)));
+    this.reconcileTipificacionSelectionWithCatalog();
   }
 
-  private async refreshOfferCatalogs(idPlan: number): Promise<void> {
+  private async cargarCatalogoProveedorActual(): Promise<void> {
+    const detail = this.detail();
+    if (!detail) {
+      return;
+    }
+    await this.cargarCatalogoDelLead(detail.id, this.selectedOfertaProviderId());
+  }
+
+  private async refreshOfferCatalogs(idPlan: number, idProveedorBase?: number | null): Promise<void> {
     const plan = this.planes().find((item) => item.id === idPlan);
-    const idProveedor = plan?.idProveedor ?? null;
+    const idProveedor = plan?.idProveedor ?? idProveedorBase ?? this.selectedOfertaProviderId() ?? null;
     this.selectedOfertaProviderId.set(idProveedor);
     this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
     const [promociones, adicionales] = await Promise.all([
-      firstValueFrom(this.preventaService.listarPromociones(idPlan ? { idPlan } : {})),
+      firstValueFrom(this.preventaService.listarPromociones({
+        ...(idProveedor ? { idProveedor } : {}),
+        ...(idPlan ? { idPlan } : {})
+      })),
       idProveedor ? firstValueFrom(this.preventaService.listarAdicionales(idProveedor)) : Promise.resolve([]),
       idProveedor ? this.ensureProviderCamposConfig(idProveedor) : Promise.resolve()
     ]);
@@ -1650,7 +1686,7 @@ export class AsesorVentasWorkspaceFacade {
 
   private patchOfertaForm(detail: LeadDetalleResponse): void {
     const idPlan = detail.idPlan ?? 0;
-    const idProveedor = this.planes().find((plan) => plan.id === idPlan)?.idProveedor ?? null;
+    const idProveedor = this.resolveProveedorOfertaInicial(detail);
     this.selectedOfertaProviderId.set(idProveedor);
     this.selectedOfertaAdditionals.set([]);
     this.ofertaForm.patchValue({
@@ -1658,6 +1694,39 @@ export class AsesorVentasWorkspaceFacade {
       idPlan,
       idPromocionInterna: detail.idPromocionInterna ?? 0
     });
+  }
+
+  private resolveProveedorOfertaInicial(detail: LeadDetalleResponse): number | null {
+    const idPlan = detail.idPlan ?? 0;
+    const proveedorFallback = detail.proveedoresEquipo?.find((proveedor) => proveedor.fallbackLeadSinCampana)?.id;
+    return this.planes().find((plan) => plan.id === idPlan)?.idProveedor ?? proveedorFallback ?? detail.idProveedorEquipo ?? null;
+  }
+
+  private reconcileTipificacionSelectionWithCatalog(): void {
+    const raw = this.tipificacionForm.getRawValue();
+    if (!raw.codigoTipificacion) {
+      return;
+    }
+
+    const tipificacion = this.catalogo()?.tipificaciones.find((item) => item.codigo === raw.codigoTipificacion);
+    if (!tipificacion) {
+      this.tipificacionForm.patchValue({
+        codigoTipificacion: '',
+        codigoSubtipificacion: '',
+        horaProgramada: ''
+      });
+      this.selectedTipificacionCode.set('');
+      this.selectedSubtipificacionCode.set('');
+      return;
+    }
+
+    if (raw.codigoSubtipificacion && !tipificacion.subtipificaciones.some((item) => item.codigo === raw.codigoSubtipificacion)) {
+      this.tipificacionForm.patchValue({
+        codigoSubtipificacion: '',
+        horaProgramada: ''
+      });
+      this.selectedSubtipificacionCode.set('');
+    }
   }
 
   private patchIdentidadForm(detail: LeadDetalleResponse): void {

@@ -11,14 +11,14 @@ import java.util.Optional;
 @Repository
 public interface TipificacionRepository extends JpaRepository<Tipificacion, Long> {
 
-    // Cross-equipo, SOLO para la paleta de colores de las vistas de supervisor (bandeja diaria/ranking):
+    // Cross-proveedor, SOLO para la paleta de colores de las vistas de supervisor (bandeja diaria/ranking):
     // NO usar para resolver tipificaciones de un lead (eso es siempre por (etapa, idEquipo)).
-    List<Tipificacion> findByEtapaAndActivoTrueOrderByOrdenAsc(Etapa etapa);
+    List<Tipificacion> findByMatrizEtapaAndActivoTrueOrderByOrdenAsc(Etapa etapa);
 
-    // Consultas por (etapa, idEquipo): cada equipo tiene su propia matriz.
-    List<Tipificacion> findByEtapaAndIdEquipoAndActivoTrueOrderByOrdenAsc(Etapa etapa, Long idEquipo);
-    List<Tipificacion> findByEtapaAndIdEquipoOrderByOrdenAsc(Etapa etapa, Long idEquipo);
-    Optional<Tipificacion> findByEtapaAndIdEquipoAndCodigo(Etapa etapa, Long idEquipo, String codigo);
-    Optional<Tipificacion> findByEtapaAndIdEquipoAndCodigoAndActivoTrue(Etapa etapa, Long idEquipo, String codigo);
-    boolean existsByEtapaAndIdEquipoAndActivoTrue(Etapa etapa, Long idEquipo);
+    // Consultas por (etapa, proveedor): cada proveedor tiene su matriz por etapa.
+    List<Tipificacion> findByMatrizEtapaAndMatrizProveedorIdAndActivoTrueOrderByOrdenAsc(Etapa etapa, Long idProveedor);
+    List<Tipificacion> findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa etapa, Long idProveedor);
+    Optional<Tipificacion> findByMatrizEtapaAndMatrizProveedorIdAndCodigo(Etapa etapa, Long idProveedor, String codigo);
+    Optional<Tipificacion> findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(Etapa etapa, Long idProveedor, String codigo);
+    boolean existsByMatrizEtapaAndMatrizProveedorIdAndActivoTrue(Etapa etapa, Long idProveedor);
 }

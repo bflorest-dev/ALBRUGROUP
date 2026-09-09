@@ -213,14 +213,20 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.etapa
             )
             FROM Lead l
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
-            LEFT JOIN Tipificacion tPrimera ON tPrimera.codigo = r.primeraCodigoTipificacion AND tPrimera.etapa = l.etapa AND tPrimera.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tPrimera ON tPrimera.codigo = r.primeraCodigoTipificacion AND tPrimera.matriz.etapa = l.etapa AND tPrimera.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
             LEFT JOIN Subtipificacion sPrimera ON sPrimera.tipificacion = tPrimera AND sPrimera.codigo = r.primeraCodigoSubtipificacion
-            LEFT JOIN Tipificacion tMayor ON tMayor.codigo = r.mayorRangoCodigoTipificacion AND tMayor.etapa = l.etapa AND tMayor.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tMayor ON tMayor.codigo = r.mayorRangoCodigoTipificacion AND tMayor.matriz.etapa = l.etapa AND tMayor.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
             LEFT JOIN Subtipificacion sMayor ON sMayor.tipificacion = tMayor AND sMayor.codigo = r.mayorRangoCodigoSubtipificacion
-            LEFT JOIN Tipificacion tUltima ON tUltima.codigo = r.ultimaCodigoTipificacion AND tUltima.etapa = l.etapa AND tUltima.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tUltima ON tUltima.codigo = r.ultimaCodigoTipificacion AND tUltima.matriz.etapa = l.etapa AND tUltima.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
             LEFT JOIN Subtipificacion sUltima ON sUltima.tipificacion = tUltima AND sUltima.codigo = r.ultimaCodigoSubtipificacion
             WHERE (l.etapa = :etapa OR l.requiereAtencionGtr = true)
               AND l.lastEntryAt >= :inicioDia
@@ -355,14 +361,20 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.etapa
             )
             FROM Lead l
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
-            LEFT JOIN Tipificacion tPrimera ON tPrimera.codigo = r.primeraCodigoTipificacion AND tPrimera.etapa = l.etapa AND tPrimera.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tPrimera ON tPrimera.codigo = r.primeraCodigoTipificacion AND tPrimera.matriz.etapa = l.etapa AND tPrimera.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
             LEFT JOIN Subtipificacion sPrimera ON sPrimera.tipificacion = tPrimera AND sPrimera.codigo = r.primeraCodigoSubtipificacion
-            LEFT JOIN Tipificacion tMayor ON tMayor.codigo = r.mayorRangoCodigoTipificacion AND tMayor.etapa = l.etapa AND tMayor.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tMayor ON tMayor.codigo = r.mayorRangoCodigoTipificacion AND tMayor.matriz.etapa = l.etapa AND tMayor.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
             LEFT JOIN Subtipificacion sMayor ON sMayor.tipificacion = tMayor AND sMayor.codigo = r.mayorRangoCodigoSubtipificacion
-            LEFT JOIN Tipificacion tUltima ON tUltima.codigo = r.ultimaCodigoTipificacion AND tUltima.etapa = l.etapa AND tUltima.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tUltima ON tUltima.codigo = r.ultimaCodigoTipificacion AND tUltima.matriz.etapa = l.etapa AND tUltima.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
             LEFT JOIN Subtipificacion sUltima ON sUltima.tipificacion = tUltima AND sUltima.codigo = r.ultimaCodigoSubtipificacion
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
@@ -797,6 +809,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT l
             FROM Lead l
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             LEFT JOIN FETCH l.datosPreventa
             LEFT JOIN FETCH l.direccion
             WHERE l.idAsesorAsignado = :idAsesor
@@ -809,8 +829,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                                 SELECT 1
                                 FROM Subtipificacion sa
                                 JOIN sa.tipificacion ta
-                                WHERE ta.idEquipo = l.idEquipo
-                                  AND ta.etapa = l.etapa
+                                WHERE ta.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+                                  AND ta.matriz.etapa = l.etapa
                                   AND ta.codigo = l.codigoTipificacion
                                   AND sa.codigo = l.codigoSubtipificacion
                                   AND :comportamiento MEMBER OF sa.comportamientos
@@ -885,9 +905,15 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             LEFT JOIN Tipificacion tAgenda ON tAgenda.codigo = r.mayorRangoCodigoTipificacion
-                AND tAgenda.etapa = l.etapa
-                AND tAgenda.idEquipo = l.idEquipo
+                AND tAgenda.matriz.etapa = l.etapa
+                AND tAgenda.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
             LEFT JOIN Subtipificacion sAgenda ON sAgenda.tipificacion = tAgenda
                 AND sAgenda.codigo = r.mayorRangoCodigoSubtipificacion
             WHERE l.etapa = :etapa
@@ -895,8 +921,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   SELECT 1
                   FROM Subtipificacion sa
                   JOIN sa.tipificacion ta
-                  WHERE ta.idEquipo = l.idEquipo
-                    AND ta.etapa = l.etapa
+                  WHERE ta.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
+                    AND ta.matriz.etapa = l.etapa
                     AND ta.codigo = r.mayorRangoCodigoTipificacion
                     AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
@@ -1011,13 +1037,19 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
               AND EXISTS (
                   SELECT 1
                   FROM Subtipificacion sa
                   JOIN sa.tipificacion ta
-                  WHERE ta.idEquipo = l.idEquipo
-                    AND ta.etapa = l.etapa
+                  WHERE ta.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
+                    AND ta.matriz.etapa = l.etapa
                     AND ta.codigo = r.mayorRangoCodigoTipificacion
                     AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
@@ -1083,13 +1115,19 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
               AND EXISTS (
                   SELECT 1
                   FROM Subtipificacion sa
                   JOIN sa.tipificacion ta
-                  WHERE ta.idEquipo = l.idEquipo
-                    AND ta.etapa = l.etapa
+                  WHERE ta.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
+                    AND ta.matriz.etapa = l.etapa
                     AND ta.codigo = r.mayorRangoCodigoTipificacion
                     AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
@@ -1155,13 +1193,19 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
               AND EXISTS (
                   SELECT 1
                   FROM Subtipificacion sa
                   JOIN sa.tipificacion ta
-                  WHERE ta.idEquipo = l.idEquipo
-                    AND ta.etapa = l.etapa
+                  WHERE ta.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
+                    AND ta.matriz.etapa = l.etapa
                     AND ta.codigo = r.mayorRangoCodigoTipificacion
                     AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
@@ -1227,13 +1271,19 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
               AND EXISTS (
                   SELECT 1
                   FROM Subtipificacion sa
                   JOIN sa.tipificacion ta
-                  WHERE ta.idEquipo = l.idEquipo
-                    AND ta.etapa = l.etapa
+                  WHERE ta.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
+                    AND ta.matriz.etapa = l.etapa
                     AND ta.codigo = r.mayorRangoCodigoTipificacion
                     AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
@@ -1267,13 +1317,21 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             SELECT COUNT(l)
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
               AND EXISTS (
                   SELECT 1
                   FROM Subtipificacion sa
                   JOIN sa.tipificacion ta
-                  WHERE ta.idEquipo = l.idEquipo
-                    AND ta.etapa = l.etapa
+                  WHERE ta.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
+                    AND ta.matriz.etapa = l.etapa
                     AND ta.codigo = r.mayorRangoCodigoTipificacion
                     AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
@@ -1302,13 +1360,21 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
               AND EXISTS (
                   SELECT 1
                   FROM Subtipificacion sa
                   JOIN sa.tipificacion ta
-                  WHERE ta.idEquipo = l.idEquipo
-                    AND ta.etapa = l.etapa
+                  WHERE ta.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
+                    AND ta.matriz.etapa = l.etapa
                     AND ta.codigo = r.mayorRangoCodigoTipificacion
                     AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
@@ -1421,12 +1487,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
-            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.etapa = l.etapa AND tAct.idEquipo = l.idEquipo
-            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = l.codigoSubtipificacion
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo
                AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.matriz.etapa = l.etapa AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = l.codigoSubtipificacion
             WHERE l.etapa = :etapa
               AND (
                     (:campoFecha = 'INGRESO'
@@ -1798,12 +1864,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
-            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.etapa = l.etapa AND tAct.idEquipo = l.idEquipo
-            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = l.codigoSubtipificacion
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo
                AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.matriz.etapa = l.etapa AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = l.codigoSubtipificacion
             WHERE l.etapa = :etapa
               AND l.codigoTipificacion = :codigoProgramado
               AND (l.codigoSubtipificacion IS NULL OR l.codigoSubtipificacion <> :codigoProgramacionCancelada)
@@ -1947,12 +2013,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN c.proveedor cp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
-            LEFT JOIN Tipificacion tAct ON tAct.codigo = e.tipificacion AND tAct.etapa = :etapaVenta AND tAct.idEquipo = l.idEquipo
-            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = e.subtipificacion
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo
                AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = e.tipificacion AND tAct.matriz.etapa = :etapaVenta AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = e.subtipificacion
             WHERE e.accion = :accionTipificacion
               AND e.etapa = :etapaVenta
               AND e.tipificacion IN :tipificacionesRechazo
@@ -2329,14 +2395,20 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.etapa
             )
             FROM Lead l
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaResumen
-            LEFT JOIN Tipificacion tPrimera ON tPrimera.codigo = r.primeraCodigoTipificacion AND tPrimera.etapa = :etapaResumen AND tPrimera.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tPrimera ON tPrimera.codigo = r.primeraCodigoTipificacion AND tPrimera.matriz.etapa = :etapaResumen AND tPrimera.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
             LEFT JOIN Subtipificacion sPrimera ON sPrimera.tipificacion = tPrimera AND sPrimera.codigo = r.primeraCodigoSubtipificacion
-            LEFT JOIN Tipificacion tMayor ON tMayor.codigo = r.mayorRangoCodigoTipificacion AND tMayor.etapa = :etapaResumen AND tMayor.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tMayor ON tMayor.codigo = r.mayorRangoCodigoTipificacion AND tMayor.matriz.etapa = :etapaResumen AND tMayor.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
             LEFT JOIN Subtipificacion sMayor ON sMayor.tipificacion = tMayor AND sMayor.codigo = r.mayorRangoCodigoSubtipificacion
-            LEFT JOIN Tipificacion tUltima ON tUltima.codigo = r.ultimaCodigoTipificacion AND tUltima.etapa = :etapaResumen AND tUltima.idEquipo = l.idEquipo
+            LEFT JOIN Tipificacion tUltima ON tUltima.codigo = r.ultimaCodigoTipificacion AND tUltima.matriz.etapa = :etapaResumen AND tUltima.matriz.proveedor.id = COALESCE(pp.id, fp.id, p.id)
             LEFT JOIN Subtipificacion sUltima ON sUltima.tipificacion = tUltima AND sUltima.codigo = r.ultimaCodigoSubtipificacion
             WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarEtapa = false OR l.etapa = :etapa)

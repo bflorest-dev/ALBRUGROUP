@@ -112,14 +112,17 @@ public class SubsanacionService {
                         esPlanCompatibleEnFecha(p, fechaGestion), razonIncompatibilidadPlan(p, fechaGestion)))
                 .toList();
 
+        Long idProveedorMatriz = idProveedor != null
+                ? idProveedor
+                : proveedoresPermitidos.size() == 1 ? proveedoresPermitidos.iterator().next() : null;
         return SubsanacionOpcionesResponse.builder()
                 .idEquipo(idEquipo)
                 .proveedores(proveedores)
                 .campanas(campanas)
                 .planes(planes)
-                .preventa(opcionesTipificacion(idEquipo, Etapa.PREVENTA,
+                .preventa(opcionesTipificacion(idProveedorMatriz, Etapa.PREVENTA,
                         ComportamientoTipificacion.ES_CIERRE_PREVENTA, Etapa.VENTA))
-                .venta(opcionesTipificacion(idEquipo, Etapa.VENTA,
+                .venta(opcionesTipificacion(idProveedorMatriz, Etapa.VENTA,
                         ComportamientoTipificacion.REQUIERE_FECHA_INSTALACION, Etapa.POSTVENTA))
                 .build();
     }
@@ -272,25 +275,26 @@ public class SubsanacionService {
             throw new ConflictException(razonIncompatibilidadPlan(plan, request.getFechaGestion()));
         }
 
-        Matriz preventa = resolverMatriz(request.getIdEquipo(), Etapa.PREVENTA,
+        Long idProveedor = plan.getProveedor().getId();
+        Matriz preventa = resolverMatriz(idProveedor, Etapa.PREVENTA,
                 request.getCodigoTipificacionPreventa(), request.getCodigoSubtipificacionPreventa(),
                 ComportamientoTipificacion.ES_CIERRE_PREVENTA, Etapa.VENTA);
-        Matriz venta = resolverMatriz(request.getIdEquipo(), Etapa.VENTA,
+        Matriz venta = resolverMatriz(idProveedor, Etapa.VENTA,
                 request.getCodigoTipificacionVenta(), request.getCodigoSubtipificacionVenta(),
                 ComportamientoTipificacion.REQUIERE_FECHA_INSTALACION, Etapa.POSTVENTA);
         return new Contexto(campana, plan, preventa, venta);
     }
 
     private Matriz resolverMatriz(
-            Long idEquipo,
+            Long idProveedor,
             Etapa etapa,
             String codigoTipificacion,
             String codigoSubtipificacion,
             ComportamientoTipificacion comportamiento,
             Etapa destino
     ) {
-        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndIdEquipoAndCodigo(
-                        etapa, idEquipo, codigoTipificacion.trim())
+        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigo(
+                        etapa, idProveedor, codigoTipificacion.trim())
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, codigoTipificacion));
         Subtipificacion subtipificacion = subtipificacionRepository.findByTipificacionIdAndCodigo(
                         tipificacion.getId(), codigoSubtipificacion.trim())
@@ -588,8 +592,12 @@ public class SubsanacionService {
     }
 
     private List<SubsanacionOpcionesResponse.TipificacionOpcion> opcionesTipificacion(
-            Long idEquipo, Etapa etapa, ComportamientoTipificacion comportamiento, Etapa destino) {
-        List<Tipificacion> tipificaciones = tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(etapa, idEquipo);
+            Long idProveedor, Etapa etapa, ComportamientoTipificacion comportamiento, Etapa destino) {
+        if (idProveedor == null) {
+            return List.of();
+        }
+        List<Tipificacion> tipificaciones =
+                tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(etapa, idProveedor);
         if (tipificaciones.isEmpty()) {
             return List.of();
         }

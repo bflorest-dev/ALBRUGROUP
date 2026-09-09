@@ -9,19 +9,17 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 @Entity @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"etapa", "id_equipo", "codigo"}))
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"matriz_id", "codigo"}))
 public class Tipificacion {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    private Etapa etapa;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "matriz_id", nullable = false)
+    private MatrizTipificacion matriz;
 
-    // Equipo dueño de esta matriz (referencia lógica al Equipo de auth-service, sin FK entre servicios,
-    // igual que EquipoProveedor.idEquipo). Cada equipo tiene su propia matriz por etapa: la resolución
-    // de tipificaciones es siempre por (etapa, idEquipo) y es fail-closed si el equipo no tiene matriz.
-    @Column(name = "id_equipo", nullable = false)
+    @Column(name = "id_equipo", insertable = false, updatable = false)
     private Long idEquipo;
 
     private String codigo;
@@ -29,4 +27,8 @@ public class Tipificacion {
     private Integer orden;
 
     private Boolean activo;
+
+    public Etapa getEtapa() {
+        return matriz == null ? null : matriz.getEtapa();
+    }
 }

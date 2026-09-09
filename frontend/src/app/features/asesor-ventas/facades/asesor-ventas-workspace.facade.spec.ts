@@ -190,10 +190,56 @@ describe('AsesorVentasWorkspaceFacade', () => {
 
     await facade.onOfertaProviderChanged(1);
 
+    expect(preventaService['getCatalogoTipificaciones']).toHaveBeenCalledWith(25202, 'PREVENTA', 1);
     expect(preventaService['listarCamposCapturaProveedor']).toHaveBeenCalledWith(1);
     expect(facade.camposVisibles().has('DOC_TITULAR_CELULAR')).toBe(true);
     expect(facade.camposVisibles().has('NOMBRE_TITULAR_CELULAR')).toBe(true);
     expect(facade.camposVisibles().has('NOMBRE_MADRE')).toBe(false);
+  });
+
+  it('limpia tipificacion seleccionada si la matriz del proveedor ya no la contiene', async () => {
+    preventaService['getCatalogoTipificaciones'].mockReturnValue(of({
+      tipificaciones: [
+        {
+          codigo: 'NO_CONTACTADO',
+          descripcion: 'No contactado',
+          orden: 1,
+          subtipificaciones: []
+        }
+      ]
+    }));
+    facade.detail.set({
+      id: 25202,
+      prefijo: '+51',
+      lead: '987654321'
+    } as never);
+    facade.catalogo.set({
+      tipificaciones: [
+        {
+          codigo: 'PREVENTA_COMPLETA',
+          descripcion: 'Gestion de preventa finalizada',
+          orden: 1,
+          subtipificaciones: [
+            {
+              codigo: 'VENTA_CERRADA',
+              descripcion: 'Venta cerrada',
+              orden: 1,
+              comportamientos: ['ES_CIERRE_PREVENTA']
+            }
+          ]
+        }
+      ]
+    } as never);
+    facade.tipificacionForm.patchValue({
+      codigoTipificacion: 'PREVENTA_COMPLETA',
+      codigoSubtipificacion: 'VENTA_CERRADA'
+    });
+
+    await facade.onOfertaProviderChanged(2);
+
+    expect(preventaService['getCatalogoTipificaciones']).toHaveBeenCalledWith(25202, 'PREVENTA', 2);
+    expect(facade.tipificacionForm.controls.codigoTipificacion.value).toBe('');
+    expect(facade.tipificacionForm.controls.codigoSubtipificacion.value).toBe('');
   });
 
   it('muestra un mensaje del modal si no se pueden cargar los campos del proveedor', async () => {

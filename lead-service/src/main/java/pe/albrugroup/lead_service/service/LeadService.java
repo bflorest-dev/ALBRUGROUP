@@ -78,6 +78,7 @@ import pe.albrugroup.lead_service.entity.response.OportunidadHermanaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.PlanResponse;
+import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
 import pe.albrugroup.lead_service.entity.response.GtrRankingAsesorResponse;
 import pe.albrugroup.lead_service.entity.response.GtrTipificacionCampanaResponse;
 import pe.albrugroup.lead_service.entity.response.GtrTipificacionRankingResponse;
@@ -2185,12 +2186,45 @@ public class LeadService {
     }
 
     // Catálogo de tipificaciones que aplica a un lead concreto: el equipo lo resuelve el backend desde
-    // el lead (no desde el usuario, que puede estar en varios equipos). Es la ruta que usan las vistas de
-    // gestión para mostrar exactamente la matriz que el backend usará al tipificar (misma partición por equipo).
-    public CatalogoResponse getCatalogoTipificacionesPorLead(Long idLead, Etapa etapa) {
+    // el lead (no desde el usuario, que puede estar en varios equipos). En PREVENTA, el proveedor elegido
+    // en Oferta Comercial puede estar aun sin guardar, por eso tiene prioridad sobre el plan persistido.
+    public CatalogoResponse getCatalogoTipificacionesPorLead(Long idLead, Etapa etapa, Long idProveedorSolicitado) {
         Lead lead = leadRepository.findById(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
-        return tipificacionService.getCatalogo(etapa, lead.getIdEquipo());
+        Long idProveedor = resolverIdProveedorMatriz(lead, etapa, idProveedorSolicitado);
+        return tipificacionService.getCatalogo(etapa, idProveedor);
+    }
+
+    private Long resolverIdProveedorMatriz(Lead lead, Etapa etapa, Long idProveedorSolicitado) {
+        if (etapa == Etapa.PREVENTA && idProveedorSolicitado != null) {
+            validarProveedorPerteneceAlEquipo(lead.getIdEquipo(), idProveedorSolicitado);
+            return idProveedorSolicitado;
+        }
+        if (lead.getPlan() != null && lead.getPlan().getProveedor() != null) {
+            return lead.getPlan().getProveedor().getId();
+        }
+        if (etapa != Etapa.PREVENTA) {
+            throw new BadRequestException("El lead no tiene plan con proveedor para resolver la matriz de " + etapa);
+        }
+        Proveedor fallback = obtenerProveedorFallbackEntidadDeEquipo(lead.getIdEquipo());
+        if (fallback == null) {
+            throw new BadRequestException(
+                    "El equipo del lead no tiene proveedor fallback para resolver la matriz de PREVENTA",
+                    lead.getIdEquipo(),
+                    null
+            );
+        }
+        return fallback.getId();
+    }
+
+    private void validarProveedorPerteneceAlEquipo(Long idEquipo, Long idProveedor) {
+        if (idEquipo == null || !equipoProveedorRepository.existsByIdEquipoAndProveedorId(idEquipo, idProveedor)) {
+            throw new BadRequestException(
+                    "El proveedor seleccionado no pertenece al equipo del lead",
+                    idProveedor,
+                    Map.of("idEquipo", idEquipo)
+            );
+        }
     }
 
     @Transactional
@@ -2206,9 +2240,10 @@ public class LeadService {
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
-        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+        Long idProveedorMatriz = resolverIdProveedorMatriz(lead, etapaActual, request.getIdProveedor());
+        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
                         etapaActual,
-                        lead.getIdEquipo(),
+                        idProveedorMatriz,
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
@@ -2273,9 +2308,10 @@ public class LeadService {
         Etapa etapaLead = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
-        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+        Long idProveedorMatriz = resolverIdProveedorMatriz(lead, Etapa.PREVENTA, request.getIdProveedor());
+        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
                         Etapa.PREVENTA,
-                        lead.getIdEquipo(),
+                        idProveedorMatriz,
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
@@ -2343,9 +2379,10 @@ public class LeadService {
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
-        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+        Long idProveedorMatriz = resolverIdProveedorMatriz(lead, etapaActual, null);
+        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
                         etapaActual,
-                        lead.getIdEquipo(),
+                        idProveedorMatriz,
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
@@ -2371,7 +2408,7 @@ public class LeadService {
 
         TipificacionRetornoPreventa tipificacionRetornoPreventa =
                 etapaActual == Etapa.VENTA && etapaDestino == Etapa.PREVENTA
-                        ? obtenerTipificacionRetornoVentaPreventa(lead.getIdEquipo())
+                        ? obtenerTipificacionRetornoVentaPreventa(idProveedorMatriz)
                         : null;
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
@@ -2438,10 +2475,10 @@ public class LeadService {
         notificarCambioLead("TIPIFICACION", savedLead, etapaActual, idAsesorAnterior);
     }
 
-    private TipificacionRetornoPreventa obtenerTipificacionRetornoVentaPreventa(Long idEquipo) {
-        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+    private TipificacionRetornoPreventa obtenerTipificacionRetornoVentaPreventa(Long idProveedor) {
+        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
                         Etapa.PREVENTA,
-                        idEquipo,
+                        idProveedor,
                         TIPIFICACION_RETORNO_VENTA_PREVENTA
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, TIPIFICACION_RETORNO_VENTA_PREVENTA));
@@ -2464,9 +2501,10 @@ public class LeadService {
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
-        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
+        Long idProveedorMatriz = resolverIdProveedorMatriz(lead, etapaActual, null);
+        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
                         etapaActual,
-                        lead.getIdEquipo(),
+                        idProveedorMatriz,
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
@@ -4715,6 +4753,8 @@ public class LeadService {
         LeadPromocionDetalleResponse promocionInterna = toLeadPromocionDetalleResponse(lead.getPromocionInterna());
         LeadEtapaResumen resumenVenta = leadEtapaResumenRepository.findByIdLeadAndEtapa(lead.getId(), Etapa.VENTA).orElse(null);
         LeadEtapaResumen resumenPreventa = leadEtapaResumenRepository.findByIdLeadAndEtapa(lead.getId(), Etapa.PREVENTA).orElse(null);
+        Proveedor proveedorFallback = obtenerProveedorFallbackEntidadDeEquipo(lead.getIdEquipo());
+        List<ProveedorResponse> proveedoresEquipo = listarProveedoresEquipoDetalle(lead.getIdEquipo());
         Evento ultimaProgramacionVenta = eventoRepository
                 .findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(lead.getId(), Accion.TIPIFICACION, TIPIFICACION_PROGRAMADO)
                 .orElse(null);
@@ -4808,7 +4848,9 @@ public class LeadService {
                 lead.getEtapa(),
                 lead.getEtapa() != Etapa.PREVENTA,
                 resolverConfigCamposCaptura(lead),
-                obtenerProveedorFallbackDeEquipo(lead.getIdEquipo()),
+                proveedoresEquipo,
+                proveedorFallback == null ? null : proveedorFallback.getId(),
+                proveedorFallback == null ? null : proveedorFallback.getNombre(),
                 ofertaComercialActualizadaEnCicloActualVenta(lead),
                 lead.getComentario()
         );
@@ -4824,6 +4866,31 @@ public class LeadService {
         return equipoCampoService.resolverConfig(lead.getIdEquipo());
     }
 
+    private List<ProveedorResponse> listarProveedoresEquipoDetalle(Long idEquipo) {
+        if (idEquipo == null) {
+            return List.of();
+        }
+        return equipoProveedorRepository.findByIdEquipo(idEquipo).stream()
+                .filter(equipoProveedor -> equipoProveedor.getProveedor() != null)
+                .sorted(java.util.Comparator.comparing(
+                        equipoProveedor -> equipoProveedor.getProveedor().getNombre(),
+                        java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+                ))
+                .map(equipoProveedor -> {
+                    Proveedor proveedor = equipoProveedor.getProveedor();
+                    return ProveedorResponse.builder()
+                            .id(proveedor.getId())
+                            .nombre(proveedor.getNombre())
+                            .cortesFacturacion(proveedor.getCortesFacturacion())
+                            .mesesPermanencia(proveedor.getMesesPermanencia())
+                            .activo(proveedor.getActivo())
+                            .createdAt(proveedor.getCreatedAt())
+                            .fallbackLeadSinCampana(equipoProveedor.isFallbackLeadSinCampana())
+                            .build();
+                })
+                .toList();
+    }
+
     // Proveedor fallback de un equipo (null-safe). Origen a mostrar cuando el lead no tiene campaña.
     private String obtenerProveedorFallbackDeEquipo(Long idEquipo) {
         Proveedor proveedor = obtenerProveedorFallbackEntidadDeEquipo(idEquipo);
@@ -4834,8 +4901,8 @@ public class LeadService {
         if (idEquipo == null) {
             return null;
         }
-        return equipoProveedorRepository.findByIdEquipo(idEquipo).stream()
-                .filter(ep -> ep.isFallbackLeadSinCampana() && ep.getProveedor() != null)
+        return equipoProveedorRepository.findByIdEquipoAndFallbackLeadSinCampanaTrue(idEquipo).stream()
+                .filter(ep -> ep.getProveedor() != null)
                 .map(EquipoProveedor::getProveedor)
                 .findFirst()
                 .orElse(null);
@@ -5824,14 +5891,18 @@ public class LeadService {
                 .toList();
     }
 
-    /** Mapa código de tipificación → orden, del catálogo PREVENTA del equipo (vacío si no hay equipo). */
+    /** Mapa código de tipificación → orden, del catálogo PREVENTA del proveedor fallback del equipo. */
     private Map<String, Integer> ordenTipificacionesPreventa(Long idEquipo) {
         if (idEquipo == null) {
             return Map.of();
         }
+        Proveedor proveedor = obtenerProveedorFallbackEntidadDeEquipo(idEquipo);
+        if (proveedor == null) {
+            return Map.of();
+        }
         Map<String, Integer> orden = new HashMap<>();
-        for (Tipificacion t : tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(
-                Etapa.PREVENTA, idEquipo)) {
+        for (Tipificacion t : tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(
+                Etapa.PREVENTA, proveedor.getId())) {
             orden.put(t.getCodigo(), t.getOrden());
         }
         return orden;

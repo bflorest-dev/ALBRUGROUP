@@ -11,8 +11,7 @@ import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 /**
- * Copia la matriz activa de una etapa desde un equipo origen a un equipo destino. Sirve para dar de
- * alta la matriz de un equipo nuevo o para dejar la matriz de un equipo igual a la de otro.
+ * Copia la matriz activa de una etapa desde un proveedor origen a un proveedor destino.
  */
 @Builder
 @Getter
@@ -26,8 +25,8 @@ public class ClonarMatrizRequest {
     private Etapa etapa;
 
     @NotNull
-    private Long idEquipoOrigen;
+    private Long idProveedorOrigen;
 
     @NotNull
-    private Long idEquipoDestino;
+    private Long idProveedorDestino;
 }

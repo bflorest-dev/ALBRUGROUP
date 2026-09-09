@@ -27,6 +27,6 @@ public interface SubtipificacionRepository extends JpaRepository<Subtipificacion
     List<Subtipificacion> listarParaBackfillResumenEtapa();
 
     // Catalogo plano para el backfill: la etapa de cambio reconstruye avances historicos.
-    @Query("SELECT t.idEquipo, t.etapa, t.codigo, s.codigo, s.etapaCambio FROM Subtipificacion s JOIN s.tipificacion t")
+    @Query("SELECT t.matriz.proveedor.id, t.matriz.etapa, t.codigo, s.codigo, s.etapaCambio FROM Subtipificacion s JOIN s.tipificacion t")
     List<Object[]> listarCambiosEtapa();
 }

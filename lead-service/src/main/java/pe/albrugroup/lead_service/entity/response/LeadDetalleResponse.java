@@ -105,6 +105,8 @@ public class LeadDetalleResponse {
     // y si es obligatorio.
     private List<CampoConfigResponse> camposConfig;
     // Proveedor fallback del equipo del lead: origen a mostrar cuando el lead no tiene campaña.
+    private List<ProveedorResponse> proveedoresEquipo;
+    private Long idProveedorEquipo;
     private String nombreProveedorEquipo;
     // Fuente autoritativa para que Backoffice no vuelva a ofrecer la edición cuando el backend ya
     // registró la única actualización permitida dentro del ciclo actual de VENTA.

@@ -27,7 +27,7 @@ public class MatrizCatalogoRequest {
     private Etapa etapa;
 
     @NotNull
-    private Long idEquipo;
+    private Long idProveedor;
 
     @NotEmpty
     @Valid

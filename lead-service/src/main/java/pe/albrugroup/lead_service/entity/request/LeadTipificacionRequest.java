@@ -16,4 +16,5 @@ public class LeadTipificacionRequest {
     private String comentario;
     private LocalTime horaProgramada;
     private Long idPlataformaDigitalOfrecida;
+    private Long idProveedor;
 }

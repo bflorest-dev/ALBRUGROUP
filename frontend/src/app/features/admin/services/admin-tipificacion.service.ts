@@ -10,8 +10,7 @@ import {
   MatrizCatalogoRequest
 } from '../../../shared/models/preventa/preventa.models';
 
-/** Equipo para el selector de la tab de tipificaciones (mismo shape que /equipos/catalogo). */
-export interface EquipoCatalogoItem {
+export interface ProveedorCatalogoItem {
   id: number;
   nombre: string;
 }
@@ -20,14 +19,16 @@ export interface EquipoCatalogoItem {
 export class AdminTipificacionService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/tipificaciones`;
-  private readonly authUrl = `${API_CONSTANTS.gatewayBaseUrl}/auth`;
+  private readonly proveedoresUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/proveedores`;
 
-  listarEquipos(): Observable<EquipoCatalogoItem[]> {
-    return this.http.get<EquipoCatalogoItem[]>(`${this.authUrl}/equipos/catalogo`);
+  listarProveedores(): Observable<ProveedorCatalogoItem[]> {
+    return this.http.get<ProveedorCatalogoItem[]>(this.proveedoresUrl, {
+      params: new HttpParams().set('activo', true)
+    });
   }
 
-  getCatalogo(etapa: string, idEquipo: number): Observable<CatalogoResponse> {
-    const params = new HttpParams().set('idEquipo', idEquipo);
+  getCatalogo(etapa: string, idProveedor: number): Observable<CatalogoResponse> {
+    const params = new HttpParams().set('idProveedor', idProveedor);
     return this.http.get<CatalogoResponse>(`${this.baseUrl}/${etapa}/catalogo`, { params });
   }
 

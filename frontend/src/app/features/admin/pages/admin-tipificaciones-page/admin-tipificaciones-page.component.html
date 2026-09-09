@@ -33,13 +33,13 @@
           <p-select
             class="min-w-44"
             appendTo="body"
-            [options]="facade.equipoOptions()"
+            [options]="facade.proveedorOptions()"
             optionLabel="label"
             optionValue="value"
-            placeholder="Equipo"
-            [ngModel]="facade.selectedEquipo()"
+            placeholder="Proveedor"
+            [ngModel]="facade.selectedProveedor()"
             [disabled]="facade.isLoading() || facade.isSaving() || facade.isCloning()"
-            (ngModelChange)="onEquipoChange($event)"
+            (ngModelChange)="onProveedorChange($event)"
           />
 
           <p-select
@@ -68,8 +68,8 @@
       <div class="flex flex-col gap-3 border-t border-slate-200 pt-3 lg:flex-row lg:items-center">
         <div class="flex flex-wrap items-center gap-3 text-sm text-slate-600">
           <span class="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 ring-1 ring-inset ring-slate-200">
-            <i class="pi pi-users text-[0.7rem]"></i>
-            {{ facade.equipoLabel(facade.selectedEquipo()) }}
+            <i class="pi pi-building text-[0.7rem]"></i>
+            {{ facade.proveedorLabel(facade.selectedProveedor()) }}
           </span>
           <span
             class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-bold ring-1 ring-inset"
@@ -288,11 +288,11 @@
             ></button>
           } @else {
             <p class="mt-3 font-semibold text-slate-700">
-              {{ facade.equipoLabel(facade.selectedEquipo()) }} todavía no tiene tipificaciones en esta etapa.
+              {{ facade.proveedorLabel(facade.selectedProveedor()) }} todavía no tiene tipificaciones en esta etapa.
             </p>
             @if (facade.clonarOrigenOptions().length) {
               <p class="mt-1 text-sm text-slate-500">
-                Crea la primera o clónala de otro equipo con “Clonar de…” en la barra superior.
+                Crea la primera o clónala de otro proveedor con “Clonar de…” en la barra superior.
               </p>
             }
             <button

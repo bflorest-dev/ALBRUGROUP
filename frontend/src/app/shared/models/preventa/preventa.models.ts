@@ -56,6 +56,13 @@ export interface SupervisorVentasResumenResponse {
   preventasMesPorProveedor: SupervisorVentasProveedorResumenResponse[];
 }
 
+export interface ProveedorEquipoOption {
+  id: number;
+  nombre: string;
+  fallbackLeadSinCampana?: boolean | null;
+  activo?: boolean | null;
+}
+
 export interface LeadGtrResponse {
   id: number;
   idEquipo?: number | null;
@@ -66,6 +73,7 @@ export interface LeadGtrResponse {
   usermeta?: string | null;
   nombreCampana?: string | null;
   nombreProveedorCampana?: string | null;
+  idProveedorEquipo?: number | null;
   nombreProveedorEquipo?: string | null;
   numeroWhatsappEmpresa?: string | null;
   base?: BaseLead | string | null;
@@ -388,6 +396,8 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   lastEntryAt?: string | null;
   nombreCampana?: string | null;
   nombreProveedorCampana?: string | null;
+  proveedoresEquipo?: ProveedorEquipoOption[] | null;
+  idProveedorEquipo?: number | null;
   nombreProveedorEquipo?: string | null;
   numeroParaLlamar?: string | null;
   base?: string | null;
@@ -751,6 +761,7 @@ export interface LeadTipificacionRequest {
   codigoSubtipificacion: string;
   comentario?: string | null;
   horaProgramada?: string | null;
+  idProveedor?: number | null;
 }
 
 export interface LeadTipificacionVentaRequest {
@@ -848,23 +859,22 @@ export interface TipificacionCatalogoRequest {
 
 export interface CatalogoRequest {
   etapa: string;
-  // Equipo dueño de la matriz: cada equipo tiene su propia matriz por etapa.
-  idEquipo: number;
+  idProveedor: number;
   tipificaciones: TipificacionCatalogoRequest[];
 }
 
 export type MatrizCatalogoRequest = CatalogoRequest;
 
-// Clona la matriz de una etapa desde un equipo origen a uno destino.
+// Clona la matriz de una etapa desde un proveedor origen a uno destino.
 export interface ClonarMatrizRequest {
   etapa: string;
-  idEquipoOrigen: number;
-  idEquipoDestino: number;
+  idProveedorOrigen: number;
+  idProveedorDestino: number;
 }
 
 export interface CatalogoEstadoRequest {
   etapa: string;
-  idEquipo: number;
+  idProveedor: number;
   tipificacionesActivar: number[];
   tipificacionesDesactivar: number[];
   subtipificacionesActivar: number[];

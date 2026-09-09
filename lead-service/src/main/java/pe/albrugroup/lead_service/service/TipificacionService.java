@@ -6,6 +6,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import pe.albrugroup.lead_service.configuration.CacheNames;
+import pe.albrugroup.lead_service.entity.MatrizTipificacion;
+import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Tipificacion;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
@@ -20,6 +22,8 @@ import pe.albrugroup.lead_service.entity.response.SubtipificacionResponse;
 import pe.albrugroup.lead_service.entity.response.TipificacionResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
+import pe.albrugroup.lead_service.repository.MatrizTipificacionRepository;
+import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
 import pe.albrugroup.lead_service.service.mapper.TipificacionMapper;
@@ -45,14 +49,15 @@ public class TipificacionService {
 
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
+    private final MatrizTipificacionRepository matrizTipificacionRepository;
+    private final ProveedorRepository proveedorRepository;
     private final TipificacionMapper mapper;
 
-    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "#etapa + '_' + #idEquipo")
-    public CatalogoResponse getCatalogo(Etapa etapa, Long idEquipo) {
+    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "#etapa + '_' + #idProveedor")
+    public CatalogoResponse getCatalogo(Etapa etapa, Long idProveedor) {
         List<Tipificacion> tipificaciones =
-                tipificacionRepository.findByEtapaAndIdEquipoAndActivoTrueOrderByOrdenAsc(etapa, idEquipo);
-        // Fail-closed: si el equipo aún no tiene matriz en esta etapa, el catálogo viene vacío (sin
-        // fallback a una matriz general). El front muestra el estado "equipo sin matriz".
+                tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndActivoTrueOrderByOrdenAsc(etapa, idProveedor);
+        // Fail-closed: si el proveedor aún no tiene matriz en esta etapa, el catálogo viene vacío.
         if (tipificaciones.isEmpty()) {
             return new CatalogoResponse(etapa, List.of());
         }
@@ -78,14 +83,14 @@ public class TipificacionService {
         return new CatalogoResponse(etapa, tipificacionesResponse);
     }
 
-    // Catálogo AGREGADO cross-equipo: unión de las matrices activas de la etapa, deduplicada por código
+    // Catálogo AGREGADO cross-proveedor: unión de las matrices activas de la etapa, deduplicada por código
     // (representante = primera tipificación activa encontrada), con sus subtipificaciones activas. Solo
     // para vistas de supervisor (paletas de color y dropdowns de filtro que cruzan equipos); NO resuelve
-    // la matriz de un lead (eso es siempre getCatalogo(etapa, idEquipo)).
+    // la matriz de un lead (eso es siempre getCatalogo(etapa, idProveedor)).
     @Cacheable(value = CacheNames.TIPIFICACIONES, key = "'agregado_' + #etapa")
     public CatalogoResponse getCatalogoAgregado(Etapa etapa) {
         Map<String, Tipificacion> representantePorCodigo = new LinkedHashMap<>();
-        for (Tipificacion tipificacion : tipificacionRepository.findByEtapaAndActivoTrueOrderByOrdenAsc(etapa)) {
+        for (Tipificacion tipificacion : tipificacionRepository.findByMatrizEtapaAndActivoTrueOrderByOrdenAsc(etapa)) {
             representantePorCodigo.putIfAbsent(tipificacion.getCodigo(), tipificacion);
         }
         List<Tipificacion> representantes = new ArrayList<>(representantePorCodigo.values());
@@ -120,7 +125,8 @@ public class TipificacionService {
         );
 
         for (TipificacionCatalogoRequest tipificacionRequest : tipificacionesRequest) {
-            Tipificacion tipificacion = upsertTipificacion(request.getEtapa(), request.getIdEquipo(), tipificacionRequest);
+            MatrizTipificacion matriz = resolverMatriz(request.getEtapa(), request.getIdProveedor());
+            Tipificacion tipificacion = upsertTipificacion(matriz, tipificacionRequest);
             List<SubtipificacionCatalogoRequest> subtipificacionesRequest = Objects.requireNonNullElse(
                     tipificacionRequest.getSubtipificaciones(),
                     List.of()
@@ -130,7 +136,7 @@ public class TipificacionService {
             }
         }
 
-        return getCatalogo(request.getEtapa(), request.getIdEquipo());
+        return getCatalogo(request.getEtapa(), request.getIdProveedor());
     }
 
     @Transactional
@@ -151,13 +157,13 @@ public class TipificacionService {
         Map<Long, Tipificacion> tipificacionesPorId = buscarTipificacionesPorId(
                 unirIds(tipificacionesActivar, tipificacionesDesactivar),
                 request.getEtapa(),
-                request.getIdEquipo()
+                request.getIdProveedor()
         );
 
         Map<Long, Subtipificacion> subtipificacionesPorId = buscarSubtipificacionesPorId(
                 unirIds(subtipificacionesActivar, subtipificacionesDesactivar),
                 request.getEtapa(),
-                request.getIdEquipo()
+                request.getIdProveedor()
         );
 
         desactivarTipificaciones(tipificacionesDesactivar, tipificacionesPorId);
@@ -167,7 +173,7 @@ public class TipificacionService {
         activarTipificaciones(tipificacionesActivar, tipificacionesPorId);
         activarSubtipificaciones(subtipificacionesActivar, subtipificacionesPorId);
 
-        return getCatalogo(request.getEtapa(), request.getIdEquipo());
+        return getCatalogo(request.getEtapa(), request.getIdProveedor());
     }
 
     @Transactional
@@ -179,10 +185,10 @@ public class TipificacionService {
         );
         validarMatriz(matriz);
 
-        // Acotado por (etapa, idEquipo): el archivado de lo que "sobra" solo debe tocar la matriz de este
-        // equipo. Si se leyera por etapa sola, guardar la matriz del equipo A archivaría la del equipo B.
+        MatrizTipificacion matrizCabecera = resolverMatriz(request.getEtapa(), request.getIdProveedor());
+        // Acotado por (etapa, proveedor): el archivado de lo que "sobra" solo debe tocar esta matriz.
         List<Tipificacion> existentes =
-                tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(request.getEtapa(), request.getIdEquipo());
+                tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(request.getEtapa(), request.getIdProveedor());
         Map<Long, Tipificacion> existentesPorId = existentes.stream()
                 .collect(Collectors.toMap(Tipificacion::getId, Function.identity()));
         List<Subtipificacion> subtipificacionesExistentes = existentes.isEmpty()
@@ -215,8 +221,7 @@ public class TipificacionService {
         for (int index = 0; index < matriz.size(); index++) {
             TipificacionCatalogoRequest item = matriz.get(index);
             Tipificacion target = tipificacionPorRequest.get(item);
-            target.setEtapa(request.getEtapa());
-            target.setIdEquipo(request.getIdEquipo());
+            target.setMatriz(matrizCabecera);
             target.setCodigo(item.getCodigo().trim());
             target.setDescripcion(item.getDescripcion().trim());
             target.setOrden(index + 1);
@@ -297,26 +302,26 @@ public class TipificacionService {
             }
         }
 
-        return getCatalogo(request.getEtapa(), request.getIdEquipo());
+        return getCatalogo(request.getEtapa(), request.getIdProveedor());
     }
 
     /**
-     * Clona la matriz activa de {@code idEquipoOrigen} en {@code idEquipoDestino} para una etapa,
+     * Clona la matriz activa de {@code idProveedorOrigen} en {@code idProveedorDestino} para una etapa,
      * reescribiéndola con {@link #guardarMatrizCatalogo} (ids nulos = inserta copias). Sirve para dar de
-     * alta la matriz de un equipo nuevo o dejar la de un equipo igual a la de otro.
+     * alta la matriz de un proveedor nuevo o dejar la de un proveedor igual a otro.
      */
     @Transactional
     @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true)
-    public CatalogoResponse clonarMatriz(Etapa etapa, Long idEquipoOrigen, Long idEquipoDestino) {
-        if (Objects.equals(idEquipoOrigen, idEquipoDestino)) {
-            throw new BadRequestException("El equipo origen y destino no pueden ser el mismo", idEquipoOrigen, null);
+    public CatalogoResponse clonarMatriz(Etapa etapa, Long idProveedorOrigen, Long idProveedorDestino) {
+        if (Objects.equals(idProveedorOrigen, idProveedorDestino)) {
+            throw new BadRequestException("El proveedor origen y destino no pueden ser el mismo", idProveedorOrigen, null);
         }
 
-        CatalogoResponse origen = getCatalogo(etapa, idEquipoOrigen);
+        CatalogoResponse origen = getCatalogo(etapa, idProveedorOrigen);
         if (origen.getTipificaciones().isEmpty()) {
             throw new BadRequestException(
-                    "El equipo origen no tiene matriz activa en esta etapa para clonar",
-                    idEquipoOrigen,
+                    "El proveedor origen no tiene matriz activa en esta etapa para clonar",
+                    idProveedorOrigen,
                     Map.of("etapa", etapa)
             );
         }
@@ -340,7 +345,7 @@ public class TipificacionService {
 
         MatrizCatalogoRequest request = MatrizCatalogoRequest.builder()
                 .etapa(etapa)
-                .idEquipo(idEquipoDestino)
+                .idProveedor(idProveedorDestino)
                 .tipificaciones(copia)
                 .build();
         return guardarMatrizCatalogo(request);
@@ -468,7 +473,7 @@ public class TipificacionService {
                 .findFirst()
                 .orElseGet(() -> {
                     Tipificacion nueva = new Tipificacion();
-                    nueva.setEtapa(etapa);
+                    nueva.setMatriz(resolverMatrizExistente(etapa, null));
                     return nueva;
                 });
     }
@@ -579,11 +584,10 @@ public class TipificacionService {
         return "__ARCHIVED_" + tipo + "_" + id;
     }
 
-    private Tipificacion upsertTipificacion(Etapa etapa, Long idEquipo, TipificacionCatalogoRequest request) {
+    private Tipificacion upsertTipificacion(MatrizTipificacion matriz, TipificacionCatalogoRequest request) {
         if (request.getId() == null) {
             Tipificacion tipificacion = mapper.toEntity(request);
-            tipificacion.setEtapa(etapa);
-            tipificacion.setIdEquipo(idEquipo);
+            tipificacion.setMatriz(matriz);
             tipificacion.setActivo(Boolean.TRUE);
             return tipificacionRepository.save(tipificacion);
         }
@@ -591,9 +595,23 @@ public class TipificacionService {
         Tipificacion tipificacion = tipificacionRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getId()));
 
+        MatrizTipificacion matrizActual = tipificacion.getMatriz();
+        Long proveedorActual = matrizActual == null || matrizActual.getProveedor() == null
+                ? null
+                : matrizActual.getProveedor().getId();
+        Long proveedorDestino = matriz.getProveedor() == null ? null : matriz.getProveedor().getId();
+        if (matrizActual == null
+                || matrizActual.getEtapa() != matriz.getEtapa()
+                || !Objects.equals(proveedorActual, proveedorDestino)) {
+            throw new BadRequestException(
+                    "La tipificacion no pertenece a la matriz (etapa, proveedor) enviada",
+                    request.getId(),
+                    Map.of("etapa", matriz.getEtapa(), "idProveedor", proveedorDestino)
+            );
+        }
+
         mapper.updateDatosTipificacion(request, tipificacion);
-        tipificacion.setEtapa(etapa);
-        tipificacion.setIdEquipo(idEquipo);
+        tipificacion.setMatriz(matriz);
         tipificacion.setActivo(Boolean.TRUE);
         return tipificacionRepository.save(tipificacion);
     }
@@ -660,7 +678,7 @@ public class TipificacionService {
         }
     }
 
-    private Map<Long, Tipificacion> buscarTipificacionesPorId(Collection<Long> ids, Etapa etapa, Long idEquipo) {
+    private Map<Long, Tipificacion> buscarTipificacionesPorId(Collection<Long> ids, Etapa etapa, Long idProveedor) {
         if (ids.isEmpty()) {
             return Map.of();
         }
@@ -674,11 +692,13 @@ public class TipificacionService {
             if (tipificacion == null) {
                 throw new NotFoundException(Tipificacion.class, id);
             }
-            if (tipificacion.getEtapa() != etapa || !Objects.equals(tipificacion.getIdEquipo(), idEquipo)) {
+            MatrizTipificacion matriz = tipificacion.getMatriz();
+            Long proveedorMatriz = matriz == null || matriz.getProveedor() == null ? null : matriz.getProveedor().getId();
+            if (matriz == null || matriz.getEtapa() != etapa || !Objects.equals(proveedorMatriz, idProveedor)) {
                 throw new BadRequestException(
-                        "La tipificacion no pertenece a la matriz (etapa, equipo) enviada",
+                        "La tipificacion no pertenece a la matriz (etapa, proveedor) enviada",
                         null,
-                        Map.of("idTipificacion", id, "etapa", etapa, "idEquipo", idEquipo)
+                        Map.of("idTipificacion", id, "etapa", etapa, "idProveedor", idProveedor)
                 );
             }
         }
@@ -686,7 +706,7 @@ public class TipificacionService {
         return resultado;
     }
 
-    private Map<Long, Subtipificacion> buscarSubtipificacionesPorId(Collection<Long> ids, Etapa etapa, Long idEquipo) {
+    private Map<Long, Subtipificacion> buscarSubtipificacionesPorId(Collection<Long> ids, Etapa etapa, Long idProveedor) {
         if (ids.isEmpty()) {
             return Map.of();
         }
@@ -701,11 +721,13 @@ public class TipificacionService {
                 throw new NotFoundException(Subtipificacion.class, id);
             }
             Tipificacion padre = subtipificacion.getTipificacion();
-            if (padre.getEtapa() != etapa || !Objects.equals(padre.getIdEquipo(), idEquipo)) {
+            MatrizTipificacion matriz = padre.getMatriz();
+            Long proveedorMatriz = matriz == null || matriz.getProveedor() == null ? null : matriz.getProveedor().getId();
+            if (matriz == null || matriz.getEtapa() != etapa || !Objects.equals(proveedorMatriz, idProveedor)) {
                 throw new BadRequestException(
-                        "La subtipificacion no pertenece a la matriz (etapa, equipo) enviada",
+                        "La subtipificacion no pertenece a la matriz (etapa, proveedor) enviada",
                         null,
-                        Map.of("idSubtipificacion", id, "etapa", etapa, "idEquipo", idEquipo)
+                        Map.of("idSubtipificacion", id, "etapa", etapa, "idProveedor", idProveedor)
                 );
             }
         }
@@ -769,5 +791,28 @@ public class TipificacionService {
         List<Long> ids = new ArrayList<>(primero);
         ids.addAll(segundo);
         return ids;
+    }
+
+    private MatrizTipificacion resolverMatriz(Etapa etapa, Long idProveedor) {
+        if (idProveedor == null) {
+            throw new BadRequestException("El proveedor de la matriz es obligatorio", null, Map.of("etapa", etapa));
+        }
+        return matrizTipificacionRepository.findByEtapaAndProveedorId(etapa, idProveedor)
+                .orElseGet(() -> {
+                    Proveedor proveedor = proveedorRepository.findByIdAndActivoTrue(idProveedor)
+                            .orElseThrow(() -> new NotFoundException(Proveedor.class, idProveedor));
+                    MatrizTipificacion matriz = new MatrizTipificacion();
+                    matriz.setEtapa(etapa);
+                    matriz.setProveedor(proveedor);
+                    matriz.setActivo(Boolean.TRUE);
+                    return matrizTipificacionRepository.save(matriz);
+                });
+    }
+
+    private MatrizTipificacion resolverMatrizExistente(Etapa etapa, Long idProveedor) {
+        if (idProveedor == null) {
+            return null;
+        }
+        return matrizTipificacionRepository.findByEtapaAndProveedorId(etapa, idProveedor).orElse(null);
     }
 }

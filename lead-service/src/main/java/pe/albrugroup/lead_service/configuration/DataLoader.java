@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.entity.Adicional;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.CuentaPublicitaria;
+import pe.albrugroup.lead_service.entity.MatrizTipificacion;
 import pe.albrugroup.lead_service.entity.Internet;
 import pe.albrugroup.lead_service.entity.Plan;
 import pe.albrugroup.lead_service.entity.PlanAdicional;
@@ -25,7 +26,9 @@ import pe.albrugroup.lead_service.entity.request.TipificacionRequest;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
 import pe.albrugroup.lead_service.repository.CuentaPublicitariaRepository;
+import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 import pe.albrugroup.lead_service.repository.InternetRepository;
+import pe.albrugroup.lead_service.repository.MatrizTipificacionRepository;
 import pe.albrugroup.lead_service.repository.PlanAdicionalRepository;
 import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
@@ -51,6 +54,8 @@ public class DataLoader {
     private final UbigeoDataLoader ubigeoDataLoader;
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
+    private final MatrizTipificacionRepository matrizTipificacionRepository;
+    private final EquipoProveedorRepository equipoProveedorRepository;
     private final ProveedorRepository proveedorRepository;
     private final CuentaPublicitariaRepository cuentaPublicitariaRepository;
     private final CampanaRepository campanaRepository;
@@ -76,12 +81,12 @@ public class DataLoader {
         log.info("=================================");
     }
 
-    // Equipo actual que se está sembrando: lo lee saveTipificacion para sellar id_equipo sin tener que
+    // Equipo actual que se está sembrando: lo lee saveTipificacion para resolver el proveedor fallback sin tener que
     // pasar el parámetro por cada una de las ~30 llamadas del seed.
     private Long currentSeedEquipo;
 
     private void crearTipificacionesYSubtipificaciones() {
-        // Seed dev: cada equipo tiene su propia matriz. Sembramos la misma matriz base para los equipos
+        // Seed dev: cada proveedor fallback tiene su propia matriz. Sembramos la matriz base para los equipos
         // de ejemplo (ids 1 y 2; ver auth-service DataLoader.crearEquipos()).
         for (Long idEquipo : java.util.List.of(1L, 2L)) {
             currentSeedEquipo = idEquipo;
@@ -158,8 +163,9 @@ public class DataLoader {
     }
 
     private Tipificacion saveTipificacion(Etapa etapa, String codigo, String descripcion, Integer orden) {
-        Long idEquipo = currentSeedEquipo;
-        return tipificacionRepository.findByEtapaAndIdEquipoAndCodigo(etapa, idEquipo, codigo)
+        MatrizTipificacion matriz = resolverMatrizSeed(etapa);
+        Long idProveedor = matriz.getProveedor().getId();
+        return tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigo(etapa, idProveedor, codigo)
                 .orElseGet(() -> {
                     TipificacionRequest request = TipificacionRequest.builder()
                             .etapa(etapa)
@@ -168,9 +174,23 @@ public class DataLoader {
                             .orden(orden)
                             .build();
                     Tipificacion entity = tipificacionMapper.toEntity(request);
-                    entity.setIdEquipo(idEquipo);
+                    entity.setMatriz(matriz);
                     entity.setActivo(Boolean.TRUE);
                     return tipificacionRepository.save(entity);
+                });
+    }
+
+    private MatrizTipificacion resolverMatrizSeed(Etapa etapa) {
+        Proveedor proveedor = equipoProveedorRepository.findByIdEquipoAndFallbackLeadSinCampanaTrue(currentSeedEquipo)
+                .map(item -> item.getProveedor())
+                .orElseThrow(() -> new IllegalStateException("El equipo seed no tiene proveedor fallback"));
+        return matrizTipificacionRepository.findByEtapaAndProveedorId(etapa, proveedor.getId())
+                .orElseGet(() -> {
+                    MatrizTipificacion matriz = new MatrizTipificacion();
+                    matriz.setEtapa(etapa);
+                    matriz.setProveedor(proveedor);
+                    matriz.setActivo(Boolean.TRUE);
+                    return matrizTipificacionRepository.save(matriz);
                 });
     }
 

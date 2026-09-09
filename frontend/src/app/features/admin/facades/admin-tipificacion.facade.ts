@@ -7,7 +7,7 @@ import {
   SubtipificacionCatalogoRequest,
   TipificacionCatalogoRequest
 } from '../../../shared/models/preventa/preventa.models';
-import { AdminTipificacionService, EquipoCatalogoItem } from '../services/admin-tipificacion.service';
+import { AdminTipificacionService, ProveedorCatalogoItem } from '../services/admin-tipificacion.service';
 
 export type EtapaCatalogo = 'PREVENTA' | 'VENTA' | 'POSTVENTA';
 
@@ -74,9 +74,8 @@ export class AdminTipificacionFacade {
   );
 
   readonly selectedEtapa = signal<EtapaCatalogo>('PREVENTA');
-  // Equipo seleccionado: cada equipo tiene su propia matriz por etapa.
-  readonly equipos = signal<EquipoCatalogoItem[]>([]);
-  readonly selectedEquipo = signal<number | null>(null);
+  readonly proveedores = signal<ProveedorCatalogoItem[]>([]);
+  readonly selectedProveedor = signal<number | null>(null);
   readonly drafts = signal<TipDraft[]>([]);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
@@ -85,16 +84,14 @@ export class AdminTipificacionFacade {
   readonly openTipUids = signal<string[]>([]);
   readonly searchTerm = signal('');
 
-  // Opciones del selector de equipo (por nombre, nunca por id visible).
-  readonly equipoOptions = computed(() =>
-    this.equipos().map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
+  readonly proveedorOptions = computed(() =>
+    this.proveedores().map((proveedor) => ({ label: proveedor.nombre, value: proveedor.id }))
   );
 
-  // Equipos a los que se puede clonar la matriz actual (todos menos el seleccionado).
   readonly clonarOrigenOptions = computed(() =>
-    this.equipos()
-      .filter((equipo) => equipo.id !== this.selectedEquipo())
-      .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
+    this.proveedores()
+      .filter((proveedor) => proveedor.id !== this.selectedProveedor())
+      .map((proveedor) => ({ label: proveedor.nombre, value: proveedor.id }))
   );
 
   readonly filteredDrafts = computed(() => {
@@ -163,18 +160,18 @@ export class AdminTipificacionFacade {
     return this.etapaOptions.find((option) => option.value === value)?.label ?? '-';
   }
 
-  async loadEquipos(): Promise<void> {
-    const equipos = await firstValueFrom(this.service.listarEquipos());
-    this.equipos.set(equipos);
-    if (this.selectedEquipo() === null && equipos.length) {
-      this.selectedEquipo.set(equipos[0].id);
+  async loadProveedores(): Promise<void> {
+    const proveedores = await firstValueFrom(this.service.listarProveedores());
+    this.proveedores.set(proveedores);
+    if (this.selectedProveedor() === null && proveedores.length) {
+      this.selectedProveedor.set(proveedores[0].id);
     }
   }
 
   async loadCatalogo(): Promise<void> {
     const etapa = this.selectedEtapa();
-    const idEquipo = this.selectedEquipo();
-    if (idEquipo === null) {
+    const idProveedor = this.selectedProveedor();
+    if (idProveedor === null) {
       this.drafts.set([]);
       this.isDirty.set(false);
       this.openTipUids.set([]);
@@ -183,7 +180,7 @@ export class AdminTipificacionFacade {
     }
     this.isLoading.set(true);
     try {
-      const catalogo = await firstValueFrom(this.service.getCatalogo(etapa, idEquipo));
+      const catalogo = await firstValueFrom(this.service.getCatalogo(etapa, idProveedor));
       this.drafts.set(this.toDrafts(catalogo, etapa));
       this.isDirty.set(false);
       this.openTipUids.set([]);
@@ -197,26 +194,25 @@ export class AdminTipificacionFacade {
     this.selectedEtapa.set(etapa);
   }
 
-  changeEquipo(idEquipo: number): void {
-    this.selectedEquipo.set(idEquipo);
+  changeProveedor(idProveedor: number): void {
+    this.selectedProveedor.set(idProveedor);
   }
 
-  equipoLabel(id: number | null): string {
-    return this.equipos().find((equipo) => equipo.id === id)?.nombre ?? '-';
+  proveedorLabel(id: number | null): string {
+    return this.proveedores().find((proveedor) => proveedor.id === id)?.nombre ?? '-';
   }
 
-  // Copia la matriz de otro equipo (origen) al equipo seleccionado (destino) en la etapa actual.
-  async clonarDesde(idEquipoOrigen: number): Promise<void> {
-    const idEquipoDestino = this.selectedEquipo();
-    if (idEquipoDestino === null || idEquipoOrigen === idEquipoDestino) {
+  async clonarDesde(idProveedorOrigen: number): Promise<void> {
+    const idProveedorDestino = this.selectedProveedor();
+    if (idProveedorDestino === null || idProveedorOrigen === idProveedorDestino) {
       return;
     }
     this.isCloning.set(true);
     try {
       const catalogo = await firstValueFrom(this.service.clonarMatriz({
         etapa: this.selectedEtapa(),
-        idEquipoOrigen,
-        idEquipoDestino
+        idProveedorOrigen,
+        idProveedorDestino
       }));
       this.drafts.set(this.toDrafts(catalogo, this.selectedEtapa()));
       this.isDirty.set(false);
@@ -473,8 +469,8 @@ export class AdminTipificacionFacade {
 
   /** Valida los drafts. Devuelve el primer mensaje de error o null si todo esta bien. */
   validate(): string | null {
-    if (this.selectedEquipo() === null) {
-      return 'Selecciona un equipo antes de guardar.';
+    if (this.selectedProveedor() === null) {
+      return 'Selecciona un proveedor antes de guardar.';
     }
     const drafts = this.drafts();
     if (!drafts.length) {
@@ -531,7 +527,7 @@ export class AdminTipificacionFacade {
 
   private toRequest(): MatrizCatalogoRequest {
     const etapa = this.selectedEtapa();
-    const idEquipo = this.selectedEquipo()!;
+    const idProveedor = this.selectedProveedor()!;
     const tipificaciones: TipificacionCatalogoRequest[] = [...this.drafts()]
       .sort((left, right) => left.orden - right.orden)
       .map((tip, tipIndex) => ({
@@ -552,7 +548,7 @@ export class AdminTipificacionFacade {
             })
           )
       }));
-    return { etapa, idEquipo, tipificaciones };
+    return { etapa, idProveedor, tipificaciones };
   }
 
   private toDrafts(catalogo: CatalogoResponse, etapa: EtapaCatalogo): TipDraft[] {

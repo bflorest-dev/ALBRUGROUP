@@ -31,13 +31,13 @@ public class TipificacionController {
     private final TipificacionService service;
     private final LeadService leadService;
 
-    // ADMIN: catálogo de una etapa para un equipo concreto (selector de equipo en la tab TIPIFICACIONES).
+    // ADMIN: catálogo de una etapa para un proveedor concreto.
     @GetMapping("/{etapa}/catalogo") @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa)")
     public ResponseEntity<CatalogoResponse> getCatalogo(
             @PathVariable Etapa etapa,
-            @RequestParam Long idEquipo
+            @RequestParam Long idProveedor
     ) {
-        return ResponseEntity.ok(service.getCatalogo(etapa, idEquipo));
+        return ResponseEntity.ok(service.getCatalogo(etapa, idProveedor));
     }
 
     // ASESOR: catálogo que aplica a un lead concreto. El backend resuelve el equipo desde el lead (el
@@ -47,9 +47,10 @@ public class TipificacionController {
     @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa)")
     public ResponseEntity<CatalogoResponse> getCatalogoPorLead(
             @PathVariable Long idLead,
-            @PathVariable Etapa etapa
+            @PathVariable Etapa etapa,
+            @RequestParam(required = false) Long idProveedor
     ) {
-        return ResponseEntity.ok(leadService.getCatalogoTipificacionesPorLead(idLead, etapa));
+        return ResponseEntity.ok(leadService.getCatalogoTipificacionesPorLead(idLead, etapa, idProveedor));
     }
 
     // SUPERVISOR (bandeja diaria/ranking/histórico GTR): catálogo AGREGADO cross-equipo (unión por código)
@@ -76,11 +77,10 @@ public class TipificacionController {
         return ResponseEntity.ok(service.guardarMatrizCatalogo(request));
     }
 
-    // Clona la matriz de una etapa desde un equipo origen a un equipo destino (alta de equipo nuevo o
-    // dejar un equipo igual a otro).
+    // Clona la matriz de una etapa desde un proveedor origen a un proveedor destino.
     @PostMapping("/catalogo/clonar") @PreAuthorize("hasAuthority('UPDATE_TIPIFICACIONES')")
     public ResponseEntity<CatalogoResponse> clonarMatriz(@Valid @RequestBody ClonarMatrizRequest request) {
         return ResponseEntity.ok(service.clonarMatriz(
-                request.getEtapa(), request.getIdEquipoOrigen(), request.getIdEquipoDestino()));
+                request.getEtapa(), request.getIdProveedorOrigen(), request.getIdProveedorDestino()));
     }
 }

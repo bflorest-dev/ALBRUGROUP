@@ -6,16 +6,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
+import pe.albrugroup.lead_service.entity.EquipoProveedor;
 import pe.albrugroup.lead_service.entity.Evento;
+import pe.albrugroup.lead_service.entity.MatrizTipificacion;
+import pe.albrugroup.lead_service.entity.Plan;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Tipificacion;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.BackfillEstadoResponse;
+import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
+import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
 
@@ -51,6 +56,8 @@ public class LeadEtapaResumenBackfillService {
     private final LeadEtapaResumenService resumenService;
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
+    private final EquipoProveedorRepository equipoProveedorRepository;
+    private final PlanRepository planRepository;
     private final TransactionTemplate transactionTemplate;
 
     private static final Set<Accion> ACCIONES_REGISTRO = EnumSet.of(Accion.REGISTRO, Accion.NUEVA_OPORTUNIDAD);
@@ -168,19 +175,20 @@ public class LeadEtapaResumenBackfillService {
             } else if (accion == Accion.ASIGNACION) {
                 resumenService.registrarAsignacion(idLead, etapa, evento.getCreatedAt());
             } else if (accion == Accion.TIPIFICACION) {
-                Integer orden = catalogo.orden(idEquipo, etapa, evento.getTipificacion());
+                Long idProveedor = catalogo.idProveedor(idEquipo, evento.getIdPlanOfrecido());
+                Integer orden = catalogo.orden(idProveedor, etapa, evento.getTipificacion());
                 resumenService.registrarTipificacion(
                         idLead, etapa, evento.getTipificacion(), evento.getSubtipificacion(),
                         orden, evento.getIdActor(), evento.getNombreActor(), evento.getCreatedAt());
 
-                Etapa destino = catalogo.etapaCambio(idEquipo, etapa, evento.getTipificacion(), evento.getSubtipificacion());
+                Etapa destino = catalogo.etapaCambio(idProveedor, etapa, evento.getTipificacion(), evento.getSubtipificacion());
                 aplicarComportamientosMerito(
                         idLead,
                         etapa,
                         evento.getIdActor(),
                         evento.getNombreActor(),
                         evento.getCreatedAt(),
-                        catalogo.comportamientos(idEquipo, etapa, evento.getTipificacion(), evento.getSubtipificacion()));
+                        catalogo.comportamientos(idProveedor, etapa, evento.getTipificacion(), evento.getSubtipificacion()));
 
                 if (destino != null && destino != etapa) {
                     resumenService.registrarSalidaEtapa(idLead, etapa, evento.getCreatedAt());
@@ -218,10 +226,25 @@ public class LeadEtapaResumenBackfillService {
     private Catalogo cargarCatalogo() {
         Map<String, Integer> ordenPorTipificacion = new HashMap<>();
         for (Tipificacion tipificacion : tipificacionRepository.findAll()) {
-            if (tipificacion.getIdEquipo() != null && tipificacion.getEtapa() != null && tipificacion.getCodigo() != null) {
+            MatrizTipificacion matriz = tipificacion.getMatriz();
+            Long idProveedor = matriz == null || matriz.getProveedor() == null ? null : matriz.getProveedor().getId();
+            if (idProveedor != null && tipificacion.getEtapa() != null && tipificacion.getCodigo() != null) {
                 ordenPorTipificacion.putIfAbsent(
-                        claveTipificacion(tipificacion.getIdEquipo(), tipificacion.getEtapa(), tipificacion.getCodigo()),
+                        claveTipificacion(idProveedor, tipificacion.getEtapa(), tipificacion.getCodigo()),
                         tipificacion.getOrden());
+            }
+        }
+
+        Map<Long, Long> proveedorFallbackPorEquipo = new HashMap<>();
+        for (EquipoProveedor item : equipoProveedorRepository.findAll()) {
+            if (item.isFallbackLeadSinCampana() && item.getProveedor() != null) {
+                proveedorFallbackPorEquipo.putIfAbsent(item.getIdEquipo(), item.getProveedor().getId());
+            }
+        }
+        Map<Long, Long> proveedorPorPlan = new HashMap<>();
+        for (Plan plan : planRepository.findAll()) {
+            if (plan.getProveedor() != null) {
+                proveedorPorPlan.put(plan.getId(), plan.getProveedor().getId());
             }
         }
 
@@ -232,12 +255,13 @@ public class LeadEtapaResumenBackfillService {
             if (tipificacion == null) {
                 continue;
             }
-            Long idEquipo = tipificacion.getIdEquipo();
+            MatrizTipificacion matriz = tipificacion.getMatriz();
+            Long idProveedor = matriz == null || matriz.getProveedor() == null ? null : matriz.getProveedor().getId();
             Etapa etapa = tipificacion.getEtapa();
             String codigoTip = tipificacion.getCodigo();
             String codigoSub = subtipificacion.getCodigo();
-            if (idEquipo != null && etapa != null && codigoTip != null && codigoSub != null) {
-                String clave = claveSubtipificacion(idEquipo, etapa, codigoTip, codigoSub);
+            if (idProveedor != null && etapa != null && codigoTip != null && codigoSub != null) {
+                String clave = claveSubtipificacion(idProveedor, etapa, codigoTip, codigoSub);
                 etapaCambioPorSubtipificacion.putIfAbsent(clave, subtipificacion.getEtapaCambio());
                 Set<ComportamientoTipificacion> comportamientos = subtipificacion.getComportamientos() == null
                         ? Set.of()
@@ -247,42 +271,50 @@ public class LeadEtapaResumenBackfillService {
         }
 
         return new Catalogo(
+                proveedorFallbackPorEquipo, proveedorPorPlan,
                 ordenPorTipificacion, etapaCambioPorSubtipificacion, comportamientosPorSubtipificacion);
     }
 
-    private static String claveTipificacion(Long idEquipo, Etapa etapa, String codigoTipificacion) {
-        return idEquipo + "|" + etapa.name() + "|" + codigoTipificacion;
+    private static String claveTipificacion(Long idProveedor, Etapa etapa, String codigoTipificacion) {
+        return idProveedor + "|" + etapa.name() + "|" + codigoTipificacion;
     }
 
-    private static String claveSubtipificacion(Long idEquipo, Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
-        return idEquipo + "|" + etapa.name() + "|" + codigoTipificacion + "|" + codigoSubtipificacion;
+    private static String claveSubtipificacion(Long idProveedor, Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
+        return idProveedor + "|" + etapa.name() + "|" + codigoTipificacion + "|" + codigoSubtipificacion;
     }
 
     /** Catálogo plano en memoria: orden de la tipificación, etapa de cambio y estado postventa de cambio. */
     private record Catalogo(
+            Map<Long, Long> proveedorFallbackPorEquipo,
+            Map<Long, Long> proveedorPorPlan,
             Map<String, Integer> ordenPorTipificacion,
             Map<String, Etapa> etapaCambioPorSubtipificacion,
             Map<String, Set<ComportamientoTipificacion>> comportamientosPorSubtipificacion) {
-        Integer orden(Long idEquipo, Etapa etapa, String codigoTipificacion) {
-            if (idEquipo == null || etapa == null || codigoTipificacion == null) {
-                return null;
-            }
-            return ordenPorTipificacion.get(claveTipificacion(idEquipo, etapa, codigoTipificacion));
+        Long idProveedor(Long idEquipo, Long idPlan) {
+            Long idProveedor = idPlan == null ? null : proveedorPorPlan.get(idPlan);
+            return idProveedor != null ? idProveedor : proveedorFallbackPorEquipo.get(idEquipo);
         }
 
-        Etapa etapaCambio(Long idEquipo, Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
-            if (idEquipo == null || etapa == null || codigoTipificacion == null || codigoSubtipificacion == null) {
+        Integer orden(Long idProveedor, Etapa etapa, String codigoTipificacion) {
+            if (idProveedor == null || etapa == null || codigoTipificacion == null) {
                 return null;
             }
-            return etapaCambioPorSubtipificacion.get(claveSubtipificacion(idEquipo, etapa, codigoTipificacion, codigoSubtipificacion));
+            return ordenPorTipificacion.get(claveTipificacion(idProveedor, etapa, codigoTipificacion));
         }
 
-        Set<ComportamientoTipificacion> comportamientos(Long idEquipo, Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
-            if (idEquipo == null || etapa == null || codigoTipificacion == null || codigoSubtipificacion == null) {
+        Etapa etapaCambio(Long idProveedor, Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
+            if (idProveedor == null || etapa == null || codigoTipificacion == null || codigoSubtipificacion == null) {
+                return null;
+            }
+            return etapaCambioPorSubtipificacion.get(claveSubtipificacion(idProveedor, etapa, codigoTipificacion, codigoSubtipificacion));
+        }
+
+        Set<ComportamientoTipificacion> comportamientos(Long idProveedor, Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
+            if (idProveedor == null || etapa == null || codigoTipificacion == null || codigoSubtipificacion == null) {
                 return Set.of();
             }
             return comportamientosPorSubtipificacion.getOrDefault(
-                    claveSubtipificacion(idEquipo, etapa, codigoTipificacion, codigoSubtipificacion),
+                    claveSubtipificacion(idProveedor, etapa, codigoTipificacion, codigoSubtipificacion),
                     Set.of());
         }
 
