@@ -34,14 +34,20 @@ public interface TipificacionMapper {
     Subtipificacion toEntity(SubtipificacionRequest request);
 
     @Mapping(target = "tipificacion", ignore = true)
+    @Mapping(target = "tipificacionConversion", ignore = true)
+    @Mapping(target = "subtipificacionConversion", ignore = true)
     @Mapping(target = "activo", ignore = true)
     Subtipificacion toEntity(SubtipificacionCatalogoRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "tipificacion", ignore = true)
+    @Mapping(target = "tipificacionConversion", ignore = true)
+    @Mapping(target = "subtipificacionConversion", ignore = true)
     @Mapping(target = "activo", ignore = true)
     void updateDatosSubtipificacion(SubtipificacionCatalogoRequest request, @MappingTarget Subtipificacion entity);
 
+    @Mapping(target = "tipificacionConversionId", source = "tipificacionConversion.id")
+    @Mapping(target = "subtipificacionConversionId", source = "subtipificacionConversion.id")
     SubtipificacionResponse toResponse(Subtipificacion entity);
 
     List<SubtipificacionResponse> toResponse(List<Subtipificacion> entities);

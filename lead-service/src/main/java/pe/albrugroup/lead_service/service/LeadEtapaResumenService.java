@@ -111,8 +111,39 @@ public class LeadEtapaResumenService {
         repository.save(resumen);
     }
 
+    /** Resultado sistémico en una etapa destino: actualiza última sin mover el mayor rango. */
+    public void registrarTipificacionResultadoEtapa(
+            Long idLead,
+            Etapa etapa,
+            String codigoTipificacion,
+            String codigoSubtipificacion,
+            Integer orden,
+            Long idAsesorGestion,
+            String nombreAsesorGestion,
+            Instant at
+    ) {
+        registrarResultadoSinMayorRango(
+                idLead, etapa, codigoTipificacion, codigoSubtipificacion, orden,
+                idAsesorGestion, nombreAsesorGestion, at);
+    }
+
     /** Retorno desde VENTA: registra la ultima preventa desaprobada y reabre gestion. */
     public void registrarRetornoVentaPreventa(
+            Long idLead,
+            Etapa etapa,
+            String codigoTipificacion,
+            String codigoSubtipificacion,
+            Integer orden,
+            Long idAsesorGestion,
+            String nombreAsesorGestion,
+            Instant at
+    ) {
+        registrarResultadoSinMayorRango(
+                idLead, etapa, codigoTipificacion, codigoSubtipificacion, orden,
+                idAsesorGestion, nombreAsesorGestion, at);
+    }
+
+    private void registrarResultadoSinMayorRango(
             Long idLead,
             Etapa etapa,
             String codigoTipificacion,

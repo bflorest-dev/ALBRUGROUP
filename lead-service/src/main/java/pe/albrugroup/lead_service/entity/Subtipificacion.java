@@ -29,6 +29,14 @@ public class Subtipificacion {
     @Enumerated(EnumType.STRING)
     private Etapa etapaCambio;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tipificacion_conversion_id")
+    private Tipificacion tipificacionConversion;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subtipificacion_conversion_id")
+    private Subtipificacion subtipificacionConversion;
+
     // Comportamientos que dispara esta subtipi (data-driven; reemplaza los códigos hardcodeados). Ausencia
     // de un valor = false. @BatchSize evita el N+1 al cargar el catálogo (lista de subtipis).
     @ElementCollection(fetch = FetchType.LAZY)

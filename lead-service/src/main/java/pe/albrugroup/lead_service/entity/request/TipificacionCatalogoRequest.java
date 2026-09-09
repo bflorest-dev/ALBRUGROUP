@@ -32,6 +32,9 @@ public class TipificacionCatalogoRequest {
     @Positive
     private Integer orden;
 
+    @Builder.Default
+    private Boolean seleccionableManual = Boolean.TRUE;
+
     @Valid
     @Builder.Default
     private List<SubtipificacionCatalogoRequest> subtipificaciones = new ArrayList<>();

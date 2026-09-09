@@ -19,5 +19,6 @@ public class TipificacionResponse {
     private String codigo;
     private String descripcion;
     private Integer orden;
+    private Boolean seleccionableManual;
     private List<SubtipificacionResponse> subtipificaciones;
 }

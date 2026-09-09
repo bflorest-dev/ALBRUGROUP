@@ -57,6 +57,18 @@ public class TipificacionService {
     public CatalogoResponse getCatalogo(Etapa etapa, Long idProveedor) {
         List<Tipificacion> tipificaciones =
                 tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndActivoTrueOrderByOrdenAsc(etapa, idProveedor);
+        return construirCatalogo(etapa, tipificaciones);
+    }
+
+    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "'operativo_' + #etapa + '_' + #idProveedor")
+    public CatalogoResponse getCatalogoOperativo(Etapa etapa, Long idProveedor) {
+        List<Tipificacion> tipificaciones =
+                tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndSeleccionableManualTrueAndActivoTrueOrderByOrdenAsc(
+                        etapa, idProveedor);
+        return construirCatalogo(etapa, tipificaciones);
+    }
+
+    private CatalogoResponse construirCatalogo(Etapa etapa, List<Tipificacion> tipificaciones) {
         // Fail-closed: si el proveedor aún no tiene matriz en esta etapa, el catálogo viene vacío.
         if (tipificaciones.isEmpty()) {
             return new CatalogoResponse(etapa, List.of());
@@ -225,6 +237,7 @@ public class TipificacionService {
             target.setCodigo(item.getCodigo().trim());
             target.setDescripcion(item.getDescripcion().trim());
             target.setOrden(index + 1);
+            target.setSeleccionableManual(!Boolean.FALSE.equals(item.getSeleccionableManual()));
             target.setActivo(Boolean.TRUE);
             Tipificacion saved = tipificacionRepository.save(target);
             tipificacionPorRequest.put(item, saved);
@@ -289,6 +302,7 @@ public class TipificacionService {
                 target.setEtapaCambio(subItem.getEtapaCambio());
                 target.setComportamientos(new HashSet<>(
                         Objects.requireNonNullElse(subItem.getComportamientos(), Set.<ComportamientoTipificacion>of())));
+                aplicarConversionSubtipificacion(target, subItem, request.getEtapa(), request.getIdProveedor());
                 target.setActivo(Boolean.TRUE);
                 Subtipificacion saved = subtipificacionRepository.save(target);
                 subtipificacionesSeleccionadas.add(saved.getId());
@@ -331,12 +345,15 @@ public class TipificacionService {
                         .codigo(tipificacion.getCodigo())
                         .descripcion(tipificacion.getDescripcion())
                         .orden(tipificacion.getOrden())
+                        .seleccionableManual(tipificacion.getSeleccionableManual())
                         .subtipificaciones(tipificacion.getSubtipificaciones().stream()
                                 .map(sub -> SubtipificacionCatalogoRequest.builder()
                                         .codigo(sub.getCodigo())
                                         .descripcion(sub.getDescripcion())
                                         .orden(sub.getOrden())
                                         .etapaCambio(sub.getEtapaCambio())
+                                        .tipificacionConversionId(null)
+                                        .subtipificacionConversionId(null)
                                         .comportamientos(sub.getComportamientos())
                                         .build())
                                 .toList())
@@ -396,7 +413,20 @@ public class TipificacionService {
                     );
                 }
                 validarComportamientosMerito(subtipificacion);
+                validarConversionCompleta(subtipificacion);
             }
+        }
+    }
+
+    private void validarConversionCompleta(SubtipificacionCatalogoRequest subtipificacion) {
+        boolean tieneTipificacion = subtipificacion.getTipificacionConversionId() != null;
+        boolean tieneSubtipificacion = subtipificacion.getSubtipificacionConversionId() != null;
+        if (tieneTipificacion != tieneSubtipificacion) {
+            throw new BadRequestException(
+                    "La conversion debe indicar tipificacion y subtipificacion destino",
+                    subtipificacion.getId(),
+                    Map.of("subtipificacion", subtipificacion.getCodigo())
+            );
         }
     }
 
@@ -588,6 +618,7 @@ public class TipificacionService {
         if (request.getId() == null) {
             Tipificacion tipificacion = mapper.toEntity(request);
             tipificacion.setMatriz(matriz);
+            tipificacion.setSeleccionableManual(!Boolean.FALSE.equals(request.getSeleccionableManual()));
             tipificacion.setActivo(Boolean.TRUE);
             return tipificacionRepository.save(tipificacion);
         }
@@ -612,6 +643,7 @@ public class TipificacionService {
 
         mapper.updateDatosTipificacion(request, tipificacion);
         tipificacion.setMatriz(matriz);
+        tipificacion.setSeleccionableManual(!Boolean.FALSE.equals(request.getSeleccionableManual()));
         tipificacion.setActivo(Boolean.TRUE);
         return tipificacionRepository.save(tipificacion);
     }
@@ -620,6 +652,12 @@ public class TipificacionService {
         if (request.getId() == null) {
             Subtipificacion subtipificacion = mapper.toEntity(request);
             subtipificacion.setTipificacion(tipificacion);
+            aplicarConversionSubtipificacion(
+                    subtipificacion,
+                    request,
+                    tipificacion.getMatriz().getEtapa(),
+                    tipificacion.getMatriz().getProveedor().getId()
+            );
             subtipificacion.setActivo(Boolean.TRUE);
             subtipificacionRepository.save(subtipificacion);
             return;
@@ -637,8 +675,74 @@ public class TipificacionService {
         }
 
         mapper.updateDatosSubtipificacion(request, subtipificacion);
+        aplicarConversionSubtipificacion(
+                subtipificacion,
+                request,
+                tipificacion.getMatriz().getEtapa(),
+                tipificacion.getMatriz().getProveedor().getId()
+        );
         subtipificacion.setActivo(Boolean.TRUE);
         subtipificacionRepository.save(subtipificacion);
+    }
+
+    private void aplicarConversionSubtipificacion(
+            Subtipificacion target,
+            SubtipificacionCatalogoRequest request,
+            Etapa etapaOrigen,
+            Long idProveedor
+    ) {
+        if (request.getTipificacionConversionId() == null && request.getSubtipificacionConversionId() == null) {
+            target.setTipificacionConversion(null);
+            target.setSubtipificacionConversion(null);
+            return;
+        }
+
+        Etapa etapaDestino = request.getEtapaCambio() == null ? etapaOrigen : request.getEtapaCambio();
+        Tipificacion tipificacionDestino = tipificacionRepository.findById(request.getTipificacionConversionId())
+                .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getTipificacionConversionId()));
+        Subtipificacion subtipificacionDestino = subtipificacionRepository.findById(request.getSubtipificacionConversionId())
+                .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getSubtipificacionConversionId()));
+
+        validarDestinoConversion(tipificacionDestino, subtipificacionDestino, etapaDestino, idProveedor, request);
+        target.setTipificacionConversion(tipificacionDestino);
+        target.setSubtipificacionConversion(subtipificacionDestino);
+    }
+
+    private void validarDestinoConversion(
+            Tipificacion tipificacionDestino,
+            Subtipificacion subtipificacionDestino,
+            Etapa etapaDestino,
+            Long idProveedor,
+            SubtipificacionCatalogoRequest request
+    ) {
+        if (!Objects.equals(subtipificacionDestino.getTipificacion().getId(), tipificacionDestino.getId())) {
+            throw new BadRequestException(
+                    "La subtipificacion de conversion no pertenece a la tipificacion destino",
+                    request.getSubtipificacionConversionId(),
+                    Map.of("idTipificacionConversion", request.getTipificacionConversionId())
+            );
+        }
+        MatrizTipificacion matrizDestino = tipificacionDestino.getMatriz();
+        Long proveedorDestino = matrizDestino == null || matrizDestino.getProveedor() == null
+                ? null
+                : matrizDestino.getProveedor().getId();
+        if (matrizDestino == null
+                || matrizDestino.getEtapa() != etapaDestino
+                || !Objects.equals(proveedorDestino, idProveedor)) {
+            throw new BadRequestException(
+                    "La conversion debe apuntar a la matriz del mismo proveedor y etapa destino",
+                    request.getId(),
+                    Map.of("etapaDestino", etapaDestino, "idProveedor", idProveedor)
+            );
+        }
+        if (!Boolean.TRUE.equals(tipificacionDestino.getActivo())
+                || !Boolean.TRUE.equals(subtipificacionDestino.getActivo())) {
+            throw new BadRequestException(
+                    "La conversion debe apuntar a una tipificacion y subtipificacion activas",
+                    request.getId(),
+                    null
+            );
+        }
     }
 
     private List<Long> normalizarIds(List<Long> ids) {

@@ -35,6 +35,10 @@ public class SubtipificacionCatalogoRequest {
 
     private Etapa etapaCambio;
 
+    private Long tipificacionConversionId;
+
+    private Long subtipificacionConversionId;
+
     @Builder.Default
     private Set<ComportamientoTipificacion> comportamientos = new HashSet<>();
 }

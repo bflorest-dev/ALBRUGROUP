@@ -165,6 +165,10 @@
     grid-column: 3 / span 2;
   }
 
+  .subtip-row.has-comportamientos .subtip-field--conversion {
+    grid-column: 2 / span 3;
+  }
+
   .subtip-row.has-postventa-state {
     grid-template-columns:
       2.25rem

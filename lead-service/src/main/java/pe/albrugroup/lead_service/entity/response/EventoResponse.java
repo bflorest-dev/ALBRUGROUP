@@ -26,10 +26,14 @@ public class EventoResponse {
     private Long idAsesorAsignado;
     private String nombreAsesorAsignado;
     private Long idPlanOfrecido;
+    private Long idTipificacionResultado;
+    private Long idSubtipificacionResultado;
     private Accion accion;
     private Etapa etapa;
     private String tipificacion;
     private String subtipificacion;
+    private String tipificacionResultado;
+    private String subtipificacionResultado;
     private LocalDate fechaInstalacion;
     private LocalDate fechaProgramacion;
     private LocalDate fechaRechazo;

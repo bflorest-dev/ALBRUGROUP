@@ -138,6 +138,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -196,10 +197,6 @@ public class LeadService {
     private static final String TIPIFICACION_INSTALADO = "INSTALADO";
     private static final String TIPIFICACION_SUBSANABLE = "SUBSANABLE";
     private static final String TIPIFICACION_NO_RECUPERABLE = "NO RECUPERABLE";
-    private static final Set<String> TIPIFICACIONES_RECHAZO_VENTA = Set.of(
-            TIPIFICACION_SUBSANABLE,
-            TIPIFICACION_NO_RECUPERABLE
-    );
     private static final Set<String> TIPIFICACIONES_SEPARADAS_PLATAFORMA = Set.of(
             TIPIFICACION_PROGRAMADO,
             TIPIFICACION_SUBSANABLE,
@@ -207,8 +204,6 @@ public class LeadService {
     );
     private static final Pattern NUMERO_LLAMADA_PATTERN = Pattern.compile("^9\\d{8}$");
     private static final String SUBTIPIFICACION_PROGRAMACION_CANCELADA = "PROGRAMACION_CANCELADA";
-    private static final String TIPIFICACION_RETORNO_VENTA_PREVENTA = "NO DESEA";
-    private static final String SUBTIPIFICACION_RETORNO_VENTA_PREVENTA = "PREVENTA DESAPROBADA";
     // "Cerró la preventa hacia venta": las subtipis con este comportamiento (COMPLETA y los PENDIENTE
     // que avanzan por causa del cliente). Reemplaza al viejo par PREVENTA_COMPLETA / VENTA_CERRADA, que
     // era una sola subtipi antes de que la etapa se abriera en matices.
@@ -2192,7 +2187,7 @@ public class LeadService {
         Lead lead = leadRepository.findById(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         Long idProveedor = resolverIdProveedorMatriz(lead, etapa, idProveedorSolicitado);
-        return tipificacionService.getCatalogo(etapa, idProveedor);
+        return tipificacionService.getCatalogoOperativo(etapa, idProveedor);
     }
 
     private Long resolverIdProveedorMatriz(Lead lead, Etapa etapa, Long idProveedorSolicitado) {
@@ -2241,7 +2236,7 @@ public class LeadService {
         String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
         Long idProveedorMatriz = resolverIdProveedorMatriz(lead, etapaActual, request.getIdProveedor());
-        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
+        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
                         etapaActual,
                         idProveedorMatriz,
                         request.getCodigoTipificacion().trim()
@@ -2256,6 +2251,12 @@ public class LeadService {
         validarHoraProgramada(subtipificacion, request.getHoraProgramada());
         aplicarPlataformaDigitalOfrecidaSiCorresponde(lead, request.getIdPlataformaDigitalOfrecida());
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
+        ResultadoTipificacion resultado = resolverResultadoTipificacion(
+                tipificacion,
+                subtipificacion,
+                etapaDestino == null ? etapaActual : etapaDestino,
+                idProveedorMatriz
+        );
         if (etapaDestino != null && etapaDestino != etapaActual) {
             if (etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA) {
                 validarPreventaCompleta(lead);
@@ -2267,15 +2268,9 @@ public class LeadService {
             lead.setEstado(EstadoSeguimiento.NUEVO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
-            lead.setIdTipificacion(null);
-            lead.setCodigoTipificacion(null);
-            lead.setIdSubtipificacion(null);
-            lead.setCodigoSubtipificacion(null);
+            aplicarResultadoLeadCambioEtapa(lead, resultado);
         } else {
-            lead.setIdTipificacion(tipificacion.getId());
-            lead.setCodigoTipificacion(tipificacion.getCodigo());
-            lead.setIdSubtipificacion(subtipificacion.getId());
-            lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
+            aplicarResultadoLead(lead, resultado);
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
@@ -2283,7 +2278,7 @@ public class LeadService {
 
         Lead savedLead = leadRepository.save(lead);
         actualizarResumenEtapaTipificacion(
-                savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
+                savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, resultado, idAsesorAnterior, nombreAsesorAnterior,
                 subtipificacion.getComportamientos());
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         registrarEventoTipificacion(
@@ -2293,6 +2288,10 @@ public class LeadService {
                 null,
                 tipificacion.getCodigo(),
                 subtipificacion.getCodigo(),
+                resultado.tipificacion().getId(),
+                resultado.subtipificacion().getId(),
+                resultado.tipificacion().getCodigo(),
+                resultado.subtipificacion().getCodigo(),
                 request.getComentario(),
                 request.getHoraProgramada()
         );
@@ -2309,7 +2308,7 @@ public class LeadService {
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
         Long idProveedorMatriz = resolverIdProveedorMatriz(lead, Etapa.PREVENTA, request.getIdProveedor());
-        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
+        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
                         Etapa.PREVENTA,
                         idProveedorMatriz,
                         request.getCodigoTipificacion().trim()
@@ -2321,6 +2320,12 @@ public class LeadService {
                 )
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
         validarHoraProgramada(subtipificacion, request.getHoraProgramada());
+        ResultadoTipificacion resultado = resolverResultadoTipificacion(
+                tipificacion,
+                subtipificacion,
+                subtipificacion.getEtapaCambio() == null ? Etapa.PREVENTA : subtipificacion.getEtapaCambio(),
+                idProveedorMatriz
+        );
 
         // Liberar la atención sin tocar la gestión del lead en su etapa actual.
         lead.setRequiereAtencionGtr(false);
@@ -2339,6 +2344,10 @@ public class LeadService {
                 null,
                 tipificacion.getCodigo(),
                 subtipificacion.getCodigo(),
+                resultado.tipificacion().getId(),
+                resultado.subtipificacion().getId(),
+                resultado.tipificacion().getCodigo(),
+                resultado.subtipificacion().getCodigo(),
                 request.getComentario(),
                 request.getHoraProgramada()
         );
@@ -2380,7 +2389,7 @@ public class LeadService {
         String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
         Long idProveedorMatriz = resolverIdProveedorMatriz(lead, etapaActual, null);
-        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
+        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
                         etapaActual,
                         idProveedorMatriz,
                         request.getCodigoTipificacion().trim()
@@ -2395,8 +2404,10 @@ public class LeadService {
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
         boolean requiereProgramacion = subtipificacion.getComportamientos()
                 .contains(ComportamientoTipificacion.REQUIERE_FECHA_PROGRAMACION);
+        boolean requiereFechaRechazo = subtipificacion.getComportamientos()
+                .contains(ComportamientoTipificacion.REQUIERE_FECHA_RECHAZO);
         validarProgramacionVenta(requiereProgramacion, request.getFechaProgramacion(), request.getHoraProgramada());
-        validarFechaRechazoVenta(tipificacion.getCodigo(), request.getFechaRechazo());
+        validarFechaRechazoVenta(requiereFechaRechazo, request.getFechaRechazo());
         aplicarSecSotVentaSiCorresponde(lead, tipificacion, subtipificacion, request.getSec(), request.getSot());
         aplicarCustomerIdVentaSiCorresponde(lead, subtipificacion, request.getCustomerId());
         if (request.getComentario() != null && !request.getComentario().isBlank()) {
@@ -2406,10 +2417,12 @@ public class LeadService {
         // Atribucion de venta (merito de VENTA): el responsable y la fecha se resuelven por
         // comportamientos de la subtipificacion; no por codigos de matriz.
 
-        TipificacionRetornoPreventa tipificacionRetornoPreventa =
-                etapaActual == Etapa.VENTA && etapaDestino == Etapa.PREVENTA
-                        ? obtenerTipificacionRetornoVentaPreventa(idProveedorMatriz)
-                        : null;
+        ResultadoTipificacion resultado = resolverResultadoTipificacion(
+                tipificacion,
+                subtipificacion,
+                etapaDestino == null ? etapaActual : etapaDestino,
+                idProveedorMatriz
+        );
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
             aplicarDatosPostventaSiCorresponde(lead, etapaDestino, request.getFechaInstalacion());
@@ -2418,22 +2431,9 @@ public class LeadService {
             lead.setEstado(EstadoSeguimiento.NUEVO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
-            if (tipificacionRetornoPreventa != null) {
-                lead.setIdTipificacion(tipificacionRetornoPreventa.tipificacion().getId());
-                lead.setCodigoTipificacion(tipificacionRetornoPreventa.tipificacion().getCodigo());
-                lead.setIdSubtipificacion(tipificacionRetornoPreventa.subtipificacion().getId());
-                lead.setCodigoSubtipificacion(tipificacionRetornoPreventa.subtipificacion().getCodigo());
-            } else {
-                lead.setIdTipificacion(null);
-                lead.setCodigoTipificacion(null);
-                lead.setIdSubtipificacion(null);
-                lead.setCodigoSubtipificacion(null);
-            }
+            aplicarResultadoLeadCambioEtapa(lead, resultado);
         } else {
-            lead.setIdTipificacion(tipificacion.getId());
-            lead.setCodigoTipificacion(tipificacion.getCodigo());
-            lead.setIdSubtipificacion(subtipificacion.getId());
-            lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
+            aplicarResultadoLead(lead, resultado);
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
@@ -2444,19 +2444,8 @@ public class LeadService {
             calendarioFacturacionPostventaService.inicializarGestionPostventa(savedLead, request.getFechaInstalacion());
         }
         actualizarResumenEtapaTipificacion(
-                savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
+                savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, resultado, idAsesorAnterior, nombreAsesorAnterior,
                 subtipificacion.getComportamientos());
-        if (tipificacionRetornoPreventa != null) {
-            leadEtapaResumenService.registrarRetornoVentaPreventa(
-                    savedLead.getId(),
-                    Etapa.PREVENTA,
-                    tipificacionRetornoPreventa.tipificacion().getCodigo(),
-                    tipificacionRetornoPreventa.subtipificacion().getCodigo(),
-                    tipificacionRetornoPreventa.tipificacion().getOrden(),
-                    idAsesorAnterior,
-                    nombreAsesorAnterior,
-                    OperationalDateTime.now());
-        }
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
         registrarEventoTipificacion(
@@ -2466,28 +2455,17 @@ public class LeadService {
                 idPlanOfrecido,
                 tipificacion.getCodigo(),
                 subtipificacion.getCodigo(),
+                resultado.tipificacion().getId(),
+                resultado.subtipificacion().getId(),
+                resultado.tipificacion().getCodigo(),
+                resultado.subtipificacion().getCodigo(),
                 request.getComentario(),
                 etapaDestino == Etapa.POSTVENTA ? request.getFechaInstalacion() : null,
                 requiereProgramacion ? request.getFechaProgramacion() : null,
                 requiereProgramacion ? request.getHoraProgramada() : null,
-                esTipificacionRechazoVenta(tipificacion.getCodigo()) ? request.getFechaRechazo() : null
+                requiereFechaRechazo ? request.getFechaRechazo() : null
         );
         notificarCambioLead("TIPIFICACION", savedLead, etapaActual, idAsesorAnterior);
-    }
-
-    private TipificacionRetornoPreventa obtenerTipificacionRetornoVentaPreventa(Long idProveedor) {
-        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
-                        Etapa.PREVENTA,
-                        idProveedor,
-                        TIPIFICACION_RETORNO_VENTA_PREVENTA
-                )
-                .orElseThrow(() -> new NotFoundException(Tipificacion.class, TIPIFICACION_RETORNO_VENTA_PREVENTA));
-        Subtipificacion subtipificacion = subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
-                        tipificacion.getId(),
-                        SUBTIPIFICACION_RETORNO_VENTA_PREVENTA
-                )
-                .orElseThrow(() -> new NotFoundException(Subtipificacion.class, SUBTIPIFICACION_RETORNO_VENTA_PREVENTA));
-        return new TipificacionRetornoPreventa(tipificacion, subtipificacion);
     }
 
     @Transactional
@@ -2502,7 +2480,7 @@ public class LeadService {
         String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
         Long idProveedorMatriz = resolverIdProveedorMatriz(lead, etapaActual, null);
-        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
+        Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
                         etapaActual,
                         idProveedorMatriz,
                         request.getCodigoTipificacion().trim()
@@ -2516,6 +2494,12 @@ public class LeadService {
 
         Etapa etapaDestinoCatalogo = subtipificacion.getEtapaCambio();
         Etapa etapaDestino = normalizarEtapaDestinoPostventa(etapaActual, etapaDestinoCatalogo);
+        ResultadoTipificacion resultado = resolverResultadoTipificacion(
+                tipificacion,
+                subtipificacion,
+                etapaDestino == null ? etapaActual : etapaDestino,
+                idProveedorMatriz
+        );
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
             lead.setEtapa(etapaDestino);
@@ -2523,15 +2507,9 @@ public class LeadService {
             lead.setEstado(EstadoSeguimiento.NUEVO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
-            lead.setIdTipificacion(null);
-            lead.setCodigoTipificacion(null);
-            lead.setIdSubtipificacion(null);
-            lead.setCodigoSubtipificacion(null);
+            aplicarResultadoLeadCambioEtapa(lead, resultado);
         } else {
-            lead.setIdTipificacion(tipificacion.getId());
-            lead.setCodigoTipificacion(tipificacion.getCodigo());
-            lead.setIdSubtipificacion(subtipificacion.getId());
-            lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
+            aplicarResultadoLead(lead, resultado);
 
             if (etapaActual == Etapa.POSTVENTA) {
                 // POSTVENTA es un pool compartido: al tipificar, la gestion termina y el lead se
@@ -2546,7 +2524,7 @@ public class LeadService {
 
         Lead savedLead = leadRepository.save(lead);
         actualizarResumenEtapaTipificacion(
-                savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
+                savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, resultado, idAsesorAnterior, nombreAsesorAnterior,
                 subtipificacion.getComportamientos());
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
@@ -2557,6 +2535,10 @@ public class LeadService {
                 idPlanOfrecido,
                 tipificacion.getCodigo(),
                 subtipificacion.getCodigo(),
+                resultado.tipificacion().getId(),
+                resultado.subtipificacion().getId(),
+                resultado.tipificacion().getCodigo(),
+                resultado.subtipificacion().getCodigo(),
                 request.getComentario(),
                 (java.time.LocalTime) null
         );
@@ -2654,19 +2636,104 @@ public class LeadService {
             Etapa etapaDestino,
             Tipificacion tipificacion,
             Subtipificacion subtipificacion,
+            ResultadoTipificacion resultado,
             Long idAsesor,
             String nombreAsesor,
             Set<ComportamientoTipificacion> comportamientos
     ) {
         Instant ahora = OperationalDateTime.now();
+        boolean cambiaEtapa = etapaDestino != null && etapaDestino != etapaActual;
+        ResultadoTipificacion resultadoAplicado = resultado == null
+                ? new ResultadoTipificacion(tipificacion, subtipificacion, false)
+                : resultado;
+        Tipificacion tipificacionResumen = cambiaEtapa ? tipificacion : resultadoAplicado.tipificacion();
+        Subtipificacion subtipificacionResumen = cambiaEtapa ? subtipificacion : resultadoAplicado.subtipificacion();
         leadEtapaResumenService.registrarTipificacion(
-                lead.getId(), etapaActual, tipificacion.getCodigo(), subtipificacion.getCodigo(),
-                tipificacion.getOrden(), idAsesor, nombreAsesor, ahora);
+                lead.getId(), etapaActual, tipificacionResumen.getCodigo(), subtipificacionResumen.getCodigo(),
+                tipificacionResumen.getOrden(), idAsesor, nombreAsesor, ahora);
         aplicarComportamientosMerito(lead.getId(), etapaActual, idAsesor, nombreAsesor, ahora, comportamientos);
-        if (etapaDestino != null && etapaDestino != etapaActual) {
+        if (cambiaEtapa) {
             leadEtapaResumenService.registrarSalidaEtapa(lead.getId(), etapaActual, ahora);
             leadEtapaResumenService.registrarEntradaEtapa(lead.getId(), etapaDestino, ahora);
+            if (resultadoAplicado.convertida()) {
+                leadEtapaResumenService.registrarTipificacionResultadoEtapa(
+                        lead.getId(),
+                        etapaDestino,
+                        resultadoAplicado.tipificacion().getCodigo(),
+                        resultadoAplicado.subtipificacion().getCodigo(),
+                        resultadoAplicado.tipificacion().getOrden(),
+                        idAsesor,
+                        nombreAsesor,
+                        ahora);
+            }
         }
+    }
+
+    private ResultadoTipificacion resolverResultadoTipificacion(
+            Tipificacion tipificacion,
+            Subtipificacion subtipificacion,
+            Etapa etapaResultado,
+            Long idProveedor
+    ) {
+        Tipificacion tipificacionConversion = subtipificacion.getTipificacionConversion();
+        Subtipificacion subtipificacionConversion = subtipificacion.getSubtipificacionConversion();
+        if (tipificacionConversion == null && subtipificacionConversion == null) {
+            return new ResultadoTipificacion(tipificacion, subtipificacion, false);
+        }
+        if (tipificacionConversion == null || subtipificacionConversion == null) {
+            throw new BadRequestException(
+                    "La subtipificacion tiene una conversion incompleta",
+                    subtipificacion.getId(),
+                    null
+            );
+        }
+        validarResultadoTipificacion(tipificacionConversion, subtipificacionConversion, etapaResultado, idProveedor);
+        return new ResultadoTipificacion(tipificacionConversion, subtipificacionConversion, true);
+    }
+
+    private void validarResultadoTipificacion(
+            Tipificacion tipificacion,
+            Subtipificacion subtipificacion,
+            Etapa etapaResultado,
+            Long idProveedor
+    ) {
+        if (!Boolean.TRUE.equals(tipificacion.getActivo()) || !Boolean.TRUE.equals(subtipificacion.getActivo())) {
+            throw new BadRequestException("La conversion apunta a una tipificacion inactiva", tipificacion.getId(), null);
+        }
+        if (!Objects.equals(subtipificacion.getTipificacion().getId(), tipificacion.getId())) {
+            throw new BadRequestException(
+                    "La conversion apunta a una subtipificacion que no pertenece a la tipificacion destino",
+                    subtipificacion.getId(),
+                    tipificacion.getId()
+            );
+        }
+        MatrizTipificacion matriz = tipificacion.getMatriz();
+        Long proveedorMatriz = matriz == null || matriz.getProveedor() == null ? null : matriz.getProveedor().getId();
+        if (matriz == null || matriz.getEtapa() != etapaResultado || !Objects.equals(proveedorMatriz, idProveedor)) {
+            throw new BadRequestException(
+                    "La conversion no pertenece a la matriz destino esperada",
+                    tipificacion.getId(),
+                    Map.of("etapa", etapaResultado, "idProveedor", idProveedor)
+            );
+        }
+    }
+
+    private void aplicarResultadoLead(Lead lead, ResultadoTipificacion resultado) {
+        lead.setIdTipificacion(resultado.tipificacion().getId());
+        lead.setCodigoTipificacion(resultado.tipificacion().getCodigo());
+        lead.setIdSubtipificacion(resultado.subtipificacion().getId());
+        lead.setCodigoSubtipificacion(resultado.subtipificacion().getCodigo());
+    }
+
+    private void aplicarResultadoLeadCambioEtapa(Lead lead, ResultadoTipificacion resultado) {
+        if (resultado.convertida()) {
+            aplicarResultadoLead(lead, resultado);
+            return;
+        }
+        lead.setIdTipificacion(null);
+        lead.setCodigoTipificacion(null);
+        lead.setIdSubtipificacion(null);
+        lead.setCodigoSubtipificacion(null);
     }
 
     private void aplicarComportamientosMerito(
@@ -3948,6 +4015,10 @@ public class LeadService {
             Long idPlanOfrecido,
             String tipificacion,
             String subtipificacion,
+            Long idTipificacionResultado,
+            Long idSubtipificacionResultado,
+            String tipificacionResultado,
+            String subtipificacionResultado,
             String comentario,
             java.time.LocalTime horaProgramada
     ) {
@@ -3966,6 +4037,10 @@ public class LeadService {
                         .idPlanOfrecido(idPlanOfrecido)
                         .tipificacion(tipificacion)
                         .subtipificacion(subtipificacion)
+                        .idTipificacionResultado(idTipificacionResultado)
+                        .idSubtipificacionResultado(idSubtipificacionResultado)
+                        .tipificacionResultado(tipificacionResultado)
+                        .subtipificacionResultado(subtipificacionResultado)
                         .comentario(comentario)
                         .fechaProgramacion(fechaProgramacion)
                         .horaProgramada(horaProgramada)
@@ -3980,6 +4055,10 @@ public class LeadService {
             Long idPlanOfrecido,
             String tipificacion,
             String subtipificacion,
+            Long idTipificacionResultado,
+            Long idSubtipificacionResultado,
+            String tipificacionResultado,
+            String subtipificacionResultado,
             String comentario,
             java.time.LocalDate fechaInstalacion
     ) {
@@ -3992,6 +4071,10 @@ public class LeadService {
                         .idPlanOfrecido(idPlanOfrecido)
                         .tipificacion(tipificacion)
                         .subtipificacion(subtipificacion)
+                        .idTipificacionResultado(idTipificacionResultado)
+                        .idSubtipificacionResultado(idSubtipificacionResultado)
+                        .tipificacionResultado(tipificacionResultado)
+                        .subtipificacionResultado(subtipificacionResultado)
                         .comentario(comentario)
                         .fechaInstalacion(fechaInstalacion)
                         .build()
@@ -4005,6 +4088,10 @@ public class LeadService {
             Long idPlanOfrecido,
             String tipificacion,
             String subtipificacion,
+            Long idTipificacionResultado,
+            Long idSubtipificacionResultado,
+            String tipificacionResultado,
+            String subtipificacionResultado,
             String comentario,
             java.time.LocalDate fechaInstalacion,
             java.time.LocalDate fechaProgramacion,
@@ -4020,6 +4107,10 @@ public class LeadService {
                         .idPlanOfrecido(idPlanOfrecido)
                         .tipificacion(tipificacion)
                         .subtipificacion(subtipificacion)
+                        .idTipificacionResultado(idTipificacionResultado)
+                        .idSubtipificacionResultado(idSubtipificacionResultado)
+                        .tipificacionResultado(tipificacionResultado)
+                        .subtipificacionResultado(subtipificacionResultado)
                         .comentario(comentario)
                         .fechaInstalacion(fechaInstalacion)
                         .fechaProgramacion(fechaProgramacion)
@@ -4076,18 +4167,13 @@ public class LeadService {
         // validarFechaNoAnteriorAHoy(fechaProgramacion, "La fecha de programacion no puede ser anterior a hoy");
     }
 
-    private void validarFechaRechazoVenta(String codigoTipificacion, java.time.LocalDate fechaRechazo) {
-        boolean esRechazo = esTipificacionRechazoVenta(codigoTipificacion);
-        if (esRechazo && fechaRechazo == null) {
+    private void validarFechaRechazoVenta(boolean requiereFechaRechazo, java.time.LocalDate fechaRechazo) {
+        if (requiereFechaRechazo && fechaRechazo == null) {
             throw new BadRequestException("La fechaRechazo es obligatoria para esta tipificacion");
         }
-        if (!esRechazo && fechaRechazo != null) {
+        if (!requiereFechaRechazo && fechaRechazo != null) {
             throw new BadRequestException("La fechaRechazo solo se permite para tipificaciones de rechazo");
         }
-    }
-
-    private boolean esTipificacionRechazoVenta(String codigoTipificacion) {
-        return codigoTipificacion != null && TIPIFICACIONES_RECHAZO_VENTA.contains(codigoTipificacion.trim().toUpperCase());
     }
 
     private void validarFechaInstalacionVenta(java.time.LocalDate fechaInstalacion) {
@@ -6063,7 +6149,7 @@ public class LeadService {
             Instant fechaUltimaGestionVenta
     ) { }
     private record IntentoVentaResultado(Evento evento, Etapa etapaDestino) { }
-    private record TipificacionRetornoPreventa(Tipificacion tipificacion, Subtipificacion subtipificacion) { }
+    private record ResultadoTipificacion(Tipificacion tipificacion, Subtipificacion subtipificacion, boolean convertida) { }
 
     private static final class ResumenSupervisorVentasAccumulator {
         private final Long idAsesor;

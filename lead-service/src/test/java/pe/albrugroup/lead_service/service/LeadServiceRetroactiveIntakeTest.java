@@ -687,7 +687,7 @@ class LeadServiceRetroactiveIntakeTest {
 
         when(currentUser.empleadoID()).thenReturn(7L);
         when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
-        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
                 Etapa.PREVENTA,
                 1L,
                 "PREVENTA_COMPLETA"
@@ -714,7 +714,7 @@ class LeadServiceRetroactiveIntakeTest {
 
         when(currentUser.empleadoID()).thenReturn(7L);
         when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
-        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
                 Etapa.PREVENTA,
                 1L,
                 "PREVENTA_COMPLETA"
@@ -741,7 +741,7 @@ class LeadServiceRetroactiveIntakeTest {
 
         when(currentUser.empleadoID()).thenReturn(7L);
         when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
-        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
                 Etapa.PREVENTA,
                 1L,
                 "PREVENTA_COMPLETA"
@@ -767,7 +767,7 @@ class LeadServiceRetroactiveIntakeTest {
 
         when(currentUser.empleadoID()).thenReturn(7L);
         when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
-        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
                 Etapa.PREVENTA,
                 1L,
                 "PREVENTA_COMPLETA"
@@ -798,7 +798,7 @@ class LeadServiceRetroactiveIntakeTest {
 
         when(currentUser.empleadoID()).thenReturn(7L);
         when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
-        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
                 Etapa.PREVENTA,
                 1L,
                 "PREVENTA_COMPLETA"

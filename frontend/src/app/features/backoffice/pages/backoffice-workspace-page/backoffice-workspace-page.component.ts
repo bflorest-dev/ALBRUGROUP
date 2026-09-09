@@ -104,7 +104,6 @@ type AssignmentConflictDetails = {
   requiereConfirmarReasignacion?: boolean;
   requiereConfirmarLeadEnGestion?: boolean;
 };
-const TIPIFICACIONES_RECHAZO_VENTA = new Set(['SUBSANABLE', 'NO RECUPERABLE']);
 // Ventana para agrupar la rafaga de eventos realtime en una sola reconciliacion (ver startRealtime).
 const REALTIME_RECONCILE_DEBOUNCE_MS = 600;
 const HISTORIAL_FILTROS: HistorialFiltroOption[] = [
@@ -510,7 +509,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly requiresProgramming = computed(
     () => this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_FECHA_PROGRAMACION') ?? false
   );
-  protected readonly requiresRejectionDate = computed(() => this.isRejectionTipification(this.selectedTipificacionCode()));
+  protected readonly requiresRejectionDate = computed(
+    () => this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_FECHA_RECHAZO') ?? false
+  );
   protected readonly requiresSecSot = computed(() =>
     this.selectedSubtipificacionRequiresSecSot()
     && this.detail()?.requiereSecSotVenta === true
@@ -2680,7 +2681,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected onTipificacionSelected(codigo: string | null): void {
     this.selectedTipificacionCode.set(codigo ?? '');
     this.selectedSubtipificacionCode.set('');
-    const rechazo = this.isRejectionTipification(codigo);
     const fechaRechazoActual = this.tipificacionForm.controls.fechaRechazo.value;
     const fechaRechazoDetalle = this.detail()?.fechaRechazo ?? '';
     // Los campos de fecha/hora dependen del comportamiento de la SUBTIPI: al cambiar de tipi se limpian y
@@ -2690,15 +2690,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         codigoSubtipificacion: '',
         fechaInstalacion: '',
         fechaProgramacion: '',
-        fechaRechazo: rechazo ? fechaRechazoActual || fechaRechazoDetalle : fechaRechazoDetalle,
+        fechaRechazo: fechaRechazoActual || fechaRechazoDetalle,
         horaProgramada: ''
       },
       { emitEvent: false }
     );
-  }
-
-  private isRejectionTipification(codigo: string | null | undefined): boolean {
-    return TIPIFICACIONES_RECHAZO_VENTA.has(String(codigo ?? '').trim().toUpperCase());
   }
 
   protected onSubtipificacionSelected(codigo: string | null): void {

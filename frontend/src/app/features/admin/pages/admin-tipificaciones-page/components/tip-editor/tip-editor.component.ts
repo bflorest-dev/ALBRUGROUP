@@ -3,6 +3,7 @@ import { NgClass } from '@angular/common';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
@@ -23,8 +24,8 @@ export interface TipFieldChange {
 export interface SubtipFieldChange {
   tipUid: string;
   subUid: string;
-  field: 'codigo' | 'descripcion' | 'etapaCambio';
-  value: string | null;
+  field: 'codigo' | 'descripcion' | 'etapaCambio' | 'tipificacionConversionId' | 'subtipificacionConversionId';
+  value: string | number | null;
 }
 
 export interface SubtipAction {
@@ -36,6 +37,11 @@ export interface SubtipComportamientosChange {
   tipUid: string;
   subUid: string;
   comportamientos: ComportamientoTipificacion[];
+}
+
+export interface TipSelectableChange {
+  uid: string;
+  seleccionableManual: boolean;
 }
 
 export interface SubtipMoveAction extends SubtipAction {
@@ -58,7 +64,7 @@ interface EtapaCambioOption {
 
 @Component({
   selector: 'app-tip-editor',
-  imports: [NgClass, FormsModule, DragDropModule, ButtonModule, InputTextModule, MultiSelectModule, SelectModule, TooltipModule],
+  imports: [NgClass, FormsModule, DragDropModule, ButtonModule, CheckboxModule, InputTextModule, MultiSelectModule, SelectModule, TooltipModule],
   templateUrl: './tip-editor.component.html',
   styleUrl: './tip-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -68,8 +74,11 @@ export class TipEditorComponent {
   @Input({ required: true }) selectedEtapa!: EtapaCatalogo;
   @Input({ required: true }) etapaOptions: EtapaCambioOption[] = [];
   @Input() comportamientoOptions: { label: string; value: ComportamientoTipificacion }[] = [];
+  @Input() conversionTipOptionsByEtapa: Record<string, { label: string; value: number }[]> = {};
+  @Input() conversionSubtipOptionsByTipId: Record<number, { label: string; value: number }[]> = {};
 
   @Output() tipFieldChange = new EventEmitter<TipFieldChange>();
+  @Output() tipSelectableChange = new EventEmitter<TipSelectableChange>();
   @Output() removeTip = new EventEmitter<string>();
   @Output() addSubtip = new EventEmitter<string>();
   @Output() subtipFieldChange = new EventEmitter<SubtipFieldChange>();
@@ -86,12 +95,27 @@ export class TipEditorComponent {
     this.tipFieldChange.emit({ uid: this.tip.uid, field, value });
   }
 
+  protected updateTipSelectable(value: boolean): void {
+    this.tipSelectableChange.emit({ uid: this.tip.uid, seleccionableManual: value });
+  }
+
   protected updateSubtip(
     sub: SubtipDraft,
     field: SubtipFieldChange['field'],
-    value: string | null
+    value: string | number | null
   ): void {
     this.subtipFieldChange.emit({ tipUid: this.tip.uid, subUid: sub.uid, field, value });
+  }
+
+  protected conversionTipOptions(sub: SubtipDraft): { label: string; value: number }[] {
+    return this.conversionTipOptionsByEtapa[sub.etapaCambio ?? this.selectedEtapa] ?? [];
+  }
+
+  protected conversionSubtipOptions(sub: SubtipDraft): { label: string; value: number }[] {
+    if (sub.tipificacionConversionId === null) {
+      return [];
+    }
+    return this.conversionSubtipOptionsByTipId[sub.tipificacionConversionId] ?? [];
   }
 
   protected dropSubtip(event: CdkDragDrop<string, string, string>): void {

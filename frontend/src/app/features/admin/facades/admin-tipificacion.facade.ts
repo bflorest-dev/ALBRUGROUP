@@ -18,6 +18,8 @@ export interface SubtipDraft {
   descripcion: string;
   orden: number;
   etapaCambio: string;
+  tipificacionConversionId: number | null;
+  subtipificacionConversionId: number | null;
   comportamientos: ComportamientoTipificacion[];
 }
 
@@ -27,7 +29,13 @@ export interface TipDraft {
   codigo: string;
   descripcion: string;
   orden: number;
+  seleccionableManual: boolean;
   subtipificaciones: SubtipDraft[];
+}
+
+interface SelectOption<T = number> {
+  label: string;
+  value: T;
 }
 
 @Injectable()
@@ -45,6 +53,7 @@ export class AdminTipificacionFacade {
   private readonly comportamientoLabels: Partial<Record<ComportamientoTipificacion, string>> = {
     REQUIERE_HORA_PROGRAMADA: 'Requiere hora',
     REQUIERE_FECHA_PROGRAMACION: 'Requiere fecha de programación',
+    REQUIERE_FECHA_RECHAZO: 'Requiere fecha de rechazo',
     REQUIERE_FECHA_INSTALACION: 'Requiere fecha de instalación',
     REQUIERE_SEC_SOT: 'Requiere SEC/SOT',
     REQUIERE_CUSTOMER_ID: 'Requiere Customer ID',
@@ -61,7 +70,7 @@ export class AdminTipificacionFacade {
   private readonly comportamientosPorEtapa: Record<EtapaCatalogo, ComportamientoTipificacion[]> = {
     PREVENTA: ['REQUIERE_HORA_PROGRAMADA', 'APARECE_EN_AGENDADOS_GTR', 'ES_CIERRE_PREVENTA',
                'ASIGNA_ASESOR_MERITO', 'ASIGNA_FECHA_MERITO', 'ANULA_ASESOR_MERITO', 'ANULA_FECHA_MERITO'],
-    VENTA: ['REQUIERE_HORA_PROGRAMADA', 'REQUIERE_FECHA_PROGRAMACION', 'REQUIERE_FECHA_INSTALACION',
+    VENTA: ['REQUIERE_HORA_PROGRAMADA', 'REQUIERE_FECHA_PROGRAMACION', 'REQUIERE_FECHA_RECHAZO', 'REQUIERE_FECHA_INSTALACION',
             'REQUIERE_SEC_SOT', 'REQUIERE_CUSTOMER_ID', 'ASIGNA_ASESOR_MERITO', 'ASIGNA_FECHA_MERITO',
             'ANULA_ASESOR_MERITO', 'ANULA_FECHA_MERITO', 'ES_CANCELACION_PROGRAMACION'],
     POSTVENTA: ['ASIGNA_ASESOR_MERITO', 'ASIGNA_FECHA_MERITO', 'ANULA_ASESOR_MERITO', 'ANULA_FECHA_MERITO',
@@ -83,6 +92,7 @@ export class AdminTipificacionFacade {
   readonly isDirty = signal(false);
   readonly openTipUids = signal<string[]>([]);
   readonly searchTerm = signal('');
+  readonly conversionCatalogos = signal<Partial<Record<EtapaCatalogo, CatalogoResponse>>>({});
 
   readonly proveedorOptions = computed(() =>
     this.proveedores().map((proveedor) => ({ label: proveedor.nombre, value: proveedor.id }))
@@ -124,6 +134,41 @@ export class AdminTipificacionFacade {
     return this.openTipUids()
       .map((uid) => draftsByUid.get(uid))
       .filter((tip): tip is TipDraft => !!tip);
+  });
+
+  readonly conversionTipOptionsByEtapa = computed(() => {
+    const selectedEtapa = this.selectedEtapa();
+    const fromDrafts = this.drafts()
+      .filter((tip) => tip.id !== null)
+      .map((tip) => ({ label: tip.codigo || 'Tipificación guardada', value: tip.id! }));
+    return this.etapaOptions.reduce((acc, option) => {
+      acc[option.value] = option.value === selectedEtapa
+        ? fromDrafts
+        : (this.conversionCatalogos()[option.value]?.tipificaciones ?? [])
+          .filter((tip) => tip.id !== null)
+          .map((tip) => ({ label: tip.codigo || 'Tipificación guardada', value: tip.id }));
+      return acc;
+    }, {} as Record<EtapaCatalogo, SelectOption[]>);
+  });
+
+  readonly conversionSubtipOptionsByTipId = computed(() => {
+    const byTipId: Record<number, SelectOption[]> = {};
+    for (const tip of this.drafts()) {
+      if (tip.id === null) {
+        continue;
+      }
+      byTipId[tip.id] = tip.subtipificaciones
+        .filter((sub) => sub.id !== null)
+        .map((sub) => ({ label: sub.codigo || 'Subtipificación guardada', value: sub.id! }));
+    }
+    for (const catalogo of Object.values(this.conversionCatalogos())) {
+      for (const tip of catalogo?.tipificaciones ?? []) {
+        byTipId[tip.id] = (tip.subtipificaciones ?? [])
+          .filter((sub) => sub.id !== null)
+          .map((sub) => ({ label: sub.codigo || 'Subtipificación guardada', value: sub.id }));
+      }
+    }
+    return byTipId;
   });
 
   // Opciones para "Resultado: el lead..." segun la etapa seleccionada.
@@ -181,6 +226,7 @@ export class AdminTipificacionFacade {
     this.isLoading.set(true);
     try {
       const catalogo = await firstValueFrom(this.service.getCatalogo(etapa, idProveedor));
+      await this.loadConversionCatalogos(idProveedor, etapa);
       this.drafts.set(this.toDrafts(catalogo, etapa));
       this.isDirty.set(false);
       this.openTipUids.set([]);
@@ -295,6 +341,17 @@ export class AdminTipificacionFacade {
     }
     this.drafts.update((items) =>
       items.map((item) => (item.uid === uid ? { ...item, [field]: value } : item))
+    );
+    this.isDirty.set(true);
+  }
+
+  updateTipSelectable(uid: string, seleccionableManual: boolean): void {
+    const current = this.drafts().find((item) => item.uid === uid);
+    if (!current || current.seleccionableManual === seleccionableManual) {
+      return;
+    }
+    this.drafts.update((items) =>
+      items.map((item) => (item.uid === uid ? { ...item, seleccionableManual } : item))
     );
     this.isDirty.set(true);
   }
@@ -422,7 +479,7 @@ export class AdminTipificacionFacade {
   updateSubtipField(
     tipUid: string,
     subUid: string,
-    field: 'codigo' | 'descripcion' | 'orden' | 'etapaCambio',
+    field: 'codigo' | 'descripcion' | 'orden' | 'etapaCambio' | 'tipificacionConversionId' | 'subtipificacionConversionId',
     value: string | number | null
   ): void {
     const current = this.drafts()
@@ -441,6 +498,9 @@ export class AdminTipificacionFacade {
           subtipificaciones: item.subtipificaciones.map((sub) => {
             if (sub.uid !== subUid) {
               return sub;
+            }
+            if (field === 'tipificacionConversionId') {
+              return { ...sub, tipificacionConversionId: value as number | null, subtipificacionConversionId: null };
             }
             return { ...sub, [field]: value } as SubtipDraft;
           })
@@ -503,6 +563,9 @@ export class AdminTipificacionFacade {
           return `El codigo de subtipificacion ${sub.codigo} esta repetido en ${tip.codigo}.`;
         }
         subCodigos.add(subNorm);
+        if ((sub.tipificacionConversionId === null) !== (sub.subtipificacionConversionId === null)) {
+          return `La conversión de ${sub.codigo} necesita tipificación y subtipificación destino.`;
+        }
       }
     }
     return null;
@@ -535,6 +598,7 @@ export class AdminTipificacionFacade {
         codigo: tip.codigo.trim(),
         descripcion: tip.descripcion.trim(),
         orden: tipIndex + 1,
+        seleccionableManual: tip.seleccionableManual,
         subtipificaciones: [...tip.subtipificaciones]
           .sort((left, right) => left.orden - right.orden)
           .map(
@@ -544,6 +608,8 @@ export class AdminTipificacionFacade {
               descripcion: sub.descripcion.trim(),
               orden: subIndex + 1,
               etapaCambio: sub.etapaCambio,
+              tipificacionConversionId: sub.tipificacionConversionId,
+              subtipificacionConversionId: sub.subtipificacionConversionId,
               comportamientos: sub.comportamientos
             })
           )
@@ -558,6 +624,7 @@ export class AdminTipificacionFacade {
       codigo: tip.codigo,
       descripcion: tip.descripcion,
       orden: tip.orden,
+      seleccionableManual: tip.seleccionableManual !== false,
       subtipificaciones: (tip.subtipificaciones ?? []).map((sub) => ({
         uid: this.nextUid(),
         id: sub.id,
@@ -566,6 +633,8 @@ export class AdminTipificacionFacade {
         orden: sub.orden,
         // null en backend significa "se mantiene"; lo normalizamos a la etapa actual.
         etapaCambio: sub.etapaCambio ?? etapa,
+        tipificacionConversionId: sub.tipificacionConversionId ?? null,
+        subtipificacionConversionId: sub.subtipificacionConversionId ?? null,
         comportamientos: sub.comportamientos ?? []
       }))
     }));
@@ -578,6 +647,7 @@ export class AdminTipificacionFacade {
       codigo: '',
       descripcion: '',
       orden,
+      seleccionableManual: true,
       subtipificaciones: []
     };
   }
@@ -590,8 +660,19 @@ export class AdminTipificacionFacade {
       descripcion: '',
       orden,
       etapaCambio: this.selectedEtapa(),
+      tipificacionConversionId: null,
+      subtipificacionConversionId: null,
       comportamientos: []
     };
+  }
+
+  private async loadConversionCatalogos(idProveedor: number, etapaActual: EtapaCatalogo): Promise<void> {
+    const entradas = await Promise.all(
+      this.etapaOptions
+        .filter((option) => option.value !== etapaActual)
+        .map(async (option) => [option.value, await firstValueFrom(this.service.getCatalogo(option.value, idProveedor))] as const)
+    );
+    this.conversionCatalogos.set(Object.fromEntries(entradas) as Partial<Record<EtapaCatalogo, CatalogoResponse>>);
   }
 
   private nextUid(): string {

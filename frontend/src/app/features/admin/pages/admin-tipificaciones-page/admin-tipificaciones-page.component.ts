@@ -16,7 +16,8 @@ import {
   SubtipFieldChange,
   SubtipMoveAction,
   TipEditorComponent,
-  TipFieldChange
+  TipFieldChange,
+  TipSelectableChange
 } from './components/tip-editor/tip-editor.component';
 
 @Component({
@@ -137,6 +138,10 @@ export class AdminTipificacionesPageComponent implements OnInit {
 
   protected onTipFieldChange(change: TipFieldChange): void {
     this.facade.updateTipField(change.uid, change.field, change.value);
+  }
+
+  protected onTipSelectableChange(change: TipSelectableChange): void {
+    this.facade.updateTipSelectable(change.uid, change.seleccionableManual);
   }
 
   protected onSubtipFieldChange(change: SubtipFieldChange): void {

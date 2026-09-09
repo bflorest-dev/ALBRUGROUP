@@ -1,5 +1,5 @@
 <div class="compact-editor grid gap-4 p-4">
-  <div class="grid items-end gap-3 lg:grid-cols-[minmax(12rem,0.8fr)_minmax(18rem,1.5fr)_auto]">
+  <div class="grid items-end gap-3 lg:grid-cols-[minmax(12rem,0.8fr)_minmax(18rem,1.5fr)_auto_auto]">
     <label class="grid min-w-0 gap-1.5">
       <span class="text-xs font-bold text-slate-600">Código</span>
       <input
@@ -20,6 +20,15 @@
         [ngModel]="tip.descripcion"
         (ngModelChange)="updateTip('descripcion', $event)"
       />
+    </label>
+
+    <label class="flex min-h-9 items-center gap-2 rounded-md bg-slate-50 px-2.5 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-200">
+      <p-checkbox
+        [binary]="true"
+        [ngModel]="tip.seleccionableManual"
+        (ngModelChange)="updateTipSelectable($event)"
+      />
+      <span>Seleccionable</span>
     </label>
 
     <button
@@ -223,6 +232,35 @@
             />
           </label>
         }
+
+        <div class="subtip-field subtip-field--conversion grid min-w-0 gap-2 rounded-md border border-slate-200 bg-white p-2">
+          <span class="text-xs font-bold text-slate-600">Conversión sistémica</span>
+          <div class="grid gap-2 md:grid-cols-2">
+            <p-select
+              class="w-full"
+              appendTo="body"
+              [options]="conversionTipOptions(sub)"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Sin conversión"
+              [showClear]="true"
+              [ngModel]="sub.tipificacionConversionId"
+              (ngModelChange)="updateSubtip(sub, 'tipificacionConversionId', $event)"
+            />
+            <p-select
+              class="w-full"
+              appendTo="body"
+              [options]="conversionSubtipOptions(sub)"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Subtipificación destino"
+              [showClear]="true"
+              [disabled]="sub.tipificacionConversionId === null"
+              [ngModel]="sub.subtipificacionConversionId"
+              (ngModelChange)="updateSubtip(sub, 'subtipificacionConversionId', $event)"
+            />
+          </div>
+        </div>
 
         <div class="subtip-actions items-center justify-end gap-1">
           <div class="subtip-desktop-order hidden">

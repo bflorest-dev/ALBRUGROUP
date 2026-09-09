@@ -26,6 +26,9 @@ public class Tipificacion {
     private String descripcion;
     private Integer orden;
 
+    @Column(nullable = false)
+    private Boolean seleccionableManual = Boolean.TRUE;
+
     private Boolean activo;
 
     public Etapa getEtapa() {

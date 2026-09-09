@@ -206,6 +206,80 @@ class TipificacionServiceMatrizTest {
     }
 
     @Test
+    void catalogoOperativoSoloDevuelveTipificacionesSeleccionables() {
+        Tipificacion visible = tipificacion(1L, "VISIBLE", 1, true);
+        visible.setSeleccionableManual(Boolean.TRUE);
+        when(tipificacionRepository
+                .findByMatrizEtapaAndMatrizProveedorIdAndSeleccionableManualTrueAndActivoTrueOrderByOrdenAsc(
+                        Etapa.PREVENTA, PROVEEDOR))
+                .thenReturn(List.of(visible));
+        when(subtipificacionRepository
+                .findByTipificacionInAndActivoTrueOrderByTipificacion_IdAscOrdenAsc(List.of(visible)))
+                .thenReturn(List.of());
+        when(mapper.toResponse(eq(visible), anyList())).thenReturn(TipificacionResponse.builder()
+                .id(1L)
+                .codigo("VISIBLE")
+                .descripcion("Visible")
+                .orden(1)
+                .seleccionableManual(true)
+                .subtipificaciones(List.of())
+                .build());
+
+        CatalogoResponse catalogo = service.getCatalogoOperativo(Etapa.PREVENTA, PROVEEDOR);
+
+        assertThat(catalogo.getTipificaciones()).extracting(TipificacionResponse::getCodigo)
+                .containsExactly("VISIBLE");
+        verify(tipificacionRepository)
+                .findByMatrizEtapaAndMatrizProveedorIdAndSeleccionableManualTrueAndActivoTrueOrderByOrdenAsc(
+                        Etapa.PREVENTA, PROVEEDOR);
+    }
+
+    @Test
+    void guardarMatrizPersisteSeleccionableManualYConversion() {
+        Tipificacion origen = tipificacion(1L, "SIN_INGRESOS", 1, true);
+        Tipificacion destino = tipificacion(2L, "NO_GESTIONABLE", 2, true);
+        Subtipificacion origenSub = subtipificacion(10L, origen, "SIN_CTO", 1, true);
+        Subtipificacion destinoSub = subtipificacion(20L, destino, "SIN_CTO", 1, true);
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR))
+                .thenReturn(List.of(origen, destino));
+        when(subtipificacionRepository.findByTipificacionInOrderByTipificacion_IdAscOrdenAsc(List.of(origen, destino)))
+                .thenReturn(List.of(origenSub, destinoSub));
+        when(tipificacionRepository.findById(2L)).thenReturn(Optional.of(destino));
+        when(subtipificacionRepository.findById(20L)).thenReturn(Optional.of(destinoSub));
+
+        SubtipificacionCatalogoRequest subOrigen = subRequest(10L, "SIN_CTO", "Sin CTO");
+        subOrigen.setTipificacionConversionId(2L);
+        subOrigen.setSubtipificacionConversionId(20L);
+        TipificacionCatalogoRequest tipDestino = tipRequest(2L, "NO_GESTIONABLE", "No gestionable", List.of(
+                subRequest(20L, "SIN_CTO", "Sin CTO")
+        ));
+        tipDestino.setSeleccionableManual(Boolean.FALSE);
+
+        service.guardarMatrizCatalogo(matriz(
+                tipRequest(1L, "SIN_INGRESOS", "Sin ingresos", List.of(subOrigen)),
+                tipDestino
+        ));
+
+        assertThat(destino.getSeleccionableManual()).isFalse();
+        assertThat(origenSub.getTipificacionConversion()).isSameAs(destino);
+        assertThat(origenSub.getSubtipificacionConversion()).isSameAs(destinoSub);
+    }
+
+    @Test
+    void guardarMatrizRechazaConversionIncompleta() {
+        SubtipificacionCatalogoRequest sub = subRequest(10L, "SIN_CTO", "Sin CTO");
+        sub.setTipificacionConversionId(2L);
+
+        assertThatThrownBy(() -> service.guardarMatrizCatalogo(matriz(
+                tipRequest(1L, "SIN_INGRESOS", "Sin ingresos", List.of(sub))
+        ))).isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("conversion");
+
+        verify(tipificacionRepository, never()).save(any());
+        verify(subtipificacionRepository, never()).save(any());
+    }
+
+    @Test
     void guardarMatrizSellaElProveedorYSoloLeeLaMatrizDeEseProveedor() {
         when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa.PREVENTA, PROVEEDOR))
                 .thenReturn(List.of());

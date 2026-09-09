@@ -11,6 +11,8 @@ public enum ComportamientoTipificacion {
     REQUIERE_HORA_PROGRAMADA,
     /** El modal exige fecha de programación (antes: tipi PROGRAMADO en VENTA). */
     REQUIERE_FECHA_PROGRAMACION,
+    /** El modal exige fecha de rechazo. */
+    REQUIERE_FECHA_RECHAZO,
     /** El modal exige fecha de instalación (antes: subtip que pasa a POSTVENTA). */
     REQUIERE_FECHA_INSTALACION,
     /** El modal muestra los campos SEC/SOT (antes: tipi SUBIDO), sujeto a que el proveedor lo requiera. */

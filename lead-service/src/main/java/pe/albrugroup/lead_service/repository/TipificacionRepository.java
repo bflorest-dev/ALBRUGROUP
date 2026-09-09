@@ -17,8 +17,10 @@ public interface TipificacionRepository extends JpaRepository<Tipificacion, Long
 
     // Consultas por (etapa, proveedor): cada proveedor tiene su matriz por etapa.
     List<Tipificacion> findByMatrizEtapaAndMatrizProveedorIdAndActivoTrueOrderByOrdenAsc(Etapa etapa, Long idProveedor);
+    List<Tipificacion> findByMatrizEtapaAndMatrizProveedorIdAndSeleccionableManualTrueAndActivoTrueOrderByOrdenAsc(Etapa etapa, Long idProveedor);
     List<Tipificacion> findByMatrizEtapaAndMatrizProveedorIdOrderByOrdenAsc(Etapa etapa, Long idProveedor);
     Optional<Tipificacion> findByMatrizEtapaAndMatrizProveedorIdAndCodigo(Etapa etapa, Long idProveedor, String codigo);
     Optional<Tipificacion> findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(Etapa etapa, Long idProveedor, String codigo);
+    Optional<Tipificacion> findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(Etapa etapa, Long idProveedor, String codigo);
     boolean existsByMatrizEtapaAndMatrizProveedorIdAndActivoTrue(Etapa etapa, Long idProveedor);
 }

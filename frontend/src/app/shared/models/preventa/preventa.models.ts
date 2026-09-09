@@ -789,10 +789,14 @@ export interface EventoResponse {
   idAsesorAsignado?: number | null;
   nombreAsesorAsignado?: string | null;
   idPlanOfrecido?: number | null;
+  idTipificacionResultado?: number | null;
+  idSubtipificacionResultado?: number | null;
   accion?: string | null;
   etapa?: Etapa | string | null;
   tipificacion?: string | null;
   subtipificacion?: string | null;
+  tipificacionResultado?: string | null;
+  subtipificacionResultado?: string | null;
   fechaInstalacion?: string | null;
   fechaProgramacion?: string | null;
   fechaRechazo?: string | null;
@@ -811,6 +815,7 @@ export interface TipificacionResponse {
   codigo: string;
   descripcion: string;
   orden: number;
+  seleccionableManual?: boolean | null;
   subtipificaciones: SubtipificacionResponse[];
 }
 
@@ -818,6 +823,7 @@ export interface TipificacionResponse {
 export type ComportamientoTipificacion =
   | 'REQUIERE_HORA_PROGRAMADA'
   | 'REQUIERE_FECHA_PROGRAMACION'
+  | 'REQUIERE_FECHA_RECHAZO'
   | 'REQUIERE_FECHA_INSTALACION'
   | 'REQUIERE_SEC_SOT'
   | 'REQUIERE_CUSTOMER_ID'
@@ -837,6 +843,8 @@ export interface SubtipificacionResponse {
   descripcion: string;
   orden: number;
   etapaCambio?: string | null;
+  tipificacionConversionId?: number | null;
+  subtipificacionConversionId?: number | null;
   comportamientos?: ComportamientoTipificacion[];
 }
 
@@ -846,6 +854,8 @@ export interface SubtipificacionCatalogoRequest {
   descripcion: string;
   orden: number;
   etapaCambio?: string | null;
+  tipificacionConversionId?: number | null;
+  subtipificacionConversionId?: number | null;
   comportamientos?: ComportamientoTipificacion[];
 }
 
@@ -854,6 +864,7 @@ export interface TipificacionCatalogoRequest {
   codigo: string;
   descripcion: string;
   orden: number;
+  seleccionableManual?: boolean | null;
   subtipificaciones: SubtipificacionCatalogoRequest[];
 }
 

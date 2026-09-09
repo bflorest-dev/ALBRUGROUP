@@ -22,5 +22,7 @@ public class SubtipificacionResponse {
     private String descripcion;
     private Integer orden;
     private Etapa etapaCambio;
+    private Long tipificacionConversionId;
+    private Long subtipificacionConversionId;
     private Set<ComportamientoTipificacion> comportamientos;
 }
