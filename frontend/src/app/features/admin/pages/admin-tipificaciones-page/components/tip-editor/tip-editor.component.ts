@@ -4,6 +4,7 @@ import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
+import { FloatLabelModule } from 'primeng/floatlabel';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
@@ -64,7 +65,7 @@ interface EtapaCambioOption {
 
 @Component({
   selector: 'app-tip-editor',
-  imports: [NgClass, FormsModule, DragDropModule, ButtonModule, CheckboxModule, InputTextModule, MultiSelectModule, SelectModule, TooltipModule],
+  imports: [NgClass, FormsModule, DragDropModule, ButtonModule, CheckboxModule, FloatLabelModule, InputTextModule, MultiSelectModule, SelectModule, TooltipModule],
   templateUrl: './tip-editor.component.html',
   styleUrl: './tip-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -214,23 +214,25 @@
         </label>
 
         @if (comportamientoOptions.length) {
-          <label class="subtip-field subtip-field--behaviors grid min-w-0 gap-1.5">
-            <span class="text-xs font-bold text-slate-600">Comportamientos</span>
+          <p-floatlabel variant="on" class="subtip-field subtip-field--behaviors min-w-0">
             <p-multiSelect
               class="w-full"
+              [inputId]="'subtip-behaviors-' + sub.uid"
               appendTo="body"
               panelStyleClass="tip-editor-behaviors-panel"
               [options]="comportamientoOptions"
               optionLabel="label"
               optionValue="value"
               [ngModel]="sub.comportamientos"
-              placeholder="Ninguno"
-              [showToggleAll]="false"
+              [filter]="true"
+              filterPlaceholder="Buscar comportamiento"
+              [showToggleAll]="true"
               [maxSelectedLabels]="1"
               selectedItemsLabel="{0} seleccionados"
               (ngModelChange)="updateSubtipComportamientos(sub, $event)"
             />
-          </label>
+            <label [for]="'subtip-behaviors-' + sub.uid">Comportamientos</label>
+          </p-floatlabel>
         }
 
         <div class="subtip-field subtip-field--conversion grid min-w-0 gap-2 rounded-md border border-slate-200 bg-white p-2">

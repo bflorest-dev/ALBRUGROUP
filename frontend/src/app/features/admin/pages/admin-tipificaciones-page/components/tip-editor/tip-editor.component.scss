@@ -8,6 +8,16 @@
   width: 100%;
 }
 
+p-floatlabel.subtip-field {
+  display: block;
+}
+
+:host ::ng-deep p-floatlabel.subtip-field > label {
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 :host ::ng-deep {
   .compact-editor {
     .p-inputtext {
@@ -61,7 +71,33 @@
 }
 
 ::ng-deep .tip-editor-behaviors-panel {
-  min-width: min(22rem, calc(100vw - 2rem));
+  width: min(24rem, calc(100vw - 2rem));
+  min-width: min(20rem, calc(100vw - 2rem)) !important;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 0.14);
+}
+
+::ng-deep .tip-editor-behaviors-panel .p-multiselect-header {
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+::ng-deep .tip-editor-behaviors-panel .p-multiselect-list {
+  padding: 0.25rem;
+}
+
+::ng-deep .tip-editor-behaviors-panel .p-multiselect-option {
+  min-height: 2.25rem;
+  border-radius: 0.375rem;
+  color: #334155;
+  font-size: 0.8125rem;
+}
+
+::ng-deep .tip-editor-behaviors-panel .p-multiselect-option-selected {
+  background: #eaf7f1;
+  color: #126b50;
 }
 
 .subtip-list {

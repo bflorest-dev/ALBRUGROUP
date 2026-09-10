@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CanDeactivateFn } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { FloatLabelModule } from 'primeng/floatlabel';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
@@ -27,6 +28,7 @@ import {
     FormsModule,
     DragDropModule,
     ButtonModule,
+    FloatLabelModule,
     InputTextModule,
     MultiSelectModule,
     SelectModule,
