@@ -18,7 +18,9 @@ import { GestionCampoTipi } from '../../services/admin-gestion-campana.service';
 import { AfluenciaHoraPanelComponent } from '../afluencia-hora-panel/afluencia-hora-panel.component';
 import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
 import { ResumenDiarioPanelComponent } from '../resumen-diario-panel/resumen-diario-panel.component';
+import { VentaSeguimientoPanelComponent } from '../venta-seguimiento-panel/venta-seguimiento-panel.component';
 import { AdvisorManagementSummaryPanelComponent } from '../advisor-management-summary-panel/advisor-management-summary-panel.component';
+import { DashboardVentaService, ProveedorRef } from '../../services/dashboard-venta.service';
 import { TeamMetricGaugesComponent } from '../../components/team-metric-gauges/team-metric-gauges.component';
 import { DashboardGaugeCard, resolveGaugeColors } from '../../models/dashboard-gauge.model';
 import {
@@ -29,7 +31,7 @@ import {
 import { AdminEquipoService } from '../../services/admin-equipo.service';
 
 const SIN_EQUIPO = 'Sin equipo';
-type PreventaDashboardView = 'resumen' | 'rendimiento' | 'asesores' | 'campanas' | 'afluencia';
+type PreventaDashboardView = 'resumen' | 'seguimiento' | 'rendimiento' | 'asesores' | 'campanas' | 'afluencia';
 
 interface DashboardMetricRow {
   idEquipo: number | null;
@@ -65,6 +67,7 @@ interface DashboardMetricRow {
     AdvisorManagementSummaryPanelComponent,
     GestionCampanaPanelComponent,
     ResumenDiarioPanelComponent,
+    VentaSeguimientoPanelComponent,
     TeamMetricGaugesComponent
   ],
   templateUrl: './dashboard-preventa-stage.component.html',
@@ -74,6 +77,7 @@ interface DashboardMetricRow {
 export class DashboardPreventaStageComponent implements OnInit {
   private readonly metricsService = inject(AdminDailyMetricsService);
   private readonly equipoService = inject(AdminEquipoService);
+  private readonly dashboardVentaService = inject(DashboardVentaService);
   private readonly teamScope = inject(CurrentUserTeamScopeService);
   private readonly operationalGateService = inject(OperationalGateService);
   private readonly sessionService = inject(SessionService);
@@ -99,6 +103,11 @@ export class DashboardPreventaStageComponent implements OnInit {
   private readonly equipoNombreById = signal<Map<number, string>>(new Map());
   private readonly equipoColorById = signal<Map<number, string>>(new Map());
   protected readonly selectedEquipoId = signal<number | null>(null);
+  // Seguimiento (VENTA) tiene su propio estado de filtros: por defecto TODO (sin scope), a diferencia del
+  // Resumen que fuerza un equipo. Equipo = equipo del lead; Proveedor = proveedor del plan.
+  protected readonly selectedEquipoIdVenta = signal<number | null>(null);
+  protected readonly selectedProveedorId = signal<number | null>(null);
+  private readonly proveedores = signal<ProveedorRef[]>([]);
   protected readonly isTeamScopedDashboard = signal(false);
   private readonly lockedEquipoId = signal<number | null>(null);
   private readonly viewReady = signal(false);
@@ -127,11 +136,26 @@ export class DashboardPreventaStageComponent implements OnInit {
   ];
   protected readonly dashboardViewOptions: Array<{ label: string; value: PreventaDashboardView }> = [
     { label: 'Resumen', value: 'resumen' },
+    { label: 'Seguimiento', value: 'seguimiento' },
     { label: 'Rendimiento', value: 'rendimiento' },
     { label: 'Asesores', value: 'asesores' },
     { label: 'Campañas', value: 'campanas' },
     { label: 'Afluencia', value: 'afluencia' }
   ];
+
+  /** Opciones del filtro de proveedor (Seguimiento). Se oculta si el catálogo no está disponible. */
+  protected readonly proveedorOptions = computed(() => [
+    { label: 'Todos', value: null as number | null },
+    ...this.proveedores()
+      .map((proveedor) => ({ label: proveedor.nombre, value: proveedor.id }))
+      .sort((left, right) => left.label.localeCompare(right.label))
+  ]);
+  protected readonly showProveedorSelector = computed(() => this.proveedores().length > 0);
+
+  /** Equipo efectivo del Seguimiento: los roles con dashboard acotado quedan fijados a su equipo. */
+  protected readonly equipoVenta = computed(() =>
+    this.isTeamScopedDashboard() ? this.lockedEquipoId() : this.selectedEquipoIdVenta()
+  );
 
   /**
    * El RESUMEN es un poster por equipo: no admite "Todos". Se muestran solo los equipos, y al entrar
@@ -233,6 +257,16 @@ export class DashboardPreventaStageComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     this.isTeamScopedDashboard.set(this.teamScope.isDashboardTeamScoped());
     this.viewReady.set(true);
+    void this.cargarProveedores();
+  }
+
+  /** Catálogo de proveedores para el filtro de Seguimiento. Si el rol no lo puede leer, se omite el filtro. */
+  private async cargarProveedores(): Promise<void> {
+    try {
+      this.proveedores.set(await firstValueFrom(this.dashboardVentaService.obtenerProveedores()));
+    } catch {
+      this.proveedores.set([]);
+    }
   }
 
   protected async onPeriodoChange(value: MetricsPeriodo): Promise<void> {
@@ -307,6 +341,19 @@ export class DashboardPreventaStageComponent implements OnInit {
     if (value) {
       this.activeView.set(value);
     }
+  }
+
+  /** Equipo del Seguimiento (VENTA): filtra el reporte por el equipo del lead. No aplica a roles acotados. */
+  protected onEquipoVentaChange(value: number | null): void {
+    if (this.isTeamScopedDashboard()) {
+      return;
+    }
+    this.selectedEquipoIdVenta.set(value ?? null);
+  }
+
+  /** Proveedor del Seguimiento (VENTA): filtra por el proveedor del plan del lead. */
+  protected onProveedorChange(value: number | null): void {
+    this.selectedProveedorId.set(value ?? null);
   }
 
   protected async load(): Promise<void> {

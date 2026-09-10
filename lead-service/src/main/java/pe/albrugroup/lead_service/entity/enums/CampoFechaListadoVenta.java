@@ -7,6 +7,7 @@ package pe.albrugroup.lead_service.entity.enums;
  * comportamiento historico cuando el frontend no envia el parametro.
  */
 public enum CampoFechaListadoVenta {
+    AUTO,
     PROGRAMACION,
     RECHAZO,
     INSTALACION,

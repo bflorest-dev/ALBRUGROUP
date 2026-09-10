@@ -19,6 +19,20 @@
   box-shadow: 0 4px 14px rgb(15 23 42 / 0.08);
 }
 
+.flow-panel {
+  container-type: inline-size;
+}
+
+.flow-grid {
+  max-height: 18rem;
+  overflow: auto;
+  padding: 0.125rem;
+}
+
+:host ::ng-deep .flow-panel .p-multiselect {
+  width: 100%;
+}
+
 .tip-grip,
 :host ::ng-deep .subtip-grip {
   touch-action: none;

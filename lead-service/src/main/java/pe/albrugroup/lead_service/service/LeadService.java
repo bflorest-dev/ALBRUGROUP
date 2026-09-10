@@ -285,10 +285,10 @@ public class LeadService {
             "ESTADO", "PLAN", "TIPIFICACION", "ULTIMO_GESTOR"
     );
     private static final Set<String> LEAD_BANDEJA_VENTA_NORMALIZADA_SORT_FIELDS = Set.of(
-            "fechaRelevante", "lead", "estado", "tipificacion"
+            "fechaIngresoEtapa", "fechaRelevante", "lead", "estado", "tipificacion"
     );
     private static final Set<String> CAMPO_FECHA_BANDEJA_VENTA_NORMALIZADA_PERMITIDOS = Set.of(
-            "PROGRAMACION", "RECHAZO", "INSTALACION", "TIPIFICACION", "TIPIFICACION_INSTALADO", "INGRESO", "ULTIMA_GESTION"
+            "AUTO", "PROGRAMACION", "RECHAZO", "INSTALACION", "TIPIFICACION", "TIPIFICACION_INSTALADO", "INGRESO", "ULTIMA_GESTION"
     );
     private static final Set<String> GROUP_BY_BANDEJA_VENTA_NORMALIZADA_PERMITIDOS = Set.of(
             "ESTADO", "PLAN", "TIPIFICACION", "ULTIMO_GESTOR"
@@ -874,6 +874,7 @@ public class LeadService {
     }
 
     public PageResponse<LeadBandejaVentaResponse> listarBandejaVentaNormalizada(
+            String lead,
             List<String> codigosTipificacion,
             List<String> codigosSubtipificacion,
             boolean sinSubtipificacion,
@@ -887,9 +888,7 @@ public class LeadService {
             PageRequest pageRequest
     ) {
         OrigenFilaBandejaVenta origenEfectivo = origen == null ? OrigenFilaBandejaVenta.ESTADO_ACTUAL : origen;
-        CampoFechaListadoVenta campo = campoFecha == null
-                ? defaultCampoFechaBandejaVenta(origenEfectivo)
-                : campoFecha;
+        CampoFechaListadoVenta campo = campoFecha == null ? CampoFechaListadoVenta.INGRESO : campoFecha;
         if (!CAMPO_FECHA_BANDEJA_VENTA_NORMALIZADA_PERMITIDOS.contains(campo.name())) {
             throw new BadRequestException("Campo de fecha no permitido para bandeja normalizada: " + campo);
         }
@@ -910,6 +909,7 @@ public class LeadService {
         Instant tsDesde = OperationalDateTime.startOfDay(rango.desde());
         Instant tsHasta = OperationalDateTime.endExclusiveOfDay(rango.hasta());
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        BusquedaVentaFiltro busqueda = resolverBusquedaVenta(lead);
         var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
         List<String> tips = normalizarCodigosBandeja(codigosTipificacion);
         List<String> subtips = normalizarCodigosBandeja(codigosSubtipificacion);
@@ -928,6 +928,8 @@ public class LeadService {
                 Etapa.VENTA,
                 Etapa.PREVENTA,
                 origenEfectivo,
+                busqueda.searchPattern(),
+                busqueda.buscarPorUsermeta(),
                 etapasActualesBandejaVenta(etapasActuales),
                 filtrarTipificaciones,
                 tipsQuery,
@@ -955,6 +957,8 @@ public class LeadService {
                 Etapa.VENTA,
                 Etapa.PREVENTA,
                 origenEfectivo,
+                busqueda.searchPattern(),
+                busqueda.buscarPorUsermeta(),
                 filtrarTipificaciones,
                 tipsQuery,
                 filtrarSubtipificaciones,
@@ -976,14 +980,8 @@ public class LeadService {
                 estadoOrden.gestionado(),
                 pageable
         );
-        leads.getContent().forEach(lead -> normalizarFechaRelevanteBandejaVenta(lead, campo));
+        leads.getContent().forEach(row -> normalizarFechaRelevanteBandejaVenta(row, CampoFechaListadoVenta.AUTO));
         return PageResponse.from(leads);
-    }
-
-    private CampoFechaListadoVenta defaultCampoFechaBandejaVenta(OrigenFilaBandejaVenta origen) {
-        return origen == OrigenFilaBandejaVenta.EVENTO_TIPIFICACION
-                ? CampoFechaListadoVenta.TIPIFICACION
-                : CampoFechaListadoVenta.INGRESO;
     }
 
     private List<String> normalizarCodigosBandeja(List<String> codigos) {
@@ -1007,6 +1005,7 @@ public class LeadService {
 
     private void normalizarFechaRelevanteBandejaVenta(LeadBandejaVentaResponse lead, CampoFechaListadoVenta campo) {
         TipoFechaRelevanteVenta tipo = switch (campo) {
+            case AUTO -> inferirTipoFechaRelevanteBandejaVenta(lead);
             case PROGRAMACION -> TipoFechaRelevanteVenta.PROGRAMACION;
             case RECHAZO -> TipoFechaRelevanteVenta.RECHAZO;
             case INSTALACION -> TipoFechaRelevanteVenta.INSTALACION;
@@ -1026,6 +1025,19 @@ public class LeadService {
             case INGRESO -> lead.setFechaRelevanteAt(lead.getFechaIngresoEtapa() == null ? lead.getLastEntryAt() : lead.getFechaIngresoEtapa());
             case ULTIMA_GESTION -> lead.setFechaRelevanteAt(lead.getFechaUltimaGestion());
         }
+    }
+
+    private TipoFechaRelevanteVenta inferirTipoFechaRelevanteBandejaVenta(LeadBandejaVentaResponse lead) {
+        if (lead.getFechaProgramacion() != null) {
+            return TipoFechaRelevanteVenta.PROGRAMACION;
+        }
+        if (lead.getFechaRechazo() != null) {
+            return TipoFechaRelevanteVenta.RECHAZO;
+        }
+        if (lead.getFechaInstalacion() != null) {
+            return TipoFechaRelevanteVenta.INSTALACION;
+        }
+        return TipoFechaRelevanteVenta.TIPIFICACION;
     }
 
     private RangoOperativoVenta resolverRangoOperativoVenta(
@@ -2348,7 +2360,8 @@ public class LeadService {
         Lead lead = leadRepository.findById(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         Long idProveedor = resolverIdProveedorMatriz(lead, etapa, idProveedorSolicitado);
-        return tipificacionService.getCatalogoOperativo(etapa, idProveedor);
+        Long idTipificacionOrigen = resolverIdTipificacionOrigenFlujo(lead.getId(), etapa, idProveedor);
+        return tipificacionService.getCatalogoOperativo(etapa, idProveedor, idTipificacionOrigen);
     }
 
     private Long resolverIdProveedorMatriz(Lead lead, Etapa etapa, Long idProveedorSolicitado) {
@@ -2403,6 +2416,8 @@ public class LeadService {
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
+        Long idTipificacionOrigen = resolverIdTipificacionOrigenFlujo(lead.getId(), etapaActual, idProveedorMatriz);
+        tipificacionService.validarTipificacionPermitida(etapaActual, idProveedorMatriz, idTipificacionOrigen, tipificacion);
         Subtipificacion subtipificacion = subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
                         tipificacion.getId(),
                         request.getCodigoSubtipificacion().trim()
@@ -2475,6 +2490,8 @@ public class LeadService {
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
+        Long idTipificacionOrigen = resolverIdTipificacionOrigenFlujo(lead.getId(), Etapa.PREVENTA, idProveedorMatriz);
+        tipificacionService.validarTipificacionPermitida(Etapa.PREVENTA, idProveedorMatriz, idTipificacionOrigen, tipificacion);
         Subtipificacion subtipificacion = subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
                         tipificacion.getId(),
                         request.getCodigoSubtipificacion().trim()
@@ -2556,6 +2573,8 @@ public class LeadService {
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
+        Long idTipificacionOrigen = resolverIdTipificacionOrigenFlujo(lead.getId(), etapaActual, idProveedorMatriz);
+        tipificacionService.validarTipificacionPermitida(etapaActual, idProveedorMatriz, idTipificacionOrigen, tipificacion);
         Subtipificacion subtipificacion = subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
                         tipificacion.getId(),
                         request.getCodigoSubtipificacion().trim()
@@ -2647,6 +2666,8 @@ public class LeadService {
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
+        Long idTipificacionOrigen = resolverIdTipificacionOrigenFlujo(lead.getId(), etapaActual, idProveedorMatriz);
+        tipificacionService.validarTipificacionPermitida(etapaActual, idProveedorMatriz, idTipificacionOrigen, tipificacion);
         Subtipificacion subtipificacion = subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
                         tipificacion.getId(),
                         request.getCodigoSubtipificacion().trim()
@@ -2877,6 +2898,19 @@ public class LeadService {
                     Map.of("etapa", etapaResultado, "idProveedor", idProveedor)
             );
         }
+    }
+
+    private Long resolverIdTipificacionOrigenFlujo(Long idLead, Etapa etapa, Long idProveedor) {
+        return leadEtapaResumenRepository.findByIdLeadAndEtapa(idLead, etapa)
+                .map(LeadEtapaResumen::getUltimaCodigoTipificacion)
+                .filter(codigo -> codigo != null && !codigo.isBlank())
+                .flatMap(codigo -> tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
+                        etapa,
+                        idProveedor,
+                        codigo.trim()
+                ))
+                .map(Tipificacion::getId)
+                .orElse(null);
     }
 
     private void aplicarResultadoLead(Lead lead, ResultadoTipificacion resultado) {

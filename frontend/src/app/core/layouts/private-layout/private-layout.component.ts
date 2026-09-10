@@ -275,6 +275,12 @@ export class PrivateLayoutComponent implements AfterViewInit {
                   exact: true
                 },
                 {
+                  label: 'Bandeja general',
+                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/general`,
+                  icon: 'pi pi-list-check',
+                  exact: true
+                },
+                {
                   label: 'Programados',
                   route: `/app/admin/plataformas/equipos/${team.id}/backoffice/programados`,
                   icon: 'pi pi-calendar-clock',
@@ -462,6 +468,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     ) {
       return [
         { domainId: 'workspace', label: 'Plataforma', route: '/app/backoffice/plataforma', icon: 'pi pi-desktop', exact: true },
+        { domainId: 'workspace', label: 'Bandeja general', route: '/app/backoffice/general', icon: 'pi pi-list-check', exact: true },
         { domainId: 'workspace', label: 'Programados', route: '/app/backoffice/programados', icon: 'pi pi-calendar-clock', exact: true },
         { domainId: 'workspace', label: 'Subsanables', route: '/app/backoffice/subsanables', icon: 'pi pi-wrench', exact: true },
         { domainId: 'workspace', label: 'Rechazados', route: '/app/backoffice/rechazados', icon: 'pi pi-exclamation-triangle', exact: true },

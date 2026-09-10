@@ -35,9 +35,10 @@ public class TipificacionController {
     @GetMapping("/{etapa}/catalogo") @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa)")
     public ResponseEntity<CatalogoResponse> getCatalogo(
             @PathVariable Etapa etapa,
-            @RequestParam Long idProveedor
+            @RequestParam Long idProveedor,
+            @RequestParam(defaultValue = "true") boolean includeFlujos
     ) {
-        return ResponseEntity.ok(service.getCatalogo(etapa, idProveedor));
+        return ResponseEntity.ok(service.getCatalogo(etapa, idProveedor, includeFlujos));
     }
 
     // ASESOR: catálogo que aplica a un lead concreto. El backend resuelve el equipo desde el lead (el

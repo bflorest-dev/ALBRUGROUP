@@ -105,6 +105,62 @@
         </app-resumen-diario-panel>
       </div>
     }
+    @case ('seguimiento') {
+      <div class="resumen-view">
+        <app-venta-seguimiento-panel
+          [externalControls]="true"
+          [idEquipo]="equipoVenta()"
+          [idProveedor]="selectedProveedorId()"
+          [teamScoped]="isTeamScopedDashboard()"
+          [periodo]="periodo()"
+          [dia]="dia()"
+          [hasta]="hasta()"
+        >
+          <div class="metrics-controls">
+            @if (showEquipoSelector()) {
+              <div class="metrics-control">
+                <span class="metrics-control-label">Equipo</span>
+                <p-selectButton
+                  [options]="equipoOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [ngModel]="selectedEquipoIdVenta()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (onChange)="onEquipoVentaChange($event.value)"
+                />
+              </div>
+            }
+
+            @if (showProveedorSelector()) {
+              <div class="metrics-control">
+                <span class="metrics-control-label">Proveedor</span>
+                <p-selectButton
+                  [options]="proveedorOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [ngModel]="selectedProveedorId()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (onChange)="onProveedorChange($event.value)"
+                />
+              </div>
+            }
+
+            <div class="metrics-control">
+              <span class="metrics-control-label">Período</span>
+              <app-period-selector
+                [periodo]="periodo()"
+                [dia]="dia()"
+                [hasta]="hasta()"
+                (periodoChange)="onPeriodoChange($event)"
+                (rangoChange)="onRangoChange($event)"
+              />
+            </div>
+          </div>
+        </app-venta-seguimiento-panel>
+      </div>
+    }
     @case ('asesores') {
       <p-card>
         <app-advisor-management-summary-panel

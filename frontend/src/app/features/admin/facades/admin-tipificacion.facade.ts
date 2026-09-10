@@ -33,6 +33,12 @@ export interface TipDraft {
   subtipificaciones: SubtipDraft[];
 }
 
+export interface FlujoDraft {
+  tipificacionOrigenId: number | null;
+  tipificacionDestinoId: number;
+  activo: boolean;
+}
+
 interface SelectOption<T = number> {
   label: string;
   value: T;
@@ -86,6 +92,7 @@ export class AdminTipificacionFacade {
   readonly proveedores = signal<ProveedorCatalogoItem[]>([]);
   readonly selectedProveedor = signal<number | null>(null);
   readonly drafts = signal<TipDraft[]>([]);
+  readonly flujos = signal<FlujoDraft[]>([]);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly isCloning = signal(false);
@@ -93,6 +100,7 @@ export class AdminTipificacionFacade {
   readonly openTipUids = signal<string[]>([]);
   readonly searchTerm = signal('');
   readonly conversionCatalogos = signal<Partial<Record<EtapaCatalogo, CatalogoResponse>>>({});
+  readonly selectedFlowOriginId = signal<number | null>(null);
 
   readonly proveedorOptions = computed(() =>
     this.proveedores().map((proveedor) => ({ label: proveedor.nombre, value: proveedor.id }))
@@ -171,6 +179,36 @@ export class AdminTipificacionFacade {
     return byTipId;
   });
 
+  readonly flujoDestinoOptions = computed(() =>
+    this.drafts()
+      .filter((tip) => tip.id !== null && tip.seleccionableManual)
+      .map((tip) => ({ label: tip.codigo || 'Tipificación guardada', value: tip.id! }))
+  );
+
+  readonly flujoOrigenRows = computed(() =>
+    this.drafts()
+      .filter((tip) => tip.id !== null)
+      .map((tip) => ({
+        id: tip.id!,
+        label: tip.codigo || 'Tipificación guardada',
+        seleccionableManual: tip.seleccionableManual
+      }))
+  );
+
+  readonly flujoOrigenOptions = computed(() =>
+    this.flujoOrigenRows().map((origen) => ({
+      label: origen.seleccionableManual ? origen.label : `${origen.label} (Sistema)`,
+      value: origen.id
+    }))
+  );
+
+  readonly flujoInicialIds = computed(() => this.destinosPermitidos(null));
+
+  readonly flujoDestinoIdsSeleccionados = computed(() => {
+    const origenId = this.selectedFlowOriginId();
+    return origenId === null ? [] : this.destinosPermitidos(origenId);
+  });
+
   // Opciones para "Resultado: el lead..." segun la etapa seleccionada.
   readonly etapaCambioOptions = computed(() => {
     const actual = this.selectedEtapa();
@@ -218,6 +256,8 @@ export class AdminTipificacionFacade {
     const idProveedor = this.selectedProveedor();
     if (idProveedor === null) {
       this.drafts.set([]);
+      this.flujos.set([]);
+      this.selectedFlowOriginId.set(null);
       this.isDirty.set(false);
       this.openTipUids.set([]);
       this.searchTerm.set('');
@@ -226,11 +266,16 @@ export class AdminTipificacionFacade {
     this.isLoading.set(true);
     try {
       const catalogo = await firstValueFrom(this.service.getCatalogo(etapa, idProveedor));
-      await this.loadConversionCatalogos(idProveedor, etapa);
+      this.conversionCatalogos.set({});
       this.drafts.set(this.toDrafts(catalogo, etapa));
+      this.flujos.set(this.toFlujoDrafts(catalogo));
+      this.ensureSelectedFlowOrigin();
       this.isDirty.set(false);
       this.openTipUids.set([]);
       this.searchTerm.set('');
+      void this.loadConversionCatalogos(idProveedor, etapa).catch(() => {
+        this.conversionCatalogos.set({});
+      });
     } finally {
       this.isLoading.set(false);
     }
@@ -260,10 +305,16 @@ export class AdminTipificacionFacade {
         idProveedorOrigen,
         idProveedorDestino
       }));
+      this.conversionCatalogos.set({});
       this.drafts.set(this.toDrafts(catalogo, this.selectedEtapa()));
+      this.flujos.set(this.toFlujoDrafts(catalogo));
+      this.ensureSelectedFlowOrigin();
       this.isDirty.set(false);
       this.openTipUids.set([]);
       this.searchTerm.set('');
+      void this.loadConversionCatalogos(idProveedorDestino, this.selectedEtapa()).catch(() => {
+        this.conversionCatalogos.set({});
+      });
     } finally {
       this.isCloning.set(false);
     }
@@ -277,7 +328,11 @@ export class AdminTipificacionFacade {
   }
 
   removeTipificacion(uid: string): void {
+    const removed = this.drafts().find((item) => item.uid === uid);
     this.drafts.update((items) => items.filter((item) => item.uid !== uid));
+    if (removed?.id !== null && removed?.id !== undefined) {
+      this.removeFlujosConTipificacion(removed.id);
+    }
     this.openTipUids.update((open) => open.filter((item) => item !== uid));
     this.isDirty.set(true);
   }
@@ -353,7 +408,34 @@ export class AdminTipificacionFacade {
     this.drafts.update((items) =>
       items.map((item) => (item.uid === uid ? { ...item, seleccionableManual } : item))
     );
+    if (!seleccionableManual && current.id !== null) {
+      this.flujos.update((flujos) => flujos.filter((flujo) => flujo.tipificacionDestinoId !== current.id));
+    }
     this.isDirty.set(true);
+  }
+
+  flujoDestinoIds(origenId: number): number[] {
+    return this.destinosPermitidos(origenId);
+  }
+
+  updateFlujosIniciales(destinoIds: number[]): void {
+    this.reemplazarFlujos(null, destinoIds);
+  }
+
+  updateFlujosDesde(origenId: number, destinoIds: number[]): void {
+    this.reemplazarFlujos(origenId, destinoIds);
+  }
+
+  changeFlowOrigin(origenId: number | null): void {
+    this.selectedFlowOriginId.set(origenId);
+  }
+
+  updateFlujosDesdeSeleccionado(destinoIds: number[]): void {
+    const origenId = this.selectedFlowOriginId();
+    if (origenId === null) {
+      return;
+    }
+    this.reemplazarFlujos(origenId, destinoIds);
   }
 
   addSubtipificacion(tipUid: string): void {
@@ -568,6 +650,20 @@ export class AdminTipificacionFacade {
         }
       }
     }
+    const selectablePersistedIds = new Set(
+      drafts
+        .filter((tip) => tip.id !== null && tip.seleccionableManual)
+        .map((tip) => tip.id!)
+    );
+    if (selectablePersistedIds.size > 0) {
+      const hasInitial = this.flujos().some((flujo) =>
+        flujo.tipificacionOrigenId === null
+        && selectablePersistedIds.has(flujo.tipificacionDestinoId)
+      );
+      if (!hasInitial) {
+        return 'Configura al menos una tipificación inicial.';
+      }
+    }
     return null;
   }
 
@@ -614,7 +710,7 @@ export class AdminTipificacionFacade {
             })
           )
       }));
-    return { etapa, idProveedor, tipificaciones };
+    return { etapa, idProveedor, tipificaciones, flujos: this.flujos() };
   }
 
   private toDrafts(catalogo: CatalogoResponse, etapa: EtapaCatalogo): TipDraft[] {
@@ -638,6 +734,16 @@ export class AdminTipificacionFacade {
         comportamientos: sub.comportamientos ?? []
       }))
     }));
+  }
+
+  private toFlujoDrafts(catalogo: CatalogoResponse): FlujoDraft[] {
+    return (catalogo.flujos ?? [])
+      .filter((flujo) => flujo.activo !== false)
+      .map((flujo) => ({
+        tipificacionOrigenId: flujo.tipificacionOrigenId ?? null,
+        tipificacionDestinoId: flujo.tipificacionDestinoId,
+        activo: true
+      }));
   }
 
   private newTipDraft(orden: number): TipDraft {
@@ -670,7 +776,7 @@ export class AdminTipificacionFacade {
     const entradas = await Promise.all(
       this.etapaOptions
         .filter((option) => option.value !== etapaActual)
-        .map(async (option) => [option.value, await firstValueFrom(this.service.getCatalogo(option.value, idProveedor))] as const)
+        .map(async (option) => [option.value, await firstValueFrom(this.service.getCatalogo(option.value, idProveedor, false))] as const)
     );
     this.conversionCatalogos.set(Object.fromEntries(entradas) as Partial<Record<EtapaCatalogo, CatalogoResponse>>);
   }
@@ -685,6 +791,46 @@ export class AdminTipificacionFacade {
 
   private normalizeSubtipOrders(items: SubtipDraft[]): SubtipDraft[] {
     return items.map((item, index) => ({ ...item, orden: index + 1 }));
+  }
+
+  private destinosPermitidos(origenId: number | null): number[] {
+    return this.flujos()
+      .filter((flujo) => flujo.tipificacionOrigenId === origenId)
+      .map((flujo) => flujo.tipificacionDestinoId);
+  }
+
+  private reemplazarFlujos(origenId: number | null, destinoIds: number[]): void {
+    const destinos = new Set(destinoIds);
+    this.flujos.update((flujos) => [
+      ...flujos.filter((flujo) => flujo.tipificacionOrigenId !== origenId),
+      ...Array.from(destinos).map((tipificacionDestinoId) => ({
+        tipificacionOrigenId: origenId,
+        tipificacionDestinoId,
+        activo: true
+      }))
+    ]);
+    this.isDirty.set(true);
+  }
+
+  private removeFlujosConTipificacion(tipificacionId: number): void {
+    this.flujos.update((flujos) =>
+      flujos.filter((flujo) =>
+        flujo.tipificacionOrigenId !== tipificacionId
+        && flujo.tipificacionDestinoId !== tipificacionId
+      )
+    );
+    if (this.selectedFlowOriginId() === tipificacionId) {
+      this.ensureSelectedFlowOrigin();
+    }
+  }
+
+  private ensureSelectedFlowOrigin(): void {
+    const opciones = this.flujoOrigenRows();
+    const selected = this.selectedFlowOriginId();
+    if (selected !== null && opciones.some((origen) => origen.id === selected)) {
+      return;
+    }
+    this.selectedFlowOriginId.set(opciones[0]?.id ?? null);
   }
 
 }

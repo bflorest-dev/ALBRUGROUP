@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mockup - Filas con bloques plegables</title>
+  <style>
+    :root {
+      --ink: #10243f;
+      --muted: #536176;
+      --line: #dce2eb;
+      --soft: #f5f7fb;
+      --panel: #ffffff;
+      --accent: #4b1480;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --danger: #dc2626;
+      --shadow: 0 18px 42px rgba(16, 36, 63, 0.08);
+      font-family: Archivo, "Segoe UI", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #eef2f7;
+      color: var(--ink);
+      margin: 0;
+      padding: 24px;
+    }
+
+    .board {
+      display: grid;
+      gap: 14px;
+      margin: 0 auto;
+      max-width: 1280px;
+    }
+
+    .toolbar {
+      align-items: center;
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+    }
+
+    .toolbar h1 {
+      font-size: 24px;
+      line-height: 1;
+      margin: 0;
+    }
+
+    .toolbar span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .table {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      display: grid;
+      overflow: hidden;
+    }
+
+    .table-head,
+    .lead-row {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr) 132px;
+    }
+
+    .table-head {
+      background: #f8fafc;
+      border-bottom: 1px solid var(--line);
+      color: #301060;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .table-head > div {
+      padding: 11px 12px;
+      text-align: center;
+    }
+
+    .lead-row {
+      border-bottom: 1px solid var(--line);
+      min-height: 88px;
+    }
+
+    .lead-row:last-child {
+      border-bottom: 0;
+    }
+
+    .date-pin,
+    .action-pin {
+      align-content: center;
+      display: grid;
+      gap: 4px;
+      justify-items: center;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .date-pin strong,
+    .action-pin strong {
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .date-pin span,
+    .action-pin span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .blocks {
+      align-items: stretch;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr 44px 44px;
+      padding: 8px;
+      transition: grid-template-columns 180ms ease;
+    }
+
+    .lead-row[data-active="operacion"] .blocks {
+      grid-template-columns: 44px 1fr 44px;
+    }
+
+    .lead-row[data-active="gestion"] .blocks {
+      grid-template-columns: 44px 44px 1fr;
+    }
+
+    .block {
+      background: var(--soft);
+      border: 1px solid #e1e7f0;
+      border-radius: 8px;
+      display: grid;
+      min-width: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .block-tab {
+      align-items: center;
+      background: transparent;
+      border: 0;
+      color: var(--muted);
+      cursor: pointer;
+      display: grid;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      gap: 4px;
+      justify-items: center;
+      min-width: 0;
+      padding: 0;
+      text-transform: uppercase;
+    }
+
+    .block-tab i {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #dbe3ed;
+      border-radius: 7px;
+      display: inline-grid;
+      font-style: normal;
+      height: 28px;
+      place-items: center;
+      width: 28px;
+    }
+
+    .block-tab span {
+      writing-mode: vertical-rl;
+    }
+
+    .block-content {
+      align-content: center;
+      display: none;
+      gap: 8px;
+      min-width: 0;
+      padding: 10px 12px;
+    }
+
+    .lead-row[data-active="identidad"] .identity .block-content,
+    .lead-row[data-active="operacion"] .operation .block-content,
+    .lead-row[data-active="gestion"] .management .block-content {
+      display: grid;
+    }
+
+    .lead-row[data-active="identidad"] .identity .block-tab,
+    .lead-row[data-active="operacion"] .operation .block-tab,
+    .lead-row[data-active="gestion"] .management .block-tab {
+      display: none;
+    }
+
+    .identity .block-content {
+      grid-template-columns: minmax(160px, 1.4fr) minmax(96px, 0.7fr) minmax(140px, 1fr);
+    }
+
+    .operation .block-content {
+      grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) minmax(120px, 0.8fr);
+    }
+
+    .management .block-content {
+      grid-template-columns: minmax(130px, 0.8fr) minmax(220px, 1.2fr) minmax(140px, 0.8fr);
+    }
+
+    .field {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .field span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .field strong {
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 900;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pill {
+      align-items: center;
+      border-radius: 6px;
+      display: inline-flex;
+      font-size: 12px;
+      font-weight: 900;
+      justify-content: flex-start;
+      max-width: 100%;
+      min-height: 24px;
+      overflow: hidden;
+      padding: 4px 8px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 160px;
+    }
+
+    .pill-blue {
+      background: var(--blue);
+      color: #ffffff;
+    }
+
+    .pill-soft-blue {
+      background: #93c5fd;
+      color: #10243f;
+    }
+
+    .pill-green {
+      background: #dcfce7;
+      color: #08743a;
+      justify-content: center;
+      width: 110px;
+    }
+
+    .logo {
+      align-items: center;
+      background: #e11d48;
+      border-radius: 6px;
+      color: #ffffff;
+      display: inline-flex;
+      font-size: 10px;
+      font-weight: 900;
+      height: 28px;
+      justify-content: center;
+      width: 42px;
+    }
+
+    .logo-win {
+      background: #0f5d75;
+    }
+
+    .plan-line {
+      align-items: center;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .comment {
+      align-items: center;
+      display: inline-flex;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .comment i {
+      color: var(--blue);
+      font-style: normal;
+      font-weight: 900;
+    }
+
+    .action-pin button {
+      background: #10b981;
+      border: 0;
+      border-radius: 7px;
+      color: #ffffff;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      min-height: 32px;
+      padding: 0 12px;
+    }
+
+    .hint {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 8px;
+      color: #9a3412;
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.45;
+      padding: 10px 12px;
+    }
+
+    @media (max-width: 860px) {
+      body {
+        padding: 12px;
+      }
+
+      .table-head,
+      .lead-row {
+        grid-template-columns: 88px minmax(0, 1fr);
+      }
+
+      .action-pin {
+        display: none;
+      }
+
+      .identity .block-content,
+      .operation .block-content,
+      .management .block-content {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="board">
+    <section class="toolbar">
+      <div>
+        <h1>Bandeja general - filas con bloques plegables</h1>
+        <span>Mockup interactivo: cada fila muestra un bloque principal y pliega los otros dos.</span>
+      </div>
+      <span>Click en Identidad / Operacion / Gestion</span>
+    </section>
+
+    <div class="hint">
+      La fila mantiene una fecha fija a la izquierda y una accion fija a la derecha. El centro funciona como acordeon horizontal:
+      solo un bloque consume el ancho grande; los demas quedan como pestañas compactas.
+    </div>
+
+    <section class="table" aria-label="Mockup de bandeja general">
+      <div class="table-head">
+        <div>Ingreso</div>
+        <div>Bloques del lead</div>
+        <div>Accion</div>
+      </div>
+
+      <article class="lead-row" data-active="identidad">
+        <div class="date-pin">
+          <strong>09/09/26</strong>
+          <span>10:21 AM</span>
+        </div>
+
+        <div class="blocks">
+          <section class="block identity">
+            <button class="block-tab" type="button" data-tab="identidad"><i>ID</i><span>Identidad</span></button>
+            <div class="block-content">
+              <div class="field">
+                <span>Cliente</span>
+                <strong>KARLA FELICITAS VALDIVIA BALDARRAGO</strong>
+              </div>
+              <div class="field">
+                <span>Documento</span>
+                <strong>DNI 48257841</strong>
+              </div>
+              <div class="field">
+                <span>Plan</span>
+                <div class="plan-line">
+                  <b class="logo">CLARO</b>
+                  <strong>1 PLAY INTERNET - S/ 109.00</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="block operation">
+            <button class="block-tab" type="button" data-tab="operacion"><i>OP</i><span>Operacion</span></button>
+            <div class="block-content">
+              <div class="field">
+                <span>Tipificacion</span>
+                <strong class="pill pill-blue">SIN INGRESAR</strong>
+              </div>
+              <div class="field">
+                <span>Subtipificacion</span>
+                <strong class="pill pill-soft-blue">CON SEC - NO DESEA GRABACION</strong>
+              </div>
+              <div class="field">
+                <span>SEC / SOT</span>
+                <strong>106923755 / 90742597</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="block management">
+            <button class="block-tab" type="button" data-tab="gestion"><i>GE</i><span>Gestion</span></button>
+            <div class="block-content">
+              <div class="field">
+                <span>Estado</span>
+                <strong class="pill pill-green">VENTA</strong>
+              </div>
+              <div class="field">
+                <span>Ultimo gestor</span>
+                <strong class="comment"><i>✉</i> MER-CUL</strong>
+              </div>
+              <div class="field">
+                <span>Ultima gestion</span>
+                <strong>09/09/26 10:38 AM</strong>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="action-pin">
+          <button type="button">Gestionar</button>
+          <span>Fila clickeable</span>
+        </div>
+      </article>
+
+      <article class="lead-row" data-active="operacion">
+        <div class="date-pin">
+          <strong>09/09/26</strong>
+          <span>09:48 AM</span>
+        </div>
+
+        <div class="blocks">
+          <section class="block identity">
+            <button class="block-tab" type="button" data-tab="identidad"><i>ID</i><span>Identidad</span></button>
+            <div class="block-content">
+              <div class="field">
+                <span>Cliente</span>
+                <strong>SEGUNDO JUAN CARRERA</strong>
+              </div>
+              <div class="field">
+                <span>Documento</span>
+                <strong>DNI 08550375</strong>
+              </div>
+              <div class="field">
+                <span>Plan</span>
+                <div class="plan-line">
+                  <b class="logo logo-win">WIN</b>
+                  <strong>2 PLAY INTERNET + TV - S/ 170.00</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="block operation">
+            <button class="block-tab" type="button" data-tab="operacion"><i>OP</i><span>Operacion</span></button>
+            <div class="block-content">
+              <div class="field">
+                <span>Tipificacion</span>
+                <strong class="pill pill-blue">PROGRAMADO</strong>
+              </div>
+              <div class="field">
+                <span>Subtipificacion</span>
+                <strong class="pill pill-soft-blue">INICIADA</strong>
+              </div>
+              <div class="field">
+                <span>Programacion</span>
+                <strong>10/09/26 09:00 AM</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="block management">
+            <button class="block-tab" type="button" data-tab="gestion"><i>GE</i><span>Gestion</span></button>
+            <div class="block-content">
+              <div class="field">
+                <span>Estado</span>
+                <strong class="pill pill-green">GESTIONADO</strong>
+              </div>
+              <div class="field">
+                <span>Ultimo gestor</span>
+                <strong class="comment"><i>✉</i> AAR-HAN</strong>
+              </div>
+              <div class="field">
+                <span>Ultima gestion</span>
+                <strong>09/09/26 09:37 AM</strong>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="action-pin">
+          <button type="button">Gestionar</button>
+          <span>Fila clickeable</span>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    document.querySelectorAll('.block-tab').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const row = button.closest('.lead-row');
+        row.dataset.active = button.dataset.tab;
+      });
+    });
+
+    document.querySelectorAll('.lead-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        row.animate(
+          [
+            { backgroundColor: '#ffffff' },
+            { backgroundColor: '#f0f7ff' },
+            { backgroundColor: '#ffffff' }
+          ],
+          { duration: 360, easing: 'ease-out' }
+        );
+      });
+    });
+  </script>
+</body>
+</html>

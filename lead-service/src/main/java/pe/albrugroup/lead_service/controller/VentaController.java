@@ -38,9 +38,11 @@ import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadVentaAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanResponse;
+import pe.albrugroup.lead_service.entity.response.VentaResumenDiarioResponse;
 import pe.albrugroup.lead_service.service.EventoService;
 import pe.albrugroup.lead_service.service.LeadInstalacionCorreccionService;
 import pe.albrugroup.lead_service.service.LeadService;
+import pe.albrugroup.lead_service.service.VentaResumenDiarioService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -53,6 +55,7 @@ public class VentaController {
     private final LeadService leadService;
     private final EventoService eventoService;
     private final LeadInstalacionCorreccionService leadInstalacionCorreccionService;
+    private final VentaResumenDiarioService ventaResumenDiarioService;
 
     // BackOffice
     // 1. Listar Leads que se encuentren en la etapa de Venta. Permite filtrar por numero de lead.
@@ -96,6 +99,7 @@ public class VentaController {
 
     @GetMapping("/bandeja") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
     public ResponseEntity<PageResponse<LeadBandejaVentaResponse>> listarBandejaVentaNormalizada(
+            @RequestParam(required = false) String lead,
             @RequestParam(required = false) List<String> codigosTipificacion,
             @RequestParam(required = false) List<String> codigosSubtipificacion,
             @RequestParam(required = false, defaultValue = "false") boolean sinSubtipificacion,
@@ -109,6 +113,7 @@ public class VentaController {
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
         var leads = leadService.listarBandejaVentaNormalizada(
+                lead,
                 codigosTipificacion,
                 codigosSubtipificacion,
                 sinSubtipificacion,
@@ -123,6 +128,20 @@ public class VentaController {
         );
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
+
+    // Resumen diario de VENTA (replica web del reporte Excel del equipo): contadores + desglose por
+    // tipificacion + desglose por asesor + detalle. Mismo permiso que el dashboard de PREVENTA (GTR).
+    @GetMapping("/resumen-diario") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<VentaResumenDiarioResponse> resumenDiarioVenta(
+            @RequestParam(required = false) Long idEquipo,
+            @RequestParam(required = false) Long idProveedor,
+            @RequestParam(required = false) LocalDate desde,
+            @RequestParam(required = false) LocalDate hasta
+    ) {
+        var resumen = ventaResumenDiarioService.obtener(idEquipo, idProveedor, desde, hasta);
+        return ResponseEntity.status(HttpStatus.OK).body(resumen);
+    }
+
     // 2. Listar los Leads PROGRAMADOS compartidos, ordenados por fecha y hora de programacion.
     @GetMapping("/programados/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<PageResponse<LeadResponse>> listarLeadsVentaProgramadosAsignados(

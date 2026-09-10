@@ -33,4 +33,8 @@ public class MatrizCatalogoRequest {
     @Valid
     @Builder.Default
     private List<TipificacionCatalogoRequest> tipificaciones = new ArrayList<>();
+
+    @Valid
+    @Builder.Default
+    private List<FlujoMatrizTipificacionRequest> flujos = new ArrayList<>();
 }

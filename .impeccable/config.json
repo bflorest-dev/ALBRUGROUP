@@ -20,6 +20,54 @@
         ],
         "createdAt": "2026-09-02T15:15:28.834Z",
         "reason": "Angular [src] binding is dynamic (providerLogo signal); same pattern as original component, static analysis cannot see it"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#3fd199",
+        "createdAt": "2026-09-10T14:05:23.432Z",
+        "reason": "paleta semantica de estados del poster oscuro de VENTA/Seguimiento (mundo dark intencional, coherente con los posters de venta/preventa existentes); no es --app-* del sistema claro"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#4bb6d8",
+        "createdAt": "2026-09-10T14:05:23.532Z",
+        "reason": "paleta semantica de estados del poster oscuro de VENTA/Seguimiento (mundo dark intencional, coherente con los posters de venta/preventa existentes); no es --app-* del sistema claro"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#86d69f",
+        "createdAt": "2026-09-10T14:05:23.628Z",
+        "reason": "paleta semantica de estados del poster oscuro de VENTA/Seguimiento (mundo dark intencional, coherente con los posters de venta/preventa existentes); no es --app-* del sistema claro"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#e8a857",
+        "createdAt": "2026-09-10T14:05:23.754Z",
+        "reason": "paleta semantica de estados del poster oscuro de VENTA/Seguimiento (mundo dark intencional, coherente con los posters de venta/preventa existentes); no es --app-* del sistema claro"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#e07f4c",
+        "createdAt": "2026-09-10T14:05:23.854Z",
+        "reason": "paleta semantica de estados del poster oscuro de VENTA/Seguimiento (mundo dark intencional, coherente con los posters de venta/preventa existentes); no es --app-* del sistema claro"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#d6564f",
+        "createdAt": "2026-09-10T14:05:23.951Z",
+        "reason": "paleta semantica de estados del poster oscuro de VENTA/Seguimiento (mundo dark intencional, coherente con los posters de venta/preventa existentes); no es --app-* del sistema claro"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#8d8272",
+        "createdAt": "2026-09-10T14:05:24.049Z",
+        "reason": "paleta semantica de estados del poster oscuro de VENTA/Seguimiento (mundo dark intencional, coherente con los posters de venta/preventa existentes); no es --app-* del sistema claro"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#9b8fd1",
+        "createdAt": "2026-09-10T14:05:24.148Z",
+        "reason": "paleta semantica de estados del poster oscuro de VENTA/Seguimiento (mundo dark intencional, coherente con los posters de venta/preventa existentes); no es --app-* del sistema claro"
       }
     ]
   }

@@ -1,0 +1,208 @@
+<div class="seguimiento-controls">
+  <ng-content></ng-content>
+</div>
+
+@if (facade.isInitialLoading()) {
+  <div class="seguimiento-loading">Cargando seguimiento de ventas…</div>
+} @else if (facade.showErrorPlaceholder()) {
+  <p-message severity="error" text="No se pudo cargar el seguimiento de ventas." styleClass="seguimiento-msg" />
+} @else {
+  <div
+    class="poster"
+    [class.is-switching]="facade.isSwitching()"
+    [class.is-refreshing]="facade.isRefreshing()"
+    [style.--team-accent]="teamAccent()"
+    [style.--team-on]="teamOn()"
+  >
+    <header class="head">
+      <h3 class="title">
+        Seguimiento de ventas
+        <small>Leads ingresados a la etapa de venta · {{ fechaLabel() }}</small>
+      </h3>
+      <div class="head-right">
+        <span class="team"><span class="team-dot"></span>{{ facade.equipoInfo()?.nombre }}</span>
+        @if (facade.isRefreshing()) {
+          <span class="refreshing"><span class="refreshing-dot"></span>Actualizando</span>
+        }
+      </div>
+    </header>
+
+    @if (facade.isEmpty()) {
+      <div class="seguimiento-empty">No hubo leads ingresados a venta en el período seleccionado.</div>
+    } @else {
+      <!-- Embudo: Ingresadas → Subidas → Instaladas + las 3 conversiones -->
+      <section class="embudo">
+        <div class="funnel">
+          <div class="frow">
+            <div class="bar b1" [style.width.%]="100">
+              <span class="bn">{{ facade.contadores().ingresadas }}</span><span class="bl">Ingresadas</span>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="bar b2" [style.width.%]="anchoSubidas()">
+              <span class="bn">{{ facade.contadores().subidas }}</span><span class="bl">Subidas</span>
+            </div>
+            <span class="conv">Conversión ingreso→subido <b>{{ facade.contadores().conversion | number:'1.0-1' }}%</b></span>
+          </div>
+          <div class="frow">
+            <div class="bar b3" [style.width.%]="anchoInstaladas()">
+              <span class="bn">{{ facade.contadores().instaladas }}</span><span class="bl">Instaladas</span>
+            </div>
+            <span class="conv">Efectividad operador <b>{{ facade.contadores().efectividadOperador | number:'1.0-1' }}%</b> · sobre subidas</span>
+          </div>
+        </div>
+        <div class="agencia">
+          <div class="big">{{ facade.contadores().efectividadAgencia | number:'1.0-1' }}%</div>
+          <div class="lbl">Efectividad agencia</div>
+          <div class="sub">Instaladas / Ingresadas</div>
+        </div>
+      </section>
+
+      <div class="grid">
+        <!-- Distribución por tipificación -->
+        <section class="panel">
+          <div class="panel-head"><h4 class="sec">Distribución por tipificación</h4><span class="tag">{{ facade.contadores().ingresadas }} leads</span></div>
+          <div class="panel-body">
+            <div class="dist">
+              @for (celda of facade.tipificaciones(); track celda.clave) {
+                <div class="drow">
+                  <span class="dname"><span class="sw" [style.background]="celda.color"></span>{{ celda.label }}</span>
+                  <div class="track"><div class="fill" [style.width.%]="(celda.cantidad / facade.maxTipiCantidad()) * 100" [style.background]="celda.color"></div></div>
+                  <span class="dval"><b>{{ celda.cantidad }}</b>{{ celda.porcentaje | number:'1.0-0' }}%</span>
+                </div>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- Preventas por asesor -->
+        <section class="panel">
+          <div class="panel-head"><h4 class="sec">Preventas por asesor</h4><span class="tag">mérito de preventa</span></div>
+          <div class="panel-body">
+            <div class="asesores">
+              @for (asesor of facade.porAsesor(); track asesor.key) {
+                <div class="arow">
+                  <span class="aname" [class.na]="asesor.idAsesor === null">{{ asesor.nombreAsesor }}</span>
+                  <span class="atot">{{ asesor.total }}</span>
+                  <div class="stack">
+                    @for (seg of segmentos(asesor); track seg.key) {
+                      <span class="seg" [style.width.%]="seg.width" [style.background]="seg.color"
+                        [pTooltip]="seg.label + ': ' + seg.cantidad" tooltipPosition="top"></span>
+                    }
+                  </div>
+                </div>
+              } @empty {
+                <div class="seguimiento-empty">Sin preventas en el período.</div>
+              }
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Leyenda de estados (centrada) -->
+      <div class="legend">
+        @for (celda of facade.tipificaciones(); track celda.clave) {
+          <span class="lg"><span class="sw" [style.background]="celda.color"></span>{{ celda.label }}</span>
+        }
+      </div>
+
+      <!-- Detalle -->
+      <section class="panel detalle">
+        <div class="panel-head">
+          <h4 class="sec">Detalle de leads ingresados</h4>
+          <span class="tag">{{ totalFiltrado() }}@if (totalFiltrado() !== facade.detalle().length) { <span> de {{ facade.detalle().length }}</span> } leads</span>
+        </div>
+        <div class="toolbar">
+          <span class="search">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m11 11 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <input type="text" [value]="search()" (input)="onSearch($any($event.target).value)" placeholder="Buscar por lead, documento o cliente" aria-label="Buscar en el detalle">
+          </span>
+          <label class="ctrl">
+            <span class="k">Agrupar por</span>
+            <select (change)="onGroupBy($any($event.target).value)">
+              <option value="none">Ninguno</option>
+              <option value="asesor">Asesor</option>
+              <option value="tipificacion">Tipificación</option>
+              <option value="ubicacion">Ubicación</option>
+            </select>
+          </label>
+          <label class="ctrl">
+            <span class="k">Asesor</span>
+            <select (change)="onFiltroAsesor($any($event.target).value)">
+              <option value="">Todos</option>
+              @for (nombre of asesorOptions(); track nombre) {
+                <option [value]="nombre">{{ nombre }}</option>
+              }
+            </select>
+          </label>
+          <label class="ctrl">
+            <span class="k">Tipificación</span>
+            <select (change)="onFiltroTipi($any($event.target).value)">
+              <option value="">Todas</option>
+              @for (opt of tipiOptions(); track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+          </label>
+          @if (hayFiltros()) {
+            <button type="button" class="ctrl-clear" (click)="limpiarFiltros()">Limpiar</button>
+          }
+        </div>
+        <div class="panel-body">
+          <div class="scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th><th>Ingreso</th><th>Tipificación</th><th>Asesor preventa</th><th>Asesor venta</th>
+                  <th>Fecha relevante</th><th>Coment.</th><th>Lead</th><th>Doc</th><th>N° documento</th>
+                  <th>Cliente</th><th>Cel. registro</th><th>Cel. referencia</th><th>Ubicación</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (grupo of grupos(); track grupo.key) {
+                  @if (showGroupHeaders()) {
+                    <tr class="group-row"><td colspan="14"><span class="group-label">{{ grupo.label }}</span><span class="group-count">{{ grupo.cantidad }}</span></td></tr>
+                  }
+                  @for (fila of grupo.filas; track fila.idLead) {
+                    <tr>
+                      <td class="ord">{{ fila.orden }}</td>
+                      <td class="mono">{{ hora(fila.fechaIngresoEtapa) }}</td>
+                      <td>
+                        <span class="pill" [style.color]="pillMeta(fila).color"
+                          [style.border-color]="pillMeta(fila).color + '66'"
+                          [style.background]="pillMeta(fila).color + '1f'">{{ pillMeta(fila).label }}</span>
+                      </td>
+                      <td>{{ fila.asesorMerito || '—' }}</td>
+                      <td [class.dash]="!fila.asesorUltimaGestion">{{ fila.asesorUltimaGestion || '—' }}</td>
+                      <td class="mono">{{ fechaRelevanteLabel(fila) }}</td>
+                      <td class="cmt-cell">
+                        @if (fila.comentario) {
+                          <button type="button" class="cmt-btn" aria-label="Ver comentario"
+                            [pTooltip]="fila.comentario" tooltipPosition="top" tooltipStyleClass="venta-cmt-tip">
+                            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M2.5 3.5h11c0.55 0 1 0.45 1 1v5.5c0 0.55-0.45 1-1 1H6.5L3.5 13.5V11H2.5c-0.55 0-1-0.45-1-1V4.5c0-0.55 0.45-1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>
+                          </button>
+                        } @else {
+                          <span class="cmt-none">—</span>
+                        }
+                      </td>
+                      <td class="mono">{{ fila.lead || '—' }}</td>
+                      <td>{{ fila.tipoDocumento || '—' }}</td>
+                      <td class="mono">{{ fila.numeroDocumento || '—' }}</td>
+                      <td class="cli">{{ fila.nombreCliente || '—' }}</td>
+                      <td class="mono">{{ fila.celularRegistro || '—' }}</td>
+                      <td class="mono">{{ fila.celularReferencia || '—' }}</td>
+                      <td>{{ ubicacion(fila) }}</td>
+                    </tr>
+                  }
+                }
+                @if (totalFiltrado() === 0) {
+                  <tr><td colspan="14" class="detalle-empty">Ningún lead coincide con los filtros.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    }
+  </div>
+}

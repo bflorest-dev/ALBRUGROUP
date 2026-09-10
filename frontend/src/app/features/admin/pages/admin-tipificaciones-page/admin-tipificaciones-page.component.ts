@@ -5,6 +5,7 @@ import { CanDeactivateFn } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ToastModule } from 'primeng/toast';
@@ -27,6 +28,7 @@ import {
     DragDropModule,
     ButtonModule,
     InputTextModule,
+    MultiSelectModule,
     SelectModule,
     SkeletonModule,
     ToastModule,

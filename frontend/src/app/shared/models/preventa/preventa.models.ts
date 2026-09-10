@@ -278,6 +278,79 @@ export interface LeadVentaResponse {
   comentario?: string | null;
 }
 
+export type OrigenFilaBandejaVenta = 'ESTADO_ACTUAL' | 'EVENTO_TIPIFICACION';
+export type TipoFechaRelevanteVenta =
+  | 'PROGRAMACION'
+  | 'RECHAZO'
+  | 'INSTALACION'
+  | 'TIPIFICACION'
+  | 'INGRESO'
+  | 'ULTIMA_GESTION';
+export type CampoFechaListadoVenta =
+  | 'AUTO'
+  | 'PROGRAMACION'
+  | 'RECHAZO'
+  | 'INSTALACION'
+  | 'TIPIFICACION'
+  | 'TIPIFICACION_INSTALADO'
+  | 'INGRESO'
+  | 'ULTIMA_GESTION';
+
+export interface LeadBandejaVentaResponse {
+  idLead: number;
+  idEventoReferencia?: number | null;
+  origenFila?: OrigenFilaBandejaVenta | string | null;
+  etapaActual?: Etapa | string | null;
+  estadoSeguimiento?: EstadoSeguimiento | string | null;
+  estadoClientePostventa?: string | null;
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
+  tipoDocumento?: string | null;
+  numeroDocumento?: string | null;
+  nombreCliente?: string | null;
+  departamentoGrupo?: string | null;
+  base?: BaseLead | string | null;
+  idTipificacionActual?: number | null;
+  codigoTipificacionActual?: string | null;
+  idSubtipificacionActual?: number | null;
+  codigoSubtipificacionActual?: string | null;
+  codigoTipificacionBandeja?: string | null;
+  codigoSubtipificacionBandeja?: string | null;
+  proveedor?: string | null;
+  plan?: string | null;
+  precioPlan?: number | null;
+  promocion?: string | null;
+  precioAdicionales?: number | null;
+  precioFinal?: number | null;
+  diaCorteFacturacion?: number | null;
+  mesesPermanencia?: number | null;
+  createdAt?: string | null;
+  lastEntryAt?: string | null;
+  fechaIngresoEtapa?: string | null;
+  updatedAt?: string | null;
+  sec?: string | null;
+  sot?: string | null;
+  customerId?: string | null;
+  requiereSecSotVenta?: boolean | null;
+  nombreAsesorMeritoPreventa?: string | null;
+  nombreAsesorUltimaGestion?: string | null;
+  fechaUltimaGestion?: string | null;
+  idAsesorEvento?: number | null;
+  nombreAsesorEvento?: string | null;
+  fechaProgramacion?: string | null;
+  horaProgramada?: string | null;
+  fechaRechazo?: string | null;
+  fechaInstalacion?: string | null;
+  fechaTipificacion?: string | null;
+  comentarioTipificacion?: string | null;
+  comentarioLead?: string | null;
+  fechaRelevante?: string | null;
+  horaRelevante?: string | null;
+  fechaRelevanteAt?: string | null;
+  tipoFechaRelevante?: TipoFechaRelevanteVenta | string | null;
+}
+
 export interface LeadInstaladoBackofficeResponse {
   idLead: number;
   prefijo?: string | null;
@@ -808,6 +881,14 @@ export interface EventoResponse {
 export interface CatalogoResponse {
   etapa: string;
   tipificaciones: TipificacionResponse[];
+  flujos?: FlujoMatrizTipificacionResponse[];
+}
+
+export interface FlujoMatrizTipificacionResponse {
+  id?: number | null;
+  tipificacionOrigenId?: number | null;
+  tipificacionDestinoId: number;
+  activo?: boolean | null;
 }
 
 export interface TipificacionResponse {
@@ -872,6 +953,7 @@ export interface CatalogoRequest {
   etapa: string;
   idProveedor: number;
   tipificaciones: TipificacionCatalogoRequest[];
+  flujos?: FlujoMatrizTipificacionResponse[];
 }
 
 export type MatrizCatalogoRequest = CatalogoRequest;

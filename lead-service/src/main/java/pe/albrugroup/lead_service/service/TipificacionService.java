@@ -6,6 +6,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import pe.albrugroup.lead_service.configuration.CacheNames;
+import pe.albrugroup.lead_service.entity.FlujoMatrizTipificacion;
 import pe.albrugroup.lead_service.entity.MatrizTipificacion;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
@@ -14,14 +15,17 @@ import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.CatalogoEstadoRequest;
 import pe.albrugroup.lead_service.entity.request.CatalogoRequest;
+import pe.albrugroup.lead_service.entity.request.FlujoMatrizTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.MatrizCatalogoRequest;
 import pe.albrugroup.lead_service.entity.request.SubtipificacionCatalogoRequest;
 import pe.albrugroup.lead_service.entity.request.TipificacionCatalogoRequest;
 import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
+import pe.albrugroup.lead_service.entity.response.FlujoMatrizTipificacionResponse;
 import pe.albrugroup.lead_service.entity.response.SubtipificacionResponse;
 import pe.albrugroup.lead_service.entity.response.TipificacionResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
+import pe.albrugroup.lead_service.repository.FlujoMatrizTipificacionRepository;
 import pe.albrugroup.lead_service.repository.MatrizTipificacionRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
@@ -50,28 +54,76 @@ public class TipificacionService {
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
     private final MatrizTipificacionRepository matrizTipificacionRepository;
+    private final FlujoMatrizTipificacionRepository flujoMatrizTipificacionRepository;
     private final ProveedorRepository proveedorRepository;
     private final TipificacionMapper mapper;
 
     @Cacheable(value = CacheNames.TIPIFICACIONES, key = "#etapa + '_' + #idProveedor")
     public CatalogoResponse getCatalogo(Etapa etapa, Long idProveedor) {
+        return getCatalogo(etapa, idProveedor, true);
+    }
+
+    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "#etapa + '_' + #idProveedor + '_flujos_' + #includeFlujos")
+    public CatalogoResponse getCatalogo(Etapa etapa, Long idProveedor, boolean includeFlujos) {
+        MatrizTipificacion matriz = matrizTipificacionRepository.findByEtapaAndProveedorIdAndActivoTrue(etapa, idProveedor)
+                .orElse(null);
+        if (matriz == null) {
+            return new CatalogoResponse(etapa, List.of());
+        }
         List<Tipificacion> tipificaciones =
                 tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndActivoTrueOrderByOrdenAsc(etapa, idProveedor);
-        return construirCatalogo(etapa, tipificaciones);
+        List<FlujoMatrizTipificacionResponse> flujos = includeFlujos ? construirFlujos(matriz.getId()) : List.of();
+        return construirCatalogo(etapa, tipificaciones, flujos);
     }
 
-    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "'operativo_' + #etapa + '_' + #idProveedor")
-    public CatalogoResponse getCatalogoOperativo(Etapa etapa, Long idProveedor) {
+    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "'operativo_' + #etapa + '_' + #idProveedor + '_' + (#idTipificacionOrigen == null ? 'INICIAL' : #idTipificacionOrigen)")
+    public CatalogoResponse getCatalogoOperativo(Etapa etapa, Long idProveedor, Long idTipificacionOrigen) {
+        MatrizTipificacion matriz = matrizTipificacionRepository.findByEtapaAndProveedorIdAndActivoTrue(etapa, idProveedor)
+                .orElse(null);
+        if (matriz == null) {
+            return new CatalogoResponse(etapa, List.of());
+        }
+        Set<Long> destinosPermitidos = idsDestinoPermitidos(matriz.getId(), idTipificacionOrigen);
         List<Tipificacion> tipificaciones =
                 tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndSeleccionableManualTrueAndActivoTrueOrderByOrdenAsc(
-                        etapa, idProveedor);
-        return construirCatalogo(etapa, tipificaciones);
+                        etapa, idProveedor)
+                        .stream()
+                        .filter(tipificacion -> destinosPermitidos.contains(tipificacion.getId()))
+                        .toList();
+        return construirCatalogo(etapa, tipificaciones, List.of());
     }
 
-    private CatalogoResponse construirCatalogo(Etapa etapa, List<Tipificacion> tipificaciones) {
+    public void validarTipificacionPermitida(Etapa etapa, Long idProveedor, Long idTipificacionOrigen, Tipificacion destino) {
+        MatrizTipificacion matriz = matrizTipificacionRepository.findByEtapaAndProveedorIdAndActivoTrue(etapa, idProveedor)
+                .orElseThrow(() -> new NotFoundException(MatrizTipificacion.class, idProveedor));
+        MatrizTipificacion matrizDestino = destino.getMatriz();
+        if (matrizDestino == null
+                || !Objects.equals(matrizDestino.getId(), matriz.getId())
+                || !Boolean.TRUE.equals(destino.getActivo())
+                || !Boolean.TRUE.equals(destino.getSeleccionableManual())) {
+            throw new BadRequestException(
+                    "La tipificacion no pertenece al flujo operativo permitido",
+                    destino.getId(),
+                    Map.of("etapa", etapa, "idProveedor", idProveedor)
+            );
+        }
+        if (!idsDestinoPermitidos(matriz.getId(), idTipificacionOrigen).contains(destino.getId())) {
+            throw new BadRequestException(
+                    "La tipificacion no esta permitida desde el estado actual del lead",
+                    destino.getId(),
+                    Map.of("idTipificacionOrigen", idTipificacionOrigen)
+            );
+        }
+    }
+
+    private CatalogoResponse construirCatalogo(
+            Etapa etapa,
+            List<Tipificacion> tipificaciones,
+            List<FlujoMatrizTipificacionResponse> flujos
+    ) {
         // Fail-closed: si el proveedor aún no tiene matriz en esta etapa, el catálogo viene vacío.
         if (tipificaciones.isEmpty()) {
-            return new CatalogoResponse(etapa, List.of());
+            return new CatalogoResponse(etapa, List.of(), flujos);
         }
 
         List<Subtipificacion> subtipificaciones = subtipificacionRepository
@@ -92,7 +144,7 @@ public class TipificacionService {
                 ))
                 .toList();
 
-        return new CatalogoResponse(etapa, tipificacionesResponse);
+        return new CatalogoResponse(etapa, tipificacionesResponse, flujos);
     }
 
     // Catálogo AGREGADO cross-proveedor: unión de las matrices activas de la etapa, deduplicada por código
@@ -316,6 +368,11 @@ public class TipificacionService {
             }
         }
 
+        List<Tipificacion> tipificacionesPersistidas = tipificacionPorRequest.values().stream()
+                .distinct()
+                .toList();
+        guardarFlujosMatriz(matrizCabecera, request.getFlujos(), tipificacionesPersistidas);
+
         return getCatalogo(request.getEtapa(), request.getIdProveedor());
     }
 
@@ -365,7 +422,211 @@ public class TipificacionService {
                 .idProveedor(idProveedorDestino)
                 .tipificaciones(copia)
                 .build();
-        return guardarMatrizCatalogo(request);
+        CatalogoResponse destino = guardarMatrizCatalogo(request);
+        copiarFlujosClonados(etapa, idProveedorOrigen, idProveedorDestino, origen, destino);
+        return getCatalogo(etapa, idProveedorDestino);
+    }
+
+    private List<FlujoMatrizTipificacionResponse> construirFlujos(Long matrizId) {
+        return flujoMatrizTipificacionRepository.findByMatrizIdAndActivoTrue(matrizId).stream()
+                .map(this::toFlujoResponse)
+                .toList();
+    }
+
+    private FlujoMatrizTipificacionResponse toFlujoResponse(FlujoMatrizTipificacion flujo) {
+        return FlujoMatrizTipificacionResponse.builder()
+                .id(flujo.getId())
+                .tipificacionOrigenId(flujo.getTipificacionOrigen() == null ? null : flujo.getTipificacionOrigen().getId())
+                .tipificacionDestinoId(flujo.getTipificacionDestino().getId())
+                .activo(flujo.getActivo())
+                .build();
+    }
+
+    private Set<Long> idsDestinoPermitidos(Long matrizId, Long idTipificacionOrigen) {
+        List<FlujoMatrizTipificacion> flujos = idTipificacionOrigen == null
+                ? flujoMatrizTipificacionRepository.findByMatrizIdAndTipificacionOrigenIsNullAndActivoTrue(matrizId)
+                : flujoMatrizTipificacionRepository.findByMatrizIdAndTipificacionOrigenIdAndActivoTrue(matrizId, idTipificacionOrigen);
+        return flujos.stream()
+                .map(flujo -> flujo.getTipificacionDestino().getId())
+                .collect(Collectors.toSet());
+    }
+
+    private void guardarFlujosMatriz(
+            MatrizTipificacion matriz,
+            List<FlujoMatrizTipificacionRequest> flujosRequest,
+            List<Tipificacion> tipificaciones
+    ) {
+        Map<Long, Tipificacion> tipificacionesPorId = tipificaciones.stream()
+                .filter(tipificacion -> tipificacion.getId() != null)
+                .collect(Collectors.toMap(Tipificacion::getId, Function.identity()));
+        List<FlujoMatrizTipificacionRequest> flujosNormalizados =
+                normalizarFlujosParaGuardar(flujosRequest, tipificaciones);
+        validarFlujosMatriz(flujosNormalizados, tipificacionesPorId);
+
+        List<FlujoMatrizTipificacion> existentes =
+                flujoMatrizTipificacionRepository.findByMatrizIdAndActivoTrue(matriz.getId());
+        Map<String, FlujoMatrizTipificacion> existentesPorClave = existentes.stream()
+                .collect(Collectors.toMap(this::claveFlujo, Function.identity(), (left, right) -> left));
+        Set<String> clavesSolicitadas = new HashSet<>();
+        for (FlujoMatrizTipificacionRequest flujoRequest : flujosNormalizados) {
+            if (Boolean.FALSE.equals(flujoRequest.getActivo())) {
+                continue;
+            }
+            String clave = claveFlujo(flujoRequest.getTipificacionOrigenId(), flujoRequest.getTipificacionDestinoId());
+            clavesSolicitadas.add(clave);
+            FlujoMatrizTipificacion flujo = existentesPorClave.getOrDefault(clave, new FlujoMatrizTipificacion());
+            flujo.setMatriz(matriz);
+            flujo.setTipificacionOrigen(flujoRequest.getTipificacionOrigenId() == null
+                    ? null
+                    : tipificacionesPorId.get(flujoRequest.getTipificacionOrigenId()));
+            flujo.setTipificacionDestino(tipificacionesPorId.get(flujoRequest.getTipificacionDestinoId()));
+            flujo.setActivo(Boolean.TRUE);
+            flujoMatrizTipificacionRepository.save(flujo);
+        }
+        for (FlujoMatrizTipificacion existente : existentes) {
+            if (!clavesSolicitadas.contains(claveFlujo(existente))) {
+                existente.setActivo(Boolean.FALSE);
+                flujoMatrizTipificacionRepository.save(existente);
+            }
+        }
+    }
+
+    private List<FlujoMatrizTipificacionRequest> normalizarFlujosParaGuardar(
+            List<FlujoMatrizTipificacionRequest> flujosRequest,
+            List<Tipificacion> tipificaciones
+    ) {
+        if (flujosRequest != null && !flujosRequest.isEmpty()) {
+            return flujosRequest;
+        }
+        List<Tipificacion> destinosSeleccionables = tipificaciones.stream()
+                .filter(tipificacion -> Boolean.TRUE.equals(tipificacion.getActivo()))
+                .filter(tipificacion -> Boolean.TRUE.equals(tipificacion.getSeleccionableManual()))
+                .toList();
+        List<Tipificacion> origenes = tipificaciones.stream()
+                .filter(tipificacion -> Boolean.TRUE.equals(tipificacion.getActivo()))
+                .toList();
+        List<FlujoMatrizTipificacionRequest> abiertos = new ArrayList<>();
+        for (Tipificacion destino : destinosSeleccionables) {
+            abiertos.add(FlujoMatrizTipificacionRequest.builder()
+                    .tipificacionOrigenId(null)
+                    .tipificacionDestinoId(destino.getId())
+                    .activo(Boolean.TRUE)
+                    .build());
+        }
+        for (Tipificacion origen : origenes) {
+            for (Tipificacion destino : destinosSeleccionables) {
+                abiertos.add(FlujoMatrizTipificacionRequest.builder()
+                        .tipificacionOrigenId(origen.getId())
+                        .tipificacionDestinoId(destino.getId())
+                        .activo(Boolean.TRUE)
+                        .build());
+            }
+        }
+        return abiertos;
+    }
+
+    private void validarFlujosMatriz(
+            List<FlujoMatrizTipificacionRequest> flujos,
+            Map<Long, Tipificacion> tipificacionesPorId
+    ) {
+        boolean haySeleccionables = tipificacionesPorId.values().stream()
+                .anyMatch(tipificacion -> Boolean.TRUE.equals(tipificacion.getSeleccionableManual())
+                        && Boolean.TRUE.equals(tipificacion.getActivo()));
+        Set<String> claves = new HashSet<>();
+        boolean tieneInicial = false;
+        for (FlujoMatrizTipificacionRequest flujo : Objects.requireNonNullElse(flujos, List.<FlujoMatrizTipificacionRequest>of())) {
+            if (Boolean.FALSE.equals(flujo.getActivo())) {
+                continue;
+            }
+            Tipificacion destino = tipificacionesPorId.get(flujo.getTipificacionDestinoId());
+            if (destino == null || !Boolean.TRUE.equals(destino.getActivo())) {
+                throw new BadRequestException("El flujo apunta a una tipificacion destino fuera de la matriz", flujo.getTipificacionDestinoId(), null);
+            }
+            if (!Boolean.TRUE.equals(destino.getSeleccionableManual())) {
+                throw new BadRequestException("El flujo no puede apuntar a una tipificacion no seleccionable", destino.getId(), null);
+            }
+            if (flujo.getTipificacionOrigenId() != null) {
+                Tipificacion origen = tipificacionesPorId.get(flujo.getTipificacionOrigenId());
+                if (origen == null || !Boolean.TRUE.equals(origen.getActivo())) {
+                    throw new BadRequestException("El flujo apunta a una tipificacion origen fuera de la matriz", flujo.getTipificacionOrigenId(), null);
+                }
+            } else {
+                tieneInicial = true;
+            }
+            if (!claves.add(claveFlujo(flujo.getTipificacionOrigenId(), flujo.getTipificacionDestinoId()))) {
+                throw new BadRequestException("La matriz contiene flujos duplicados", flujo.getTipificacionDestinoId(), null);
+            }
+        }
+        if (haySeleccionables && !tieneInicial) {
+            throw new BadRequestException("La matriz necesita al menos una tipificacion inicial", null, null);
+        }
+    }
+
+    private void copiarFlujosClonados(
+            Etapa etapa,
+            Long idProveedorOrigen,
+            Long idProveedorDestino,
+            CatalogoResponse origen,
+            CatalogoResponse destino
+    ) {
+        MatrizTipificacion matrizDestino = matrizTipificacionRepository.findByEtapaAndProveedorIdAndActivoTrue(etapa, idProveedorDestino)
+                .orElseThrow(() -> new NotFoundException(MatrizTipificacion.class, idProveedorDestino));
+        Map<Long, Long> idsDestinoPorOrigen = mapearIdsClonados(origen, destino);
+        List<FlujoMatrizTipificacionRequest> flujos = Objects.requireNonNullElse(origen.getFlujos(), List.<FlujoMatrizTipificacionResponse>of())
+                .stream()
+                .map(flujo -> remapearFlujoClonado(flujo, idsDestinoPorOrigen))
+                .filter(Objects::nonNull)
+                .filter(flujo -> flujo.getTipificacionDestinoId() != null)
+                .toList();
+        List<Tipificacion> tipificacionesDestino =
+                tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndActivoTrueOrderByOrdenAsc(etapa, idProveedorDestino);
+        guardarFlujosMatriz(matrizDestino, flujos, tipificacionesDestino);
+    }
+
+    private FlujoMatrizTipificacionRequest remapearFlujoClonado(
+            FlujoMatrizTipificacionResponse flujo,
+            Map<Long, Long> idsDestinoPorOrigen
+    ) {
+        Long destinoId = idsDestinoPorOrigen.get(flujo.getTipificacionDestinoId());
+        if (destinoId == null) {
+            return null;
+        }
+        Long origenId = null;
+        if (flujo.getTipificacionOrigenId() != null) {
+            origenId = idsDestinoPorOrigen.get(flujo.getTipificacionOrigenId());
+            if (origenId == null) {
+                return null;
+            }
+        }
+        return FlujoMatrizTipificacionRequest.builder()
+                .tipificacionOrigenId(origenId)
+                .tipificacionDestinoId(destinoId)
+                .activo(flujo.getActivo())
+                .build();
+    }
+
+    private Map<Long, Long> mapearIdsClonados(CatalogoResponse origen, CatalogoResponse destino) {
+        Map<String, Long> destinoPorCodigo = destino.getTipificaciones().stream()
+                .collect(Collectors.toMap(tipificacion -> normalizarCodigo(tipificacion.getCodigo()), TipificacionResponse::getId));
+        Map<Long, Long> idsDestinoPorOrigen = new HashMap<>();
+        for (TipificacionResponse tipificacionOrigen : origen.getTipificaciones()) {
+            Long idDestino = destinoPorCodigo.get(normalizarCodigo(tipificacionOrigen.getCodigo()));
+            if (idDestino != null) {
+                idsDestinoPorOrigen.put(tipificacionOrigen.getId(), idDestino);
+            }
+        }
+        return idsDestinoPorOrigen;
+    }
+
+    private String claveFlujo(FlujoMatrizTipificacion flujo) {
+        return claveFlujo(
+                flujo.getTipificacionOrigen() == null ? null : flujo.getTipificacionOrigen().getId(),
+                flujo.getTipificacionDestino().getId()
+        );
+    }
+
+    private String claveFlujo(Long idOrigen, Long idDestino) {
+        return (idOrigen == null ? "INICIAL" : idOrigen.toString()) + "->" + idDestino;
     }
 
     private void validarMatriz(List<TipificacionCatalogoRequest> matriz) {

@@ -18,4 +18,11 @@ public class CatalogoResponse {
 
     private Etapa etapa;
     private List<TipificacionResponse> tipificaciones;
+    private List<FlujoMatrizTipificacionResponse> flujos;
+
+    public CatalogoResponse(Etapa etapa, List<TipificacionResponse> tipificaciones) {
+        this.etapa = etapa;
+        this.tipificaciones = tipificaciones;
+        this.flujos = List.of();
+    }
 }

@@ -6,7 +6,9 @@ import {
   AdicionalResponse,
   CatalogoResponse,
   EventoResponse,
+  CampoFechaListadoVenta,
   LeadContextoLookupResponse,
+  LeadBandejaVentaResponse,
   LeadDatosPreventaRequest,
   LeadDetalleResponse,
   LeadInstalacionCorreccionCandidatoResponse,
@@ -21,6 +23,7 @@ import {
   LeadVentaGroupFilter,
   LeadVentaGroupsResponse,
   LeadVentaResponse,
+  OrigenFilaBandejaVenta,
   PageQuery,
   PlanResponse,
   PromocionComercialResponse,
@@ -30,6 +33,20 @@ import {
 export interface LeadRechazadosFilters {
   fechaDesde?: string | null;
   fechaHasta?: string | null;
+}
+
+export interface LeadBandejaVentaNormalizadaQuery extends PageQuery {
+  lead?: string | null;
+  codigosTipificacion?: string[];
+  codigosSubtipificacion?: string[];
+  sinSubtipificacion?: boolean;
+  origen?: OrigenFilaBandejaVenta;
+  etapasActuales?: string[];
+  idEquipo?: number | null;
+  fechaDesde?: string | null;
+  fechaHasta?: string | null;
+  campoFecha?: CampoFechaListadoVenta | string | null;
+  groupBy?: string | null;
 }
 
 export type BackofficeHistorialAccion = 'TIPIFICACION' | 'ASIGNACION' | 'CONTACTO' | 'CORRECCION';
@@ -62,6 +79,46 @@ export class BackofficeLeadService {
       params = params.set('groupBy', groupBy);
     }
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta`, { params });
+  }
+
+  listarBandejaVentaNormalizada(
+    query: LeadBandejaVentaNormalizadaQuery
+  ): Observable<LeadPage<LeadBandejaVentaResponse>> {
+    let params = this.pageParams(query);
+    if (query.lead) {
+      params = params.set('lead', query.lead);
+    }
+    for (const codigo of query.codigosTipificacion ?? []) {
+      params = params.append('codigosTipificacion', codigo);
+    }
+    for (const codigo of query.codigosSubtipificacion ?? []) {
+      params = params.append('codigosSubtipificacion', codigo);
+    }
+    if (query.sinSubtipificacion) {
+      params = params.set('sinSubtipificacion', true);
+    }
+    if (query.origen) {
+      params = params.set('origen', query.origen);
+    }
+    for (const etapa of query.etapasActuales ?? []) {
+      params = params.append('etapasActuales', etapa);
+    }
+    if (query.idEquipo !== null && query.idEquipo !== undefined) {
+      params = params.set('idEquipo', query.idEquipo);
+    }
+    if (query.fechaDesde) {
+      params = params.set('fechaDesde', query.fechaDesde);
+    }
+    if (query.fechaHasta) {
+      params = params.set('fechaHasta', query.fechaHasta);
+    }
+    if (query.campoFecha) {
+      params = params.set('campoFecha', query.campoFecha);
+    }
+    if (query.groupBy) {
+      params = params.set('groupBy', query.groupBy);
+    }
+    return this.http.get<LeadPage<LeadBandejaVentaResponse>>(`${this.leadUrl}/venta/bandeja`, { params });
   }
 
   listarAgrupacionesPlataforma(

@@ -25,6 +25,7 @@ import { AsesorVentasHorarioPageComponent } from '../asesor-ventas/pages/asesor-
 import { AsesorVentasMisPreventasPageComponent } from '../asesor-ventas/pages/asesor-ventas-mis-preventas-page/asesor-ventas-mis-preventas-page.component';
 import { AsesorVentasMetricasPageComponent } from '../asesor-ventas/pages/asesor-ventas-metricas-page/asesor-ventas-metricas-page.component';
 import { BackofficeWorkspacePageComponent } from '../backoffice/pages/backoffice-workspace-page/backoffice-workspace-page.component';
+import { BackofficeGeneralBoardPageComponent } from '../backoffice/pages/backoffice-general-board-page/backoffice-general-board-page.component';
 import { CommunityCampaignCorrectionPageComponent } from '../community/pages/community-campaign-correction-page/community-campaign-correction-page.component';
 import { CommunityWorkspacePageComponent } from '../community/pages/community-workspace-page/community-workspace-page.component';
 import { DailyLeadsPageComponent } from '../daily-leads/pages/daily-leads-page/daily-leads-page.component';
@@ -264,6 +265,14 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'admin/plataformas/equipos/:idEquipo/backoffice/general',
+    component: BackofficeGeneralBoardPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
     path: 'admin/plataformas/equipos/:idEquipo/backoffice/programados',
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
@@ -447,6 +456,14 @@ export const PLATFORM_ROUTES: Routes = [
     data: {
       roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
       section: 'plataforma'
+    }
+  },
+  {
+    path: 'backoffice/general',
+    component: BackofficeGeneralBoardPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR']
     }
   },
   {

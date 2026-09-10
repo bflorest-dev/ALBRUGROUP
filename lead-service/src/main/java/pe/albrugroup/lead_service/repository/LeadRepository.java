@@ -1411,8 +1411,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.id, ultTip.id, :origenFila, l.etapa, l.estado, l.estadoClientePostventa,
                 l.prefijo, l.lead, l.usermeta, dp.tipoDocumento,
                 COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
-                dp.nombreTitularServicio, l.base, l.idTipificacion, l.codigoTipificacion,
-                l.idSubtipificacion, l.codigoSubtipificacion, l.codigoTipificacion, l.codigoSubtipificacion,
+                dp.nombreTitularServicio,
+                CASE
+                  WHEN dir.ubigeoDomicilio IS NULL OR TRIM(dir.ubigeoDomicilio) = '' THEN null
+                  WHEN SUBSTRING(dir.ubigeoDomicilio, 1, 2) IN ('07', '15') THEN 'Lima'
+                  ELSE 'Provincia'
+                END,
+                l.base, l.idTipificacion, l.codigoTipificacion,
+                l.idSubtipificacion, l.codigoSubtipificacion, r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion,
                 l.nombreProveedorSnapshot, l.nombrePlanSnapshot, l.precioPlanSnapshot,
                 l.nombrePromocionInternaSnapshot, l.precioAdicionalesSnapshot, l.precioFinal,
                 l.diaCorteFacturacion, l.mesesPermanenciaSnapshot, l.createdAt, l.lastEntryAt,
@@ -1421,7 +1427,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 rp.nombreAsesorMerito, r.nombreAsesorUltimaGestion, r.fechaUltimaGestion,
                 ultTip.idActor, ultTip.nombreActor, prog.fechaProgramacion, prog.horaProgramada,
                 rechazo.fechaRechazo, instalado.fechaInstalacion, ultTip.createdAt, ultTip.comentario,
-                l.comentario, null, null, null, null
+                l.comentario
             )
             FROM Lead l
             LEFT JOIN Evento ultTip ON ultTip.id = (
@@ -1454,6 +1460,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   AND ev.fechaInstalacion IS NOT NULL
             )
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.direccion dir
             LEFT JOIN l.plan pl
             LEFT JOIN pl.proveedor pp
             LEFT JOIN l.campana c
@@ -1462,12 +1469,29 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
             LEFT JOIN EquipoProveedor epFallback ON epFallback.idEquipo = l.idEquipo AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
-            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.matriz.etapa = l.etapa AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
-            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = l.codigoSubtipificacion
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = r.ultimaCodigoTipificacion AND tAct.matriz.etapa = :etapaVenta AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = r.ultimaCodigoSubtipificacion
             WHERE l.etapa = :etapaVenta
-              AND (:filtrarTipificaciones = false OR l.codigoTipificacion IN :codigosTipificacion)
-              AND (:filtrarSubtipificaciones = false OR l.codigoSubtipificacion IN :codigosSubtipificacion OR (:sinSubtipificacion = true AND l.codigoSubtipificacion IS NULL))
               AND (
+                    :searchPattern = '%'
+                    OR (:buscarPorUsermeta = false AND (
+                        l.lead LIKE :searchPattern
+                        OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                        OR l.sec LIKE :searchPattern
+                        OR l.sot LIKE :searchPattern
+                    ))
+                    OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
+              )
+              AND (:filtrarTipificaciones = false OR r.ultimaCodigoTipificacion IN :codigosTipificacion)
+              AND (:filtrarSubtipificaciones = false OR r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion OR (:sinSubtipificacion = true AND r.ultimaCodigoSubtipificacion IS NULL))
+              AND (
+                    (:campoFecha = 'AUTO' AND (
+                        (prog.fechaProgramacion IS NOT NULL AND prog.fechaProgramacion BETWEEN :fechaDesde AND :fechaHasta)
+                        OR (prog.fechaProgramacion IS NULL AND rechazo.fechaRechazo IS NOT NULL AND rechazo.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta)
+                        OR (prog.fechaProgramacion IS NULL AND rechazo.fechaRechazo IS NULL AND instalado.fechaInstalacion IS NOT NULL AND instalado.fechaInstalacion BETWEEN :fechaDesde AND :fechaHasta)
+                        OR (prog.fechaProgramacion IS NULL AND rechazo.fechaRechazo IS NULL AND instalado.fechaInstalacion IS NULL AND ultTip.createdAt >= :tsDesde AND ultTip.createdAt < :tsHasta)
+                    ))
+                    OR
                     (:campoFecha = 'PROGRAMACION' AND prog.fechaProgramacion BETWEEN :fechaDesde AND :fechaHasta)
                     OR (:campoFecha = 'RECHAZO' AND rechazo.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta)
                     OR (:campoFecha = 'INSTALACION' AND instalado.fechaInstalacion BETWEEN :fechaDesde AND :fechaHasta)
@@ -1483,6 +1507,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               CASE WHEN :groupBy = 'TIPIFICACION' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
               CASE WHEN :groupBy = 'TIPIFICACION' THEN tAct.orden END ASC,
               CASE WHEN :groupBy = 'TIPIFICACION' THEN sAct.orden END ASC,
+              CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = false THEN COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) END ASC,
+              CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = true THEN COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN COALESCE(prog.fechaProgramacion, rechazo.fechaRechazo, instalado.fechaInstalacion) END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'AUTO' THEN COALESCE(prog.fechaProgramacion, rechazo.fechaRechazo, instalado.fechaInstalacion) END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN ultTip.createdAt END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'AUTO' THEN ultTip.createdAt END DESC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'PROGRAMACION' THEN prog.fechaProgramacion END ASC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'PROGRAMACION' THEN prog.fechaProgramacion END DESC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'RECHAZO' THEN rechazo.fechaRechazo END ASC,
@@ -1512,6 +1542,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapaVenta") Etapa etapaVenta,
             @Param("etapaPreventa") Etapa etapaPreventa,
             @Param("origenFila") pe.albrugroup.lead_service.entity.enums.OrigenFilaBandejaVenta origenFila,
+            @Param("searchPattern") String searchPattern,
+            @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
             @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
             @Param("codigosTipificacion") Collection<String> codigosTipificacion,
             @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
@@ -1539,7 +1571,13 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.id, e.id, :origenFila, l.etapa, l.estado, l.estadoClientePostventa,
                 l.prefijo, l.lead, l.usermeta, dp.tipoDocumento,
                 COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
-                dp.nombreTitularServicio, l.base, l.idTipificacion, l.codigoTipificacion,
+                dp.nombreTitularServicio,
+                CASE
+                  WHEN dir.ubigeoDomicilio IS NULL OR TRIM(dir.ubigeoDomicilio) = '' THEN null
+                  WHEN SUBSTRING(dir.ubigeoDomicilio, 1, 2) IN ('07', '15') THEN 'Lima'
+                  ELSE 'Provincia'
+                END,
+                l.base, l.idTipificacion, l.codigoTipificacion,
                 l.idSubtipificacion, l.codigoSubtipificacion, e.tipificacion, e.subtipificacion,
                 l.nombreProveedorSnapshot, l.nombrePlanSnapshot, l.precioPlanSnapshot,
                 l.nombrePromocionInternaSnapshot, l.precioAdicionalesSnapshot, l.precioFinal,
@@ -1549,11 +1587,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 rp.nombreAsesorMerito, r.nombreAsesorUltimaGestion, r.fechaUltimaGestion,
                 e.idActor, e.nombreActor, e.fechaProgramacion, e.horaProgramada,
                 e.fechaRechazo, e.fechaInstalacion, e.createdAt, e.comentario,
-                l.comentario, null, null, null, null
+                l.comentario
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.direccion dir
             LEFT JOIN l.plan pl
             LEFT JOIN pl.proveedor pp
             LEFT JOIN l.campana c
@@ -1567,9 +1606,26 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE e.accion = :accionTipificacion
               AND e.etapa = :etapaVenta
               AND l.etapa IN :etapasActuales
+              AND (
+                    :searchPattern = '%'
+                    OR (:buscarPorUsermeta = false AND (
+                        l.lead LIKE :searchPattern
+                        OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                        OR l.sec LIKE :searchPattern
+                        OR l.sot LIKE :searchPattern
+                    ))
+                    OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
+              )
               AND (:filtrarTipificaciones = false OR e.tipificacion IN :codigosTipificacion)
               AND (:filtrarSubtipificaciones = false OR e.subtipificacion IN :codigosSubtipificacion OR (:sinSubtipificacion = true AND e.subtipificacion IS NULL))
               AND (
+                    (:campoFecha = 'AUTO' AND (
+                        (e.fechaProgramacion IS NOT NULL AND e.fechaProgramacion BETWEEN :fechaDesde AND :fechaHasta)
+                        OR (e.fechaProgramacion IS NULL AND e.fechaRechazo IS NOT NULL AND e.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta)
+                        OR (e.fechaProgramacion IS NULL AND e.fechaRechazo IS NULL AND e.fechaInstalacion IS NOT NULL AND e.fechaInstalacion BETWEEN :fechaDesde AND :fechaHasta)
+                        OR (e.fechaProgramacion IS NULL AND e.fechaRechazo IS NULL AND e.fechaInstalacion IS NULL AND e.createdAt >= :tsDesde AND e.createdAt < :tsHasta)
+                    ))
+                    OR
                     (:campoFecha = 'PROGRAMACION' AND e.fechaProgramacion BETWEEN :fechaDesde AND :fechaHasta)
                     OR (:campoFecha = 'RECHAZO' AND e.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta)
                     OR (:campoFecha = 'INSTALACION' AND e.fechaInstalacion BETWEEN :fechaDesde AND :fechaHasta)
@@ -1594,6 +1650,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               CASE WHEN :groupBy = 'TIPIFICACION' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
               CASE WHEN :groupBy = 'TIPIFICACION' THEN tAct.orden END ASC,
               CASE WHEN :groupBy = 'TIPIFICACION' THEN sAct.orden END ASC,
+              CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = false THEN COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) END ASC,
+              CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = true THEN COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN COALESCE(e.fechaProgramacion, e.fechaRechazo, e.fechaInstalacion) END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'AUTO' THEN COALESCE(e.fechaProgramacion, e.fechaRechazo, e.fechaInstalacion) END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN e.createdAt END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'AUTO' THEN e.createdAt END DESC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'PROGRAMACION' THEN e.fechaProgramacion END ASC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'PROGRAMACION' THEN e.fechaProgramacion END DESC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'RECHAZO' THEN e.fechaRechazo END ASC,
@@ -1619,6 +1681,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapaVenta") Etapa etapaVenta,
             @Param("etapaPreventa") Etapa etapaPreventa,
             @Param("origenFila") pe.albrugroup.lead_service.entity.enums.OrigenFilaBandejaVenta origenFila,
+            @Param("searchPattern") String searchPattern,
+            @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
             @Param("etapasActuales") Collection<Etapa> etapasActuales,
             @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
             @Param("codigosTipificacion") Collection<String> codigosTipificacion,

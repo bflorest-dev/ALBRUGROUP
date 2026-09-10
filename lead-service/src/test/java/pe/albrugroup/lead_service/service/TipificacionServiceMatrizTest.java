@@ -9,6 +9,7 @@ import pe.albrugroup.lead_service.entity.MatrizTipificacion;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Tipificacion;
+import pe.albrugroup.lead_service.entity.FlujoMatrizTipificacion;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.MatrizCatalogoRequest;
@@ -22,6 +23,7 @@ import pe.albrugroup.lead_service.repository.MatrizTipificacionRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
+import pe.albrugroup.lead_service.repository.FlujoMatrizTipificacionRepository;
 import pe.albrugroup.lead_service.service.mapper.TipificacionMapper;
 
 import java.util.List;
@@ -48,6 +50,7 @@ class TipificacionServiceMatrizTest {
     @Mock private TipificacionRepository tipificacionRepository;
     @Mock private SubtipificacionRepository subtipificacionRepository;
     @Mock private MatrizTipificacionRepository matrizTipificacionRepository;
+    @Mock private FlujoMatrizTipificacionRepository flujoMatrizTipificacionRepository;
     @Mock private ProveedorRepository proveedorRepository;
     @Mock private TipificacionMapper mapper;
 
@@ -65,6 +68,7 @@ class TipificacionServiceMatrizTest {
                 tipificacionRepository,
                 subtipificacionRepository,
                 matrizTipificacionRepository,
+                flujoMatrizTipificacionRepository,
                 proveedorRepository,
                 mapper
         );
@@ -72,6 +76,13 @@ class TipificacionServiceMatrizTest {
                 .thenReturn(Optional.of(matrizProveedor));
         lenient().when(matrizTipificacionRepository.findByEtapaAndProveedorId(Etapa.PREVENTA, PROVEEDOR_B))
                 .thenReturn(Optional.of(matrizProveedorB));
+        lenient().when(matrizTipificacionRepository.findByEtapaAndProveedorIdAndActivoTrue(Etapa.PREVENTA, PROVEEDOR))
+                .thenReturn(Optional.of(matrizProveedor));
+        lenient().when(matrizTipificacionRepository.findByEtapaAndProveedorIdAndActivoTrue(Etapa.PREVENTA, PROVEEDOR_B))
+                .thenReturn(Optional.of(matrizProveedorB));
+        lenient().when(flujoMatrizTipificacionRepository.findByMatrizIdAndActivoTrue(any()))
+                .thenReturn(List.of());
+        lenient().when(flujoMatrizTipificacionRepository.save(any(FlujoMatrizTipificacion.class))).thenAnswer(invocation -> invocation.getArgument(0));
         lenient().when(tipificacionRepository.save(any(Tipificacion.class))).thenAnswer(invocation -> {
             Tipificacion entity = invocation.getArgument(0);
             if (entity.getId() == null) {
@@ -208,11 +219,16 @@ class TipificacionServiceMatrizTest {
     @Test
     void catalogoOperativoSoloDevuelveTipificacionesSeleccionables() {
         Tipificacion visible = tipificacion(1L, "VISIBLE", 1, true);
+        Tipificacion ocultoPorFlujo = tipificacion(2L, "OCULTO", 2, true);
         visible.setSeleccionableManual(Boolean.TRUE);
+        ocultoPorFlujo.setSeleccionableManual(Boolean.TRUE);
+        FlujoMatrizTipificacion flujo = flujo(null, visible);
+        when(flujoMatrizTipificacionRepository.findByMatrizIdAndTipificacionOrigenIsNullAndActivoTrue(10L))
+                .thenReturn(List.of(flujo));
         when(tipificacionRepository
                 .findByMatrizEtapaAndMatrizProveedorIdAndSeleccionableManualTrueAndActivoTrueOrderByOrdenAsc(
                         Etapa.PREVENTA, PROVEEDOR))
-                .thenReturn(List.of(visible));
+                .thenReturn(List.of(visible, ocultoPorFlujo));
         when(subtipificacionRepository
                 .findByTipificacionInAndActivoTrueOrderByTipificacion_IdAscOrdenAsc(List.of(visible)))
                 .thenReturn(List.of());
@@ -225,13 +241,32 @@ class TipificacionServiceMatrizTest {
                 .subtipificaciones(List.of())
                 .build());
 
-        CatalogoResponse catalogo = service.getCatalogoOperativo(Etapa.PREVENTA, PROVEEDOR);
+        CatalogoResponse catalogo = service.getCatalogoOperativo(Etapa.PREVENTA, PROVEEDOR, null);
 
         assertThat(catalogo.getTipificaciones()).extracting(TipificacionResponse::getCodigo)
                 .containsExactly("VISIBLE");
         verify(tipificacionRepository)
                 .findByMatrizEtapaAndMatrizProveedorIdAndSeleccionableManualTrueAndActivoTrueOrderByOrdenAsc(
                         Etapa.PREVENTA, PROVEEDOR);
+    }
+
+    @Test
+    void validarTipificacionPermitidaRechazaDestinoFueraDelFlujo() {
+        Tipificacion origen = tipificacion(1L, "ORIGEN", 1, true);
+        Tipificacion destinoPermitido = tipificacion(2L, "PERMITIDO", 2, true);
+        Tipificacion destinoBloqueado = tipificacion(3L, "BLOQUEADO", 3, true);
+        destinoPermitido.setSeleccionableManual(Boolean.TRUE);
+        destinoBloqueado.setSeleccionableManual(Boolean.TRUE);
+        when(flujoMatrizTipificacionRepository.findByMatrizIdAndTipificacionOrigenIdAndActivoTrue(10L, 1L))
+                .thenReturn(List.of(flujo(origen, destinoPermitido)));
+
+        assertThatThrownBy(() -> service.validarTipificacionPermitida(
+                Etapa.PREVENTA,
+                PROVEEDOR,
+                origen.getId(),
+                destinoBloqueado
+        )).isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("estado actual");
     }
 
     @Test
@@ -420,8 +455,18 @@ class TipificacionServiceMatrizTest {
         entity.setCodigo(codigo);
         entity.setDescripcion(codigo);
         entity.setOrden(orden);
+        entity.setSeleccionableManual(Boolean.TRUE);
         entity.setActivo(activo);
         return entity;
+    }
+
+    private FlujoMatrizTipificacion flujo(Tipificacion origen, Tipificacion destino) {
+        FlujoMatrizTipificacion flujo = new FlujoMatrizTipificacion();
+        flujo.setMatriz(matrizProveedor);
+        flujo.setTipificacionOrigen(origen);
+        flujo.setTipificacionDestino(destino);
+        flujo.setActivo(Boolean.TRUE);
+        return flujo;
     }
 
     private MatrizTipificacion matrizCabecera(Long id, Long idProveedor) {

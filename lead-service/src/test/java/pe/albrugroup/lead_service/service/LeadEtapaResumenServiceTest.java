@@ -147,6 +147,28 @@ class LeadEtapaResumenServiceTest {
     }
 
     @Test
+    void registrarEntradaEtapaReingresoMueveFechaIngresoEtapa() {
+        Instant primerIngreso = Instant.parse("2026-08-25T15:00:00Z");
+        Instant reingreso = Instant.parse("2026-08-28T09:00:00Z");
+        LeadEtapaResumen resumen = LeadEtapaResumen.builder()
+                .idLead(10L)
+                .etapa(Etapa.VENTA)
+                .fechaIngresoEtapa(primerIngreso)
+                .fechaSalidaEtapa(Instant.parse("2026-08-26T18:00:00Z"))
+                .numeroPasadas(1)
+                .build();
+        when(repository.findByIdLeadAndEtapa(10L, Etapa.VENTA)).thenReturn(Optional.of(resumen));
+
+        // Reingreso a VENTA (venia de un retorno a PREVENTA): la entrada mas reciente manda.
+        service.registrarEntradaEtapa(10L, Etapa.VENTA, reingreso);
+
+        assertSame(reingreso, resumen.getFechaIngresoEtapa());
+        assertNull(resumen.getFechaSalidaEtapa());
+        assertEquals(2, resumen.getNumeroPasadas());
+        verify(repository).save(resumen);
+    }
+
+    @Test
     void registrarTipificacionMismoCodigoNoMueveUltimaTipificacionAt() {
         Instant primera = Instant.parse("2026-08-24T14:00:00Z");
         Instant segunda = Instant.parse("2026-08-27T09:00:00Z");

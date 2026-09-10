@@ -1,0 +1,342 @@
+<section class="general-board">
+  <header class="general-board__head">
+    <div class="general-board__title">
+      <span>Bandeja general</span>
+      <h1>Venta Backoffice</h1>
+    </div>
+
+    <div class="general-board__meta" aria-label="Resumen de bandeja">
+      <strong>{{ total() }}</strong>
+      <span>{{ total() === 1 ? 'lead listado' : 'leads listados' }}</span>
+    </div>
+  </header>
+
+  <section class="general-board__controls" aria-label="Filtros de bandeja general">
+    <form class="search-strip" (ngSubmit)="buscar()">
+      <i class="pi pi-search" aria-hidden="true"></i>
+      <input
+        pInputText
+        type="text"
+        inputmode="text"
+        name="buscar"
+        autocomplete="off"
+        placeholder="Lead, documento, SEC, SOT o @usermeta"
+        [ngModel]="searchInput()"
+        (ngModelChange)="searchInput.set($event)"
+      />
+      @if (searchActive()) {
+        <button
+          pButton
+          type="button"
+          icon="pi pi-times"
+          severity="secondary"
+          text
+          aria-label="Limpiar búsqueda"
+          (click)="limpiarBusqueda()"
+        ></button>
+      }
+      <button pButton type="submit" icon="pi pi-arrow-right" label="Buscar" [loading]="loading()"></button>
+    </form>
+
+    <div class="filter-strip">
+      <p-multiSelect
+        styleClass="tipification-picker"
+        [options]="tipificacionOptions()"
+        [ngModel]="selectedTipificaciones()"
+        optionLabel="label"
+        optionValue="value"
+        display="chip"
+        placeholder="Todas las tipificaciones"
+        [loading]="catalogLoading()"
+        [filter]="true"
+        [showClear]="true"
+        appendTo="body"
+        (ngModelChange)="setTipificaciones($event)"
+      >
+        <ng-template #item let-option>
+          <div class="tip-option">
+            <strong>{{ option.label }}</strong>
+            <span>{{ option.descripcion }}</span>
+          </div>
+        </ng-template>
+      </p-multiSelect>
+
+      <app-period-selector
+        [periodo]="periodo()"
+        [dia]="dia()"
+        [hasta]="hasta()"
+        (periodoChange)="onPeriodoChange($event)"
+        (rangoChange)="onRangoChange($event)"
+      />
+
+      <button
+        pButton
+        type="button"
+        icon="pi pi-sliders-h"
+        label="Organizar"
+        severity="secondary"
+        outlined
+        (click)="organize.toggle($event)"
+      ></button>
+
+      <button
+        pButton
+        type="button"
+        icon="pi pi-refresh"
+        severity="secondary"
+        text
+        aria-label="Actualizar"
+        [loading]="loading()"
+        (click)="refresh()"
+      ></button>
+    </div>
+  </section>
+
+  <p-popover #organize appendTo="body" styleClass="general-board-popover">
+    <div class="organize-panel">
+      <label>
+        <span>Origen</span>
+        <p-select
+          [options]="origenOptions"
+          [ngModel]="origen()"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          (ngModelChange)="setOrigen($event)"
+        />
+      </label>
+
+      <label>
+        <span>Agrupar</span>
+        <p-select
+          [options]="groupOptions"
+          [ngModel]="groupBy()"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          (ngModelChange)="setGroupBy($event)"
+        />
+      </label>
+
+      <label>
+        <span>Ordenar</span>
+        <p-select
+          [options]="sortOptions"
+          [ngModel]="sortBy()"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          (ngModelChange)="setSortBy($event)"
+        />
+      </label>
+
+      <label>
+        <span>Dirección</span>
+        <p-select
+          [options]="directionOptions"
+          [ngModel]="direction()"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          (ngModelChange)="setDirection($event)"
+        />
+      </label>
+
+      <button
+        pButton
+        type="button"
+        icon="pi pi-filter-slash"
+        label="Restablecer"
+        severity="secondary"
+        text
+        [disabled]="activeFilterCount() === 0"
+        (click)="clearFilters(); organize.hide()"
+      ></button>
+    </div>
+  </p-popover>
+
+  <div class="selection-rail" aria-label="Selección activa">
+    <span class="selection-rail__item">
+      <i class="pi pi-calendar" aria-hidden="true"></i>
+      {{ periodLabel() }}
+    </span>
+    <span class="selection-rail__item">
+      <i class="pi pi-database" aria-hidden="true"></i>
+      {{ origen() === 'ESTADO_ACTUAL' ? 'Estado actual' : 'Último evento' }}
+    </span>
+    <span class="selection-rail__item">
+      <i class="pi pi-clock" aria-hidden="true"></i>
+      Periodo por fecha ingreso
+    </span>
+    <span class="selection-rail__item">
+      <i class="pi pi-tags" aria-hidden="true"></i>
+      {{ selectedTipificaciones().length ? selectedTipificaciones().length + ' tipificaciones' : 'Todas las tipificaciones' }}
+    </span>
+  </div>
+
+  @if (error()) {
+    <div class="state state--error" role="alert">
+      <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+      <span>{{ error() }}</span>
+      <button pButton type="button" label="Reintentar" size="small" (click)="refresh()"></button>
+    </div>
+  }
+
+  <section class="table-shell">
+    <p-table
+      [value]="rows()"
+      dataKey="idLead"
+      [loading]="loading()"
+      [rowHover]="true"
+      [scrollable]="true"
+      scrollHeight="flex"
+      [tableStyle]="{ 'min-width': showSecSotColumn() ? '1060px' : '940px', 'width': '100%', 'table-layout': 'fixed' }"
+      styleClass="p-datatable-sm general-table"
+    >
+      <ng-template #header>
+        <tr>
+          <th class="col-date col-ingreso">
+            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'fechaIngresoEtapa'" (click)="sort('fechaIngresoEtapa')">
+              Fecha ingreso <i [class]="sortIcon('fechaIngresoEtapa')" aria-hidden="true"></i>
+            </button>
+          </th>
+          <th class="col-date col-relevant">
+            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'fechaRelevante'" (click)="sort('fechaRelevante')">
+              Fecha relevante <i [class]="sortIcon('fechaRelevante')" aria-hidden="true"></i>
+            </button>
+          </th>
+          <th class="col-client">Cliente</th>
+          <th class="col-department">Departamento</th>
+          @if (showSecSotColumn()) {
+            <th class="col-ops">SEC/SOT</th>
+          }
+          <th class="col-plan">Plan</th>
+          <th class="col-tipification">
+            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'tipificacion'" (click)="sort('tipificacion')">
+              Tipificación <i [class]="sortIcon('tipificacion')" aria-hidden="true"></i>
+            </button>
+          </th>
+          <th class="col-state">
+            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'estado'" (click)="sort('estado')">
+              Estado <i [class]="sortIcon('estado')" aria-hidden="true"></i>
+            </button>
+          </th>
+          <th class="col-agent">Gestión</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-row let-rowIndex="rowIndex">
+        @if (showGroupHeader(rowIndex, row)) {
+          <tr class="group-row">
+            <td [attr.colspan]="tableColumnCount()">{{ groupLabel(row) }}</td>
+          </tr>
+        }
+        <tr class="board-row" tabindex="0" aria-label="Abrir gestión del lead">
+          <td class="cell-date cell-ingreso">
+            <div class="date-cell">
+              <strong>{{ formatIngreso(row) }}</strong>
+              <span>{{ formatIngresoTime(row) || 'VENTA' }}</span>
+            </div>
+          </td>
+          <td class="cell-date cell-relevant">
+            <div class="date-cell date-cell--relevant" [class.date-cell--empty]="!formatRelevantDate(row)">
+              <strong>{{ formatRelevantDate(row) || '-' }}</strong>
+              <span>{{ relevantLabel(row) }}</span>
+            </div>
+          </td>
+          <td class="cell-client">
+            <div class="client-cell">
+              <strong>{{ display(row.tipoDocumento, 'DOC') }} {{ display(row.numeroDocumento, '') }}</strong>
+              <span [title]="display(row.nombreCliente)">{{ display(row.nombreCliente) }}</span>
+            </div>
+          </td>
+          <td class="cell-department">
+            <span class="department-pill" [class.department-pill--empty]="!row.departamentoGrupo">
+              {{ display(row.departamentoGrupo, 'Sin ubigeo') }}
+            </span>
+          </td>
+          @if (showSecSotColumn()) {
+            <td class="cell-ops">
+              <div class="ops-cell">
+                <span>{{ displayOperationalCode(row.sec, 'SEC') }}</span>
+                <span>{{ displayOperationalCode(row.sot, 'SOT') }}</span>
+                @if (row.customerId) {
+                  <span>ID {{ row.customerId }}</span>
+                }
+              </div>
+            </td>
+          }
+          <td class="cell-plan">
+            <div class="plan-cell">
+              @if (providerLogo(row.proveedor); as logo) {
+                <span class="provider-cell">
+                  <img [src]="logo" [alt]="display(row.proveedor, 'Proveedor')" />
+                </span>
+              } @else {
+                <span class="provider-cell provider-cell--text">{{ providerInitial(row.proveedor) }}</span>
+              }
+              <div class="plan-cell__text">
+                <strong [title]="display(row.plan, 'Sin plan')">{{ display(row.plan, 'Sin plan') }}</strong>
+                <span>{{ money(row.precioFinal ?? row.precioPlan) }}</span>
+              </div>
+            </div>
+          </td>
+          <td class="cell-tipification">
+            <app-tipification-stack
+              [codigoTipificacion]="row.codigoTipificacionBandeja"
+              [codigoSubtipificacion]="row.codigoSubtipificacionBandeja"
+              [paletteByCode]="tipificationPaletteByCode()"
+              emptyText="Sin tipificación"
+            />
+          </td>
+          <td class="cell-state">
+            <div class="state-cell">
+              <p-tag [styleClass]="etapaTagClass(row)" [value]="display(row.etapaActual)" />
+              <span>{{ display(row.estadoSeguimiento) }}</span>
+            </div>
+          </td>
+          <td class="cell-agent">
+            <div class="agent-cell">
+              <div>
+                <div class="agent-cell__line">
+                  @if (commentText(row)) {
+                    <i
+                      class="pi pi-envelope comment-icon"
+                      aria-label="Comentario del lead"
+                      [pTooltip]="commentText(row)"
+                      tooltipStyleClass="app-tip-nowrap"
+                      tooltipPosition="left"
+                      appendTo="body"
+                    ></i>
+                  }
+                  <strong>{{ advisorAlias(row.nombreAsesorUltimaGestion ?? row.nombreAsesorEvento) }}</strong>
+                </div>
+                <span>{{ formatInstantShort(row.fechaUltimaGestion) || 'Sin última gestión' }}</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td [attr.colspan]="tableColumnCount()">
+            <div class="state">
+              <i class="pi pi-inbox" aria-hidden="true"></i>
+              <span>No hay leads para la selección actual.</span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </section>
+
+  <p-paginator
+    [rows]="pageSize"
+    [totalRecords]="total()"
+    [first]="page() * pageSize"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="{first} - {last} de {totalRecords}"
+    (onPageChange)="onPage($event)"
+  />
+</section>

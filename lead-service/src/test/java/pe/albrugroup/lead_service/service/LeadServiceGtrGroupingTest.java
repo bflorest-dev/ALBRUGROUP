@@ -97,7 +97,6 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(Etapa.PREVENTA),
                 eq(true),
-                anyCollection(),
                 eq(false),
                 anyCollection(),
                 eq("SIN_AGRUPAR"),
@@ -128,10 +127,6 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(Etapa.PREVENTA),
                 eq(true),
-                argThat(values -> values.size() == 3
-                        && values.contains("PROGRAMADO")
-                        && values.contains("SUBSANABLE")
-                        && values.contains("NO RECUPERABLE")),
                 eq(false),
                 eq(List.of(-1L)),
                 eq("SIN_AGRUPAR"),
@@ -168,7 +163,6 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(Etapa.PREVENTA),
                 eq(false),
-                anyCollection(),
                 eq(false),
                 anyCollection(),
                 eq("SIN_AGRUPAR"),
@@ -207,10 +201,6 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(Etapa.PREVENTA),
                 eq(false),
-                argThat(values -> values.size() == 3
-                        && values.contains("PROGRAMADO")
-                        && values.contains("SUBSANABLE")
-                        && values.contains("NO RECUPERABLE")),
                 eq(false),
                 eq(List.of(-1L)),
                 eq("SIN_AGRUPAR"),
@@ -249,7 +239,6 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(Etapa.PREVENTA),
                 eq(false),
-                anyCollection(),
                 eq(false),
                 anyCollection(),
                 eq("SIN_AGRUPAR"),
@@ -289,10 +278,6 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(Etapa.PREVENTA),
                 eq(false),
-                argThat(values -> values.size() == 3
-                        && values.contains("PROGRAMADO")
-                        && values.contains("SUBSANABLE")
-                        && values.contains("NO RECUPERABLE")),
                 eq(false),
                 eq(List.of(-1L)),
                 eq("SIN_AGRUPAR"),
@@ -311,23 +296,23 @@ class LeadServiceGtrGroupingTest {
         when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
         when(leadRepository.agruparVentaPorEstado(
                 eq(Etapa.VENTA), eq("%"), eq(false), any(Instant.class), any(Instant.class), eq(false), eq(null),
-                eq(true), anyCollection(), eq(false), anyCollection()))
+                eq(true), eq(false), anyCollection()))
                 .thenReturn(List.of());
         when(leadRepository.agruparVentaPorProveedor(
                 eq(Etapa.VENTA), eq("%"), eq(false), any(Instant.class), any(Instant.class), eq(false), eq(null),
-                eq(true), anyCollection(), eq(false), anyCollection()))
+                eq(true), eq(false), anyCollection()))
                 .thenReturn(List.of());
         when(leadRepository.agruparVentaPorPlan(
                 eq(Etapa.VENTA), eq("%"), eq(false), any(Instant.class), any(Instant.class), eq(false), eq(null),
-                eq(true), anyCollection(), eq(false), anyCollection()))
+                eq(true), eq(false), anyCollection()))
                 .thenReturn(List.of());
         when(leadRepository.agruparVentaPorUltimoGestor(
                 eq(Etapa.VENTA), eq("%"), eq(false), any(Instant.class), any(Instant.class), eq(false), eq(null),
-                eq(true), anyCollection(), eq(false), anyCollection()))
+                eq(true), eq(false), anyCollection()))
                 .thenReturn(List.of());
         when(leadRepository.agruparVentaPorTipificacion(
                 eq(Etapa.VENTA), eq("%"), eq(false), any(Instant.class), any(Instant.class), eq(false), eq(null),
-                eq(true), anyCollection(), eq(false), anyCollection()))
+                eq(true), eq(false), anyCollection()))
                 .thenReturn(List.of());
 
         leadService.listarAgrupacionesBandejaVenta(null, null);
@@ -341,10 +326,6 @@ class LeadServiceGtrGroupingTest {
                 eq(false),
                 eq(null),
                 eq(true),
-                argThat(values -> values.size() == 3
-                        && values.contains("PROGRAMADO")
-                        && values.contains("SUBSANABLE")
-                        && values.contains("NO RECUPERABLE")),
                 eq(false),
                 eq(List.of(-1L))
         );
@@ -375,7 +356,6 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(Etapa.PREVENTA),
                 eq(true),
-                anyCollection(),
                 eq(false),
                 anyCollection(),
                 eq("SIN_AGRUPAR"),
@@ -406,7 +386,6 @@ class LeadServiceGtrGroupingTest {
                 anyCollection(),
                 eq(Etapa.PREVENTA),
                 eq(true),
-                anyCollection(),
                 eq(false),
                 eq(List.of(-1L)),
                 eq("SIN_AGRUPAR"),

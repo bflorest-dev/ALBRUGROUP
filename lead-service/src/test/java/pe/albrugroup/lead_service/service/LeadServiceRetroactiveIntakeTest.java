@@ -1,5 +1,6 @@
 package pe.albrugroup.lead_service.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -48,6 +49,7 @@ import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
+import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
 import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
@@ -70,6 +72,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -100,9 +103,17 @@ class LeadServiceRetroactiveIntakeTest {
     @Mock private LeadRealtimeNotifier leadRealtimeNotifier;
     @Mock private LeadAsignacionCounterService leadAsignacionCounterService;
     @Mock private LeadEtapaResumenService leadEtapaResumenService;
+    @Mock private LeadEtapaResumenRepository leadEtapaResumenRepository;
     @Mock private ProveedorScopeService proveedorScopeService;
+    @Mock private TipificacionService tipificacionService;
 
     @InjectMocks private LeadService leadService;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(leadEtapaResumenRepository.findByIdLeadAndEtapa(any(), any()))
+                .thenReturn(Optional.empty());
+    }
 
     @Test
     void listarNumerosLlamadaDevuelveJerarquiaSinDuplicados() {

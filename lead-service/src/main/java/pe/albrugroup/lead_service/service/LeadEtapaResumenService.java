@@ -28,11 +28,12 @@ public class LeadEtapaResumenService {
         repository.findByIdLeadAndEtapa(idLead, etapa).ifPresentOrElse(
                 resumen -> {
                     // Reingreso: reabrimos la etapa (last-writer-wins, sin versionar) y contamos la pasada.
+                    // fechaIngresoEtapa se pisa con la entrada mas reciente: un lead que reingresa a la etapa
+                    // (p.ej. VENTA -> PREVENTA -> VENTA) debe contar en el dia del ultimo ingreso, no quedar
+                    // anclado al primero. Los reportes anclados en esta fecha (cohortes "del dia") dependen de eso.
                     resumen.setFechaSalidaEtapa(null);
                     resumen.setNumeroPasadas(nvl(resumen.getNumeroPasadas(), 1) + 1);
-                    if (resumen.getFechaIngresoEtapa() == null) {
-                        resumen.setFechaIngresoEtapa(at);
-                    }
+                    resumen.setFechaIngresoEtapa(at);
                     repository.save(resumen);
                 },
                 () -> repository.save(LeadEtapaResumen.builder()

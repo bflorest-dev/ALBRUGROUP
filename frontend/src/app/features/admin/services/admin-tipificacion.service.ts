@@ -27,8 +27,10 @@ export class AdminTipificacionService {
     });
   }
 
-  getCatalogo(etapa: string, idProveedor: number): Observable<CatalogoResponse> {
-    const params = new HttpParams().set('idProveedor', idProveedor);
+  getCatalogo(etapa: string, idProveedor: number, includeFlujos = true): Observable<CatalogoResponse> {
+    const params = new HttpParams()
+      .set('idProveedor', idProveedor)
+      .set('includeFlujos', includeFlujos);
     return this.http.get<CatalogoResponse>(`${this.baseUrl}/${etapa}/catalogo`, { params });
   }
 
