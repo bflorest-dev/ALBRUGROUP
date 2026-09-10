@@ -154,6 +154,9 @@
                     @for (field of [{k:'urbanizacion',l:'Urbanización'},{k:'numero',l:'Número'},{k:'manzana',l:'Manzana'},{k:'lote',l:'Lote'},{k:'piso',l:'Piso'},{k:'interior',l:'Interior'}]; track field.k) {
                       <label><span>{{ field.l }}</span>@if (editingSection() === 'detalle-direccion') { <input pInputText [formControlName]="field.k" /> } @else { <strong>{{ display(direccionForm.get(field.k)?.value) }}</strong> }</label>
                     }
+                    @if (hasValue(direccionForm, 'plano')) {
+                      <label><span>Plano</span>@if (editingSection() === 'detalle-direccion') { <input pInputText formControlName="plano" /> } @else { <strong>{{ display(direccionForm.get('plano')?.value) }}</strong> }</label>
+                    }
                   </div>
                 </section>
                 <section class="venta-v2__section venta-v2__geolocation">

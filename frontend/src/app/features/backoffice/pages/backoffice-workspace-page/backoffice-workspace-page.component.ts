@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -29,9 +29,7 @@ import { PresenceService } from '../../../../core/services/presence.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { CurrentUserProviderScopeService } from '../../../../core/services/current-user-provider-scope.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
-import { LeadCommercialDataTabsComponent } from '../../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
 import { LeadPlanSummaryComponent } from '../../../../shared/components/lead-plan-summary/lead-plan-summary.component';
-import { PhoneActionButtonComponent } from '../../../../shared/components/phone-action-button/phone-action-button.component';
 import { VentaDrawerV2Component } from '../../../../shared/components/venta-drawer-v2/venta-drawer-v2.component';
 import { SectionHeaderComponent } from '../../../../shared/components/section-header/section-header.component';
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
@@ -59,7 +57,6 @@ import {
 } from '../../../../shared/models/preventa/preventa.models';
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { BackofficeLeadService, LeadRechazadosFilters } from '../../services/backoffice-lead.service';
-import type { BackofficeHistorialAccion } from '../../services/backoffice-lead.service';
 
 type BackofficeSection = 'plataforma' | 'programados' | 'subsanables' | 'rechazados' | 'instalados' | 'correccion-instalacion';
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
@@ -68,13 +65,6 @@ type BackofficeSortDirection = 'asc' | 'desc';
 // Campo de fecha contra el que la bandeja filtra el periodo (mecanica "Usar fecha de").
 type BackofficeCampoFecha = 'PROGRAMACION' | 'RECHAZO' | 'INSTALACION' | 'TIPIFICACION_INSTALADO' | 'INGRESO' | 'ULTIMA_GESTION';
 type DrawerMode = 'gestion' | 'consulta';
-type BackofficeHistorialFiltro = Extract<BackofficeHistorialAccion, 'TIPIFICACION' | 'ASIGNACION'> | null;
-type HistorialAccionMeta = {
-  clase: 'tipificacion' | 'asignacion' | 'contacto' | 'correccion';
-  etiqueta: string;
-};
-type HistorialFiltroOption = { label: string; value: BackofficeHistorialFiltro };
-type HistorialFechaGrupo = { clave: string; etiqueta: string; eventos: EventoResponse[] };
 type OrganizationFilterOption = { label: string; value: string; codigo?: string; descripcion?: string; sinValor?: boolean; rawValue?: string | null };
 type VisualLeadVenta = LeadVentaResponse & {
   isNew?: boolean;
@@ -106,18 +96,6 @@ type AssignmentConflictDetails = {
 };
 // Ventana para agrupar la rafaga de eventos realtime en una sola reconciliacion (ver startRealtime).
 const REALTIME_RECONCILE_DEBOUNCE_MS = 600;
-const HISTORIAL_FILTROS: HistorialFiltroOption[] = [
-  { label: 'Tipificación', value: 'TIPIFICACION' },
-  { label: 'Asignación', value: 'ASIGNACION' },
-  { label: 'Todo', value: null }
-];
-const HISTORIAL_ACCIONES: Record<string, HistorialAccionMeta> = {
-  TIPIFICACION: { clase: 'tipificacion', etiqueta: 'Tipificación' },
-  ASIGNACION: { clase: 'asignacion', etiqueta: 'Asignación' },
-  CONTACTO: { clase: 'contacto', etiqueta: 'Contacto' },
-  CORRECCION: { clase: 'correccion', etiqueta: 'Corrección' }
-};
-const HISTORIAL_MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
 
 @Component({
   selector: 'app-backoffice-workspace-page',
@@ -142,9 +120,7 @@ const HISTORIAL_MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago',
     TagModule,
     ToastModule,
     TooltipModule,
-    LeadCommercialDataTabsComponent,
     LeadPlanSummaryComponent,
-    PhoneActionButtonComponent,
     VentaDrawerV2Component,
     SectionHeaderComponent,
     PeriodSelectorComponent,
@@ -156,7 +132,6 @@ const HISTORIAL_MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
-  @ViewChild('tipificationFooter') private tipificationFooter?: ElementRef<HTMLElement>;
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -172,7 +147,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
-  private readonly pickerDateCache = new Map<string, Date | null>();
   private readonly provinciasCache = new Map<number, UbigeoItem[]>();
   private readonly distritosCache = new Map<number, UbigeoItem[]>();
   private organizeCloseTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -214,11 +188,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     () => new Set((this.detail()?.camposConfig ?? []).filter((campo) => campo.visible).map((campo) => campo.campo))
   );
   protected readonly eventos = signal<EventoResponse[]>([]);
-  protected readonly historialFiltro = signal<BackofficeHistorialFiltro>('TIPIFICACION');
-  protected readonly historialFiltros = HISTORIAL_FILTROS;
   protected readonly historialLoading = signal(false);
   protected readonly historialError = signal<string | null>(null);
-  protected readonly historialGrupos = computed<HistorialFechaGrupo[]>(() => this.agruparHistorialPorFecha(this.eventos()));
   protected readonly selectedLeadId = signal<number | null>(null);
   protected readonly totalPlataforma = signal(0);
   protected readonly totalProgramados = signal(0);
@@ -249,7 +220,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   });
   protected readonly selectedTipificacionCode = signal('');
   protected readonly selectedSubtipificacionCode = signal('');
-  protected readonly tipificacionCommentPlaceholder = signal('Agrega una nota si ayuda a la siguiente gestion');
   private readonly loadedComentario = signal('');
   protected readonly planes = signal<PlanResponse[]>([]);
   protected readonly ofertaPlanes = signal<PlanResponse[]>([]);
@@ -264,17 +234,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly ubigeoDomicilioError = signal<string | null>(null);
   private readonly adicionalesDirty = signal(false);
   protected readonly detailDrawerOpen = signal(false);
-  protected readonly useVentaDrawerV2 = true;
   protected readonly correctionDrawerOpen = signal(false);
   protected readonly correctionTarget = signal<CorreccionInstalacionRow | null>(null);
   protected readonly drawerMode = signal<DrawerMode>('gestion');
   protected readonly detailReadOnly = computed(() => this.drawerMode() === 'consulta');
-  protected readonly activeDataTab = signal('datos');
-  protected readonly tipificationFooterPinned = signal(false);
-  protected readonly tipificationOverlayOpen = signal(false);
-  protected readonly tipificationFooterExpanded = computed(() =>
-    !this.detailReadOnly() && (this.tipificationFooterPinned() || this.tipificationOverlayOpen())
-  );
   protected readonly searchInput = signal('');
   protected readonly searchTermActive = signal('');
   protected readonly isSearching = signal(false);
@@ -1245,43 +1208,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.releaseCurrentLeadIfIdle();
     }
     this.closeDetail();
-  }
-
-  protected setTipificationFooterPinned(value: boolean): void {
-    if (!value && this.tipificationOverlayOpen()) {
-      return;
-    }
-    this.tipificationFooterPinned.set(value);
-  }
-
-  protected setTipificationOverlayOpen(value: boolean): void {
-    if (value) {
-      this.tipificationFooterPinned.set(true);
-      this.tipificationOverlayOpen.set(true);
-      return;
-    }
-    window.setTimeout(() => this.tipificationOverlayOpen.set(false), 120);
-  }
-
-  @HostListener('document:pointermove', ['$event'])
-  protected releaseTipificationFooterWhenPointerLeaves(event: PointerEvent): void {
-    if (!this.tipificationFooterPinned() || this.tipificationOverlayOpen()) {
-      return;
-    }
-    const footer = this.tipificationFooter?.nativeElement;
-    if (!footer) {
-      this.tipificationFooterPinned.set(false);
-      return;
-    }
-    const rect = footer.getBoundingClientRect();
-    const insideFooter =
-      event.clientX >= rect.left &&
-      event.clientX <= rect.right &&
-      event.clientY >= rect.top &&
-      event.clientY <= rect.bottom;
-    if (!insideFooter) {
-      this.tipificationFooterPinned.set(false);
-    }
   }
 
   protected async registrarContacto(): Promise<void> {
@@ -2365,67 +2291,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return String(value);
   }
 
-  protected setHistorialFiltro(filtro: BackofficeHistorialFiltro): void {
-    if (this.historialFiltro() === filtro) {
-      return;
-    }
-    this.historialFiltro.set(filtro);
-    const idLead = this.selectedLeadId();
-    if (idLead !== null) {
-      void this.refreshHistorialBackofficeVenta(idLead);
-    }
-  }
-
   protected retryHistorial(): void {
     const idLead = this.selectedLeadId();
     if (idLead !== null) {
       void this.refreshHistorialBackofficeVenta(idLead);
     }
-  }
-
-  protected historialAccionMeta(accion?: string | null): HistorialAccionMeta {
-    return HISTORIAL_ACCIONES[this.normalizedCode(accion)] ?? {
-      clase: 'asignacion',
-      etiqueta: this.display(accion)
-    };
-  }
-
-  protected historialEventoTitulo(evento: EventoResponse): string {
-    const detalle = [evento.tipificacion, evento.subtipificacion]
-      .map((value) => value?.trim())
-      .filter((value): value is string => Boolean(value));
-    return detalle.length ? detalle.join(' · ') : this.historialAccionMeta(evento.accion).etiqueta;
-  }
-
-  protected historialFechaHora(value?: string | null): string {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) {
-      return '-';
-    }
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
-    return `${day} ${HISTORIAL_MESES[date.getMonth()]} · ${hour}:${minute}`;
-  }
-
-  protected historialHora(value?: string | null): string {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) {
-      return '-';
-    }
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
-    return `${hour}:${minute}`;
-  }
-
-  protected historialEmptyMessage(): string {
-    if (this.historialFiltro() === 'TIPIFICACION') {
-      return 'No hay tipificaciones de venta registradas.';
-    }
-    if (this.historialFiltro() === 'ASIGNACION') {
-      return 'No hay asignaciones de venta registradas.';
-    }
-    return 'No hay eventos de venta para mostrar.';
   }
 
   private displayLookupStage(value: string | null | undefined): string {
@@ -2464,26 +2334,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return `${String(hour12).padStart(2, '0')}:${match[2]} ${suffix}`;
   }
 
-  protected toPickerDate(value: unknown): Date | null {
-    if (value instanceof Date) {
-      return value;
-    }
-
-    if (typeof value !== 'string' || !value) {
-      return null;
-    }
-
-    const cached = this.pickerDateCache.get(value);
-    if (cached !== undefined) {
-      return cached;
-    }
-
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    const parsed = match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
-    this.pickerDateCache.set(value, parsed);
-    return parsed;
-  }
-
   protected validateDateNotBeforeToday(value: string | null | undefined, message: string): boolean {
     if (value && value < this.todayLocalDate()) {
       this.notify('warn', message);
@@ -2500,22 +2350,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       }
       return null;
     };
-  }
-
-  protected setDateControl(controlName: 'fechaInstalacion' | 'fechaProgramacion' | 'fechaRechazo', value: Date | string | null): void {
-    const control = this.tipificacionForm.controls[controlName];
-    control.setValue(this.toBackendDate(value));
-    control.markAsTouched();
-    control.markAsDirty();
-  }
-
-  protected setFixedDigits(controlName: 'sec' | 'sot' | 'customerId', value: string, maxLength: number): void {
-    const normalized = value.replace(/\D/g, '').slice(0, maxLength);
-    const control = this.tipificacionForm.controls[controlName];
-    if (control.value !== normalized) {
-      control.setValue(normalized);
-      control.markAsDirty();
-    }
   }
 
   protected leadUsermeta(row: Pick<LeadVentaResponse, 'usermeta'> | Pick<LeadDetalleResponse, 'usermeta'>): string {
@@ -3100,7 +2934,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private async refreshHistorialBackofficeVenta(idLead: number): Promise<void> {
     const requestSeq = ++this.historialRequestSeq;
-    const filtro = this.historialFiltro();
     this.historialLoading.set(true);
     this.historialError.set(null);
     try {
@@ -3112,22 +2945,21 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
             pageSize: 100,
             sortBy: 'createdAt',
             direction: 'desc'
-          },
-          filtro
+          }
         )
       );
-      if (!this.isCurrentHistorialRequest(requestSeq, idLead, filtro)) {
+      if (!this.isCurrentHistorialRequest(requestSeq, idLead)) {
         return;
       }
       this.eventos.set(page.content ?? []);
     } catch {
-      if (!this.isCurrentHistorialRequest(requestSeq, idLead, filtro)) {
+      if (!this.isCurrentHistorialRequest(requestSeq, idLead)) {
         return;
       }
       this.eventos.set([]);
       this.historialError.set('No se pudo cargar el historial. Reintenta la consulta.');
     } finally {
-      if (this.isCurrentHistorialRequest(requestSeq, idLead, filtro)) {
+      if (this.isCurrentHistorialRequest(requestSeq, idLead)) {
         this.historialLoading.set(false);
       }
     }
@@ -3135,58 +2967,19 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private isCurrentHistorialRequest(
     requestSeq: number,
-    idLead: number,
-    filtro: BackofficeHistorialFiltro
+    idLead: number
   ): boolean {
     return (
       this.historialRequestSeq === requestSeq &&
-      this.selectedLeadId() === idLead &&
-      this.historialFiltro() === filtro
+      this.selectedLeadId() === idLead
     );
   }
 
   private resetHistorialState(): void {
     this.historialRequestSeq += 1;
-    this.historialFiltro.set('TIPIFICACION');
     this.historialLoading.set(false);
     this.historialError.set(null);
     this.eventos.set([]);
-  }
-
-  private agruparHistorialPorFecha(eventos: readonly EventoResponse[]): HistorialFechaGrupo[] {
-    const grupos = new Map<string, HistorialFechaGrupo>();
-    for (const evento of eventos) {
-      const fecha = evento.createdAt ? new Date(evento.createdAt) : null;
-      const fechaValida = fecha && !Number.isNaN(fecha.getTime()) ? fecha : null;
-      const clave = fechaValida
-        ? `${fechaValida.getFullYear()}-${String(fechaValida.getMonth() + 1).padStart(2, '0')}-${String(fechaValida.getDate()).padStart(2, '0')}`
-        : 'sin-fecha';
-      let grupo = grupos.get(clave);
-      if (!grupo) {
-        grupo = {
-          clave,
-          etiqueta: this.historialFechaGrupoEtiqueta(fechaValida),
-          eventos: []
-        };
-        grupos.set(clave, grupo);
-      }
-      grupo.eventos.push(evento);
-    }
-    return Array.from(grupos.values());
-  }
-
-  private historialFechaGrupoEtiqueta(fecha: Date | null): string {
-    if (!fecha) {
-      return 'SIN FECHA';
-    }
-    const hoy = new Date();
-    const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
-    const inicioFecha = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()).getTime();
-    const diferenciaDias = Math.round((inicioHoy - inicioFecha) / 86_400_000);
-    const prefijo = diferenciaDias === 0 ? 'HOY · ' : diferenciaDias === 1 ? 'AYER · ' : '';
-    const day = String(fecha.getDate()).padStart(2, '0');
-    const year = fecha.getFullYear() === hoy.getFullYear() ? '' : ` ${fecha.getFullYear()}`;
-    return `${prefijo}${day} ${HISTORIAL_MESES[fecha.getMonth()].toUpperCase()}${year}`;
   }
 
   private async refreshPlanes(): Promise<void> {
@@ -3627,8 +3420,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.adicionalesDirty.set(false);
     const codigoTipificacion = sourceRow?.codigoTipificacion ?? '';
     const codigoSubtipificacion = sourceRow?.codigoSubtipificacion ?? '';
-    const comentarioPrevio = (sourceRow?.ultimoComentarioTipificacion ?? '').trim();
-    this.tipificacionCommentPlaceholder.set(comentarioPrevio || 'Agrega una nota si ayuda a la siguiente gestion');
     const comentarioCargado = (detail.comentario ?? '').trim();
     this.loadedComentario.set(comentarioCargado);
     this.selectedTipificacionCode.set(codigoTipificacion);
@@ -3645,7 +3436,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       sot: detail.sot ?? '',
       customerId: detail.customerId ?? sourceRow?.customerId ?? ''
     }, { emitEvent: false });
-    this.activeDataTab.set('datos');
     this.markFormsPristine();
     void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
   }
@@ -3856,7 +3646,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.selectedLeadId.set(null);
     this.selectedTipificacionCode.set('');
     this.selectedSubtipificacionCode.set('');
-    this.tipificacionCommentPlaceholder.set('Agrega una nota si ayuda a la siguiente gestion');
     this.selectedOfertaProviderId.set(null);
     this.ofertaPlanes.set([]);
     this.adicionalesSeleccionados.set([]);
