@@ -1827,6 +1827,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                         AND ((:sinValor = true AND COALESCE(l.codigoTipificacion, '') = '') OR l.codigoTipificacion IN :valoresGrupo))
               )
               AND (:excluirTipificacionesSeparadas = false
+                   OR tAct.orden IS NULL
                    OR (
                         tAct.orden > 1
                         AND tAct.orden < (
