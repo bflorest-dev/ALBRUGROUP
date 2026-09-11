@@ -47,6 +47,7 @@ import {
   MasivoLeadFilters,
   PageQuery,
   PlanResponse,
+  PlataformaDigitalResponse,
   PromocionComercialResponse,
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
@@ -398,6 +399,7 @@ export class GtrWorkspaceFacade {
   readonly selectedOfertaProviderId = signal<number | null>(null);
   readonly selectedOfertaAdditionals = signal<OfertaAdditionalSelection[]>([]);
   readonly departamentos = signal<UbigeoItem[]>([]);
+  readonly plataformasDigitales = signal<PlataformaDigitalResponse[]>([]);
   readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
   readonly distritosDomicilio = signal<UbigeoItem[]>([]);
   readonly activeDataTab = signal<LeadCommercialDataTab>('datos');
@@ -543,6 +545,7 @@ export class GtrWorkspaceFacade {
     nombreTitularServicio: [''],
     celularRegistro: [''],
     celularReferencia: [''],
+    celularGrabacion: [''],
     correo: [''],
     fechaNacimiento: [''],
     parentesco: [''],
@@ -585,7 +588,8 @@ export class GtrWorkspaceFacade {
     codigoTipificacion: ['', [Validators.required]],
     codigoSubtipificacion: ['', [Validators.required]],
     comentario: [''],
-    horaProgramada: ['']
+    horaProgramada: [''],
+    idPlataformaDigitalOfrecida: [null as number | null]
   });
 
   readonly masivoFiltersForm = this.fb.group({
@@ -1696,7 +1700,8 @@ export class GtrWorkspaceFacade {
       codigoTipificacion: raw.codigoTipificacion,
       codigoSubtipificacion: raw.codigoSubtipificacion,
       comentario: this.showComment() ? raw.comentario || null : null,
-      horaProgramada: this.requiresScheduledTime() ? raw.horaProgramada || null : null
+      horaProgramada: this.requiresScheduledTime() ? raw.horaProgramada || null : null,
+      idPlataformaDigitalOfrecida: raw.idPlataformaDigitalOfrecida || null
     };
     const forceFullSave = this.requiresVentaCompleta();
 
@@ -4143,14 +4148,16 @@ export class GtrWorkspaceFacade {
   // re-trae por lead porque distintos leads pueden ser de equipos con matrices distintas; planes y
   // departamentos sí se cachean.
   private async ensureTypifyCatalogs(idLead: number): Promise<void> {
-    const [catalogo, planes, departamentos] = await Promise.all([
+    const [catalogo, planes, departamentos, plataformas] = await Promise.all([
       firstValueFrom(this.preventaService.getCatalogoTipificaciones(idLead, 'PREVENTA')),
       this.planes().length ? Promise.resolve(this.planes()) : firstValueFrom(this.preventaService.listarPlanes(undefined, true)),
-      this.departamentos().length ? Promise.resolve(this.departamentos()) : firstValueFrom(this.preventaService.listarDepartamentos())
+      this.departamentos().length ? Promise.resolve(this.departamentos()) : firstValueFrom(this.preventaService.listarDepartamentos()),
+      this.plataformasDigitales().length ? Promise.resolve(this.plataformasDigitales()) : firstValueFrom(this.preventaService.listarPlataformasDigitales())
     ]);
     this.typifyCatalogo.set(catalogo);
     this.planes.set(planes);
     this.departamentos.set(departamentos);
+    this.plataformasDigitales.set(plataformas);
   }
 
   // Dropdowns de filtro del histórico (cross-equipo): salen del catálogo AGREGADO por código. NO tocan el
@@ -4220,7 +4227,8 @@ export class GtrWorkspaceFacade {
       codigoTipificacion: '',
       codigoSubtipificacion: '',
       comentario: '',
-      horaProgramada: ''
+      horaProgramada: '',
+      idPlataformaDigitalOfrecida: null
     });
     this.selectedTipificacionCode.set('');
     this.showComment.set(false);
@@ -4236,6 +4244,7 @@ export class GtrWorkspaceFacade {
       nombreTitularServicio: detail.nombreTitular ?? '',
       celularRegistro: detail.celularRegistro ?? '',
       celularReferencia: detail.celularReferencia ?? '',
+      celularGrabacion: detail.celularGrabacion ?? '',
       correo: detail.correo ?? '',
       fechaNacimiento: detail.fechaNacimiento ?? '',
       parentesco: detail.parentesco ?? '',
@@ -4306,7 +4315,8 @@ export class GtrWorkspaceFacade {
       codigoTipificacion: '',
       codigoSubtipificacion: '',
       comentario: '',
-      horaProgramada: ''
+      horaProgramada: '',
+      idPlataformaDigitalOfrecida: null
     });
     this.markTypifyFormsPristine();
   }

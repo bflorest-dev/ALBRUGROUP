@@ -76,6 +76,21 @@
           </p-select>
         </label>
 
+        @if (facade.plataformasDigitales().length) {
+          <label class="tipification-bar__field">
+            <span>Plataforma digital</span>
+            <p-select
+              formControlName="idPlataformaDigitalOfrecida"
+              [options]="facade.plataformasDigitales()"
+              optionLabel="nombre"
+              optionValue="id"
+              [showClear]="true"
+              placeholder="Sin plataforma"
+              appendTo="body"
+            />
+          </label>
+        }
+
         @if (facade.requiresScheduledTime()) {
           <label class="tipification-bar__field tipification-bar__field--time">
             <span>Hora programada</span>

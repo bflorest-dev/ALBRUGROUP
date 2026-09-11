@@ -265,6 +265,10 @@
                 <label>Celular referencia</label>
                 <input class="mono" formControlName="celularReferencia" />
               </div>
+              <div class="field" [class.dirty]="f.campoModificado('datos','celularGrabacion')">
+                <label>Celular grabación</label>
+                <input class="mono" formControlName="celularGrabacion" />
+              </div>
               <div class="field col2" [class.dirty]="f.campoModificado('datos','correo')">
                 <label>Correo</label>
                 <input formControlName="correo" />

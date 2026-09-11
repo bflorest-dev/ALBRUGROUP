@@ -10,7 +10,6 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { DatePickerModule } from 'primeng/datepicker';
 import { DrawerModule } from 'primeng/drawer';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
@@ -20,7 +19,6 @@ import { Popover, PopoverModule } from 'primeng/popover';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
-import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
@@ -106,7 +104,6 @@ const REALTIME_RECONCILE_DEBOUNCE_MS = 600;
     ButtonModule,
     CardModule,
     ConfirmDialogModule,
-    DatePickerModule,
     DrawerModule,
     InputTextModule,
     MessageModule,
@@ -116,7 +113,6 @@ const REALTIME_RECONCILE_DEBOUNCE_MS = 600;
     SelectModule,
     SkeletonModule,
     TableModule,
-    TabsModule,
     TagModule,
     ToastModule,
     TooltipModule,
@@ -392,6 +388,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     nombreTitularServicio: [''],
     celularRegistro: [''],
     celularReferencia: [''],
+    celularGrabacion: [''],
     correo: [''],
     fechaNacimiento: [''],
     parentesco: [''],
@@ -3376,6 +3373,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       nombreTitularServicio: detail.nombreTitular ?? '',
       celularRegistro: detail.celularRegistro ?? '',
       celularReferencia: detail.celularReferencia ?? '',
+      celularGrabacion: detail.celularGrabacion ?? '',
       correo: detail.correo ?? '',
       fechaNacimiento: detail.fechaNacimiento ?? '',
       parentesco: detail.parentesco ?? '',

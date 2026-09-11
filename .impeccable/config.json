@@ -68,6 +68,15 @@
         "value": "#9b8fd1",
         "createdAt": "2026-09-10T14:05:24.148Z",
         "reason": "paleta semantica de estados del poster oscuro de VENTA/Seguimiento (mundo dark intencional, coherente con los posters de venta/preventa existentes); no es --app-* del sistema claro"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "frontend/src/app/features/gtr/components/gtr-tipification-dialog/gtr-tipification-dialog.component.html"
+        ],
+        "createdAt": "2026-09-11T15:06:25.218Z",
+        "reason": "dynamic [src] binding resolved at runtime from providerLogo(); not a static placeholder"
       }
     ]
   }

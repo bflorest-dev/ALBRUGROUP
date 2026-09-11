@@ -700,9 +700,6 @@ select {
     width: 4.75rem;
   }
 
-  .drawer-footer--adaptive:not(.drawer-footer--expanded) :where(.drawer-tipification__extras,.drawer-tipification__comment) {
-    display: none !important;
-  }
 }
 
 /* Bitácora · entradas del flujo de subsanación. Se mantienen globales para no

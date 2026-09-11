@@ -22,6 +22,7 @@ public class LeadDatosPreventaRequest {
     private String nombreTitularServicio;
     private String celularRegistro;
     private String celularReferencia;
+    private String celularGrabacion;
     private String correo;
     private LocalDate fechaNacimiento;
     private Parentesco parentesco;

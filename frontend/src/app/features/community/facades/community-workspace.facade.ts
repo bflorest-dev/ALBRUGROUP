@@ -498,6 +498,9 @@ export class CommunityWorkspaceFacade {
   setSection(section: CommunitySection): void {
     this.section.set(section);
     this.clearMessages();
+    if (section === 'plataformas-digitales') {
+      void this.loadDigitalPlatforms();
+    }
   }
 
   async loadAll(): Promise<void> {
@@ -519,8 +522,7 @@ export class CommunityWorkspaceFacade {
         this.loadList('adicionales', () => this.loadAdditionalsByProviders(proveedores)),
         this.loadList('planes', () => firstValueFrom(this.leadService.listarPlanes())),
         this.loadList('promociones', () => firstValueFrom(this.leadService.listarPromociones({}))),
-        this.loadList('zonas', () => firstValueFrom(this.leadService.listarZonas())),
-        this.refreshDigitalPlatforms()
+        this.loadList('zonas', () => firstValueFrom(this.leadService.listarZonas()))
       ]);
 
       const failed = results
@@ -1436,15 +1438,28 @@ export class CommunityWorkspaceFacade {
   }
 
   private async loadAdditionalsByProviders(proveedores: ProveedorResponse[]): Promise<AdicionalResponse[]> {
-    if (!proveedores.length) {
+    const proveedoresActivos = proveedores.filter((proveedor) => proveedor.activo === true);
+    if (!proveedoresActivos.length) {
       return [];
     }
 
     const adicionalesPorProveedor = await Promise.all(
-      proveedores.map((proveedor) => firstValueFrom(this.leadService.listarAdicionales(proveedor.id)))
+      proveedoresActivos.map((proveedor) => firstValueFrom(this.leadService.listarAdicionales(proveedor.id)))
     );
     const adicionales = adicionalesPorProveedor.flat();
     return [...new Map(adicionales.map((adicional) => [adicional.id, adicional])).values()];
+  }
+
+  private async loadDigitalPlatforms(): Promise<void> {
+    if (this.plataformasDigitales().length) {
+      return;
+    }
+
+    try {
+      await this.refreshDigitalPlatforms();
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar las plataformas digitales.'));
+    }
   }
 
   private async loadList<T>(label: string, loader: () => Promise<T[]>): Promise<void> {

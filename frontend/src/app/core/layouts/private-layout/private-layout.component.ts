@@ -3,7 +3,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
   HostListener,
   ViewChild,
   computed,
@@ -13,9 +12,8 @@ import {
   untracked
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
-import { BadgeModule } from 'primeng/badge';
 import { AttendanceFacade } from '../../facades/attendance.facade';
 import { AttendanceRealtimeService } from '../../services/attendance-realtime.service';
 import { AuthSessionService } from '../../services/auth-session.service';
@@ -33,7 +31,7 @@ import { CurrentUserProviderScopeService } from '../../services/current-user-pro
 import { LeadMeritoCorreccionDrawerComponent } from '../../../shared/components/lead-merito-correccion-drawer/lead-merito-correccion-drawer.component';
 import { AdminSidebarV2Component } from './admin-sidebar-v2.component';
 import { SidebarDomainDefinition, SidebarItem, SidebarRoleModeOption } from './sidebar-item.model';
-import { sidebarDomainsForRole, sidebarV2EnabledForRole } from './sidebar-v2.config';
+import { sidebarDomainsForRole } from './sidebar-v2.config';
 import { shouldGuideAttendanceLogout } from './attendance-logout-guidance';
 import { SidebarAttendancePickerComponent } from './sidebar-attendance-picker.component';
 
@@ -59,10 +57,7 @@ const ROLE_THEME_CLASS: Record<string, string> = {
   selector: 'app-private-layout',
   imports: [
     RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
     TopBannerComponent,
-    BadgeModule,
     LeadMeritoCorreccionDrawerComponent,
     AdminSidebarV2Component,
     SidebarAttendancePickerComponent
@@ -72,8 +67,6 @@ const ROLE_THEME_CLASS: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PrivateLayoutComponent implements AfterViewInit {
-  @ViewChild('sidebar') private sidebar?: ElementRef<HTMLElement>;
-  @ViewChild('sidebarMenu') private sidebarMenu?: ElementRef<HTMLElement>;
   @ViewChild('mobileAttendancePicker') private mobileAttendancePicker?: SidebarAttendancePickerComponent;
   @ViewChild(AdminSidebarV2Component) private sidebarV2?: AdminSidebarV2Component;
   @ViewChild(LeadMeritoCorreccionDrawerComponent) private meritoDrawer?: LeadMeritoCorreccionDrawerComponent;
@@ -91,26 +84,19 @@ export class PrivateLayoutComponent implements AfterViewInit {
   protected readonly proveedoresUsuario = this.providerScope.proveedores;
   protected readonly proveedorActivoId = this.providerScope.activeId;
   protected readonly mostrarSelectorProveedor = this.providerScope.mostrarSelector;
-  protected readonly profileMenuOpen = signal(false);
   protected readonly mobileMenuOpen = signal(false);
-  // Grupos expandibles del sidebar (clave estable del grupo).
-  protected readonly expandedGroups = signal<Record<string, boolean>>({});
-  protected readonly menuCanScrollUp = signal(false);
-  protected readonly menuCanScrollDown = signal(false);
   private readonly currentUrl = signal(this.router.url);
   protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
   protected readonly attendanceErrorMessage = signal('');
   protected readonly logoutGuidanceActive = signal(false);
   protected readonly isMobileViewport = signal(window.innerWidth <= 900);
   private attendanceInitialized = false;
-  private menuScrollUpdateScheduled = false;
   // Ultimo tick de salida ya procesado: al marcar OFFLINE (REGISTRAR_SALIDA) cerramos la sesion, y
   // este contador evita re-disparar el logout en un layout recreado tras un re-login.
   private handledSalidaTick = this.attendanceFacade.salidaSuccessTick();
   protected readonly session = this.sessionService.session;
   protected readonly activeRole = this.sessionService.activeRole;
   protected readonly isAdmin = computed(() => this.activeRole() === 'ADMINISTRADOR');
-  protected readonly usesSidebarV2 = computed(() => sidebarV2EnabledForRole(this.activeRole()));
   protected readonly sidebarDomainDefinitions = computed<SidebarDomainDefinition[]>(() =>
     sidebarDomainsForRole(this.activeRole())
   );
@@ -526,23 +512,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
     });
   }
 
-  protected itemKey(item: SidebarItem): string {
+  private itemKey(item: SidebarItem): string {
     return item.key ?? item.route ?? item.label;
-  }
-
-  protected isGroupExpanded(item: SidebarItem): boolean {
-    return this.expandedGroups()[this.itemKey(item)] ?? false;
-  }
-
-  protected toggleGroup(item: SidebarItem, ancestors: SidebarItem[] = []): void {
-    const key = this.itemKey(item);
-    const nextValue = !(this.expandedGroups()[key] ?? false);
-    const nextGroups: Record<string, boolean> = {};
-    for (const ancestor of ancestors) {
-      nextGroups[this.itemKey(ancestor)] = true;
-    }
-    nextGroups[key] = nextValue;
-    this.expandedGroups.set(nextGroups);
   }
 
   constructor() {
@@ -639,41 +610,15 @@ export class PrivateLayoutComponent implements AfterViewInit {
       }
     });
 
-    effect(() => {
-      const url = this.currentUrl();
-      const isAdminColaboradores = url.startsWith('/app/admin/colaboradores');
-      const isAdminPlataformas = url.startsWith('/app/admin/plataformas');
-      this.expandedGroups.update((current) => {
-        if (isAdminPlataformas) {
-          const nextGroups: Record<string, boolean> = { Plataformas: true };
-          const match = /\/app\/admin\/plataformas\/equipos\/(\d+)\/([^/]+)/.exec(url);
-          if (match) {
-            nextGroups[`plataformas-equipo-${match[1]}`] = true;
-            nextGroups[`plataformas-equipo-${match[1]}-${match[2]}`] = true;
-          }
-          return this.groupsEqual(current, nextGroups) ? current : nextGroups;
-        }
-        const nextGroups: Record<string, boolean> = isAdminColaboradores ? { Colaboradores: true } : {};
-        return this.groupsEqual(current, nextGroups) ? current : nextGroups;
-      });
-    });
-
-    effect(() => {
-      this.menuItems();
-      this.expandedGroups();
-      this.scheduleMenuScrollStateUpdate();
-    });
   }
 
   ngAfterViewInit(): void {
-    this.scheduleMenuScrollStateUpdate();
     // Carga perezosa de los proveedores del usuario (no-op salvo BACKOFFICE / POSTVENTA).
     void this.providerScope.load();
   }
 
   protected seleccionarProveedor(idProveedor: number): void {
     this.providerScope.setActive(idProveedor);
-    this.profileMenuOpen.set(false);
   }
 
   protected async seleccionarModoTrabajo(role: string): Promise<void> {
@@ -681,7 +626,6 @@ export class PrivateLayoutComponent implements AfterViewInit {
       return;
     }
     this.providerScope.resetForOperationalScopeChange();
-    this.profileMenuOpen.set(false);
     const route = ROLE_HOME_ROUTES[role] ?? this.sessionService.getHomeRoute();
     await this.providerScope.load();
     void this.router.navigate([route]);
@@ -690,48 +634,11 @@ export class PrivateLayoutComponent implements AfterViewInit {
   @HostListener('window:resize')
   protected onWindowResize(): void {
     this.isMobileViewport.set(window.innerWidth <= 900);
-    this.scheduleMenuScrollStateUpdate();
   }
 
   @HostListener('document:keydown.escape')
   protected onEscape(): void {
     this.cancelLogoutGuidance();
-  }
-
-  protected updateMenuScrollState(): void {
-    const menu = this.sidebarMenu?.nativeElement;
-    if (!menu) {
-      this.menuCanScrollUp.set(false);
-      this.menuCanScrollDown.set(false);
-      return;
-    }
-    const maxScrollTop = Math.max(0, menu.scrollHeight - menu.clientHeight);
-    this.menuCanScrollUp.set(menu.scrollTop > 2);
-    this.menuCanScrollDown.set(menu.scrollTop < maxScrollTop - 2);
-  }
-
-  protected scrollMenu(direction: 'up' | 'down'): void {
-    const menu = this.sidebarMenu?.nativeElement;
-    if (!menu) return;
-    menu.scrollBy({ top: direction === 'down' ? 180 : -180, behavior: 'smooth' });
-    window.setTimeout(() => this.updateMenuScrollState(), 220);
-  }
-
-  private scheduleMenuScrollStateUpdate(): void {
-    if (this.menuScrollUpdateScheduled) {
-      return;
-    }
-    this.menuScrollUpdateScheduled = true;
-    window.setTimeout(() => {
-      this.menuScrollUpdateScheduled = false;
-      this.updateMenuScrollState();
-    });
-  }
-
-  private groupsEqual(left: Record<string, boolean>, right: Record<string, boolean>): boolean {
-    const leftKeys = Object.keys(left).filter((key) => left[key]);
-    const rightKeys = Object.keys(right).filter((key) => right[key]);
-    return leftKeys.length === rightKeys.length && leftKeys.every((key) => right[key]);
   }
 
   private getToday(): string {
@@ -768,10 +675,6 @@ export class PrivateLayoutComponent implements AfterViewInit {
     return this.attendanceFacade.errorMessage();
   }
 
-  protected toggleProfileMenu(): void {
-    this.profileMenuOpen.update((value) => !value);
-  }
-
   protected toggleAdminDeleteLeadsVisible(): void {
     this.adminDeleteLeadsVisible.update((value) => {
       const nextValue = !value;
@@ -781,30 +684,26 @@ export class PrivateLayoutComponent implements AfterViewInit {
   }
 
   protected openMeritoCorrection(): void {
-    this.profileMenuOpen.set(false);
     this.mobileMenuOpen.set(false);
     this.meritoDrawer?.open();
   }
 
   protected toggleMobileMenu(): void {
-    this.mobileMenuOpen.update((value) => !value);
+    const shouldOpen = !this.mobileMenuOpen();
+    this.mobileMenuOpen.set(shouldOpen);
+    if (shouldOpen) {
+      queueMicrotask(() => this.sidebarV2?.openNavigation());
+    } else {
+      this.sidebarV2?.closeNavigation();
+    }
   }
 
   protected closeMobileMenu(): void {
     this.mobileMenuOpen.set(false);
-  }
-
-  protected releaseSidebarPointerFocus(): void {
-    const sidebar = this.sidebar?.nativeElement;
-    const activeElement = document.activeElement;
-    if (!(activeElement instanceof HTMLElement) || !sidebar?.contains(activeElement)) {
-      return;
-    }
-    activeElement.blur();
+    this.sidebarV2?.closeNavigation();
   }
 
   protected async logout(): Promise<void> {
-    this.profileMenuOpen.set(false);
     this.mobileMenuOpen.set(false);
 
     if (this.shouldGuideLogout()) {

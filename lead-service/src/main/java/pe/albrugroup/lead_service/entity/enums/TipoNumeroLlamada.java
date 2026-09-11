@@ -4,5 +4,6 @@ public enum TipoNumeroLlamada {
     NUMERO_PARA_LLAMAR,
     LEAD,
     CELULAR_REFERENCIA,
-    CELULAR_REGISTRO
+    CELULAR_REGISTRO,
+    CELULAR_GRABACION
 }

@@ -126,6 +126,7 @@ export class SubsanacionDrawerComponent implements OnInit {
     nombreTitularServicio: ['', Validators.required],
     celularRegistro: ['', Validators.required],
     celularReferencia: [''],
+    celularGrabacion: [''],
     correo: ['', [Validators.required, Validators.email]],
     fechaNacimiento: ['', Validators.required],
     parentesco: ['', Validators.required],
@@ -403,7 +404,7 @@ export class SubsanacionDrawerComponent implements OnInit {
     this.datosForm.reset({
       tipoDocumento: d.tipoDocumento ?? '', numeroDocumentoTitularServicio: d.numeroDocumentoTitularServicio ?? '',
       ubigeoNacimiento: d.ubigeoNacimiento ?? '', nombreTitularServicio: d.nombreTitular ?? '',
-      celularRegistro: d.celularRegistro ?? '', celularReferencia: d.celularReferencia ?? '', correo: d.correo ?? '',
+      celularRegistro: d.celularRegistro ?? '', celularReferencia: d.celularReferencia ?? '', celularGrabacion: d.celularGrabacion ?? '', correo: d.correo ?? '',
       fechaNacimiento: d.fechaNacimiento ?? '', parentesco: d.parentesco ?? '', nombreMadre: d.nombreMadre ?? '',
       nombrePadre: d.nombrePadre ?? '', numeroDocumentoTitularCelularRegistro: d.numeroDocumentoTitularCelularRegistro ?? '',
       nombreTitularCelularRegistro: d.nombreTitularCelularRegistro ?? ''
@@ -591,6 +592,7 @@ export class SubsanacionDrawerComponent implements OnInit {
         tipoDocumento: datos.tipoDocumento ?? '', numeroDocumentoTitularServicio: datos.numeroDocumentoTitularServicio ?? '',
         ubigeoNacimiento: this.nulo(datos.ubigeoNacimiento), nombreTitularServicio: this.nulo(datos.nombreTitularServicio),
         celularRegistro: this.nulo(datos.celularRegistro), celularReferencia: this.nulo(datos.celularReferencia),
+        celularGrabacion: this.nulo(datos.celularGrabacion),
         correo: this.nulo(datos.correo), fechaNacimiento: this.nulo(datos.fechaNacimiento), parentesco: this.nulo(datos.parentesco),
         nombreMadre: this.nulo(datos.nombreMadre), nombrePadre: this.nulo(datos.nombrePadre),
         numeroDocumentoTitularCelularRegistro: this.nulo(datos.numeroDocumentoTitularCelularRegistro),

@@ -24,6 +24,7 @@ public class DatosPreventa {
 
     private String celularRegistro;
     private String celularReferencia;
+    private String celularGrabacion;
     private String correo;
     private LocalDate fechaNacimiento;
     @Enumerated(EnumType.STRING)

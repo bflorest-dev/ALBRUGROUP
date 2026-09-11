@@ -1,4 +1,4 @@
-<div [class]="'layout-shell ' + themeClass()" [class.layout-shell--sidebar-v2]="usesSidebarV2()">
+<div [class]="'layout-shell layout-shell--sidebar-v2 ' + themeClass()">
   <header class="mobile-topbar" [class.logout-guidance-active]="logoutGuidanceActive()">
     <button
       type="button"
@@ -51,9 +51,9 @@
     ></button>
   }
 
-  @if (usesSidebarV2()) {
-    <app-admin-sidebar-v2
+  <app-admin-sidebar-v2
       class="sidebar-v2-host"
+      [class.sidebar-v2-host--mobile-open]="mobileMenuOpen()"
       [class.logout-guidance-active]="logoutGuidanceActive()"
       [items]="menuItems()"
       [domainDefinitions]="sidebarDomainDefinitions()"
@@ -79,6 +79,7 @@
       [activeProviderId]="proveedorActivoId()"
       [roleModes]="roleModes()"
       [activeRole]="activeRole()"
+      [overlayMode]="isMobileViewport()"
       (deleteLeadsToggled)="toggleAdminDeleteLeadsVisible()"
       (correctMeritoRequested)="openMeritoCorrection()"
       (providerSelected)="seleccionarProveedor($event)"
@@ -86,287 +87,9 @@
       (attendanceActionSelected)="submitAttendanceAction($event)"
       (attendanceRetry)="attendanceFacade.reload()"
       (attendanceGuidanceCancelled)="cancelLogoutGuidance()"
+      (navigationDismissed)="closeMobileMenu()"
       (logoutRequested)="logout()"
-    />
-  }
-
-  <aside
-    #sidebar
-    class="sidebar sidebar--legacy"
-    [class.sidebar--legacy-v2]="usesSidebarV2()"
-    [class.sidebar--open]="mobileMenuOpen()"
-    aria-label="Menu principal"
-    (mouseleave)="releaseSidebarPointerFocus()"
-  >
-    <div class="sidebar__brand">
-      <span class="brand__logo" aria-hidden="true">
-        <i class="pi pi-building"></i>
-      </span>
-      <span class="brand__copy">
-        <span class="brand__eyebrow">ALBRUGROUP</span>
-        <strong class="brand__title">Panel operativo</strong>
-      </span>
-    </div>
-
-    <nav
-      #sidebarMenu
-      class="menu"
-      [class.menu--has-scroll-up]="menuCanScrollUp()"
-      [class.menu--has-scroll-down]="menuCanScrollDown()"
-      aria-label="Navegacion del rol"
-      (scroll)="updateMenuScrollState()"
-    >
-      @if (menuCanScrollUp()) {
-        <button
-          type="button"
-          class="menu__scroll-cue menu__scroll-cue--top"
-          aria-label="Ver opciones anteriores"
-          (click)="scrollMenu('up')"
-        >
-          <i class="pi pi-angle-up" aria-hidden="true"></i>
-        </button>
-      }
-
-      <span class="menu__section">Workspace</span>
-
-      @for (item of menuItems(); track itemKey(item)) {
-        @if (item.children) {
-          <button
-            type="button"
-            class="menu__item menu__item--group"
-            [class.is-open]="isGroupExpanded(item)"
-            [attr.aria-expanded]="isGroupExpanded(item)"
-            (click)="toggleGroup(item)"
-          >
-            <span class="menu__item-main">
-              <i [class]="item.icon" aria-hidden="true"></i>
-              <span>{{ item.label }}</span>
-            </span>
-            <i
-              class="menu__item-chevron"
-              [class.pi]="true"
-              [class.pi-angle-down]="isGroupExpanded(item)"
-              [class.pi-angle-right]="!isGroupExpanded(item)"
-              aria-hidden="true"
-            ></i>
-          </button>
-
-          @if (isGroupExpanded(item)) {
-            <div class="menu__subitems">
-              @for (child of item.children; track itemKey(child)) {
-                @if (child.startsGroup) {
-                  <span class="menu__subitems-divider" aria-hidden="true"></span>
-                }
-                @if (child.children) {
-                  <button
-                    type="button"
-                    class="menu__item menu__subitem menu__item--group"
-                    [class.is-open]="isGroupExpanded(child)"
-                    [attr.aria-expanded]="isGroupExpanded(child)"
-                    (click)="toggleGroup(child, [item])"
-                  >
-                    <span class="menu__item-main">
-                      <i [class]="child.icon" aria-hidden="true"></i>
-                      <span>{{ child.label }}</span>
-                    </span>
-                    <i
-                      class="menu__item-chevron"
-                      [class.pi]="true"
-                      [class.pi-angle-down]="isGroupExpanded(child)"
-                      [class.pi-angle-right]="!isGroupExpanded(child)"
-                      aria-hidden="true"
-                    ></i>
-                  </button>
-
-                  @if (isGroupExpanded(child)) {
-                    <div class="menu__subitems menu__subitems--nested">
-                      @for (grandchild of child.children; track itemKey(grandchild)) {
-                        @if (grandchild.children) {
-                          <button
-                            type="button"
-                            class="menu__item menu__subitem menu__subitem--nested menu__item--group"
-                            [class.is-open]="isGroupExpanded(grandchild)"
-                            [attr.aria-expanded]="isGroupExpanded(grandchild)"
-                            (click)="toggleGroup(grandchild, [item, child])"
-                          >
-                            <span class="menu__item-main">
-                              <i [class]="grandchild.icon" aria-hidden="true"></i>
-                              <span>{{ grandchild.label }}</span>
-                            </span>
-                            <i
-                              class="menu__item-chevron"
-                              [class.pi]="true"
-                              [class.pi-angle-down]="isGroupExpanded(grandchild)"
-                              [class.pi-angle-right]="!isGroupExpanded(grandchild)"
-                              aria-hidden="true"
-                            ></i>
-                          </button>
-
-                          @if (isGroupExpanded(grandchild)) {
-                            <div class="menu__subitems menu__subitems--nested menu__subitems--deep">
-                              @for (roleTab of grandchild.children; track itemKey(roleTab)) {
-                                <a
-                                  [routerLink]="roleTab.route"
-                                  routerLinkActive="is-active"
-                                  [routerLinkActiveOptions]="{ exact: roleTab.exact ?? false }"
-                                  class="menu__item menu__subitem menu__subitem--deep"
-                                  (click)="closeMobileMenu()"
-                                >
-                                  <span class="menu__item-main">
-                                    <i [class]="roleTab.icon" aria-hidden="true"></i>
-                                    <span>{{ roleTab.label }}</span>
-                                  </span>
-                                </a>
-                              }
-                            </div>
-                          }
-                        } @else {
-                          <a
-                            [routerLink]="grandchild.route"
-                            routerLinkActive="is-active"
-                            [routerLinkActiveOptions]="{ exact: grandchild.exact ?? false }"
-                            class="menu__item menu__subitem menu__subitem--nested"
-                            (click)="closeMobileMenu()"
-                          >
-                            <span class="menu__item-main">
-                              <i [class]="grandchild.icon" aria-hidden="true"></i>
-                              <span>{{ grandchild.label }}</span>
-                            </span>
-                          </a>
-                        }
-                      }
-                    </div>
-                  }
-                } @else {
-                  <a
-                    [routerLink]="child.route"
-                    routerLinkActive="is-active"
-                    [routerLinkActiveOptions]="{ exact: child.exact ?? false }"
-                    class="menu__item menu__subitem"
-                    (click)="closeMobileMenu()"
-                  >
-                    <span class="menu__item-main">
-                      <i [class]="child.icon" aria-hidden="true"></i>
-                      <span>{{ child.label }}</span>
-                    </span>
-                  </a>
-                }
-              }
-            </div>
-          }
-        } @else {
-          <a
-            [routerLink]="item.route"
-            routerLinkActive="is-active"
-            [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
-            class="menu__item"
-            (click)="closeMobileMenu()"
-          >
-            <span class="menu__item-main">
-              <i [class]="item.icon" aria-hidden="true"></i>
-              <span>{{ item.label }}</span>
-            </span>
-
-            @if (item.badge !== undefined) {
-              <span class="menu__item-alert" [attr.aria-label]="item.alertLabel ?? null">
-                <p-badge [value]="item.badge" severity="danger" />
-                <span
-                  class="menu__item-alert-warning"
-                  [class.menu__item-alert-warning--active]="item.alertActive"
-                  aria-hidden="true"
-                >
-                  <i class="pi pi-exclamation"></i>
-                </span>
-              </span>
-            }
-          </a>
-        }
-      }
-
-      @if (menuCanScrollDown()) {
-        <button
-          type="button"
-          class="menu__scroll-cue menu__scroll-cue--bottom"
-          aria-label="Ver mas opciones"
-          (click)="scrollMenu('down')"
-        >
-          <i class="pi pi-angle-down" aria-hidden="true"></i>
-        </button>
-      }
-    </nav>
-
-    <div class="sidebar__bottom">
-      @if (profileMenuOpen()) {
-        <div class="profile-menu">
-          @if (isAdmin()) {
-            <button
-              type="button"
-              class="profile-menu__item profile-menu__item--switch"
-              role="switch"
-              [attr.aria-checked]="adminDeleteLeadsVisible()"
-              (click)="toggleAdminDeleteLeadsVisible()"
-            >
-              <i class="pi pi-trash" aria-hidden="true"></i>
-              <span>Eliminar Leads</span>
-              <span class="profile-switch" [class.profile-switch--on]="adminDeleteLeadsVisible()" aria-hidden="true">
-                <span></span>
-              </span>
-            </button>
-          }
-
-          @if (canCorrectMerito()) {
-            <button type="button" class="profile-menu__item" (click)="openMeritoCorrection()">
-              <i class="pi pi-user-edit" aria-hidden="true"></i>
-              <span>Correccion Merito</span>
-            </button>
-          }
-
-          @if (mostrarSelectorProveedor()) {
-            <div class="profile-menu__label">Proveedor</div>
-            @for (proveedor of proveedoresUsuario(); track proveedor.id) {
-              <button
-                type="button"
-                class="profile-menu__item profile-menu__item--proveedor"
-                [class.profile-menu__item--active]="proveedor.id === proveedorActivoId()"
-                [attr.aria-pressed]="proveedor.id === proveedorActivoId()"
-                (click)="seleccionarProveedor(proveedor.id)"
-              >
-                <i
-                  class="pi"
-                  [class.pi-check-circle]="proveedor.id === proveedorActivoId()"
-                  [class.pi-circle]="proveedor.id !== proveedorActivoId()"
-                  aria-hidden="true"
-                ></i>
-                <span>{{ proveedor.nombre }}</span>
-              </button>
-            }
-            <div class="profile-menu__separator" aria-hidden="true"></div>
-          }
-
-          <button type="button" class="profile-menu__item" (click)="logout()">
-            <i class="pi pi-sign-out" aria-hidden="true"></i>
-            <span>Cerrar sesion</span>
-          </button>
-        </div>
-      }
-
-      <button
-        type="button"
-        class="profile-button"
-        [attr.aria-expanded]="profileMenuOpen()"
-        (click)="toggleProfileMenu()"
-      >
-        <span class="profile-button__avatar" aria-hidden="true">
-          <i class="pi pi-user"></i>
-        </span>
-        <span class="profile-button__copy">
-          <strong>{{ userDisplayName() }}</strong>
-          <small>{{ primaryRoleLabel() }}</small>
-        </span>
-        <i [class]="profileMenuOpen() ? 'pi pi-angle-down' : 'pi pi-angle-up'" aria-hidden="true"></i>
-      </button>
-    </div>
-  </aside>
+  />
 
   <main class="content">
     <app-top-banner />

@@ -76,6 +76,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   readonly activeProviderId = input<number | null>(null);
   readonly roleModes = input<SidebarRoleModeOption[]>([]);
   readonly activeRole = input<string | null>(null);
+  readonly overlayMode = input(false);
   readonly attendanceActions = input<AttendanceActionOption[]>([]);
   readonly attendanceLoading = input(false);
   readonly attendanceErrorMessage = input('');
@@ -96,6 +97,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   readonly attendanceActionSelected = output<AttendanceActionId>();
   readonly attendanceRetry = output<void>();
   readonly attendanceGuidanceCancelled = output<void>();
+  readonly navigationDismissed = output<void>();
 
   protected readonly openPanelId = signal<string | 'profile' | null>(null);
   protected readonly selectedPath = signal<SidebarItem[]>([]);
@@ -165,6 +167,7 @@ export class AdminSidebarV2Component implements OnDestroy {
       return;
     }
     this.closePanel(true);
+    this.navigationDismissed.emit();
   }
 
   protected openDomain(domain: SidebarDomain, event?: Event): void {
@@ -257,6 +260,23 @@ export class AdminSidebarV2Component implements OnDestroy {
     this.closePanel();
   }
 
+  openNavigation(): void {
+    this.cancelClose();
+    this.cancelHoverOpen();
+    const committedDomainId = this.committedDomainId();
+    const domain =
+      this.domains().find((candidate) => candidate.id === committedDomainId) ??
+      this.domains().find((candidate) => this.hasActiveRoute(candidate.items)) ??
+      this.domains()[0];
+    if (!domain) return;
+    const path = committedDomainId === domain.id ? this.committedPath() : this.activeGroupPath(domain);
+    this.showDomain(domain, path);
+  }
+
+  closeNavigation(): void {
+    this.closePanel();
+  }
+
   protected activateGroup(item: SidebarItem): void {
     if (!item.children?.length) return;
     const path = [...this.selectedPath(), item];
@@ -284,10 +304,11 @@ export class AdminSidebarV2Component implements OnDestroy {
     // Router no emite NavigationEnd al seleccionar de nuevo la misma URL. Cerramos el panel desde
     // la intencion del usuario para que todas las rutas finales tengan una respuesta determinista.
     this.closePanel();
+    this.navigationDismissed.emit();
   }
 
   protected scheduleClose(): void {
-    if (this.attendanceGuided()) return;
+    if (this.attendanceGuided() || this.overlayMode()) return;
     this.cancelHoverOpen();
     this.cancelClose();
     this.closeTimer = setTimeout(() => this.closePanel(), 180);
@@ -315,6 +336,7 @@ export class AdminSidebarV2Component implements OnDestroy {
       return;
     }
     this.closePanel();
+    this.navigationDismissed.emit();
   }
 
   protected itemKey(item: SidebarItem): string {
@@ -340,11 +362,13 @@ export class AdminSidebarV2Component implements OnDestroy {
     this.closePanel();
     if (action === 'merito') this.correctMeritoRequested.emit();
     if (action === 'logout') this.logoutRequested.emit();
+    this.navigationDismissed.emit();
   }
 
   protected selectProvider(providerId: number): void {
     this.providerSelected.emit(providerId);
     this.closePanel();
+    this.navigationDismissed.emit();
   }
 
   protected selectRoleMode(role: string): void {
@@ -353,6 +377,7 @@ export class AdminSidebarV2Component implements OnDestroy {
     }
     this.roleModeSelected.emit(role);
     this.closePanel();
+    this.navigationDismissed.emit();
   }
 
   private hasActiveRoute(items: SidebarItem[]): boolean {

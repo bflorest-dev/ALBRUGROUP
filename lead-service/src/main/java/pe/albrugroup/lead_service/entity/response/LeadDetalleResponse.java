@@ -44,6 +44,7 @@ public class LeadDetalleResponse {
     private String nombreTitular;
     private String celularRegistro;
     private String celularReferencia;
+    private String celularGrabacion;
     private String correo;
     private LocalDate fechaNacimiento;
     private Parentesco parentesco;

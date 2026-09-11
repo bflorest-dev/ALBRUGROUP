@@ -118,6 +118,17 @@ const postventaConfig: SidebarV2RoleConfig = {
   ]
 };
 
+const fallbackConfig: SidebarV2RoleConfig = {
+  domains: [
+    {
+      id: 'workspace',
+      label: 'Espacio de trabajo',
+      description: 'Navegación principal de la sesión',
+      icon: 'ti ti-layout-sidebar-left'
+    }
+  ]
+};
+
 const ROLE_CONFIGS: Record<string, SidebarV2RoleConfig> = {
   ADMINISTRADOR: adminConfig,
   RRHH: {
@@ -178,10 +189,6 @@ const ROLE_CONFIGS: Record<string, SidebarV2RoleConfig> = {
   }
 };
 
-export function sidebarV2EnabledForRole(primaryRole?: string | null): boolean {
-  return Boolean(primaryRole && ROLE_CONFIGS[primaryRole]);
-}
-
 export function sidebarDomainsForRole(primaryRole?: string | null): SidebarDomainDefinition[] {
-  return primaryRole ? ROLE_CONFIGS[primaryRole]?.domains ?? [] : [];
+  return primaryRole ? (ROLE_CONFIGS[primaryRole] ?? fallbackConfig).domains : [];
 }

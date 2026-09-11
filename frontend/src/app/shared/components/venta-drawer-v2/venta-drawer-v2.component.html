@@ -111,6 +111,7 @@
                   <div class="venta-v2__fields">
                     <label><span>Celular registrado</span>@if (editingSection() === 'contacto') { <input pInputText formControlName="celularRegistro" /> } @else { <strong>{{ display(datosForm.get('celularRegistro')?.value) }}</strong> }</label>
                     <label><span>Celular de referencia</span>@if (editingSection() === 'contacto') { <input pInputText formControlName="celularReferencia" /> } @else { <strong>{{ display(datosForm.get('celularReferencia')?.value) }}</strong> }</label>
+                    <label><span>Celular de grabación</span>@if (editingSection() === 'contacto') { <input pInputText formControlName="celularGrabacion" /> } @else { <strong>{{ display(datosForm.get('celularGrabacion')?.value) }}</strong> }</label>
                     <label class="span-2"><span>Correo</span>@if (editingSection() === 'contacto') { <input pInputText formControlName="correo" /> } @else { <strong>{{ display(datosForm.get('correo')?.value) }}</strong> }</label>
                   </div>
                 </section>

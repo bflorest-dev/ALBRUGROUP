@@ -484,6 +484,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   correo?: string | null;
   celularRegistro?: string | null;
   celularReferencia?: string | null;
+  celularGrabacion?: string | null;
   nombreMadre?: string | null;
   nombrePadre?: string | null;
   fechaNacimiento?: string | null;
@@ -766,6 +767,7 @@ export interface LeadDatosPreventaRequest {
   nombreTitularServicio?: string | null;
   celularRegistro?: string | null;
   celularReferencia?: string | null;
+  celularGrabacion?: string | null;
   correo?: string | null;
   fechaNacimiento?: string | null;
   parentesco?: ParentescoPreventa | string | null;
@@ -775,7 +777,7 @@ export interface LeadDatosPreventaRequest {
   nombreTitularCelularRegistro?: string | null;
 }
 
-export type TipoNumeroLlamada = 'NUMERO_PARA_LLAMAR' | 'LEAD' | 'CELULAR_REFERENCIA' | 'CELULAR_REGISTRO';
+export type TipoNumeroLlamada = 'NUMERO_PARA_LLAMAR' | 'LEAD' | 'CELULAR_REFERENCIA' | 'CELULAR_REGISTRO' | 'CELULAR_GRABACION';
 
 export interface NumeroLlamadaResponse {
   tipo: TipoNumeroLlamada;
@@ -835,6 +837,13 @@ export interface LeadTipificacionRequest {
   comentario?: string | null;
   horaProgramada?: string | null;
   idProveedor?: number | null;
+  idPlataformaDigitalOfrecida?: number | null;
+}
+
+export interface PlataformaDigitalResponse {
+  id: number;
+  nombre?: string | null;
+  activo?: boolean | null;
 }
 
 export interface LeadTipificacionVentaRequest {

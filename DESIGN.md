@@ -138,6 +138,22 @@ Paneles superpuestos con fondo opaco, borde fino y sombra direccional. El flyout
 un scrim funcional con oscurecimiento suave y blur para mantener el foco sin desplazar la vista. Este
 tratamiento pertenece al estado abierto y nunca se usa como decoracion permanente.
 
+### Migracion de drawers operativos
+
+Cada drawer de gestion por etapa o rol se trata como una superficie propia. Su rediseño se construye
+desde cero con Impeccable y con los contratos reales de datos y operacion; no se obtiene maquillando,
+extendiendo ni reacomodando el drawer anterior.
+
+El componente antiguo solo puede permanecer de forma temporal mientras conserve consumidores que aun
+no hayan migrado. Cuando el reemplazo alcance paridad funcional, haya sido probado por el equipo y todos
+sus accesos apunten a la nueva version, se eliminan el template, la logica, los estilos y las pruebas que
+hayan quedado sin consumidores.
+
+Los componentes atomicos neutrales —por ejemplo acciones telefonicas o una representacion compacta de
+plan— pueden reutilizarse si encajan con el nuevo sistema. Los contenedores compuestos que determinan la
+arquitectura visual del drawer no se consideran una base obligatoria y deben desaparecer al completar su
+migracion.
+
 ## Do's and Don'ts
 
 ### Do:

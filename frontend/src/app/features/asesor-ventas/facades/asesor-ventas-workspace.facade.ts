@@ -22,6 +22,7 @@ import {
   OportunidadHermana,
   PageQuery,
   PlanResponse,
+  PlataformaDigitalResponse,
   PromocionComercialResponse,
   SubtipificacionResponse,
   UbigeoItem
@@ -173,6 +174,7 @@ export class AsesorVentasWorkspaceFacade {
   private readonly camposConfigByProviderId = signal<Record<number, CampoConfigItem[]>>({});
   readonly selectedOfertaAdditionals = signal<OfertaAdditionalSelection[]>([]);
   readonly departamentos = signal<UbigeoItem[]>([]);
+  readonly plataformasDigitales = signal<PlataformaDigitalResponse[]>([]);
   readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
   readonly distritosDomicilio = signal<UbigeoItem[]>([]);
   readonly isManagingLead = signal(false);
@@ -203,6 +205,7 @@ export class AsesorVentasWorkspaceFacade {
     nombreTitularServicio: ['', [personNameValidator]],
     celularRegistro: [''],
     celularReferencia: [''],
+    celularGrabacion: [''],
     correo: [''],
     fechaNacimiento: [''],
     parentesco: [''],
@@ -250,7 +253,8 @@ export class AsesorVentasWorkspaceFacade {
     codigoTipificacion: ['', [Validators.required]],
     codigoSubtipificacion: ['', [Validators.required]],
     comentario: [''],
-    horaProgramada: ['']
+    horaProgramada: [''],
+    idPlataformaDigitalOfrecida: [null as number | null]
   });
 
   readonly subtipificaciones = computed<SubtipificacionSelectOption[]>(() => {
@@ -743,7 +747,8 @@ export class AsesorVentasWorkspaceFacade {
       codigoTipificacion: '',
       codigoSubtipificacion: '',
       comentario: '',
-      horaProgramada: ''
+      horaProgramada: '',
+      idPlataformaDigitalOfrecida: null
     });
     this.identidadForm.reset({
       prefijo: PERU_PHONE_PREFIX,
@@ -885,7 +890,8 @@ export class AsesorVentasWorkspaceFacade {
       codigoSubtipificacion: raw.codigoSubtipificacion,
       comentario: this.showComment() ? raw.comentario || null : null,
       horaProgramada: this.requiresScheduledTime() ? raw.horaProgramada || null : null,
-      idProveedor: this.selectedOfertaProviderId()
+      idProveedor: this.selectedOfertaProviderId(),
+      idPlataformaDigitalOfrecida: raw.idPlataformaDigitalOfrecida || null
     };
 
     // Al cerrar una venta NO confiamos en el flag "dirty": forzamos el guardado de
@@ -1546,12 +1552,14 @@ export class AsesorVentasWorkspaceFacade {
   // El catálogo de tipificaciones ya no se precarga global: depende del equipo del lead y se trae por
   // lead al abrir su gestión (ver openDetail/reopenManagedLead). Aquí solo planes y departamentos.
   private async refreshCatalogs(): Promise<void> {
-    const [planes, departamentos] = await Promise.all([
+    const [planes, departamentos, plataformas] = await Promise.all([
       firstValueFrom(this.preventaService.listarPlanes(undefined, true)),
-      firstValueFrom(this.preventaService.listarDepartamentos())
+      firstValueFrom(this.preventaService.listarDepartamentos()),
+      firstValueFrom(this.preventaService.listarPlataformasDigitales())
     ]);
     this.planes.set(planes);
     this.departamentos.set(departamentos);
+    this.plataformasDigitales.set(plataformas);
   }
 
   // Catálogo de tipificaciones del proveedor efectivo del lead. En PREVENTA puede venir del plan,
@@ -1629,7 +1637,8 @@ export class AsesorVentasWorkspaceFacade {
       codigoTipificacion: '',
       codigoSubtipificacion: '',
       comentario: '',
-      horaProgramada: ''
+      horaProgramada: '',
+      idPlataformaDigitalOfrecida: null
     });
     this.selectedTipificacionCode.set('');
     this.showComment.set(false);
@@ -1648,6 +1657,7 @@ export class AsesorVentasWorkspaceFacade {
       nombreTitularServicio: detail.nombreTitular ?? '',
       celularRegistro: detail.celularRegistro ?? '',
       celularReferencia: detail.celularReferencia ?? '',
+      celularGrabacion: detail.celularGrabacion ?? '',
       correo: detail.correo ?? '',
       fechaNacimiento: detail.fechaNacimiento ?? '',
       parentesco: detail.parentesco ?? '',

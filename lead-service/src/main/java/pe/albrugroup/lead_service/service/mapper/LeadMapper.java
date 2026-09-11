@@ -60,6 +60,7 @@ public interface LeadMapper {
     @Mapping(target = "nombreTitularServicio", expression = "java(trimToNull(request.getNombreTitularServicio()))")
     @Mapping(target = "celularRegistro", expression = "java(trimToNull(request.getCelularRegistro()))")
     @Mapping(target = "celularReferencia", expression = "java(trimToNull(request.getCelularReferencia()))")
+    @Mapping(target = "celularGrabacion", expression = "java(trimToNull(request.getCelularGrabacion()))")
     @Mapping(target = "correo", expression = "java(trimToNull(request.getCorreo()))")
     @Mapping(target = "fechaNacimiento", source = "fechaNacimiento")
     @Mapping(target = "parentesco", source = "parentesco")

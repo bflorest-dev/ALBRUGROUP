@@ -51,6 +51,7 @@ import {
   LeadTomaGestionGtrRequest,
   PageQuery,
   PlanResponse,
+  PlataformaDigitalResponse,
   PromocionComercialResponse,
   UbigeoItem,
   ZonaResponse
@@ -621,5 +622,9 @@ export class PreventaLeadService {
       params = params.set('fechaHasta', filters.fechaHasta);
     }
     return params;
+  }
+
+  listarPlataformasDigitales(): Observable<PlataformaDigitalResponse[]> {
+    return this.http.get<PlataformaDigitalResponse[]>(`${this.leadUrl}/postventa/plataformas-digitales/plataformas`);
   }
 }

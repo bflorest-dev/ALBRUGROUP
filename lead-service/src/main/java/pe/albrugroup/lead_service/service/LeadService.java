@@ -2225,6 +2225,8 @@ public class LeadService {
                 datosPreventa == null ? null : datosPreventa.getCelularReferencia(), 3);
         agregarNumeroLlamada(opciones, TipoNumeroLlamada.CELULAR_REGISTRO, "Celular de registro",
                 datosPreventa == null ? null : datosPreventa.getCelularRegistro(), 4);
+        agregarNumeroLlamada(opciones, TipoNumeroLlamada.CELULAR_GRABACION, "Celular de grabación",
+                datosPreventa == null ? null : datosPreventa.getCelularGrabacion(), 5);
 
         return new ArrayList<>(opciones.values());
     }
@@ -5074,6 +5076,7 @@ public class LeadService {
                 datosPreventa == null ? null : datosPreventa.getNombreTitularServicio(),
                 datosPreventa == null ? null : datosPreventa.getCelularRegistro(),
                 datosPreventa == null ? null : datosPreventa.getCelularReferencia(),
+                datosPreventa == null ? null : datosPreventa.getCelularGrabacion(),
                 datosPreventa == null ? null : datosPreventa.getCorreo(),
                 datosPreventa == null ? null : datosPreventa.getFechaNacimiento(),
                 datosPreventa == null ? null : datosPreventa.getParentesco(),
@@ -5690,6 +5693,7 @@ public class LeadService {
         validarTextoObligatorio(datosPreventa.getNumeroDocumentoTitularServicio(), "Falta numeroDocumentoTitularServicio");
         validarTextoObligatorio(datosPreventa.getNombreTitularServicio(), "Falta nombreTitularServicio");
         validarTextoObligatorio(datosPreventa.getCelularRegistro(), "Falta celularRegistro");
+        validarTextoObligatorio(datosPreventa.getCelularGrabacion(), "Falta celularGrabacion");
         validarTextoObligatorio(datosPreventa.getCorreo(), "Falta correo");
         if (datosPreventa.getFechaNacimiento() == null) {
             throw new BadRequestException("Falta fechaNacimiento");

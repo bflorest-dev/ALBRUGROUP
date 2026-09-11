@@ -98,6 +98,17 @@
                 (input)="setNumericDigits(datosForm.get('celularReferencia'), $any($event.target).value, 9)"
               />
             </label>
+            <label class="data-field data-field--phone">
+              <span>Celular de grabación</span>
+              <input
+                pInputText
+                type="text"
+                inputmode="numeric"
+                formControlName="celularGrabacion"
+                [readonly]="readonly"
+                (input)="setNumericDigits(datosForm.get('celularGrabacion'), $any($event.target).value, 9)"
+              />
+            </label>
             <label class="data-field data-field--email">
               <span>Correo</span>
               <input pInputText type="email" formControlName="correo" [readonly]="readonly" />
