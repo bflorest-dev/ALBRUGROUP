@@ -85,8 +85,9 @@ public class MonitoringService {
     private Mono<List<ConnectedUserResponse>> listarConectadosVentasYOjt() {
         return Mono.zip(
                 presenceService.listarUsuariosConectados(ROL_ASESOR),
-                presenceService.listarUsuariosConectados(ROL_OJT)
-        ).map(tuple -> mergePorEmpleado(tuple.getT1(), tuple.getT2()));
+                presenceService.listarUsuariosConectados(ROL_OJT),
+                presenceService.listarUsuariosConectados(ROL_SUPERVISOR_VENTAS)
+        ).map(tuple -> mergePorEmpleado(tuple.getT1(), tuple.getT2(), tuple.getT3()));
     }
 
     private Mono<List<UsuarioRolResponse>> listarUsuariosActivosVentasYOjt(String authHeader) {
@@ -193,6 +194,10 @@ public class MonitoringService {
             porEmpleado.put(extractEmpleadoId(item), item);
         }
         return List.copyOf(porEmpleado.values());
+    }
+
+    private <T> List<T> mergePorEmpleado(List<T> first, List<T> second, List<T> third) {
+        return mergePorEmpleado(mergePorEmpleado(first, second), third);
     }
 
     private Long extractEmpleadoId(Object item) {
