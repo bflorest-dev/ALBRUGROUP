@@ -1116,7 +1116,11 @@ export class GtrWorkspaceFacade {
       ['GESTIONANDO', 2],
       ['SIN_GESTIONAR', 3],
       ['OCUPADO', 4],
-      ['SATURADO', 5]
+      ['SATURADO', 5],
+      ['ALMUERZO', 6],
+      ['PAUSA_ACTIVA', 7],
+      ['SERVICIOS', 8],
+      ['CAPACITACION', 9]
     ]);
 
     return this.advisorsView()
@@ -2778,7 +2782,15 @@ export class GtrWorkspaceFacade {
           operativo: monitor?.operativo ?? false,
           estadoSchedule: monitor?.estadoSchedule ?? null,
           esperadoHoy: monitor?.esperadoHoy ?? false,
-          disponibilidad: monitor?.disponibilidad ?? presence?.disponibilidad,
+          disponibilidad: (() => {
+            const operativo = monitor?.operativo ?? false;
+            const scheduleState = monitor?.estadoSchedule;
+            const nonOperativeStates = new Set(['ALMUERZO', 'PAUSA_ACTIVA', 'SERVICIOS', 'CAPACITACION']);
+            if (!operativo && scheduleState && nonOperativeStates.has(scheduleState)) {
+              return scheduleState;
+            }
+            return monitor?.disponibilidad ?? presence?.disponibilidad;
+          })(),
           lastSeen: monitor?.lastSeen ?? presence?.lastSeen
         };
       })
@@ -3349,6 +3361,11 @@ export class GtrWorkspaceFacade {
       case 'SIN_PRESENCIA':
       case 'OFFLINE':
         return 'danger';
+      case 'ALMUERZO':
+      case 'PAUSA_ACTIVA':
+      case 'SERVICIOS':
+      case 'CAPACITACION':
+        return 'warn';
       default:
         return 'info';
     }
