@@ -130,6 +130,17 @@
       (click)="facade.openAssignment()"
     ></button>
 
+    <button
+      pButton
+      type="button"
+      icon="pi pi-copy"
+      [label]="'Copiar numeros (' + facade.selectedCount() + ')'"
+      severity="secondary"
+      [outlined]="true"
+      [disabled]="facade.selectedCount() === 0"
+      (click)="facade.copySelectedLeadNumbers()"
+    ></button>
+
     <label class="page-size-select" style="align-items: center; display: inline-flex; gap: 0.45rem;">
       <span>Filas</span>
       <p-select

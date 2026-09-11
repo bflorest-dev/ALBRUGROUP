@@ -1507,6 +1507,29 @@ export class GtrWorkspaceFacade {
     }
   }
 
+  async copySelectedLeadNumbers(): Promise<void> {
+    const rows = this.selectedRowsForCurrentSection();
+    const numbers = rows.map((r) => r.lead).filter((n): n is string => !!n);
+
+    if (!numbers.length) {
+      this.errorMessage.set('No hay numeros para copiar en la seleccion.');
+      return;
+    }
+
+    const clipboard = this.document.defaultView?.navigator?.clipboard;
+    if (!clipboard) {
+      this.errorMessage.set('No fue posible acceder al portapapeles.');
+      return;
+    }
+
+    try {
+      await clipboard.writeText(numbers.join('\n'));
+      this.successMessage.set(`${numbers.length} numero${numbers.length === 1 ? '' : 's'} copiado${numbers.length === 1 ? '' : 's'} al portapapeles.`);
+    } catch {
+      this.errorMessage.set('No se pudieron copiar los numeros.');
+    }
+  }
+
   beginSnapshot(row: LeadGtrResponse): void {
     this.activeSnapshotLead.set(row);
     this.resetNumerosLlamadaState();

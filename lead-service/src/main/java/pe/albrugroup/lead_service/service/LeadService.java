@@ -2323,6 +2323,9 @@ public class LeadService {
 
         lead.setNumeroDocumentoTitularServicioSnapshot(datosPreventa.getNumeroDocumentoTitularServicio());
         lead.setDatosPreventa(datosPreventa);
+        if (datosPreventa.getCelularGrabacion() != null) {
+            lead.setNumeroParaLlamar(datosPreventa.getCelularGrabacion());
+        }
         moverAEnGestionSiAplica(lead);
         return leadRepository.save(lead);
     }
