@@ -455,6 +455,21 @@
             [disabled]="offerLocked || readonly"
           />
         </label>
+        @if (plataformaDigitalControl && plataformasDigitales.length) {
+          <label class="wide">
+            <span>Plataforma digital</span>
+            <p-select
+              [formControl]="plataformaDigitalControl"
+              [options]="plataformasDigitales"
+              optionLabel="nombre"
+              optionValue="id"
+              [showClear]="true"
+              placeholder="Sin plataforma"
+              appendTo="body"
+              [disabled]="readonly"
+            />
+          </label>
+        }
         <div class="offer-additionals wide">
           <div class="offer-additionals__head">
             <span>Adicionales</span>

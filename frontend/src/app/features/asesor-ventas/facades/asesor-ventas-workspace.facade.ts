@@ -717,17 +717,29 @@ export class AsesorVentasWorkspaceFacade {
       return;
     }
     this.clearMessages();
-    // Guardar lo ingresado para no perderlo. En atención GTR los datos son de solo lectura: no hay
-    // nada que guardar. Si el guardado falla, no minimizamos: el asesor ve el error y sigue aquí.
+    // Guardar lo válido para no perderlo. En atención GTR los datos son de solo lectura: no hay
+    // nada que guardar. Si algún form está dirty pero inválido, lo descartamos (markAsPristine)
+    // para no bloquear: minimizar es "aparcar", no requiere datos completos.
     if (this.hasPendingIdentityChange() || (!this.atencionOtraEtapa() && this.hasUnsavedDataChanges())) {
-      const guardado = await this.guardarAntesDeTipificar(detail, false);
-      if (!guardado) {
-        return;
+      this.discardInvalidDirtyForms();
+      if (this.hasPendingIdentityChange() || this.hasUnsavedDataChanges()) {
+        const guardado = await this.guardarAntesDeTipificar(detail, false);
+        if (!guardado) {
+          return;
+        }
       }
     }
     this.resetDetailSignals();
     // El lead sigue EN_GESTION en el backend; refrescamos la bandeja para que aparezca como "Retomar".
     await this.refreshPage(true).catch(() => undefined);
+  }
+
+  private discardInvalidDirtyForms(): void {
+    for (const form of [this.datosForm, this.direccionForm, this.ofertaForm]) {
+      if (form.dirty && form.invalid) {
+        form.markAsPristine();
+      }
+    }
   }
 
   // Limpia todo el estado del modal/sesión de gestión (formularios, oportunidades, banderas). No

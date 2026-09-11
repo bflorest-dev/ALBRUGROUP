@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core';
-import { AbstractControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
@@ -75,6 +75,8 @@ export class LeadCommercialDataTabsComponent {
   @Input() adicionales: AdicionalResponse[] = [];
   @Input() selectedAdditionals: LeadCommercialAdditionalSelection[] = [];
   @Input() additionalsTotal = 0;
+  @Input() plataformaDigitalControl: FormControl<number | null> | null = null;
+  @Input() plataformasDigitales: { id: number; nombre?: string | null }[] = [];
   @Input() offerLocked = false;
   @Input() offerNoticeSeverity: 'info' | 'warn' | null = null;
   @Input() offerNoticeText: string | null = null;
