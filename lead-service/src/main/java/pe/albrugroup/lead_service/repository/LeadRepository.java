@@ -3130,7 +3130,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:soloIngresados = false
                    OR EXISTS (SELECT 1 FROM Evento reg
                               WHERE reg.idLead = l.id
-                                AND reg.accion = :accionRegistro
+                                AND reg.accion IN :accionesIngreso
                                 AND reg.createdAt >= :fechaDesde
                                 AND reg.createdAt < :fechaHasta))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -3142,7 +3142,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             """)
     List<AsesorPreventaCantidadProjection> resumirPreventasPorAsesorLeadGtr(
             @Param("soloIngresados") boolean soloIngresados,
-            @Param("accionRegistro") Accion accionRegistro,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("soloActivos") boolean soloActivos,

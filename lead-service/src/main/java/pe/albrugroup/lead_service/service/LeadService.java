@@ -5825,7 +5825,7 @@ public class LeadService {
                 });
 
         leadRepository.resumirPreventasPorAsesorLeadGtr(
-                        ingresados, Accion.REGISTRO,
+                        ingresados, ACCIONES_INGRESO,
                         rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
                         equipos.filtrar(), equipos.ids())
                 .forEach(row -> {
