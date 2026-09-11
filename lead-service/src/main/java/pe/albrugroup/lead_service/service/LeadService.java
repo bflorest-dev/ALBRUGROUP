@@ -5916,17 +5916,17 @@ public class LeadService {
         boolean ingresados = modo == ModoConteo.INGRESADOS;
         List<TipificacionCantidadProjection> rows = switch (campo) {
             case PRIMERA -> leadRepository.resumirTipiRankingGtrPrimera(
-                    ingresados, Accion.REGISTRO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+                    ingresados, ACCIONES_INGRESO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
             case ULTIMA -> leadRepository.resumirTipiRankingGtrUltima(
-                    ingresados, Accion.REGISTRO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+                    ingresados, ACCIONES_INGRESO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
             case MAYOR -> leadRepository.resumirTipiRankingGtrMayor(
-                    ingresados, Accion.REGISTRO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+                    ingresados, ACCIONES_INGRESO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
         };
         long tipificados = rows.stream().mapToLong(TipificacionCantidadProjection::getCantidad).sum();
         long sinTipificar = 0;
         if (ingresados) {
             long totalLeads = eventoRepository.contarLeadsUnicosRegistrados(
-                    Accion.REGISTRO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+                    ACCIONES_INGRESO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
             sinTipificar = totalLeads - tipificados;
         }
         long total = tipificados + Math.max(sinTipificar, 0);

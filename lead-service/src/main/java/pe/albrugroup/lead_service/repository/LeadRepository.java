@@ -3202,14 +3202,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE r.primeraCodigoTipificacion IS NOT NULL AND TRIM(r.primeraCodigoTipificacion) <> ''
               AND ((:ingresados = false AND r.primeraTipificacionAt >= :fechaDesde AND r.primeraTipificacionAt < :fechaHasta)
                    OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
-                              WHERE e.idLead = l.id AND e.accion = :accion
+                              WHERE e.idLead = l.id AND e.accion IN :accionesIngreso
                                 AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY TRIM(r.primeraCodigoTipificacion)
             """)
     List<TipificacionCantidadProjection> resumirTipiRankingGtrPrimera(
             @Param("ingresados") boolean ingresados,
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarEquipos") boolean filtrarEquipos,
@@ -3223,14 +3223,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE r.ultimaCodigoTipificacion IS NOT NULL AND TRIM(r.ultimaCodigoTipificacion) <> ''
               AND ((:ingresados = false AND r.ultimaTipificacionAt >= :fechaDesde AND r.ultimaTipificacionAt < :fechaHasta)
                    OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
-                              WHERE e.idLead = l.id AND e.accion = :accion
+                              WHERE e.idLead = l.id AND e.accion IN :accionesIngreso
                                 AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY TRIM(r.ultimaCodigoTipificacion)
             """)
     List<TipificacionCantidadProjection> resumirTipiRankingGtrUltima(
             @Param("ingresados") boolean ingresados,
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarEquipos") boolean filtrarEquipos,
@@ -3244,14 +3244,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE r.mayorRangoCodigoTipificacion IS NOT NULL AND TRIM(r.mayorRangoCodigoTipificacion) <> ''
               AND ((:ingresados = false AND r.mayorRangoAt >= :fechaDesde AND r.mayorRangoAt < :fechaHasta)
                    OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
-                              WHERE e.idLead = l.id AND e.accion = :accion
+                              WHERE e.idLead = l.id AND e.accion IN :accionesIngreso
                                 AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY TRIM(r.mayorRangoCodigoTipificacion)
             """)
     List<TipificacionCantidadProjection> resumirTipiRankingGtrMayor(
             @Param("ingresados") boolean ingresados,
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarEquipos") boolean filtrarEquipos,

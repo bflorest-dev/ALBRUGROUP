@@ -972,13 +972,13 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                 ON epFallback.idEquipo = l.idEquipo
                AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
-            WHERE e.accion = :accion
+            WHERE e.accion IN :accionesIngreso
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarLeadsUnicosRegistrados(
-            @Param("accion") Accion accion,
+            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
             @Param("filtrarEquipos") boolean filtrarEquipos,
