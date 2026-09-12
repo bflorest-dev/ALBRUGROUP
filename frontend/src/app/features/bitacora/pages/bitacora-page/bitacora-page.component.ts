@@ -59,6 +59,7 @@ export class BitacoraPageComponent implements OnInit {
   protected readonly subsanacionModo = signal<SubsanacionModo | null>(null);
   protected readonly subsanacionIdLead = signal<number | null>(null);
   protected readonly subsanacionTelefonoInicial = signal('');
+  protected readonly subsanacionPasoInicial = signal(0);
   protected readonly actaSubsanacion = signal<SubsanacionResponse | null>(null);
   protected readonly cargandoActaSubsanacion = signal(false);
   protected readonly errorActaSubsanacion = signal<string | null>(null);
@@ -128,6 +129,7 @@ export class BitacoraPageComponent implements OnInit {
     this.f.cerrarDrawer();
     this.subsanacionIdLead.set(null);
     this.subsanacionTelefonoInicial.set(telefono.length >= 6 ? telefono : '');
+    this.subsanacionPasoInicial.set(0);
     this.subsanacionModo.set('NUEVO');
   }
 
@@ -141,6 +143,7 @@ export class BitacoraPageComponent implements OnInit {
     this.f.cerrarDrawer();
     this.subsanacionIdLead.set(idLead);
     this.subsanacionTelefonoInicial.set('');
+    this.subsanacionPasoInicial.set(0);
     this.subsanacionModo.set('EXISTENTE');
   }
 
@@ -149,6 +152,7 @@ export class BitacoraPageComponent implements OnInit {
     queueMicrotask(() => {
       this.subsanacionIdLead.set(idLead);
       this.subsanacionTelefonoInicial.set('');
+      this.subsanacionPasoInicial.set(1);
       this.subsanacionModo.set('EXISTENTE');
     });
   }
@@ -157,6 +161,7 @@ export class BitacoraPageComponent implements OnInit {
     this.subsanacionModo.set(null);
     this.subsanacionIdLead.set(null);
     this.subsanacionTelefonoInicial.set('');
+    this.subsanacionPasoInicial.set(0);
   }
 
   protected subsanacionCompletada(_resultado: SubsanacionResponse): void {

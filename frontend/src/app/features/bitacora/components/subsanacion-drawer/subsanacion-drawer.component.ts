@@ -67,6 +67,7 @@ export class SubsanacionDrawerComponent implements OnInit {
   readonly modo = input.required<SubsanacionModo>();
   readonly idLead = input<number | null>(null);
   readonly telefonoInicial = input('');
+  readonly pasoInicial = input(0);
   readonly tema = input<'light' | 'dark'>('light');
 
   readonly cerrar = output<void>();
@@ -245,6 +246,7 @@ export class SubsanacionDrawerComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.paso.set(Math.max(0, Math.min(this.pasos.length - 1, this.pasoInicial())));
     this.equiposNav.ensureLoaded();
     void this.cargarDepartamentos().catch(() => {
       const mensaje = 'No se pudo cargar el catálogo de ubicaciones. Cierra el flujo e inténtalo nuevamente.';
