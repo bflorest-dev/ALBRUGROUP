@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
-import { CampoConfigItem } from '../../../shared/models/preventa/preventa.models';
+import { CampoConfigItem, UbigeoItem } from '../../../shared/models/preventa/preventa.models';
 import {
   SubsanacionActaResumen,
   SubsanacionImpacto,
@@ -37,6 +37,18 @@ export class SubsanacionService {
 
   camposCaptura(idProveedor: number): Observable<CampoConfigItem[]> {
     return this.http.get<CampoConfigItem[]>(`${this.leadUrl}/proveedores/${idProveedor}/campos-captura`);
+  }
+
+  listarDepartamentos(): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos`);
+  }
+
+  listarProvincias(idDepartamento: number): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos/${idDepartamento}/provincias`);
+  }
+
+  listarDistritos(idProvincia: number): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/provincias/${idProvincia}/distritos`);
   }
 
   ejecutar(request: SubsanacionRequest): Observable<SubsanacionResponse> {

@@ -209,6 +209,31 @@
 .field .mono { font-family: 'Spline Sans Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 .field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
+.location-block {
+  min-width: 0;
+  padding-block: 2px;
+}
+.location-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-bottom: 10px;
+  color: var(--sub-ink);
+  font-size: 12px;
+  font-weight: 750;
+  small { color: var(--sub-muted); font-size: 10.5px; font-weight: 500; }
+}
+.location-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding-top: 8px;
+  color: var(--sub-muted);
+  font-size: 11.5px;
+  &.error { color: var(--sub-danger); }
+}
+
 .inline-status,
 .state-message {
   display: flex;

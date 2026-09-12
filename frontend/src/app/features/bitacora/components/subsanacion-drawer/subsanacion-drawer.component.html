@@ -127,7 +127,20 @@
               <label class="field span2"><span>Correo</span><input type="email" formControlName="correo" /></label>
               <label class="field"><span>Fecha de nacimiento</span><input class="mono" type="date" formControlName="fechaNacimiento" /></label>
               <label class="field"><span>Parentesco</span><select formControlName="parentesco"><option value="">Selecciona</option>@for (item of parentescos; track item) { <option [value]="item">{{ item }}</option> }</select></label>
-              <label class="field span2"><span>Ubigeo de nacimiento <small>opcional</small></span><input class="mono" formControlName="ubigeoNacimiento" /></label>
+              <div class="location-block span2">
+                <div class="location-heading"><span>Ubicación de nacimiento</span><small>opcional</small></div>
+                <div class="field-grid three">
+                  <label class="field"><span>Departamento</span><select formControlName="idDepartamentoNacimiento" [disabled]="cargandoDepartamentos() || cargandoUbigeoNacimiento()" (change)="cambiarDepartamentoNacimiento()"><option [ngValue]="null">{{ cargandoDepartamentos() ? 'Cargando…' : 'Selecciona' }}</option>@for (item of departamentos(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+                  <label class="field"><span>Provincia</span><select formControlName="idProvinciaNacimiento" [disabled]="cargandoUbigeoNacimiento() || !provinciasNacimiento().length" (change)="cambiarProvinciaNacimiento()"><option [ngValue]="null">Selecciona</option>@for (item of provinciasNacimiento(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+                  <label class="field"><span>Distrito</span><select formControlName="idDistritoNacimiento" [disabled]="cargandoUbigeoNacimiento() || !distritosNacimiento().length" (change)="cambiarDistritoNacimiento()"><option [ngValue]="null">Selecciona</option>@for (item of distritosNacimiento(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+                </div>
+                @if (cargandoDepartamentos() || cargandoUbigeoNacimiento() || errorUbigeoNacimiento()) {
+                  <div class="location-status" [class.error]="errorUbigeoNacimiento()" aria-live="polite">
+                    @if (cargandoDepartamentos() || cargandoUbigeoNacimiento()) { <span class="spinner"></span><span>Cargando ubicación de nacimiento…</span> }
+                    @else { <span>{{ errorUbigeoNacimiento() }}</span> }
+                  </div>
+                }
+              </div>
               <label class="field"><span>Nombre de la madre</span><input formControlName="nombreMadre" /></label>
               <label class="field"><span>Nombre del padre</span><input formControlName="nombrePadre" /></label>
               <label class="field"><span>Doc. titular del celular</span><input class="mono" formControlName="numeroDocumentoTitularCelularRegistro" /></label>
@@ -137,7 +150,20 @@
           <div class="subsection" [formGroup]="direccionForm">
             <h4>Dirección de instalación</h4>
             <div class="field-grid two">
-              <label class="field"><span>Ubigeo domicilio</span><input class="mono" formControlName="ubigeoDomicilio" /></label>
+              <div class="location-block span2">
+                <div class="location-heading"><span>Ubicación del domicilio</span><small>obligatoria</small></div>
+                <div class="field-grid three">
+                  <label class="field"><span>Departamento</span><select formControlName="idDepartamentoDomicilio" [disabled]="cargandoDepartamentos() || cargandoUbigeoDomicilio()" (change)="cambiarDepartamentoDomicilio()"><option [ngValue]="null">{{ cargandoDepartamentos() ? 'Cargando…' : 'Selecciona' }}</option>@for (item of departamentos(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+                  <label class="field"><span>Provincia</span><select formControlName="idProvinciaDomicilio" [disabled]="cargandoUbigeoDomicilio() || !provinciasDomicilio().length" (change)="cambiarProvinciaDomicilio()"><option [ngValue]="null">Selecciona</option>@for (item of provinciasDomicilio(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+                  <label class="field"><span>Distrito</span><select formControlName="idDistritoDomicilio" [disabled]="cargandoUbigeoDomicilio() || !distritosDomicilio().length" (change)="cambiarDistritoDomicilio()"><option [ngValue]="null">Selecciona</option>@for (item of distritosDomicilio(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+                </div>
+                @if (cargandoDepartamentos() || cargandoUbigeoDomicilio() || errorUbigeoDomicilio()) {
+                  <div class="location-status" [class.error]="errorUbigeoDomicilio()" aria-live="polite">
+                    @if (cargandoDepartamentos() || cargandoUbigeoDomicilio()) { <span class="spinner"></span><span>Cargando ubicación del domicilio…</span> }
+                    @else { <span>{{ errorUbigeoDomicilio() }}</span> }
+                  </div>
+                }
+              </div>
               <label class="field"><span>Tipo de domicilio</span><select formControlName="tipoDomicilio"><option value="">Selecciona</option>@for (item of tiposDomicilio; track item) { <option [value]="item">{{ item }}</option> }</select></label>
               <label class="field"><span>Tipo de vía <small>opcional</small></span><select formControlName="tipoVia"><option value="">Sin vía</option>@for (item of tiposVia; track item) { <option [value]="item">{{ item }}</option> }</select></label>
               <label class="field"><span>Vía</span><input formControlName="via" /></label>

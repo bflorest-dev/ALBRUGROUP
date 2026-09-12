@@ -12,9 +12,9 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { finalize } from 'rxjs';
+import { finalize, firstValueFrom } from 'rxjs';
 import { EquiposNavService } from '../../../../core/services/equipos-nav.service';
-import { CampoConfigItem } from '../../../../shared/models/preventa/preventa.models';
+import { CampoConfigItem, UbigeoItem } from '../../../../shared/models/preventa/preventa.models';
 import {
   SubsanacionModo,
   SubsanacionOpciones,
@@ -41,7 +41,8 @@ const LABELS: Record<string, string> = {
   correo: 'Correo',
   fechaNacimiento: 'Fecha de nacimiento',
   parentesco: 'Parentesco',
-  ubigeoDomicilio: 'Ubigeo domicilio',
+  ubigeoNacimiento: 'Ubicación de nacimiento',
+  ubigeoDomicilio: 'Ubicación del domicilio',
   tipoDomicilio: 'Tipo de domicilio',
   direccion: 'Dirección',
   referencia: 'Referencia',
@@ -88,6 +89,16 @@ export class SubsanacionDrawerComponent implements OnInit {
   readonly preparacion = signal<SubsanacionPreparacion | null>(null);
   readonly opciones = signal<SubsanacionOpciones | null>(null);
   readonly camposConfig = signal<CampoConfigItem[]>([]);
+  readonly departamentos = signal<UbigeoItem[]>([]);
+  readonly provinciasNacimiento = signal<UbigeoItem[]>([]);
+  readonly distritosNacimiento = signal<UbigeoItem[]>([]);
+  readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
+  readonly distritosDomicilio = signal<UbigeoItem[]>([]);
+  readonly cargandoDepartamentos = signal(false);
+  readonly cargandoUbigeoNacimiento = signal(false);
+  readonly cargandoUbigeoDomicilio = signal(false);
+  readonly errorUbigeoNacimiento = signal<string | null>(null);
+  readonly errorUbigeoDomicilio = signal<string | null>(null);
   readonly duplicado = signal<{ idLead: number; titular?: string | null } | null>(null);
   readonly confirmacionAbierta = signal(false);
   readonly confirmarContacto = signal(false);
@@ -96,6 +107,9 @@ export class SubsanacionDrawerComponent implements OnInit {
   private readonly formVersion = signal(0);
   private original: Record<string, string> = {};
   private requestId = this.nuevoRequestId();
+  private nacimientoResolveSeq = 0;
+  private domicilioResolveSeq = 0;
+  private departamentosPromise: Promise<UbigeoItem[]> | null = null;
 
   readonly pasos = ['Identidad', 'Fechas', 'Expediente', 'Flujo ideal', 'Revisión'];
   readonly tiposDocumento = ['DNI', 'CE', 'RUC'];
@@ -123,6 +137,9 @@ export class SubsanacionDrawerComponent implements OnInit {
     tipoDocumento: ['', Validators.required],
     numeroDocumentoTitularServicio: ['', Validators.required],
     ubigeoNacimiento: [''],
+    idDepartamentoNacimiento: [null as number | null],
+    idProvinciaNacimiento: [null as number | null],
+    idDistritoNacimiento: [null as number | null],
     nombreTitularServicio: ['', Validators.required],
     celularRegistro: ['', Validators.required],
     celularReferencia: [''],
@@ -138,6 +155,9 @@ export class SubsanacionDrawerComponent implements OnInit {
 
   readonly direccionForm = this.fb.group({
     ubigeoDomicilio: ['', Validators.required],
+    idDepartamentoDomicilio: [null as number | null, Validators.required],
+    idProvinciaDomicilio: [null as number | null, Validators.required],
+    idDistritoDomicilio: [null as number | null, Validators.required],
     tipoDomicilio: ['', Validators.required],
     tipoVia: [''],
     via: [''],
@@ -226,6 +246,11 @@ export class SubsanacionDrawerComponent implements OnInit {
 
   ngOnInit(): void {
     this.equiposNav.ensureLoaded();
+    void this.cargarDepartamentos().catch(() => {
+      const mensaje = 'No se pudo cargar el catálogo de ubicaciones. Cierra el flujo e inténtalo nuevamente.';
+      this.errorUbigeoNacimiento.set(mensaje);
+      this.errorUbigeoDomicilio.set(mensaje);
+    });
     this.observarFormularios();
     if (this.modo() === 'EXISTENTE') {
       const id = this.idLead();
@@ -262,6 +287,74 @@ export class SubsanacionDrawerComponent implements OnInit {
 
   cambiarFechaInstalacion(): void {
     this.validarFechasCliente();
+  }
+
+  async cambiarDepartamentoNacimiento(): Promise<void> {
+    this.nacimientoResolveSeq++;
+    this.cargandoUbigeoNacimiento.set(false);
+    const idDepartamento = this.datosForm.controls.idDepartamentoNacimiento.value;
+    this.errorUbigeoNacimiento.set(null);
+    this.datosForm.patchValue({
+      idProvinciaNacimiento: null,
+      idDistritoNacimiento: null,
+      ubigeoNacimiento: ''
+    });
+    this.provinciasNacimiento.set([]);
+    this.distritosNacimiento.set([]);
+    if (idDepartamento) await this.cargarProvincias(idDepartamento, 'nacimiento');
+  }
+
+  async cambiarProvinciaNacimiento(): Promise<void> {
+    this.nacimientoResolveSeq++;
+    this.cargandoUbigeoNacimiento.set(false);
+    const idProvincia = this.datosForm.controls.idProvinciaNacimiento.value;
+    this.errorUbigeoNacimiento.set(null);
+    this.datosForm.patchValue({ idDistritoNacimiento: null, ubigeoNacimiento: '' });
+    this.distritosNacimiento.set([]);
+    if (idProvincia) await this.cargarDistritos(idProvincia, 'nacimiento');
+  }
+
+  cambiarDistritoNacimiento(): void {
+    this.nacimientoResolveSeq++;
+    this.cargandoUbigeoNacimiento.set(false);
+    const idDistrito = this.datosForm.controls.idDistritoNacimiento.value;
+    const distrito = this.distritosNacimiento().find((item) => item.id === idDistrito);
+    this.datosForm.controls.ubigeoNacimiento.setValue(distrito?.codigo ?? '');
+    this.errorUbigeoNacimiento.set(distrito?.codigo ? null : 'Selecciona un distrito válido.');
+  }
+
+  async cambiarDepartamentoDomicilio(): Promise<void> {
+    this.domicilioResolveSeq++;
+    this.cargandoUbigeoDomicilio.set(false);
+    const idDepartamento = this.direccionForm.controls.idDepartamentoDomicilio.value;
+    this.errorUbigeoDomicilio.set(null);
+    this.direccionForm.patchValue({
+      idProvinciaDomicilio: null,
+      idDistritoDomicilio: null,
+      ubigeoDomicilio: ''
+    });
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
+    if (idDepartamento) await this.cargarProvincias(idDepartamento, 'domicilio');
+  }
+
+  async cambiarProvinciaDomicilio(): Promise<void> {
+    this.domicilioResolveSeq++;
+    this.cargandoUbigeoDomicilio.set(false);
+    const idProvincia = this.direccionForm.controls.idProvinciaDomicilio.value;
+    this.errorUbigeoDomicilio.set(null);
+    this.direccionForm.patchValue({ idDistritoDomicilio: null, ubigeoDomicilio: '' });
+    this.distritosDomicilio.set([]);
+    if (idProvincia) await this.cargarDistritos(idProvincia, 'domicilio');
+  }
+
+  cambiarDistritoDomicilio(): void {
+    this.domicilioResolveSeq++;
+    this.cargandoUbigeoDomicilio.set(false);
+    const idDistrito = this.direccionForm.controls.idDistritoDomicilio.value;
+    const distrito = this.distritosDomicilio().find((item) => item.id === idDistrito);
+    this.direccionForm.controls.ubigeoDomicilio.setValue(distrito?.codigo ?? '');
+    this.errorUbigeoDomicilio.set(distrito?.codigo ? null : 'Selecciona un distrito válido.');
   }
 
   avanzar(): void {
@@ -389,6 +482,8 @@ export class SubsanacionDrawerComponent implements OnInit {
         next: (prep) => {
           this.preparacion.set(prep);
           this.patchPreparacion(prep);
+          void this.resolverUbigeoGuardado(prep.detalle.ubigeoNacimiento ?? null, 'nacimiento');
+          void this.resolverUbigeoGuardado(prep.detalle.ubigeoDomicilio ?? null, 'domicilio');
           this.original = this.valoresComparables();
           if (prep.idProveedor) this.cargarCampos(prep.idProveedor);
           this.cargarOpciones(true);
@@ -403,14 +498,16 @@ export class SubsanacionDrawerComponent implements OnInit {
     this.identidadForm.controls.lead.disable({ emitEvent: false });
     this.datosForm.reset({
       tipoDocumento: d.tipoDocumento ?? '', numeroDocumentoTitularServicio: d.numeroDocumentoTitularServicio ?? '',
-      ubigeoNacimiento: d.ubigeoNacimiento ?? '', nombreTitularServicio: d.nombreTitular ?? '',
+      ubigeoNacimiento: d.ubigeoNacimiento ?? '', idDepartamentoNacimiento: null, idProvinciaNacimiento: null,
+      idDistritoNacimiento: null, nombreTitularServicio: d.nombreTitular ?? '',
       celularRegistro: d.celularRegistro ?? '', celularReferencia: d.celularReferencia ?? '', celularGrabacion: d.celularGrabacion ?? '', correo: d.correo ?? '',
       fechaNacimiento: d.fechaNacimiento ?? '', parentesco: d.parentesco ?? '', nombreMadre: d.nombreMadre ?? '',
       nombrePadre: d.nombrePadre ?? '', numeroDocumentoTitularCelularRegistro: d.numeroDocumentoTitularCelularRegistro ?? '',
       nombreTitularCelularRegistro: d.nombreTitularCelularRegistro ?? ''
     }, { emitEvent: false });
     this.direccionForm.reset({
-      ubigeoDomicilio: d.ubigeoDomicilio ?? '', tipoDomicilio: d.tipoDomicilio ?? '', tipoVia: d.tipoVia ?? '',
+      ubigeoDomicilio: d.ubigeoDomicilio ?? '', idDepartamentoDomicilio: null, idProvinciaDomicilio: null,
+      idDistritoDomicilio: null, tipoDomicilio: d.tipoDomicilio ?? '', tipoVia: d.tipoVia ?? '',
       via: d.via ?? '', direccion: d.direccion ?? '', referencia: d.referencia ?? '', latitud: d.latitud ?? '',
       longitud: d.longitud ?? '', urbanizacion: d.urbanizacion ?? '', numero: d.numero ?? '', manzana: d.manzana ?? '',
       lote: d.lote ?? '', nombreEdificio: d.nombreEdificio ?? '', nombreCondominio: d.nombreCondominio ?? '',
@@ -474,6 +571,112 @@ export class SubsanacionDrawerComponent implements OnInit {
     });
   }
 
+  private cargarDepartamentos(): Promise<UbigeoItem[]> {
+    if (this.departamentos().length) return Promise.resolve(this.departamentos());
+    if (this.departamentosPromise) return this.departamentosPromise;
+    this.cargandoDepartamentos.set(true);
+    this.departamentosPromise = firstValueFrom(this.api.listarDepartamentos())
+      .then((items) => {
+        this.departamentos.set(items);
+        return items;
+      })
+      .finally(() => {
+        this.cargandoDepartamentos.set(false);
+        this.departamentosPromise = null;
+      });
+    return this.departamentosPromise;
+  }
+
+  private async cargarProvincias(idDepartamento: number, tipo: 'nacimiento' | 'domicilio'): Promise<UbigeoItem[]> {
+    const loading = tipo === 'nacimiento' ? this.cargandoUbigeoNacimiento : this.cargandoUbigeoDomicilio;
+    const error = tipo === 'nacimiento' ? this.errorUbigeoNacimiento : this.errorUbigeoDomicilio;
+    loading.set(true);
+    try {
+      const items = await firstValueFrom(this.api.listarProvincias(idDepartamento));
+      if (tipo === 'nacimiento') this.provinciasNacimiento.set(items);
+      else this.provinciasDomicilio.set(items);
+      return items;
+    } catch {
+      error.set('No se pudieron cargar las provincias. Vuelve a elegir el departamento.');
+      return [];
+    } finally {
+      loading.set(false);
+    }
+  }
+
+  private async cargarDistritos(idProvincia: number, tipo: 'nacimiento' | 'domicilio'): Promise<UbigeoItem[]> {
+    const loading = tipo === 'nacimiento' ? this.cargandoUbigeoNacimiento : this.cargandoUbigeoDomicilio;
+    const error = tipo === 'nacimiento' ? this.errorUbigeoNacimiento : this.errorUbigeoDomicilio;
+    loading.set(true);
+    try {
+      const items = await firstValueFrom(this.api.listarDistritos(idProvincia));
+      if (tipo === 'nacimiento') this.distritosNacimiento.set(items);
+      else this.distritosDomicilio.set(items);
+      return items;
+    } catch {
+      error.set('No se pudieron cargar los distritos. Vuelve a elegir la provincia.');
+      return [];
+    } finally {
+      loading.set(false);
+    }
+  }
+
+  private async resolverUbigeoGuardado(codigoOriginal: string | null, tipo: 'nacimiento' | 'domicilio'): Promise<void> {
+    const codigo = codigoOriginal?.replace(/\D/g, '') ?? '';
+    if (!codigo) return;
+    const sequence = tipo === 'nacimiento' ? ++this.nacimientoResolveSeq : ++this.domicilioResolveSeq;
+    const loading = tipo === 'nacimiento' ? this.cargandoUbigeoNacimiento : this.cargandoUbigeoDomicilio;
+    const error = tipo === 'nacimiento' ? this.errorUbigeoNacimiento : this.errorUbigeoDomicilio;
+    loading.set(true);
+    error.set(null);
+    try {
+      if (codigo.length !== 6) throw new Error('UBIGEO_INVALIDO');
+      const departamentos = await this.cargarDepartamentos();
+      if (!this.esResolucionActual(tipo, sequence)) return;
+      const departamento = departamentos.find((item) => item.codigo === codigo.slice(0, 2));
+      if (!departamento) throw new Error('DEPARTAMENTO_NO_ENCONTRADO');
+      const provincias = await firstValueFrom(this.api.listarProvincias(departamento.id));
+      if (!this.esResolucionActual(tipo, sequence)) return;
+      const provincia = provincias.find((item) => item.codigo === codigo.slice(0, 4));
+      if (!provincia) throw new Error('PROVINCIA_NO_ENCONTRADA');
+      const distritos = await firstValueFrom(this.api.listarDistritos(provincia.id));
+      if (!this.esResolucionActual(tipo, sequence)) return;
+      const distrito = distritos.find((item) => item.codigo === codigo);
+      if (!distrito) throw new Error('DISTRITO_NO_ENCONTRADO');
+
+      if (tipo === 'nacimiento') {
+        this.provinciasNacimiento.set(provincias);
+        this.distritosNacimiento.set(distritos);
+        this.datosForm.patchValue({
+          idDepartamentoNacimiento: departamento.id,
+          idProvinciaNacimiento: provincia.id,
+          idDistritoNacimiento: distrito.id,
+          ubigeoNacimiento: codigo
+        }, { emitEvent: false });
+      } else {
+        this.provinciasDomicilio.set(provincias);
+        this.distritosDomicilio.set(distritos);
+        this.direccionForm.patchValue({
+          idDepartamentoDomicilio: departamento.id,
+          idProvinciaDomicilio: provincia.id,
+          idDistritoDomicilio: distrito.id,
+          ubigeoDomicilio: codigo
+        }, { emitEvent: false });
+      }
+      this.formVersion.update((value) => value + 1);
+    } catch {
+      error.set('No se pudo reconocer la ubicación guardada. Selecciónala nuevamente.');
+      if (tipo === 'domicilio') this.direccionForm.controls.ubigeoDomicilio.setErrors({ ubigeoNoReconocido: true });
+      else this.datosForm.controls.ubigeoNacimiento.setErrors({ ubigeoNoReconocido: true });
+    } finally {
+      if (this.esResolucionActual(tipo, sequence)) loading.set(false);
+    }
+  }
+
+  private esResolucionActual(tipo: 'nacimiento' | 'domicilio', sequence: number): boolean {
+    return tipo === 'nacimiento' ? sequence === this.nacimientoResolveSeq : sequence === this.domicilioResolveSeq;
+  }
+
   private aplicarValidadoresConfigurables(campos: CampoConfigItem[]): void {
     const mapa: Record<string, keyof typeof this.datosForm.controls | keyof typeof this.direccionForm.controls> = {
       NOMBRE_MADRE: 'nombreMadre', NOMBRE_PADRE: 'nombrePadre',
@@ -528,9 +731,11 @@ export class SubsanacionDrawerComponent implements OnInit {
       return this.validarGrupo(this.fechasForm, 'Revisa el rango de las fechas históricas.');
     }
     if (this.paso() === 2) {
+      const ubicacionNacimiento = this.validarUbigeoNacimientoCompleto();
       const datos = this.validarGrupo(this.datosForm, 'Completa los datos obligatorios de Preventa.');
       const direccion = this.validarGrupo(this.direccionForm, 'Completa la dirección de instalación.');
-      return datos && direccion;
+      if (!ubicacionNacimiento) this.error.set('Completa los tres niveles de la ubicación de nacimiento o déjalos vacíos.');
+      return ubicacionNacimiento && datos && direccion;
     }
     if (this.paso() === 3) {
       this.actualizarValidadoresVenta();
@@ -544,6 +749,7 @@ export class SubsanacionDrawerComponent implements OnInit {
     this.validarFechasCliente();
     this.actualizarValidadoresVenta();
     this.validarPlanSeleccionado();
+    this.validarUbigeoNacimientoCompleto();
     const forms = [this.identidadForm, this.fechasForm, this.datosForm, this.direccionForm, this.comercialForm];
     forms.forEach((form) => form.markAllAsTouched());
     this.motivoControl.markAsTouched();
@@ -558,6 +764,26 @@ export class SubsanacionDrawerComponent implements OnInit {
     form.markAllAsTouched();
     if (form.invalid) this.error.set(mensaje);
     return form.valid;
+  }
+
+  private validarUbigeoNacimientoCompleto(): boolean {
+    const departamento = this.datosForm.controls.idDepartamentoNacimiento.value;
+    const provincia = this.datosForm.controls.idProvinciaNacimiento.value;
+    const distrito = this.datosForm.controls.idDistritoNacimiento.value;
+    const codigo = this.datosForm.controls.ubigeoNacimiento.value ?? '';
+    const algunoSeleccionado = !!departamento || !!provincia || !!distrito;
+    const completo = !!departamento && !!provincia && !!distrito && codigo.length === 6;
+    const control = this.datosForm.controls.ubigeoNacimiento;
+    if (completo) {
+      control.setErrors(null);
+      return true;
+    }
+    if (algunoSeleccionado) {
+      control.setErrors({ seleccionIncompleta: true });
+      return false;
+    }
+    if (!codigo) control.setErrors(null);
+    return control.valid;
   }
 
   private validarFechasCliente(): void {
