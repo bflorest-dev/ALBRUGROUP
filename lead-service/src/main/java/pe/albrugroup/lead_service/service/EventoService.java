@@ -33,6 +33,8 @@ import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
 import pe.albrugroup.lead_service.repository.projection.LeadUltimaAsignacionProjection;
 import pe.albrugroup.lead_service.service.mapper.EventoMapper;
+import jakarta.persistence.EntityManager;
+import org.hibernate.Session;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -57,6 +59,7 @@ public class EventoService {
     private final CurrentUser currentUser;
     private final EventoMapper eventoMapper;
     private final PaginationService paginationService;
+    private final EntityManager entityManager;
     private final LeadAsignacionCounterService leadAsignacionCounterService;
     private final ProveedorScopeService proveedorScopeService;
 
@@ -169,6 +172,11 @@ public class EventoService {
     }
 
     public PageResponse<EventoResponse> listarPorLeadAsignado(Long idLead, Etapa etapa, PageRequest pageRequest) {
+        if (etapa == Etapa.POSTVENTA) {
+            Session session = entityManager.unwrap(Session.class);
+            session.disableFilter("proveedorFilter");
+            session.disableFilter("equipoFilter");
+        }
         if (leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(idLead, currentUser.empleadoID(), etapa).isEmpty()) {
             throw new NotFoundException(Lead.class, idLead);
         }

@@ -26,6 +26,8 @@ import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
 import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
 import pe.albrugroup.lead_service.service.mapper.PagoPostventaMapper;
+import jakarta.persistence.EntityManager;
+import org.hibernate.Session;
 
 import java.time.LocalDate;
 import java.util.Set;
@@ -41,6 +43,7 @@ public class PagoPostventaService {
     private final CurrentUser currentUser;
     private final PagoPostventaMapper mapper;
     private final PaginationService paginationService;
+    private final EntityManager entityManager;
     private final PostventaAsesorProveedorService postventaAsesorProveedorService;
 
     private static final Set<Etapa> ETAPAS_GESTION_POSTVENTA = Set.of(Etapa.POSTVENTA);
@@ -257,6 +260,9 @@ public class PagoPostventaService {
     }
 
     private Lead obtenerLeadAsignadoGestionable(Long idLead) {
+        Session session = entityManager.unwrap(Session.class);
+        session.disableFilter("proveedorFilter");
+        session.disableFilter("equipoFilter");
         Lead lead = leadRepository.findByIdAndIdAsesorAsignadoAndEtapaIn(
                         idLead,
                         currentUser.empleadoID(),

@@ -65,6 +65,7 @@ class EncuestaPostventaServiceTest {
                 currentUser,
                 mapper,
                 mock(PaginationService.class),
+                mock(jakarta.persistence.EntityManager.class),
                 mock(PostventaAsesorProveedorService.class)
         );
     }

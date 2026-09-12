@@ -16,6 +16,7 @@ public class LeadPostventaBusquedaResponse {
 
     private boolean existe;
     private Etapa etapaActual;
+    private boolean soloLectura;
     private LeadPostventaBandejaResponse lead;
     private String mensajeUsuario;
 }

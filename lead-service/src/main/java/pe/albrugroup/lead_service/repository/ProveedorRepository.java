@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface ProveedorRepository extends JpaRepository<Proveedor, Long> {
 
     Optional<Proveedor> findByIdAndActivoTrue(Long id);
+    Optional<Proveedor> findFirstByNombreIgnoreCase(String nombre);
 
     @Query("""
             select p

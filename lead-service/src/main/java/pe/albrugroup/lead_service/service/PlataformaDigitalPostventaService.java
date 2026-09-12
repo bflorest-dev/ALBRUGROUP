@@ -34,6 +34,8 @@ import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.MarcaDispositivoRepository;
 import pe.albrugroup.lead_service.repository.PaquetePlataformaRepository;
 import pe.albrugroup.lead_service.repository.PlataformaRepository;
+import jakarta.persistence.EntityManager;
+import org.hibernate.Session;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -56,6 +58,7 @@ public class PlataformaDigitalPostventaService {
     private final LeadRepository leadRepository;
     private final CurrentUser currentUser;
     private final PostventaAsesorProveedorService postventaAsesorProveedorService;
+    private final EntityManager entityManager;
 
     @Transactional
     public PlataformaResponse crearPlataforma(PlataformaRequest request) {
@@ -255,6 +258,9 @@ public class PlataformaDigitalPostventaService {
     }
 
     private Lead obtenerLeadAsignadoGestionable(Long idLead) {
+        Session session = entityManager.unwrap(Session.class);
+        session.disableFilter("proveedorFilter");
+        session.disableFilter("equipoFilter");
         Lead lead = leadRepository.findByIdAndIdAsesorAsignadoAndEtapaIn(
                         idLead,
                         currentUser.empleadoID(),

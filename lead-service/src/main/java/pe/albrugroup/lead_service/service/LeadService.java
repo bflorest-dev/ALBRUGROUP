@@ -111,6 +111,7 @@ import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
 import pe.albrugroup.lead_service.repository.ContactoRepository;
 import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
+import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
@@ -124,6 +125,8 @@ import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
 import pe.albrugroup.lead_service.repository.ZonaReglaRepository;
 import pe.albrugroup.lead_service.service.mapper.LeadMapper;
+import jakarta.persistence.EntityManager;
+import org.hibernate.Session;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -187,6 +190,8 @@ public class LeadService {
     private final ProveedorScopeService proveedorScopeService;
     private final PlanService planService;
     private final AuthEquipoClient authEquipoClient;
+    private final EntityManager entityManager;
+    private final ProveedorRepository proveedorRepository;
 
     // La bandeja de Agendados GTR ya no cuelga de una tipi: el concepto vive en el comportamiento, que
     // cada equipo marca en las subtipis que correspondan (hoy, varias de NO DESEA).
@@ -1519,6 +1524,11 @@ public class LeadService {
     }
 
     public LeadDetalleResponse obtenerDetalleLeadAsignado(Long idLead, Etapa etapa) {
+        if (etapa == Etapa.POSTVENTA) {
+            Session session = entityManager.unwrap(Session.class);
+            session.disableFilter("proveedorFilter");
+            session.disableFilter("equipoFilter");
+        }
         Long idAsesor = currentUser.empleadoID();
         Lead lead = leadRepository.buscarDetalleAsesor(idLead, idAsesor, etapa)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
@@ -1534,6 +1544,9 @@ public class LeadService {
     }
 
     public LeadDetalleResponse obtenerDetalleLeadPostventaConsulta(Long idLead) {
+        Session session = entityManager.unwrap(Session.class);
+        session.disableFilter("proveedorFilter");
+        session.disableFilter("equipoFilter");
         Lead lead = leadRepository.buscarDetalleCompletoPorId(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         if (lead.getEtapa() != Etapa.POSTVENTA && lead.getEtapa() != Etapa.COBRANZA) {
@@ -2378,6 +2391,14 @@ public class LeadService {
             return lead.getPlan().getProveedor().getId();
         }
         if (etapa != Etapa.PREVENTA) {
+            String snapshot = lead.getNombreProveedorSnapshot();
+            if (snapshot != null && !snapshot.isBlank()) {
+                return proveedorRepository.findFirstByNombreIgnoreCase(snapshot.trim())
+                        .map(Proveedor::getId)
+                        .orElseThrow(() -> new BadRequestException(
+                                "El lead no tiene plan y el proveedor snapshot '" + snapshot + "' no existe en el sistema",
+                                lead.getId()));
+            }
             throw new BadRequestException("El lead no tiene plan con proveedor para resolver la matriz de " + etapa);
         }
         Proveedor fallback = obtenerProveedorFallbackEntidadDeEquipo(lead.getIdEquipo());
@@ -2679,8 +2700,7 @@ public class LeadService {
                 )
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
 
-        Etapa etapaDestinoCatalogo = subtipificacion.getEtapaCambio();
-        Etapa etapaDestino = normalizarEtapaDestinoPostventa(etapaActual, etapaDestinoCatalogo);
+        Etapa etapaDestino = subtipificacion.getEtapaCambio();
         ResultadoTipificacion resultado = resolverResultadoTipificacion(
                 tipificacion,
                 subtipificacion,
@@ -2783,13 +2803,6 @@ public class LeadService {
                 .toUpperCase(Locale.ROOT)
                 .replace('-', '_')
                 .replace(' ', '_');
-    }
-
-    private Etapa normalizarEtapaDestinoPostventa(Etapa etapaActual, Etapa etapaDestino) {
-        if (etapaActual == Etapa.POSTVENTA && etapaDestino == Etapa.COBRANZA) {
-            return null;
-        }
-        return etapaDestino;
     }
 
     private void aplicarDatosPostventaSiCorresponde(Lead lead, Etapa etapaDestino, LocalDate fechaInstalacion) {
@@ -3355,6 +3368,13 @@ public class LeadService {
     // gestion, el 409 pide confirmar el relevo. Mismo mecanismo que tomarLeadVenta.
     @Transactional
     public void tomarLeadPostventaGestion(Long idLead, boolean confirmarReasignacion) {
+        // Leads sin plan (id_plan NULL) son invisibles para el proveedorFilter de Hibernate
+        // porque NULL IN (...) es siempre FALSE. La bandeja los muestra (consulta calendarios,
+        // no pasa por el filtro), pero findByIdAndEtapa sí lo aplica. Se desactivan los filtros
+        // y se delega la validación de acceso a validarLeadVisibleParaUsuarioActual.
+        Session session = entityManager.unwrap(Session.class);
+        session.disableFilter("proveedorFilter");
+        session.disableFilter("equipoFilter");
         Lead lead = leadRepository.findByIdAndEtapa(idLead, Etapa.POSTVENTA)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(lead);
@@ -5492,6 +5512,11 @@ public class LeadService {
     }
 
     private Lead obtenerLeadAsignadoEnEtapa(Long idLead, Etapa etapa) {
+        if (etapa == Etapa.POSTVENTA) {
+            Session session = entityManager.unwrap(Session.class);
+            session.disableFilter("proveedorFilter");
+            session.disableFilter("equipoFilter");
+        }
         Lead lead = leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(idLead, currentUser.empleadoID(), etapa)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         if (etapa == Etapa.POSTVENTA) {
