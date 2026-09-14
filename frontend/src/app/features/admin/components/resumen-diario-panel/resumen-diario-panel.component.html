@@ -305,24 +305,51 @@
         </thead>
         <tbody>
           @for (row of rankingDetalle(); track row.idLead) {
-            <tr>
-              <td>{{ fechaHora(row.fechaIngresoAt) }}</td>
-              <td class="lead-cell">
-                @if (row.lead) {
-                  <span class="lead-main">{{ row.lead }}</span>
-                  @if (row.usermeta) {
-                    <span class="lead-sub">&#64;{{ row.usermeta }}</span>
-                  }
-                } @else if (row.usermeta) {
-                  <span class="lead-main">&#64;{{ row.usermeta }}</span>
-                } @else {
-                  <span class="lead-main is-empty">—</span>
-                }
+            <tr [class.is-preventa-row]="esFilaPreventa(row)">
+              <td>
+                <span class="stack-cell time-stack">
+                  <span class="stack-secondary">{{ fechaParte(row.fechaIngresoAt) }}</span>
+                  <span class="stack-main">{{ horaParte(row.fechaIngresoAt) }}</span>
+                </span>
               </td>
-              <td>{{ tipiSubtip(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion) }}</td>
-              <td>{{ tipiSubtip(row.mayorRangoCodigoTipificacion, row.mayorRangoCodigoSubtipificacion) }}</td>
-              <td>{{ tipiSubtip(row.ultimaCodigoTipificacion, row.ultimaCodigoSubtipificacion) }}</td>
-              <td>{{ fechaHora(row.fechaUltimaGestionAt) }}</td>
+              <td class="lead-cell">
+                <span class="stack-cell">
+                  @if (row.lead) {
+                    <span class="stack-main">{{ row.lead }}</span>
+                    @if (row.usermeta) {
+                      <span class="stack-secondary">&#64;{{ row.usermeta }}</span>
+                    }
+                  } @else if (row.usermeta) {
+                    <span class="stack-main">&#64;{{ row.usermeta }}</span>
+                  } @else {
+                    <span class="stack-main is-empty">—</span>
+                  }
+                </span>
+              </td>
+              <td>
+                <span class="stack-cell tip-stack">
+                  <span class="stack-main">{{ tipificacionPrincipal(row.primeraCodigoTipificacion) }}</span>
+                  <span class="stack-secondary">{{ subtipificacionSecundaria(row.primeraCodigoSubtipificacion) }}</span>
+                </span>
+              </td>
+              <td>
+                <span class="stack-cell tip-stack">
+                  <span class="stack-main">{{ tipificacionPrincipal(row.mayorRangoCodigoTipificacion) }}</span>
+                  <span class="stack-secondary">{{ subtipificacionSecundaria(row.mayorRangoCodigoSubtipificacion) }}</span>
+                </span>
+              </td>
+              <td>
+                <span class="stack-cell tip-stack">
+                  <span class="stack-main">{{ tipificacionPrincipal(row.ultimaCodigoTipificacion) }}</span>
+                  <span class="stack-secondary">{{ subtipificacionSecundaria(row.ultimaCodigoSubtipificacion) }}</span>
+                </span>
+              </td>
+              <td>
+                <span class="stack-cell time-stack">
+                  <span class="stack-secondary">{{ fechaParte(row.fechaUltimaGestionAt) }}</span>
+                  <span class="stack-main">{{ horaParte(row.fechaUltimaGestionAt) }}</span>
+                </span>
+              </td>
             </tr>
           }
         </tbody>

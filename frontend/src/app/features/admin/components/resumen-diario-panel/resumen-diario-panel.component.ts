@@ -278,13 +278,37 @@ export class ResumenDiarioPanelComponent implements OnInit {
     });
   }
 
-  protected tipiSubtip(tipificacion: string | null, subtipificacion: string | null): string {
-    const tipi = this.capitalizarCodigo(tipificacion);
-    const subtipi = this.capitalizarCodigo(subtipificacion);
-    if (tipi === '—' && subtipi === '—') {
+  protected fechaParte(iso: string | null): string {
+    if (!iso) {
       return '—';
     }
-    return `${tipi} · ${subtipi}`;
+    const fecha = new Date(iso);
+    if (Number.isNaN(fecha.getTime())) {
+      return '—';
+    }
+    return fecha.toLocaleDateString('es-PE', {
+      timeZone: 'America/Lima',
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit'
+    });
+  }
+
+  protected horaParte(iso: string | null): string {
+    return this.hora(iso);
+  }
+
+  protected tipificacionPrincipal(codigo: string | null): string {
+    const limpio = codigo?.trim();
+    return limpio ? limpio.toUpperCase() : '—';
+  }
+
+  protected subtipificacionSecundaria(codigo: string | null): string {
+    return this.capitalizarCodigo(codigo);
+  }
+
+  protected esFilaPreventa(row: RankingAsesorDetalle): boolean {
+    return row.preventa;
   }
 
   /** Nombre del asesor recortado a las dos primeras palabras (nombre + primer apellido/segundo nombre). */

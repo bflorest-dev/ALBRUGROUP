@@ -790,21 +790,101 @@ tr.is-win .est-name {
 }
 
 ::ng-deep .ranking-detalle-dialog {
+  --ranking-row-height: 58px;
+
   table.ranking-detalle th,
   table.ranking-detalle td {
-    white-space: normal;
     min-width: 130px;
-    vertical-align: top;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
   }
 
-  table.ranking-detalle th:first-child,
-  table.ranking-detalle td:first-child,
-  table.ranking-detalle th:last-child,
-  table.ranking-detalle td:last-child {
-    white-space: nowrap;
+  table.ranking-detalle tbody tr {
+    height: var(--ranking-row-height);
+  }
+
+  table.ranking-detalle tbody td {
+    height: var(--ranking-row-height);
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  table.ranking-detalle tbody tr.is-preventa-row td {
+    background: color-mix(in srgb, var(--win) 7%, transparent);
+  }
+
+  table.ranking-detalle tbody tr.is-preventa-row td:first-child {
+    box-shadow: inset 3px 0 0 var(--win);
+  }
+
+  table.ranking-detalle tbody tr.is-preventa-row:hover td {
+    background: color-mix(in srgb, var(--win) 12%, var(--line-soft));
   }
 
   table.ranking-detalle .lead-cell {
     min-width: 125px;
+  }
+
+  table.ranking-detalle .tip-stack {
+    max-width: 175px;
+  }
+
+  table.ranking-detalle .time-stack {
+    max-width: 96px;
+  }
+
+  .stack-cell {
+    display: inline-flex;
+    width: 100%;
+    min-height: 38px;
+    max-height: 42px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .stack-main,
+  .stack-secondary {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stack-main {
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.12;
+    color: var(--ink);
+  }
+
+  .stack-main.is-empty {
+    color: var(--faint);
+    font-weight: 500;
+  }
+
+  .stack-secondary {
+    font-size: 11.5px;
+    line-height: 1.1;
+    color: var(--faint);
+  }
+
+  .time-stack .stack-main {
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .time-stack .stack-secondary {
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tip-stack .stack-main {
+    letter-spacing: 0.02em;
   }
 }
