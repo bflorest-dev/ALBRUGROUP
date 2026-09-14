@@ -298,6 +298,7 @@ table.records {
   &.primary { background: var(--signal); border-color: var(--signal); color: #fff; &:hover:not(:disabled) { filter: brightness(1.06); } }
   &:disabled { opacity: .55; cursor: not-allowed; }
   &.primary:disabled { background: var(--panel-sunk); border-color: var(--line); color: var(--ink-3); opacity: 1; }
+  &.danger { background: var(--cob); border-color: var(--cob); color: #fff; }
   svg { width: 15px; height: 15px; }
 }
 .drawer-error { padding: 10px 22px 14px; color: var(--cob); font-size: 12.5px; font-weight: 600; background: var(--cob-wash); }
@@ -317,7 +318,7 @@ table.records {
       color: var(--signal); display: grid; place-items: center; text-align: center; font-size: 8px; font-weight: 800;
       letter-spacing: .06em; line-height: 1.1; transform: rotate(-9deg); opacity: .85;
     }
-    .k { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--signal); }
+    .k { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--signal); &.danger { color: var(--cob); } }
     h3 { margin: 7px 0 0; font-size: 19px; font-weight: 800; letter-spacing: -.02em; max-width: 34ch; text-wrap: balance; }
     p { margin: 7px 0 0; font-size: 12.5px; color: var(--ink-2); max-width: 44ch; }
   }
@@ -366,6 +367,7 @@ table.records {
   border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); font-size: 11.5px; font-weight: 600;
   padding: 6px 10px; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; transition: .13s;
   &:hover { border-color: var(--signal-line); color: var(--signal); background: var(--signal-wash); }
+  &.danger { color: var(--cob); border-color: color-mix(in srgb,var(--cob) 40%,transparent); &:hover { background: var(--cob-wash); border-color: var(--cob); } }
   svg { width: 13px; height: 13px; }
 }
 .reestructura-ok {

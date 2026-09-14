@@ -7,8 +7,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { MetricsPeriodo } from '../../../../shared/components/period-selector/period-selector.component';
 import { localToday, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { GestionCampoTipi, GestionModo } from '../../services/admin-gestion-campana.service';
-import { PreventaDetalle, ResumenDiarioService } from '../../services/resumen-diario.service';
-import { ResumenDiarioFacade } from '../../facades/resumen-diario.facade';
+import { PreventaDetalle, RankingAsesorDetalle, ResumenDiarioService } from '../../services/resumen-diario.service';
+import { ResumenAsesorVista, ResumenDiarioFacade } from '../../facades/resumen-diario.facade';
 
 /**
  * Panel RESUMEN DIARIO del DASHBOARD de PREVENTA: las 4 tablas del reporte diario como un poster
@@ -33,6 +33,18 @@ export class ResumenDiarioPanelComponent implements OnInit {
   protected readonly detalleError = signal(false);
   protected readonly detalle = signal<PreventaDetalle[]>([]);
   private readonly detalleModo = signal<GestionModo>('GESTIONADOS');
+
+  protected readonly rankingDetalleVisible = signal(false);
+  protected readonly rankingDetalleLoading = signal(false);
+  protected readonly rankingDetalleError = signal(false);
+  protected readonly rankingDetalle = signal<RankingAsesorDetalle[]>([]);
+  protected readonly rankingDetalleAsesor = signal<ResumenAsesorVista | null>(null);
+  protected readonly rankingDetalleAsignados = computed(
+    () => this.rankingDetalle().filter((row) => row.asignado).length
+  );
+  protected readonly rankingDetallePreventas = computed(
+    () => this.rankingDetalle().filter((row) => row.preventa).length
+  );
 
   /** Card del que se abrió el detalle (para el subtítulo del modal). */
   protected readonly detalleCard = computed(() =>
@@ -204,6 +216,32 @@ export class ResumenDiarioPanelComponent implements OnInit {
     }
   }
 
+  protected async abrirDetalleRanking(asesor: ResumenAsesorVista): Promise<void> {
+    this.rankingDetalleAsesor.set(asesor);
+    this.rankingDetalleVisible.set(true);
+    this.rankingDetalleLoading.set(true);
+    this.rankingDetalleError.set(false);
+    this.rankingDetalle.set([]);
+    try {
+      const range = resolveMetricsRange(this.periodo() ?? 'dia', this.dia(), this.hasta());
+      const filas = await firstValueFrom(
+        this.detalleService.obtenerRankingAsesorDetalle(
+          this.idEquipo(),
+          asesor.idAsesor,
+          asesor.idAsesor == null && asesor.nombreAsesor === 'OJT',
+          this.modo() ?? 'GESTIONADOS',
+          range.desde,
+          range.hasta
+        )
+      );
+      this.rankingDetalle.set(filas);
+    } catch {
+      this.rankingDetalleError.set(true);
+    } finally {
+      this.rankingDetalleLoading.set(false);
+    }
+  }
+
   /** Hora local (America/Lima) HH:MM de un instante ISO. */
   protected hora(iso: string | null): string {
     if (!iso) {
@@ -221,12 +259,50 @@ export class ResumenDiarioPanelComponent implements OnInit {
     });
   }
 
+  protected fechaHora(iso: string | null): string {
+    if (!iso) {
+      return '—';
+    }
+    const fecha = new Date(iso);
+    if (Number.isNaN(fecha.getTime())) {
+      return '—';
+    }
+    return fecha.toLocaleString('es-PE', {
+      timeZone: 'America/Lima',
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  }
+
+  protected tipiSubtip(tipificacion: string | null, subtipificacion: string | null): string {
+    const tipi = this.capitalizarCodigo(tipificacion);
+    const subtipi = this.capitalizarCodigo(subtipificacion);
+    if (tipi === '—' && subtipi === '—') {
+      return '—';
+    }
+    return `${tipi} · ${subtipi}`;
+  }
+
   /** Nombre del asesor recortado a las dos primeras palabras (nombre + primer apellido/segundo nombre). */
   protected asesorCorto(nombre: string | null): string {
     if (!nombre) {
       return '—';
     }
     return nombre.trim().split(/\s+/).slice(0, 2).join(' ');
+  }
+
+  private capitalizarCodigo(codigo: string | null): string {
+    const limpio = codigo?.trim();
+    if (!limpio) {
+      return '—';
+    }
+    return limpio.toLowerCase().replace(/(^|[\s_])(\p{L})/gu, (_, sep: string, char: string) =>
+      `${sep === '_' ? ' ' : sep}${char.toUpperCase()}`
+    );
   }
 
 }

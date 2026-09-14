@@ -182,11 +182,15 @@
           <div class="ca-btns">
             <button type="button" class="mini-btn" (click)="abrirReestructurar('swap')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10 3 6l4-4M3 6h13a4 4 0 0 1 4 4M17 14l4 4-4 4M21 18H8a4 4 0 0 1-4-4"/></svg>
-              Intercambiar teléfono
+              Intercambiar leads
             </button>
             <button type="button" class="mini-btn" (click)="abrirReestructurar('move')">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               Mover a otro contacto
+            </button>
+            <button type="button" class="mini-btn danger" (click)="f.abrirLimpiar()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+              Limpiar datos
             </button>
           </div>
         </div>
@@ -531,16 +535,16 @@
     </div>
   }
 
-  <!-- ── Reestructurar contacto (intercambiar / mover) ── -->
+  <!-- ── Reestructurar contacto (intercambiar leads / mover) ── -->
   @if (f.modoReestructurar() !== 'none' && f.cluster(); as cl) {
     <div class="acta-scrim" (click)="f.cerrarReestructurar()">
       <div class="acta reestructura" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
         <div class="ah">
-          <div class="k">{{ f.modoReestructurar() === 'swap' ? 'Intercambiar teléfono' : 'Mover a otro contacto' }}</div>
-          <h3>{{ f.modoReestructurar() === 'swap' ? 'Intercambia el número con otro contacto' : 'Reubica este lead a otro contacto' }}</h3>
+          <div class="k">{{ f.modoReestructurar() === 'swap' ? 'Intercambiar leads' : 'Mover a otro contacto' }}</div>
+          <h3>{{ f.modoReestructurar() === 'swap' ? 'Intercambia los leads entre dos contactos' : 'Reubica este lead a otro contacto' }}</h3>
           <p>
             @if (f.modoReestructurar() === 'swap') {
-              El teléfono de <b class="mono">{{ cl.prefijo }} {{ cl.lead }}</b> y el del contacto que elijas se intercambian entre sí. Cada lado queda con el número del otro.
+              Los leads de <b class="mono">{{ cl.prefijo }} {{ cl.lead }}</b> y del contacto que elijas se intercambian entre sí. Cada contacto queda con los leads del otro.
             } @else {
               Este lead pasará a pertenecer al contacto que elijas (tomará su teléfono y usermeta). Su historial se mantiene.
             }
@@ -588,7 +592,28 @@
           <button type="button" class="btn ghost" (click)="f.cerrarReestructurar()">Cancelar</button>
           <button type="button" class="btn primary" [disabled]="!f.objetivo() || f.procesandoReestructura()" (click)="f.confirmarReestructurar()">
             @if (f.procesandoReestructura()) { <span class="spin light"></span> Procesando… }
-            @else { {{ f.modoReestructurar() === 'swap' ? 'Intercambiar' : (sourceSeraHuerfano() ? 'Mover y eliminar contacto' : 'Mover lead') }} }
+            @else { {{ f.modoReestructurar() === 'swap' ? 'Intercambiar leads' : (sourceSeraHuerfano() ? 'Mover y eliminar contacto' : 'Mover lead') }} }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Limpiar datos del expediente ── -->
+  @if (f.confirmandoLimpiar()) {
+    <div class="acta-scrim" (click)="f.cerrarLimpiar()">
+      <div class="acta" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <div class="ah">
+          <div class="k danger">Acción destructiva</div>
+          <h3>Limpiar datos del expediente</h3>
+          <p>Se eliminarán todos los datos ingresados en el expediente: datos personales, dirección y teléfonos de contacto. El historial de tipificaciones y los méritos <b>no se tocan</b>.</p>
+          <p>Esta acción queda registrada como corrección y no se puede deshacer.</p>
+        </div>
+        <div class="af">
+          <button type="button" class="btn ghost" (click)="f.cerrarLimpiar()">Cancelar</button>
+          <button type="button" class="btn danger" [disabled]="f.procesandoLimpiar()" (click)="f.confirmarLimpiar()">
+            @if (f.procesandoLimpiar()) { <span class="spin light"></span> Limpiando… }
+            @else { Limpiar datos }
           </button>
         </div>
       </div>

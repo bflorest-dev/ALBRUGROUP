@@ -97,7 +97,14 @@
             </thead>
             <tbody>
               @for (asesor of facade.ranking(); track asesor.key) {
-                <tr>
+                <tr
+                  class="rk-row"
+                  tabindex="0"
+                  title="Ver detalle de asignaciones y preventas"
+                  (click)="abrirDetalleRanking(asesor)"
+                  (keydown.enter)="abrirDetalleRanking(asesor)"
+                  (keydown.space)="$event.preventDefault(); abrirDetalleRanking(asesor)"
+                >
                   <td class="rk-name">{{ asesor.nombreAsesor }}</td>
                   <td class="n rk-total">{{ asesor.totalAsignaciones }}</td>
                   <td class="n rk-prev" [class.zero]="asesor.preventas === 0">{{ asesor.preventas }}</td>
@@ -250,5 +257,77 @@
       </table>
     </div>
     <p class="detalle-count">{{ detalle().length }} preventa(s)</p>
+  }
+</p-dialog>
+
+<p-dialog
+  [(visible)]="rankingDetalleVisible"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: '1120px', maxWidth: '96vw' }"
+  styleClass="resumen-detalle-dialog ranking-detalle-dialog"
+>
+  <ng-template pTemplate="header">
+    <div class="detalle-head">
+      <div class="detalle-title-row">
+        <span class="detalle-title">Detalle del asesor</span>
+        @if (!rankingDetalleLoading() && !rankingDetalleError()) {
+          <span class="detalle-badge">{{ rankingDetalle().length }}</span>
+        }
+      </div>
+      <div class="detalle-sub">
+        <span class="detalle-dot" [style.background]="teamAccent()"></span>
+        <b>{{ rankingDetalleAsesor()?.nombreAsesor }}</b> · {{ fechaLabel() }} ·
+        {{ rankingDetalleAsignados() }} asignado(s) · {{ rankingDetallePreventas() }} preventa(s)
+      </div>
+    </div>
+  </ng-template>
+
+  @if (rankingDetalleError()) {
+    <p class="detalle-empty">No se pudo cargar el detalle del asesor.</p>
+  } @else if (rankingDetalleLoading()) {
+    <p class="detalle-empty">Cargando detalle...</p>
+  } @else if (!rankingDetalle().length) {
+    <p class="detalle-empty">No hay leads para este asesor en el período.</p>
+  } @else {
+    <div class="detalle-scroll">
+      <table class="detalle ranking-detalle">
+        <thead>
+          <tr>
+            <th>Ingreso</th>
+            <th>Lead</th>
+            <th>Primera tipificación</th>
+            <th>Mayor tipificación</th>
+            <th>Última tipificación</th>
+            <th>Última gestión</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rankingDetalle(); track row.idLead) {
+            <tr>
+              <td>{{ fechaHora(row.fechaIngresoAt) }}</td>
+              <td class="lead-cell">
+                @if (row.lead) {
+                  <span class="lead-main">{{ row.lead }}</span>
+                  @if (row.usermeta) {
+                    <span class="lead-sub">&#64;{{ row.usermeta }}</span>
+                  }
+                } @else if (row.usermeta) {
+                  <span class="lead-main">&#64;{{ row.usermeta }}</span>
+                } @else {
+                  <span class="lead-main is-empty">—</span>
+                }
+              </td>
+              <td>{{ tipiSubtip(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion) }}</td>
+              <td>{{ tipiSubtip(row.mayorRangoCodigoTipificacion, row.mayorRangoCodigoSubtipificacion) }}</td>
+              <td>{{ tipiSubtip(row.ultimaCodigoTipificacion, row.ultimaCodigoSubtipificacion) }}</td>
+              <td>{{ fechaHora(row.fechaUltimaGestionAt) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="detalle-count">{{ rankingDetalle().length }} lead(s)</p>
   }
 </p-dialog>

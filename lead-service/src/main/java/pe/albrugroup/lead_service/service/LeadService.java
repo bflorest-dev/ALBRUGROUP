@@ -91,6 +91,7 @@ import pe.albrugroup.lead_service.entity.response.PreventaDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenAsesorResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenIngresosGestionResponse;
+import pe.albrugroup.lead_service.entity.response.ResumenRankingAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenRankingResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenSubtipCampanaCeldaResponse;
 import pe.albrugroup.lead_service.entity.Tipificacion;
@@ -1721,11 +1722,10 @@ public class LeadService {
         String bPrefijo = b.getPrefijo();
         String bLead = b.getLead();
 
-        // Swap en 3 pasos con centinela NULL: la unicidad (prefijo,lead) se valida por fila, así que
-        // no se puede permutar en un solo statement. Liberar A → B toma el de A → A toma el de B.
-        contactoRepository.actualizarTelefono(idContactoA, aPrefijo, null);
-        contactoRepository.actualizarTelefono(idContactoB, aPrefijo, aLead);
+        // uq_contacto_prefijo_lead es DEFERRABLE INITIALLY DEFERRED (V63): la unicidad se valida al
+        // COMMIT, no fila a fila, por lo que dos updates directos dentro de @Transactional bastan.
         contactoRepository.actualizarTelefono(idContactoA, bPrefijo, bLead);
+        contactoRepository.actualizarTelefono(idContactoB, aPrefijo, aLead);
         // A queda con el teléfono de B y viceversa; sincronizamos los denormalizados de cada lado.
         leadRepository.sincronizarTelefonoContacto(idContactoA, bPrefijo, bLead);
         leadRepository.sincronizarTelefonoContacto(idContactoB, aPrefijo, aLead);
@@ -1767,6 +1767,22 @@ public class LeadService {
         for (Lead item : leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(idContacto)) {
             emitirCorreccion(item.getId(), item.getEtapa(), comentario);
         }
+    }
+
+    // Vacía DatosPreventa + Dirección del lead y sus snapshots denormalizados. Pensado para el
+    // caso en que se llenaron datos del expediente incorrecto y se quiere partir de cero.
+    @Transactional
+    public void limpiarDatosLead(Long idLead) {
+        Lead lead = leadRepository.buscarDetalleCompletoPorId(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        lead.setDatosPreventa(null);
+        lead.setDireccion(null);
+        lead.setNumeroDocumentoTitularServicioSnapshot(null);
+        lead.setDireccionSnapshot(null);
+        lead.setNumeroParaLlamar(null);
+        lead.setLastEntryAt(OperationalDateTime.now());
+        leadRepository.save(lead);
+        emitirCorreccion(idLead, lead.getEtapa(), "Datos del expediente limpiados por administrador");
     }
 
     private void emitirCorreccion(Long idLead, Etapa etapa, String comentario) {
@@ -6079,6 +6095,51 @@ public class LeadService {
                 .sorted(Comparator.comparing(PreventaDetalleResponse::tipificadoAt,
                         Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
+    }
+
+    public List<ResumenRankingAsesorDetalleResponse> obtenerRankingAsesorDetalle(
+            Long idEquipo, Long idAsesor, boolean grupoOjt, ModoConteo modo, LocalDate desde, LocalDate hasta) {
+        if (!grupoOjt && idAsesor == null) {
+            throw new BadRequestException("Selecciona un asesor para ver el detalle del ranking.");
+        }
+        OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        boolean ingresados = modo == ModoConteo.INGRESADOS;
+
+        Map<Long, ResumenRankingAsesorDetalleResponse> porLead = new LinkedHashMap<>();
+        eventoRepository.detalleRankingAsignadosGtr(
+                        idAsesor, grupoOjt, Accion.ASIGNACION, ingresados, Accion.REGISTRO,
+                        rango.inicio(), rango.fin(), true, equipos.filtrar(), equipos.ids())
+                .forEach(row -> porLead.put(row.idLead(), row));
+
+        leadRepository.detalleRankingPreventasGtr(
+                        idAsesor, grupoOjt, ingresados, ACCIONES_INGRESO, Accion.REGISTRO,
+                        rango.inicio(), rango.fin(), true, equipos.filtrar(), equipos.ids())
+                .forEach(row -> porLead.merge(row.idLead(), row, this::fusionarDetalleRanking));
+
+        return porLead.values().stream()
+                .sorted(Comparator.comparing(ResumenRankingAsesorDetalleResponse::fechaIngresoAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    private ResumenRankingAsesorDetalleResponse fusionarDetalleRanking(
+            ResumenRankingAsesorDetalleResponse actual,
+            ResumenRankingAsesorDetalleResponse entrante) {
+        return new ResumenRankingAsesorDetalleResponse(
+                actual.idLead(),
+                actual.fechaIngresoAt() != null ? actual.fechaIngresoAt() : entrante.fechaIngresoAt(),
+                actual.lead(),
+                actual.usermeta(),
+                actual.primeraCodigoTipificacion(),
+                actual.primeraCodigoSubtipificacion(),
+                actual.mayorRangoCodigoTipificacion(),
+                actual.mayorRangoCodigoSubtipificacion(),
+                actual.ultimaCodigoTipificacion(),
+                actual.ultimaCodigoSubtipificacion(),
+                actual.fechaUltimaGestionAt() != null ? actual.fechaUltimaGestionAt() : entrante.fechaUltimaGestionAt(),
+                actual.asignado() || entrante.asignado(),
+                actual.preventa() || entrante.preventa());
     }
 
     /**

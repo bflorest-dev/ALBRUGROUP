@@ -94,6 +94,14 @@ public class CorreccionAdminController {
         return ResponseEntity.noContent().build();
     }
 
+    // (D) Vacía DatosPreventa + Dirección + snapshots. Para cuando se llenó el expediente incorrecto.
+    @PostMapping("/{idLead}/limpiar-datos")
+    @PreAuthorize("hasAuthority('CORREGIR_LEAD_ADMIN')")
+    public ResponseEntity<Void> limpiarDatos(@PathVariable Long idLead) {
+        correccionAdminService.limpiarDatos(idLead);
+        return ResponseEntity.noContent().build();
+    }
+
     // (C) Reubica un lead a otro contacto (y elimina el origen si queda huérfano).
     @PostMapping("/{idLead}/mover-contacto")
     @PreAuthorize("hasAuthority('CORREGIR_LEAD_ADMIN')")

@@ -99,13 +99,17 @@ export class BitacoraFacade {
     return (this.cluster()?.oportunidades ?? []).filter((o) => o.id !== idActual);
   });
 
-  // Reestructuración (intercambiar teléfono / mover lead) desde el drawer.
+  // Reestructuración (intercambiar leads / mover lead) desde el drawer.
   readonly modoReestructurar = signal<'none' | 'swap' | 'move'>('none');
   readonly pickerBuscando = signal(false);
   readonly pickerResultados = signal<BitacoraBusquedaResponse[]>([]);
   readonly objetivo = signal<BitacoraBusquedaResponse | null>(null);
   readonly procesandoReestructura = signal(false);
   readonly reestructuraMsg = signal<string | null>(null);
+
+  // Limpiar datos del expediente (DatosPreventa + Dirección).
+  readonly confirmandoLimpiar = signal(false);
+  readonly procesandoLimpiar = signal(false);
 
   readonly identidadForm: FormGroup = this.fb.group({
     prefijo: [''],
@@ -341,7 +345,7 @@ export class BitacoraFacade {
         .pipe(finalize(() => this.procesandoReestructura.set(false)))
         .subscribe({
           next: () => {
-            this.reestructuraMsg.set('Teléfonos intercambiados entre los dos contactos.');
+            this.reestructuraMsg.set('Leads intercambiados entre los dos contactos.');
             this.modoReestructurar.set('none');
             this.recargar(idLead);
           },
@@ -368,6 +372,32 @@ export class BitacoraFacade {
           error: () => this.error.set('No se pudo mover el lead. Inténtalo de nuevo.')
         });
     };
+  }
+
+  abrirLimpiar(): void {
+    this.confirmandoLimpiar.set(true);
+    this.error.set(null);
+  }
+
+  cerrarLimpiar(): void {
+    this.confirmandoLimpiar.set(false);
+  }
+
+  confirmarLimpiar(): void {
+    const idLead = this.detalle()?.id;
+    if (!idLead) return;
+    this.procesandoLimpiar.set(true);
+    this.error.set(null);
+    this.service
+      .limpiarDatos(idLead)
+      .pipe(finalize(() => this.procesandoLimpiar.set(false)))
+      .subscribe({
+        next: () => {
+          this.confirmandoLimpiar.set(false);
+          this.recargar(idLead);
+        },
+        error: () => this.error.set('No se pudieron limpiar los datos. Inténtalo de nuevo.')
+      });
   }
 
   // Recarga detalle + historial + cluster del lead abierto tras una reestructuración.

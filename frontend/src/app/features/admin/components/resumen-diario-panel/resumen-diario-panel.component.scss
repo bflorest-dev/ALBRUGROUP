@@ -463,6 +463,21 @@ th.n {
 }
 
 /* Ranking */
+.rk-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rk-row:hover td,
+.rk-row:focus-visible td {
+  background: var(--line-soft);
+}
+
+.rk-row:focus-visible {
+  outline: 2px solid var(--win);
+  outline-offset: -2px;
+}
+
 .rk-name {
   font-weight: 500;
 }
@@ -771,5 +786,25 @@ tr.is-win .est-name {
     font-size: 12.5px;
     color: var(--faint);
     text-align: right;
+  }
+}
+
+::ng-deep .ranking-detalle-dialog {
+  table.ranking-detalle th,
+  table.ranking-detalle td {
+    white-space: normal;
+    min-width: 130px;
+    vertical-align: top;
+  }
+
+  table.ranking-detalle th:first-child,
+  table.ranking-detalle td:first-child,
+  table.ranking-detalle th:last-child,
+  table.ranking-detalle td:last-child {
+    white-space: nowrap;
+  }
+
+  table.ranking-detalle .lead-cell {
+    min-width: 125px;
   }
 }

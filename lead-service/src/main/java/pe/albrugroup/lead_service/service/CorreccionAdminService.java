@@ -69,6 +69,11 @@ public class CorreccionAdminService {
     }
 
     @Transactional
+    public void limpiarDatos(Long idLead) {
+        leadService.limpiarDatosLead(idLead);
+    }
+
+    @Transactional
     public MoverContactoResultado moverLead(Long idLead, Long idContactoDestino) {
         return leadService.moverLeadAContacto(idLead, idContactoDestino);
     }

@@ -15,10 +15,9 @@ public interface ContactoRepository extends JpaRepository<Contacto, Long> {
     Optional<Contacto> findByPrefijoAndLead(String prefijo, String lead);
     Optional<Contacto> findByUsermetaIgnoreCase(String usermeta);
 
-    // Setea el teléfono (prefijo+lead) de un contacto en un statement propio. La unicidad
-    // (prefijo,lead) es NON-DEFERRABLE y Postgres la valida por fila dentro del statement, así que un
-    // swap A↔B se hace en 3 pasos con centinela NULL (los NULL son distintos en el índice único):
-    // liberar A (lead=NULL) → B toma el de A → A toma el de B. Ver intercambiarTelefonoContactos.
+    // Actualiza el teléfono (prefijo+lead) de un contacto. El unique uq_contacto_prefijo_lead es
+    // DEFERRABLE INITIALLY DEFERRED (V63), por lo que dos llamadas consecutivas dentro de la misma
+    // @Transactional no chocan: la validación ocurre al COMMIT, no fila a fila.
     @Modifying
     @Query("UPDATE Contacto c SET c.prefijo = :prefijo, c.lead = :lead WHERE c.id = :idContacto")
     int actualizarTelefono(

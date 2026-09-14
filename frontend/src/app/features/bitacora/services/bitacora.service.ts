@@ -66,4 +66,8 @@ export class BitacoraService {
   moverLead(idLead: number, idContactoDestino: number): Observable<BitacoraMoverResultado> {
     return this.http.post<BitacoraMoverResultado>(`${this.baseUrl}/${idLead}/mover-contacto`, { idContactoDestino });
   }
+
+  limpiarDatos(idLead: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${idLead}/limpiar-datos`, {});
+  }
 }

@@ -20,6 +20,7 @@ import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
+import pe.albrugroup.lead_service.entity.response.ResumenRankingAsesorDetalleResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorPreventaCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorProveedorPreventaProjection;
@@ -3143,6 +3144,71 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<AsesorPreventaCantidadProjection> resumirPreventasPorAsesorLeadGtr(
             @Param("soloIngresados") boolean soloIngresados,
             @Param("accionesIngreso") Collection<Accion> accionesIngreso,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.ResumenRankingAsesorDetalleResponse(
+                   l.id,
+                   MAX(reg.createdAt),
+                   l.lead,
+                   l.usermeta,
+                   r.primeraCodigoTipificacion,
+                   r.primeraCodigoSubtipificacion,
+                   r.mayorRangoCodigoTipificacion,
+                   r.mayorRangoCodigoSubtipificacion,
+                   r.ultimaCodigoTipificacion,
+                   r.ultimaCodigoSubtipificacion,
+                   MAX(gest.createdAt),
+                   false,
+                   true)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            LEFT JOIN Evento reg ON reg.idLead = l.id AND reg.accion = :accionRegistro
+            LEFT JOIN Evento gest ON gest.idLead = l.id
+                 AND ((:grupoOjt = false AND gest.idActor = :idAsesor)
+                      OR (:grupoOjt = true AND gest.rolActor = 'OJT'))
+            WHERE r.idAsesorMerito IS NOT NULL
+              AND ((:grupoOjt = false AND r.idAsesorMerito = :idAsesor)
+                   OR (:grupoOjt = true AND r.idAsesorMerito IN (
+                       SELECT ojt.idActor
+                       FROM Evento ojt
+                       JOIN Lead lo ON lo.id = ojt.idLead
+                       WHERE ojt.idActor IS NOT NULL
+                         AND ojt.rolActor = 'OJT'
+                         AND ojt.createdAt >= :fechaDesde
+                         AND ojt.createdAt < :fechaHasta
+                         AND (:filtrarEquipos = false OR lo.idEquipo IN :equipoIds)
+                   )))
+              AND r.fechaMerito >= :fechaDesde
+              AND r.fechaMerito < :fechaHasta
+              AND l.etapa <> 'PREVENTA'
+              AND (:soloIngresados = false
+                   OR EXISTS (SELECT 1 FROM Evento ing
+                              WHERE ing.idLead = l.id
+                                AND ing.accion IN :accionesIngreso
+                                AND ing.createdAt >= :fechaDesde
+                                AND ing.createdAt < :fechaHasta))
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND (:soloActivos = false
+                   OR EXISTS (SELECT 1 FROM Lead la
+                              WHERE la.idAsesorAsignado = r.idAsesorMerito
+                                AND la.etapa = 'PREVENTA'))
+            GROUP BY l.id, l.lead, l.usermeta,
+                     r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion,
+                     r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion,
+                     r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
+            """)
+    List<ResumenRankingAsesorDetalleResponse> detalleRankingPreventasGtr(
+            @Param("idAsesor") Long idAsesor,
+            @Param("grupoOjt") boolean grupoOjt,
+            @Param("soloIngresados") boolean soloIngresados,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
+            @Param("accionRegistro") Accion accionRegistro,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("soloActivos") boolean soloActivos,

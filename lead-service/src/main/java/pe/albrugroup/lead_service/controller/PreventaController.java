@@ -293,6 +293,19 @@ public class PreventaController {
         return ResponseEntity.ok(leadService.obtenerPreventasDetalle(idEquipo, modo, campo, desde, hasta));
     }
 
+    // 2.7. Detalle de una fila del ranking de asesores del RESUMEN DIARIO
+    @GetMapping("/resumen-diario/ranking-asesor-detalle") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<List<ResumenRankingAsesorDetalleResponse>> obtenerRankingAsesorDetalle(
+            @RequestParam(required = false) Long idEquipo,
+            @RequestParam(required = false) Long idAsesor,
+            @RequestParam(defaultValue = "false") boolean grupoOjt,
+            @RequestParam(defaultValue = "GESTIONADOS") ModoConteo modo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
+    ) {
+        return ResponseEntity.ok(leadService.obtenerRankingAsesorDetalle(idEquipo, idAsesor, grupoOjt, modo, desde, hasta));
+    }
+
     @PostMapping("/gtr/{idLead}/tomar-gestion")
     @PreAuthorize("hasAuthority('READ_LEADS_GTR') and hasAuthority('UPDATE_LEADS_ASESOR')")
     public ResponseEntity<Void> tomarGestionGtr(

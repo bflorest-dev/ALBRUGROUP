@@ -57,6 +57,23 @@ export interface PreventaDetalle {
   nombreCampana: string | null;
 }
 
+/** Detalle de una fila del ranking: unión de leads asignados y/o preventas del asesor. */
+export interface RankingAsesorDetalle {
+  idLead: number;
+  fechaIngresoAt: string | null;
+  lead: string | null;
+  usermeta: string | null;
+  primeraCodigoTipificacion: string | null;
+  primeraCodigoSubtipificacion: string | null;
+  mayorRangoCodigoTipificacion: string | null;
+  mayorRangoCodigoSubtipificacion: string | null;
+  ultimaCodigoTipificacion: string | null;
+  ultimaCodigoSubtipificacion: string | null;
+  fechaUltimaGestionAt: string | null;
+  asignado: boolean;
+  preventa: boolean;
+}
+
 /** Las 4 tablas del RESUMEN DIARIO en un solo payload (espejo del backend). */
 export interface ResumenDiarioResponse {
   ingresosGestion: ResumenIngresosGestion;
@@ -140,6 +157,33 @@ export class ResumenDiarioService {
     }
     return this.http.get<PreventaDetalle[]>(
       `${this.leadsUrl}/preventa/resumen-diario/preventas-detalle`,
+      { params }
+    );
+  }
+
+  obtenerRankingAsesorDetalle(
+    idEquipo: number | null,
+    idAsesor: number | null,
+    grupoOjt: boolean,
+    modo: GestionModo,
+    desde?: string,
+    hasta?: string
+  ): Observable<RankingAsesorDetalle[]> {
+    let params = new HttpParams().set('modo', modo).set('grupoOjt', grupoOjt);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    if (idAsesor !== null && idAsesor !== undefined) {
+      params = params.set('idAsesor', idAsesor);
+    }
+    if (desde) {
+      params = params.set('desde', desde);
+    }
+    if (hasta) {
+      params = params.set('hasta', hasta);
+    }
+    return this.http.get<RankingAsesorDetalle[]>(
+      `${this.leadsUrl}/preventa/resumen-diario/ranking-asesor-detalle`,
       { params }
     );
   }
