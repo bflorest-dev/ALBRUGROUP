@@ -1,14 +1,17 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { MisPreventasV2Response } from '../../../shared/models/preventa/preventa.models';
+import { buildTelUrl } from '../../../shared/utils/phone-link';
 import { VentaDetalleRow, VentaDetallePage } from '../../admin/services/dashboard-venta.service';
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
+import { BrowserSessionService } from '../../../core/services/browser-session.service';
 
 export type { VentaDetalleRow };
 
 @Injectable()
 export class AsesorVentasMisPreventasFacade {
   private readonly preventaService = inject(PreventaLeadService);
+  private readonly browserSessionService = inject(BrowserSessionService);
 
   readonly pageSize = 15;
 
@@ -79,6 +82,25 @@ export class AsesorVentasMisPreventasFacade {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  async llamar(row: VentaDetalleRow): Promise<void> {
+    const telUrl = buildTelUrl(row.prefijo, row.lead);
+    if (!telUrl) {
+      this.errorMessage.set('El lead no tiene un número válido para iniciar la llamada.');
+      return;
+    }
+    this.browserSessionService.allowExternalNavigation();
+    window.location.assign(telUrl);
+    try {
+      await firstValueFrom(this.preventaService.registrarContacto(row.idLead));
+    } catch {
+      this.errorMessage.set('Se inició la llamada pero no se pudo registrar el contacto.');
+    }
+  }
+
+  hasPhone(row: VentaDetalleRow): boolean {
+    return !!buildTelUrl(row.prefijo, row.lead);
   }
 
   conversionPct(num: number, denom: number): string {

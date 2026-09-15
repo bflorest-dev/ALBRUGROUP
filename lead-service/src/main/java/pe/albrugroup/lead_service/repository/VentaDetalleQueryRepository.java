@@ -57,7 +57,7 @@ public class VentaDetalleQueryRepository {
 
     private static final String SELECT_ROW = """
             SELECT new pe.albrugroup.lead_service.entity.response.VentaDetalleResponse(
-                l.id, l.lead, l.usermeta,
+                l.id, l.lead, l.prefijo, l.usermeta,
                 dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
                 l.etapa, rv.ultimaCodigoTipificacion, rv.ultimaCodigoSubtipificacion,
                 rv.fechaIngresoEtapa, rv.fechaUltimaGestion,

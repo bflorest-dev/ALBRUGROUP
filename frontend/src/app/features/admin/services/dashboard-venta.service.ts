@@ -162,6 +162,7 @@ export type EnfoqueVenta = 'DIA' | 'GENERAL';
 export interface VentaDetalleRow {
   idLead: number;
   lead: string | null;
+  prefijo: string | null;
   usermeta: string | null;
   numeroDocumento: string | null;
   nombreCliente: string | null;

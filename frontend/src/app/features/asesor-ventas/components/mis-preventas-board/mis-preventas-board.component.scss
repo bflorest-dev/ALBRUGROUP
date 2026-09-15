@@ -365,6 +365,35 @@
 }
 .mp-cempty { color: var(--faint); }
 
+// ── Lead cell (click-to-call) ──────────────────────────────────────
+.mp-lead-cell {
+  position: relative;
+  &--active { cursor: pointer; }
+  &--active:hover {
+    background: var(--soft);
+    .mp-call-btn { opacity: 1; }
+  }
+}
+.mp-call-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  translate: 0 -50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--vd-success);
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  &:hover { background: var(--vd-success); color: var(--deep); opacity: 1; }
+}
+
 // ── Footer / paginator ──────────────────────────────────────────────
 .mp-foot {
   border-top: 1px solid var(--line);

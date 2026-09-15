@@ -18,6 +18,7 @@ import java.time.LocalTime;
 public record VentaDetalleResponse(
         Long idLead,
         String lead,
+        String prefijo,
         String usermeta,
         String numeroDocumento,
         String nombreCliente,
