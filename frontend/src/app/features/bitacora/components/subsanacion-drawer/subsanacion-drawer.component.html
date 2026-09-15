@@ -61,9 +61,9 @@
             <p>El teléfono identifica la oportunidad. En un expediente existente no puede modificarse.</p>
           </div>
           <div class="field-grid three">
-            <label class="field"><span>Prefijo</span><input class="mono" formControlName="prefijo" placeholder="+51" /></label>
-            <label class="field span2"><span>Teléfono</span><input class="mono" formControlName="lead" (blur)="verificarDuplicado()" placeholder="999888777" /></label>
-            <label class="field span3"><span>Usermeta <small>opcional, sin &#64;</small></span><input formControlName="usermeta" /></label>
+            <label class="field"><span>Prefijo</span><span class="prefix-control"><span>+</span><input class="mono" formControlName="prefijo" inputmode="numeric" maxlength="3" placeholder="51" /></span></label>
+            <label class="field span2"><span>Teléfono</span><input class="mono" formControlName="lead" inputmode="numeric" maxlength="15" (blur)="verificarDuplicado()" placeholder="999888777" /></label>
+            <label class="field span3"><span>Usermeta <small>opcional, sin &#64;</small></span><input formControlName="usermeta" maxlength="80" autocapitalize="none" spellcheck="false" /></label>
           </div>
 
           @if (verificandoTelefono()) {
@@ -119,12 +119,12 @@
             <h4>Titular y contacto</h4>
             <div class="field-grid two">
               <label class="field"><span>Tipo de documento</span><select formControlName="tipoDocumento"><option value="">Selecciona</option>@for (item of tiposDocumento; track item) { <option [value]="item">{{ item }}</option> }</select></label>
-              <label class="field"><span>N.º documento</span><input class="mono" formControlName="numeroDocumentoTitularServicio" /></label>
-              <label class="field span2"><span>Nombre del titular</span><input formControlName="nombreTitularServicio" /></label>
-              <label class="field"><span>Celular de registro</span><input class="mono" formControlName="celularRegistro" /></label>
-              <label class="field"><span>Celular de referencia</span><input class="mono" formControlName="celularReferencia" /></label>
-              <label class="field"><span>Celular de grabación</span><input class="mono" formControlName="celularGrabacion" /></label>
-              <label class="field span2"><span>Correo</span><input type="email" formControlName="correo" /></label>
+              <label class="field"><span>N.º documento</span><input class="mono" formControlName="numeroDocumentoTitularServicio" inputmode="numeric" maxlength="12" /></label>
+              <label class="field span2"><span>Nombre del titular</span><input formControlName="nombreTitularServicio" maxlength="120" /></label>
+              <label class="field"><span>Celular de registro</span><input class="mono" formControlName="celularRegistro" inputmode="numeric" maxlength="15" /></label>
+              <label class="field"><span>Celular de referencia</span><input class="mono" formControlName="celularReferencia" inputmode="numeric" maxlength="15" /></label>
+              <label class="field"><span>Celular de grabación</span><input class="mono" formControlName="celularGrabacion" inputmode="numeric" maxlength="15" /></label>
+              <label class="field span2"><span>Correo</span><input type="email" formControlName="correo" autocapitalize="none" spellcheck="false" /></label>
               <label class="field"><span>Fecha de nacimiento</span><input class="mono" type="date" formControlName="fechaNacimiento" /></label>
               <label class="field"><span>Parentesco</span><select formControlName="parentesco"><option value="">Selecciona</option>@for (item of parentescos; track item) { <option [value]="item">{{ item }}</option> }</select></label>
               <div class="location-block span2">
@@ -141,10 +141,10 @@
                   </div>
                 }
               </div>
-              <label class="field"><span>Nombre de la madre</span><input formControlName="nombreMadre" /></label>
-              <label class="field"><span>Nombre del padre</span><input formControlName="nombrePadre" /></label>
-              <label class="field"><span>Doc. titular del celular</span><input class="mono" formControlName="numeroDocumentoTitularCelularRegistro" /></label>
-              <label class="field"><span>Nombre titular del celular</span><input formControlName="nombreTitularCelularRegistro" /></label>
+              <label class="field"><span>Nombre de la madre</span><input formControlName="nombreMadre" maxlength="120" /></label>
+              <label class="field"><span>Nombre del padre</span><input formControlName="nombrePadre" maxlength="120" /></label>
+              <label class="field"><span>Doc. titular del celular</span><input class="mono" formControlName="numeroDocumentoTitularCelularRegistro" inputmode="numeric" maxlength="12" /></label>
+              <label class="field"><span>Nombre titular del celular</span><input formControlName="nombreTitularCelularRegistro" maxlength="120" /></label>
             </div>
           </div>
           <div class="subsection" [formGroup]="direccionForm">
@@ -169,8 +169,8 @@
               <label class="field"><span>Vía</span><input formControlName="via" /></label>
               <label class="field span2"><span>Dirección</span><input formControlName="direccion" /></label>
               <label class="field span2"><span>Referencia</span><input formControlName="referencia" /></label>
-              <label class="field"><span>Latitud</span><input class="mono" formControlName="latitud" /></label>
-              <label class="field"><span>Longitud</span><input class="mono" formControlName="longitud" /></label>
+              <label class="field"><span>Latitud</span><input class="mono" formControlName="latitud" inputmode="decimal" maxlength="24" (paste)="pegarCoordenadas($event, 'latitud')" /></label>
+              <label class="field"><span>Longitud</span><input class="mono" formControlName="longitud" inputmode="decimal" maxlength="24" (paste)="pegarCoordenadas($event, 'longitud')" /></label>
               <label class="field"><span>Urbanización</span><input formControlName="urbanizacion" /></label>
               <label class="field"><span>Número</span><input formControlName="numero" /></label>
               <label class="field"><span>Manzana</span><input formControlName="manzana" /></label>
@@ -204,9 +204,9 @@
             <div class="commercial-codes">
               <h4>Códigos de instalación requeridos</h4>
               <div class="field-grid three">
-                @if (requiereSecSot()) { <label class="field"><span>SEC</span><input class="mono" formControlName="sec" maxlength="9" /></label> }
-                @if (requiereSecSot()) { <label class="field"><span>SOT</span><input class="mono" formControlName="sot" maxlength="8" /></label> }
-                @if (requiereCustomerId()) { <label class="field"><span>Customer ID</span><input class="mono" formControlName="customerId" maxlength="8" /></label> }
+                @if (requiereSecSot()) { <label class="field"><span>SEC</span><input class="mono" formControlName="sec" inputmode="numeric" maxlength="9" /></label> }
+                @if (requiereSecSot()) { <label class="field"><span>SOT</span><input class="mono" formControlName="sot" inputmode="numeric" maxlength="8" /></label> }
+                @if (requiereCustomerId()) { <label class="field"><span>Customer ID</span><input class="mono" formControlName="customerId" inputmode="numeric" maxlength="8" /></label> }
               </div>
             </div>
           }

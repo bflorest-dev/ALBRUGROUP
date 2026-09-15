@@ -1,14 +1,15 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormGroup } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { finalize, firstValueFrom } from 'rxjs';
 import { EquiposNavService } from '../../../core/services/equipos-nav.service';
 import {
   EventoResponse,
   LeadDatosPreventaRequest,
   LeadDetalleResponse,
   LeadDireccionRequest,
-  PageQuery
+  PageQuery,
+  UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import {
   BitacoraAccion,
@@ -18,6 +19,21 @@ import {
   BitacoraIdentidadRequest
 } from '../models/bitacora.models';
 import { BitacoraService } from '../services/bitacora.service';
+import {
+  coordenadaValidator,
+  documentoValidator,
+  extraerParCoordenadas,
+  limpiarCoordenada,
+  limpiarDocumento,
+  limpiarNombrePersona,
+  limpiarPrefijo,
+  limpiarTelefonoPorPrefijo,
+  limpiarTextoDireccion,
+  limpiarUsermeta,
+  prefijoValidator,
+  soloDigitos,
+  telefonoValidator
+} from '../utils/bitacora-input.rules';
 
 export type BitacoraTab = 'datos' | 'direccion' | 'oferta' | 'historial';
 
@@ -112,7 +128,7 @@ export class BitacoraFacade {
   readonly procesandoLimpiar = signal(false);
 
   readonly identidadForm: FormGroup = this.fb.group({
-    prefijo: [''],
+    prefijo: ['51'],
     lead: [''],
     usermeta: ['']
   });
@@ -121,6 +137,9 @@ export class BitacoraFacade {
     tipoDocumento: [''],
     numeroDocumentoTitularServicio: [''],
     ubigeoNacimiento: [''],
+    idDepartamentoNacimiento: [null as number | null],
+    idProvinciaNacimiento: [null as number | null],
+    idDistritoNacimiento: [null as number | null],
     nombreTitularServicio: [''],
     celularRegistro: [''],
     celularReferencia: [''],
@@ -134,6 +153,9 @@ export class BitacoraFacade {
 
   readonly direccionForm: FormGroup = this.fb.group({
     ubigeoDomicilio: [''],
+    idDepartamentoDomicilio: [null as number | null],
+    idProvinciaDomicilio: [null as number | null],
+    idDistritoDomicilio: [null as number | null],
     tipoDomicilio: [''],
     tipoVia: [''],
     via: [''],
@@ -158,6 +180,19 @@ export class BitacoraFacade {
   private readonly direccionOriginal = signal<Record<string, string>>({});
   private readonly datosValues = signal<Record<string, string>>({});
   private readonly direccionValues = signal<Record<string, string>>({});
+  readonly departamentos = signal<UbigeoItem[]>([]);
+  readonly provinciasNacimiento = signal<UbigeoItem[]>([]);
+  readonly distritosNacimiento = signal<UbigeoItem[]>([]);
+  readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
+  readonly distritosDomicilio = signal<UbigeoItem[]>([]);
+  readonly cargandoDepartamentos = signal(false);
+  readonly cargandoUbigeoNacimiento = signal(false);
+  readonly cargandoUbigeoDomicilio = signal(false);
+  readonly errorUbigeoNacimiento = signal<string | null>(null);
+  readonly errorUbigeoDomicilio = signal<string | null>(null);
+  private nacimientoResolveSeq = 0;
+  private domicilioResolveSeq = 0;
+  private departamentosPromise: Promise<UbigeoItem[]> | null = null;
 
   // ── Historial ─────────────────────────────────────────
   readonly filtroAccion = signal<BitacoraAccion | null>('TIPIFICACION');
@@ -187,6 +222,8 @@ export class BitacoraFacade {
   });
 
   constructor() {
+    this.configurarValidadores();
+    this.configurarNormalizadores();
     this.identidadForm.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => this.identidadValues.set(this.normalizeRecord(value)));
@@ -196,6 +233,72 @@ export class BitacoraFacade {
     this.direccionForm.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => this.direccionValues.set(this.normalizeRecord(value)));
+  }
+
+  private configurarValidadores(): void {
+    this.identidadForm.controls['prefijo'].setValidators([prefijoValidator()]);
+    this.identidadForm.controls['lead'].setValidators([telefonoValidator(() => this.identidadForm.controls['prefijo'].value)]);
+    this.datosForm.controls['numeroDocumentoTitularServicio'].setValidators([
+      documentoValidator(() => this.datosForm.controls['tipoDocumento'].value)
+    ]);
+    for (const campo of ['celularRegistro', 'celularReferencia', 'celularGrabacion']) {
+      this.datosForm.controls[campo].setValidators([telefonoValidator(() => this.identidadForm.controls['prefijo'].value)]);
+    }
+    this.datosForm.controls['numeroDocumentoTitularCelularRegistro'].setValidators([Validators.pattern(/^\d*$/)]);
+    this.datosForm.controls['correo'].setValidators([Validators.email]);
+    for (const campo of ['nombreTitularServicio', 'nombreTitularCelularRegistro', 'nombreMadre', 'nombrePadre']) {
+      this.datosForm.controls[campo].setValidators([Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]*$/)]);
+    }
+    this.direccionForm.controls['latitud'].setValidators([coordenadaValidator('latitud')]);
+    this.direccionForm.controls['longitud'].setValidators([coordenadaValidator('longitud')]);
+  }
+
+  private configurarNormalizadores(): void {
+    this.normalizarControl(this.identidadForm, 'prefijo', limpiarPrefijo, () => this.normalizarTelefonosPorPrefijo());
+    this.normalizarControl(this.identidadForm, 'lead', (value) => this.limpiarTelefonoActual(value));
+    this.normalizarControl(this.identidadForm, 'usermeta', limpiarUsermeta);
+    this.datosForm.controls['tipoDocumento'].valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.datosForm.controls['numeroDocumentoTitularServicio'].updateValueAndValidity({ emitEvent: false }));
+    this.normalizarControl(this.datosForm, 'numeroDocumentoTitularServicio', limpiarDocumento);
+    for (const campo of ['celularRegistro', 'celularReferencia', 'celularGrabacion']) {
+      this.normalizarControl(this.datosForm, campo, (value) => this.limpiarTelefonoActual(value));
+    }
+    this.normalizarControl(this.datosForm, 'numeroDocumentoTitularCelularRegistro', (value) => soloDigitos(value, 12));
+    for (const campo of ['nombreTitularServicio', 'nombreTitularCelularRegistro', 'nombreMadre', 'nombrePadre']) {
+      this.normalizarControl(this.datosForm, campo, limpiarNombrePersona);
+    }
+    for (const campo of ['via', 'direccion', 'referencia', 'urbanizacion', 'numero', 'manzana', 'lote', 'nombreEdificio', 'nombreCondominio', 'plano', 'piso', 'interior']) {
+      this.normalizarControl(this.direccionForm, campo, limpiarTextoDireccion);
+    }
+    this.normalizarControl(this.direccionForm, 'latitud', limpiarCoordenada);
+    this.normalizarControl(this.direccionForm, 'longitud', limpiarCoordenada);
+  }
+
+  private normalizarControl(form: FormGroup, nombre: string, limpiar: (value: unknown) => string, despues?: () => void): void {
+    const control = form.controls[nombre];
+    control.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
+      const limpio = limpiar(value);
+      if (value !== limpio) {
+        control.setValue(limpio, { emitEvent: false });
+      }
+      despues?.();
+    });
+  }
+
+  private limpiarTelefonoActual(value: unknown): string {
+    return limpiarTelefonoPorPrefijo(value, this.identidadForm.controls['prefijo'].value);
+  }
+
+  private normalizarTelefonosPorPrefijo(): void {
+    const lead = this.identidadForm.controls['lead'];
+    lead.setValue(this.limpiarTelefonoActual(lead.value), { emitEvent: false });
+    lead.updateValueAndValidity({ emitEvent: false });
+    for (const campo of ['celularRegistro', 'celularReferencia', 'celularGrabacion']) {
+      const control = this.datosForm.controls[campo];
+      control.setValue(this.limpiarTelefonoActual(control.value), { emitEvent: false });
+      control.updateValueAndValidity({ emitEvent: false });
+    }
   }
 
   start(): void {
@@ -234,6 +337,76 @@ export class BitacoraFacade {
       });
   }
 
+  async cambiarDepartamentoNacimiento(): Promise<void> {
+    this.nacimientoResolveSeq++;
+    this.cargandoUbigeoNacimiento.set(false);
+    const idDepartamento = this.datosForm.controls['idDepartamentoNacimiento'].value;
+    this.errorUbigeoNacimiento.set(null);
+    this.datosForm.patchValue({ idProvinciaNacimiento: null, idDistritoNacimiento: null, ubigeoNacimiento: '' });
+    this.provinciasNacimiento.set([]);
+    this.distritosNacimiento.set([]);
+    if (idDepartamento) await this.cargarProvincias(idDepartamento, 'nacimiento');
+  }
+
+  async cambiarProvinciaNacimiento(): Promise<void> {
+    this.nacimientoResolveSeq++;
+    this.cargandoUbigeoNacimiento.set(false);
+    const idProvincia = this.datosForm.controls['idProvinciaNacimiento'].value;
+    this.errorUbigeoNacimiento.set(null);
+    this.datosForm.patchValue({ idDistritoNacimiento: null, ubigeoNacimiento: '' });
+    this.distritosNacimiento.set([]);
+    if (idProvincia) await this.cargarDistritos(idProvincia, 'nacimiento');
+  }
+
+  cambiarDistritoNacimiento(): void {
+    this.nacimientoResolveSeq++;
+    this.cargandoUbigeoNacimiento.set(false);
+    const idDistrito = this.datosForm.controls['idDistritoNacimiento'].value;
+    const distrito = this.distritosNacimiento().find((item) => item.id === idDistrito);
+    this.datosForm.controls['ubigeoNacimiento'].setValue(distrito?.codigo ?? '');
+    this.errorUbigeoNacimiento.set(distrito?.codigo ? null : 'Selecciona un distrito válido.');
+  }
+
+  async cambiarDepartamentoDomicilio(): Promise<void> {
+    this.domicilioResolveSeq++;
+    this.cargandoUbigeoDomicilio.set(false);
+    const idDepartamento = this.direccionForm.controls['idDepartamentoDomicilio'].value;
+    this.errorUbigeoDomicilio.set(null);
+    this.direccionForm.patchValue({ idProvinciaDomicilio: null, idDistritoDomicilio: null, ubigeoDomicilio: '' });
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
+    if (idDepartamento) await this.cargarProvincias(idDepartamento, 'domicilio');
+  }
+
+  async cambiarProvinciaDomicilio(): Promise<void> {
+    this.domicilioResolveSeq++;
+    this.cargandoUbigeoDomicilio.set(false);
+    const idProvincia = this.direccionForm.controls['idProvinciaDomicilio'].value;
+    this.errorUbigeoDomicilio.set(null);
+    this.direccionForm.patchValue({ idDistritoDomicilio: null, ubigeoDomicilio: '' });
+    this.distritosDomicilio.set([]);
+    if (idProvincia) await this.cargarDistritos(idProvincia, 'domicilio');
+  }
+
+  cambiarDistritoDomicilio(): void {
+    this.domicilioResolveSeq++;
+    this.cargandoUbigeoDomicilio.set(false);
+    const idDistrito = this.direccionForm.controls['idDistritoDomicilio'].value;
+    const distrito = this.distritosDomicilio().find((item) => item.id === idDistrito);
+    this.direccionForm.controls['ubigeoDomicilio'].setValue(distrito?.codigo ?? '');
+    this.errorUbigeoDomicilio.set(distrito?.codigo ? null : 'Selecciona un distrito válido.');
+  }
+
+  pegarCoordenadas(event: ClipboardEvent, origen: 'latitud' | 'longitud'): void {
+    const par = extraerParCoordenadas(event.clipboardData?.getData('text') ?? '');
+    if (!par) return;
+    event.preventDefault();
+    this.direccionForm.patchValue({ latitud: par[0], longitud: par[1] });
+    this.direccionForm.controls[origen].markAsDirty();
+    this.direccionForm.controls['latitud'].updateValueAndValidity({ emitEvent: false });
+    this.direccionForm.controls['longitud'].updateValueAndValidity({ emitEvent: false });
+  }
+
   // ── Expediente ────────────────────────────────────────
   abrirLead(idLead: number): void {
     this.drawerAbierto.set(true);
@@ -253,6 +426,9 @@ export class BitacoraFacade {
         next: (detalle) => {
           this.detalle.set(detalle);
           this.patchForms(detalle);
+          void this.cargarDepartamentos();
+          void this.resolverUbigeoGuardado(detalle.ubigeoNacimiento, 'nacimiento');
+          void this.resolverUbigeoGuardado(detalle.ubigeoDomicilio, 'domicilio');
         },
         error: () => this.error.set('No se pudo cargar el expediente.')
       });
@@ -469,14 +645,21 @@ export class BitacoraFacade {
     if (!detalle || !this.hayCambios() || this.guardando()) {
       return;
     }
+    if (this.identidadForm.invalid || this.datosForm.invalid || this.direccionForm.invalid) {
+      this.identidadForm.markAllAsTouched();
+      this.datosForm.markAllAsTouched();
+      this.direccionForm.markAllAsTouched();
+      this.error.set('Hay campos con formato inválido. Revisa los valores señalados antes de guardar.');
+      return;
+    }
 
     const identidadCambio = this.grupoTieneCambios(this.identidadOriginal(), this.identidadValues());
     const datosCambio = this.grupoTieneCambios(this.datosOriginal(), this.datosValues());
     const direccionCambio = this.grupoTieneCambios(this.direccionOriginal(), this.direccionValues());
 
-    const identidad = identidadCambio ? (this.identidadForm.getRawValue() as BitacoraIdentidadRequest) : null;
-    const datosPreventa = datosCambio ? (this.datosForm.getRawValue() as LeadDatosPreventaRequest) : null;
-    const direccion = direccionCambio ? (this.direccionForm.getRawValue() as LeadDireccionRequest) : null;
+    const identidad = identidadCambio ? this.construirIdentidadRequest() : null;
+    const datosPreventa = datosCambio ? this.construirDatosRequest() : null;
+    const direccion = direccionCambio ? this.construirDireccionRequest() : null;
 
     this.guardando.set(true);
     this.error.set(null);
@@ -518,7 +701,7 @@ export class BitacoraFacade {
   // ── Helpers de forms / diff ───────────────────────────
   private patchForms(detalle: LeadDetalleResponse): void {
     const identidad = {
-      prefijo: detalle.prefijo ?? '',
+      prefijo: limpiarPrefijo(detalle.prefijo ?? '51'),
       lead: detalle.lead ?? '',
       usermeta: detalle.usermeta ?? ''
     };
@@ -526,6 +709,9 @@ export class BitacoraFacade {
       tipoDocumento: detalle.tipoDocumento ?? '',
       numeroDocumentoTitularServicio: detalle.numeroDocumentoTitularServicio ?? '',
       ubigeoNacimiento: detalle.ubigeoNacimiento ?? '',
+      idDepartamentoNacimiento: null,
+      idProvinciaNacimiento: null,
+      idDistritoNacimiento: null,
       nombreTitularServicio: detalle.nombreTitular ?? '',
       celularRegistro: detalle.celularRegistro ?? '',
       celularReferencia: detalle.celularReferencia ?? '',
@@ -538,6 +724,9 @@ export class BitacoraFacade {
     };
     const direccion = {
       ubigeoDomicilio: detalle.ubigeoDomicilio ?? '',
+      idDepartamentoDomicilio: null,
+      idProvinciaDomicilio: null,
+      idDistritoDomicilio: null,
       tipoDomicilio: detalle.tipoDomicilio ?? '',
       tipoVia: detalle.tipoVia ?? '',
       via: detalle.via ?? '',
@@ -564,6 +753,162 @@ export class BitacoraFacade {
     this.identidadValues.set(this.normalizeRecord(identidad));
     this.datosValues.set(this.normalizeRecord(datos));
     this.direccionValues.set(this.normalizeRecord(direccion));
+  }
+
+  private construirIdentidadRequest(): BitacoraIdentidadRequest {
+    const raw = this.identidadForm.getRawValue();
+    return {
+      prefijo: raw.prefijo ?? null,
+      lead: raw.lead ?? null,
+      usermeta: raw.usermeta ?? null
+    };
+  }
+
+  private construirDatosRequest(): LeadDatosPreventaRequest {
+    const raw = this.datosForm.getRawValue();
+    return {
+      tipoDocumento: raw.tipoDocumento ?? '',
+      numeroDocumentoTitularServicio: raw.numeroDocumentoTitularServicio ?? '',
+      ubigeoNacimiento: raw.ubigeoNacimiento || null,
+      nombreTitularServicio: raw.nombreTitularServicio || null,
+      celularRegistro: raw.celularRegistro || null,
+      celularReferencia: raw.celularReferencia || null,
+      celularGrabacion: raw.celularGrabacion || null,
+      correo: raw.correo || null,
+      nombreMadre: raw.nombreMadre || null,
+      nombrePadre: raw.nombrePadre || null,
+      numeroDocumentoTitularCelularRegistro: raw.numeroDocumentoTitularCelularRegistro || null,
+      nombreTitularCelularRegistro: raw.nombreTitularCelularRegistro || null
+    };
+  }
+
+  private construirDireccionRequest(): LeadDireccionRequest {
+    const raw = this.direccionForm.getRawValue();
+    return {
+      ubigeoDomicilio: raw.ubigeoDomicilio ?? '',
+      tipoDomicilio: raw.tipoDomicilio || null,
+      tipoVia: raw.tipoVia || null,
+      via: raw.via || null,
+      direccion: raw.direccion ?? '',
+      referencia: raw.referencia || null,
+      latitud: String(raw.latitud ?? '').replace(',', '.'),
+      longitud: String(raw.longitud ?? '').replace(',', '.'),
+      urbanizacion: raw.urbanizacion || null,
+      numero: raw.numero || null,
+      manzana: raw.manzana || null,
+      lote: raw.lote || null,
+      nombreEdificio: raw.nombreEdificio || null,
+      nombreCondominio: raw.nombreCondominio || null,
+      plano: raw.plano || null,
+      piso: raw.piso || null,
+      interior: raw.interior || null
+    };
+  }
+
+  private cargarDepartamentos(): Promise<UbigeoItem[]> {
+    if (this.departamentos().length) return Promise.resolve(this.departamentos());
+    if (this.departamentosPromise) return this.departamentosPromise;
+    this.cargandoDepartamentos.set(true);
+    this.departamentosPromise = firstValueFrom(this.service.listarDepartamentos())
+      .then((items) => {
+        this.departamentos.set(items);
+        return items;
+      })
+      .finally(() => {
+        this.cargandoDepartamentos.set(false);
+        this.departamentosPromise = null;
+      });
+    return this.departamentosPromise;
+  }
+
+  private async cargarProvincias(idDepartamento: number, tipo: 'nacimiento' | 'domicilio'): Promise<UbigeoItem[]> {
+    const loading = tipo === 'nacimiento' ? this.cargandoUbigeoNacimiento : this.cargandoUbigeoDomicilio;
+    const error = tipo === 'nacimiento' ? this.errorUbigeoNacimiento : this.errorUbigeoDomicilio;
+    loading.set(true);
+    try {
+      const items = await firstValueFrom(this.service.listarProvincias(idDepartamento));
+      if (tipo === 'nacimiento') this.provinciasNacimiento.set(items);
+      else this.provinciasDomicilio.set(items);
+      return items;
+    } catch {
+      error.set('No se pudieron cargar las provincias. Vuelve a elegir el departamento.');
+      return [];
+    } finally {
+      loading.set(false);
+    }
+  }
+
+  private async cargarDistritos(idProvincia: number, tipo: 'nacimiento' | 'domicilio'): Promise<UbigeoItem[]> {
+    const loading = tipo === 'nacimiento' ? this.cargandoUbigeoNacimiento : this.cargandoUbigeoDomicilio;
+    const error = tipo === 'nacimiento' ? this.errorUbigeoNacimiento : this.errorUbigeoDomicilio;
+    loading.set(true);
+    try {
+      const items = await firstValueFrom(this.service.listarDistritos(idProvincia));
+      if (tipo === 'nacimiento') this.distritosNacimiento.set(items);
+      else this.distritosDomicilio.set(items);
+      return items;
+    } catch {
+      error.set('No se pudieron cargar los distritos. Vuelve a elegir la provincia.');
+      return [];
+    } finally {
+      loading.set(false);
+    }
+  }
+
+  private async resolverUbigeoGuardado(codigoOriginal: string | null | undefined, tipo: 'nacimiento' | 'domicilio'): Promise<void> {
+    const codigo = soloDigitos(codigoOriginal, 6);
+    if (!codigo) return;
+    const sequence = tipo === 'nacimiento' ? ++this.nacimientoResolveSeq : ++this.domicilioResolveSeq;
+    const loading = tipo === 'nacimiento' ? this.cargandoUbigeoNacimiento : this.cargandoUbigeoDomicilio;
+    const error = tipo === 'nacimiento' ? this.errorUbigeoNacimiento : this.errorUbigeoDomicilio;
+    loading.set(true);
+    error.set(null);
+    try {
+      if (codigo.length !== 6) throw new Error('UBIGEO_INVALIDO');
+      const departamentos = await this.cargarDepartamentos();
+      if (!this.esResolucionActual(tipo, sequence)) return;
+      const departamento = departamentos.find((item) => item.codigo === codigo.slice(0, 2));
+      if (!departamento) throw new Error('DEPARTAMENTO_NO_ENCONTRADO');
+      const provincias = await firstValueFrom(this.service.listarProvincias(departamento.id));
+      if (!this.esResolucionActual(tipo, sequence)) return;
+      const provincia = provincias.find((item) => item.codigo === codigo.slice(0, 4));
+      if (!provincia) throw new Error('PROVINCIA_NO_ENCONTRADA');
+      const distritos = await firstValueFrom(this.service.listarDistritos(provincia.id));
+      if (!this.esResolucionActual(tipo, sequence)) return;
+      const distrito = distritos.find((item) => item.codigo === codigo);
+      if (!distrito) throw new Error('DISTRITO_NO_ENCONTRADO');
+      if (tipo === 'nacimiento') {
+        this.provinciasNacimiento.set(provincias);
+        this.distritosNacimiento.set(distritos);
+        this.datosForm.patchValue({
+          idDepartamentoNacimiento: departamento.id,
+          idProvinciaNacimiento: provincia.id,
+          idDistritoNacimiento: distrito.id,
+          ubigeoNacimiento: codigo
+        }, { emitEvent: false });
+        this.datosOriginal.set(this.normalizeRecord(this.datosForm.getRawValue()));
+        this.datosValues.set(this.normalizeRecord(this.datosForm.getRawValue()));
+      } else {
+        this.provinciasDomicilio.set(provincias);
+        this.distritosDomicilio.set(distritos);
+        this.direccionForm.patchValue({
+          idDepartamentoDomicilio: departamento.id,
+          idProvinciaDomicilio: provincia.id,
+          idDistritoDomicilio: distrito.id,
+          ubigeoDomicilio: codigo
+        }, { emitEvent: false });
+        this.direccionOriginal.set(this.normalizeRecord(this.direccionForm.getRawValue()));
+        this.direccionValues.set(this.normalizeRecord(this.direccionForm.getRawValue()));
+      }
+    } catch {
+      error.set('No se pudo reconocer la ubicación guardada. Selecciónala nuevamente.');
+    } finally {
+      if (this.esResolucionActual(tipo, sequence)) loading.set(false);
+    }
+  }
+
+  private esResolucionActual(tipo: 'nacimiento' | 'domicilio', sequence: number): boolean {
+    return tipo === 'nacimiento' ? sequence === this.nacimientoResolveSeq : sequence === this.domicilioResolveSeq;
   }
 
   private originalDe(grupo: 'identidad' | 'datos' | 'direccion'): Record<string, string> {
@@ -621,5 +966,11 @@ export class BitacoraFacade {
     this.direccionOriginal.set({});
     this.datosValues.set({});
     this.direccionValues.set({});
+    this.provinciasNacimiento.set([]);
+    this.distritosNacimiento.set([]);
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
+    this.errorUbigeoNacimiento.set(null);
+    this.errorUbigeoDomicilio.set(null);
   }
 }

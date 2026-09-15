@@ -653,9 +653,36 @@ export interface LeadMeritoCorreccionResponse {
 }
 
 export interface MisPreventasResumenResponse {
-  cerradas: number;
+  preventas: number;
+  registradas: number;
   instaladas: number;
+  registradasEInstaladas: number;
   rechazadas: number;
+}
+
+export interface MisPreventasEnfoqueDia {
+  sinIngresar: number;
+  registradas: number;
+  programadas: number;
+  subsanables: number;
+  rechazadas: number;
+  instaladas: number;
+  instaladasEnVentana: number;
+}
+
+export interface MisPreventasEnfoqueGeneral {
+  sinIngresar: number;
+  registradas: number;
+  programadas: number;
+  subsanables: number;
+  rechazadas: number;
+  instaladas: number;
+}
+
+export interface MisPreventasCuadranteResponse {
+  preventas: number;
+  delMes: MisPreventasEnfoqueDia;
+  general: MisPreventasEnfoqueGeneral;
 }
 
 export interface LeadRealtimeEvent {
@@ -1084,4 +1111,23 @@ export interface GtrSubtipificacionRankingResponse {
   codigoSubtipificacion: string;
   cantidad: number;
   porcentaje: number;
+}
+
+// ── MIS PREVENTAS V2 ─────────────────────────────────────────────────────────
+
+export interface MisPreventasV2Conversiones {
+  registradasFunnel: number;
+  instaladasFunnel: number;
+  rechazadasFunnel: number;
+  programadasTotal: number;
+  programadasInstaladas: number;
+  programadasRechazadas: number;
+}
+
+export interface MisPreventasV2Response {
+  preventas: number;
+  delDia: MisPreventasEnfoqueDia;
+  delMes: MisPreventasEnfoqueDia;
+  conversiones: MisPreventasV2Conversiones;
+  proveedores: { id: number; nombre: string }[];
 }

@@ -207,6 +207,38 @@
 
 .mono,
 .field .mono { font-family: 'Spline Sans Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.prefix-control {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  min-height: 40px;
+  border: 1px solid var(--sub-line-strong);
+  border-radius: 8px;
+  background: var(--sub-panel);
+  overflow: hidden;
+
+  > span {
+    padding-left: 11px;
+    color: var(--sub-muted);
+    font-family: 'Spline Sans Mono', ui-monospace, monospace;
+    font-size: 13px;
+  }
+
+  input {
+    min-height: 38px;
+    border: 0;
+    background: transparent;
+    padding-left: 2px;
+    &:focus { box-shadow: none; }
+  }
+
+  &:focus-within {
+    border-color: var(--sub-focus);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--sub-focus) 24%, transparent);
+  }
+
+  &:has(input.ng-invalid.ng-touched) { border-color: var(--sub-danger); }
+}
 .field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
 .location-block {

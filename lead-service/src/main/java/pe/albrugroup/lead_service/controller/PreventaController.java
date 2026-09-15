@@ -10,6 +10,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pe.albrugroup.lead_service.entity.request.*;
+import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse;
+import pe.albrugroup.lead_service.entity.response.MisPreventasV2Response;
+import pe.albrugroup.lead_service.entity.response.VentaDetallePage;
 import pe.albrugroup.lead_service.service.AuthEquipoClient;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
@@ -22,6 +25,7 @@ import pe.albrugroup.lead_service.service.LeadCampanaCorreccionService;
 import pe.albrugroup.lead_service.service.LeadExcelIntakeService;
 import pe.albrugroup.lead_service.service.LeadMeritoCorreccionService;
 import pe.albrugroup.lead_service.service.LeadService;
+import pe.albrugroup.lead_service.service.MisPreventasV2Service;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -36,6 +40,7 @@ public class PreventaController {
     private final LeadCampanaCorreccionService leadCampanaCorreccionService;
     private final LeadMeritoCorreccionService leadMeritoCorreccionService;
     private final AuthEquipoClient authEquipoClient;
+    private final MisPreventasV2Service misPreventasV2Service;
 
     //GTR
 
@@ -410,6 +415,14 @@ public class PreventaController {
         var resumen = leadService.obtenerResumenMisPreventas(fechaDesde, fechaHasta);
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
     }
+    @GetMapping("/asesor-ventas/mis-preventas/cuadrante") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    public ResponseEntity<MisPreventasCuadranteResponse> obtenerCuadranteMisPreventas(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
+    ) {
+        var cuadrante = leadService.obtenerCuadranteMisPreventas(fechaDesde, fechaHasta);
+        return ResponseEntity.status(HttpStatus.OK).body(cuadrante);
+    }
     @GetMapping("/asesor-ventas/mis-preventas/por-resumen") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<PageResponse<MisPreventaResponse>> listarMisPreventasPorResumenEtapa(
             @Valid @ModelAttribute PageRequest pageRequest,
@@ -427,6 +440,32 @@ public class PreventaController {
         var resumen = leadService.obtenerResumenMisPreventasPorResumenEtapa(fechaDesde, fechaHasta);
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
     }
+    // ── MIS PREVENTAS V2 (cuadrante + detalle scoped por asesor, sin alterar métricas generales) ──
+
+    @GetMapping("/asesor-ventas/mis-preventas/v2/proveedores") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    public ResponseEntity<List<DashboardVentaResponse.ProveedorRef>> misPreventasV2Proveedores() {
+        return ResponseEntity.ok(misPreventasV2Service.proveedores());
+    }
+
+    @GetMapping("/asesor-ventas/mis-preventas/v2/cuadrante") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    public ResponseEntity<MisPreventasV2Response> misPreventasV2Cuadrante(
+            @RequestParam(required = false) Long idProveedor,
+            @RequestParam(required = false) String mes
+    ) {
+        return ResponseEntity.ok(misPreventasV2Service.obtenerCuadrante(idProveedor, mes));
+    }
+
+    @GetMapping("/asesor-ventas/mis-preventas/v2/detalle") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    public ResponseEntity<VentaDetallePage> misPreventasV2Detalle(
+            @RequestParam(required = false) Long idProveedor,
+            @RequestParam(required = false) String mes,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String groupBy,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        return ResponseEntity.ok(misPreventasV2Service.obtenerDetalle(idProveedor, mes, search, groupBy, pageRequest));
+    }
+
     // 1.2. Ver (read-only) el detalle actual de una preventa propia
     @GetMapping("/{idLead}/detalle-mi-preventa") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<LeadDetalleResponse> obtenerDetalleMiPreventa(@PathVariable Long idLead) {

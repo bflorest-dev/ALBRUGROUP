@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
+import { VentaDetallePage } from '../../admin/services/dashboard-venta.service';
 import {
   AdicionalResponse,
   AgendadosGtrResumenResponse,
@@ -41,7 +42,9 @@ import {
   LeadNumeroParaLlamarRequest,
   MasivoLeadFilters,
   MisPreventaResponse,
+  MisPreventasCuadranteResponse,
   MisPreventasResumenResponse,
+  MisPreventasV2Response,
   NumeroLlamadaResponse,
   OportunidadHermana,
   LeadSnapshotsRequest,
@@ -413,6 +416,14 @@ export class PreventaLeadService {
     });
   }
 
+  obtenerCuadranteMisPreventas(fechaDesde?: string, fechaHasta?: string): Observable<MisPreventasCuadranteResponse> {
+    let params = new HttpParams();
+    if (fechaDesde) params = params.set('fechaDesde', fechaDesde);
+    if (fechaHasta) params = params.set('fechaHasta', fechaHasta);
+    return this.http.get<MisPreventasCuadranteResponse>(
+      `${this.leadUrl}/preventa/asesor-ventas/mis-preventas/cuadrante`, { params });
+  }
+
   obtenerDetalleMiPreventa(idLead: number): Observable<LeadDetalleResponse> {
     return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/preventa/${idLead}/detalle-mi-preventa`);
   }
@@ -626,5 +637,46 @@ export class PreventaLeadService {
 
   listarPlataformasDigitales(): Observable<PlataformaDigitalResponse[]> {
     return this.http.get<PlataformaDigitalResponse[]>(`${this.leadUrl}/postventa/plataformas-digitales/plataformas`);
+  }
+
+  // ── MIS PREVENTAS V2 ────────────────────────────────────────────────────────
+
+  listarProveedoresMisPreventasV2(): Observable<{ id: number; nombre: string }[]> {
+    return this.http.get<{ id: number; nombre: string }[]>(
+      `${this.leadUrl}/preventa/asesor-ventas/mis-preventas/v2/proveedores`
+    );
+  }
+
+  obtenerCuadranteMisPreventasV2(idProveedor?: number | null, mes?: string | null): Observable<MisPreventasV2Response> {
+    let params = new HttpParams();
+    if (idProveedor != null) params = params.set('idProveedor', idProveedor);
+    if (mes) params = params.set('mes', mes);
+    return this.http.get<MisPreventasV2Response>(
+      `${this.leadUrl}/preventa/asesor-ventas/mis-preventas/v2/cuadrante`, { params }
+    );
+  }
+
+  obtenerDetalleMisPreventasV2(opts: {
+    idProveedor?: number | null;
+    mes?: string | null;
+    search?: string | null;
+    groupBy?: string | null;
+    sortBy?: string;
+    direction?: string;
+    page?: number;
+    size?: number;
+  }): Observable<VentaDetallePage> {
+    let params = new HttpParams();
+    if (opts.idProveedor != null) params = params.set('idProveedor', opts.idProveedor);
+    if (opts.mes) params = params.set('mes', opts.mes);
+    if (opts.search) params = params.set('search', opts.search);
+    if (opts.groupBy) params = params.set('groupBy', opts.groupBy);
+    if (opts.sortBy) params = params.set('sortBy', opts.sortBy);
+    if (opts.direction) params = params.set('direction', opts.direction);
+    if (opts.page != null) params = params.set('pageNumber', opts.page);
+    if (opts.size != null) params = params.set('pageSize', opts.size);
+    return this.http.get<VentaDetallePage>(
+      `${this.leadUrl}/preventa/asesor-ventas/mis-preventas/v2/detalle`, { params }
+    );
   }
 }

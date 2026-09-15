@@ -73,7 +73,9 @@ import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.InternetResponse;
 import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
 import pe.albrugroup.lead_service.entity.response.MisPreventaResponse;
+import pe.albrugroup.lead_service.entity.response.MisPreventasCuadranteResponse;
 import pe.albrugroup.lead_service.entity.response.MisPreventasResumenResponse;
+import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse;
 import pe.albrugroup.lead_service.entity.response.NumeroLlamadaResponse;
 import pe.albrugroup.lead_service.entity.response.ContactoClusterResponse;
 import pe.albrugroup.lead_service.entity.response.MoverContactoResultado;
@@ -1847,7 +1849,7 @@ public class LeadService {
             }
         }
 
-        return new MisPreventasResumenResponse(cierres.size(), instaladas, rechazadas);
+        return new MisPreventasResumenResponse(cierres.size(), 0L, instaladas, 0L, rechazadas);
     }
 
     public PageResponse<MisPreventaResponse> listarMisPreventasPorResumenEtapa(
@@ -1901,24 +1903,94 @@ public class LeadService {
                 .toList();
     }
 
-    public MisPreventasResumenResponse obtenerResumenMisPreventasPorResumenEtapa(LocalDate fechaDesde, LocalDate fechaHasta) {
-        Instant desde = fechaDesde == null ? Instant.EPOCH : OperationalDateTime.startOfDay(fechaDesde);
-        Instant hasta = fechaHasta == null ? MIS_PREVENTAS_FECHA_HASTA_ABIERTA : OperationalDateTime.endExclusiveOfDay(fechaHasta);
-        LocalDate desdeDate = fechaDesde == null ? LocalDate.of(1, 1, 1) : fechaDesde;
-        LocalDate hastaDate = fechaHasta == null ? LocalDate.of(9999, 1, 1) : fechaHasta.plusDays(1);
-        List<MisPreventaResumenEtapaRow> rows = listarMisPreventasPorFechaVista(desde, hasta, desdeDate, hastaDate);
+    // V50: INGRESADO ocupa el orden 4 en la matriz VENTA (igual que DashboardVentaService.ORDEN_INGRESADO)
+    private static final int ORDEN_INGRESADO_VENTA = 4;
+    private static final Set<String> TIPIFICACIONES_INGRESADO_O_MAS_VENTA =
+            Set.of("INGRESADO", "PROGRAMADO", "INSTALADO");
+    private static final Set<String> TIPIFICACIONES_VIVAS_GENERAL_VENTA =
+            Set.of("INGRESADO", "PROGRAMADO", "SUBSANABLE");
 
-        long cerradas = rows.size();
-        long instaladas = 0;
-        long rechazadas = 0;
-        for (MisPreventaResumenEtapaRow row : rows) {
-            if (row.lead().getEtapa() == Etapa.POSTVENTA) {
-                instaladas++;
-            } else if (row.lead().getEtapa() == Etapa.PREVENTA && row.resumenPreventa().getFechaMerito() == null) {
-                rechazadas++;
-            }
+    public MisPreventasResumenResponse obtenerResumenMisPreventasPorResumenEtapa(LocalDate fechaDesde, LocalDate fechaHasta) {
+        Instant inicio = fechaDesde == null ? Instant.EPOCH : OperationalDateTime.startOfDay(fechaDesde);
+        Instant fin    = fechaHasta == null ? MIS_PREVENTAS_FECHA_HASTA_ABIERTA : OperationalDateTime.endExclusiveOfDay(fechaHasta);
+        LocalDate desdeDate   = fechaDesde == null ? LocalDate.of(1, 1, 1)    : fechaDesde;
+        LocalDate hastaDateExcl = fechaHasta == null ? LocalDate.of(9999, 1, 1) : fechaHasta.plusDays(1);
+        List<Object[]> rows = leadEtapaResumenRepository.resumirMisPreventas(
+                currentUser.empleadoID(),
+                Etapa.VENTA, Etapa.PREVENTA,
+                inicio, fin,
+                ORDEN_INGRESADO_VENTA,
+                desdeDate, hastaDateExcl);
+        Object[] r = rows.isEmpty() ? new Object[5] : rows.get(0);
+        return new MisPreventasResumenResponse(
+                r[0] == null ? 0L : ((Number) r[0]).longValue(),
+                r[1] == null ? 0L : ((Number) r[1]).longValue(),
+                r[2] == null ? 0L : ((Number) r[2]).longValue(),
+                r[3] == null ? 0L : ((Number) r[3]).longValue(),
+                r[4] == null ? 0L : ((Number) r[4]).longValue()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public MisPreventasCuadranteResponse obtenerCuadranteMisPreventas(LocalDate fechaDesde, LocalDate fechaHasta) {
+        LocalDate desdeR = fechaDesde != null ? fechaDesde : OperationalDateTime.currentMonth().atDay(1);
+        LocalDate hastaR = fechaHasta != null ? fechaHasta : OperationalDateTime.today();
+        Instant inicio = OperationalDateTime.startOfDay(desdeR);
+        Instant fin = OperationalDateTime.endExclusiveOfDay(hastaR);
+        LocalDate hastaExcl = hastaR.plusDays(1);
+        Long idAsesor = currentUser.empleadoID();
+
+        // Q1: DEL MES — cohorte por fechaIngresoEtapa ∈ período, clasificada por última actual
+        long preventasCompletas = 0, diaSinIngresar = 0, diaRegistradas = 0;
+        long diaProgramadas = 0, diaSubsanables = 0, diaRechazadas = 0, diaInstaladas = 0;
+        for (Object[] r : leadEtapaResumenRepository.cuadranteAsesorUniverso(
+                idAsesor, Etapa.VENTA, Etapa.PREVENTA, inicio, fin,
+                ORDEN_INGRESADO_VENTA, desdeR, hastaExcl)) {
+            String ultima = (String) r[0];
+            String mayor = (String) r[1];
+            long n = ((Number) r[2]).longValue();
+            boolean sinIngresar = ultima == null || "SIN INGRESAR".equals(ultima);
+            boolean alcanzoRegistrado = mayor != null && TIPIFICACIONES_INGRESADO_O_MAS_VENTA.contains(mayor);
+            if (!("NO RECUPERABLE".equals(ultima) && !alcanzoRegistrado)) preventasCompletas += n;
+            if (sinIngresar) diaSinIngresar += n;
+            else if ("INGRESADO".equals(ultima)) diaRegistradas += n;
+            else if ("PROGRAMADO".equals(ultima)) diaProgramadas += n;
+            else if ("SUBSANABLE".equals(ultima)) diaSubsanables += n;
+            else if ("INSTALADO".equals(ultima)) diaInstaladas += n;
+            else if ("NO RECUPERABLE".equals(ultima) && alcanzoRegistrado) diaRechazadas += n;
         }
-        return new MisPreventasResumenResponse(cerradas, instaladas, rechazadas);
+
+        // Q8: DEL MES — instaladas en ventana (nació e instaló en el período)
+        long instaladasEnVentana = leadEtapaResumenRepository.cuadranteAsesorInstaladasEnVentana(
+                idAsesor, Etapa.VENTA, Etapa.PREVENTA, "INSTALADO", inicio, fin, desdeR, hastaExcl);
+
+        // Q7: GENERAL — estados vivos acumulados al cierre del período
+        java.util.Map<String, Long> vivos = new LinkedHashMap<>();
+        for (Object[] r : leadEtapaResumenRepository.cuadranteAsesorGeneralVivos(
+                idAsesor, Etapa.VENTA, Etapa.PREVENTA, TIPIFICACIONES_VIVAS_GENERAL_VENTA, fin)) {
+            vivos.merge((String) r[0], ((Number) r[1]).longValue(), Long::sum);
+        }
+
+        // Q7b + Q2b + Q3b: GENERAL — sin ingresar, rechazadas, instaladas (todos acumulados o ∈ período)
+        long generalSinIngresar = leadEtapaResumenRepository.cuadranteAsesorGeneralSinIngresar(
+                idAsesor, Etapa.VENTA, Etapa.PREVENTA, "SIN INGRESAR", fin);
+        long generalRechazadas = leadEtapaResumenRepository.cuadranteAsesorGeneralRechazadas(
+                idAsesor, Etapa.VENTA, Etapa.PREVENTA, "NO RECUPERABLE",
+                TIPIFICACIONES_INGRESADO_O_MAS_VENTA, inicio, fin);
+        long generalInstaladas = leadEtapaResumenRepository.cuadranteAsesorInstaladas(
+                idAsesor, Etapa.VENTA, Etapa.PREVENTA, "INSTALADO", desdeR, hastaExcl);
+
+        var delMes = new DashboardVentaResponse.EnfoqueDia(
+                diaSinIngresar, diaRegistradas, diaProgramadas, diaSubsanables,
+                diaRechazadas, diaInstaladas, instaladasEnVentana);
+        var general = new DashboardVentaResponse.EnfoqueGeneral(
+                generalSinIngresar,
+                vivos.getOrDefault("INGRESADO", 0L),
+                vivos.getOrDefault("PROGRAMADO", 0L),
+                vivos.getOrDefault("SUBSANABLE", 0L),
+                generalRechazadas,
+                generalInstaladas);
+        return new MisPreventasCuadranteResponse(preventasCompletas, delMes, general);
     }
 
     private MisPreventaResponse toMisPreventaResponse(Object[] row) {

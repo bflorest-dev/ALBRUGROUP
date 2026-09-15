@@ -65,8 +65,12 @@ export interface DashboardVentaProgramacion {
 export interface DashboardVentaRankingAsesor {
   idAsesor: number;
   nombre: string | null;
+  preventas: number;
   registradas: number;
   instaladas: number;
+  registradasEInstaladas: number;
+  preventasLima: number;
+  preventasProvincia: number;
   registradasLima: number;
   instaladasLima: number;
   registradasProvincia: number;

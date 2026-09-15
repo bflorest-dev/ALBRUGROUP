@@ -7,7 +7,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public class MisPreventasResumenResponse {
 
-    private long cerradas;
-    private long instaladas;
-    private long rechazadas;
+    private long preventas;           // leads que pasaron a VENTA en el período (fechaIngresoEtapa)
+    private long registradas;         // leads que alcanzaron INGRESADO en el período (mayorRangoAt)
+    private long instaladas;          // leads instalados en el período (fechaInstalacion)
+    private long registradasEInstaladas; // registradas ∩ instaladas del mismo período
+    private long rechazadas;          // del cohort preventas: volvió a PREVENTA o ultimaTipificacionOrden=1
 }

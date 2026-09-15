@@ -6,7 +6,8 @@ import {
   EventoResponse,
   LeadDetalleResponse,
   LeadPage,
-  PageQuery
+  PageQuery,
+  UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import {
   BitacoraAccion,
@@ -24,6 +25,7 @@ import {
 export class BitacoraService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/correcciones-admin`;
+  private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
 
   buscar(termino: string): Observable<BitacoraBusquedaResponse[]> {
     return this.http.get<BitacoraBusquedaResponse[]>(`${this.baseUrl}/buscar`, {
@@ -69,5 +71,17 @@ export class BitacoraService {
 
   limpiarDatos(idLead: number): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/${idLead}/limpiar-datos`, {});
+  }
+
+  listarDepartamentos(): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos`);
+  }
+
+  listarProvincias(idDepartamento: number): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos/${idDepartamento}/provincias`);
+  }
+
+  listarDistritos(idProvincia: number): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/provincias/${idProvincia}/distritos`);
   }
 }

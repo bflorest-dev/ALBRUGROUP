@@ -116,10 +116,21 @@ public record DashboardVentaResponse(
 
     public record SubtipCount(String codigo, long cantidad) {}
 
-    /** Bloque 6 — por asesor de mérito de preventa; Lima incluye Callao. */
+    /**
+     * Bloque 6 — por asesor de mérito de preventa; Lima incluye Callao.
+     * Cada métrica usa su propia ancla temporal (sin embudo):
+     *   preventas         = rv.fechaIngresoEtapa ∈ período
+     *   registradas       = rv.mayorRangoAt ∈ período + mayorRangoOrden >= INGRESADO
+     *   instaladas        = c.fechaInstalacion ∈ período
+     *   regEInstaladas    = registradas ∩ instaladas del mismo período
+     */
     public record RankingAsesor(
             Long idAsesor, String nombre,
-            long registradas, long instaladas,
+            long preventas,
+            long registradas,
+            long instaladas,
+            long registradasEInstaladas,
+            long preventasLima, long preventasProvincia,
             long registradasLima, long instaladasLima,
             long registradasProvincia, long instaladasProvincia
     ) {}

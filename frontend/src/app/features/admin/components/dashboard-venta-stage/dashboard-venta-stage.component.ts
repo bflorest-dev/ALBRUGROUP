@@ -84,12 +84,15 @@ interface RankingVm {
   nombre: string;
   inicial: string;
   color: string;
+  preventas: number;
   registradas: number;
   instaladas: number;
-  conv: number;
+  conv: number;       // pct(instaladas / preventas)
+  prevLima: number;
   regLima: number;
   instLima: number;
   convLima: number;
+  prevProv: number;
   regProv: number;
   instProv: number;
   convProv: number;
@@ -362,15 +365,18 @@ export class DashboardVentaStageComponent implements OnInit {
         nombre,
         inicial: this.iniciales(nombre),
         color: AVATAR_COLORS[i % AVATAR_COLORS.length],
+        preventas: a.preventas,
         registradas: a.registradas,
         instaladas: a.instaladas,
-        conv: this.pct(a.instaladas, a.registradas),
+        conv: this.pct(a.instaladas, a.preventas),
+        prevLima: a.preventasLima,
         regLima: a.registradasLima,
         instLima: a.instaladasLima,
-        convLima: this.pct(a.instaladasLima, a.registradasLima),
+        convLima: this.pct(a.instaladasLima, a.preventasLima),
+        prevProv: a.preventasProvincia,
         regProv: a.registradasProvincia,
         instProv: a.instaladasProvincia,
-        convProv: this.pct(a.instaladasProvincia, a.registradasProvincia)
+        convProv: this.pct(a.instaladasProvincia, a.preventasProvincia)
       };
     });
   });

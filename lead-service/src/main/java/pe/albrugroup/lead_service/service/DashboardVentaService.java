@@ -79,6 +79,7 @@ public class DashboardVentaService {
     // rechazo solo es mayor rango cuando el lead nunca avanzó. Excluye a los rechazados sin haber ingresado.
     private static final Set<String> TIPIFICACIONES_INGRESADO_O_MAS =
             Set.of(TIPIFICACION_INGRESADO, TIPIFICACION_PROGRAMADO, TIPIFICACION_INSTALADO);
+    private static final int ORDEN_INGRESADO = 4; // V50: INGRESADO ocupa el orden 4 en la matriz VENTA
     private static final Set<String> PREFIJOS_LIMA = Set.of("15", "07"); // Lima + Callao
     private static final LocalTime T08 = LocalTime.of(8, 0);
     private static final LocalTime T12 = LocalTime.of(12, 0);
@@ -222,7 +223,8 @@ public class DashboardVentaService {
 
         List<RankingAsesor> ranking = construirRanking(
                 resumenRepository.dashboardVentaRanking(
-                        Etapa.VENTA, Etapa.PREVENTA, idProveedor, inicio, fin, TIPIFICACION_INSTALADO));
+                        Etapa.VENTA, Etapa.PREVENTA, idProveedor, inicio, fin,
+                        ORDEN_INGRESADO, desdeR, hastaExcl));
 
         return new DashboardVentaResponse(
                 new ProveedorRef(proveedor.getId(), proveedor.getNombre()),
@@ -448,23 +450,32 @@ public class DashboardVentaService {
             Long idAsesor = (Long) r[0];
             RankingAcc a = porAsesor.computeIfAbsent(idAsesor, k -> new RankingAcc(idAsesor, (String) r[1]));
             Zona3 z = Zona3.de((String) r[2]);
-            long registradas = asLong(r[3]);
-            long instaladas = asLong(r[4]);
+            long preventas   = asLong(r[3]);
+            long registradas = asLong(r[4]);
+            long instaladas  = asLong(r[5]);
+            long regEInst    = asLong(r[6]);
+            a.preventas += preventas;
             a.registradas += registradas;
             a.instaladas += instaladas;
+            a.registradasEInstaladas += regEInst;
             if (z == Zona3.LIMA) {
+                a.preventasLima += preventas;
                 a.registradasLima += registradas;
                 a.instaladasLima += instaladas;
             } else if (z == Zona3.PROVINCIA) {
+                a.preventasProv += preventas;
                 a.registradasProv += registradas;
                 a.instaladasProv += instaladas;
             }
         }
         List<RankingAsesor> out = new ArrayList<>(porAsesor.size());
         porAsesor.values().forEach(a -> out.add(new RankingAsesor(
-                a.idAsesor, a.nombre, a.registradas, a.instaladas,
-                a.registradasLima, a.instaladasLima, a.registradasProv, a.instaladasProv)));
-        out.sort(Comparator.comparingLong(RankingAsesor::registradas).reversed()
+                a.idAsesor, a.nombre,
+                a.preventas, a.registradas, a.instaladas, a.registradasEInstaladas,
+                a.preventasLima, a.preventasProv,
+                a.registradasLima, a.instaladasLima,
+                a.registradasProv, a.instaladasProv)));
+        out.sort(Comparator.comparingLong(RankingAsesor::preventas).reversed()
                 .thenComparing(Comparator.comparingLong(RankingAsesor::instaladas).reversed()));
         return out;
     }
@@ -472,7 +483,9 @@ public class DashboardVentaService {
     private static final class RankingAcc {
         final Long idAsesor;
         final String nombre;
-        long registradas, instaladas, registradasLima, instaladasLima, registradasProv, instaladasProv;
+        long preventas, registradas, instaladas, registradasEInstaladas;
+        long preventasLima, registradasLima, instaladasLima;
+        long preventasProv, registradasProv, instaladasProv;
         RankingAcc(Long idAsesor, String nombre) { this.idAsesor = idAsesor; this.nombre = nombre; }
     }
 

@@ -1,115 +1,203 @@
-<p-card styleClass="mis-preventas-board">
-  <ng-template #title>
-    <span class="board-title">
-      Mis Preventas
-      <p-tag severity="info" [value]="facade.resumen().cerradas.toString()" />
-    </span>
-  </ng-template>
-  <ng-template #subtitle>Seguimiento mensual de tus ventas cerradas</ng-template>
+<section class="mp-dash">
 
-  <section class="stats-grid" aria-label="Resumen mensual">
-    <article class="stat stat--closed">
-      <span>Cerradas</span>
-      <strong>{{ facade.resumen().cerradas }}</strong>
-    </article>
-    <article class="stat stat--installed">
-      <span>Instaladas</span>
-      <strong>{{ facade.resumen().instaladas }}</strong>
-    </article>
-    <article class="stat stat--rejected">
-      <span>Rechazadas</span>
-      <strong>{{ facade.resumen().rechazadas }}</strong>
-    </article>
-    <article class="stat stat--conversion">
-      <span>Conversion</span>
-      <strong>{{ facade.conversionLabel() }}</strong>
-    </article>
-  </section>
+  @if (facade.cuadrante(); as cq) {
+    <article class="poster">
+      <header class="poster-head">
+        <div class="poster-head__left">
+          <p class="eyebrow">Preventa</p>
+          <h2 class="poster-title">Mis Preventas</h2>
+          <p class="poster-sub">Seguimiento de los leads que pasaste a venta</p>
+        </div>
+        <div class="poster-head__right">
+          @if (facade.proveedores().length > 1) {
+            <select
+              class="ph-select"
+              [ngModel]="facade.selectedProveedorId()"
+              (ngModelChange)="facade.setProveedor(+$event)"
+            >
+              @for (p of facade.proveedores(); track p.id) {
+                <option [value]="p.id">{{ p.nombre }}</option>
+              }
+            </select>
+          } @else if (facade.proveedores().length === 1) {
+            <span class="ph-chip"><span class="ph-dot"></span>{{ facade.proveedores()[0].nombre }}</span>
+          }
 
-  <div class="board-filters">
-    <p-datepicker
-      view="month"
-      dateFormat="MM yy"
-      [ngModel]="facade.selectedMonth()"
-      [ngModelOptions]="{ standalone: true }"
-      [minDate]="facade.minMonth"
-      [maxDate]="facade.maxMonth"
-      [readonlyInput]="true"
-      [showIcon]="true"
-      iconDisplay="input"
-      appendTo="body"
-      placeholder="Elegir mes"
-      (onSelect)="facade.setMonth($event)"
-    />
-  </div>
-
-  <p-table
-    [value]="facade.rows()"
-    dataKey="idLead"
-    [loading]="facade.isLoading()"
-    [rowHover]="true"
-    [scrollable]="true"
-    scrollHeight="flex"
-    [tableStyle]="{ 'min-width': '1080px' }"
-    styleClass="p-datatable-sm mis-preventas-table"
-  >
-    <ng-template #header>
-      <tr>
-        <th class="col-fecha">Fecha registro/instalacion</th>
-        <th class="col-lead">Lead</th>
-        <th class="col-documento">Documento</th>
-        <th class="col-plan">Plan</th>
-        <th class="col-departamento">Departamento</th>
-        <th class="col-etapa">Etapa actual</th>
-        <th class="col-estado">Estado</th>
-      </tr>
-    </ng-template>
-
-    <ng-template #body let-row>
-      <tr>
-        <td class="col-fecha">
-          <div class="date-stack">
-            <span>{{ row.fechaRegistro ? (row.fechaRegistro | date: 'dd/MM/yyyy') : '-' }}</span>
-            <strong>{{ row.fechaRegistro ? (row.fechaRegistro | date: 'hh:mm a') : '' }}</strong>
-          </div>
-        </td>
-        <td class="col-lead">
-          <strong>{{ facade.leadPhone(row) }}</strong>
-        </td>
-        <td class="col-documento">{{ facade.display(row.numeroDocumento) }}</td>
-        <td class="col-plan">
-          <app-lead-plan-summary
-            [planName]="row.plan"
-            [internetVelocidad]="row.internetVelocidad"
-            [internetUnidad]="row.internetUnidad"
-            [velocidadPromocional]="row.velocidadPromocional"
-            [mesesPromocionVelocidad]="row.mesesPromocionVelocidad"
-            [adicionales]="row.adicionales"
+          <p-datepicker
+            view="month"
+            dateFormat="MM yy"
+            [ngModel]="facade.selectedMonth()"
+            [ngModelOptions]="{ standalone: true }"
+            [minDate]="facade.minMonth"
+            [maxDate]="facade.maxMonth"
+            [readonlyInput]="true"
+            [showIcon]="true"
+            iconDisplay="input"
+            appendTo="body"
+            placeholder="Elegir mes"
+            styleClass="mp-picker"
+            (onSelect)="facade.setMonth($event)"
           />
-        </td>
-        <td class="col-departamento">{{ facade.display(row.departamento) }}</td>
-        <td class="col-etapa">
-          <p-tag [severity]="facade.etapaSeverity(row.etapaActual)" [value]="facade.etapaLabel(row.etapaActual)" />
-        </td>
-        <td class="col-estado">
-          <p-tag [severity]="facade.estadoSeverity(row.estado)" [value]="facade.display(row.estado)" />
-        </td>
-      </tr>
-    </ng-template>
+        </div>
+      </header>
 
-    <ng-template #emptymessage>
-      <tr>
-        <td colspan="7">
-          <span class="helper--centered">Todavia no hay preventas cerradas en este mes.</span>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
+      <!-- Cuadrante: hero + matriz -->
+      <div class="mp-cuad">
+        <div class="mp-cuad__hero">
+          <div class="mp-cuad__herolbl">Preventas</div>
+          <div class="mp-cuad__herov">{{ cq.preventas }}</div>
+          <div class="mp-cuad__heronote">Las que ingresaron en la fecha o rango elegido.</div>
+        </div>
 
-  <p-paginator
-    [first]="facade.pageNumber() * facade.pageSize"
-    [rows]="facade.pageSize"
-    [totalRecords]="facade.totalElements()"
-    (onPageChange)="facade.changePage($event.page ?? 0)"
-  />
-</p-card>
+        <div class="mp-cuad__matrix">
+          <div class="mp-mh mp-mh--corner"></div>
+          <div class="mp-mh"><div class="mp-mh__lbl">Sin ingresar</div><span class="mp-mh__rule" style="background: var(--muted)"></span></div>
+          <div class="mp-mh"><div class="mp-mh__lbl">Registradas</div><span class="mp-mh__rule" style="background: var(--vd-info)"></span></div>
+          <div class="mp-mh"><div class="mp-mh__lbl">Programadas</div><span class="mp-mh__rule" style="background: var(--vd-primary)"></span></div>
+          <div class="mp-mh"><div class="mp-mh__lbl">Subsanables</div><span class="mp-mh__rule" style="background: var(--vd-warning)"></span></div>
+          <div class="mp-mh"><div class="mp-mh__lbl">Rechazadas</div><span class="mp-mh__rule" style="background: var(--vd-danger)"></span></div>
+          <div class="mp-mh"><div class="mp-mh__lbl">Instaladas</div><span class="mp-mh__rule" style="background: var(--vd-success)"></span></div>
+
+          <div class="mp-rl"><span class="mp-rl__t">Del día</span></div>
+          <div class="mp-cell"><span class="mp-cell__v">{{ cq.delDia.sinIngresar }}</span></div>
+          <div class="mp-cell"><span class="mp-cell__v">{{ cq.delDia.registradas }}</span></div>
+          <div class="mp-cell"><span class="mp-cell__v">{{ cq.delDia.programadas }}</span></div>
+          <div class="mp-cell"><span class="mp-cell__v">{{ cq.delDia.subsanables }}</span></div>
+          <div class="mp-cell"><span class="mp-cell__v">{{ cq.delDia.rechazadas }}</span></div>
+          <div class="mp-cell"><span class="mp-cell__v">{{ cq.delDia.instaladas }}</span></div>
+
+          <div class="mp-rl"><span class="mp-rl__t">Del mes</span></div>
+          <div class="mp-cell"><span class="mp-cell__v">{{ cq.delMes.sinIngresar }}</span></div>
+          <div class="mp-cell"><span class="mp-cell__v">{{ cq.delMes.registradas }}</span></div>
+          <div class="mp-cell"><span class="mp-cell__v">{{ cq.delMes.programadas }}</span></div>
+          <div class="mp-cell"><span class="mp-cell__v">{{ cq.delMes.subsanables }}</span></div>
+          <div class="mp-cell"><span class="mp-cell__v">{{ cq.delMes.rechazadas }}</span></div>
+          <div class="mp-cell">
+            <span class="mp-cell__v">{{ cq.delMes.instaladas }}</span>
+            <span class="mp-cell__sub">/ {{ cq.delMes.instaladasEnVentana }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ribbon de conversión -->
+      <div class="mp-card mp-ribbon">
+        <div class="mp-conv">
+          <div class="mp-conv__lbl">Registradas</div>
+          <div class="mp-conv__v">{{ facade.conversionPct(cq.conversiones.registradasFunnel, cq.preventas) }}</div>
+        </div>
+        <div class="mp-conv">
+          <div class="mp-conv__lbl">Instaladas</div>
+          <div class="mp-conv__v mp-conv__v--inst">{{ facade.conversionPct(cq.conversiones.instaladasFunnel, cq.conversiones.registradasFunnel) }}</div>
+        </div>
+        <div class="mp-conv">
+          <div class="mp-conv__lbl">Prog. → Instaladas</div>
+          <div class="mp-conv__v mp-conv__v--inst">{{ facade.conversionPct(cq.conversiones.programadasInstaladas, cq.conversiones.programadasTotal) }}</div>
+        </div>
+        <div class="mp-conv">
+          <div class="mp-conv__lbl">Rechazadas</div>
+          <div class="mp-conv__v mp-conv__v--bad">{{ facade.conversionPct(cq.conversiones.rechazadasFunnel, cq.conversiones.registradasFunnel) }}</div>
+        </div>
+      </div>
+
+      <!-- Detalle -->
+      <h3 class="mp-sec">Detalle <span class="mp-sec__count">{{ facade.totalElements() }} leads</span></h3>
+
+      <div class="mp-wrap">
+        @if (facade.isLoading()) {
+          <div class="mp-state">Cargando…</div>
+        } @else {
+          <table class="mp-table">
+            <thead>
+              <tr>
+                <th>Ingreso</th>
+                <th>Últ. gestión</th>
+                <th>Programación</th>
+                <th>Rechazo</th>
+                <th>Instalación</th>
+                <th>Cliente</th>
+                <th>Zona</th>
+                <th>Tipificación</th>
+                <th class="num">Cargo fijo</th>
+                <th class="ico">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Comentario">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 9 9 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
+                  </svg>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of facade.rows(); track row.idLead) {
+                <tr>
+                  <td>
+                    <span class="mp-mono">{{ facade.instantDate(row.fechaIngresoEtapa) }}</span>
+                    <span class="mp-sub">{{ facade.instantTime(row.fechaIngresoEtapa) }}</span>
+                  </td>
+                  <td>
+                    <span class="mp-mono">{{ facade.instantDate(row.fechaUltimaGestion) }}</span>
+                    <span class="mp-sub">{{ facade.instantTime(row.fechaUltimaGestion) }}</span>
+                  </td>
+                  <td>
+                    <span class="mp-mono">{{ facade.localDate(row.fechaProgramacion) }}</span>
+                    <span class="mp-sub">{{ facade.localTime(row.horaProgramada) }}</span>
+                  </td>
+                  <td><span class="mp-mono">{{ facade.localDate(row.fechaRechazo) }}</span></td>
+                  <td><span class="mp-mono">{{ facade.localDate(row.fechaInstalacion) }}</span></td>
+                  <td>
+                    <div class="mp-mono">{{ row.numeroDocumento || '—' }}</div>
+                    @if (row.nombreCliente) {
+                      <div class="mp-sub mp-ell" [attr.title]="row.nombreCliente">{{ row.nombreCliente }}</div>
+                    }
+                  </td>
+                  <td>{{ facade.zona(row) }}</td>
+                  <td>
+                    <div class="mp-ell">{{ row.tipificacion || '—' }}</div>
+                    @if (row.subtipificacion) {
+                      <div class="mp-sub mp-ell" [attr.title]="row.subtipificacion">{{ row.subtipificacion }}</div>
+                    }
+                  </td>
+                  <td class="num"><span class="mp-mono">{{ row.cargoFijo != null ? ('S/ ' + row.cargoFijo) : '—' }}</span></td>
+                  <td class="ico">
+                    @if (row.ultimoComentario) {
+                      <button
+                        type="button"
+                        class="mp-cbtn"
+                        [pTooltip]="row.ultimoComentario"
+                        tooltipPosition="left"
+                        tooltipStyleClass="app-tip-nowrap"
+                        aria-label="Ver comentario"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 9 9 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
+                        </svg>
+                      </button>
+                    } @else {
+                      <span class="mp-cempty">—</span>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="10" class="mp-empty">Sin preventas en este período.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+
+      <div class="mp-foot">
+        <p-paginator
+          [first]="facade.pageNumber() * facade.pageSize"
+          [rows]="facade.pageSize"
+          [totalRecords]="facade.totalElements()"
+          styleClass="mp-pag"
+          (onPageChange)="facade.changePage($event.page ?? 0)"
+        />
+      </div>
+    </article>
+  } @else if (facade.isLoadingCuadrante()) {
+    <div class="poster mp-state-box">Cargando cuadrante…</div>
+  } @else {
+    <div class="poster mp-state-box">Sin datos para este período.</div>
+  }
+</section>

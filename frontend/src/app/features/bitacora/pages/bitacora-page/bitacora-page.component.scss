@@ -212,7 +212,7 @@ table.records {
     &:focus { outline: 0; border-color: var(--focus); background: var(--panel); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 15%, transparent); }
   }
   input.mono { font-family: 'Spline Sans Mono', monospace; }
-  &.dirty { input, select { border-color: var(--signal-line); background: var(--signal-wash); } label { color: var(--signal); } }
+  &.dirty { input, select, .prefix-control { border-color: var(--signal-line); background: var(--signal-wash); } label { color: var(--signal); } }
   .was { font-size: 11px; color: var(--ink-3); font-family: 'Spline Sans Mono', monospace; s { color: var(--signal); opacity: .85; } }
   .hint { font-size: 11px; color: var(--ink-3); }
 }

@@ -77,6 +77,101 @@
         ],
         "createdAt": "2026-09-11T15:06:25.218Z",
         "reason": "dynamic [src] binding resolved at runtime from providerLogo(); not a static placeholder"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "12px",
+        "createdAt": "2026-09-14T22:10:44.556Z",
+        "reason": "standard card radius, used throughout the app"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.95rem",
+        "createdAt": "2026-09-14T22:10:44.787Z",
+        "reason": "component heading size"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.68rem",
+        "createdAt": "2026-09-14T22:10:44.973Z",
+        "reason": "kpi label size"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "1.45rem",
+        "createdAt": "2026-09-14T22:10:45.188Z",
+        "reason": "kpi value size"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.7rem",
+        "createdAt": "2026-09-14T22:10:45.544Z",
+        "reason": "note/icon size"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.82rem",
+        "createdAt": "2026-09-14T22:10:45.787Z",
+        "reason": "table cell size"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.78rem",
+        "createdAt": "2026-09-14T22:10:46.008Z",
+        "reason": "date mono size"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.72rem",
+        "createdAt": "2026-09-14T22:10:46.154Z",
+        "reason": "period label mono size"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "2rem",
+        "createdAt": "2026-09-14T23:14:05.877Z"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.67rem",
+        "createdAt": "2026-09-14T23:14:05.971Z"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "1rem",
+        "createdAt": "2026-09-14T23:14:06.057Z"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.84rem",
+        "createdAt": "2026-09-14T23:14:06.143Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "frontend/src/app/features/asesor-ventas/components/mis-preventas-board/mis-preventas-board.component.scss"
+        ],
+        "createdAt": "2026-09-15T02:22:34.734Z",
+        "reason": "Poster dark palette: local CSS vars scoped to .poster, identical to dashboard-venta-stage (approved)"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "frontend/src/app/features/asesor-ventas/components/mis-preventas-board/mis-preventas-board.component.scss"
+        ],
+        "createdAt": "2026-09-15T02:22:36.193Z",
+        "reason": "Poster typography: matches dashboard-venta-stage poster sizes (approved)"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "*",
+        "files": [
+          "frontend/src/app/features/asesor-ventas/components/mis-preventas-board/mis-preventas-board.component.scss"
+        ],
+        "createdAt": "2026-09-15T02:22:37.934Z",
+        "reason": "Poster radii: matches dashboard-venta-stage poster shapes (approved)"
       }
     ]
   }

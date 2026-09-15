@@ -12,6 +12,7 @@ import pe.albrugroup.lead_service.entity.response.VentaDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.VentaDetallePage;
 import pe.albrugroup.lead_service.service.VentaMetricaSpec;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -168,6 +169,80 @@ public class VentaDetalleQueryRepository {
             case "SIN_UBIGEO" -> " AND (d.ubigeoDomicilio IS NULL OR d.ubigeoDomicilio = '')";
             default -> "";
         };
+    }
+
+    /**
+     * Variante para MIS PREVENTAS V2 (asesor autenticado): reemplaza el scope por proveedor con scope por
+     * asesor ({@code rp.idAsesorMerito = :idAsesor}) + período mensual. El filtro de proveedor es opcional
+     * (solo si el asesor tiene leads de varios proveedores y quiere acotar). La selección de columnas, el
+     * orden y la paginación son idénticos a {@link #buscar}: el frontend puede reusar exactamente el mismo
+     * componente de tabla.
+     */
+    public VentaDetallePage buscarPorAsesor(
+            Long idAsesor, Long idProveedor, Instant inicio, Instant fin,
+            String search, String groupBy, String sortBy, String direction, int page, int size) {
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("etapaVenta", Etapa.VENTA);
+        params.put("etapaPreventa", Etapa.PREVENTA);
+        params.put("codigoProgramado", VentaMetricaSpec.PROGRAMADO);
+        params.put("accionTip", Accion.TIPIFICACION);
+        params.put("idAsesor", idAsesor);
+        params.put("inicio", inicio);
+        params.put("fin", fin);
+
+        StringBuilder where = new StringBuilder(
+                "rp.idAsesorMerito = :idAsesor "
+                + "AND rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin");
+
+        if (idProveedor != null) {
+            where.append(" AND pr.id = :idProveedor");
+            params.put("idProveedor", idProveedor);
+        }
+
+        boolean hasSearch = search != null && !search.isBlank();
+        if (hasSearch) {
+            where.append(" AND (LOWER(dp.numeroDocumentoTitularServicio) LIKE :search "
+                    + "OR LOWER(dp.nombreTitularServicio) LIKE :search "
+                    + "OR LOWER(l.lead) LIKE :search OR LOWER(l.usermeta) LIKE :search)");
+            params.put("search", "%" + search.trim().toLowerCase() + "%");
+        }
+
+        String groupExpr = groupBy != null ? GROUP.get(groupBy) : null;
+        boolean known = sortBy != null && SORT.containsKey(sortBy);
+        String orderExpr = known ? SORT.get(sortBy) : "rv.fechaIngresoEtapa";
+        String dir = !known ? "DESC" : ("desc".equalsIgnoreCase(direction) ? "DESC" : "ASC");
+
+        StringBuilder order = new StringBuilder(" ORDER BY ");
+        if (groupExpr != null) {
+            order.append(groupExpr).append(" ASC, ");
+        }
+        order.append(orderExpr).append(' ').append(dir).append(", l.id DESC");
+
+        Query rowQ = em.createQuery(SELECT_ROW + FROM_JOINS + " WHERE " + where + order);
+        bind(rowQ, params);
+        rowQ.setFirstResult(page * size);
+        rowQ.setMaxResults(size);
+        @SuppressWarnings("unchecked")
+        List<VentaDetalleResponse> content = rowQ.getResultList();
+
+        Query countQ = em.createQuery("SELECT COUNT(DISTINCT l.id) " + FROM_JOINS + " WHERE " + where);
+        bind(countQ, params);
+        long total = ((Number) countQ.getSingleResult()).longValue();
+
+        List<VentaDetallePage.GrupoResumen> grupos = new ArrayList<>();
+        if (groupExpr != null) {
+            Query groupQ = em.createQuery("SELECT " + groupExpr + ", COUNT(DISTINCT l.id) " + FROM_JOINS
+                    + " WHERE " + where + " GROUP BY " + groupExpr + " ORDER BY COUNT(DISTINCT l.id) DESC");
+            bind(groupQ, params);
+            for (Object[] r : (List<Object[]>) groupQ.getResultList()) {
+                grupos.add(new VentaDetallePage.GrupoResumen(
+                        r[0] == null ? null : String.valueOf(r[0]), ((Number) r[1]).longValue()));
+            }
+        }
+
+        int totalPages = size == 0 ? 0 : (int) Math.ceil((double) total / size);
+        return new VentaDetallePage(page, size, totalPages, total, content, grupos);
     }
 
     private static void bind(Query q, Map<String, Object> params) {

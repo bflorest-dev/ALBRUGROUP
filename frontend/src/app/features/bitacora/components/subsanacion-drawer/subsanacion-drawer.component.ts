@@ -24,6 +24,21 @@ import {
   SubsanacionTipificacionOpcion
 } from '../../models/subsanacion.models';
 import { SubsanacionService } from '../../services/subsanacion.service';
+import {
+  coordenadaValidator,
+  documentoValidator,
+  extraerParCoordenadas,
+  limpiarCoordenada,
+  limpiarDocumento,
+  limpiarNombrePersona,
+  limpiarPrefijo,
+  limpiarTelefonoPorPrefijo,
+  limpiarTextoDireccion,
+  limpiarUsermeta,
+  prefijoValidator,
+  soloDigitos,
+  telefonoValidator
+} from '../../utils/bitacora-input.rules';
 
 interface CambioVisible {
   label: string;
@@ -124,8 +139,8 @@ export class SubsanacionDrawerComponent implements OnInit {
   readonly fechaInstalacionMax = this.isoLocal(new Date());
 
   readonly identidadForm = this.fb.group({
-    prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{1,3}$/)]],
-    lead: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]],
+    prefijo: ['51'],
+    lead: [''],
     usermeta: ['']
   });
 
@@ -135,14 +150,14 @@ export class SubsanacionDrawerComponent implements OnInit {
   });
 
   readonly datosForm = this.fb.group({
-    tipoDocumento: ['', Validators.required],
-    numeroDocumentoTitularServicio: ['', Validators.required],
+    tipoDocumento: [''],
+    numeroDocumentoTitularServicio: [''],
     ubigeoNacimiento: [''],
     idDepartamentoNacimiento: [null as number | null],
     idProvinciaNacimiento: [null as number | null],
     idDistritoNacimiento: [null as number | null],
     nombreTitularServicio: ['', Validators.required],
-    celularRegistro: ['', Validators.required],
+    celularRegistro: [''],
     celularReferencia: [''],
     celularGrabacion: [''],
     correo: ['', [Validators.required, Validators.email]],
@@ -164,8 +179,8 @@ export class SubsanacionDrawerComponent implements OnInit {
     via: [''],
     direccion: ['', Validators.required],
     referencia: ['', Validators.required],
-    latitud: ['', [Validators.required, Validators.pattern(/^-?\d{1,3}([.,]\d+)?$/)]],
-    longitud: ['', [Validators.required, Validators.pattern(/^-?\d{1,3}([.,]\d+)?$/)]],
+    latitud: [''],
+    longitud: [''],
     urbanizacion: [''],
     numero: [''],
     manzana: [''],
@@ -253,6 +268,8 @@ export class SubsanacionDrawerComponent implements OnInit {
       this.errorUbigeoNacimiento.set(mensaje);
       this.errorUbigeoDomicilio.set(mensaje);
     });
+    this.configurarValidadores();
+    this.configurarNormalizadores();
     this.observarFormularios();
     if (this.modo() === 'EXISTENTE') {
       const id = this.idLead();
@@ -357,6 +374,17 @@ export class SubsanacionDrawerComponent implements OnInit {
     const distrito = this.distritosDomicilio().find((item) => item.id === idDistrito);
     this.direccionForm.controls.ubigeoDomicilio.setValue(distrito?.codigo ?? '');
     this.errorUbigeoDomicilio.set(distrito?.codigo ? null : 'Selecciona un distrito válido.');
+  }
+
+  pegarCoordenadas(event: ClipboardEvent, origen: 'latitud' | 'longitud'): void {
+    const par = extraerParCoordenadas(event.clipboardData?.getData('text') ?? '');
+    if (!par) return;
+    event.preventDefault();
+    this.direccionForm.patchValue({ latitud: par[0], longitud: par[1] });
+    this.direccionForm.controls[origen].markAsDirty();
+    this.direccionForm.controls.latitud.updateValueAndValidity({ emitEvent: false });
+    this.direccionForm.controls.longitud.updateValueAndValidity({ emitEvent: false });
+    this.formVersion.update((value) => value + 1);
   }
 
   avanzar(): void {
@@ -496,7 +524,7 @@ export class SubsanacionDrawerComponent implements OnInit {
 
   private patchPreparacion(prep: SubsanacionPreparacion): void {
     const d = prep.detalle;
-    this.identidadForm.reset({ prefijo: d.prefijo ?? '+51', lead: d.lead ?? '', usermeta: d.usermeta ?? '' }, { emitEvent: false });
+    this.identidadForm.reset({ prefijo: limpiarPrefijo(d.prefijo ?? '51'), lead: d.lead ?? '', usermeta: d.usermeta ?? '' }, { emitEvent: false });
     this.identidadForm.controls.lead.disable({ emitEvent: false });
     this.datosForm.reset({
       tipoDocumento: d.tipoDocumento ?? '', numeroDocumentoTitularServicio: d.numeroDocumentoTitularServicio ?? '',
@@ -680,19 +708,55 @@ export class SubsanacionDrawerComponent implements OnInit {
   }
 
   private aplicarValidadoresConfigurables(campos: CampoConfigItem[]): void {
-    const mapa: Record<string, keyof typeof this.datosForm.controls | keyof typeof this.direccionForm.controls> = {
+    const mapa: Record<string, string> = {
       NOMBRE_MADRE: 'nombreMadre', NOMBRE_PADRE: 'nombrePadre',
       DOC_TITULAR_CELULAR: 'numeroDocumentoTitularCelularRegistro',
       NOMBRE_TITULAR_CELULAR: 'nombreTitularCelularRegistro', PLANO: 'plano'
+    };
+    const baseValidators: Record<string, ReturnType<typeof Validators.pattern>[]> = {
+      nombreMadre: [Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]*$/)],
+      nombrePadre: [Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]*$/)],
+      numeroDocumentoTitularCelularRegistro: [Validators.pattern(/^\d*$/)],
+      nombreTitularCelularRegistro: [Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]*$/)]
     };
     for (const campo of campos) {
       const nombre = mapa[campo.campo];
       if (!nombre) continue;
       const control = this.datosForm.get(nombre) ?? this.direccionForm.get(nombre);
       if (!control) continue;
-      control.setValidators(campo.requerido ? Validators.required : []);
+      control.setValidators([...(campo.requerido ? [Validators.required] : []), ...(baseValidators[nombre] ?? [])]);
       control.updateValueAndValidity({ emitEvent: false });
     }
+  }
+
+  private configurarValidadores(): void {
+    this.identidadForm.controls.prefijo.setValidators([Validators.required, prefijoValidator()]);
+    this.identidadForm.controls.lead.setValidators([Validators.required, telefonoValidator(() => this.identidadForm.controls.prefijo.value)]);
+    this.datosForm.controls.tipoDocumento.setValidators([Validators.required]);
+    this.datosForm.controls.numeroDocumentoTitularServicio.setValidators([
+      Validators.required,
+      documentoValidator(() => this.datosForm.controls.tipoDocumento.value)
+    ]);
+    this.datosForm.controls.nombreTitularServicio.setValidators([Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]*$/)]);
+    this.datosForm.controls.celularRegistro.setValidators([Validators.required, telefonoValidator(() => this.identidadForm.controls.prefijo.value)]);
+    this.datosForm.controls.celularReferencia.setValidators([telefonoValidator(() => this.identidadForm.controls.prefijo.value)]);
+    this.datosForm.controls.celularGrabacion.setValidators([telefonoValidator(() => this.identidadForm.controls.prefijo.value)]);
+    this.datosForm.controls.correo.setValidators([Validators.required, Validators.email]);
+    this.datosForm.controls.fechaNacimiento.setValidators([Validators.required]);
+    this.datosForm.controls.parentesco.setValidators([Validators.required]);
+    this.datosForm.controls.numeroDocumentoTitularCelularRegistro.setValidators([Validators.pattern(/^\d*$/)]);
+    this.datosForm.controls.nombreTitularCelularRegistro.setValidators([Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]*$/)]);
+    this.datosForm.controls.nombreMadre.setValidators([Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]*$/)]);
+    this.datosForm.controls.nombrePadre.setValidators([Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]*$/)]);
+    this.direccionForm.controls.ubigeoDomicilio.setValidators([Validators.required]);
+    this.direccionForm.controls.idDepartamentoDomicilio.setValidators([Validators.required]);
+    this.direccionForm.controls.idProvinciaDomicilio.setValidators([Validators.required]);
+    this.direccionForm.controls.idDistritoDomicilio.setValidators([Validators.required]);
+    this.direccionForm.controls.tipoDomicilio.setValidators([Validators.required]);
+    this.direccionForm.controls.direccion.setValidators([Validators.required]);
+    this.direccionForm.controls.referencia.setValidators([Validators.required]);
+    this.direccionForm.controls.latitud.setValidators([coordenadaValidator('latitud', true)]);
+    this.direccionForm.controls.longitud.setValidators([coordenadaValidator('longitud', true)]);
   }
 
   private actualizarValidadoresVenta(): void {
@@ -704,13 +768,70 @@ export class SubsanacionDrawerComponent implements OnInit {
     const sotValidators = requiereSecSot
       ? [Validators.required, Validators.pattern(/^\d{8}$/)]
       : [];
-    const customerValidators = requiereCustomerId ? [Validators.required] : [];
+    const customerValidators = requiereCustomerId ? [Validators.required, Validators.pattern(/^\d{1,8}$/)] : [];
     this.comercialForm.controls.sec.setValidators(secValidators);
     this.comercialForm.controls.sot.setValidators(sotValidators);
     this.comercialForm.controls.customerId.setValidators(customerValidators);
     this.comercialForm.controls.sec.updateValueAndValidity({ emitEvent: false });
     this.comercialForm.controls.sot.updateValueAndValidity({ emitEvent: false });
     this.comercialForm.controls.customerId.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private configurarNormalizadores(): void {
+    this.normalizarControl(this.identidadForm, 'prefijo', limpiarPrefijo, () => this.normalizarTelefonosPorPrefijo());
+    this.normalizarControl(this.identidadForm, 'lead', (value) => this.limpiarTelefonoActual(value));
+    this.normalizarControl(this.identidadForm, 'usermeta', limpiarUsermeta);
+    this.datosForm.controls.tipoDocumento.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.datosForm.controls.numeroDocumentoTitularServicio.updateValueAndValidity({ emitEvent: false }));
+    this.normalizarControl(this.datosForm, 'numeroDocumentoTitularServicio', limpiarDocumento);
+    for (const campo of ['celularRegistro', 'celularReferencia', 'celularGrabacion'] as const) {
+      this.normalizarControl(this.datosForm, campo, (value) => this.limpiarTelefonoActual(value));
+    }
+    this.normalizarControl(this.datosForm, 'numeroDocumentoTitularCelularRegistro', (value) => soloDigitos(value, 12));
+    for (const campo of ['nombreTitularServicio', 'nombreTitularCelularRegistro', 'nombreMadre', 'nombrePadre'] as const) {
+      this.normalizarControl(this.datosForm, campo, limpiarNombrePersona);
+    }
+    for (const campo of ['via', 'direccion', 'referencia', 'urbanizacion', 'numero', 'manzana', 'lote', 'nombreEdificio', 'nombreCondominio', 'plano', 'piso', 'interior'] as const) {
+      this.normalizarControl(this.direccionForm, campo, limpiarTextoDireccion);
+    }
+    this.normalizarControl(this.direccionForm, 'latitud', limpiarCoordenada);
+    this.normalizarControl(this.direccionForm, 'longitud', limpiarCoordenada);
+    this.normalizarControl(this.comercialForm, 'sec', (value) => soloDigitos(value, 9));
+    this.normalizarControl(this.comercialForm, 'sot', (value) => soloDigitos(value, 8));
+    this.normalizarControl(this.comercialForm, 'customerId', (value) => soloDigitos(value, 8));
+  }
+
+  private normalizarControl(
+    form: FormGroup,
+    nombre: string,
+    limpiar: (value: unknown) => string,
+    despues?: () => void
+  ): void {
+    const control = form.controls[nombre];
+    control.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
+      const limpio = limpiar(value);
+      if (value !== limpio) {
+        control.setValue(limpio, { emitEvent: false });
+      }
+      despues?.();
+      this.formVersion.update((actual) => actual + 1);
+    });
+  }
+
+  private limpiarTelefonoActual(value: unknown): string {
+    return limpiarTelefonoPorPrefijo(value, this.identidadForm.controls.prefijo.value);
+  }
+
+  private normalizarTelefonosPorPrefijo(): void {
+    const lead = this.identidadForm.controls.lead;
+    lead.setValue(this.limpiarTelefonoActual(lead.value), { emitEvent: false });
+    lead.updateValueAndValidity({ emitEvent: false });
+    for (const campo of ['celularRegistro', 'celularReferencia', 'celularGrabacion'] as const) {
+      const control = this.datosForm.controls[campo];
+      control.setValue(this.limpiarTelefonoActual(control.value), { emitEvent: false });
+      control.updateValueAndValidity({ emitEvent: false });
+    }
   }
 
   private observarFormularios(): void {
@@ -829,7 +950,7 @@ export class SubsanacionDrawerComponent implements OnInit {
       direccion: {
         ubigeoDomicilio: direccion.ubigeoDomicilio ?? '', tipoDomicilio: this.nulo(direccion.tipoDomicilio),
         tipoVia: this.nulo(direccion.tipoVia), via: this.nulo(direccion.via), direccion: direccion.direccion ?? '',
-        referencia: this.nulo(direccion.referencia), latitud: direccion.latitud ?? '', longitud: direccion.longitud ?? '',
+        referencia: this.nulo(direccion.referencia), latitud: String(direccion.latitud ?? '').replace(',', '.'), longitud: String(direccion.longitud ?? '').replace(',', '.'),
         urbanizacion: this.nulo(direccion.urbanizacion), numero: this.nulo(direccion.numero), manzana: this.nulo(direccion.manzana),
         lote: this.nulo(direccion.lote), nombreEdificio: this.nulo(direccion.nombreEdificio),
         nombreCondominio: this.nulo(direccion.nombreCondominio), plano: this.nulo(direccion.plano),

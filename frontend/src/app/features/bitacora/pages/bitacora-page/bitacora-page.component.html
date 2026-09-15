@@ -227,17 +227,17 @@
               </div>
               <div class="fgrid">
                 <div class="field" [class.dirty]="f.campoModificado('identidad','prefijo')">
-                  <label>Prefijo</label>
-                  <input class="mono" formControlName="prefijo" placeholder="+51" />
+                  <label>Prefijo (+)</label>
+                  <input class="mono" formControlName="prefijo" inputmode="numeric" maxlength="3" placeholder="51" />
                 </div>
                 <div class="field" [class.dirty]="f.campoModificado('identidad','lead')">
                   <label>Teléfono (lead)</label>
-                  <input class="mono" formControlName="lead" />
+                  <input class="mono" formControlName="lead" inputmode="numeric" maxlength="15" />
                   @if (f.campoModificado('identidad','lead')) { <span class="was">antes <s>{{ f.valorOriginal('identidad','lead') || '—' }}</s></span> }
                 </div>
                 <div class="field col2" [class.dirty]="f.campoModificado('identidad','usermeta')">
                   <label>Usermeta <span class="hint">(sin «&#64;»)</span></label>
-                  <input formControlName="usermeta" />
+                  <input formControlName="usermeta" maxlength="80" autocapitalize="none" spellcheck="false" />
                   @if (f.campoModificado('identidad','usermeta')) { <span class="was">antes <s>{{ f.valorOriginal('identidad','usermeta') || '—' }}</s></span> }
                 </div>
               </div>
@@ -248,38 +248,44 @@
               <div class="field" [class.dirty]="f.campoModificado('datos','tipoDocumento')">
                 <label>Tipo de documento</label>
                 <select formControlName="tipoDocumento">
+                  <option value="">—</option>
                   @for (opt of tipoDocumentoOpts(); track opt) { <option [value]="opt">{{ opt }}</option> }
                 </select>
               </div>
               <div class="field" [class.dirty]="f.campoModificado('datos','numeroDocumentoTitularServicio')">
                 <label>N.º documento</label>
-                <input class="mono" formControlName="numeroDocumentoTitularServicio" />
+                <input class="mono" formControlName="numeroDocumentoTitularServicio" inputmode="numeric" maxlength="12" />
                 @if (f.campoModificado('datos','numeroDocumentoTitularServicio')) { <span class="was">antes <s>{{ f.valorOriginal('datos','numeroDocumentoTitularServicio') || '—' }}</s></span> }
               </div>
               <div class="field col2" [class.dirty]="f.campoModificado('datos','nombreTitularServicio')">
                 <label>Nombre del titular</label>
-                <input formControlName="nombreTitularServicio" />
+                <input formControlName="nombreTitularServicio" maxlength="120" />
                 @if (f.campoModificado('datos','nombreTitularServicio')) { <span class="was">antes <s>{{ f.valorOriginal('datos','nombreTitularServicio') || '—' }}</s></span> }
               </div>
               <div class="field" [class.dirty]="f.campoModificado('datos','celularRegistro')">
                 <label>Celular registro</label>
-                <input class="mono" formControlName="celularRegistro" />
+                <input class="mono" formControlName="celularRegistro" inputmode="numeric" maxlength="15" />
               </div>
               <div class="field" [class.dirty]="f.campoModificado('datos','celularReferencia')">
                 <label>Celular referencia</label>
-                <input class="mono" formControlName="celularReferencia" />
+                <input class="mono" formControlName="celularReferencia" inputmode="numeric" maxlength="15" />
               </div>
               <div class="field" [class.dirty]="f.campoModificado('datos','celularGrabacion')">
                 <label>Celular grabación</label>
-                <input class="mono" formControlName="celularGrabacion" />
+                <input class="mono" formControlName="celularGrabacion" inputmode="numeric" maxlength="15" />
               </div>
               <div class="field col2" [class.dirty]="f.campoModificado('datos','correo')">
                 <label>Correo</label>
-                <input formControlName="correo" />
+                <input type="email" formControlName="correo" autocapitalize="none" spellcheck="false" />
               </div>
               <div class="field col2" [class.dirty]="f.campoModificado('datos','ubigeoNacimiento')">
-                <label>Ubigeo de nacimiento</label>
-                <input class="mono" formControlName="ubigeoNacimiento" />
+                <div class="location-heading"><span>Ubicación de nacimiento</span><small>opcional</small></div>
+                <div class="fgrid location-grid">
+                  <div class="field"><label>Departamento</label><select formControlName="idDepartamentoNacimiento" [disabled]="f.cargandoDepartamentos() || f.cargandoUbigeoNacimiento()" (change)="f.cambiarDepartamentoNacimiento()"><option [ngValue]="null">{{ f.cargandoDepartamentos() ? 'Cargando…' : 'Selecciona' }}</option>@for (item of f.departamentos(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></div>
+                  <div class="field"><label>Provincia</label><select formControlName="idProvinciaNacimiento" [disabled]="f.cargandoUbigeoNacimiento() || !f.provinciasNacimiento().length" (change)="f.cambiarProvinciaNacimiento()"><option [ngValue]="null">Selecciona</option>@for (item of f.provinciasNacimiento(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></div>
+                  <div class="field"><label>Distrito</label><select formControlName="idDistritoNacimiento" [disabled]="f.cargandoUbigeoNacimiento() || !f.distritosNacimiento().length" (change)="f.cambiarDistritoNacimiento()"><option [ngValue]="null">Selecciona</option>@for (item of f.distritosNacimiento(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></div>
+                </div>
+                @if (f.cargandoUbigeoNacimiento() || f.errorUbigeoNacimiento()) { <span class="hint">{{ f.cargandoUbigeoNacimiento() ? 'Cargando ubicación…' : f.errorUbigeoNacimiento() }}</span> }
               </div>
             </div>
 
@@ -287,19 +293,19 @@
             <div class="fgrid">
               <div class="field" [class.dirty]="f.campoModificado('datos','numeroDocumentoTitularCelularRegistro')">
                 <label>Doc. titular del celular</label>
-                <input class="mono" formControlName="numeroDocumentoTitularCelularRegistro" />
+                <input class="mono" formControlName="numeroDocumentoTitularCelularRegistro" inputmode="numeric" maxlength="12" />
               </div>
               <div class="field" [class.dirty]="f.campoModificado('datos','nombreTitularCelularRegistro')">
                 <label>Nombre titular del celular</label>
-                <input formControlName="nombreTitularCelularRegistro" />
+                <input formControlName="nombreTitularCelularRegistro" maxlength="120" />
               </div>
               <div class="field" [class.dirty]="f.campoModificado('datos','nombreMadre')">
                 <label>Nombre de la madre</label>
-                <input formControlName="nombreMadre" />
+                <input formControlName="nombreMadre" maxlength="120" />
               </div>
               <div class="field" [class.dirty]="f.campoModificado('datos','nombrePadre')">
                 <label>Nombre del padre</label>
-                <input formControlName="nombrePadre" />
+                <input formControlName="nombrePadre" maxlength="120" />
               </div>
             </div>
             </div>
@@ -312,9 +318,14 @@
             <div class="grouptitle">Domicilio de instalación</div>
             <div class="fgrid">
               <div class="field col2" [class.dirty]="f.campoModificado('direccion','ubigeoDomicilio')">
-                <label>Ubigeo domicilio</label>
-                <input class="mono" formControlName="ubigeoDomicilio" />
+                <div class="location-heading"><span>Ubicación del domicilio</span><small>opcional</small></div>
+                <div class="fgrid location-grid">
+                  <div class="field"><label>Departamento</label><select formControlName="idDepartamentoDomicilio" [disabled]="f.cargandoDepartamentos() || f.cargandoUbigeoDomicilio()" (change)="f.cambiarDepartamentoDomicilio()"><option [ngValue]="null">{{ f.cargandoDepartamentos() ? 'Cargando…' : 'Selecciona' }}</option>@for (item of f.departamentos(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></div>
+                  <div class="field"><label>Provincia</label><select formControlName="idProvinciaDomicilio" [disabled]="f.cargandoUbigeoDomicilio() || !f.provinciasDomicilio().length" (change)="f.cambiarProvinciaDomicilio()"><option [ngValue]="null">Selecciona</option>@for (item of f.provinciasDomicilio(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></div>
+                  <div class="field"><label>Distrito</label><select formControlName="idDistritoDomicilio" [disabled]="f.cargandoUbigeoDomicilio() || !f.distritosDomicilio().length" (change)="f.cambiarDistritoDomicilio()"><option [ngValue]="null">Selecciona</option>@for (item of f.distritosDomicilio(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></div>
+                </div>
                 @if (d.distritoDomicilio) { <span class="hint">{{ d.distritoDomicilio }}, {{ d.provinciaDomicilio }} · {{ d.departamentoDomicilio }}</span> }
+                @if (f.cargandoUbigeoDomicilio() || f.errorUbigeoDomicilio()) { <span class="hint">{{ f.cargandoUbigeoDomicilio() ? 'Cargando ubicación…' : f.errorUbigeoDomicilio() }}</span> }
               </div>
               <div class="field" [class.dirty]="f.campoModificado('direccion','tipoDomicilio')">
                 <label>Tipo de domicilio</label>
@@ -348,8 +359,8 @@
               <div class="field col2" [class.dirty]="f.campoModificado('direccion','referencia')"><label>Referencia</label><input formControlName="referencia" /></div>
               <div class="field" [class.dirty]="f.campoModificado('direccion','nombreEdificio')"><label>Edificio</label><input formControlName="nombreEdificio" /></div>
               <div class="field" [class.dirty]="f.campoModificado('direccion','nombreCondominio')"><label>Condominio</label><input formControlName="nombreCondominio" /></div>
-              <div class="field" [class.dirty]="f.campoModificado('direccion','latitud')"><label>Latitud</label><input class="mono" formControlName="latitud" /></div>
-              <div class="field" [class.dirty]="f.campoModificado('direccion','longitud')"><label>Longitud</label><input class="mono" formControlName="longitud" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','latitud')"><label>Latitud</label><input class="mono" formControlName="latitud" inputmode="decimal" maxlength="24" (paste)="f.pegarCoordenadas($event, 'latitud')" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','longitud')"><label>Longitud</label><input class="mono" formControlName="longitud" inputmode="decimal" maxlength="24" (paste)="f.pegarCoordenadas($event, 'longitud')" /></div>
               <div class="field col2" [class.dirty]="f.campoModificado('direccion','plano')"><label>Plano</label><input formControlName="plano" /></div>
             </div>
           </section>

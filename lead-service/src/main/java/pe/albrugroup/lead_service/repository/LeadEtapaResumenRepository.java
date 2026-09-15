@@ -615,21 +615,39 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("codigoProgramado") String codigoProgramado
     );
 
-    // Q6 — ranking por asesor de mérito de PREVENTA sobre el universo VENTA, con prefijo de ubigeo.
+    // Q6 — ranking por asesor de mérito de PREVENTA, métricas independientes por fecha real de cada hecho.
+    // Columnas: [0] idAsesor, [1] nombre, [2] prefijoUbigeo,
+    //           [3] preventas     (rv.fechaIngresoEtapa ∈ período),
+    //           [4] registradas   (rv.mayorRangoAt ∈ período + mayorRangoOrden >= :ordenIngresado),
+    //           [5] instaladas    (c.fechaInstalacion ∈ período),
+    //           [6] regEInstaladas (registradas ∩ instaladas del mismo período).
+    // Universo = OR de las 3 condiciones de fecha para acotar el scan sin usar embudo.
     @Query("""
             SELECT rp.idAsesorMerito, rp.nombreAsesorMerito, SUBSTRING(d.ubigeoDomicilio, 1, 2),
-                   COUNT(DISTINCT l.id),
-                   SUM(CASE WHEN rv.ultimaCodigoTipificacion = :codigoInstalado THEN 1 ELSE 0 END)
+                   SUM(CASE WHEN rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin
+                                THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN rv.mayorRangoAt >= :inicio AND rv.mayorRangoAt < :fin
+                                 AND rv.mayorRangoOrden >= :ordenIngresado THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN c.fechaInstalacion >= :desdeDate AND c.fechaInstalacion < :hastaDateExcl
+                                THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN rv.mayorRangoAt >= :inicio AND rv.mayorRangoAt < :fin
+                                 AND rv.mayorRangoOrden >= :ordenIngresado
+                                 AND c.fechaInstalacion >= :desdeDate AND c.fechaInstalacion < :hastaDateExcl
+                                THEN 1 ELSE 0 END)
             FROM Lead l
             JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
             JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
             JOIN l.plan pl
             JOIN pl.proveedor pr
             LEFT JOIN l.direccion d
+            LEFT JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
             WHERE pr.id = :idProveedor
-              AND rv.fechaIngresoEtapa >= :inicio
-              AND rv.fechaIngresoEtapa < :fin
               AND rp.idAsesorMerito IS NOT NULL
+              AND (
+                    (rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin)
+                 OR (rv.mayorRangoAt >= :inicio AND rv.mayorRangoAt < :fin AND rv.mayorRangoOrden >= :ordenIngresado)
+                 OR (c.fechaInstalacion >= :desdeDate AND c.fechaInstalacion < :hastaDateExcl)
+              )
             GROUP BY rp.idAsesorMerito, rp.nombreAsesorMerito, SUBSTRING(d.ubigeoDomicilio, 1, 2)
             """)
     List<Object[]> dashboardVentaRanking(
@@ -638,7 +656,327 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("idProveedor") Long idProveedor,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
-            @Param("codigoInstalado") String codigoInstalado
+            @Param("ordenIngresado") int ordenIngresado,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
+    // Mis Preventas — resumen escalar para el asesor autenticado; métricas alineadas con Q6 del dashboard.
+    // Columnas: [0] preventas, [1] registradas, [2] instaladas, [3] regEInstaladas, [4] rechazadas.
+    // rechazadas = del cohort preventas: lead volvió a PREVENTA o quedó en orden 1 de VENTA.
+    @Query("""
+            SELECT
+                SUM(CASE WHEN rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin
+                             THEN 1 ELSE 0 END),
+                SUM(CASE WHEN rv.mayorRangoAt >= :inicio AND rv.mayorRangoAt < :fin
+                              AND rv.mayorRangoOrden >= :ordenIngresado THEN 1 ELSE 0 END),
+                SUM(CASE WHEN c.fechaInstalacion >= :desdeDate AND c.fechaInstalacion < :hastaDateExcl
+                             THEN 1 ELSE 0 END),
+                SUM(CASE WHEN rv.mayorRangoAt >= :inicio AND rv.mayorRangoAt < :fin
+                              AND rv.mayorRangoOrden >= :ordenIngresado
+                              AND c.fechaInstalacion >= :desdeDate AND c.fechaInstalacion < :hastaDateExcl
+                             THEN 1 ELSE 0 END),
+                SUM(CASE WHEN rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin
+                              AND (l.etapa = :etapaPreventa OR rv.ultimaTipificacionOrden = 1)
+                             THEN 1 ELSE 0 END)
+            FROM Lead l
+            JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            LEFT JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND (
+                    (rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin)
+                 OR (rv.mayorRangoAt >= :inicio AND rv.mayorRangoAt < :fin AND rv.mayorRangoOrden >= :ordenIngresado)
+                 OR (c.fechaInstalacion >= :desdeDate AND c.fechaInstalacion < :hastaDateExcl)
+              )
+            """)
+    List<Object[]> resumirMisPreventas(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("ordenIngresado") int ordenIngresado,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
+    // ===== MIS PREVENTAS — CUADRANTE (asesor autenticado) =====
+    // Réplica de las queries del Dashboard VENTA, scope por rp.idAsesorMerito = :idAsesor (resumen
+    // PREVENTA) en vez de pr.id = :idProveedor. Misma semántica de anclaje y agrupación.
+
+    // Q1 asesor — ventana de actividad (3-condition OR): ingresó en período, o alcanzó INGRESADO+
+    // en período, o se instaló en período. Alineado con dashboardVentaRanking.
+    @Query("""
+            SELECT r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            LEFT JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND (
+                    (r.fechaIngresoEtapa >= :inicio AND r.fechaIngresoEtapa < :fin)
+                 OR (r.mayorRangoAt >= :inicio AND r.mayorRangoAt < :fin AND r.mayorRangoOrden >= :ordenIngresado)
+                 OR (c.fechaInstalacion >= :desdeDate AND c.fechaInstalacion < :hastaDateExcl)
+              )
+            GROUP BY r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion
+            """)
+    List<Object[]> cuadranteAsesorUniverso(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("ordenIngresado") int ordenIngresado,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
+    // Q7 asesor — GENERAL vivos: última ∈ codigos Y ultimaTipificacionAt < fin (acumulado al cierre).
+    @Query("""
+            SELECT r.ultimaCodigoTipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND r.ultimaCodigoTipificacion IN :codigos
+              AND r.ultimaTipificacionAt < :fin
+            GROUP BY r.ultimaCodigoTipificacion
+            """)
+    List<Object[]> cuadranteAsesorGeneralVivos(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("codigos") Collection<String> codigos,
+            @Param("fin") Instant fin
+    );
+
+    // Q7b asesor — GENERAL sin ingresar: última nula o 'SIN INGRESAR', ancla fechaIngresoEtapa < fin.
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion = :codigoSinIngresar)
+              AND r.fechaIngresoEtapa < :fin
+            """)
+    long cuadranteAsesorGeneralSinIngresar(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("codigoSinIngresar") String codigoSinIngresar,
+            @Param("fin") Instant fin
+    );
+
+    // Q8 asesor — DEL MES instaladas en ventana: del cohorte (fechaIngresoEtapa ∈ período), también
+    // instalaron en el período (fechaInstalacion ∈ período). Subconjunto de diaInstaladas del cohorte.
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND r.ultimaCodigoTipificacion = :codigoInstalado
+              AND r.fechaIngresoEtapa >= :inicio
+              AND r.fechaIngresoEtapa < :fin
+              AND c.fechaInstalacion >= :desdeDate
+              AND c.fechaInstalacion < :hastaDateExcl
+            """)
+    long cuadranteAsesorInstaladasEnVentana(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("codigoInstalado") String codigoInstalado,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
+    // Q2b asesor — GENERAL rechazadas: NO RECUPERABLE ∈ período (ultimaTipAt) que además alcanzoRegistrado.
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND r.ultimaCodigoTipificacion = :codigoNoRecuperable
+              AND r.mayorRangoCodigoTipificacion IN :codigosAlcanzoRegistrado
+              AND r.ultimaTipificacionAt >= :inicio
+              AND r.ultimaTipificacionAt < :fin
+            """)
+    long cuadranteAsesorGeneralRechazadas(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("codigoNoRecuperable") String codigoNoRecuperable,
+            @Param("codigosAlcanzoRegistrado") Collection<String> codigosAlcanzoRegistrado,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // Q3b asesor — GENERAL instaladas: ancla fechaInstalacion ∈ período (sin desglose de zonas).
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND r.ultimaCodigoTipificacion = :codigoInstalado
+              AND c.fechaInstalacion >= :desdeDate
+              AND c.fechaInstalacion < :hastaDateExcl
+            """)
+    long cuadranteAsesorInstaladas(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("codigoInstalado") String codigoInstalado,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
+    // Q3b asesor con proveedor — misma lógica que cuadranteAsesorInstaladas + filtro de proveedor.
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            JOIN l.plan pl
+            JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND pl.proveedor.id = :idProveedor
+              AND r.ultimaCodigoTipificacion = :codigoInstalado
+              AND c.fechaInstalacion >= :desdeDate
+              AND c.fechaInstalacion < :hastaDateExcl
+            """)
+    long misPreventasV2InstaladasPorProveedor(
+            @Param("idAsesor") Long idAsesor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("codigoInstalado") String codigoInstalado,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
+    // ===== MIS PREVENTAS V2 — variantes con filtro de proveedor (para asesores multi-proveedor) =====
+
+    // Q1 V2 con proveedor — misma lógica que cuadranteAsesorUniverso + AND pl.proveedor.id = :idProveedor.
+    @Query("""
+            SELECT r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            JOIN l.plan pl
+            LEFT JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND pl.proveedor.id = :idProveedor
+              AND (
+                    (r.fechaIngresoEtapa >= :inicio AND r.fechaIngresoEtapa < :fin)
+                 OR (r.mayorRangoAt >= :inicio AND r.mayorRangoAt < :fin AND r.mayorRangoOrden >= :ordenIngresado)
+                 OR (c.fechaInstalacion >= :desdeDate AND c.fechaInstalacion < :hastaDateExcl)
+              )
+            GROUP BY r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion
+            """)
+    List<Object[]> misPreventasV2UniversoPorProveedor(
+            @Param("idAsesor") Long idAsesor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("ordenIngresado") int ordenIngresado,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
+    // Q8 V2 con proveedor — misma lógica que cuadranteAsesorInstaladasEnVentana + filtro de proveedor.
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            JOIN l.plan pl
+            JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND pl.proveedor.id = :idProveedor
+              AND r.ultimaCodigoTipificacion = :codigoInstalado
+              AND r.fechaIngresoEtapa >= :inicio
+              AND r.fechaIngresoEtapa < :fin
+              AND c.fechaInstalacion >= :desdeDate
+              AND c.fechaInstalacion < :hastaDateExcl
+            """)
+    long misPreventasV2InstaladasEnVentanaPorProveedor(
+            @Param("idAsesor") Long idAsesor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("codigoInstalado") String codigoInstalado,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
+    // Q1 V2 cohorte — scope SOLO por fechaIngresoEtapa (sin 3-condition OR). Alineado con
+    // dashboardVentaUniverso para que preventas cuadre con el ranking del Dashboard VENTA.
+    @Query("""
+            SELECT r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND r.fechaIngresoEtapa >= :inicio
+              AND r.fechaIngresoEtapa < :fin
+            GROUP BY r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion
+            """)
+    List<Object[]> misPreventasV2Cohorte(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // Q1 V2 cohorte con proveedor — misma lógica que misPreventasV2Cohorte + filtro de proveedor.
+    @Query("""
+            SELECT r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            JOIN l.plan pl
+            WHERE rp.idAsesorMerito = :idAsesor
+              AND pl.proveedor.id = :idProveedor
+              AND r.fechaIngresoEtapa >= :inicio
+              AND r.fechaIngresoEtapa < :fin
+            GROUP BY r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion
+            """)
+    List<Object[]> misPreventasV2CohortePorProveedor(
+            @Param("idAsesor") Long idAsesor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // Lista de proveedores para los que el asesor tiene al menos un lead en VENTA (dropdown del filtro).
+    @Query("""
+            SELECT DISTINCT pl.proveedor.id, pl.proveedor.nombre
+            FROM Lead l
+            JOIN LeadEtapaResumen r  ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            JOIN l.plan pl
+            WHERE rp.idAsesorMerito = :idAsesor
+            ORDER BY pl.proveedor.nombre ASC
+            """)
+    List<Object[]> misPreventasV2Proveedores(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPreventa") Etapa etapaPreventa
     );
 
     // Q4 (endpoint auxiliar) — tramos: cartera viva de PROGRAMADO cuyo evento de programación VIGENTE cae en
