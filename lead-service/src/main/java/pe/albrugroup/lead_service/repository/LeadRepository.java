@@ -3354,7 +3354,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 WHERE m2.idLead = l.id
                   AND m2.accion = :accionTipificacion
                   AND m2.etapa = 'PREVENTA'
-                  AND m2.createdAt = r.mayorRangoAt
                   AND TRIM(COALESCE(m2.tipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoTipificacion, ''))
                   AND TRIM(COALESCE(m2.subtipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoSubtipificacion, ''))
             )
@@ -3397,7 +3396,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 WHERE m2.idLead = l.id
                   AND m2.accion = :accionTipificacion
                   AND m2.etapa = 'PREVENTA'
-                  AND m2.createdAt = r.mayorRangoAt
                   AND TRIM(COALESCE(m2.tipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoTipificacion, ''))
                   AND TRIM(COALESCE(m2.subtipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoSubtipificacion, ''))
             )
@@ -3440,7 +3438,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 WHERE m2.idLead = l.id
                   AND m2.accion = :accionTipificacion
                   AND m2.etapa = 'PREVENTA'
-                  AND m2.createdAt = r.mayorRangoAt
                   AND TRIM(COALESCE(m2.tipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoTipificacion, ''))
                   AND TRIM(COALESCE(m2.subtipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoSubtipificacion, ''))
             )
@@ -3486,7 +3483,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 WHERE m2.idLead = l.id
                   AND m2.accion = :accionTipificacion
                   AND m2.etapa = 'PREVENTA'
-                  AND m2.createdAt = r.mayorRangoAt
                   AND TRIM(COALESCE(m2.tipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoTipificacion, ''))
                   AND TRIM(COALESCE(m2.subtipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoSubtipificacion, ''))
             )
