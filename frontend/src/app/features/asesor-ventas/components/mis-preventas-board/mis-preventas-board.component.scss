@@ -295,7 +295,7 @@
     top: 0;
     z-index: 3;
     background: var(--deep);
-    text-align: left;
+    text-align: center;
     font-size: 11px;
     font-weight: 700;
     color: var(--muted);
@@ -314,7 +314,7 @@
     font-weight: 500;
     color: var(--ink-2);
     white-space: nowrap;
-    vertical-align: top;
+    vertical-align: middle;
     &.num { text-align: right; }
     &.ico { text-align: center; }
   }
@@ -368,30 +368,26 @@
 // ── Lead cell (click-to-call) ──────────────────────────────────────
 .mp-lead-cell {
   position: relative;
+  padding-left: 34px !important;
+  transition: background 0.15s, color 0.15s;
+
   &--active { cursor: pointer; }
+
   &--active:hover {
-    background: var(--soft);
-    .mp-call-btn { opacity: 1; }
+    background: var(--vd-success) !important;
+    .mp-mono { color: var(--deep); }
+    .mp-lead-ico { opacity: 0.6; color: var(--deep); }
   }
 }
-.mp-call-btn {
+.mp-lead-ico {
   position: absolute;
-  right: 10px;
+  left: 12px;
   top: 50%;
   translate: 0 -50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: 1px solid var(--line);
-  background: var(--card);
   color: var(--vd-success);
-  cursor: pointer;
-  opacity: 0.4;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
-  &:hover { background: var(--vd-success); color: var(--deep); opacity: 1; }
+  opacity: 0.18;
+  pointer-events: none;
+  transition: opacity 0.15s, color 0.15s;
 }
 
 // ── Footer / paginator ──────────────────────────────────────────────
