@@ -100,7 +100,16 @@
       </div>
 
       <!-- Detalle -->
-      <h3 class="mp-sec">Detalle <span class="mp-sec__count">{{ facade.totalElements() }} leads</span></h3>
+      <div class="mp-sec-row">
+        <h3 class="mp-sec">Detalle <span class="mp-sec__count">{{ facade.totalElements() }} leads</span></h3>
+        <input
+          class="mp-search"
+          type="text"
+          placeholder="Buscar lead, usermeta o documento…"
+          [ngModel]="facade.searchTerm()"
+          (ngModelChange)="onSearch($event)"
+        />
+      </div>
 
       <div class="mp-wrap">
         @if (facade.isLoading()) {
@@ -115,9 +124,9 @@
                 <th>Rechazo</th>
                 <th>Instalación</th>
                 <th>Lead</th>
-                <th>Cliente</th>
+                <th class="wide">Cliente</th>
                 <th>Zona</th>
-                <th>Tipificación</th>
+                <th class="wide">Tipificación</th>
                 <th class="ico">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Comentario">
                     <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 9 9 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
@@ -154,14 +163,14 @@
                     }
                     <span class="mp-mono">{{ row.lead || '—' }}</span>
                   </td>
-                  <td>
+                  <td class="wide">
                     <div class="mp-mono">{{ row.numeroDocumento || '—' }}</div>
                     @if (row.nombreCliente) {
                       <div class="mp-sub mp-ell" [attr.title]="row.nombreCliente">{{ row.nombreCliente }}</div>
                     }
                   </td>
                   <td>{{ facade.zona(row) }}</td>
-                  <td>
+                  <td class="wide">
                     <div class="mp-ell">{{ row.tipificacion || '—' }}</div>
                     @if (row.subtipificacion) {
                       <div class="mp-sub mp-ell" [attr.title]="row.subtipificacion">{{ row.subtipificacion }}</div>

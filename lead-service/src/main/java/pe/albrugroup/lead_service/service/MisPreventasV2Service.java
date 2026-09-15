@@ -7,7 +7,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
+import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
+import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.exception.NotFoundException;
+import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.EnfoqueDia;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse.ProveedorRef;
@@ -49,7 +55,9 @@ public class MisPreventasV2Service {
     private static final Set<String> RECHAZO          = Set.of(SUBSANABLE, NO_RECUPERABLE);
 
     private final LeadEtapaResumenRepository resumenRepository;
+    private final LeadRepository leadRepository;
     private final VentaDetalleQueryRepository ventaDetalleQueryRepository;
+    private final EventoService eventoService;
     private final CurrentUser currentUser;
     private final EntityManager entityManager;
 
@@ -186,6 +194,28 @@ public class MisPreventasV2Service {
                 search, groupBy,
                 pageRequest.getSortBy(), pageRequest.getDirection(),
                 pageRequest.getPageNumber(), pageRequest.getPageSize());
+    }
+
+    @Transactional
+    public void registrarContactoSeguimiento(Long idLead) {
+        desactivarEquipoFilter();
+        Long idAsesor = currentUser.empleadoID();
+        boolean esMerito = resumenRepository.existsByIdLeadAndEtapaAndIdAsesorMerito(
+                idLead, Etapa.PREVENTA, idAsesor);
+        if (!esMerito) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        Long idCampana = lead.getCampana() == null ? null : lead.getCampana().getId();
+        eventoService.registrarEvento(
+                RegistrarEventoRequest.builder()
+                        .idLead(idLead)
+                        .idCampana(idCampana)
+                        .accion(Accion.CONTACTO)
+                        .etapa(lead.getEtapa())
+                        .build()
+        );
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────────────────────

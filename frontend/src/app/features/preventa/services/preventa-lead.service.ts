@@ -679,4 +679,10 @@ export class PreventaLeadService {
       `${this.leadUrl}/preventa/asesor-ventas/mis-preventas/v2/detalle`, { params }
     );
   }
+
+  registrarContactoMisPreventasV2(idLead: number): Observable<void> {
+    return this.http.post<void>(
+      `${this.leadUrl}/preventa/asesor-ventas/mis-preventas/v2/${idLead}/contacto`, {}
+    );
+  }
 }

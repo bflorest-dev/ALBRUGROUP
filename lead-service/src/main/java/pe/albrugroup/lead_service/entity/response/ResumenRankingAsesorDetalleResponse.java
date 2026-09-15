@@ -10,15 +10,12 @@ import java.time.Instant;
 public record ResumenRankingAsesorDetalleResponse(
         Long idLead,
         Instant fechaIngresoAt,
+        Instant fechaUltimaAsignacionAt,
         String lead,
         String usermeta,
-        String primeraCodigoTipificacion,
-        String primeraCodigoSubtipificacion,
-        String mayorRangoCodigoTipificacion,
-        String mayorRangoCodigoSubtipificacion,
-        String ultimaCodigoTipificacion,
-        String ultimaCodigoSubtipificacion,
-        Instant fechaUltimaGestionAt,
+        String codigoTipificacionAsesor,
+        String codigoSubtipificacionAsesor,
+        Instant fechaGestionAsesorAt,
         boolean asignado,
         boolean preventa
 ) {

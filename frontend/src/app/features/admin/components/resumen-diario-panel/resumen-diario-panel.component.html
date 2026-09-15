@@ -123,7 +123,15 @@
           <table>
             <tbody>
               @for (fila of facade.estadoLeads(); track fila.key) {
-                <tr class="est-row" [class.is-win]="fila.esPreventa">
+                <tr
+                  class="est-row"
+                  [class.is-win]="fila.esPreventa"
+                  tabindex="0"
+                  title="Ver detalle de este estado"
+                  (click)="abrirDetalleEstado(fila)"
+                  (keydown.enter)="abrirDetalleEstado(fila)"
+                  (keydown.space)="$event.preventDefault(); abrirDetalleEstado(fila)"
+                >
                   <td class="est-name">
                     {{ fila.label }}
                     <div class="minibar"><span [style.width.%]="(fila.cantidad / facade.maxEstadoCantidad()) * 100"></span></div>
@@ -261,6 +269,95 @@
 </p-dialog>
 
 <p-dialog
+  [(visible)]="estadoDetalleVisible"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: '1080px', maxWidth: '96vw' }"
+  styleClass="resumen-detalle-dialog ranking-detalle-dialog"
+>
+  <ng-template pTemplate="header">
+    <div class="detalle-head">
+      <div class="detalle-title-row">
+        <span class="detalle-title">Detalle de estado</span>
+        @if (!estadoDetalleLoading() && !estadoDetalleError()) {
+          <span class="detalle-badge">{{ estadoDetalle().length }}</span>
+        }
+      </div>
+      <div class="detalle-sub">
+        <span class="detalle-dot" [style.background]="teamAccent()"></span>
+        <b>{{ estadoDetalleFila()?.label }}</b> · {{ fechaLabel() }} · {{ modoLabel() }} ·
+        tipificación {{ campoLabel() }}
+      </div>
+    </div>
+  </ng-template>
+
+  @if (estadoDetalleError()) {
+    <p class="detalle-empty">No se pudo cargar el detalle del estado.</p>
+  } @else if (estadoDetalleLoading()) {
+    <p class="detalle-empty">Cargando detalle...</p>
+  } @else if (!estadoDetalle().length) {
+    <p class="detalle-empty">No hay leads para este estado en el período.</p>
+  } @else {
+    <div class="detalle-scroll">
+      <table class="detalle ranking-detalle estado-detalle">
+        <thead>
+          <tr>
+            <th>Ingreso</th>
+            <th>Lead</th>
+            <th>Asesor mayor</th>
+            <th>Gestión mayor</th>
+            <th>Asesor última</th>
+            <th>Última gestión</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of estadoDetalle(); track row.idLead) {
+            <tr>
+              <td>
+                <span class="stack-cell time-stack">
+                  <span class="stack-secondary">{{ fechaParte(row.fechaIngresoAt) }}</span>
+                  <span class="stack-main">{{ horaParte(row.fechaIngresoAt) }}</span>
+                </span>
+              </td>
+              <td class="lead-cell">
+                <span class="stack-cell">
+                  @if (row.lead) {
+                    <span class="stack-main">{{ row.lead }}</span>
+                    @if (row.usermeta) {
+                      <span class="stack-secondary">&#64;{{ row.usermeta }}</span>
+                    }
+                  } @else if (row.usermeta) {
+                    <span class="stack-main">&#64;{{ row.usermeta }}</span>
+                  } @else {
+                    <span class="stack-main is-empty">—</span>
+                  }
+                </span>
+              </td>
+              <td>{{ asesorCorto(row.nombreAsesorMayorTipificacion) }}</td>
+              <td>
+                <span class="stack-cell time-stack">
+                  <span class="stack-secondary">{{ fechaParte(row.fechaMayorTipificacionAt) }}</span>
+                  <span class="stack-main">{{ horaParte(row.fechaMayorTipificacionAt) }}</span>
+                </span>
+              </td>
+              <td>{{ asesorCorto(row.nombreAsesorUltimaTipificacion) }}</td>
+              <td>
+                <span class="stack-cell time-stack">
+                  <span class="stack-secondary">{{ fechaParte(row.fechaUltimaGestionAt) }}</span>
+                  <span class="stack-main">{{ horaParte(row.fechaUltimaGestionAt) }}</span>
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="detalle-count">{{ estadoDetalle().length }} lead(s)</p>
+  }
+</p-dialog>
+
+<p-dialog
   [(visible)]="rankingDetalleVisible"
   [modal]="true"
   [draggable]="false"
@@ -296,11 +393,10 @@
         <thead>
           <tr>
             <th>Ingreso</th>
+            <th>Última asignación</th>
             <th>Lead</th>
-            <th>Primera tipificación</th>
-            <th>Mayor tipificación</th>
-            <th>Última tipificación</th>
-            <th>Última gestión</th>
+            <th>Tipificación asesor</th>
+            <th>Gestión</th>
           </tr>
         </thead>
         <tbody>
@@ -310,6 +406,12 @@
                 <span class="stack-cell time-stack">
                   <span class="stack-secondary">{{ fechaParte(row.fechaIngresoAt) }}</span>
                   <span class="stack-main">{{ horaParte(row.fechaIngresoAt) }}</span>
+                </span>
+              </td>
+              <td>
+                <span class="stack-cell time-stack">
+                  <span class="stack-secondary">{{ fechaParte(row.fechaUltimaAsignacionAt) }}</span>
+                  <span class="stack-main">{{ horaParte(row.fechaUltimaAsignacionAt) }}</span>
                 </span>
               </td>
               <td class="lead-cell">
@@ -328,26 +430,14 @@
               </td>
               <td>
                 <span class="stack-cell tip-stack">
-                  <span class="stack-main">{{ tipificacionPrincipal(row.primeraCodigoTipificacion) }}</span>
-                  <span class="stack-secondary">{{ subtipificacionSecundaria(row.primeraCodigoSubtipificacion) }}</span>
-                </span>
-              </td>
-              <td>
-                <span class="stack-cell tip-stack">
-                  <span class="stack-main">{{ tipificacionPrincipal(row.mayorRangoCodigoTipificacion) }}</span>
-                  <span class="stack-secondary">{{ subtipificacionSecundaria(row.mayorRangoCodigoSubtipificacion) }}</span>
-                </span>
-              </td>
-              <td>
-                <span class="stack-cell tip-stack">
-                  <span class="stack-main">{{ tipificacionPrincipal(row.ultimaCodigoTipificacion) }}</span>
-                  <span class="stack-secondary">{{ subtipificacionSecundaria(row.ultimaCodigoSubtipificacion) }}</span>
+                  <span class="stack-main">{{ tipificacionPrincipal(row.codigoTipificacionAsesor) }}</span>
+                  <span class="stack-secondary">{{ subtipificacionSecundaria(row.codigoSubtipificacionAsesor) }}</span>
                 </span>
               </td>
               <td>
                 <span class="stack-cell time-stack">
-                  <span class="stack-secondary">{{ fechaParte(row.fechaUltimaGestionAt) }}</span>
-                  <span class="stack-main">{{ horaParte(row.fechaUltimaGestionAt) }}</span>
+                  <span class="stack-secondary">{{ fechaParte(row.fechaGestionAsesorAt) }}</span>
+                  <span class="stack-main">{{ horaParte(row.fechaGestionAsesorAt) }}</span>
                 </span>
               </td>
             </tr>

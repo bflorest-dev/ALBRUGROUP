@@ -254,11 +254,18 @@
 }
 
 // ── Section heading ─────────────────────────────────────────────────
+.mp-sec-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 22px 0 12px;
+}
 .mp-sec {
   display: flex;
   align-items: center;
   gap: 11px;
-  margin: 22px 0 12px;
+  margin: 0;
   font-size: 1.02rem;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -282,6 +289,21 @@
     border-radius: 999px;
   }
 }
+.mp-search {
+  appearance: none;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 16px;
+  width: 260px;
+  transition: border-color 0.15s;
+  &::placeholder { color: var(--faint); }
+  &:hover { border-color: rgba(255, 255, 255, 0.3); }
+  &:focus { outline: 2px solid rgba(255, 255, 255, 0.4); outline-offset: 1px; border-color: rgba(255, 255, 255, 0.4); }
+}
 
 // ── Detail table (matching drawer style) ────────────────────────────
 .mp-wrap { overflow: auto; }
@@ -296,27 +318,29 @@
     z-index: 3;
     background: var(--deep);
     text-align: center;
-    font-size: 11px;
+    font-size: 12.5px;
     font-weight: 700;
     color: var(--muted);
     letter-spacing: 0.02em;
-    padding: 11px 14px;
+    padding: 10px 8px;
     border-bottom: 1px solid var(--line-strong);
     white-space: nowrap;
     &.num { text-align: right; }
-    &.ico { text-align: center; width: 46px; }
+    &.ico { text-align: center; width: 42px; padding: 10px 4px; }
+    &.wide { padding-inline: 16px; }
   }
 
   tbody td {
-    padding: 10px 14px;
+    padding: 10px 8px;
     border-bottom: 1px solid var(--line);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     color: var(--ink-2);
     white-space: nowrap;
     vertical-align: middle;
     &.num { text-align: right; }
-    &.ico { text-align: center; }
+    &.ico { text-align: center; padding: 10px 4px; }
+    &.wide { padding-inline: 16px; }
   }
 
   tbody tr:hover td { background: var(--card); }
@@ -325,17 +349,18 @@
 .mp-mono {
   display: block;
   font-family: 'Spline Sans Mono', ui-monospace, monospace;
+  font-size: 13.5px;
   color: var(--ink);
 }
 
 .mp-sub {
   display: block;
   color: var(--faint);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .mp-ell {
-  max-width: 210px;
+  max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

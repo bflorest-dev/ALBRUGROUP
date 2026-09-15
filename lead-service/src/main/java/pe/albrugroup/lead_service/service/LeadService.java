@@ -92,6 +92,7 @@ import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasEquipoResp
 import pe.albrugroup.lead_service.entity.response.PreventaDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenAsesorResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenDiarioResponse;
+import pe.albrugroup.lead_service.entity.response.ResumenEstadoLeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenIngresosGestionResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenRankingAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenRankingResponse;
@@ -6180,13 +6181,14 @@ public class LeadService {
 
         Map<Long, ResumenRankingAsesorDetalleResponse> porLead = new LinkedHashMap<>();
         eventoRepository.detalleRankingAsignadosGtr(
-                        idAsesor, grupoOjt, Accion.ASIGNACION, ingresados, Accion.REGISTRO,
+                        idAsesor, grupoOjt, Accion.ASIGNACION, Accion.TIPIFICACION, ingresados, Accion.REGISTRO,
                         rango.inicio(), rango.fin(), true, equipos.filtrar(), equipos.ids())
                 .forEach(row -> porLead.put(row.idLead(), row));
 
         leadRepository.detalleRankingPreventasGtr(
                         idAsesor, grupoOjt, ingresados, ACCIONES_INGRESO, Accion.REGISTRO,
-                        rango.inicio(), rango.fin(), true, equipos.filtrar(), equipos.ids())
+                        Accion.ASIGNACION, Accion.TIPIFICACION, rango.inicio(), rango.fin(),
+                        true, equipos.filtrar(), equipos.ids())
                 .forEach(row -> porLead.merge(row.idLead(), row, this::fusionarDetalleRanking));
 
         return porLead.values().stream()
@@ -6201,17 +6203,65 @@ public class LeadService {
         return new ResumenRankingAsesorDetalleResponse(
                 actual.idLead(),
                 actual.fechaIngresoAt() != null ? actual.fechaIngresoAt() : entrante.fechaIngresoAt(),
+                maxInstant(actual.fechaUltimaAsignacionAt(), entrante.fechaUltimaAsignacionAt()),
                 actual.lead(),
                 actual.usermeta(),
-                actual.primeraCodigoTipificacion(),
-                actual.primeraCodigoSubtipificacion(),
-                actual.mayorRangoCodigoTipificacion(),
-                actual.mayorRangoCodigoSubtipificacion(),
-                actual.ultimaCodigoTipificacion(),
-                actual.ultimaCodigoSubtipificacion(),
-                actual.fechaUltimaGestionAt() != null ? actual.fechaUltimaGestionAt() : entrante.fechaUltimaGestionAt(),
+                actual.codigoTipificacionAsesor() != null ? actual.codigoTipificacionAsesor() : entrante.codigoTipificacionAsesor(),
+                actual.codigoSubtipificacionAsesor() != null ? actual.codigoSubtipificacionAsesor() : entrante.codigoSubtipificacionAsesor(),
+                maxInstant(actual.fechaGestionAsesorAt(), entrante.fechaGestionAsesorAt()),
                 actual.asignado() || entrante.asignado(),
                 actual.preventa() || entrante.preventa());
+    }
+
+    public List<ResumenEstadoLeadDetalleResponse> obtenerEstadoLeadsDetalle(
+            Long idEquipo, String codigoTipificacion, ModoConteo modo, CampoTipificacion campo,
+            LocalDate desde, LocalDate hasta) {
+        String codigo = codigoTipificacion == null ? "" : codigoTipificacion.trim();
+        if (codigo.isBlank()) {
+            throw new BadRequestException("Selecciona una tipificacion para ver el detalle.");
+        }
+        OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        boolean ingresados = modo == ModoConteo.INGRESADOS;
+
+        List<ResumenEstadoLeadDetalleResponse> rows;
+        if ("SIN_TIPIFICAR".equalsIgnoreCase(codigo)) {
+            if (!ingresados) {
+                return List.of();
+            }
+            rows = leadRepository.detalleEstadoLeadsSinTipificarGtr(
+                    campo == CampoTipificacion.PRIMERA,
+                    campo == CampoTipificacion.ULTIMA,
+                    campo == CampoTipificacion.MAYOR,
+                    ACCIONES_INGRESO, Accion.TIPIFICACION, rango.inicio(), rango.fin(),
+                    equipos.filtrar(), equipos.ids());
+        } else {
+            rows = switch (campo) {
+                case PRIMERA -> leadRepository.detalleEstadoLeadsPrimeraGtr(
+                        codigo, ingresados, ACCIONES_INGRESO, Accion.TIPIFICACION,
+                        rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+                case ULTIMA -> leadRepository.detalleEstadoLeadsUltimaGtr(
+                        codigo, ingresados, ACCIONES_INGRESO, Accion.TIPIFICACION,
+                        rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+                case MAYOR -> leadRepository.detalleEstadoLeadsMayorGtr(
+                        codigo, ingresados, ACCIONES_INGRESO, Accion.TIPIFICACION,
+                        rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            };
+        }
+        return rows.stream()
+                .sorted(Comparator.comparing(ResumenEstadoLeadDetalleResponse::fechaIngresoAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    private Instant maxInstant(Instant left, Instant right) {
+        if (left == null) {
+            return right;
+        }
+        if (right == null) {
+            return left;
+        }
+        return left.isAfter(right) ? left : right;
     }
 
     /**

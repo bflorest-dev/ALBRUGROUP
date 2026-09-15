@@ -22,6 +22,8 @@ export class AsesorVentasMisPreventasFacade {
   readonly selectedProveedorId = signal<number | null>(null);
   readonly proveedores = signal<{ id: number; nombre: string }[]>([]);
 
+  readonly searchTerm = signal('');
+
   readonly isLoading = signal(false);
   readonly isLoadingCuadrante = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -71,6 +73,19 @@ export class AsesorVentasMisPreventasFacade {
     await this.load();
   }
 
+  async search(term: string): Promise<void> {
+    this.searchTerm.set(term);
+    this.pageNumber.set(0);
+    this.isLoading.set(true);
+    try {
+      await this.refreshDetalle();
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo buscar.'));
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
   async changePage(pageNumber: number): Promise<void> {
     if (pageNumber === this.pageNumber()) return;
     this.pageNumber.set(pageNumber);
@@ -93,7 +108,7 @@ export class AsesorVentasMisPreventasFacade {
     this.browserSessionService.allowExternalNavigation();
     window.location.assign(telUrl);
     try {
-      await firstValueFrom(this.preventaService.registrarContacto(row.idLead));
+      await firstValueFrom(this.preventaService.registrarContactoMisPreventasV2(row.idLead));
     } catch {
       this.errorMessage.set('Se inició la llamada pero no se pudo registrar el contacto.');
     }
@@ -164,6 +179,7 @@ export class AsesorVentasMisPreventasFacade {
       this.preventaService.obtenerDetalleMisPreventasV2({
         idProveedor: this.selectedProveedorId(),
         mes: this.mesParam(),
+        search: this.searchTerm() || undefined,
         sortBy: 'fechaIngresoEtapa',
         direction: 'desc',
         page: this.pageNumber(),

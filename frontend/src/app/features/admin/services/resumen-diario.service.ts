@@ -61,17 +61,26 @@ export interface PreventaDetalle {
 export interface RankingAsesorDetalle {
   idLead: number;
   fechaIngresoAt: string | null;
+  fechaUltimaAsignacionAt: string | null;
   lead: string | null;
   usermeta: string | null;
-  primeraCodigoTipificacion: string | null;
-  primeraCodigoSubtipificacion: string | null;
-  mayorRangoCodigoTipificacion: string | null;
-  mayorRangoCodigoSubtipificacion: string | null;
-  ultimaCodigoTipificacion: string | null;
-  ultimaCodigoSubtipificacion: string | null;
-  fechaUltimaGestionAt: string | null;
+  codigoTipificacionAsesor: string | null;
+  codigoSubtipificacionAsesor: string | null;
+  fechaGestionAsesorAt: string | null;
   asignado: boolean;
   preventa: boolean;
+}
+
+/** Detalle de una fila del bloque Estado Leads del día. */
+export interface EstadoLeadDetalle {
+  idLead: number;
+  fechaIngresoAt: string | null;
+  lead: string | null;
+  usermeta: string | null;
+  nombreAsesorMayorTipificacion: string | null;
+  fechaMayorTipificacionAt: string | null;
+  nombreAsesorUltimaTipificacion: string | null;
+  fechaUltimaGestionAt: string | null;
 }
 
 /** Las 4 tablas del RESUMEN DIARIO en un solo payload (espejo del backend). */
@@ -184,6 +193,33 @@ export class ResumenDiarioService {
     }
     return this.http.get<RankingAsesorDetalle[]>(
       `${this.leadsUrl}/preventa/resumen-diario/ranking-asesor-detalle`,
+      { params }
+    );
+  }
+
+  obtenerEstadoLeadsDetalle(
+    idEquipo: number | null,
+    codigoTipificacion: string,
+    modo: GestionModo,
+    campo: GestionCampoTipi,
+    desde?: string,
+    hasta?: string
+  ): Observable<EstadoLeadDetalle[]> {
+    let params = new HttpParams()
+      .set('codigoTipificacion', codigoTipificacion)
+      .set('modo', modo)
+      .set('campo', campo);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    if (desde) {
+      params = params.set('desde', desde);
+    }
+    if (hasta) {
+      params = params.set('hasta', hasta);
+    }
+    return this.http.get<EstadoLeadDetalle[]>(
+      `${this.leadsUrl}/preventa/resumen-diario/estado-leads-detalle`,
       { params }
     );
   }

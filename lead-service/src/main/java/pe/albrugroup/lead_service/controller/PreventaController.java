@@ -311,6 +311,20 @@ public class PreventaController {
         return ResponseEntity.ok(leadService.obtenerRankingAsesorDetalle(idEquipo, idAsesor, grupoOjt, modo, desde, hasta));
     }
 
+    // 2.8. Detalle de una fila del bloque Estado Leads del RESUMEN DIARIO
+    @GetMapping("/resumen-diario/estado-leads-detalle") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<List<ResumenEstadoLeadDetalleResponse>> obtenerEstadoLeadsDetalle(
+            @RequestParam(required = false) Long idEquipo,
+            @RequestParam String codigoTipificacion,
+            @RequestParam(defaultValue = "GESTIONADOS") ModoConteo modo,
+            @RequestParam(defaultValue = "MAYOR") CampoTipificacion campo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
+    ) {
+        return ResponseEntity.ok(leadService.obtenerEstadoLeadsDetalle(
+                idEquipo, codigoTipificacion, modo, campo, desde, hasta));
+    }
+
     @PostMapping("/gtr/{idLead}/tomar-gestion")
     @PreAuthorize("hasAuthority('READ_LEADS_GTR') and hasAuthority('UPDATE_LEADS_ASESOR')")
     public ResponseEntity<Void> tomarGestionGtr(
@@ -464,6 +478,12 @@ public class PreventaController {
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
         return ResponseEntity.ok(misPreventasV2Service.obtenerDetalle(idProveedor, mes, search, groupBy, pageRequest));
+    }
+
+    @PostMapping("/asesor-ventas/mis-preventas/v2/{idLead}/contacto") @PreAuthorize("hasAuthority('CONTACT_LEADS')")
+    public ResponseEntity<Void> misPreventasV2Contacto(@PathVariable Long idLead) {
+        misPreventasV2Service.registrarContactoSeguimiento(idLead);
+        return ResponseEntity.noContent().build();
     }
 
     // 1.2. Ver (read-only) el detalle actual de una preventa propia

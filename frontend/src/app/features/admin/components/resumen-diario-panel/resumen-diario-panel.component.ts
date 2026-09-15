@@ -7,8 +7,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { MetricsPeriodo } from '../../../../shared/components/period-selector/period-selector.component';
 import { localToday, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { GestionCampoTipi, GestionModo } from '../../services/admin-gestion-campana.service';
-import { PreventaDetalle, RankingAsesorDetalle, ResumenDiarioService } from '../../services/resumen-diario.service';
-import { ResumenAsesorVista, ResumenDiarioFacade } from '../../facades/resumen-diario.facade';
+import { EstadoLeadDetalle, PreventaDetalle, RankingAsesorDetalle, ResumenDiarioService } from '../../services/resumen-diario.service';
+import { ResumenAsesorVista, ResumenDiarioFacade, ResumenEstadoFila } from '../../facades/resumen-diario.facade';
 
 /**
  * Panel RESUMEN DIARIO del DASHBOARD de PREVENTA: las 4 tablas del reporte diario como un poster
@@ -45,6 +45,12 @@ export class ResumenDiarioPanelComponent implements OnInit {
   protected readonly rankingDetallePreventas = computed(
     () => this.rankingDetalle().filter((row) => row.preventa).length
   );
+
+  protected readonly estadoDetalleVisible = signal(false);
+  protected readonly estadoDetalleLoading = signal(false);
+  protected readonly estadoDetalleError = signal(false);
+  protected readonly estadoDetalle = signal<EstadoLeadDetalle[]>([]);
+  protected readonly estadoDetalleFila = signal<ResumenEstadoFila | null>(null);
 
   /** Card del que se abrió el detalle (para el subtítulo del modal). */
   protected readonly detalleCard = computed(() =>
@@ -239,6 +245,32 @@ export class ResumenDiarioPanelComponent implements OnInit {
       this.rankingDetalleError.set(true);
     } finally {
       this.rankingDetalleLoading.set(false);
+    }
+  }
+
+  protected async abrirDetalleEstado(fila: ResumenEstadoFila): Promise<void> {
+    this.estadoDetalleFila.set(fila);
+    this.estadoDetalleVisible.set(true);
+    this.estadoDetalleLoading.set(true);
+    this.estadoDetalleError.set(false);
+    this.estadoDetalle.set([]);
+    try {
+      const range = resolveMetricsRange(this.periodo() ?? 'dia', this.dia(), this.hasta());
+      const filas = await firstValueFrom(
+        this.detalleService.obtenerEstadoLeadsDetalle(
+          this.idEquipo(),
+          fila.key,
+          this.modo() ?? 'GESTIONADOS',
+          this.campo() ?? 'MAYOR',
+          range.desde,
+          range.hasta
+        )
+      );
+      this.estadoDetalle.set(filas);
+    } catch {
+      this.estadoDetalleError.set(true);
+    } finally {
+      this.estadoDetalleLoading.set(false);
     }
   }
 

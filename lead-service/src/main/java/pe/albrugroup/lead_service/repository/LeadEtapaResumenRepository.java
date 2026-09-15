@@ -20,6 +20,8 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
 
     Optional<LeadEtapaResumen> findByIdLeadAndEtapa(Long idLead, Etapa etapa);
 
+    boolean existsByIdLeadAndEtapaAndIdAsesorMerito(Long idLead, Etapa etapa, Long idAsesorMerito);
+
     List<LeadEtapaResumen> findByIdLead(Long idLead);
 
     @Query("""

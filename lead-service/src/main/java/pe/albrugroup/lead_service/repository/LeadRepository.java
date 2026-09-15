@@ -20,6 +20,7 @@ import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
+import pe.albrugroup.lead_service.entity.response.ResumenEstadoLeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenRankingAsesorDetalleResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorPreventaCantidadProjection;
@@ -3155,23 +3156,34 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             SELECT new pe.albrugroup.lead_service.entity.response.ResumenRankingAsesorDetalleResponse(
                    l.id,
                    MAX(reg.createdAt),
+                   MAX(asig.createdAt),
                    l.lead,
                    l.usermeta,
-                   r.primeraCodigoTipificacion,
-                   r.primeraCodigoSubtipificacion,
-                   r.mayorRangoCodigoTipificacion,
-                   r.mayorRangoCodigoSubtipificacion,
-                   r.ultimaCodigoTipificacion,
-                   r.ultimaCodigoSubtipificacion,
-                   MAX(gest.createdAt),
+                   gest.tipificacion,
+                   gest.subtipificacion,
+                   gest.createdAt,
                    false,
                    true)
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
             LEFT JOIN Evento reg ON reg.idLead = l.id AND reg.accion = :accionRegistro
-            LEFT JOIN Evento gest ON gest.idLead = l.id
-                 AND ((:grupoOjt = false AND gest.idActor = :idAsesor)
-                      OR (:grupoOjt = true AND gest.rolActor = 'OJT'))
+            LEFT JOIN Evento asig ON asig.idLead = l.id
+                 AND asig.accion = :accionAsignacion
+                 AND asig.createdAt >= :fechaDesde
+                 AND asig.createdAt < :fechaHasta
+                 AND ((:grupoOjt = false AND asig.idAsesorAsignado = :idAsesor)
+                      OR (:grupoOjt = true AND asig.idAsesorAsignado = r.idAsesorMerito))
+            LEFT JOIN Evento gest ON gest.id = (
+                SELECT MAX(g2.id)
+                FROM Evento g2
+                WHERE g2.idLead = l.id
+                  AND g2.accion = :accionTipificacion
+                  AND g2.etapa = 'PREVENTA'
+                  AND g2.createdAt >= :fechaDesde
+                  AND g2.createdAt < :fechaHasta
+                  AND ((:grupoOjt = false AND g2.idActor = :idAsesor)
+                       OR (:grupoOjt = true AND g2.rolActor = 'OJT'))
+            )
             WHERE r.idAsesorMerito IS NOT NULL
               AND ((:grupoOjt = false AND r.idAsesorMerito = :idAsesor)
                    OR (:grupoOjt = true AND r.idAsesorMerito IN (
@@ -3198,10 +3210,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    OR EXISTS (SELECT 1 FROM Lead la
                               WHERE la.idAsesorAsignado = r.idAsesorMerito
                                 AND la.etapa = 'PREVENTA'))
-            GROUP BY l.id, l.lead, l.usermeta,
-                     r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion,
-                     r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion,
-                     r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
+            GROUP BY l.id, l.lead, l.usermeta, gest.tipificacion, gest.subtipificacion, gest.createdAt
             """)
     List<ResumenRankingAsesorDetalleResponse> detalleRankingPreventasGtr(
             @Param("idAsesor") Long idAsesor,
@@ -3209,6 +3218,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("soloIngresados") boolean soloIngresados,
             @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("accionRegistro") Accion accionRegistro,
+            @Param("accionAsignacion") Accion accionAsignacion,
+            @Param("accionTipificacion") Accion accionTipificacion,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("soloActivos") boolean soloActivos,
@@ -3318,6 +3329,180 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<TipificacionCantidadProjection> resumirTipiRankingGtrMayor(
             @Param("ingresados") boolean ingresados,
             @Param("accionesIngreso") Collection<Accion> accionesIngreso,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.ResumenEstadoLeadDetalleResponse(
+                   l.id,
+                   MAX(reg.createdAt),
+                   l.lead,
+                   l.usermeta,
+                   mayor.nombreActor,
+                   r.mayorRangoAt,
+                   r.nombreAsesorUltimaGestion,
+                   r.fechaUltimaGestion)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            LEFT JOIN Evento reg ON reg.idLead = l.id AND reg.accion IN :accionesIngreso
+            LEFT JOIN Evento mayor ON mayor.id = (
+                SELECT MAX(m2.id)
+                FROM Evento m2
+                WHERE m2.idLead = l.id
+                  AND m2.accion = :accionTipificacion
+                  AND m2.etapa = 'PREVENTA'
+                  AND m2.createdAt = r.mayorRangoAt
+                  AND TRIM(COALESCE(m2.tipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoTipificacion, ''))
+                  AND TRIM(COALESCE(m2.subtipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoSubtipificacion, ''))
+            )
+            WHERE TRIM(r.primeraCodigoTipificacion) = :codigoTipificacion
+              AND ((:ingresados = false AND r.primeraTipificacionAt >= :fechaDesde AND r.primeraTipificacionAt < :fechaHasta)
+                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento ing
+                              WHERE ing.idLead = l.id AND ing.accion IN :accionesIngreso
+                                AND ing.createdAt >= :fechaDesde AND ing.createdAt < :fechaHasta)))
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            GROUP BY l.id, l.lead, l.usermeta, mayor.nombreActor, r.mayorRangoAt,
+                     r.nombreAsesorUltimaGestion, r.fechaUltimaGestion
+            """)
+    List<ResumenEstadoLeadDetalleResponse> detalleEstadoLeadsPrimeraGtr(
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("ingresados") boolean ingresados,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.ResumenEstadoLeadDetalleResponse(
+                   l.id,
+                   MAX(reg.createdAt),
+                   l.lead,
+                   l.usermeta,
+                   mayor.nombreActor,
+                   r.mayorRangoAt,
+                   r.nombreAsesorUltimaGestion,
+                   r.fechaUltimaGestion)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            LEFT JOIN Evento reg ON reg.idLead = l.id AND reg.accion IN :accionesIngreso
+            LEFT JOIN Evento mayor ON mayor.id = (
+                SELECT MAX(m2.id)
+                FROM Evento m2
+                WHERE m2.idLead = l.id
+                  AND m2.accion = :accionTipificacion
+                  AND m2.etapa = 'PREVENTA'
+                  AND m2.createdAt = r.mayorRangoAt
+                  AND TRIM(COALESCE(m2.tipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoTipificacion, ''))
+                  AND TRIM(COALESCE(m2.subtipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoSubtipificacion, ''))
+            )
+            WHERE TRIM(r.ultimaCodigoTipificacion) = :codigoTipificacion
+              AND ((:ingresados = false AND r.ultimaTipificacionAt >= :fechaDesde AND r.ultimaTipificacionAt < :fechaHasta)
+                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento ing
+                              WHERE ing.idLead = l.id AND ing.accion IN :accionesIngreso
+                                AND ing.createdAt >= :fechaDesde AND ing.createdAt < :fechaHasta)))
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            GROUP BY l.id, l.lead, l.usermeta, mayor.nombreActor, r.mayorRangoAt,
+                     r.nombreAsesorUltimaGestion, r.fechaUltimaGestion
+            """)
+    List<ResumenEstadoLeadDetalleResponse> detalleEstadoLeadsUltimaGtr(
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("ingresados") boolean ingresados,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.ResumenEstadoLeadDetalleResponse(
+                   l.id,
+                   MAX(reg.createdAt),
+                   l.lead,
+                   l.usermeta,
+                   mayor.nombreActor,
+                   r.mayorRangoAt,
+                   r.nombreAsesorUltimaGestion,
+                   r.fechaUltimaGestion)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            LEFT JOIN Evento reg ON reg.idLead = l.id AND reg.accion IN :accionesIngreso
+            LEFT JOIN Evento mayor ON mayor.id = (
+                SELECT MAX(m2.id)
+                FROM Evento m2
+                WHERE m2.idLead = l.id
+                  AND m2.accion = :accionTipificacion
+                  AND m2.etapa = 'PREVENTA'
+                  AND m2.createdAt = r.mayorRangoAt
+                  AND TRIM(COALESCE(m2.tipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoTipificacion, ''))
+                  AND TRIM(COALESCE(m2.subtipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoSubtipificacion, ''))
+            )
+            WHERE TRIM(r.mayorRangoCodigoTipificacion) = :codigoTipificacion
+              AND ((:ingresados = false AND r.mayorRangoAt >= :fechaDesde AND r.mayorRangoAt < :fechaHasta)
+                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento ing
+                              WHERE ing.idLead = l.id AND ing.accion IN :accionesIngreso
+                                AND ing.createdAt >= :fechaDesde AND ing.createdAt < :fechaHasta)))
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            GROUP BY l.id, l.lead, l.usermeta, mayor.nombreActor, r.mayorRangoAt,
+                     r.nombreAsesorUltimaGestion, r.fechaUltimaGestion
+            """)
+    List<ResumenEstadoLeadDetalleResponse> detalleEstadoLeadsMayorGtr(
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("ingresados") boolean ingresados,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.ResumenEstadoLeadDetalleResponse(
+                   l.id,
+                   MAX(reg.createdAt),
+                   l.lead,
+                   l.usermeta,
+                   mayor.nombreActor,
+                   r.mayorRangoAt,
+                   r.nombreAsesorUltimaGestion,
+                   r.fechaUltimaGestion)
+            FROM Lead l
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            JOIN Evento reg ON reg.idLead = l.id
+                 AND reg.accion IN :accionesIngreso
+                 AND reg.createdAt >= :fechaDesde
+                 AND reg.createdAt < :fechaHasta
+            LEFT JOIN Evento mayor ON mayor.id = (
+                SELECT MAX(m2.id)
+                FROM Evento m2
+                WHERE m2.idLead = l.id
+                  AND m2.accion = :accionTipificacion
+                  AND m2.etapa = 'PREVENTA'
+                  AND m2.createdAt = r.mayorRangoAt
+                  AND TRIM(COALESCE(m2.tipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoTipificacion, ''))
+                  AND TRIM(COALESCE(m2.subtipificacion, '')) = TRIM(COALESCE(r.mayorRangoCodigoSubtipificacion, ''))
+            )
+            WHERE ((:usarPrimera = true AND (r.id IS NULL OR r.primeraCodigoTipificacion IS NULL OR TRIM(r.primeraCodigoTipificacion) = ''))
+                OR (:usarUltima = true AND (r.id IS NULL OR r.ultimaCodigoTipificacion IS NULL OR TRIM(r.ultimaCodigoTipificacion) = ''))
+                OR (:usarMayor = true AND (r.id IS NULL OR r.mayorRangoCodigoTipificacion IS NULL OR TRIM(r.mayorRangoCodigoTipificacion) = '')))
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            GROUP BY l.id, l.lead, l.usermeta, mayor.nombreActor, r.mayorRangoAt,
+                     r.nombreAsesorUltimaGestion, r.fechaUltimaGestion
+            """)
+    List<ResumenEstadoLeadDetalleResponse> detalleEstadoLeadsSinTipificarGtr(
+            @Param("usarPrimera") boolean usarPrimera,
+            @Param("usarUltima") boolean usarUltima,
+            @Param("usarMayor") boolean usarMayor,
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
+            @Param("accionTipificacion") Accion accionTipificacion,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarEquipos") boolean filtrarEquipos,

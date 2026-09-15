@@ -497,6 +497,21 @@ th.n {
 }
 
 /* Estado leads */
+.est-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.est-row:hover td,
+.est-row:focus-visible td {
+  background: var(--line-soft);
+}
+
+.est-row:focus-visible {
+  outline: 2px solid var(--win);
+  outline-offset: -2px;
+}
+
 .est-name {
   font-weight: 500;
 }

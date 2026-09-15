@@ -2075,24 +2075,28 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             SELECT new pe.albrugroup.lead_service.entity.response.ResumenRankingAsesorDetalleResponse(
                    l.id,
                    MAX(reg.createdAt),
+                   MAX(e.createdAt),
                    l.lead,
                    l.usermeta,
-                   r.primeraCodigoTipificacion,
-                   r.primeraCodigoSubtipificacion,
-                   r.mayorRangoCodigoTipificacion,
-                   r.mayorRangoCodigoSubtipificacion,
-                   r.ultimaCodigoTipificacion,
-                   r.ultimaCodigoSubtipificacion,
-                   MAX(gest.createdAt),
+                   gest.tipificacion,
+                   gest.subtipificacion,
+                   gest.createdAt,
                    true,
                    false)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
-            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
             LEFT JOIN Evento reg ON reg.idLead = l.id AND reg.accion = :accionRegistro
-            LEFT JOIN Evento gest ON gest.idLead = l.id
-                 AND ((:grupoOjt = false AND gest.idActor = :idAsesor)
-                      OR (:grupoOjt = true AND gest.rolActor = 'OJT'))
+            LEFT JOIN Evento gest ON gest.id = (
+                SELECT MAX(g2.id)
+                FROM Evento g2
+                WHERE g2.idLead = l.id
+                  AND g2.accion = :accionTipificacion
+                  AND g2.etapa = 'PREVENTA'
+                  AND g2.createdAt >= :fechaDesde
+                  AND g2.createdAt < :fechaHasta
+                  AND ((:grupoOjt = false AND g2.idActor = :idAsesor)
+                       OR (:grupoOjt = true AND g2.rolActor = 'OJT'))
+            )
             WHERE e.accion = :accionAsignacion
               AND e.idAsesorAsignado IS NOT NULL
               AND ((:grupoOjt = false AND e.idAsesorAsignado = :idAsesor)
@@ -2119,15 +2123,13 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                    OR EXISTS (SELECT 1 FROM Lead la
                               WHERE la.idAsesorAsignado = e.idAsesorAsignado
                                 AND la.etapa = 'PREVENTA'))
-            GROUP BY l.id, l.lead, l.usermeta,
-                     r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion,
-                     r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion,
-                     r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
+            GROUP BY l.id, l.lead, l.usermeta, gest.tipificacion, gest.subtipificacion, gest.createdAt
             """)
     List<ResumenRankingAsesorDetalleResponse> detalleRankingAsignadosGtr(
             @Param("idAsesor") Long idAsesor,
             @Param("grupoOjt") boolean grupoOjt,
             @Param("accionAsignacion") Accion accionAsignacion,
+            @Param("accionTipificacion") Accion accionTipificacion,
             @Param("soloIngresados") boolean soloIngresados,
             @Param("accionRegistro") Accion accionRegistro,
             @Param("fechaDesde") Instant fechaDesde,
