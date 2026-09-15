@@ -71,6 +71,7 @@ export class EmployeeAccessPanelComponent {
   private readonly teamAssignableRoles = new Set([
     'ASESOR_GTR',
     'SUPERVISOR_GTR',
+    'FREELANCE',
     'ASESOR_VENTAS',
     'SUPERVISOR_VENTAS',
     'OJT',

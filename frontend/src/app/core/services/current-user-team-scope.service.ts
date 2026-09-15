@@ -6,6 +6,7 @@ import { SessionService } from './session.service';
 
 const TEAM_SCOPED_DASHBOARD_ROLES = new Set([
   'ASESOR_GTR',
+  'FREELANCE',
   'SUPERVISOR_GTR',
   'ASESOR_BACKOFFICE',
   'SUPERVISOR_BACKOFFICE',

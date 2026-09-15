@@ -172,6 +172,38 @@
         ],
         "createdAt": "2026-09-15T02:22:37.934Z",
         "reason": "Poster radii: matches dashboard-venta-stage poster shapes (approved)"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": ".69rem",
+        "createdAt": "2026-09-15T22:43:42.669Z",
+        "reason": "Intentional: compact 36px projection strip labels"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "1.06rem",
+        "createdAt": "2026-09-15T22:43:42.764Z",
+        "reason": "Intentional: projection strip mono numbers sized for 36px height"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#2d6b4a",
+        "createdAt": "2026-09-15T23:15:34.426Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(0 0 0 / .15)",
+        "createdAt": "2026-09-15T23:15:34.514Z"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": ".2rem",
+        "createdAt": "2026-09-15T23:15:34.601Z"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": ".25rem",
+        "createdAt": "2026-09-15T23:15:34.712Z"
       }
     ]
   }

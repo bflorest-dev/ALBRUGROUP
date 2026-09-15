@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter } from 'rxjs';
+import { debounceTime, filter, take } from 'rxjs';
 import { AttendanceFacade } from '../../facades/attendance.facade';
 import { AttendanceRealtimeService } from '../../services/attendance-realtime.service';
 import { AuthSessionService } from '../../services/auth-session.service';
@@ -28,6 +28,9 @@ import { POSTVENTA_BACKOFFICE_ROLE, POSTVENTA_ROLE, ROLE_HOME_ROUTES } from '../
 import { GtrAgendadosAlertFacade } from '../../../features/gtr/facades/gtr-agendados-alert.facade';
 import { EquiposNavService } from '../../services/equipos-nav.service';
 import { CurrentUserProviderScopeService } from '../../services/current-user-provider-scope.service';
+import { ProyeccionVentasService } from '../../services/proyeccion-ventas.service';
+import { LeadRealtimeService } from '../../../features/preventa/services/lead-realtime.service';
+import { ProyeccionBannerData } from '../../../shared/components/top-banner/top-banner.component';
 import { LeadMeritoCorreccionDrawerComponent } from '../../../shared/components/lead-merito-correccion-drawer/lead-merito-correccion-drawer.component';
 import { AdminSidebarV2Component } from './admin-sidebar-v2.component';
 import { SidebarDomainDefinition, SidebarItem, SidebarRoleModeOption } from './sidebar-item.model';
@@ -40,6 +43,7 @@ const ROLE_THEME_CLASS: Record<string, string> = {
   RRHH: 'theme-rrhh',
   RECLUTADOR: 'theme-recruiter',
   CAPACITADOR: 'theme-trainer',
+  FREELANCE: 'theme-freelance',
   ASESOR_GTR: 'theme-gtr',
   SUPERVISOR_GTR: 'theme-gtr',
   ASESOR_VENTAS: 'theme-sales',
@@ -79,6 +83,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
   private readonly gtrAgendadosAlertFacade = inject(GtrAgendadosAlertFacade);
   private readonly equiposNav = inject(EquiposNavService);
   private readonly providerScope = inject(CurrentUserProviderScopeService);
+  private readonly proyeccionService = inject(ProyeccionVentasService);
+  private readonly leadRealtime = inject(LeadRealtimeService);
   private readonly router = inject(Router);
   // Selector de proveedor (BACKOFFICE / POSTVENTA con más de un proveedor asignado).
   protected readonly proveedoresUsuario = this.providerScope.proveedores;
@@ -167,6 +173,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     return activeRole ? ROLE_THEME_CLASS[activeRole] ?? 'theme-admin' : 'theme-admin';
   });
   protected readonly primaryRoleLabel = computed(() => formatLabel(this.activeRole()));
+  protected readonly proyeccionData = signal<ProyeccionBannerData | null>(null);
   protected readonly roleModes = computed<SidebarRoleModeOption[]>(() => {
     const roles = this.session()?.roles ?? [];
     if (!roles.includes(POSTVENTA_ROLE) || !roles.includes(POSTVENTA_BACKOFFICE_ROLE)) {
@@ -372,6 +379,18 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ];
     }
 
+    if (activeRole === 'FREELANCE') {
+      return [
+        {
+          domainId: 'workspace',
+          label: 'Seguimiento',
+          route: '/app/freelance',
+          icon: 'pi pi-chart-line',
+          exact: true
+        }
+      ];
+    }
+
     if (activeRole === 'ASESOR_VENTAS' || activeRole === 'OJT') {
       const items = [
         {
@@ -532,6 +551,41 @@ export class PrivateLayoutComponent implements AfterViewInit {
       }
     });
 
+    effect(() => {
+      const role = this.activeRole();
+      const confirmed = this.attendanceFacade.statusConfirmed();
+      const status = this.attendanceFacade.rawStatus();
+      const isVenta = role === 'ASESOR_VENTAS' || role === 'SUPERVISOR_VENTAS';
+      if (!isVenta || !confirmed || status === 'OFFLINE') {
+        untracked(() => this.proyeccionData.set(null));
+        return;
+      }
+      untracked(() => this.fetchProyeccion(role!));
+    });
+
+    const empleadoId = this.session()?.empleadoId;
+    if (empleadoId) {
+      this.leadRealtime.watchTopic(`/topic/leads/asesor/${empleadoId}`).pipe(
+        filter(e => e.tipo === 'TIPIFICACION'),
+        debounceTime(5000),
+        takeUntilDestroyed(this.destroyRef)
+      ).subscribe(() => {
+        const role = this.activeRole();
+        if (role === 'ASESOR_VENTAS') {
+          this.fetchProyeccion(role);
+        }
+      });
+    }
+    this.leadRealtime.watchTopic('/topic/leads/etapa/VENTA').pipe(
+      filter(e => e.tipo === 'TIPIFICACION'),
+      debounceTime(10000),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      if (this.activeRole() === 'SUPERVISOR_VENTAS') {
+        this.fetchProyeccion('SUPERVISOR_VENTAS');
+      }
+    });
+
     // Marcar OFFLINE = terminar la jornada para roles operativos de bandeja. Si la salida respondio a
     // una intencion de logout guiada, completamos esa intencion en cualquier rol. COMMUNITY conserva
     // acceso cuando marco salida por iniciativa propia.
@@ -639,6 +693,16 @@ export class PrivateLayoutComponent implements AfterViewInit {
   @HostListener('document:keydown.escape')
   protected onEscape(): void {
     this.cancelLogoutGuidance();
+  }
+
+  private fetchProyeccion(role: string): void {
+    const obs = role === 'SUPERVISOR_VENTAS'
+      ? this.proyeccionService.obtenerProyeccionEquipo()
+      : this.proyeccionService.obtenerProyeccionAsesor();
+    obs.pipe(take(1)).subscribe({
+      next: (r) => this.proyeccionData.set(r),
+      error: () => this.proyeccionData.set(null)
+    });
   }
 
   private getToday(): string {

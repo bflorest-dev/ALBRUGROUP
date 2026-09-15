@@ -486,6 +486,16 @@ public class PreventaController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/proyeccion-ventas/asesor") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    public ResponseEntity<ProyeccionVentasResponse> proyeccionAsesor() {
+        return ResponseEntity.ok(misPreventasV2Service.proyeccionAsesor());
+    }
+
+    @GetMapping("/proyeccion-ventas/equipo") @PreAuthorize("hasAuthority('READ_LEADS_SUPERVISOR_VENTAS_RESUMEN')")
+    public ResponseEntity<ProyeccionVentasResponse> proyeccionEquipo() {
+        return ResponseEntity.ok(misPreventasV2Service.proyeccionEquipo());
+    }
+
     // 1.2. Ver (read-only) el detalle actual de una preventa propia
     @GetMapping("/{idLead}/detalle-mi-preventa") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<LeadDetalleResponse> obtenerDetalleMiPreventa(@PathVariable Long idLead) {

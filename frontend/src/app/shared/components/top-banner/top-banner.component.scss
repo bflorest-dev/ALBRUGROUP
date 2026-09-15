@@ -7,6 +7,8 @@
   height: .75rem;
 }
 
+// ── Modo original (title/detail/context) ──────────────────────────────────────
+
 .top-banner {
   align-items: center;
   border-bottom: 1px solid var(--app-border-soft);
@@ -112,4 +114,85 @@
   .top-banner::after {
     animation: none;
   }
+}
+
+// ── Modo proyección ───────────────────────────────────────────────────────────
+
+.top-banner--proyeccion {
+  display: block;
+  grid-template-columns: none;
+  min-height: 0;
+  padding: 0;
+  position: relative;
+  margin-inline: calc(-1 * var(--layout-content-padding, 2rem));
+  width: calc(100% + 2 * var(--layout-content-padding, 2rem));
+}
+
+.top-banner--proyeccion::after {
+  display: none;
+}
+
+.proyeccion {
+  display: flex;
+  align-items: stretch;
+  height: 2.25rem;
+}
+
+.proyeccion__seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  overflow: hidden;
+  min-width: 220px;
+}
+
+.proyeccion__seg--instaladas {
+  background: #2d6b4a;
+}
+
+.proyeccion__seg--proyectadas {
+  border-left: 1px dashed rgba(255 255 255 / .15);
+  background: repeating-linear-gradient(
+    110deg,
+    #3a8f62 0 6px,
+    #43a070 6px 12px
+  );
+}
+
+.proyeccion__label {
+  font-size: .69rem;
+  color: rgba(255 255 255 / .75);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.proyeccion__num {
+  font-family: 'Spline Sans Mono', ui-monospace, monospace;
+  font-size: 1.06rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.proyeccion__num--accent {
+  color: rgba(255 255 255 / .9);
+}
+
+.proyeccion__chip {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: .69rem;
+  font-weight: 600;
+  color: #2d6b4a;
+  background: #fff;
+  padding: .15rem .55rem;
+  border-radius: .2rem;
+  box-shadow: 0 1px 4px rgba(0 0 0 / .15);
+  white-space: nowrap;
+  z-index: 1;
+  pointer-events: none;
 }

@@ -173,6 +173,9 @@ public class DataLoader {
         savePermiso("CORREGIR_MERITO_PREVENTA", "Puede corregir el asesor de merito de una preventa", "LEAD_PREVENTA_MERITO", "CORRECT");
         savePermiso("CORREGIR_LEAD_ADMIN", "Puede corregir integralmente un lead: editar datos y eliminar eventos", "LEAD", "CORRECCION");
         savePermiso("SUBSANAR_LEAD_ADMIN", "Puede crear o reconstruir historicamente un lead completo", "LEAD", "SUBSANACION");
+        savePermiso("FREELANCE_READ", "Puede consultar su seguimiento personal de ventas", "FREELANCE_VENTA", "READ");
+        savePermiso("FREELANCE_CREATE", "Puede registrar ventas freelance", "FREELANCE_VENTA", "CREATE");
+        savePermiso("FREELANCE_CORRECT", "Puede corregir y reenviar sus ventas retornadas", "FREELANCE_VENTA", "CORRECT");
         savePermiso("ASSIGN_LEADS", "Puede asignar leads", "LEAD", "ASSIGN");
         savePermiso("READ_LEADS_ASESOR", "Puede ver bandeja y detalle de leads del asesor", "LEAD", "READ");
         savePermiso("UPDATE_LEADS_ASESOR", "Puede actualizar datos de gestion del lead", "LEAD", "UPDATE");
@@ -400,6 +403,16 @@ public class DataLoader {
                 getPermiso("EXTEND_HORARIO")
         );
         saveRol("ASESOR_GTR", "GTR - Asignacion y seguimiento de leads", asesorGtrPermisos);
+
+        Set<Permiso> freelancePermisos = Set.of(
+                getPermiso("FREELANCE_READ"),
+                getPermiso("FREELANCE_CREATE"),
+                getPermiso("FREELANCE_CORRECT"),
+                getPermiso("READ_UBIGEO"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("UPDATE_ASISTENCIAS")
+        );
+        saveRol("FREELANCE", "Registro y seguimiento personal de ventas", freelancePermisos);
 
         Set<Permiso> supervisorGtrPermisos = Set.of(
                 getPermiso("READ_LEADS_GTR"),

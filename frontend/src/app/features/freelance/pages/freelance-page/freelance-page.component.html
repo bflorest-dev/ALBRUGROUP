@@ -1,0 +1,133 @@
+<section class="freelance-shell">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Panel freelance</p>
+      <h1>Seguimiento de mis ventas</h1>
+      <p>Ventas registradas entre {{ range().desde | date:'dd MMM yyyy':'UTC':'es-PE' }} y {{ range().hasta | date:'dd MMM yyyy':'UTC':'es-PE' }}</p>
+    </div>
+    <div class="hero-actions">
+      @if ((options()?.proveedores?.length ?? 0) > 1) {
+        <label class="provider-filter">
+          <span>Proveedor</span>
+          <select [value]="providerId() ?? ''" (change)="onProviderChange($any($event.target).value)">
+            <option value="">Todos</option>
+            @for (provider of options()?.proveedores ?? []; track provider.id) {
+              <option [value]="provider.id">{{ provider.nombre }}</option>
+            }
+          </select>
+        </label>
+      }
+      <app-period-selector
+        [periodo]="period()"
+        [dia]="day()"
+        [hasta]="until()"
+        (periodoChange)="onPeriodChange($event)"
+        (rangoChange)="onRangeChange($event)"
+      />
+      <button class="add-sale" type="button" (click)="openCreate()" [disabled]="!canCreate()">
+        <i class="ti ti-plus" aria-hidden="true"></i> Agregar venta
+      </button>
+    </div>
+  </header>
+
+  @if (teamError()) {
+    <aside class="team-warning" role="alert">
+      <i class="ti ti-users-minus" aria-hidden="true"></i>
+      <div><strong>No puedes registrar ventas todavía</strong><span>{{ teamError() }} Tu historial permanece disponible.</span></div>
+    </aside>
+  }
+  @if (error()) { <div class="error-banner" role="alert">{{ error() }}</div> }
+
+  <article class="funnel-card" [class.loading]="loading()">
+    <div class="funnel-bars">
+      <div class="funnel-row registered"><strong>{{ data().contadores.registradas }}</strong><span>Registradas</span></div>
+      <div class="funnel-row uploaded" [style.width.%]="data().contadores.registradas ? Math.max(34, conversionUploaded()) : 34">
+        <strong>{{ data().contadores.subidas }}</strong><span>Subidas</span><small>{{ conversionUploaded() }}% de registradas</small>
+      </div>
+      <div class="funnel-row installed" [style.width.%]="data().contadores.subidas ? Math.max(22, conversionInstalled()) : 22">
+        <strong>{{ data().contadores.instaladas }}</strong><span>Instaladas</span><small>{{ conversionInstalled() }}% de subidas</small>
+      </div>
+    </div>
+    <div class="return-counter">
+      <span>Requieren atención</span><strong>{{ data().contadores.retornadas }}</strong><small>retornadas a Preventa</small>
+    </div>
+  </article>
+
+  <div class="insight-grid">
+    <article class="panel distribution">
+      <header><h2>Distribución por estado</h2><span>{{ data().contadores.registradas }} leads</span></header>
+      <div class="state-list">
+        @for (state of data().estados; track state.clave) {
+          <div class="state-row">
+            <span class="state-name"><i [class]="stateClass(state.clave)"></i>{{ stateLabel(state.clave) }}</span>
+            <span class="state-bar"><i [class]="stateClass(state.clave)" [style.width.%]="barWidth(state.cantidad)"></i></span>
+            <strong>{{ state.cantidad }}</strong>
+          </div>
+        } @empty {
+          <p class="empty">Sin ventas en el período seleccionado.</p>
+        }
+      </div>
+    </article>
+
+    <article class="panel providers">
+      <header><h2>Rendimiento por proveedor</h2></header>
+      <div class="provider-table-wrap">
+        <table>
+          <thead><tr><th>Proveedor</th><th>Reg.</th><th>Sub.</th><th>Inst.</th><th>Ret.</th></tr></thead>
+          <tbody>
+            @for (provider of data().proveedores; track provider.idProveedor) {
+              <tr><td>{{ provider.proveedor || 'Sin proveedor' }}</td><td>{{ provider.registradas }}</td><td>{{ provider.subidas }}</td><td>{{ provider.instaladas }}</td><td>{{ provider.retornadas }}</td></tr>
+            } @empty { <tr><td colspan="5" class="empty">Sin datos</td></tr> }
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+
+  <article class="panel detail">
+    <header class="detail-head">
+      <div><h2>Detalle de ventas registradas</h2><span>{{ filteredRows().length }} de {{ data().detalle.length }} ventas</span></div>
+      <div class="filters">
+        <label class="search"><i class="ti ti-search"></i><input [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Buscar por lead, documento o cliente"></label>
+        <select [ngModel]="status()" (ngModelChange)="status.set($event)" aria-label="Filtrar por estado">
+          <option value="TODOS">Todos los estados</option>
+          @for (state of data().estados; track state.clave) { <option [value]="state.clave">{{ stateLabel(state.clave) }}</option> }
+        </select>
+      </div>
+    </header>
+    <div class="table-scroll">
+      <table class="detail-table">
+        <thead><tr><th>Ingreso</th><th>Estado</th><th>Lead</th><th>Cliente</th><th>Documento</th><th>Proveedor / plan</th><th>Gestión Venta</th><th>Intentos</th><th></th></tr></thead>
+        <tbody>
+          @for (row of filteredRows(); track row.idLead) {
+            <tr [class.returned]="row.requiereCorreccion">
+              <td><strong>{{ row.fechaRegistro | date:'dd/MM':'UTC' }}</strong><small>{{ row.fechaRegistro | date:'HH:mm':'UTC' }}</small></td>
+              <td><span class="status-pill" [class]="stateClass(row.clasificacion)">{{ stateLabel(row.clasificacion) }}</span></td>
+              <td class="mono">{{ row.lead }}</td>
+              <td><strong>{{ row.cliente || 'Sin nombre' }}</strong><small>{{ row.celularRegistro || '—' }}</small></td>
+              <td><span>{{ row.tipoDocumento || '—' }}</span><small class="mono">{{ row.numeroDocumento || '—' }}</small></td>
+              <td><strong>{{ row.proveedor || '—' }}</strong><small>{{ row.plan || 'Sin plan' }}</small></td>
+              <td><span>{{ row.tipificacionVenta ? stateLabel(row.tipificacionVenta) : 'Pendiente' }}</span><small>{{ row.comentario || row.asesorVenta || '—' }}</small></td>
+              <td class="mono">{{ row.numeroIntentos }}</td>
+              <td>
+                @if (row.puedeCorregir) {
+                  <button class="correct" type="button" (click)="openCorrection(row)"><i class="ti ti-edit"></i> Corregir</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="9" class="empty large">No hay ventas que coincidan con los filtros.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
+
+<app-freelance-venta-drawer
+  [visible]="drawerOpen()"
+  [mode]="correctionLeadId() ? 'corregir' : 'crear'"
+  [idLead]="correctionLeadId()"
+  (close)="closeDrawer()"
+  (saved)="saved()"
+/>

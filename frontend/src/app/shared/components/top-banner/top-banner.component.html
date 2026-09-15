@@ -1,4 +1,25 @@
-@if (hasContent()) {
+@if (hasProyeccion()) {
+  <section class="top-banner top-banner--proyeccion" aria-label="Proyección de ventas del mes">
+    <div class="proyeccion">
+      <div class="proyeccion__seg proyeccion__seg--instaladas"
+           #instaladasSeg
+           [style.flex]="flexInstaladas()">
+        <span class="proyeccion__label">Instaladas</span>
+        <span class="proyeccion__num">{{ proyeccion()!.instaladas }}</span>
+      </div>
+
+      <div class="proyeccion__seg proyeccion__seg--proyectadas"
+           [style.flex]="flexProyectadas()">
+        <span class="proyeccion__num proyeccion__num--accent">+{{ proyectadas() }}</span>
+        <span class="proyeccion__label">proyectadas</span>
+      </div>
+    </div>
+
+    <div class="proyeccion__chip" #chipEl [style.left]="chipLeft()">
+      Total proyectado: {{ totalProyectado() }}
+    </div>
+  </section>
+} @else if (hasContent()) {
   <section class="top-banner" aria-labelledby="top-banner-title">
     <i [class]="icon() + ' top-banner__icon'" aria-hidden="true"></i>
 

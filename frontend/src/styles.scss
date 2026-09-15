@@ -393,6 +393,32 @@ app-employee-access-panel .row-actions {
   --layout-sidebar-signal: #60a5fa;
 }
 
+.theme-freelance {
+  --role-primary: #3a270c;
+  --role-secondary: #b87822;
+  --role-accent: #e9a23b;
+  --role-accent-2: #f2be71;
+  --role-accent-soft: rgba(233, 162, 59, 0.12);
+  --role-panel-text: #2b1b08;
+  --role-muted: #75644e;
+  --role-hero-text: #ffffff;
+  --role-hero-muted: rgba(255, 255, 255, 0.88);
+  --role-hero-bg: linear-gradient(135deg, #3a270c 0%, #b87822 100%);
+  --role-button-bg: linear-gradient(135deg, #b87822 0%, #f2be71 100%);
+  --role-button-alt-bg: rgba(233, 162, 59, 0.12);
+  --role-button-alt-text: #5b390d;
+  --layout-sidebar-bg: #3a270c;
+  --layout-sidebar-bg-deep: #181005;
+  --layout-sidebar-glow: rgba(242, 190, 113, 0.32);
+  --layout-sidebar-icon: #f8ddb4;
+  --layout-sidebar-rail: #181005;
+  --layout-sidebar-panel: #3a270c;
+  --layout-sidebar-panel-deep: #2c1d09;
+  --layout-sidebar-ink: #fff9ef;
+  --layout-sidebar-muted: #efd3a8;
+  --layout-sidebar-signal: #f2be71;
+}
+
 .theme-sales {
   --role-primary: #7c2d12;
   --role-secondary: #ea580c;

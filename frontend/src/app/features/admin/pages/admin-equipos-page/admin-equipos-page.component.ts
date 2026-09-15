@@ -34,7 +34,7 @@ interface GrupoEmpleados {
 
 // Roles que SÍ pertenecen a un equipo. Backoffice y postventa se gestionan por proveedor (tab Proveedores),
 // no aquí. Solo filtramos las OPCIONES: los miembros ya asignados de otros roles no se tocan (dual-run).
-const ROLES_DE_EQUIPO = new Set(['ASESOR_GTR', 'SUPERVISOR_GTR', 'ASESOR_VENTAS', 'SUPERVISOR_VENTAS', 'OJT']);
+const ROLES_DE_EQUIPO = new Set(['ASESOR_GTR', 'SUPERVISOR_GTR', 'ASESOR_VENTAS', 'SUPERVISOR_VENTAS', 'OJT', 'FREELANCE']);
 
 @Component({
   selector: 'app-admin-equipos-page',

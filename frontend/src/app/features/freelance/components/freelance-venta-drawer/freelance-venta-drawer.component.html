@@ -1,0 +1,171 @@
+@if (visible()) {
+  <div class="drawer-scrim" (click)="dismiss()" aria-hidden="true"></div>
+  <aside class="drawer" role="dialog" aria-modal="true" [attr.aria-label]="title()">
+    <header class="drawer-head">
+      <div>
+        <span class="back">Venta freelance</span>
+        <h2>{{ title() }}</h2>
+        <p>{{ mode() === 'corregir' ? 'Corrige el expediente observado y vuelve a enviarlo a Venta.' : 'Completa el expediente; la preventa se cerrará automáticamente.' }}</p>
+      </div>
+      <button type="button" class="icon-button" (click)="dismiss()" aria-label="Cerrar drawer">
+        <i class="ti ti-x" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <nav class="steps" aria-label="Progreso del registro">
+      @for (label of ['Identidad', 'Expediente', 'Oferta', 'Revisión']; track label; let i = $index) {
+        <button type="button" [class.active]="step() === i" [class.done]="step() > i" (click)="step.set(i)">
+          <span>{{ i + 1 }}</span>{{ label }}
+        </button>
+      }
+    </nav>
+
+    <form class="drawer-body" [formGroup]="form" (ngSubmit)="submit()">
+      @if (loading()) {
+        <div class="loading-state"><span></span>Cargando expediente…</div>
+      } @else {
+        @if (mode() === 'corregir' && preparacion()) {
+          <section class="return-note" aria-live="polite">
+            <i class="ti ti-arrow-back-up" aria-hidden="true"></i>
+            <div>
+              <strong>Venta retornada por {{ preparacion()?.motivoVenta || 'observación de Venta' }}</strong>
+              <p>{{ preparacion()?.submotivoVenta || 'Revisa el expediente completo.' }}@if (preparacion()?.comentarioVenta) { · {{ preparacion()?.comentarioVenta }} }</p>
+            </div>
+          </section>
+        }
+
+        @if (error()) {
+          <div class="form-error" role="alert"><i class="ti ti-alert-circle"></i>{{ error() }}</div>
+        }
+
+        @if (step() === 0) {
+          <section class="form-section">
+            <div class="section-copy">
+              <h3>Identidad del contacto</h3>
+              <p>El teléfono identifica la oportunidad y no podrá cambiar después del registro.</p>
+            </div>
+            <div class="fields identity-grid">
+              <label><span>Prefijo</span><input formControlName="prefijo" placeholder="+51" [class.invalid]="invalid('prefijo')"></label>
+              <label class="wide"><span>Teléfono</span><input formControlName="lead" inputmode="numeric" placeholder="999 888 777" [class.invalid]="invalid('lead')"></label>
+              <label class="full"><span>Usermeta <small>opcional, sin @</small></span><input formControlName="usermeta" placeholder="usuario.meta" [class.invalid]="invalid('usermeta')"></label>
+            </div>
+          </section>
+        }
+
+        @if (step() === 1) {
+          <section class="form-section">
+            <div class="section-copy">
+              <h3>Expediente completo</h3>
+              <p>Datos del titular, contacto y dirección donde se instalará el servicio.</p>
+            </div>
+            <div class="fields two-columns provider-first">
+              <label><span>Proveedor</span>
+                <select formControlName="idProveedor" (change)="selectProvider($any($event.target).value)" [class.invalid]="invalid('idProveedor')">
+                  <option [ngValue]="null">Selecciona</option>
+                  @for (provider of providers(); track provider.id) { <option [ngValue]="provider.id">{{ provider.nombre }}</option> }
+                </select>
+              </label>
+            </div>
+            <h4>Titular y contacto</h4>
+            <div class="fields two-columns">
+              <label><span>Tipo de documento</span><select formControlName="tipoDocumento"><option>DNI</option><option>CE</option><option>RUC</option></select></label>
+              <label><span>N.º documento</span><input formControlName="numeroDocumentoTitularServicio" inputmode="numeric" [class.invalid]="invalid('numeroDocumentoTitularServicio')"></label>
+              <label class="full"><span>Nombre del titular</span><input formControlName="nombreTitularServicio" [class.invalid]="invalid('nombreTitularServicio')"></label>
+              <label><span>Celular de registro</span><input formControlName="celularRegistro" inputmode="numeric" [class.invalid]="invalid('celularRegistro')"></label>
+              <label><span>Celular de referencia <small>opcional</small></span><input formControlName="celularReferencia" inputmode="numeric" [class.invalid]="invalid('celularReferencia')"></label>
+              <label><span>Celular de grabación</span><input formControlName="celularGrabacion" inputmode="numeric" [class.invalid]="invalid('celularGrabacion')"></label>
+              <label><span>Correo</span><input formControlName="correo" type="email" placeholder="cliente@correo.com" [class.invalid]="invalid('correo')"></label>
+              <label><span>Fecha de nacimiento</span><input formControlName="fechaNacimiento" type="date" [class.invalid]="invalid('fechaNacimiento')"></label>
+              <label><span>Parentesco</span><select formControlName="parentesco"><option>TITULAR</option><option>MADRE</option><option>PADRE</option><option>HERMANO_A</option><option>TIO_A</option><option>CONOCIDO</option></select></label>
+              <fieldset class="full location-fields">
+                <legend>Ubicación de nacimiento <small>opcional</small></legend>
+                <label><span>Departamento</span><select formControlName="idDepartamentoNacimiento" (change)="selectDepartment('nacimiento', $any($event.target).value)"><option [ngValue]="null">Selecciona</option>@for (item of departamentos(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
+                <label><span>Provincia</span><select formControlName="idProvinciaNacimiento" (change)="selectProvince('nacimiento', $any($event.target).value)"><option [ngValue]="null">Selecciona</option>@for (item of provinciasNacimiento(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
+                <label><span>Distrito</span><select formControlName="idDistritoNacimiento" (change)="selectDistrict('nacimiento', $any($event.target).value)"><option [ngValue]="null">Selecciona</option>@for (item of distritosNacimiento(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
+              </fieldset>
+              @if (fieldVisible('NOMBRE_MADRE')) { <label><span>Nombre de la madre @if (!fieldRequired('NOMBRE_MADRE')) { <small>opcional</small> }</span><input formControlName="nombreMadre" [class.invalid]="invalid('nombreMadre')"></label> }
+              @if (fieldVisible('NOMBRE_PADRE')) { <label><span>Nombre del padre @if (!fieldRequired('NOMBRE_PADRE')) { <small>opcional</small> }</span><input formControlName="nombrePadre" [class.invalid]="invalid('nombrePadre')"></label> }
+              @if (fieldVisible('DOC_TITULAR_CELULAR')) { <label><span>Doc. titular del celular @if (!fieldRequired('DOC_TITULAR_CELULAR')) { <small>opcional</small> }</span><input formControlName="numeroDocumentoTitularCelularRegistro" inputmode="numeric" [class.invalid]="invalid('numeroDocumentoTitularCelularRegistro')"></label> }
+              @if (fieldVisible('NOMBRE_TITULAR_CELULAR')) { <label><span>Nombre titular del celular @if (!fieldRequired('NOMBRE_TITULAR_CELULAR')) { <small>opcional</small> }</span><input formControlName="nombreTitularCelularRegistro" [class.invalid]="invalid('nombreTitularCelularRegistro')"></label> }
+            </div>
+
+            <h4>Dirección de instalación</h4>
+            <div class="fields two-columns">
+              <fieldset class="full location-fields required-location">
+                <legend>Ubicación del domicilio</legend>
+                <label><span>Departamento</span><select formControlName="idDepartamentoDomicilio" (change)="selectDepartment('domicilio', $any($event.target).value)" [class.invalid]="invalid('idDepartamentoDomicilio')"><option [ngValue]="null">Selecciona</option>@for (item of departamentos(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
+                <label><span>Provincia</span><select formControlName="idProvinciaDomicilio" (change)="selectProvince('domicilio', $any($event.target).value)" [class.invalid]="invalid('idProvinciaDomicilio')"><option [ngValue]="null">Selecciona</option>@for (item of provinciasDomicilio(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
+                <label><span>Distrito</span><select formControlName="idDistritoDomicilio" (change)="selectDistrict('domicilio', $any($event.target).value)" [class.invalid]="invalid('idDistritoDomicilio')"><option [ngValue]="null">Selecciona</option>@for (item of distritosDomicilio(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
+              </fieldset>
+              <label><span>Tipo de domicilio</span><select formControlName="tipoDomicilio"><option>HOGAR</option><option>MULTIFAMILIAR</option><option>CONDOMINIO_EDIFICIO</option><option>CONDOMINIO_EDIFICIO_NO_HABILITADO</option></select></label>
+              <label><span>Tipo de vía <small>opcional</small></span><select formControlName="tipoVia"><option [ngValue]="null">Sin vía</option><option>CALLE</option><option>AVENIDA</option><option>JIRON</option><option>PASAJE</option><option>PROLONGACION</option></select></label>
+              <label><span>Nombre de vía</span><input formControlName="via"></label>
+              <label class="full"><span>Dirección</span><input formControlName="direccion" placeholder="Av. Principal 123" [class.invalid]="invalid('direccion')"></label>
+              <label class="full"><span>Referencia</span><input formControlName="referencia" placeholder="Frente al parque" [class.invalid]="invalid('referencia')"></label>
+              <label><span>Latitud</span><input formControlName="latitud" placeholder="-12.0464" [class.invalid]="invalid('latitud')"></label>
+              <label><span>Longitud</span><input formControlName="longitud" placeholder="-77.0428" [class.invalid]="invalid('longitud')"></label>
+              @for (field of [
+                ['urbanizacion','Urbanización'], ['numero','Número'], ['manzana','Manzana'], ['lote','Lote'],
+                ['nombreEdificio','Edificio'], ['nombreCondominio','Condominio'], ['piso','Piso'], ['interior','Interior']
+              ]; track field[0]) {
+                <label><span>{{ field[1] }} <small>opcional</small></span><input [formControlName]="$any(field[0])"></label>
+              }
+              @if (fieldVisible('PLANO')) { <label><span>Plano @if (!fieldRequired('PLANO')) { <small>opcional</small> }</span><input formControlName="plano" [class.invalid]="invalid('plano')"></label> }
+            </div>
+          </section>
+        }
+
+        @if (step() === 2) {
+          <section class="form-section">
+            <div class="section-copy">
+              <h3>Oferta comercial</h3>
+              <p>Selecciona un plan vigente del proveedor elegido para este expediente.</p>
+            </div>
+            <div class="fields two-columns">
+              <label><span>Plan</span>
+                <select formControlName="idPlan" [class.invalid]="invalid('idPlan')">
+                  <option [ngValue]="null">Selecciona</option>
+                  @for (plan of plans(); track plan.id) { <option [ngValue]="plan.id">{{ plan.nombre }} · S/ {{ plan.precio | number:'1.2-2' }}</option> }
+                </select>
+              </label>
+            </div>
+            @if (form.controls.idPlan.value) {
+              <div class="plan-summary"><i class="ti ti-router"></i><div><strong>{{ planName() }}</strong><span>Plan listo para enviar a Venta</span></div></div>
+            }
+          </section>
+        }
+
+        @if (step() === 3) {
+          <section class="form-section review">
+            <div class="section-copy">
+              <h3>Revisión final</h3>
+              <p>Verifica la identidad, el titular y la oferta antes de registrar la venta.</p>
+            </div>
+            <dl>
+              <div><dt>Contacto</dt><dd>{{ form.getRawValue().prefijo }} {{ form.getRawValue().lead }}</dd></div>
+              <div><dt>Titular</dt><dd>{{ form.value.nombreTitularServicio || '—' }}</dd></div>
+              <div><dt>Documento</dt><dd>{{ form.value.tipoDocumento }} {{ form.value.numeroDocumentoTitularServicio }}</dd></div>
+              <div><dt>Dirección</dt><dd>{{ form.value.direccion || '—' }}</dd></div>
+              <div><dt>Plan</dt><dd>{{ planName() }}</dd></div>
+              <div><dt>Resultado</dt><dd>Ingreso automático a la etapa VENTA</dd></div>
+            </dl>
+          </section>
+        }
+      }
+    </form>
+
+    <footer class="drawer-foot">
+      <span><b>{{ step() + 1 }}/4</b> {{ ['Identidad', 'Expediente', 'Oferta', 'Revisión'][step()] }}</span>
+      <div>
+        @if (step() > 0) { <button type="button" class="secondary" (click)="previous()" [disabled]="saving()">Anterior</button> }
+        @if (step() < 3) {
+          <button type="button" class="primary" (click)="next()" [disabled]="loading() || checkingIdentity()">{{ checkingIdentity() ? 'Validando…' : 'Continuar' }}</button>
+        } @else {
+          <button type="button" class="primary" (click)="submit()" [disabled]="saving() || loading()">
+            {{ saving() ? 'Guardando…' : mode() === 'corregir' ? 'Corregir y reenviar' : 'Registrar venta' }}
+          </button>
+        }
+      </div>
+    </footer>
+  </aside>
+}

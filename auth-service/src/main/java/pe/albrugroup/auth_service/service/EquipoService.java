@@ -45,7 +45,7 @@ public class EquipoService implements IEquipo {
     // particionan por equipo sino por proveedor (ver ROLES_GESTIONADOS_POR_PROVEEDOR y lead-service).
     private static final Set<String> ROLES_OPERATIVOS = Set.of(
             "ASESOR_GTR", "SUPERVISOR_GTR",
-            "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "OJT"
+            "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "OJT", "FREELANCE"
     );
 
     // Roles operativos que SÍ pueden pertenecer a varios equipos a la vez. El ASESOR_VENTAS se

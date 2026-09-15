@@ -22,6 +22,8 @@ import pe.albrugroup.lead_service.entity.response.VentaDetallePage;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.VentaDetalleQueryRepository;
 
+import pe.albrugroup.lead_service.entity.response.ProyeccionVentasResponse;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -228,6 +230,36 @@ public class MisPreventasV2Service {
             out.add(new ProveedorRef((Long) r[0], (String) r[1]));
         }
         return out;
+    }
+
+    @Transactional(readOnly = true)
+    public ProyeccionVentasResponse proyeccionAsesor() {
+        desactivarEquipoFilter();
+        Long idAsesor = currentUser.empleadoID();
+        YearMonth yearMonth = OperationalDateTime.currentMonth();
+        LocalDate primerDia = yearMonth.atDay(1);
+        LocalDate hoy = OperationalDateTime.today();
+        int diasTranscurridos = hoy.getDayOfMonth();
+        int diasTotales = yearMonth.lengthOfMonth();
+        LocalDate hastaExcl = hoy.plusDays(1);
+
+        long instaladas = resumenRepository.cuadranteAsesorInstaladas(
+                idAsesor, Etapa.VENTA, Etapa.PREVENTA, INSTALADO, primerDia, hastaExcl);
+        return new ProyeccionVentasResponse(instaladas, diasTranscurridos, diasTotales);
+    }
+
+    @Transactional(readOnly = true)
+    public ProyeccionVentasResponse proyeccionEquipo() {
+        YearMonth yearMonth = OperationalDateTime.currentMonth();
+        LocalDate primerDia = yearMonth.atDay(1);
+        LocalDate hoy = OperationalDateTime.today();
+        int diasTranscurridos = hoy.getDayOfMonth();
+        int diasTotales = yearMonth.lengthOfMonth();
+        LocalDate hastaExcl = hoy.plusDays(1);
+
+        long instaladas = resumenRepository.proyeccionEquipoInstaladas(
+                Etapa.VENTA, INSTALADO, primerDia, hastaExcl);
+        return new ProyeccionVentasResponse(instaladas, diasTranscurridos, diasTotales);
     }
 
     private void desactivarEquipoFilter() {

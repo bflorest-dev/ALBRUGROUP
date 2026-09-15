@@ -1,6 +1,7 @@
 export const OPERATIONAL_ROLES: ReadonlySet<string> = new Set([
   'ASESOR_VENTAS',
   'ASESOR_GTR',
+  'FREELANCE',
   'SUPERVISOR_VENTAS',
   'ASESOR_BACKOFFICE',
   'SUPERVISOR_BACKOFFICE',

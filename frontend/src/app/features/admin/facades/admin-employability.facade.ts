@@ -213,6 +213,7 @@ export class AdminEmployabilityFacade {
     'ASESOR_BACKOFFICE',
     'SUPERVISOR_GTR',
     'ASESOR_GTR',
+    'FREELANCE',
     'SUPERVISOR_POSTVENTA',
     'ASESOR_POSTVENTA'
   ];

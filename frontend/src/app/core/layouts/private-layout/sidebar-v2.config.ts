@@ -161,6 +161,16 @@ const ROLE_CONFIGS: Record<string, SidebarV2RoleConfig> = {
       }
     ]
   },
+  FREELANCE: {
+    domains: [
+      {
+        id: 'workspace',
+        label: 'Mis ventas',
+        description: 'Registro y seguimiento de ventas propias',
+        icon: 'ti ti-briefcase-2'
+      }
+    ]
+  },
   ASESOR_GTR: gtrConfig,
   SUPERVISOR_GTR: gtrConfig,
   ASESOR_VENTAS: salesConfig,

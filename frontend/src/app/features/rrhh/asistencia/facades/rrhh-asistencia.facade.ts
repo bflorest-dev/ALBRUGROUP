@@ -93,6 +93,7 @@ const OPERATIVO_ORDER: readonly string[] = [
   'SUPERVISOR_POSTVENTA', 'ASESOR_POSTVENTA',
   'SUPERVISOR_BACKOFFICE', 'ASESOR_BACKOFFICE',
   'SUPERVISOR_GTR', 'ASESOR_GTR',
+  'FREELANCE',
   'SUPERVISOR_VENTAS', 'ASESOR_VENTAS',
   'ASESOR_COBRANZA'
 ];
@@ -108,6 +109,7 @@ const ROLE_LABELS: Record<string, string> = {
   SUPERVISOR_BACKOFFICE: 'Supervisor Backoffice',
   ASESOR_GTR: 'GTR',
   SUPERVISOR_GTR: 'Supervisor GTR',
+  FREELANCE: 'Freelance',
   SUPERVISOR_VENTAS: 'Supervisor Ventas',
   ASESOR_VENTAS: 'Asesor Ventas',
   ASESOR_COBRANZA: 'Cobranza',

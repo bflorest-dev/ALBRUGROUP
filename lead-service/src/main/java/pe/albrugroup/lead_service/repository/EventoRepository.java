@@ -84,6 +84,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             Pageable pageable
     );
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDescIdDesc(Long idLead, Accion accion);
+    Optional<Evento> findTopByIdLeadAndAccionAndEtapaOrderByCreatedAtDescIdDesc(
+            Long idLead, Accion accion, Etapa etapa);
     Optional<Evento> findTopByIdLeadAndAccionAndEtapaAndTipificacionOrderByCreatedAtDescIdDesc(
             Long idLead,
             Accion accion,

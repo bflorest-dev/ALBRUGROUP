@@ -119,6 +119,7 @@ import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
+import pe.albrugroup.lead_service.repository.FreelanceVentaOrigenRepository;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
@@ -194,6 +195,7 @@ public class LeadService {
     private final ProveedorScopeService proveedorScopeService;
     private final PlanService planService;
     private final AuthEquipoClient authEquipoClient;
+    private final FreelanceVentaOrigenRepository freelanceVentaOrigenRepository;
     private final EntityManager entityManager;
     private final ProveedorRepository proveedorRepository;
 
@@ -2560,6 +2562,12 @@ public class LeadService {
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
             aplicarResultadoLeadCambioEtapa(lead, resultado);
+            if (etapaDestino == Etapa.PREVENTA) {
+                freelanceVentaOrigenRepository.findByIdLead(lead.getId()).ifPresent(origen -> {
+                    lead.setIdAsesorAsignado(origen.getIdFreelance());
+                    lead.setNombreAsesorAsignado(origen.getNombreFreelance());
+                });
+            }
         } else {
             aplicarResultadoLead(lead, resultado);
             lead.setEstado(EstadoSeguimiento.GESTIONADO);

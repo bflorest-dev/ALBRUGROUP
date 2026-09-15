@@ -22,6 +22,7 @@ public enum PuestoTrabajo {
     ASESOR_BACKOFFICE("back"),
     SUPERVISOR_GTR("supgtr"),
     ASESOR_GTR("gtr"),
+    FREELANCE("freelance"),
     SUPERVISOR_POSTVENTA("suppost"),
     ASESOR_POSTVENTA("post"),
     ASESOR_COBRANZA("collection");

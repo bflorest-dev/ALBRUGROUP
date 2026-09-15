@@ -36,6 +36,7 @@ import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-
 import { RrhhAsistenciaPageComponent } from '../rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component';
 import { RrhhPersonalPageComponent } from '../rrhh/pages/rrhh-personal-page/rrhh-personal-page.component';
 import { TrainerWorkspacePageComponent } from '../trainer/pages/trainer-workspace-page/trainer-workspace-page.component';
+import { FreelancePageComponent } from '../freelance/pages/freelance-page/freelance-page.component';
 import { RoleHomeRedirectComponent } from './pages/role-home-redirect/role-home-redirect.component';
 import { RolePlatformPageComponent } from './pages/role-platform-page/role-platform-page.component';
 
@@ -366,6 +367,12 @@ export const PLATFORM_ROUTES: Routes = [
     data: {
       roles: ['CAPACITADOR']
     }
+  },
+  {
+    path: 'freelance',
+    component: FreelancePageComponent,
+    canActivate: [roleGuard],
+    data: { roles: ['FREELANCE'] }
   },
   {
     path: 'gtr',

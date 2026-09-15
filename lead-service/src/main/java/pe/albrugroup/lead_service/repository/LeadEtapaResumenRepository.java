@@ -1010,4 +1010,23 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("dias") Collection<java.time.LocalDate> dias
     );
 
+
+    // Proyección banner — instaladas del equipo (scope por equipoFilter automático).
+    // Rootea en Lead para que el @Filter("equipoFilter") acote al scope del usuario.
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE r.ultimaCodigoTipificacion = :codigoInstalado
+              AND c.fechaInstalacion >= :desdeDate
+              AND c.fechaInstalacion < :hastaDateExcl
+            """)
+    long proyeccionEquipoInstaladas(
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("codigoInstalado") String codigoInstalado,
+            @Param("desdeDate") java.time.LocalDate desdeDate,
+            @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
 }
