@@ -230,6 +230,19 @@ public class EquipoService implements IEquipo {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean freelanceActivoEnEquipo(Long equipoId, Long empleadoId) {
+        if (!equipoRepository.existsByIdAndActivoTrue(equipoId)) {
+            return false;
+        }
+        return usuarioRepository.findDistinctByEquiposIdAndActivoTrue(equipoId).stream()
+                .filter(usuario -> empleadoId.equals(usuario.getEmpleadoId()))
+                .anyMatch(usuario -> usuario.getRoles().stream()
+                        .map(Rol::getNombre)
+                        .anyMatch("FREELANCE"::equals));
+    }
+
     // Normaliza el color de marca: cadena vacía/espacios -> null (sin color); en otro caso, hex en
     // mayúsculas. El formato ya fue validado en el DTO (@Pattern), aquí solo se estandariza.
     @Override

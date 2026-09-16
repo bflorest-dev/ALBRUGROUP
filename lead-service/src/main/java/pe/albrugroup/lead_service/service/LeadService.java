@@ -2564,8 +2564,10 @@ public class LeadService {
             aplicarResultadoLeadCambioEtapa(lead, resultado);
             if (etapaDestino == Etapa.PREVENTA) {
                 freelanceVentaOrigenRepository.findByIdLead(lead.getId()).ifPresent(origen -> {
-                    lead.setIdAsesorAsignado(origen.getIdFreelance());
-                    lead.setNombreAsesorAsignado(origen.getNombreFreelance());
+                    if (authEquipoClient.freelanceActivoEnEquipo(lead.getIdEquipo(), origen.getIdFreelance())) {
+                        lead.setIdAsesorAsignado(origen.getIdFreelance());
+                        lead.setNombreAsesorAsignado(origen.getNombreFreelance());
+                    }
                 });
             }
         } else {

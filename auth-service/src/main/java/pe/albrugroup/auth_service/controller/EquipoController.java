@@ -67,6 +67,16 @@ public class EquipoController {
         return ResponseEntity.ok(equipoService.listarAsesoresPreventa(id));
     }
 
+    @GetMapping("/{id}/freelancers/{empleadoId}/activo")
+    @PreAuthorize("hasAnyAuthority('ASSIGN_LEADS', 'FREELANCE_READ')")
+    @Operation(summary = "Validar freelance del equipo", description = "Confirma que el empleado FREELANCE siga activo y pertenezca al equipo indicado.")
+    public ResponseEntity<Boolean> freelanceActivoEnEquipo(
+            @PathVariable @Positive Long id,
+            @PathVariable @Positive Long empleadoId
+    ) {
+        return ResponseEntity.ok(equipoService.freelanceActivoEnEquipo(id, empleadoId));
+    }
+
     @GetMapping("/{id}/asesores-ventas-merito")
     @PreAuthorize("hasAuthority('CORREGIR_MERITO_PREVENTA')")
     @Operation(summary = "Asesores de venta por equipo", description = "Lista asesores de venta activos del equipo indicado para correccion de merito.")

@@ -2,11 +2,13 @@ package pe.albrugroup.lead_service.service;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import pe.albrugroup.lead_service.entity.response.UsuarioRolAuthResponse;
 import pe.albrugroup.lead_service.exception.ForbiddenException;
 
@@ -16,6 +18,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthEquipoClient {
 
     private static final String ROL_ASESOR_VENTAS = "ASESOR_VENTAS";
@@ -51,6 +54,31 @@ public class AuthEquipoClient {
 
     public List<UsuarioRolAuthResponse> listarAsesoresPreventa(Long idEquipo) {
         return listarAsesores(idEquipo, "/equipos/{idEquipo}/asesores-preventa");
+    }
+
+    public boolean freelanceActivoEnEquipo(Long idEquipo, Long idFreelance) {
+        if (idEquipo == null || idFreelance == null) {
+            return false;
+        }
+        String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authorization == null || authorization.isBlank()) {
+            return false;
+        }
+        try {
+            Boolean activo = restClientBuilder
+                    .baseUrl(authBaseUrl)
+                    .build()
+                    .get()
+                    .uri("/equipos/{idEquipo}/freelancers/{idFreelance}/activo", idEquipo, idFreelance)
+                    .header(HttpHeaders.AUTHORIZATION, authorization)
+                    .retrieve()
+                    .body(Boolean.class);
+            return Boolean.TRUE.equals(activo);
+        } catch (RestClientException ex) {
+            log.warn("No se pudo validar al freelance {} en el equipo {}: {}",
+                    idFreelance, idEquipo, ex.getMessage());
+            return false;
+        }
     }
 
     public List<UsuarioRolAuthResponse> listarAsesoresVentasMerito(Long idEquipo) {

@@ -18,6 +18,7 @@ public interface IEquipo {
     UsuarioResponse asignarEquipos(Long empleadoId, Set<Long> equipoIds);
     List<EquipoResponse> listarMisEquipos();
     List<UsuarioRolResponse> listarAsesoresPreventa(Long equipoId);
+    boolean freelanceActivoEnEquipo(Long equipoId, Long empleadoId);
     List<UsuarioRolResponse> listarAsesoresVentasMerito(Long equipoId);
     List<UsuarioRolResponse> listarAsesoresMeritoAdmin(Long equipoId, String etapa);
     List<UsuarioRolResponse> listarMiembros(Long equipoId);

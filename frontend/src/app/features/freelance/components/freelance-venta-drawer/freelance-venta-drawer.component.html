@@ -14,7 +14,8 @@
 
     <nav class="steps" aria-label="Progreso del registro">
       @for (label of ['Identidad', 'Expediente', 'Oferta', 'Revisión']; track label; let i = $index) {
-        <button type="button" [class.active]="step() === i" [class.done]="step() > i" (click)="step.set(i)">
+        <button type="button" [class.active]="step() === i" [class.done]="step() > i"
+          [disabled]="i > step()" (click)="goToCompletedStep(i)">
           <span>{{ i + 1 }}</span>{{ label }}
         </button>
       }

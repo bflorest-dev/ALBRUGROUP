@@ -123,32 +123,54 @@ public class PostventaBandejaService {
                     .build();
         }
 
-        Lead lead = filtro.buscarPorUsermeta()
-                ? leadRepository.buscarPorUsermeta(filtro.valor()).stream().findFirst().orElse(null)
-                : leadRepository.buscarPorLeadODocumento(filtro.valor()).stream().findFirst().orElse(null);
-        if (lead == null) {
+        List<Lead> encontrados = filtro.buscarPorUsermeta()
+                ? leadRepository.buscarPorUsermeta(filtro.valor())
+                : leadRepository.buscarPorLeadODocumento(filtro.valor());
+        if (encontrados.isEmpty()) {
             return LeadPostventaBusquedaResponse.builder()
                     .existe(false)
                     .mensajeUsuario("No encontramos ese lead, documento o @usermeta en el sistema.")
                     .build();
         }
-        if (lead.getEtapa() != Etapa.POSTVENTA && lead.getEtapa() != Etapa.COBRANZA) {
+
+        List<Lead> visiblesPostventa = encontrados.stream()
+                .filter(this::esEtapaOperativaPostventa)
+                .filter(postventaAsesorProveedorService::esLeadVisibleParaUsuarioActual)
+                .toList();
+        if (!visiblesPostventa.isEmpty()) {
+            return construirRespuestaBusquedaPostventa(visiblesPostventa);
+        }
+
+        Lead leadVisibleFueraPostventa = encontrados.stream()
+                .filter(postventaAsesorProveedorService::esLeadVisibleParaUsuarioActual)
+                .findFirst()
+                .orElse(null);
+        if (leadVisibleFueraPostventa != null && !esEtapaOperativaPostventa(leadVisibleFueraPostventa)) {
             return LeadPostventaBusquedaResponse.builder()
                     .existe(true)
-                    .etapaActual(lead.getEtapa())
-                    .mensajeUsuario("El lead existe, pero actualmente esta en etapa " + lead.getEtapa() + ".")
-                    .build();
-        }
-        if (!postventaAsesorProveedorService.esLeadVisibleParaUsuarioActual(lead)) {
-            return LeadPostventaBusquedaResponse.builder()
-                    .existe(false)
-                    .mensajeUsuario("No encontramos ese lead, documento o @usermeta en tu alcance de Postventa.")
+                    .etapaActual(leadVisibleFueraPostventa.getEtapa())
+                    .mensajeUsuario("El lead existe, pero actualmente esta en etapa " + leadVisibleFueraPostventa.getEtapa() + ".")
                     .build();
         }
 
-        CalendarioFacturacionPostventa calendario = calendarioRepository.findWithLeadByLeadId(lead.getId())
-                .orElse(null);
-        if (calendario == null) {
+        return LeadPostventaBusquedaResponse.builder()
+                .existe(false)
+                .mensajeUsuario("No encontramos ese lead, documento o @usermeta en tu alcance de Postventa.")
+                .build();
+    }
+
+    private boolean esEtapaOperativaPostventa(Lead lead) {
+        return lead != null && (lead.getEtapa() == Etapa.POSTVENTA || lead.getEtapa() == Etapa.COBRANZA);
+    }
+
+    private LeadPostventaBusquedaResponse construirRespuestaBusquedaPostventa(List<Lead> leads) {
+        List<CalendarioFacturacionPostventa> calendarios = leads.stream()
+                .map(Lead::getId)
+                .map(idLead -> calendarioRepository.findWithLeadByLeadId(idLead).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        if (calendarios.isEmpty()) {
+            Lead lead = leads.get(0);
             return LeadPostventaBusquedaResponse.builder()
                     .existe(true)
                     .etapaActual(lead.getEtapa())
@@ -156,19 +178,37 @@ public class PostventaBandejaService {
                     .build();
         }
 
-        Long idLead = lead.getId();
-        LeadPostventaBandejaResponse row = toResponse(
-                calendario,
-                obtenerUltimasEncuestas(List.of(idLead)).get(idLead),
-                resolverEstadosPlataforma(List.of(idLead)).getOrDefault(idLead, EstadoPlataformaDigitalLead.NO_ENTREGADA),
-                obtenerPeriodosVigentes(List.of(idLead)).get(idLead),
-                obtenerUltimasGestiones(List.of(idLead)).get(idLead)
-        );
+        List<Long> leadIds = calendarios.stream()
+                .map(CalendarioFacturacionPostventa::getLead)
+                .map(Lead::getId)
+                .toList();
+        Map<Long, EncuestaPostventa> ultimasEncuestas = obtenerUltimasEncuestas(leadIds);
+        Map<Long, EstadoPlataformaDigitalLead> estadosPlataforma = resolverEstadosPlataforma(leadIds);
+        Map<Long, PeriodoFacturacionPostventa> periodosVigentes = obtenerPeriodosVigentes(leadIds);
+        Map<Long, UltimaGestion> ultimasGestiones = obtenerUltimasGestiones(leadIds);
+        List<LeadPostventaBandejaResponse> coincidencias = calendarios.stream()
+                .map(calendario -> {
+                    Long idLead = calendario.getLead().getId();
+                    return toResponse(
+                            calendario,
+                            ultimasEncuestas.get(idLead),
+                            estadosPlataforma.getOrDefault(idLead, EstadoPlataformaDigitalLead.NO_ENTREGADA),
+                            periodosVigentes.get(idLead),
+                            ultimasGestiones.get(idLead)
+                    );
+                })
+                .toList();
+        Lead leadPrincipal = calendarios.get(0).getLead();
+        LeadPostventaBandejaResponse filaPrincipal = coincidencias.get(0);
         return LeadPostventaBusquedaResponse.builder()
                 .existe(true)
-                .etapaActual(lead.getEtapa())
-                .soloLectura(lead.getEtapa() == Etapa.COBRANZA)
-                .lead(row)
+                .etapaActual(leadPrincipal.getEtapa())
+                .soloLectura(leadPrincipal.getEtapa() == Etapa.COBRANZA)
+                .lead(coincidencias.size() == 1 ? filaPrincipal : null)
+                .coincidencias(coincidencias)
+                .mensajeUsuario(coincidencias.size() > 1
+                        ? "Encontramos " + coincidencias.size() + " oportunidades en Postventa. Elige cual gestionar."
+                        : null)
                 .build();
     }
 
@@ -345,6 +385,7 @@ public class PostventaBandejaService {
         DatosPreventa datos = lead.getDatosPreventa();
         return LeadPostventaBandejaResponse.builder()
                 .idLead(lead.getId())
+                .etapa(lead.getEtapa())
                 .fechaInstalacion(calendario.getFechaInstalacion())
                 .tipoDocumento(datos == null ? null : datos.getTipoDocumento())
                 .numeroDocumento(datos == null

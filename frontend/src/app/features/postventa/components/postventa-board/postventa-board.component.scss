@@ -66,6 +66,68 @@
   }
 }
 
+.search-matches {
+  border-bottom: 1px solid var(--app-border);
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.65rem 0.25rem 0.75rem;
+}
+
+.search-matches__head {
+  align-items: center;
+  color: var(--role-muted);
+  display: flex;
+  font-size: 0.75rem;
+  font-weight: 700;
+  gap: 0.5rem;
+  text-transform: uppercase;
+
+  strong {
+    color: var(--role-primary);
+    font-size: 0.85rem;
+  }
+}
+
+.search-matches__list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.search-match {
+  align-items: center;
+  background: var(--app-surface-muted, rgba(15, 23, 42, 0.03));
+  border: 1px solid var(--app-border);
+  border-radius: 0.65rem;
+  color: var(--app-text);
+  cursor: pointer;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 7rem minmax(10rem, 1fr) minmax(12rem, 1.2fr) 6.5rem;
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+
+  &:hover {
+    border-color: var(--role-primary);
+  }
+}
+
+.search-match__lead,
+.search-match__stage {
+  color: var(--role-primary);
+  font-weight: 800;
+}
+
+.search-match__client,
+.search-match__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-match__meta {
+  color: var(--role-muted);
+}
+
 .postventa-table {
   // Encabezados y contenidos centrados y alineados verticalmente al medio.
   th,

@@ -29,6 +29,7 @@ export type TipoDispositivo = 'TV' | 'TV_BOX' | 'CELULAR' | 'TABLET' | 'LAPTOP';
 
 export interface LeadPostventaBandejaResponse {
   idLead: number;
+  etapa?: string | null;
   fechaInstalacion?: string | null;
   tipoDocumento?: string | null;
   numeroDocumento?: string | null;
@@ -55,7 +56,9 @@ export interface LeadPostventaBandejaResponse {
 export interface LeadPostventaBusquedaResponse {
   existe: boolean;
   etapaActual?: string | null;
+  soloLectura?: boolean | null;
   lead?: LeadPostventaBandejaResponse | null;
+  coincidencias?: LeadPostventaBandejaResponse[] | null;
   mensajeUsuario?: string | null;
 }
 

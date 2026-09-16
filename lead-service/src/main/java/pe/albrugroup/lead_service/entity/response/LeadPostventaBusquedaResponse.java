@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
@@ -18,5 +20,6 @@ public class LeadPostventaBusquedaResponse {
     private Etapa etapaActual;
     private boolean soloLectura;
     private LeadPostventaBandejaResponse lead;
+    private List<LeadPostventaBandejaResponse> coincidencias;
     private String mensajeUsuario;
 }

@@ -133,6 +133,10 @@ export class FreelanceVentaDrawerComponent {
     this.step.update((value) => Math.max(0, value - 1));
   }
 
+  goToCompletedStep(target: number): void {
+    if (target <= this.step()) this.step.set(target);
+  }
+
   selectProvider(value: string): void {
     const id = value ? Number(value) : null;
     this.selectedProvider.set(id);
@@ -338,6 +342,8 @@ export class FreelanceVentaDrawerComponent {
     };
     for (const [field, name] of Object.entries(controls) as [CampoCaptura, string][]) {
       const control = this.form.get(name);
+      const visible = this.fieldVisible(field);
+      if (!visible) control?.setValue('', { emitEvent: false });
       const validators = this.fieldRequired(field) ? [Validators.required] : [];
       if (field === 'DOC_TITULAR_CELULAR') validators.push(Validators.pattern(/^\d{6,12}$/));
       if (field === 'NOMBRE_MADRE' || field === 'NOMBRE_PADRE' || field === 'NOMBRE_TITULAR_CELULAR') {

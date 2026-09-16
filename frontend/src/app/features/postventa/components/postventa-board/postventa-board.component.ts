@@ -58,4 +58,8 @@ export class PostventaBoardComponent {
   protected async buscarRapido(): Promise<void> {
     await this.facade.buscarRapido(this.searchTerm);
   }
+
+  protected async gestionarCoincidencia(row: VisualLeadPostventa): Promise<void> {
+    await this.facade.gestionarCoincidenciaBusqueda(row);
+  }
 }

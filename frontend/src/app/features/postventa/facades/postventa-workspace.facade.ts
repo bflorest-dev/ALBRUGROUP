@@ -114,11 +114,13 @@ export class PostventaWorkspaceFacade {
   private readonly _pageNumber = signal(0);
   private readonly _loadingBoard = signal(false);
   private readonly _selectedCorteValue = signal(TODOS_LOS_CORTES);
+  private readonly _coincidenciasBusqueda = signal<VisualLeadPostventa[]>([]);
   readonly rows = this._rows.asReadonly();
   readonly totalRows = this._totalRows.asReadonly();
   readonly pageNumber = this._pageNumber.asReadonly();
   readonly loadingBoard = this._loadingBoard.asReadonly();
   readonly selectedCorteValue = this._selectedCorteValue.asReadonly();
+  readonly coincidenciasBusqueda = this._coincidenciasBusqueda.asReadonly();
   readonly corteOptions = computed<CortePostventaOption[]>(() => [
     { label: 'Todos los cortes', value: TODOS_LOS_CORTES, mesCorteBase: null, numeroCorteBase: null },
     ...this.buildCortesActivos()
@@ -222,6 +224,9 @@ export class PostventaWorkspaceFacade {
     if (!silent && this._loadingBoard()) {
       return;
     }
+    if (!silent) {
+      this._coincidenciasBusqueda.set([]);
+    }
     const requestSeq = ++this.boardRequestSeq;
     const requestKey = this.boardRequestKey(pageNumber);
     if (!silent) {
@@ -324,6 +329,7 @@ export class PostventaWorkspaceFacade {
 
   async buscarRapido(term: string): Promise<void> {
     const buscar = this.normalizeSearch(term);
+    this._coincidenciasBusqueda.set([]);
     if (!buscar) {
       this.notify('warn', 'Escribe el lead, documento o @usermeta que quieres buscar.');
       return;
@@ -331,12 +337,19 @@ export class PostventaWorkspaceFacade {
     this._loadingBoard.set(true);
     try {
       const response = await firstValueFrom(this.service.buscarLead(buscar));
-      if (!response.lead) {
+      const coincidencias = (response.coincidencias ?? []).map((row) => this.withFechaGroup(row));
+      if (coincidencias.length > 1) {
+        this._coincidenciasBusqueda.set(coincidencias);
+        this.notify('info', response.mensajeUsuario || 'Encontramos mas de una oportunidad en Postventa.');
+        return;
+      }
+      const lead = response.lead ?? coincidencias[0] ?? null;
+      if (!lead) {
         this.notify('warn', response.mensajeUsuario || 'No encontramos ese lead en Postventa.');
         return;
       }
-      const row = this.withFechaGroup(response.lead);
-      if (response.etapaActual === 'COBRANZA') {
+      const row = this.withFechaGroup(lead);
+      if ((row.etapa ?? response.etapaActual) === 'COBRANZA') {
         await this.openDrawer(row, true);
         this.notify('info', 'Lead en COBRANZA: se abre en modo consulta.');
         return;
@@ -347,6 +360,16 @@ export class PostventaWorkspaceFacade {
     } finally {
       this._loadingBoard.set(false);
     }
+  }
+
+  async gestionarCoincidenciaBusqueda(row: VisualLeadPostventa): Promise<void> {
+    this._coincidenciasBusqueda.set([]);
+    if (row.etapa === 'COBRANZA') {
+      await this.openDrawer(row, true);
+      this.notify('info', 'Lead en COBRANZA: se abre en modo consulta.');
+      return;
+    }
+    await this.gestionar(row);
   }
 
   // ---------------------------------------------------------------------------

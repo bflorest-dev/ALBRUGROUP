@@ -95,7 +95,10 @@ INSERT INTO seed_permisos (nombre, descripcion, recurso, accion) VALUES
 ('READ_LEADS_DIARIOS', 'Puede ver el listado de leads ingresados durante el dia', 'EVENTO_LEAD', 'READ'),
 ('READ_LEADS_VENTA', 'Puede ver la bandeja de leads disponibles en venta', 'LEAD_VENTA', 'READ'),
 ('READ_LEADS_POSTVENTA', 'Puede ver la bandeja de leads disponibles en postventa', 'LEAD_POSTVENTA', 'READ'),
-('READ_LEADS_COBRANZA', 'Puede ver la bandeja de leads disponibles en cobranza', 'LEAD_COBRANZA', 'READ');
+('READ_LEADS_COBRANZA', 'Puede ver la bandeja de leads disponibles en cobranza', 'LEAD_COBRANZA', 'READ'),
+('FREELANCE_READ', 'Puede consultar su seguimiento personal de ventas', 'FREELANCE_VENTA', 'READ'),
+('FREELANCE_CREATE', 'Puede registrar ventas freelance', 'FREELANCE_VENTA', 'CREATE'),
+('FREELANCE_CORRECT', 'Puede corregir y reenviar sus ventas retornadas', 'FREELANCE_VENTA', 'CORRECT');
 
 INSERT INTO permisos (nombre, descripcion, recurso, accion)
 SELECT nombre, descripcion, recurso, accion
@@ -127,6 +130,7 @@ INSERT INTO seed_roles (nombre, descripcion) VALUES
 ('ASESOR_POSTVENTA', 'Postventa - Gestion de cartera y seguimiento'),
 ('SUPERVISOR_POSTVENTA', 'Postventa - Supervision de cartera y seguimiento'),
 ('ASESOR_COBRANZA', 'Cobranza - Seguimiento de pagos postventa'),
+('FREELANCE', 'Registro y seguimiento personal de ventas'),
 ('DESARROLLADOR', 'Tecnologia - Soporte y mantenimiento'),
 ('CONTADOR', 'Contabilidad - Gestion de pagos y consulta laboral');
 
@@ -376,6 +380,12 @@ INSERT INTO seed_role_permiso (rol_nombre, permiso_nombre) VALUES
 ('ASESOR_COBRANZA', 'READ_UBIGEO'),
 ('ASESOR_COBRANZA', 'READ_ASISTENCIAS_SELF'),
 ('ASESOR_COBRANZA', 'UPDATE_ASISTENCIAS'),
+('FREELANCE', 'FREELANCE_READ'),
+('FREELANCE', 'FREELANCE_CREATE'),
+('FREELANCE', 'FREELANCE_CORRECT'),
+('FREELANCE', 'READ_UBIGEO'),
+('FREELANCE', 'READ_ASISTENCIAS_SELF'),
+('FREELANCE', 'UPDATE_ASISTENCIAS'),
 ('DESARROLLADOR', 'READ_EVENTOS'),
 ('DESARROLLADOR', 'READ_EVENTOS_LEADS'),
 ('DESARROLLADOR', 'READ_EVENTOS_RECRUITMENT'),

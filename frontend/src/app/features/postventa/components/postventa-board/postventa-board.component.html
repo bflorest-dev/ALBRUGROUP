@@ -36,6 +36,25 @@
     </div>
   </div>
 
+  @if (facade.coincidenciasBusqueda().length) {
+    <div class="search-matches" aria-label="Coincidencias de busqueda en Postventa">
+      <div class="search-matches__head">
+        <span>Oportunidades encontradas</span>
+        <strong>{{ facade.coincidenciasBusqueda().length }}</strong>
+      </div>
+      <div class="search-matches__list">
+        @for (row of facade.coincidenciasBusqueda(); track row.idLead) {
+          <button type="button" class="search-match" (click)="gestionarCoincidencia(row)">
+            <span class="search-match__lead">{{ row.lead || '—' }}</span>
+            <span class="search-match__client">{{ row.nombreCliente || 'Cliente sin nombre' }}</span>
+            <span class="search-match__meta">{{ row.proveedor || 'Proveedor' }} · {{ row.plan || 'Plan no registrado' }}</span>
+            <span class="search-match__stage">{{ row.etapa || 'POSTVENTA' }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  }
+
   <p-table
     [value]="facade.rows()"
     dataKey="idLead"

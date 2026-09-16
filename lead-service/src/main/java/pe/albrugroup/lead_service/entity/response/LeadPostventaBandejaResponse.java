@@ -10,6 +10,7 @@ import pe.albrugroup.lead_service.entity.enums.EstadoCredencialesPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPagoPeriodoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPlataformaDigitalLead;
 import pe.albrugroup.lead_service.entity.enums.EstadoServicioPostventa;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 
 import java.time.Instant;
@@ -23,6 +24,7 @@ import java.time.LocalDate;
 public class LeadPostventaBandejaResponse {
 
     private Long idLead;
+    private Etapa etapa;
     private LocalDate fechaInstalacion;
     private TipoDocumento tipoDocumento;
     private String numeroDocumento;
