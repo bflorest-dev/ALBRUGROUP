@@ -455,6 +455,8 @@ export type CampoCaptura =
   | 'NOMBRE_TITULAR_CELULAR'
   | 'PLANO';
 
+export type Tecnologia = 'HFC' | 'FTTH' | 'HIBRIDA';
+
 export type ParentescoPreventa = 'TITULAR' | 'MADRE' | 'PADRE' | 'HERMANO_A' | 'TIO_A' | 'CONOCIDO';
 
 export interface CampoConfigItem {
@@ -543,6 +545,8 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   camposConfig?: CampoConfigItem[] | null;
   ofertaComercialActualizadaVenta?: boolean;
   comentario?: string | null;
+  tecnologia?: Tecnologia | string | null;
+  esFullClaro?: boolean | null;
 }
 
 export interface LeadPlanDetalleResponse {
@@ -865,6 +869,8 @@ export interface LeadTipificacionRequest {
   horaProgramada?: string | null;
   idProveedor?: number | null;
   idPlataformaDigitalOfrecida?: number | null;
+  tecnologia?: Tecnologia | null;
+  esFullClaro?: boolean | null;
 }
 
 export interface PlataformaDigitalResponse {

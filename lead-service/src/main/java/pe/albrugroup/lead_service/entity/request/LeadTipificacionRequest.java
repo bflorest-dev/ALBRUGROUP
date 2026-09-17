@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.entity.request;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
+import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 
 import java.time.LocalTime;
 
@@ -17,4 +18,6 @@ public class LeadTipificacionRequest {
     private LocalTime horaProgramada;
     private Long idPlataformaDigitalOfrecida;
     private Long idProveedor;
+    private Tecnologia tecnologia;
+    private Boolean esFullClaro;
 }

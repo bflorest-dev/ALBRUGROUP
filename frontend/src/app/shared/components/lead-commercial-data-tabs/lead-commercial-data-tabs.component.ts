@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
@@ -40,6 +41,7 @@ type ParentescoOption = { label: string; value: string };
   imports: [
     ReactiveFormsModule,
     ButtonModule,
+    CheckboxModule,
     DateFieldComponent,
     InputTextModule,
     MessageModule,
@@ -77,6 +79,11 @@ export class LeadCommercialDataTabsComponent {
   @Input() additionalsTotal = 0;
   @Input() plataformaDigitalControl: FormControl<number | null> | null = null;
   @Input() plataformasDigitales: { id: number; nombre?: string | null }[] = [];
+  @Input() tecnologiaControl: FormControl<string> | null = null;
+  @Input() tecnologiaOptions: string[] = [];
+  @Input() esFullClaroControl: FormControl<boolean> | null = null;
+  @Input() mostrarDatosClaro = false;
+  @Input() requiereTecnologiaClaro = false;
   @Input() offerLocked = false;
   @Input() offerNoticeSeverity: 'info' | 'warn' | null = null;
   @Input() offerNoticeText: string | null = null;

@@ -31,6 +31,7 @@ import pe.albrugroup.lead_service.entity.enums.Parentesco;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoNumeroLlamada;
+import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.request.LeadIdentidadRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
@@ -797,6 +798,90 @@ class LeadServiceRetroactiveIntakeTest {
     }
 
     @Test
+    void tipificarPreventaClaroRechazaCierreSinTecnologia() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.setPlan(Plan.builder()
+                .id(5L)
+                .proveedor(Proveedor.builder().id(2L).nombre("CLARO").build())
+                .build());
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
+        stubCierrePreventa(2L);
+
+        assertThatThrownBy(() -> leadService.tipificarLead(25202L, cierrePreventaRequest()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("tecnologia es obligatoria");
+
+        verify(leadRepository, never()).save(any());
+    }
+
+    @Test
+    void tipificarPreventaClaroGuardaTecnologiaYBooleanoFalsoPorDefecto() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.setPlan(Plan.builder()
+                .id(5L)
+                .proveedor(Proveedor.builder().id(2L).nombre("CLARO").build())
+                .build());
+        LeadTipificacionRequest request = cierrePreventaRequest();
+        request.setTecnologia(Tecnologia.FTTH);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
+        stubCierrePreventa(2L);
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.tipificarLead(25202L, request);
+
+        assertThat(lead.getTecnologia()).isEqualTo(Tecnologia.FTTH);
+        assertThat(lead.isEsFullClaro()).isFalse();
+        verify(leadRepository).save(lead);
+    }
+
+    @Test
+    void tipificarPreventaClaroGuardaBooleanoFullClaro() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.setPlan(Plan.builder()
+                .id(5L)
+                .proveedor(Proveedor.builder().id(2L).nombre("CLARO").build())
+                .build());
+        LeadTipificacionRequest request = cierrePreventaRequest();
+        request.setTecnologia(Tecnologia.HFC);
+        request.setEsFullClaro(true);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
+        stubCierrePreventa(2L);
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.tipificarLead(25202L, request);
+
+        assertThat(lead.getTecnologia()).isEqualTo(Tecnologia.HFC);
+        assertThat(lead.isEsFullClaro()).isTrue();
+    }
+
+    @Test
+    void tipificarPreventaWinLimpiaDatosEspecificosDeClaro() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.setPlan(Plan.builder()
+                .id(5L)
+                .proveedor(Proveedor.builder().id(1L).nombre("WIN").build())
+                .build());
+        lead.setTecnologia(Tecnologia.HFC);
+        lead.setEsFullClaro(true);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
+        stubCierrePreventa(1L);
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.tipificarLead(25202L, cierrePreventaRequest());
+
+        assertThat(lead.getTecnologia()).isNull();
+        assertThat(lead.isEsFullClaro()).isFalse();
+    }
+
+    @Test
     void tipificarPreventaCompletaConPlanWinExigeTitularCelularDelProveedorOfrecido() {
         Lead lead = leadCompletoParaCierrePreventa();
         lead.setPlan(Plan.builder()
@@ -904,6 +989,7 @@ class LeadServiceRetroactiveIntakeTest {
                         .numeroDocumentoTitularServicio("12345678")
                         .nombreTitularServicio("Juan Perez")
                         .celularRegistro("987654321")
+                        .celularGrabacion("987654321")
                         .correo("cliente@correo.com")
                         .fechaNacimiento(LocalDate.of(1990, 5, 12))
                         .parentesco(Parentesco.CONOCIDO)
@@ -926,6 +1012,21 @@ class LeadServiceRetroactiveIntakeTest {
         request.setCodigoTipificacion("PREVENTA_COMPLETA");
         request.setCodigoSubtipificacion("VENTA_CERRADA");
         return request;
+    }
+
+    private void stubCierrePreventa(Long idProveedor) {
+        Tipificacion tipificacion = tipificacionPreventaCompleta();
+        Subtipificacion subtipificacion = subtipificacionCierrePreventa(tipificacion);
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
+                Etapa.PREVENTA,
+                idProveedor,
+                "PREVENTA_COMPLETA"
+        )).thenReturn(Optional.of(tipificacion));
+        when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
+                80L,
+                "VENTA_CERRADA"
+        )).thenReturn(Optional.of(subtipificacion));
+        when(equipoCampoService.resolverConfigPorProveedor(idProveedor)).thenReturn(List.of());
     }
 
     private Tipificacion tipificacionPreventaCompleta() {

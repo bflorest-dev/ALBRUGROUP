@@ -14,6 +14,7 @@ import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -98,6 +99,13 @@ public class Lead {
     private String sot;
     @Column(length = 8)
     private String customerId;
+
+    // Datos específicos de la oferta CLARO, capturados al tipificar la preventa.
+    @Builder.Default
+    private boolean esFullClaro = false;
+
+    @Enumerated(EnumType.STRING)
+    private Tecnologia tecnologia;
 
     // ASESOR VENTAS
 

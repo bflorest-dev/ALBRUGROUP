@@ -58,7 +58,13 @@ describe('AsesorVentasWorkspaceFacade', () => {
       listarDepartamentos: vi.fn(() => of([])),
       listarProvincias: vi.fn(() => of([])),
       listarDistritos: vi.fn(() => of([])),
-      listarCamposCapturaProveedor: vi.fn(() => of([]))
+      listarCamposCapturaProveedor: vi.fn(() => of([])),
+      actualizarDatosPreventa: vi.fn(() => of(void 0)),
+      actualizarDireccion: vi.fn(() => of(void 0)),
+      actualizarOfertaComercial: vi.fn(() => of(void 0)),
+      actualizarSnapshotsLead: vi.fn(() => of(void 0)),
+      completarIdentidadLead: vi.fn(() => of(void 0)),
+      cerrarAtencion: vi.fn(() => of(void 0))
     };
 
     TestBed.configureTestingModule({
@@ -168,6 +174,90 @@ describe('AsesorVentasWorkspaceFacade', () => {
     expect(facade.identidadEditorOpen()).toBe(true);
     expect(facade.errorMessage()).toBe('Para cerrar la venta, completa el numero de lead.');
     expect(preventaService['tipificarLead']).not.toHaveBeenCalled();
+  });
+
+  it('incluye los datos de CLARO en el payload de tipificacion', async () => {
+    facade.detail.set({
+      id: 25202,
+      atencionOtraEtapa: false,
+      proveedoresEquipo: [{ id: 2, nombre: 'CLARO' }]
+    } as never);
+    facade.selectedOfertaProviderId.set(2);
+    facade.isManagingLead.set(true);
+    facade.catalogo.set({
+      tipificaciones: [
+        {
+          codigo: 'CONTACTADO',
+          descripcion: 'Contactado',
+          orden: 1,
+          subtipificaciones: [{ codigo: 'SEGUIMIENTO', descripcion: 'Seguimiento', orden: 1, comportamientos: [] }]
+        }
+      ]
+    } as never);
+    facade.selectedTipificacionCode.set('CONTACTADO');
+    facade.selectedSubtipificacionCode.set('SEGUIMIENTO');
+    facade.tipificacionForm.patchValue({
+      codigoTipificacion: 'CONTACTADO',
+      codigoSubtipificacion: 'SEGUIMIENTO',
+      tecnologia: 'FTTH',
+      esFullClaro: true
+    });
+
+    await facade.tipificar();
+
+    expect(preventaService['tipificarLead']).toHaveBeenCalledWith(25202, expect.objectContaining({
+      tecnologia: 'FTTH',
+      esFullClaro: true
+    }));
+  });
+
+  it('oculta y limpia los datos de CLARO al cambiar a WIN', async () => {
+    facade.detail.set({
+      id: 25202,
+      atencionOtraEtapa: false,
+      proveedoresEquipo: [
+        { id: 2, nombre: 'CLARO' },
+        { id: 1, nombre: 'WIN' }
+      ]
+    } as never);
+    facade.selectedOfertaProviderId.set(2);
+    facade.tipificacionForm.patchValue({ tecnologia: 'HFC', esFullClaro: true });
+
+    await facade.onOfertaProviderChanged(1);
+
+    expect(facade.mostrarDatosClaro()).toBe(false);
+    expect(facade.tipificacionForm.controls.tecnologia.value).toBe('');
+    expect(facade.tipificacionForm.controls.esFullClaro.value).toBe(false);
+  });
+
+  it('agrega tecnologia como pendiente al checklist de cierre CLARO', () => {
+    facade.detail.set({
+      id: 25202,
+      atencionOtraEtapa: false,
+      proveedoresEquipo: [{ id: 2, nombre: 'CLARO' }]
+    } as never);
+    facade.selectedOfertaProviderId.set(2);
+    facade.catalogo.set({
+      tipificaciones: [
+        {
+          codigo: 'PREVENTA_COMPLETA',
+          descripcion: 'Preventa completa',
+          orden: 1,
+          subtipificaciones: [{
+            codigo: 'VENTA_CERRADA',
+            descripcion: 'Venta cerrada',
+            orden: 1,
+            comportamientos: ['ES_CIERRE_PREVENTA']
+          }]
+        }
+      ]
+    } as never);
+    facade.selectedTipificacionCode.set('PREVENTA_COMPLETA');
+    facade.selectedSubtipificacionCode.set('VENTA_CERRADA');
+
+    expect(facade.preventaCompletaChecklist().find((item) => item.campo === 'Tecnologia')).toMatchObject({
+      completo: false
+    });
   });
 
   it('usa la matriz de campos del proveedor elegido en oferta comercial', async () => {

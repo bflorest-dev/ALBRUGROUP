@@ -25,6 +25,7 @@ import {
   PlataformaDigitalResponse,
   PromocionComercialResponse,
   SubtipificacionResponse,
+  Tecnologia,
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import { buildTelUrl, buildWhatsAppUrl, formatLeadIdentity } from '../../../shared/utils/phone-link';
@@ -197,6 +198,7 @@ export class AsesorVentasWorkspaceFacade {
     'CONDOMINIO_EDIFICIO_NO_HABILITADO'
   ];
   readonly tipoViaOptions = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
+  readonly tecnologiaOptions: Tecnologia[] = ['HFC', 'FTTH', 'HIBRIDA'];
 
   readonly datosForm = this.fb.group({
     tipoDocumento: ['', [Validators.required]],
@@ -254,7 +256,9 @@ export class AsesorVentasWorkspaceFacade {
     codigoSubtipificacion: ['', [Validators.required]],
     comentario: [''],
     horaProgramada: [''],
-    idPlataformaDigitalOfrecida: [null as number | null]
+    idPlataformaDigitalOfrecida: [null as number | null],
+    tecnologia: ['' as Tecnologia | ''],
+    esFullClaro: [false]
   });
 
   readonly subtipificaciones = computed<SubtipificacionSelectOption[]>(() => {
@@ -327,6 +331,13 @@ export class AsesorVentasWorkspaceFacade {
   );
   // El lead abierto está en otra etapa: se atiende en solo lectura (atención GTR).
   readonly atencionOtraEtapa = computed(() => !!this.detail()?.atencionOtraEtapa);
+  readonly esProveedorClaroSeleccionado = computed(() => {
+    const idProveedor = this.selectedOfertaProviderId();
+    const proveedor = this.ofertaProviderOptions().find((item) => item.id === idProveedor);
+    return proveedor?.nombre?.trim().toUpperCase() === 'CLARO';
+  });
+  readonly mostrarDatosClaro = computed(() => this.esProveedorClaroSeleccionado() && !this.atencionOtraEtapa());
+  readonly requiereTecnologiaClaro = computed(() => this.mostrarDatosClaro() && this.requiresVentaCompleta());
   // Subtipi seleccionada (objeto del catálogo) para leer sus comportamientos data-driven.
   readonly selectedSubtipificacion = computed(() =>
     this.subtipificaciones().find((sub) => sub.codigo === this.selectedSubtipificacionCode()) ?? null
@@ -760,7 +771,9 @@ export class AsesorVentasWorkspaceFacade {
       codigoSubtipificacion: '',
       comentario: '',
       horaProgramada: '',
-      idPlataformaDigitalOfrecida: null
+      idPlataformaDigitalOfrecida: null,
+      tecnologia: '',
+      esFullClaro: false
     });
     this.identidadForm.reset({
       prefijo: PERU_PHONE_PREFIX,
@@ -903,7 +916,9 @@ export class AsesorVentasWorkspaceFacade {
       comentario: this.showComment() ? raw.comentario || null : null,
       horaProgramada: this.requiresScheduledTime() ? raw.horaProgramada || null : null,
       idProveedor: this.selectedOfertaProviderId(),
-      idPlataformaDigitalOfrecida: raw.idPlataformaDigitalOfrecida || null
+      idPlataformaDigitalOfrecida: raw.idPlataformaDigitalOfrecida || null,
+      tecnologia: this.mostrarDatosClaro() ? (raw.tecnologia || null) : null,
+      esFullClaro: this.mostrarDatosClaro() ? raw.esFullClaro : false
     };
 
     // Al cerrar una venta NO confiamos en el flag "dirty": forzamos el guardado de
@@ -1110,6 +1125,7 @@ export class AsesorVentasWorkspaceFacade {
     const plan = this.planes().find((item) => item.id === idPlan);
     const idProveedor = plan?.idProveedor ?? this.selectedOfertaProviderId();
     this.selectedOfertaProviderId.set(idProveedor ?? null);
+    this.limpiarDatosClaroSiNoCorresponde();
     this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
     this.ofertaForm.controls.idPromocionInterna.setValue(0);
     await Promise.all([
@@ -1122,6 +1138,7 @@ export class AsesorVentasWorkspaceFacade {
 
   async onOfertaProviderChanged(idProveedor: number): Promise<void> {
     this.selectedOfertaProviderId.set(idProveedor || null);
+    this.limpiarDatosClaroSiNoCorresponde();
     this.ofertaForm.patchValue({
       idProveedor: idProveedor || 0,
       idPlan: 0,
@@ -1650,7 +1667,9 @@ export class AsesorVentasWorkspaceFacade {
       codigoSubtipificacion: '',
       comentario: '',
       horaProgramada: '',
-      idPlataformaDigitalOfrecida: null
+      idPlataformaDigitalOfrecida: null,
+      tecnologia: '',
+      esFullClaro: false
     });
     this.selectedTipificacionCode.set('');
     this.showComment.set(false);
@@ -1716,6 +1735,15 @@ export class AsesorVentasWorkspaceFacade {
       idPlan,
       idPromocionInterna: detail.idPromocionInterna ?? 0
     });
+    this.limpiarDatosClaroSiNoCorresponde();
+  }
+
+  private limpiarDatosClaroSiNoCorresponde(): void {
+    if (this.esProveedorClaroSeleccionado()) {
+      return;
+    }
+    this.tipificacionForm.controls.tecnologia.setValue('');
+    this.tipificacionForm.controls.esFullClaro.setValue(false);
   }
 
   private resolveProveedorOfertaInicial(detail: LeadDetalleResponse): number | null {
@@ -2062,6 +2090,9 @@ export class AsesorVentasWorkspaceFacade {
     add('direccion', 'Referencia', a.referencia.value);
     add('direccion', 'Piso', a.piso.value);
     add('direccion', 'Interior', a.interior.value);
+    if (this.requiereTecnologiaClaro()) {
+      add('oferta', 'Tecnologia', this.tipificacionForm.controls.tecnologia.value);
+    }
     checklist.push({ tab: 'oferta', campo: 'Plan', completo: !!this.ofertaForm.controls.idPlan.value });
 
     return checklist;

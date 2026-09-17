@@ -9,6 +9,7 @@ import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.Parentesco;
+import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoVia;
@@ -114,4 +115,6 @@ public class LeadDetalleResponse {
     private boolean ofertaComercialActualizadaVenta;
     // Último comentario libre dejado por el asesor durante la gestión.
     private String comentario;
+    private Tecnologia tecnologia;
+    private boolean esFullClaro;
 }

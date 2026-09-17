@@ -2554,12 +2554,13 @@ public class LeadService {
                 etapaDestino == null ? etapaActual : etapaDestino,
                 idProveedorMatriz
         );
+        boolean transicionaAVenta = etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA;
+        if (transicionaAVenta) {
+            validarPreventaCompleta(lead);
+        }
+        aplicarDatosClarosAlTipificar(lead, request, transicionaAVenta);
+
         if (etapaDestino != null && etapaDestino != etapaActual) {
-            if (etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA) {
-                validarPreventaCompleta(lead);
-                // Atribucion de preventa (merito de PREVENTA): la mantiene el resumen por etapa
-                // (registrarMerito via actualizarResumenEtapaTipificacion, esMerito=true mas abajo).
-            }
             lead.setEtapa(etapaDestino);
             lead.setLastEntryAt(OperationalDateTime.now());
             lead.setEstado(EstadoSeguimiento.NUEVO);
@@ -3118,6 +3119,23 @@ public class LeadService {
     private boolean esProveedorPlanClaro(Lead lead) {
         Proveedor proveedor = lead.getPlan() == null ? null : lead.getPlan().getProveedor();
         return proveedor != null && normalizarTexto(proveedor.getNombre()).equals("CLARO");
+    }
+
+    private void aplicarDatosClarosAlTipificar(
+            Lead lead,
+            LeadTipificacionRequest request,
+            boolean transicionaAVenta
+    ) {
+        if (!esProveedorPlanClaro(lead)) {
+            lead.setTecnologia(null);
+            lead.setEsFullClaro(false);
+            return;
+        }
+        if (transicionaAVenta && request.getTecnologia() == null) {
+            throw new BadRequestException("La tecnologia es obligatoria para cerrar una preventa CLARO");
+        }
+        lead.setTecnologia(request.getTecnologia());
+        lead.setEsFullClaro(Boolean.TRUE.equals(request.getEsFullClaro()));
     }
 
     private boolean esTipificacionSubidaVenta(Tipificacion tipificacion) {
@@ -5262,7 +5280,9 @@ public class LeadService {
                 proveedorFallback == null ? null : proveedorFallback.getId(),
                 proveedorFallback == null ? null : proveedorFallback.getNombre(),
                 ofertaComercialActualizadaEnCicloActualVenta(lead),
-                lead.getComentario()
+                lead.getComentario(),
+                lead.getTecnologia(),
+                lead.isEsFullClaro()
         );
     }
 

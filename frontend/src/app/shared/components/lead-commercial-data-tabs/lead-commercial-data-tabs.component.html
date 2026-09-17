@@ -455,6 +455,49 @@
             [disabled]="offerLocked || readonly"
           />
         </label>
+        @if (mostrarDatosClaro && tecnologiaControl && esFullClaroControl) {
+          <section class="claro-offer-fields wide" aria-labelledby="claro-offer-fields-title">
+            <div class="claro-offer-fields__heading">
+              <div>
+                <h3 id="claro-offer-fields-title">Datos de CLARO</h3>
+                <p>Completa la tecnología antes de cerrar la preventa.</p>
+              </div>
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+            </div>
+            <div class="claro-offer-fields__grid">
+              <label>
+                <span>
+                  Tecnología
+                  @if (requiereTecnologiaClaro) {
+                    <strong class="required-mark" aria-hidden="true">*</strong>
+                  }
+                </span>
+                <p-select
+                  [formControl]="tecnologiaControl"
+                  [options]="tecnologiaOptions"
+                  placeholder="Seleccionar tecnología"
+                  appendTo="body"
+                  [disabled]="offerLocked || readonly"
+                />
+                @if (requiereTecnologiaClaro) {
+                  <small>Obligatoria para cerrar una preventa CLARO.</small>
+                }
+              </label>
+              <label class="claro-check-field" for="asesor-es-full-claro">
+                <span>Validación comercial</span>
+                <span class="claro-check-field__control">
+                  <p-checkbox
+                    inputId="asesor-es-full-claro"
+                    [formControl]="esFullClaroControl"
+                    [binary]="true"
+                    [disabled]="offerLocked || readonly"
+                  />
+                  <span>Es Full Claro</span>
+                </span>
+              </label>
+            </div>
+          </section>
+        }
         @if (plataformaDigitalControl && plataformasDigitales.length) {
           <label class="wide">
             <span>Plataforma digital</span>
