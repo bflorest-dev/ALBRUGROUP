@@ -63,6 +63,8 @@
 .venta-v2__fields label.span-2 { grid-column: span 2; }
 .venta-v2__fields label > span, .venta-v2__plan-editor label > span, .venta-v2__dock label > span { display: block; margin-bottom: .36rem; color: var(--venta-muted); font-size: .72rem; font-weight: 650; }
 .venta-v2__fields label > strong { display: block; font-size: .84rem; font-weight: 650; line-height: 1.45; overflow-wrap: anywhere; }
+.venta-v2__checkbox { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.4rem; font-size: .8rem; }
+.venta-v2__fields label > .venta-v2__checkbox { display: inline-flex; margin: 0; color: var(--venta-ink); font-size: .8rem; }
 
 .venta-v2__plan, .venta-v2__history { max-width: 58rem; margin: 0 auto; }
 .venta-v2__plan-head, .venta-v2__history-head { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 1rem; border-bottom: 1px solid var(--venta-line); }

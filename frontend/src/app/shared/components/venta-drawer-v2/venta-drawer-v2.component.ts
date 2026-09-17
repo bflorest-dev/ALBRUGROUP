@@ -14,6 +14,7 @@ import {
 } from '@angular/core';
 import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
@@ -24,6 +25,7 @@ import {
   PlanResponse,
   PromocionComercialResponse,
   SubtipificacionResponse,
+  Tecnologia,
   TipificacionResponse,
   UbigeoItem
 } from '../../models/preventa/preventa.models';
@@ -44,6 +46,7 @@ type HistoryGroup = { key: string; label: string; events: EventoResponse[] };
     FormsModule,
     ReactiveFormsModule,
     ButtonModule,
+    CheckboxModule,
     DatePickerModule,
     InputTextModule,
     SelectModule,
@@ -114,6 +117,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   protected readonly coordinatePasteMessage = signal<string | null>(null);
   protected readonly historyFilter = signal<'TODO' | 'TIPIFICACION' | 'ASIGNACION'>('TODO');
   protected readonly sectionSaving = signal(false);
+  protected readonly tecnologiaOptions: Tecnologia[] = ['HFC', 'FTTH', 'HIBRIDA'];
 
   private sectionSnapshot: Record<string, unknown> | null = null;
   private planSnapshot: Record<string, unknown> | null = null;
@@ -240,6 +244,24 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
 
   protected showConfiguredField(key: string, form: FormGroup, control: string): boolean {
     return this.camposVisibles.has(key) || this.hasValue(form, control);
+  }
+
+  protected providerName(): string {
+    const nestedProvider = String(this.detail?.plan?.nombreProveedor ?? '').trim();
+    const fallbackProvider = String(this.detail?.nombreProveedorPlan ?? '').trim();
+    return (nestedProvider || fallbackProvider).toUpperCase();
+  }
+
+  protected isClaro(): boolean {
+    return this.providerName() === 'CLARO';
+  }
+
+  protected isWin(): boolean {
+    return this.providerName() === 'WIN';
+  }
+
+  protected booleanDisplay(value: unknown): string {
+    return value === true ? 'Sí' : 'No';
   }
 
   protected display(value: unknown, empty = 'Sin registrar'): string {

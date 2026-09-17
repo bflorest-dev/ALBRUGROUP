@@ -2439,6 +2439,14 @@ public class LeadService {
         Direccion direccion = lead.getDireccion() == null ? new Direccion() : lead.getDireccion();
         leadMapper.updateDireccion(request, direccion);
 
+        if (esProveedorPlanClaro(lead)) {
+            lead.setTecnologia(request.getTecnologia());
+            lead.setEsFullClaro(Boolean.TRUE.equals(request.getEsFullClaro()));
+        } else {
+            lead.setTecnologia(null);
+            lead.setEsFullClaro(false);
+        }
+
         lead.setDireccionSnapshot(direccion.getDireccion());
         lead.setDireccion(direccion);
         moverAEnGestionSiAplica(lead);

@@ -96,7 +96,6 @@
                     <label><span>Número de documento</span>@if (editingSection() === 'identidad') { <input pInputText formControlName="numeroDocumentoTitularServicio" /> } @else { <strong>{{ display(datosForm.get('numeroDocumentoTitularServicio')?.value) }}</strong> }</label>
                     <label class="span-2"><span>Nombre completo</span>@if (editingSection() === 'identidad') { <input pInputText formControlName="nombreTitularServicio" /> } @else { <strong>{{ display(datosForm.get('nombreTitularServicio')?.value) }}</strong> }</label>
                     <label><span>Fecha de nacimiento</span>@if (editingSection() === 'identidad') { <p-datepicker [ngModel]="pickerDate(datosForm.get('fechaNacimiento')?.value)" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy" [showIcon]="true" iconDisplay="input" [showButtonBar]="true" [readonlyInput]="false" appendTo="body" [baseZIndex]="1400" panelStyleClass="venta-v2-calendar" (ngModelChange)="setDateValue(datosForm, 'fechaNacimiento', $event)" /> } @else { <strong>{{ formatDate(datosForm.get('fechaNacimiento')?.value) }}</strong> }</label>
-                    <label><span>Parentesco</span>@if (editingSection() === 'identidad') { <input pInputText formControlName="parentesco" /> } @else { <strong>{{ display(datosForm.get('parentesco')?.value) }}</strong> }</label>
                   </div>
                 </section>
 
@@ -116,17 +115,18 @@
                   </div>
                 </section>
 
-                @if (showConfiguredField('NOMBRE_MADRE', datosForm, 'nombreMadre') || showConfiguredField('NOMBRE_PADRE', datosForm, 'nombrePadre') || showConfiguredField('DOC_TITULAR_CELULAR', datosForm, 'numeroDocumentoTitularCelularRegistro') || showConfiguredField('NOMBRE_TITULAR_CELULAR', datosForm, 'nombreTitularCelularRegistro')) {
+                @if (isClaro() || isWin() || showConfiguredField('DOC_TITULAR_CELULAR', datosForm, 'numeroDocumentoTitularCelularRegistro') || showConfiguredField('NOMBRE_TITULAR_CELULAR', datosForm, 'nombreTitularCelularRegistro')) {
                   <section class="venta-v2__section">
                     <div class="venta-v2__section-head">
                       <div><i class="pi pi-database" aria-hidden="true"></i><span><strong>Datos según proveedor</strong><small>Información adicional requerida por la oferta</small></span></div>
                       @if (!readOnly) { @if (editingSection() === 'proveedor') { <div class="venta-v2__edit-actions"><button type="button" (click)="cancelSectionEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applySectionEdit()">Aplicar</button></div> } @else { <button class="venta-v2__edit" type="button" (click)="startSectionEdit('proveedor')"><i class="pi pi-pencil" aria-hidden="true"></i><span>Editar</span></button> } }
                     </div>
                     <div class="venta-v2__fields">
-                      @if (showConfiguredField('NOMBRE_MADRE', datosForm, 'nombreMadre')) { <label><span>Nombre de madre</span>@if (editingSection() === 'proveedor') { <input pInputText formControlName="nombreMadre" /> } @else { <strong>{{ display(datosForm.get('nombreMadre')?.value) }}</strong> }</label> }
-                      @if (showConfiguredField('NOMBRE_PADRE', datosForm, 'nombrePadre')) { <label><span>Nombre de padre</span>@if (editingSection() === 'proveedor') { <input pInputText formControlName="nombrePadre" /> } @else { <strong>{{ display(datosForm.get('nombrePadre')?.value) }}</strong> }</label> }
+                      @if (isClaro()) { <label><span>Nombre de madre</span>@if (editingSection() === 'proveedor') { <input pInputText formControlName="nombreMadre" /> } @else { <strong>{{ display(datosForm.get('nombreMadre')?.value) }}</strong> }</label> }
+                      @if (isClaro()) { <label><span>Nombre de padre</span>@if (editingSection() === 'proveedor') { <input pInputText formControlName="nombrePadre" /> } @else { <strong>{{ display(datosForm.get('nombrePadre')?.value) }}</strong> }</label> }
                       @if (showConfiguredField('DOC_TITULAR_CELULAR', datosForm, 'numeroDocumentoTitularCelularRegistro')) { <label><span>Documento titular del celular</span>@if (editingSection() === 'proveedor') { <input pInputText formControlName="numeroDocumentoTitularCelularRegistro" /> } @else { <strong>{{ display(datosForm.get('numeroDocumentoTitularCelularRegistro')?.value) }}</strong> }</label> }
                       @if (showConfiguredField('NOMBRE_TITULAR_CELULAR', datosForm, 'nombreTitularCelularRegistro')) { <label><span>Nombre titular del celular</span>@if (editingSection() === 'proveedor') { <input pInputText formControlName="nombreTitularCelularRegistro" /> } @else { <strong>{{ display(datosForm.get('nombreTitularCelularRegistro')?.value) }}</strong> }</label> }
+                      @if (isWin()) { <label><span>Parentesco</span>@if (editingSection() === 'proveedor') { <input pInputText formControlName="parentesco" /> } @else { <strong>{{ display(datosForm.get('parentesco')?.value) }}</strong> }</label> }
                     </div>
                   </section>
                 }
@@ -155,8 +155,12 @@
                     @for (field of [{k:'urbanizacion',l:'Urbanización'},{k:'numero',l:'Número'},{k:'manzana',l:'Manzana'},{k:'lote',l:'Lote'},{k:'piso',l:'Piso'},{k:'interior',l:'Interior'}]; track field.k) {
                       <label><span>{{ field.l }}</span>@if (editingSection() === 'detalle-direccion') { <input pInputText [formControlName]="field.k" /> } @else { <strong>{{ display(direccionForm.get(field.k)?.value) }}</strong> }</label>
                     }
-                    @if (hasValue(direccionForm, 'plano')) {
+                    @if (isClaro()) {
                       <label><span>Plano</span>@if (editingSection() === 'detalle-direccion') { <input pInputText formControlName="plano" /> } @else { <strong>{{ display(direccionForm.get('plano')?.value) }}</strong> }</label>
+                      <label><span>Tecnología</span>@if (editingSection() === 'detalle-direccion') { <p-select formControlName="tecnologia" [options]="tecnologiaOptions" appendTo="body" /> } @else { <strong>{{ display(direccionForm.get('tecnologia')?.value) }}</strong> }</label>
+                    }
+                    @if (isClaro()) {
+                      <label><span>Full Claro</span>@if (editingSection() === 'detalle-direccion') { <span class="venta-v2__checkbox"><p-checkbox formControlName="esFullClaro" [binary]="true" inputId="direccion-es-full-claro" /><span>Es Full Claro</span></span> } @else { <strong>{{ booleanDisplay(direccionForm.get('esFullClaro')?.value) }}</strong> }</label>
                     }
                   </div>
                 </section>

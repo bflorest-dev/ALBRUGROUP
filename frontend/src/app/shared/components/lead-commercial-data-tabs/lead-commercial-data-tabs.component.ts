@@ -83,6 +83,7 @@ export class LeadCommercialDataTabsComponent {
   @Input() tecnologiaOptions: string[] = [];
   @Input() esFullClaroControl: FormControl<boolean> | null = null;
   @Input() mostrarDatosClaro = false;
+  @Input() parentescoEnDatosProveedor = false;
   @Input() requiereTecnologiaClaro = false;
   @Input() offerLocked = false;
   @Input() offerNoticeSeverity: 'info' | 'warn' | null = null;

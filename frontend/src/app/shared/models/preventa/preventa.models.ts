@@ -849,6 +849,8 @@ export interface LeadDireccionRequest {
   plano?: string | null;
   piso?: string | null;
   interior?: string | null;
+  tecnologia?: Tecnologia | string | null;
+  esFullClaro?: boolean | null;
 }
 
 export interface LeadOfertaAdicionalRequest {

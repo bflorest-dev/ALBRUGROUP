@@ -418,7 +418,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     nombreCondominio: [''],
     plano: [''],
     piso: [''],
-    interior: ['']
+    interior: [''],
+    tecnologia: [''],
+    esFullClaro: [false]
   });
 
   protected readonly ofertaForm = this.fb.group({
@@ -3402,7 +3404,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       nombreCondominio: detail.nombreCondominio ?? '',
       plano: detail.plano ?? '',
       piso: detail.piso ?? '',
-      interior: detail.interior ?? ''
+      interior: detail.interior ?? '',
+      tecnologia: detail.tecnologia ?? '',
+      esFullClaro: detail.esFullClaro ?? false
     });
     const idPlan = detail.idPlan ?? 0;
     const idProveedor = this.ofertaPlanes().find((plan) => plan.id === idPlan)?.idProveedor
@@ -3803,7 +3807,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       nombreCondominio: raw.nombreCondominio,
       plano: raw.plano,
       piso: raw.piso,
-      interior: raw.interior
+      interior: raw.interior,
+      tecnologia: raw.tecnologia,
+      esFullClaro: raw.esFullClaro
     });
   }
 

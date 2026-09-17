@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoVia;
+import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 
 @Getter
 @Setter
@@ -37,4 +38,6 @@ public class LeadDireccionRequest {
     private String plano;
     private String piso;
     private String interior;
+    private Tecnologia tecnologia;
+    private Boolean esFullClaro;
 }

@@ -58,18 +58,40 @@
               placeholder="dd/mm/aaaa"
               [readonly]="readonly"
             />
-            <label class="data-field data-field--relationship">
-              <span>Parentesco</span>
-              <p-select
-                formControlName="parentesco"
-                [options]="parentescoOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Seleccionar"
-                appendTo="body"
-                [disabled]="readonly"
-              />
-            </label>
+            @if (parentescoEnDatosProveedor) {
+              <label class="data-field data-field--ubigeo">
+                <span>
+                  Ubigeo nacimiento
+                  <i
+                    class="pi pi-info-circle ubigeo-hint"
+                    pTooltip="El numero de Ubigeo se encuentra en la parte posterior del DNI"
+                    tooltipPosition="top"
+                    aria-hidden="true"
+                  ></i>
+                </span>
+                <input
+                  pInputText
+                  type="text"
+                  inputmode="numeric"
+                  formControlName="ubigeoNacimiento"
+                  [readonly]="readonly"
+                  (input)="setNumericDigits(datosForm.get('ubigeoNacimiento'), $any($event.target).value, 6)"
+                />
+              </label>
+            } @else {
+              <label class="data-field data-field--relationship">
+                <span>Parentesco</span>
+                <p-select
+                  formControlName="parentesco"
+                  [options]="parentescoOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Seleccionar"
+                  appendTo="body"
+                  [disabled]="readonly"
+                />
+              </label>
+            }
           </div>
         </section>
 
@@ -119,25 +141,40 @@
         <section class="data-section">
           <h3>Datos segun proveedor</h3>
           <div class="data-section__grid">
-            <label class="data-field data-field--ubigeo">
-              <span>
-                Ubigeo nacimiento
-                <i
-                  class="pi pi-info-circle ubigeo-hint"
-                  pTooltip="El numero de Ubigeo se encuentra en la parte posterior del DNI"
-                  tooltipPosition="top"
-                  aria-hidden="true"
-                ></i>
-              </span>
-              <input
-                pInputText
-                type="text"
-                inputmode="numeric"
-                formControlName="ubigeoNacimiento"
-                [readonly]="readonly"
-                (input)="setNumericDigits(datosForm.get('ubigeoNacimiento'), $any($event.target).value, 6)"
-              />
-            </label>
+            @if (parentescoEnDatosProveedor) {
+              <label class="data-field data-field--relationship">
+                <span>Parentesco</span>
+                <p-select
+                  formControlName="parentesco"
+                  [options]="parentescoOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Seleccionar"
+                  appendTo="body"
+                  [disabled]="readonly"
+                />
+              </label>
+            } @else {
+              <label class="data-field data-field--ubigeo">
+                <span>
+                  Ubigeo nacimiento
+                  <i
+                    class="pi pi-info-circle ubigeo-hint"
+                    pTooltip="El numero de Ubigeo se encuentra en la parte posterior del DNI"
+                    tooltipPosition="top"
+                    aria-hidden="true"
+                  ></i>
+                </span>
+                <input
+                  pInputText
+                  type="text"
+                  inputmode="numeric"
+                  formControlName="ubigeoNacimiento"
+                  [readonly]="readonly"
+                  (input)="setNumericDigits(datosForm.get('ubigeoNacimiento'), $any($event.target).value, 6)"
+                />
+              </label>
+            }
             <label class="data-field data-field--family" [class.form-field--readonly]="campoSoloLectura('NOMBRE_MADRE')">
               <span>Madre</span>
               <input

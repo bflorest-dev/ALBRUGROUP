@@ -35,6 +35,7 @@ import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.request.LeadIdentidadRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
+import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadNumeroParaLlamarRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
@@ -879,6 +880,58 @@ class LeadServiceRetroactiveIntakeTest {
 
         assertThat(lead.getTecnologia()).isNull();
         assertThat(lead.isEsFullClaro()).isFalse();
+    }
+
+    @Test
+    void actualizarDireccionVentaClaroGuardaTecnologiaYFullClaro() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.setEtapa(Etapa.VENTA);
+        lead.setPlan(Plan.builder()
+                .id(5L)
+                .proveedor(Proveedor.builder().id(2L).nombre("Claro").build())
+                .build());
+        LeadDireccionRequest request = new LeadDireccionRequest();
+        request.setUbigeoDomicilio("150101");
+        request.setTecnologia(Tecnologia.FTTH);
+        request.setEsFullClaro(true);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(25202L, 7L, Etapa.VENTA))
+                .thenReturn(Optional.of(lead));
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.actualizarDireccionVenta(25202L, request);
+
+        assertThat(lead.getTecnologia()).isEqualTo(Tecnologia.FTTH);
+        assertThat(lead.isEsFullClaro()).isTrue();
+        verify(leadRepository).save(lead);
+    }
+
+    @Test
+    void actualizarDireccionVentaWinLimpiaDatosEspecificosDeClaro() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.setEtapa(Etapa.VENTA);
+        lead.setPlan(Plan.builder()
+                .id(5L)
+                .proveedor(Proveedor.builder().id(1L).nombre("WIN").build())
+                .build());
+        lead.setTecnologia(Tecnologia.HFC);
+        lead.setEsFullClaro(true);
+        LeadDireccionRequest request = new LeadDireccionRequest();
+        request.setUbigeoDomicilio("150101");
+        request.setTecnologia(Tecnologia.FTTH);
+        request.setEsFullClaro(true);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(25202L, 7L, Etapa.VENTA))
+                .thenReturn(Optional.of(lead));
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.actualizarDireccionVenta(25202L, request);
+
+        assertThat(lead.getTecnologia()).isNull();
+        assertThat(lead.isEsFullClaro()).isFalse();
+        verify(leadRepository).save(lead);
     }
 
     @Test
