@@ -296,13 +296,14 @@ public class LeadService {
             "ESTADO", "PLAN", "TIPIFICACION", "ULTIMO_GESTOR"
     );
     private static final Set<String> LEAD_BANDEJA_VENTA_NORMALIZADA_SORT_FIELDS = Set.of(
-            "fechaIngresoEtapa", "fechaRelevante", "lead", "estado", "tipificacion"
+            "fechaIngresoEtapa", "fechaRelevante", "fechaUltimaGestion", "lead", "estado", "tipificacion"
     );
     private static final Set<String> CAMPO_FECHA_BANDEJA_VENTA_NORMALIZADA_PERMITIDOS = Set.of(
             "AUTO", "PROGRAMACION", "RECHAZO", "INSTALACION", "TIPIFICACION", "TIPIFICACION_INSTALADO", "INGRESO", "ULTIMA_GESTION"
     );
     private static final Set<String> GROUP_BY_BANDEJA_VENTA_NORMALIZADA_PERMITIDOS = Set.of(
-            "ESTADO", "PLAN", "TIPIFICACION", "ULTIMO_GESTOR"
+            "ESTADO", "PLAN", "TIPIFICACION", "SUBTIPIFICACION", "ULTIMO_GESTOR",
+            "ASESOR_PREVENTA", "DEPARTAMENTO", "PROVINCIA", "DISTRITO"
     );
     private static final Set<String> LEAD_CORRECCION_INSTALACION_SORT_FIELDS = Set.of(
             "fechaInstalacion", "fechaTipificacionInstalado", "createdAt", "lead", "numeroDocumento"
@@ -2543,6 +2544,9 @@ public class LeadService {
 
         validarHoraProgramada(subtipificacion, request.getHoraProgramada());
         aplicarPlataformaDigitalOfrecidaSiCorresponde(lead, request.getIdPlataformaDigitalOfrecida());
+        if (request.getComentario() != null && !request.getComentario().isBlank()) {
+            lead.setComentario(request.getComentario());
+        }
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
         ResultadoTipificacion resultado = resolverResultadoTipificacion(
                 tipificacion,

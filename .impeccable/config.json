@@ -204,6 +204,42 @@
         "rule": "design-system-radius",
         "value": ".25rem",
         "createdAt": "2026-09-15T23:15:34.712Z"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "frontend/src/app/features/backoffice/pages/backoffice-general-board-page/backoffice-general-board-page.component.html"
+        ],
+        "createdAt": "2026-09-16T22:02:59.048Z",
+        "reason": "Dynamic [src] binding from providerLogo() - never empty when rendered (guarded by @if)"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "frontend/src/app/features/backoffice/pages/backoffice-general-board-page/backoffice-general-board-page.component.scss"
+        ],
+        "createdAt": "2026-09-16T22:03:18.685Z",
+        "reason": "Board component uses its own type ramp with --board-* tokens, pre-existing design"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "*",
+        "files": [
+          "frontend/src/app/features/backoffice/pages/backoffice-general-board-page/backoffice-general-board-page.component.scss"
+        ],
+        "createdAt": "2026-09-16T22:03:20.210Z",
+        "reason": "Board component uses its own radius values, pre-existing design"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "frontend/src/app/features/backoffice/pages/backoffice-general-board-page/backoffice-general-board-page.component.scss"
+        ],
+        "createdAt": "2026-09-16T22:03:32.791Z",
+        "reason": "Board component uses its own color tokens, pre-existing design"
       }
     ]
   }

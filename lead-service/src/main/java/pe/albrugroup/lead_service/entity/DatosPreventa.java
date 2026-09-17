@@ -20,13 +20,13 @@ public class DatosPreventa {
     private String numeroDocumentoTitularServicio;
     @Column(length = 6)
     private String ubigeoNacimiento; // UPDATE
+    private LocalDate fechaNacimiento;
     private String nombreTitularServicio;
 
     private String celularRegistro;
     private String celularReferencia;
     private String celularGrabacion;
     private String correo;
-    private LocalDate fechaNacimiento;
     @Enumerated(EnumType.STRING)
     private Parentesco parentesco;
     private String nombreMadre;

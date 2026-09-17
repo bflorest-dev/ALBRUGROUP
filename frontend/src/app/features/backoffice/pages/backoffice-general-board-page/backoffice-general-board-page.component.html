@@ -39,27 +39,28 @@
     </form>
 
     <div class="filter-strip">
-      <p-multiSelect
-        styleClass="tipification-picker"
-        [options]="tipificacionOptions()"
-        [ngModel]="selectedTipificaciones()"
+      <!-- Tipificacion tree selector -->
+      <button
+        pButton
+        type="button"
+        icon="pi pi-tags"
+        [label]="tipFilterCount() ? tipFilterCount() + ' filtros' : 'Tipificaciones'"
+        severity="secondary"
+        [outlined]="!tipFilterCount()"
+        [class.filter-btn--active]="tipFilterCount() > 0"
+        (click)="tipPopover.toggle($event)"
+      ></button>
+
+      <!-- Origen toggle -->
+      <p-select
+        styleClass="origen-select"
+        [options]="origenOptions"
+        [ngModel]="origen()"
         optionLabel="label"
         optionValue="value"
-        display="chip"
-        placeholder="Todas las tipificaciones"
-        [loading]="catalogLoading()"
-        [filter]="true"
-        [showClear]="true"
         appendTo="body"
-        (ngModelChange)="setTipificaciones($event)"
-      >
-        <ng-template #item let-option>
-          <div class="tip-option">
-            <strong>{{ option.label }}</strong>
-            <span>{{ option.descripcion }}</span>
-          </div>
-        </ng-template>
-      </p-multiSelect>
+        (ngModelChange)="setOrigen($event)"
+      />
 
       <app-period-selector
         [periodo]="periodo()"
@@ -75,7 +76,8 @@
         icon="pi pi-sliders-h"
         label="Organizar"
         severity="secondary"
-        outlined
+        [outlined]="isOrganizationDefault()"
+        [class.filter-btn--active]="!isOrganizationDefault()"
         (click)="organize.toggle($event)"
       ></button>
 
@@ -92,22 +94,100 @@
     </div>
   </section>
 
+  <!-- Tipificacion tree popover -->
+  <p-popover #tipPopover appendTo="body" styleClass="general-board-popover tip-tree-popover">
+    <div class="tip-tree">
+      <div class="tip-tree__search">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <input
+          pInputText
+          type="text"
+          placeholder="Buscar tipificación..."
+          [ngModel]="tipSearchTerm()"
+          (ngModelChange)="tipSearchTerm.set($event)"
+        />
+      </div>
+
+      <div class="tip-tree__list">
+        @for (node of filteredTipNodes(); track node.codigo) {
+          <div class="tip-tree__node">
+            <div class="tip-tree__row">
+              <p-checkbox
+                [binary]="true"
+                [ngModel]="isTipSelected(node.codigo)"
+                (ngModelChange)="toggleTipificacion(node.codigo)"
+              />
+              <span class="tip-tree__label" [pTooltip]="node.descripcion" tooltipPosition="right" appendTo="body">
+                {{ node.codigo }}
+              </span>
+              @if (node.subtipificaciones.length) {
+                <button
+                  pButton
+                  type="button"
+                  [icon]="node.expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                  severity="secondary"
+                  text
+                  size="small"
+                  (click)="toggleExpand(node)"
+                ></button>
+              }
+            </div>
+            @if (node.expanded && node.subtipificaciones.length) {
+              <div class="tip-tree__children">
+                @for (sub of node.subtipificaciones; track sub.codigo) {
+                  <div class="tip-tree__row tip-tree__row--child">
+                    <p-checkbox
+                      [binary]="true"
+                      [ngModel]="isSubtipSelected(sub.codigo) || isTipSelected(node.codigo)"
+                      [disabled]="isTipSelected(node.codigo)"
+                      (ngModelChange)="toggleSubtipificacion(node.codigo, sub.codigo)"
+                    />
+                    <span class="tip-tree__label tip-tree__label--sub" [pTooltip]="sub.descripcion" tooltipPosition="right" appendTo="body">
+                      {{ sub.codigo }}
+                    </span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+        @if (!filteredTipNodes().length) {
+          <div class="tip-tree__empty">Sin resultados</div>
+        }
+      </div>
+
+      @if (tipFilterCount()) {
+        <button
+          pButton
+          type="button"
+          icon="pi pi-filter-slash"
+          label="Limpiar filtros"
+          severity="secondary"
+          text
+          size="small"
+          (click)="clearTipFilter(); tipPopover.hide()"
+        ></button>
+      }
+    </div>
+  </p-popover>
+
+  <!-- Organize popover -->
   <p-popover #organize appendTo="body" styleClass="general-board-popover">
     <div class="organize-panel">
       <label>
-        <span>Origen</span>
+        <span>Usar fecha de</span>
         <p-select
-          [options]="origenOptions"
-          [ngModel]="origen()"
+          [options]="campoFechaOptions"
+          [ngModel]="campoFecha()"
           optionLabel="label"
           optionValue="value"
           appendTo="body"
-          (ngModelChange)="setOrigen($event)"
+          (ngModelChange)="setCampoFecha($event)"
         />
       </label>
 
       <label>
-        <span>Agrupar</span>
+        <span>Agrupar por</span>
         <p-select
           [options]="groupOptions"
           [ngModel]="groupBy()"
@@ -119,7 +199,7 @@
       </label>
 
       <label>
-        <span>Ordenar</span>
+        <span>Ordenar por</span>
         <p-select
           [options]="sortOptions"
           [ngModel]="sortBy()"
@@ -131,9 +211,9 @@
       </label>
 
       <label>
-        <span>Dirección</span>
+        <span>Mostrar primero</span>
         <p-select
-          [options]="directionOptions"
+          [options]="directionOptions()"
           [ngModel]="direction()"
           optionLabel="label"
           optionValue="value"
@@ -146,11 +226,11 @@
         pButton
         type="button"
         icon="pi pi-filter-slash"
-        label="Restablecer"
+        label="Limpiar"
         severity="secondary"
         text
-        [disabled]="activeFilterCount() === 0"
-        (click)="clearFilters(); organize.hide()"
+        [disabled]="isOrganizationDefault()"
+        (click)="clearOrganize(); organize.hide()"
       ></button>
     </div>
   </p-popover>
@@ -161,16 +241,12 @@
       {{ periodLabel() }}
     </span>
     <span class="selection-rail__item">
-      <i class="pi pi-database" aria-hidden="true"></i>
-      {{ origen() === 'ESTADO_ACTUAL' ? 'Estado actual' : 'Último evento' }}
-    </span>
-    <span class="selection-rail__item">
       <i class="pi pi-clock" aria-hidden="true"></i>
-      Periodo por fecha ingreso
+      Periodo por {{ campoFechaLabel() | lowercase }}
     </span>
     <span class="selection-rail__item">
       <i class="pi pi-tags" aria-hidden="true"></i>
-      {{ selectedTipificaciones().length ? selectedTipificaciones().length + ' tipificaciones' : 'Todas las tipificaciones' }}
+      {{ tipFilterCount() ? tipFilterCount() + ' filtros de tipificación' : 'Todas las tipificaciones' }}
     </span>
   </div>
 
@@ -196,12 +272,12 @@
       <ng-template #header>
         <tr>
           <th class="col-date col-ingreso">
-            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'fechaIngresoEtapa'" (click)="sort('fechaIngresoEtapa')">
+            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'fechaIngresoEtapa'" (click)="changeColumnSort('fechaIngresoEtapa')">
               Fecha ingreso <i [class]="sortIcon('fechaIngresoEtapa')" aria-hidden="true"></i>
             </button>
           </th>
           <th class="col-date col-relevant">
-            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'fechaRelevante'" (click)="sort('fechaRelevante')">
+            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'fechaRelevante'" (click)="changeColumnSort('fechaRelevante')">
               Fecha relevante <i [class]="sortIcon('fechaRelevante')" aria-hidden="true"></i>
             </button>
           </th>
@@ -212,16 +288,20 @@
           }
           <th class="col-plan">Plan</th>
           <th class="col-tipification">
-            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'tipificacion'" (click)="sort('tipificacion')">
+            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'tipificacion'" (click)="changeColumnSort('tipificacion')">
               Tipificación <i [class]="sortIcon('tipificacion')" aria-hidden="true"></i>
             </button>
           </th>
           <th class="col-state">
-            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'estado'" (click)="sort('estado')">
+            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'estado'" (click)="changeColumnSort('estado')">
               Estado <i [class]="sortIcon('estado')" aria-hidden="true"></i>
             </button>
           </th>
-          <th class="col-agent">Gestión</th>
+          <th class="col-agent">
+            <button type="button" class="sort-header" [class.sort-header--active]="sortBy() === 'fechaUltimaGestion'" (click)="changeColumnSort('fechaUltimaGestion')">
+              Gestión <i [class]="sortIcon('fechaUltimaGestion')" aria-hidden="true"></i>
+            </button>
+          </th>
         </tr>
       </ng-template>
 

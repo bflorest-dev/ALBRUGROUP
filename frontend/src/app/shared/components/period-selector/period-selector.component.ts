@@ -161,10 +161,12 @@ export class PeriodSelectorComponent implements OnDestroy {
       this.cerrar();
       return;
     }
-    this.periodoChange.emit(value);
-    if (value !== 'dia') {
+    if (value === 'mes') {
+      this.emitirMesActual();
       this.cerrar();
+      return;
     }
+    this.periodoChange.emit(value);
   }
 
   /** Clic sobre el primer segmento: abre el calendario aunque ese segmento ya estuviera activo. */
@@ -407,6 +409,16 @@ export class PeriodSelectorComponent implements OnDestroy {
       this.periodoChange.emit('dia');
     }
     this.rangoChange.emit({ desde: this.hoy, hasta: this.hoy });
+  }
+
+  private emitirMesActual(): void {
+    const now = new Date();
+    const desde = this.formatLocal(new Date(now.getFullYear(), now.getMonth(), 1));
+    const hasta = this.formatLocal(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    if (this.periodo() !== 'dia') {
+      this.periodoChange.emit('dia');
+    }
+    this.rangoChange.emit({ desde, hasta });
   }
 
   private emitirSemanaHastaHoy(): void {

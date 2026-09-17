@@ -1415,6 +1415,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
                 dp.nombreTitularServicio,
                 CASE
+                  WHEN :groupBy = 'DEPARTAMENTO' THEN dept.nombre
+                  WHEN :groupBy = 'PROVINCIA' THEN CONCAT(COALESCE(dept.nombre, '?'), ' / ', COALESCE(prov.nombre, '?'))
+                  WHEN :groupBy = 'DISTRITO' THEN CONCAT(COALESCE(dept.nombre, '?'), ' / ', COALESCE(prov.nombre, '?'), ' / ', COALESCE(dist.nombre, '?'))
                   WHEN dir.ubigeoDomicilio IS NULL OR TRIM(dir.ubigeoDomicilio) = '' THEN null
                   WHEN SUBSTRING(dir.ubigeoDomicilio, 1, 2) IN ('07', '15') THEN 'Lima'
                   ELSE 'Provincia'
@@ -1473,6 +1476,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN epFallback.proveedor fp
             LEFT JOIN Tipificacion tAct ON tAct.codigo = r.ultimaCodigoTipificacion AND tAct.matriz.etapa = :etapaVenta AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
             LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = r.ultimaCodigoSubtipificacion
+            LEFT JOIN Distrito dist ON dist.codigo = dir.ubigeoDomicilio
+            LEFT JOIN dist.provincia prov
+            LEFT JOIN dist.departamento dept
             WHERE l.etapa = :etapaVenta
               AND (
                     :searchPattern = '%'
@@ -1506,11 +1512,22 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               CASE WHEN :groupBy = 'ESTADO' THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END ASC,
               CASE WHEN :groupBy = 'PLAN' THEN l.nombrePlanSnapshot END ASC,
               CASE WHEN :groupBy = 'ULTIMO_GESTOR' THEN r.nombreAsesorUltimaGestion END ASC,
+              CASE WHEN :groupBy = 'ASESOR_PREVENTA' THEN rp.nombreAsesorMerito END ASC,
               CASE WHEN :groupBy = 'TIPIFICACION' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
               CASE WHEN :groupBy = 'TIPIFICACION' THEN tAct.orden END ASC,
               CASE WHEN :groupBy = 'TIPIFICACION' THEN sAct.orden END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN tAct.orden END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN CASE WHEN sAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN sAct.orden END ASC,
+              CASE WHEN :groupBy IN ('DEPARTAMENTO', 'PROVINCIA', 'DISTRITO') THEN CASE WHEN dept.nombre IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy IN ('DEPARTAMENTO', 'PROVINCIA', 'DISTRITO') THEN dept.nombre END ASC,
+              CASE WHEN :groupBy IN ('PROVINCIA', 'DISTRITO') THEN prov.nombre END ASC,
+              CASE WHEN :groupBy = 'DISTRITO' THEN dist.nombre END ASC,
               CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = false THEN COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) END ASC,
               CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = true THEN COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) END DESC,
+              CASE WHEN :sortBy = 'fechaUltimaGestion' AND :sortDesc = false THEN r.fechaUltimaGestion END ASC,
+              CASE WHEN :sortBy = 'fechaUltimaGestion' AND :sortDesc = true THEN r.fechaUltimaGestion END DESC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN COALESCE(prog.fechaProgramacion, rechazo.fechaRechazo, instalado.fechaInstalacion) END ASC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'AUTO' THEN COALESCE(prog.fechaProgramacion, rechazo.fechaRechazo, instalado.fechaInstalacion) END DESC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN ultTip.createdAt END ASC,
@@ -1575,6 +1592,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
                 dp.nombreTitularServicio,
                 CASE
+                  WHEN :groupBy = 'DEPARTAMENTO' THEN dept.nombre
+                  WHEN :groupBy = 'PROVINCIA' THEN CONCAT(COALESCE(dept.nombre, '?'), ' / ', COALESCE(prov.nombre, '?'))
+                  WHEN :groupBy = 'DISTRITO' THEN CONCAT(COALESCE(dept.nombre, '?'), ' / ', COALESCE(prov.nombre, '?'), ' / ', COALESCE(dist.nombre, '?'))
                   WHEN dir.ubigeoDomicilio IS NULL OR TRIM(dir.ubigeoDomicilio) = '' THEN null
                   WHEN SUBSTRING(dir.ubigeoDomicilio, 1, 2) IN ('07', '15') THEN 'Lima'
                   ELSE 'Provincia'
@@ -1605,6 +1625,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN epFallback.proveedor fp
             LEFT JOIN Tipificacion tAct ON tAct.codigo = e.tipificacion AND tAct.matriz.etapa = :etapaVenta AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
             LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = e.subtipificacion
+            LEFT JOIN Distrito dist ON dist.codigo = dir.ubigeoDomicilio
+            LEFT JOIN dist.provincia prov
+            LEFT JOIN dist.departamento dept
             WHERE e.accion = :accionTipificacion
               AND e.etapa = :etapaVenta
               AND l.etapa IN :etapasActuales
@@ -1649,11 +1672,22 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               CASE WHEN :groupBy = 'ESTADO' THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END ASC,
               CASE WHEN :groupBy = 'PLAN' THEN l.nombrePlanSnapshot END ASC,
               CASE WHEN :groupBy = 'ULTIMO_GESTOR' THEN e.nombreActor END ASC,
+              CASE WHEN :groupBy = 'ASESOR_PREVENTA' THEN rp.nombreAsesorMerito END ASC,
               CASE WHEN :groupBy = 'TIPIFICACION' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
               CASE WHEN :groupBy = 'TIPIFICACION' THEN tAct.orden END ASC,
               CASE WHEN :groupBy = 'TIPIFICACION' THEN sAct.orden END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN tAct.orden END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN CASE WHEN sAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN sAct.orden END ASC,
+              CASE WHEN :groupBy IN ('DEPARTAMENTO', 'PROVINCIA', 'DISTRITO') THEN CASE WHEN dept.nombre IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy IN ('DEPARTAMENTO', 'PROVINCIA', 'DISTRITO') THEN dept.nombre END ASC,
+              CASE WHEN :groupBy IN ('PROVINCIA', 'DISTRITO') THEN prov.nombre END ASC,
+              CASE WHEN :groupBy = 'DISTRITO' THEN dist.nombre END ASC,
               CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = false THEN COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) END ASC,
               CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = true THEN COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) END DESC,
+              CASE WHEN :sortBy = 'fechaUltimaGestion' AND :sortDesc = false THEN r.fechaUltimaGestion END ASC,
+              CASE WHEN :sortBy = 'fechaUltimaGestion' AND :sortDesc = true THEN r.fechaUltimaGestion END DESC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN COALESCE(e.fechaProgramacion, e.fechaRechazo, e.fechaInstalacion) END ASC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'AUTO' THEN COALESCE(e.fechaProgramacion, e.fechaRechazo, e.fechaInstalacion) END DESC,
               CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN e.createdAt END ASC,

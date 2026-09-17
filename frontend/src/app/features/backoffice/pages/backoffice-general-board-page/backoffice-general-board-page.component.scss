@@ -371,15 +371,95 @@ app-tipification-stack {
   min-height: 3.5rem;
 }
 
-.tip-option {
-  display: grid;
-  gap: 0.1rem;
-  max-width: 28rem;
+.filter-btn--active {
+  font-weight: 800;
 }
 
-.tip-option strong {
+.tip-tree {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 16rem;
+  max-width: 24rem;
+}
+
+.tip-tree__search {
+  align-items: center;
+  background: var(--board-soft);
+  border: 1px solid var(--board-line);
+  border-radius: 6px;
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.3rem 0.45rem;
+}
+
+.tip-tree__search > i {
+  color: var(--board-muted);
+  font-size: 0.78rem;
+}
+
+.tip-tree__search input {
+  border: 0;
+  box-shadow: none;
+  flex: 1;
+  font-size: 0.8rem;
+  min-width: 0;
+  padding: 0.15rem 0;
+}
+
+.tip-tree__list {
+  display: grid;
+  gap: 0.15rem;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.tip-tree__node {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.tip-tree__row {
+  align-items: center;
+  border-radius: 5px;
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.28rem 0.35rem;
+}
+
+.tip-tree__row:hover {
+  background: var(--board-soft);
+}
+
+.tip-tree__row--child {
+  padding-left: 1.6rem;
+}
+
+.tip-tree__label {
   color: var(--board-ink);
-  font-size: 0.82rem;
+  flex: 1;
+  font-size: 0.8rem;
+  font-weight: 800;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tip-tree__label--sub {
+  color: var(--board-muted);
+  font-weight: 700;
+}
+
+.tip-tree__children {
+  display: grid;
+  gap: 0.06rem;
+}
+
+.tip-tree__empty {
+  color: var(--board-muted);
+  font-size: 0.78rem;
+  padding: 0.6rem;
+  text-align: center;
 }
 
 .organize-panel {
@@ -397,16 +477,16 @@ app-tipification-stack {
 }
 
 :host ::ng-deep {
-  .tipification-picker {
-    min-width: min(25rem, 100%);
-  }
-
-  .tipification-picker .p-multiselect-label {
-    min-height: 1.45rem;
-  }
-
   .general-board-popover .p-popover-content {
     padding: 0.9rem;
+  }
+
+  .tip-tree-popover .p-popover-content {
+    padding: 0.75rem;
+  }
+
+  .origen-select {
+    min-width: 10rem;
   }
 
   .organize-panel .p-select,
@@ -609,8 +689,8 @@ app-tipification-stack {
   }
 
   :host ::ng-deep {
-    .tipification-picker,
-    .filter-strip .p-button {
+    .filter-strip .p-button,
+    .filter-strip .p-select {
       width: 100%;
     }
   }

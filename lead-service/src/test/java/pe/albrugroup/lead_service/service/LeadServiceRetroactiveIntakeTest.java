@@ -831,6 +831,48 @@ class LeadServiceRetroactiveIntakeTest {
     }
 
     @Test
+    void tipificarPreventaPersisteComentarioEnLeadYEvento() {
+        Lead lead = Lead.builder()
+                .id(25202L)
+                .idEquipo(10L)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.EN_GESTION)
+                .idAsesorAsignado(7L)
+                .nombreAsesorAsignado("Asesor Venta")
+                .build();
+        LeadTipificacionRequest request = new LeadTipificacionRequest();
+        request.setCodigoTipificacion("CONTACTADO");
+        request.setCodigoSubtipificacion("SEGUIMIENTO");
+        request.setComentario("Comentario del asesor");
+        request.setIdProveedor(1L);
+        Tipificacion tipificacion = tipificacionPreventaCompleta();
+        tipificacion.setCodigo("CONTACTADO");
+        Subtipificacion subtipificacion = new Subtipificacion();
+        subtipificacion.setId(81L);
+        subtipificacion.setTipificacion(tipificacion);
+        subtipificacion.setCodigo("SEGUIMIENTO");
+        subtipificacion.setOrden(1);
+        subtipificacion.setActivo(true);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
+        when(equipoProveedorRepository.existsByIdEquipoAndProveedorId(10L, 1L)).thenReturn(true);
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
+                Etapa.PREVENTA, 1L, "CONTACTADO"
+        )).thenReturn(Optional.of(tipificacion));
+        when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(80L, "SEGUIMIENTO"))
+                .thenReturn(Optional.of(subtipificacion));
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.tipificarLead(25202L, request);
+
+        assertThat(lead.getComentario()).isEqualTo("Comentario del asesor");
+        ArgumentCaptor<RegistrarEventoRequest> captor = ArgumentCaptor.forClass(RegistrarEventoRequest.class);
+        verify(eventoService).registrarEvento(captor.capture());
+        assertThat(captor.getValue().getComentario()).isEqualTo("Comentario del asesor");
+    }
+
+    @Test
     void aceptaLosLimitesDeHoraYRechazaValoresFueraDelRango() {
         assertThat(leadService.calcularRegistroRetroactivo(LocalDate.of(2026, 6, 10), LocalTime.of(18, 0)))
                 .isNotNull();
