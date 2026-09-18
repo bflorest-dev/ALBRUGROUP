@@ -234,15 +234,28 @@ label {
   justify-content: flex-end;
 }
 
+.assignment-dialog-actions {
+  align-items: center;
+  gap: .6rem;
+}
+
+.assignment-dialog-actions > button {
+  flex: 0 0 6.5rem;
+  height: 2.75rem;
+  justify-content: center;
+  min-height: 2.75rem;
+  width: 6.5rem;
+}
+
 .gtr-derive-button {
   background: #f4b740;
-  border-color: #d39216;
+  border-color: transparent;
   color: #2f2410;
 }
 
 .gtr-derive-button:hover:not(:disabled) {
   background: #e5a92f;
-  border-color: #b9780b;
+  border-color: transparent;
   color: #2f2410;
 }
 

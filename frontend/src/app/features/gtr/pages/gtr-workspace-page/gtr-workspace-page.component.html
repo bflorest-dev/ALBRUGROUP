@@ -398,19 +398,6 @@
 
       <div class="dialog-actions">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeDialog()"></button>
-        @if (facade.activeAssignmentLead()) {
-          <button
-            pButton
-            type="button"
-            label="Derivar"
-            icon="pi pi-share-alt"
-            class="gtr-derive-button"
-            title="Derivar este lead al asesor seleccionado"
-            [disabled]="!facade.canMutateOperationalData()"
-            [loading]="facade.isSaving()"
-            (click)="facade.submitAssignment(true)"
-          ></button>
-        }
         <button
           pButton
           type="submit"
@@ -651,8 +638,20 @@
         </p-select>
       </label>
 
-      <div class="dialog-actions">
+      <div class="dialog-actions assignment-dialog-actions">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeDialog()"></button>
+        @if (facade.activeAssignmentLead()) {
+          <button
+            pButton
+            type="button"
+            label="Derivar"
+            class="gtr-derive-button"
+            title="Derivar este lead al asesor seleccionado"
+            [disabled]="!facade.canMutateOperationalData()"
+            [loading]="facade.isSaving()"
+            (click)="facade.submitAssignment(true)"
+          ></button>
+        }
         <button
           pButton
           type="submit"
