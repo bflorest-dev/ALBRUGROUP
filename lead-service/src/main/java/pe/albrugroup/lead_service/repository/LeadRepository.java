@@ -3625,27 +3625,22 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("SELECT l.id, l.idEquipo FROM Lead l WHERE l.lead = :lead ORDER BY l.lastEntryAt DESC, l.id DESC")
     List<Object[]> findLeadIdsAndEquiposByLead(@Param("lead") String lead);
 
-    @Query("""
-            SELECT l.id FROM Lead l
-            WHERE l.etapa = :etapa
-              AND l.idSubtipificacion IN :subtipiIds
-              AND EXISTS (
-                  SELECT 1 FROM LeadEtapaResumen r
-                  WHERE r.idLead = l.id AND r.etapa = :etapa
-                    AND r.ultimaTipificacionAt IS NOT NULL
-                    AND r.ultimaTipificacionAt <= :sinCambioDesde
-              )
-              AND EXISTS (
-                  SELECT 1 FROM Evento e
-                  WHERE e.idLead = l.id AND e.accion = :accion
-                    AND e.createdAt >= :contactoDesde
-              )
-            """)
+    @Query(value = """
+            SELECT l.id FROM lead l
+            JOIN lead_etapa_resumen r ON r.id_lead = l.id AND r.etapa = 'VENTA'
+            WHERE l.etapa = 'VENTA'
+              AND l.id_subtipificacion IN (:subtipiIds)
+              AND r.ultima_tipificacion_at IS NOT NULL
+              AND r.ultima_tipificacion_at <= :sinCambioDesde
+              AND (SELECT COUNT(DISTINCT CAST(e.created_at AS date))
+                   FROM evento e
+                   WHERE e.id_lead = l.id AND e.accion = 'CONTACTO'
+                     AND e.created_at >= :contactoDesde) >= :diasContactoMinimo
+            """, nativeQuery = true)
     List<Long> findLeadIdsParaRetornoPreventa(
-            @Param("etapa") Etapa etapa,
             @Param("subtipiIds") Collection<Long> subtipiIds,
             @Param("sinCambioDesde") Instant sinCambioDesde,
             @Param("contactoDesde") Instant contactoDesde,
-            @Param("accion") Accion accion
+            @Param("diasContactoMinimo") int diasContactoMinimo
     );
 }

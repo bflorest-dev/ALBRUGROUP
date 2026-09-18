@@ -54,7 +54,7 @@ public class RetornoPreventaJob {
         Instant contactoDesde = ahora.minus(Duration.ofDays(config.getDiasContactoReciente()));
 
         List<Long> leadIds = leadRepository.findLeadIdsParaRetornoPreventa(
-                Etapa.VENTA, subtipiIds, sinCambioDesde, contactoDesde, Accion.CONTACTO);
+                subtipiIds, sinCambioDesde, contactoDesde, config.getDiasContactoReciente());
 
         if (leadIds.isEmpty()) {
             return;
