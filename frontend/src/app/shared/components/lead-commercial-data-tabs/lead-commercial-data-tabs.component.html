@@ -1,5 +1,5 @@
 <div class="commercial-tabs" [class.commercial-tabs--drawer]="layoutMode === 'drawer'">
-  <p-tabs [value]="activeTab" (valueChange)="activeTabChange.emit($any($event))">
+  <p-tabs [value]="activeTab" (valueChange)="onActiveTabValueChange($any($event))">
     <p-tablist>
       <p-tab value="datos">{{ layoutMode === 'drawer' ? 'Datos' : 'Datos Preventa' }}</p-tab>
       <p-tab value="direccion">Direccion</p-tab>
@@ -481,7 +481,39 @@
             </ng-template>
           </p-select>
         </label>
-        <label class="wide">
+        @if (mostrarDatosClaro && tecnologiaControl && esFullClaroControl) {
+          <label class="offer-field offer-field--half">
+            <span>
+              Tecnología
+              @if (requiereTecnologiaClaro) {
+                <strong class="required-mark" aria-hidden="true">*</strong>
+              }
+            </span>
+            <p-select
+              [formControl]="tecnologiaControl"
+              [options]="tecnologiaOptions"
+              placeholder="Seleccionar tecnología"
+              appendTo="body"
+              [disabled]="offerLocked || readonly"
+            />
+          </label>
+          <label class="offer-field offer-field--half offer-checkbox-field" for="asesor-es-full-claro">
+            <span class="offer-checkbox-field__control">
+              <p-checkbox
+                inputId="asesor-es-full-claro"
+                [formControl]="esFullClaroControl"
+                [binary]="true"
+                [disabled]="offerLocked || readonly"
+              />
+              <span>Es Full Claro</span>
+            </span>
+          </label>
+        }
+        <label
+          class="offer-field"
+          [class.wide]="!platformOptionsAvailable()"
+          [class.offer-field--half]="platformOptionsAvailable()"
+        >
           <span>Promocion</span>
           <p-select
             formControlName="idPromocionInterna"
@@ -492,54 +524,11 @@
             [disabled]="offerLocked || readonly"
           />
         </label>
-        @if (mostrarDatosClaro && tecnologiaControl && esFullClaroControl) {
-          <section class="claro-offer-fields wide" aria-labelledby="claro-offer-fields-title">
-            <div class="claro-offer-fields__heading">
-              <div>
-                <h3 id="claro-offer-fields-title">Datos de CLARO</h3>
-                <p>Completa la tecnología antes de cerrar la preventa.</p>
-              </div>
-              <i class="pi pi-info-circle" aria-hidden="true"></i>
-            </div>
-            <div class="claro-offer-fields__grid">
-              <label>
-                <span>
-                  Tecnología
-                  @if (requiereTecnologiaClaro) {
-                    <strong class="required-mark" aria-hidden="true">*</strong>
-                  }
-                </span>
-                <p-select
-                  [formControl]="tecnologiaControl"
-                  [options]="tecnologiaOptions"
-                  placeholder="Seleccionar tecnología"
-                  appendTo="body"
-                  [disabled]="offerLocked || readonly"
-                />
-                @if (requiereTecnologiaClaro) {
-                  <small>Obligatoria para cerrar una preventa CLARO.</small>
-                }
-              </label>
-              <label class="claro-check-field" for="asesor-es-full-claro">
-                <span>Validación comercial</span>
-                <span class="claro-check-field__control">
-                  <p-checkbox
-                    inputId="asesor-es-full-claro"
-                    [formControl]="esFullClaroControl"
-                    [binary]="true"
-                    [disabled]="offerLocked || readonly"
-                  />
-                  <span>Es Full Claro</span>
-                </span>
-              </label>
-            </div>
-          </section>
-        }
-        @if (plataformaDigitalControl && plataformasDigitales.length) {
-          <label class="wide">
+        @if (platformOptionsAvailable()) {
+          <label class="offer-field offer-field--half">
             <span>Plataforma digital</span>
             <p-select
-              [formControl]="plataformaDigitalControl"
+              [formControl]="plataformaDigitalControl!"
               [options]="plataformasDigitales"
               optionLabel="nombre"
               optionValue="id"
@@ -558,51 +547,73 @@
             }
           </div>
 
-          <div class="offer-additionals__list">
-            @for (adicional of adicionales; track adicional.id) {
-              <article class="offer-additional-item">
-                <div class="offer-additional-item__info">
-                  <strong>{{ adicional.nombre }}</strong>
-                  <small>S/ {{ display(adicional.precioUnitario) }}</small>
-                </div>
+          @if (shouldShowAdditionalOptions()) {
+            <div class="offer-additionals__list" id="additional-options-list">
+              @for (adicional of adicionales; track adicional.id) {
+                <article class="offer-additional-item">
+                  <div class="offer-additional-item__info">
+                    <strong>{{ adicional.nombre }}</strong>
+                    <small>S/ {{ display(adicional.precioUnitario) }}</small>
+                  </div>
 
-                <div class="quantity-control" [attr.aria-label]="'Cantidad de ' + adicional.nombre">
-                  @if (!readonly) {
-                    <button
-                      pButton
-                      type="button"
-                      icon="pi pi-minus"
-                      severity="secondary"
-                      size="small"
-                      [disabled]="offerLocked || adicionalCantidad(adicional.id) === 0"
-                      (click)="disminuirAdicional.emit(adicional)"
-                    ></button>
+                  <div class="quantity-control" [attr.aria-label]="'Cantidad de ' + adicional.nombre">
+                    @if (!readonly) {
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-minus"
+                        severity="secondary"
+                        size="small"
+                        [disabled]="offerLocked || adicionalCantidad(adicional.id) === 0"
+                        (click)="disminuirAdicional.emit(adicional)"
+                      ></button>
+                    }
+                    <span>{{ readonly ? 'x' + adicionalCantidad(adicional.id) : adicionalCantidad(adicional.id) }}</span>
+                    @if (!readonly) {
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-plus"
+                        size="small"
+                        [disabled]="offerLocked"
+                        (click)="incrementarAdicional.emit(adicional)"
+                      ></button>
+                    }
+                  </div>
+                </article>
+              } @empty {
+                <p class="helper">
+                  @if (readonly) {
+                    Este lead no tiene adicionales.
+                  } @else if (offerLocked) {
+                    Sin adicionales disponibles para mostrar.
+                  } @else {
+                    Selecciona un proveedor para ver sus adicionales disponibles.
                   }
-                  <span>{{ readonly ? 'x' + adicionalCantidad(adicional.id) : adicionalCantidad(adicional.id) }}</span>
-                  @if (!readonly) {
-                    <button
-                      pButton
-                      type="button"
-                      icon="pi pi-plus"
-                      size="small"
-                      [disabled]="offerLocked"
-                      (click)="incrementarAdicional.emit(adicional)"
-                    ></button>
-                  }
-                </div>
-              </article>
-            } @empty {
-              <p class="helper">
-                @if (readonly) {
-                  Este lead no tiene adicionales.
-                } @else if (offerLocked) {
-                  Sin adicionales disponibles para mostrar.
-                } @else {
-                  Selecciona un proveedor para ver sus adicionales disponibles.
-                }
-              </p>
-            }
-          </div>
+                </p>
+              }
+            </div>
+          } @else if (readonly) {
+            <p class="helper">Este lead no tiene adicionales.</p>
+          }
+          @if (!readonly) {
+            <button
+              class="offer-additionals__trigger"
+              type="button"
+              [attr.aria-expanded]="shouldShowAdditionalOptions()"
+              aria-controls="additional-options-list"
+              [disabled]="offerLocked || (!adicionales.length && !selectedAdditionals.length)"
+              (click)="toggleAdditionalOptions()"
+            >
+              <i
+                class="pi"
+                [class.pi-chevron-up]="shouldShowAdditionalOptions()"
+                [class.pi-plus-circle]="!shouldShowAdditionalOptions()"
+                aria-hidden="true"
+              ></i>
+              <span>{{ shouldShowAdditionalOptions() ? 'Ocultar adicionales' : 'Incluir adicionales' }}</span>
+            </button>
+          }
         </div>
       </form>
     </p-tabpanel>

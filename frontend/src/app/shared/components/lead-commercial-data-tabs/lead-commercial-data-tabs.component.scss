@@ -36,6 +36,11 @@
   grid-column: 1 / -1;
 }
 
+.offer-field--half {
+  grid-column: span 6;
+  min-width: 0;
+}
+
 .data-section {
   border-bottom: 1px solid #dce6ee;
   display: grid;
@@ -256,50 +261,11 @@ label {
   margin-top: 1rem;
 }
 
-.claro-offer-fields {
-  border: 1px solid #d6e5df;
-  border-radius: 10px;
-  display: grid;
-  gap: 0.85rem;
-  padding: 0.85rem;
-}
-
-.claro-offer-fields__heading {
-  align-items: flex-start;
-  color: #17624f;
-  display: flex;
-  gap: 0.65rem;
-  justify-content: space-between;
-}
-
-.claro-offer-fields__heading h3,
-.claro-offer-fields__heading p {
-  margin: 0;
-}
-
-.claro-offer-fields__heading h3 {
-  font-size: 0.88rem;
-  font-weight: 850;
-}
-
-.claro-offer-fields__heading p,
-.claro-offer-fields label small {
+.offer-field small {
   color: #617187;
   font-size: 0.7rem;
   font-weight: 600;
   margin-top: 0.18rem;
-}
-
-.claro-offer-fields__grid {
-  display: grid;
-  gap: 0.8rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-@media (max-width: 720px) {
-  .claro-offer-fields__grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .required-mark {
@@ -307,7 +273,11 @@ label {
   margin-left: 0.15rem;
 }
 
-.claro-check-field__control {
+.offer-checkbox-field {
+  align-content: end;
+}
+
+.offer-checkbox-field__control {
   align-items: center;
   display: flex;
   gap: 0.55rem;
@@ -449,6 +419,34 @@ label {
   border: 1px solid #dce8e3;
   border-radius: 12px;
   padding: 0.75rem;
+}
+
+.offer-additionals__trigger {
+  align-items: center;
+  background: #f8fbfa;
+  border: 1px dashed #a8c9bb;
+  border-radius: 8px;
+  color: #17624f;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.45rem;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.8rem;
+  width: 100%;
+}
+
+.offer-additionals__trigger:hover:not(:disabled) {
+  background: #eef8f3;
+  border-color: #56a486;
+}
+
+.offer-additionals__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .offer-additionals__head,
@@ -743,7 +741,8 @@ label {
   }
 
   .offer-additional-item,
-  .wide {
+  .wide,
+  .offer-field--half {
     grid-column: 1 / -1;
   }
 }

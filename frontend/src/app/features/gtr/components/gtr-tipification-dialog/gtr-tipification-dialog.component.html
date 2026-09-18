@@ -76,21 +76,6 @@
           </p-select>
         </label>
 
-        @if (facade.plataformasDigitales().length) {
-          <label class="tipification-bar__field">
-            <span>Plataforma digital</span>
-            <p-select
-              formControlName="idPlataformaDigitalOfrecida"
-              [options]="facade.plataformasDigitales()"
-              optionLabel="nombre"
-              optionValue="id"
-              [showClear]="true"
-              placeholder="Sin plataforma"
-              appendTo="body"
-            />
-          </label>
-        }
-
         @if (facade.requiresScheduledTime()) {
           <label class="tipification-bar__field tipification-bar__field--time">
             <span>Hora programada</span>
@@ -174,6 +159,13 @@
         [adicionales]="facade.adicionales()"
         [selectedAdditionals]="facade.selectedOfertaAdditionals()"
         [additionalsTotal]="facade.ofertaAdditionalsTotal()"
+        [plataformaDigitalControl]="facade.tipificacionForm.controls.idPlataformaDigitalOfrecida"
+        [plataformasDigitales]="facade.plataformasDigitales()"
+        [tecnologiaControl]="facade.tipificacionForm.controls.tecnologia"
+        [tecnologiaOptions]="facade.tecnologiaOptions"
+        [esFullClaroControl]="facade.tipificacionForm.controls.esFullClaro"
+        [mostrarDatosClaro]="facade.mostrarDatosClaro()"
+        [requiereTecnologiaClaro]="facade.requiereTecnologiaClaro()"
         (activeTabChange)="facade.setActiveDataTab($event)"
         (tipoDocumentoChange)="facade.onTipoDocumentoChanged()"
         (departamentoDomicilioChange)="facade.onDepartamentoDomicilioChanged()"

@@ -170,6 +170,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     // Gestiones aparcadas del asesor: para topar cuántos leads puede tener EN_GESTION en paralelo.
     long countByIdAsesorAsignadoAndEstado(Long idAsesorAsignado, EstadoSeguimiento estado);
     long countByIdAsesorAsignadoAndEstadoAndEtapa(Long idAsesorAsignado, EstadoSeguimiento estado, Etapa etapa);
+
+    boolean existsByIdAsesorAsignadoAndEsDerivadoTrueAndIdNot(Long idAsesorAsignado, Long id);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Lead> findByIdAndEtapa(Long id, Etapa etapa);
 

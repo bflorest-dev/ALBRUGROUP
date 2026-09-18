@@ -226,6 +226,7 @@ export interface LeadAsesorVentasResponse {
   // en solo lectura y solo puede tipificarlo (informativo) o crear nuevas oportunidades.
   etapa?: Etapa | string | null;
   atencionOtraEtapa?: boolean;
+  esDerivado?: boolean;
 }
 
 export interface LeadVentaResponse {
@@ -738,6 +739,7 @@ export interface LeadAsignacionRequest {
   nombreAsesorAsignado: string;
   confirmarReasignacion?: boolean;
   confirmarGestionPrevia?: boolean;
+  esDerivado?: boolean;
 }
 
 export interface LeadTomaGestionGtrRequest {
@@ -754,6 +756,7 @@ export interface LeadAsignacionMasivaRequest {
   idAsesorAsignado: number;
   nombreAsesorAsignado: string;
   confirmarReasignacion?: boolean;
+  esDerivado?: boolean;
 }
 
 export interface LeadAsignacionResultadoResponse {

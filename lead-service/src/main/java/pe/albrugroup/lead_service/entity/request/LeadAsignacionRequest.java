@@ -18,4 +18,6 @@ public class LeadAsignacionRequest {
     private Boolean confirmarReasignacion = false;
 
     private Boolean confirmarGestionPrevia = false;
+
+    private Boolean esDerivado = false;
 }

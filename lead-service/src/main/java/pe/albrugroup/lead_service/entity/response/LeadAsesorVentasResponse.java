@@ -38,4 +38,5 @@ public class LeadAsesorVentasResponse {
     // proveedor de la campaña si la tiene; si no, el proveedor fallback del equipo del lead.
     private String nombreProveedorCampana;
     private String nombreProveedorEquipo;
+    private boolean esDerivado;
 }

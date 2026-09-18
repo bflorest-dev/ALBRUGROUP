@@ -49,6 +49,7 @@ import {
   PlanResponse,
   PlataformaDigitalResponse,
   PromocionComercialResponse,
+  Tecnologia,
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import { LeadCommercialDataTab } from '../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
@@ -170,6 +171,7 @@ type PendingReassignment = {
   requiresReassignment: boolean;
   requiresPreviousManagement: boolean;
   previousManagementAt?: string | null;
+  esDerivado: boolean;
 };
 
 type PendingTakeover = {
@@ -589,7 +591,9 @@ export class GtrWorkspaceFacade {
     codigoSubtipificacion: ['', [Validators.required]],
     comentario: [''],
     horaProgramada: [''],
-    idPlataformaDigitalOfrecida: [null as number | null]
+    idPlataformaDigitalOfrecida: [null as number | null],
+    tecnologia: ['' as Tecnologia | ''],
+    esFullClaro: [false]
   });
 
   readonly masivoFiltersForm = this.fb.group({
@@ -670,6 +674,13 @@ export class GtrWorkspaceFacade {
     { id: 0, reglaComercial: 'Sin promocion' },
     ...this.promociones()
   ]);
+  readonly tecnologiaOptions: Tecnologia[] = ['HFC', 'FTTH', 'HIBRIDA'];
+  readonly esProveedorClaroSeleccionado = computed(() => {
+    const provider = this.ofertaProviderOptions().find((item) => item.id === this.selectedOfertaProviderId());
+    return provider?.nombre?.trim().toUpperCase() === 'CLARO';
+  });
+  readonly mostrarDatosClaro = this.esProveedorClaroSeleccionado;
+  readonly requiereTecnologiaClaro = computed(() => this.mostrarDatosClaro() && this.requiresVentaCompleta());
   readonly ofertaAdditionalsTotal = computed(() =>
     this.selectedOfertaAdditionals().reduce((total, adicional) => total + (adicional.precioUnitario ?? 0) * adicional.cantidad, 0)
   );
@@ -1728,7 +1739,9 @@ export class GtrWorkspaceFacade {
       codigoSubtipificacion: raw.codigoSubtipificacion,
       comentario: this.showComment() ? raw.comentario || null : null,
       horaProgramada: this.requiresScheduledTime() ? raw.horaProgramada || null : null,
-      idPlataformaDigitalOfrecida: raw.idPlataformaDigitalOfrecida || null
+      idPlataformaDigitalOfrecida: raw.idPlataformaDigitalOfrecida || null,
+      tecnologia: this.mostrarDatosClaro() ? (raw.tecnologia || null) : null,
+      esFullClaro: this.mostrarDatosClaro() ? raw.esFullClaro : false
     };
     const forceFullSave = this.requiresVentaCompleta();
 
@@ -2229,6 +2242,7 @@ export class GtrWorkspaceFacade {
     const idPlan = this.ofertaForm.controls.idPlan.value;
     this.ofertaForm.controls.idPromocionInterna.setValue(0);
     await this.refreshPlanPromotions(idPlan);
+    this.limpiarDatosClarosSiNoCorresponde();
   }
 
   async onOfertaProviderChanged(idProveedor: number): Promise<void> {
@@ -2242,6 +2256,7 @@ export class GtrWorkspaceFacade {
     this.promociones.set([]);
     this.adicionales.set([]);
     this.ofertaForm.markAsDirty();
+    this.limpiarDatosClarosSiNoCorresponde();
     if (idProveedor) {
       await this.refreshProviderAdditionals(idProveedor);
     }
@@ -2406,7 +2421,8 @@ export class GtrWorkspaceFacade {
   async assignOne(
     row: LeadGtrResponse,
     confirmarReasignacion = false,
-    confirmarGestionPrevia = false
+    confirmarGestionPrevia = false,
+    esDerivado = false
   ): Promise<void> {
     if (!this.ensureCanMutate()) {
       return;
@@ -2433,14 +2449,15 @@ export class GtrWorkspaceFacade {
           idAsesorAsignado: advisor.empleadoId,
           nombreAsesorAsignado: advisor.nombreCompleto,
           confirmarReasignacion,
-          confirmarGestionPrevia
+          confirmarGestionPrevia,
+          esDerivado
         })
       );
       this.successMessage.set(`Lead ${this.leadIdentity(row)} asignado a ${advisor.nombreCompleto}.`);
       this.closeDialog();
       await this.reconcile();
     } catch (error) {
-      if (this.openReassignmentConfirmation(error, row, advisor)) {
+      if (this.openReassignmentConfirmation(error, row, advisor, esDerivado)) {
         return;
       }
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo asignar el lead.'));
@@ -2460,7 +2477,12 @@ export class GtrWorkspaceFacade {
 
     this.assignmentForm.controls.idAsesorAsignado.setValue(pending.advisor.empleadoId);
     this.selectedAssignmentAdvisorId.set(pending.advisor.empleadoId);
-    await this.assignOne(pending.row, pending.requiresReassignment, pending.requiresPreviousManagement);
+    await this.assignOne(
+      pending.row,
+      pending.requiresReassignment,
+      pending.requiresPreviousManagement,
+      pending.esDerivado
+    );
   }
 
   cancelReassignment(): void {
@@ -3692,10 +3714,10 @@ export class GtrWorkspaceFacade {
     }
   }
 
-  async submitAssignment(): Promise<void> {
+  async submitAssignment(esDerivado = false): Promise<void> {
     const row = this.activeAssignmentLead();
     if (row) {
-      await this.assignOne(row);
+      await this.assignOne(row, false, false, esDerivado);
       return;
     }
 
@@ -3748,7 +3770,12 @@ export class GtrWorkspaceFacade {
     return false;
   }
 
-  private openReassignmentConfirmation(error: unknown, row: LeadGtrResponse, advisor: AdvisorOption): boolean {
+  private openReassignmentConfirmation(
+    error: unknown,
+    row: LeadGtrResponse,
+    advisor: AdvisorOption,
+    esDerivado = false
+  ): boolean {
     if (!(error instanceof HttpErrorResponse) || error.status !== 409) {
       return false;
     }
@@ -3778,7 +3805,8 @@ export class GtrWorkspaceFacade {
       requiresInManagement,
       requiresReassignment,
       requiresPreviousManagement,
-      details?.ultimaGestionAt ?? null
+      details?.ultimaGestionAt ?? null,
+      esDerivado
     );
     return true;
   }
@@ -3790,7 +3818,8 @@ export class GtrWorkspaceFacade {
     requiresInManagement: boolean,
     requiresReassignment: boolean,
     requiresPreviousManagement: boolean,
-    previousManagementAt: string | null
+    previousManagementAt: string | null,
+    esDerivado: boolean
   ): void {
     this.errorMessage.set(null);
     this.pendingReassignment.set({
@@ -3800,7 +3829,8 @@ export class GtrWorkspaceFacade {
       requiresInManagement,
       requiresReassignment,
       requiresPreviousManagement,
-      previousManagementAt
+      previousManagementAt,
+      esDerivado
     });
     this.activeDialog.set('reassign-confirm');
   }
@@ -4259,6 +4289,14 @@ export class GtrWorkspaceFacade {
     this.adicionales.set(await firstValueFrom(this.preventaService.listarAdicionales(idProveedor)));
   }
 
+  private limpiarDatosClarosSiNoCorresponde(): void {
+    if (this.esProveedorClaroSeleccionado()) {
+      return;
+    }
+    this.tipificacionForm.controls.tecnologia.setValue('');
+    this.tipificacionForm.controls.esFullClaro.setValue(false);
+  }
+
   private patchTypifyForms(detail: LeadDetalleResponse): void {
     this.patchDatosForm(detail);
     this.patchDireccionForm(detail);
@@ -4268,7 +4306,9 @@ export class GtrWorkspaceFacade {
       codigoSubtipificacion: '',
       comentario: '',
       horaProgramada: '',
-      idPlataformaDigitalOfrecida: null
+      idPlataformaDigitalOfrecida: null,
+      tecnologia: '',
+      esFullClaro: false
     });
     this.selectedTipificacionCode.set('');
     this.showComment.set(false);
@@ -4356,7 +4396,9 @@ export class GtrWorkspaceFacade {
       codigoSubtipificacion: '',
       comentario: '',
       horaProgramada: '',
-      idPlataformaDigitalOfrecida: null
+      idPlataformaDigitalOfrecida: null,
+      tecnologia: '',
+      esFullClaro: false
     });
     this.markTypifyFormsPristine();
   }
@@ -4526,6 +4568,9 @@ export class GtrWorkspaceFacade {
     add('direccion', 'Referencia', a.referencia.value);
     add('direccion', 'Piso', a.piso.value);
     add('direccion', 'Interior', a.interior.value);
+    if (this.requiereTecnologiaClaro()) {
+      add('oferta', 'Tecnologia', this.tipificacionForm.controls.tecnologia.value);
+    }
     checklist.push({ tab: 'oferta', campo: 'Plan', completo: !!this.ofertaForm.controls.idPlan.value });
 
     return checklist;

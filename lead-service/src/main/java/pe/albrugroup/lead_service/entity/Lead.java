@@ -68,6 +68,10 @@ public class Lead {
     private Long idAsesorAsignado;
     private String nombreAsesorAsignado;
 
+    // Marca una asignacion prioritaria del GTR que el asesor debe cerrar antes de recibir otra.
+    @Builder.Default
+    private boolean esDerivado = false;
+
     // Atención GTR de un lead que ya NO está en PREVENTA: cuando el contacto vuelve a
     // comunicarse y su único lead está en otra etapa, el GTR lo registra y este flag lo
     // hace visible en la bandeja diaria solo para asignarlo a un asesor que atienda la

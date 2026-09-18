@@ -2590,6 +2590,8 @@ public class LeadService {
             lead.setNombreAsesorAsignado(null);
         }
 
+        lead.setEsDerivado(false);
+
         Lead savedLead = leadRepository.save(lead);
         actualizarResumenEtapaTipificacion(
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, resultado, idAsesorAnterior, nombreAsesorAnterior,
@@ -2693,6 +2695,7 @@ public class LeadService {
         lead.setIdAsesorAsignado(null);
         lead.setNombreAsesorAsignado(null);
         lead.setEstado(EstadoSeguimiento.GESTIONADO);
+        lead.setEsDerivado(false);
         Lead savedLead = leadRepository.save(lead);
         notificarCambioLead("ATENCION_CERRADA", savedLead, etapaLead, idAsesorAnterior, true);
     }
@@ -2756,6 +2759,8 @@ public class LeadService {
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
         }
+
+        lead.setEsDerivado(false);
 
         Lead savedLead = leadRepository.save(lead);
         if (etapaDestino == Etapa.POSTVENTA) {
@@ -2840,6 +2845,8 @@ public class LeadService {
                 moverAEnGestionSiAplica(lead);
             }
         }
+
+        lead.setEsDerivado(false);
 
         Lead savedLead = leadRepository.save(lead);
         actualizarResumenEtapaTipificacion(
@@ -3340,6 +3347,7 @@ public class LeadService {
                 request.getNombreAsesorAsignado(),
                 Boolean.TRUE.equals(request.getConfirmarReasignacion()),
                 Boolean.TRUE.equals(request.getConfirmarGestionPrevia()),
+                Boolean.TRUE.equals(request.getEsDerivado()),
                 true
         );
     }
@@ -3366,6 +3374,7 @@ public class LeadService {
                 nombreGtr,
                 Boolean.TRUE.equals(request.getConfirmarReasignacion()),
                 Boolean.TRUE.equals(request.getConfirmarGestionPrevia()),
+                false,
                 true
         );
         Lead savedLead = leadRepository.findById(idLead)
@@ -3592,7 +3601,8 @@ public class LeadService {
                         idLead,
                         request.getIdAsesorAsignado(),
                         request.getNombreAsesorAsignado(),
-                        Boolean.TRUE.equals(request.getConfirmarReasignacion())
+                        Boolean.TRUE.equals(request.getConfirmarReasignacion()),
+                        Boolean.TRUE.equals(request.getEsDerivado())
                 );
                 resultados.add(LeadAsignacionResultadoResponse.builder()
                         .idLead(idLead)
@@ -3629,12 +3639,13 @@ public class LeadService {
             Long idLead,
             Long idAsesorAsignado,
             String nombreAsesorAsignado,
-            boolean confirmarReasignacion
+            boolean confirmarReasignacion,
+            boolean esDerivado
     ) {
         TransactionTemplate transaction = new TransactionTemplate(transactionTemplate.getTransactionManager());
         transaction.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
         transaction.executeWithoutResult(
-                status -> asignarLeadInterno(idLead, idAsesorAsignado, nombreAsesorAsignado, confirmarReasignacion, false, false)
+                status -> asignarLeadInterno(idLead, idAsesorAsignado, nombreAsesorAsignado, confirmarReasignacion, false, esDerivado, false)
         );
     }
 
@@ -3652,6 +3663,7 @@ public class LeadService {
             String nombreAsesorAsignado,
             boolean confirmarReasignacion,
             boolean confirmarGestionPrevia,
+            boolean esDerivado,
             boolean permitirConfirmarLeadEnGestion
     ) {
         Lead lead = leadRepository.findById(idLead)
@@ -3667,9 +3679,13 @@ public class LeadService {
                 confirmarGestionPrevia,
                 permitirConfirmarLeadEnGestion
         );
+        if (esDerivado) {
+            validarDerivacionPermitida(lead, idAsesorAsignado);
+        }
 
         lead.setIdAsesorAsignado(idAsesorAsignado);
         lead.setNombreAsesorAsignado(nombreAsesorAsignado.trim());
+        lead.setEsDerivado(esDerivado);
         lead.setIdTipificacion(null);
         lead.setCodigoTipificacion(null);
         lead.setIdSubtipificacion(null);
@@ -3702,6 +3718,16 @@ public class LeadService {
         }
         if (!authEquipoClient.asesorPerteneceEquipo(lead.getIdEquipo(), idAsesorAsignado)) {
             throw new BadRequestException("El asesor seleccionado no pertenece al equipo del Lead.");
+        }
+    }
+
+    private void validarDerivacionPermitida(Lead lead, Long idAsesorAsignado) {
+        if (leadRepository.existsByIdAsesorAsignadoAndEsDerivadoTrueAndIdNot(idAsesorAsignado, lead.getId())) {
+            throw new ConflictException(
+                    "El asesor ya tiene un lead derivado pendiente de gestion",
+                    lead.getId(),
+                    detalleConflictoAsignacion("ASESOR_YA_TIENE_LEAD_DERIVADO", idAsesorAsignado, null)
+            );
         }
     }
 
@@ -5164,7 +5190,8 @@ public class LeadService {
                 lead.getEtapa(),
                 lead.getEtapa() != Etapa.PREVENTA,
                 nombreProveedorCampana,
-                nombreProveedorEquipo
+                nombreProveedorEquipo,
+                lead.isEsDerivado()
         );
     }
 

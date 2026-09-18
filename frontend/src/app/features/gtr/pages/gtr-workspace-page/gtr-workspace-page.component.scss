@@ -234,6 +234,18 @@ label {
   justify-content: flex-end;
 }
 
+.gtr-derive-button {
+  background: #f4b740;
+  border-color: #d39216;
+  color: #2f2410;
+}
+
+.gtr-derive-button:hover:not(:disabled) {
+  background: #e5a92f;
+  border-color: #b9780b;
+  color: #2f2410;
+}
+
 .lead-contact-actions {
   align-items: center;
   display: flex;

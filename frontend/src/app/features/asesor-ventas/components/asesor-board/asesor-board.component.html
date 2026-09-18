@@ -52,9 +52,16 @@
     </ng-template>
 
     <ng-template #body let-row>
-      <tr [class.row-new]="row.isNew" [class.row-priority-campaign]="facade.isPriorityCampaign(row)">
+      <tr
+        [class.row-new]="row.isNew"
+        [class.row-priority-campaign]="facade.isPriorityCampaign(row)"
+        [class.row-derived]="row.esDerivado"
+      >
         <td>
           <strong>{{ facade.leadPhone(row) }}</strong>
+          @if (row.esDerivado) {
+            <p-tag severity="warn" value="DERIVADO" title="Lead derivado pendiente de gestion" />
+          }
           @if (facade.isPriorityCampaign(row)) {
             <span class="priority-campaign-chip" [title]="facade.priorityCampaignLabel()">
               <i class="pi pi-star-fill" aria-hidden="true"></i>

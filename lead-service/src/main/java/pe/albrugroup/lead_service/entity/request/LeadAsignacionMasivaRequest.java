@@ -22,4 +22,6 @@ public class LeadAsignacionMasivaRequest {
     private String nombreAsesorAsignado;
 
     private Boolean confirmarReasignacion = false;
+
+    private Boolean esDerivado = false;
 }

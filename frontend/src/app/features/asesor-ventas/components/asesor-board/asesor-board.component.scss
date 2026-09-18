@@ -48,6 +48,18 @@
   border-left: 4px solid #f59e0b;
 }
 
+.row-derived > td {
+  background: #fff3cd;
+}
+
+.row-derived > td:first-child {
+  border-left: 4px solid #d97706;
+}
+
+.row-derived:hover > td {
+  background: #ffecb5;
+}
+
 .row-new.row-priority-campaign td {
   background: #fef3c7;
 }

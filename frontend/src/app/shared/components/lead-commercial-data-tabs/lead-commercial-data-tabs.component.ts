@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, signal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -55,7 +55,7 @@ type ParentescoOption = { label: string; value: string };
   styleUrl: './lead-commercial-data-tabs.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class LeadCommercialDataTabsComponent {
+export class LeadCommercialDataTabsComponent implements OnChanges {
   @Input({ required: true }) datosForm!: FormGroup;
   @Input({ required: true }) direccionForm!: FormGroup;
   @Input({ required: true }) ofertaForm!: FormGroup;
@@ -105,6 +105,43 @@ export class LeadCommercialDataTabsComponent {
 
   protected campoSoloLectura(campo: string): boolean {
     return this.readonly || !this.camposVisibles.has(campo);
+  }
+
+  protected platformOptionsAvailable(): boolean {
+    return !!this.plataformaDigitalControl && this.plataformasDigitales.length > 0;
+  }
+
+  protected readonly additionalOptionsVisible = signal(false);
+
+  ngOnChanges(changes: SimpleChanges): void {
+    const selectedAdditionalsChange = changes['selectedAdditionals'];
+    if (!selectedAdditionalsChange) {
+      return;
+    }
+
+    const previousSelection = selectedAdditionalsChange.previousValue as LeadCommercialAdditionalSelection[] | undefined;
+    const hasSelectedAdditionals = this.selectedAdditionals.length > 0;
+    const hadSelectedAdditionals = (previousSelection?.length ?? 0) > 0;
+
+    if (hasSelectedAdditionals && !hadSelectedAdditionals) {
+      this.additionalOptionsVisible.set(true);
+    }
+  }
+
+  protected toggleAdditionalOptions(): void {
+    this.additionalOptionsVisible.update((visible) => !visible);
+  }
+
+  protected onActiveTabValueChange(tab: LeadCommercialDataTab): void {
+    if (tab !== 'oferta' && this.selectedAdditionals.length === 0) {
+      this.additionalOptionsVisible.set(false);
+    }
+
+    this.activeTabChange.emit(tab);
+  }
+
+  protected shouldShowAdditionalOptions(): boolean {
+    return this.additionalOptionsVisible();
   }
 
   @Output() activeTabChange = new EventEmitter<LeadCommercialDataTab>();
