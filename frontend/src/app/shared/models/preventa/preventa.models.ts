@@ -963,7 +963,8 @@ export type ComportamientoTipificacion =
   | 'APARECE_EN_AGENDADOS_GTR'
   | 'ES_CANCELACION_PROGRAMACION'
   | 'CIERRA_PERIODO_PAGO_CONFIRMADO'
-  | 'CIERRA_PERIODO_BAJA';
+  | 'CIERRA_PERIODO_BAJA'
+  | 'RETORNO_PREVENTA_POR_CONTACTO';
 
 export interface SubtipificacionResponse {
   id: number;

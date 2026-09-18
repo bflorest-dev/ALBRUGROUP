@@ -69,7 +69,8 @@ export class AdminTipificacionFacade {
     ANULA_FECHA_MERITO: 'Anula fecha de mérito',
     ES_CIERRE_PREVENTA: 'Cierra la preventa',
     APARECE_EN_AGENDADOS_GTR: 'Aparece en Agendados (GTR)',
-    ES_CANCELACION_PROGRAMACION: 'Es programación cancelada'
+    ES_CANCELACION_PROGRAMACION: 'Es programación cancelada',
+    RETORNO_PREVENTA_POR_CONTACTO: 'Retorno automático a Preventa (3 días sin avance)'
   };
 
   // Qué comportamientos tiene sentido ofrecer en cada etapa (curado).
@@ -78,7 +79,7 @@ export class AdminTipificacionFacade {
                'ASIGNA_ASESOR_MERITO', 'ASIGNA_FECHA_MERITO', 'ANULA_ASESOR_MERITO', 'ANULA_FECHA_MERITO'],
     VENTA: ['REQUIERE_HORA_PROGRAMADA', 'REQUIERE_FECHA_PROGRAMACION', 'REQUIERE_FECHA_RECHAZO', 'REQUIERE_FECHA_INSTALACION',
             'REQUIERE_SEC_SOT', 'REQUIERE_CUSTOMER_ID', 'ASIGNA_ASESOR_MERITO', 'ASIGNA_FECHA_MERITO',
-            'ANULA_ASESOR_MERITO', 'ANULA_FECHA_MERITO', 'ES_CANCELACION_PROGRAMACION'],
+            'ANULA_ASESOR_MERITO', 'ANULA_FECHA_MERITO', 'ES_CANCELACION_PROGRAMACION', 'RETORNO_PREVENTA_POR_CONTACTO'],
     POSTVENTA: ['ASIGNA_ASESOR_MERITO', 'ASIGNA_FECHA_MERITO', 'ANULA_ASESOR_MERITO', 'ANULA_FECHA_MERITO',
                 'CIERRA_PERIODO_PAGO_CONFIRMADO', 'CIERRA_PERIODO_BAJA']
   };
