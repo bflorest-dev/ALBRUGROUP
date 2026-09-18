@@ -5263,7 +5263,7 @@ export class GtrWorkspaceFacade {
     if (error instanceof HttpErrorResponse) {
       const responseError = error.error as { message?: string; error?: string } | null;
       const detail = responseError?.message ?? responseError?.error ?? error.statusText;
-      return `HTTP ${error.status}${detail ? `: ${detail}` : ''}`;
+      return detail || fallback;
     }
 
     if (error instanceof Error) {
