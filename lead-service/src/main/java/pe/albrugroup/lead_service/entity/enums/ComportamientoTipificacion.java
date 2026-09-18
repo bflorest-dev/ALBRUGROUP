@@ -34,5 +34,7 @@ public enum ComportamientoTipificacion {
     /** Cancela una programación previa (antes: subtip PROGRAMACION_CANCELADA). Lectura diferida (reportería). */
     ES_CANCELACION_PROGRAMACION,
     CIERRA_PERIODO_PAGO_CONFIRMADO,
-    CIERRA_PERIODO_BAJA
+    CIERRA_PERIODO_BAJA,
+    /** El job horario devuelve a PREVENTA los leads de VENTA que llevan 3+ días en esta subtipi con contacto reciente. */
+    RETORNO_PREVENTA_POR_CONTACTO
 }

@@ -2,9 +2,11 @@ package pe.albrugroup.lead_service.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Tipificacion;
+import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,4 +31,7 @@ public interface SubtipificacionRepository extends JpaRepository<Subtipificacion
     // Catalogo plano para el backfill: la etapa de cambio reconstruye avances historicos.
     @Query("SELECT t.matriz.proveedor.id, t.matriz.etapa, t.codigo, s.codigo, s.etapaCambio FROM Subtipificacion s JOIN s.tipificacion t")
     List<Object[]> listarCambiosEtapa();
+
+    @Query("SELECT s.id FROM Subtipificacion s JOIN s.comportamientos c WHERE c = :comportamiento AND s.activo = true")
+    List<Long> findIdsByComportamiento(@Param("comportamiento") ComportamientoTipificacion comportamiento);
 }

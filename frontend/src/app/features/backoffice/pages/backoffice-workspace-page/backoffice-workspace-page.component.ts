@@ -155,6 +155,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private correccionInstalacionRequestSeq = 0;
   private historialRequestSeq = 0;
   private domicilioResolveSeq = 0;
+  private nacimientoResolveSeq = 0;
   private initialized = false;
   private initializeInFlight = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
@@ -226,6 +227,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly departamentos = signal<UbigeoItem[]>([]);
   protected readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
   protected readonly distritosDomicilio = signal<UbigeoItem[]>([]);
+  protected readonly lugarNacimiento = signal<string | null>(null);
   protected readonly ubigeoDomicilioLoading = signal(false);
   protected readonly ubigeoDomicilioError = signal<string | null>(null);
   private readonly adicionalesDirty = signal(false);
@@ -3044,6 +3046,60 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.adicionales.set(await firstValueFrom(this.leadService.listarAdicionales(idProveedor)));
   }
 
+  private async resolveNacimientoLabel(ubigeoNacimiento: string | null): Promise<void> {
+    const requestSeq = ++this.nacimientoResolveSeq;
+    this.lugarNacimiento.set(null);
+    if (!ubigeoNacimiento) {
+      return;
+    }
+
+    const codigo = ubigeoNacimiento.replace(/\D/g, '');
+    if (codigo.length !== 6) {
+      return;
+    }
+
+    try {
+      const departamentos = this.departamentos().length
+        ? this.departamentos()
+        : await firstValueFrom(this.leadService.listarDepartamentos());
+      if (requestSeq !== this.nacimientoResolveSeq) {
+        return;
+      }
+      if (!this.departamentos().length) {
+        this.departamentos.set(departamentos);
+      }
+
+      const departamento = departamentos.find((item) => item.codigo === codigo.slice(0, 2));
+      if (!departamento) {
+        return;
+      }
+
+      const provincias = await this.getProvinciasDomicilio(departamento.id);
+      if (requestSeq !== this.nacimientoResolveSeq) {
+        return;
+      }
+      const provincia = provincias.find((item) => item.codigo === codigo.slice(0, 4));
+      if (!provincia) {
+        return;
+      }
+
+      const distritos = await this.getDistritosDomicilio(provincia.id);
+      if (requestSeq !== this.nacimientoResolveSeq) {
+        return;
+      }
+      const distrito = distritos.find((item) => item.codigo === codigo);
+      if (!distrito) {
+        return;
+      }
+
+      this.lugarNacimiento.set([departamento.nombre, provincia.nombre, distrito.nombre].join(' · '));
+    } catch {
+      if (requestSeq === this.nacimientoResolveSeq) {
+        this.lugarNacimiento.set(null);
+      }
+    }
+  }
+
   private async resolveDomicilioSelection(ubigeoDomicilio: string | null): Promise<void> {
     const requestSeq = ++this.domicilioResolveSeq;
     this.ubigeoDomicilioError.set(null);
@@ -3439,6 +3495,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       customerId: detail.customerId ?? sourceRow?.customerId ?? ''
     }, { emitEvent: false });
     this.markFormsPristine();
+    void this.resolveNacimientoLabel(detail.ubigeoNacimiento ?? null);
     void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
   }
 
@@ -3641,6 +3698,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private closeDetail(): void {
+    this.nacimientoResolveSeq++;
+    this.lugarNacimiento.set(null);
     this.setBackofficeManagingPresence(false);
     this.detailDrawerOpen.set(false);
     this.detail.set(null);

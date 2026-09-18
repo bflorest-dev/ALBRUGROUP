@@ -55,12 +55,15 @@
 .venta-v2__section-head strong { font-size: .9rem; }
 .venta-v2__section-head small { margin-top: .14rem; color: var(--venta-muted); font-size: .73rem; }
 .venta-v2__edit, .venta-v2__edit-actions button { min-height: 2rem; padding: 0 .65rem; border: 1px solid var(--venta-line); border-radius: .32rem; color: var(--venta-ink); background: #fff; font: inherit; font-size: .75rem; font-weight: 650; }
+.venta-v2__section-actions { display: flex; align-items: center; gap: .4rem; }
+.venta-v2__copy.is-success { color: #16845d; border-color: #a8d8c4; background: #f1fbf6; }
 .venta-v2__edit-actions { display: flex; gap: .4rem; }
 .venta-v2__edit-actions .is-primary { color: #fff; background: var(--venta-accent); border-color: var(--venta-accent); }
 .venta-v2__fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .venta-v2__fields label { min-width: 0; min-height: 4.4rem; padding: .85rem 1rem; border-right: 1px solid var(--venta-line); border-bottom: 1px solid var(--venta-line); }
 .venta-v2__fields label:nth-child(4n) { border-right: 0; }
 .venta-v2__fields label.span-2 { grid-column: span 2; }
+.venta-v2__fields label.span-3 { grid-column: span 3; }
 .venta-v2__fields label > span, .venta-v2__plan-editor label > span, .venta-v2__dock label > span { display: block; margin-bottom: .36rem; color: var(--venta-muted); font-size: .72rem; font-weight: 650; }
 .venta-v2__fields label > strong { display: block; font-size: .84rem; font-weight: 650; line-height: 1.45; overflow-wrap: anywhere; }
 .venta-v2__checkbox { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.4rem; font-size: .8rem; }
@@ -126,6 +129,7 @@
   .venta-v2__fields { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .venta-v2__fields label:nth-child(4n) { border-right: 1px solid var(--venta-line); }
   .venta-v2__fields label:nth-child(2n) { border-right: 0; }
+  .venta-v2__fields label.span-3 { grid-column: 1 / -1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

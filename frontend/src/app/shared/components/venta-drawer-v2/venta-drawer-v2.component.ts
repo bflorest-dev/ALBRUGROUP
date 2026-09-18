@@ -71,6 +71,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   @Input() departamentos: UbigeoItem[] = [];
   @Input() provinciasDomicilio: UbigeoItem[] = [];
   @Input() distritosDomicilio: UbigeoItem[] = [];
+  @Input() lugarNacimiento: string | null = null;
   @Input() providerOptions: ProviderOption[] = [];
   @Input() planOptions: Array<Partial<PlanResponse> & { id: number; nombre: string }> = [];
   @Input() promocionOptions: Array<Partial<PromocionComercialResponse> & { id: number; reglaComercial: string }> = [];
@@ -118,6 +119,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   protected readonly historyFilter = signal<'TODO' | 'TIPIFICACION' | 'ASIGNACION'>('TODO');
   protected readonly sectionSaving = signal(false);
   protected readonly tecnologiaOptions: Tecnologia[] = ['HFC', 'FTTH', 'HIBRIDA'];
+  protected readonly providerCopyState = signal<'idle' | 'success' | 'error'>('idle');
 
   private sectionSnapshot: Record<string, unknown> | null = null;
   private planSnapshot: Record<string, unknown> | null = null;
@@ -139,6 +141,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
         this.summaryOpen.set(true);
         this.editingSection.set(null);
         this.planEditing.set(false);
+        this.providerCopyState.set('idle');
       } else {
         this.restoreBodyScroll();
         this.pickerDateCache.clear();
@@ -258,6 +261,57 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
 
   protected isWin(): boolean {
     return this.providerName() === 'WIN';
+  }
+
+  protected providerDataSectionTitle(): string {
+    if (this.isWin()) {
+      return 'Datos Titular Linea Telefonica';
+    }
+    if (this.isClaro()) {
+      return 'Datos adicionales del Titular';
+    }
+    return 'Datos según proveedor';
+  }
+
+  protected async copyWinProviderData(): Promise<void> {
+    const values = [
+      this.datosForm.get('numeroDocumentoTitularCelularRegistro')?.value,
+      this.datosForm.get('nombreTitularCelularRegistro')?.value,
+      this.datosForm.get('parentesco')?.value
+    ]
+      .map((value) => String(value ?? '').trim())
+      .filter(Boolean);
+    const text = values.join(' ');
+
+    if (!text) {
+      this.providerCopyState.set('error');
+      return;
+    }
+
+    try {
+      const windowRef = this.document.defaultView;
+      if (windowRef?.navigator?.clipboard && windowRef.isSecureContext) {
+        await windowRef.navigator.clipboard.writeText(text);
+      } else if (!this.copyTextLegacy(text)) {
+        throw new Error('Clipboard API unavailable');
+      }
+      this.providerCopyState.set('success');
+    } catch {
+      this.providerCopyState.set('error');
+    }
+  }
+
+  private copyTextLegacy(value: string): boolean {
+    const textarea = this.document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    this.document.body.appendChild(textarea);
+    textarea.select();
+    const copied = this.document.execCommand('copy');
+    textarea.remove();
+    return copied;
   }
 
   protected booleanDisplay(value: unknown): string {
