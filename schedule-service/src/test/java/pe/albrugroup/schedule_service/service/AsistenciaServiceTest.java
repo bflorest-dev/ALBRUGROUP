@@ -127,6 +127,61 @@ class AsistenciaServiceTest {
     }
 
     @Test
+    void autoCierrePersisteSalidaForzadaParaPermitirReingresoPosterior() {
+        LocalDate fecha = LocalDate.of(2026, 6, 15);
+        Clock fixedClock = Clock.fixed(
+                ZonedDateTime.of(2026, 6, 15, 17, 10, 0, 0, OperationalDateTime.ZONE).toInstant(),
+                OperationalDateTime.ZONE);
+        Asistencia asistencia = Asistencia.builder()
+                .id(1L)
+                .idEmpleado(21L)
+                .idHorario(7L)
+                .fecha(fecha)
+                .estadoActual(EstadoAsistencia.ONLINE)
+                .entradaProgramada(LocalTime.of(9, 0))
+                .salidaProgramada(LocalTime.of(17, 0))
+                .fechaHoraIngreso(LocalDateTime.of(2026, 6, 15, 9, 0))
+                .minutosObjetivoDia(480)
+                .minutosTrabajados(480)
+                .minutosBalance(0)
+                .minutosAlmuerzoTomados(0)
+                .minutosServiciosPermitidos(20)
+                .minutosServiciosAcumulados(0)
+                .excedioServicios(false)
+                .origenTramoActual(OrigenTramo.BASE)
+                .build();
+        TramoJornadaResponse tramoBase = TramoJornadaResponse.builder()
+                .inicio(LocalDateTime.of(2026, 6, 15, 9, 0))
+                .fin(LocalDateTime.of(2026, 6, 15, 17, 0))
+                .base(true)
+                .build();
+        JornadaEfectivaResponse jornada = JornadaEfectivaResponse.builder()
+                .idEmpleado(21L)
+                .idHorario(7L)
+                .fecha(fecha)
+                .tramos(List.of(tramoBase))
+                .build();
+
+        try {
+            OperationalDateTime.useClock(fixedClock);
+            when(asistenciaRepository.findByIdEmpleadoAndFecha(21L, fecha)).thenReturn(Optional.of(asistencia));
+            when(jornadaEfectivaResolver.resolverSiExiste(21L, fecha)).thenReturn(Optional.of(jornada));
+            when(asistenciaRepository.save(any(Asistencia.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(mapper.toDetalleResponse(any(Asistencia.class)))
+                    .thenReturn(DetalleAsistenciaResponse.builder().build());
+
+            service.autoCerrarJornada(21L);
+
+            assertThat(asistencia.getEstadoActual()).isEqualTo(EstadoAsistencia.OFFLINE);
+            assertThat(asistencia.getFechaHoraSalida()).isEqualTo(LocalDateTime.of(2026, 6, 15, 17, 10));
+            assertThat(asistencia.getSalidaForzada()).isTrue();
+            verify(asistenciaRepository).save(asistencia);
+        } finally {
+            OperationalDateTime.useClock(Clock.system(OperationalDateTime.ZONE));
+        }
+    }
+
+    @Test
     void permiteNuevoIngresoCuandoUnAjusteExtiendeUnaJornadaCerrada() {
         LocalDate fecha = LocalDate.of(2026, 6, 15);
         LocalDateTime ahora = LocalDateTime.of(2026, 6, 15, 17, 10);

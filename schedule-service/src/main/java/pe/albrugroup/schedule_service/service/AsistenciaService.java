@@ -689,6 +689,12 @@ public class AsistenciaService implements IAsistencia {
 
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
         finalizarPausaPendiente(asistencia, topeSalida);
+        // El cierre por inactividad debe dejar un segmento cerrado de forma explicita. Si despues
+        // se habilita un tramo extra, el flujo de reingreso detecta esta salida y archiva el tramo
+        // base antes de abrir la nueva sesion; dejar la salida nula hace que el ingreso parezca
+        // duplicado y bloquea el ONLINE.
+        asistencia.setFechaHoraSalida(ahora);
+        asistencia.setSalidaForzada(true);
         asistencia.setEstadoActual(EstadoAsistencia.OFFLINE);
         Asistencia savedAsistencia = asistenciaRepository.save(asistencia);
         attendanceRealtimeNotifier.publishAfterCommit(
@@ -1406,6 +1412,7 @@ public class AsistenciaService implements IAsistencia {
                 .salidaProgramada(asistencia.getSalidaProgramada())
                 .fechaHoraIngreso(asistencia.getFechaHoraIngreso())
                 .fechaHoraSalida(asistencia.getFechaHoraSalida())
+                .salidaForzada(asistencia.getSalidaForzada())
                 .fechaHoraInicioAlmuerzo(asistencia.getFechaHoraInicioAlmuerzo())
                 .fechaHoraFinAlmuerzo(asistencia.getFechaHoraFinAlmuerzo())
                 .minutosObjetivo(objetivoActual)

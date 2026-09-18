@@ -902,12 +902,14 @@ public class MarcacionService {
             SesionTotales tot = totales(asistencia.getId());
             int usosPausa = sesionEstadoRepository
                     .findByAsistenciaIdAndTipoOrderByInicioAsc(asistencia.getId(), TipoSesionEstado.PAUSA_ACTIVA).size();
+            boolean jornadaCerrada = asistencia.getFechaHoraSalida() != null
+                    && !tieneTramoReingresoDisponible(asistencia, jornada);
             return b
                     .idHorario(asistencia.getIdHorario())
                     .estadoActual(asistencia.getEstadoActual())
                     .fechaHoraIngreso(asistencia.getFechaHoraIngreso())
                     .fechaHoraSalida(asistencia.getFechaHoraSalida())
-                    .jornadaCerrada(asistencia.getFechaHoraSalida() != null)
+                    .jornadaCerrada(jornadaCerrada)
                     .minutosObjetivoDia(asistencia.getMinutosObjetivoDia())
                     .minutosTrabajados(asistencia.getMinutosTrabajados())
                     .minutosBalance(asistencia.getMinutosBalance())
@@ -952,6 +954,17 @@ public class MarcacionService {
                 .sesionEnCurso(false)
                 .minutosServiciosTope(horario != null ? horario.getMinutosServicios() : null)
                 .build();
+    }
+
+    private boolean tieneTramoReingresoDisponible(Asistencia asistencia, JornadaEfectivaResponse jornada) {
+        if (jornada == null || jornada.getTramos() == null || asistencia.getFechaHoraSalida() == null) {
+            return false;
+        }
+        LocalDateTime ahora = OperationalDateTime.nowLocalDateTime();
+        return jornada.getTramos().stream()
+                .filter(tramo -> tramo.getFin() != null)
+                .anyMatch(tramo -> tramo.getFin().isAfter(ahora)
+                        && tramo.getFin().isAfter(asistencia.getFechaHoraSalida()));
     }
 
     /**
