@@ -266,6 +266,43 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
     return this.providerName() === 'WIN';
   }
 
+  protected hasProviderSpecificSummary(): boolean {
+    return this.isWin() || this.isClaro();
+  }
+
+  protected providerSummaryFeatureLabel(): string {
+    return this.isWin() ? 'Jala cobertura' : 'Full Claro';
+  }
+
+  protected providerSummaryFeatureValue(): string {
+    const controlName = this.isWin() ? 'esJalaCobertura' : 'esFullClaro';
+    const formValue = this.direccionForm?.get(controlName)?.value;
+    const detailValue = this.isWin() ? this.detail?.esJalaCobertura : this.detail?.esFullClaro;
+    return this.booleanDisplay(formValue ?? detailValue);
+  }
+
+  protected summaryBirth(): string {
+    const parts = [
+      this.detail?.fechaNacimiento ? this.formatDate(this.detail.fechaNacimiento) : null,
+      this.lugarNacimiento || this.detail?.ubigeoNacimiento
+    ].filter((value): value is string => !!value && value !== 'Sin registrar');
+    return parts.join(' · ') || 'Sin registrar';
+  }
+
+  protected summaryPlan(): string {
+    const plan = this.selectedPlan()?.nombre || this.detail?.plan?.nombre || this.detail?.nombrePlan;
+    const promotion = this.selectedPromotion()?.reglaComercial
+      || this.detail?.promocionInterna?.reglaComercial
+      || this.detail?.nombrePromocionInterna;
+    return [plan, promotion].filter((value): value is string => !!value && value.trim() !== '').join(' · ') || 'Sin registrar';
+  }
+
+  protected summaryCoordinates(): string {
+    return [this.detail?.latitud, this.detail?.longitud]
+      .filter((value): value is string => !!value && value.trim() !== '')
+      .join(' · ') || 'Sin registrar';
+  }
+
   protected providerDataSectionTitle(): string {
     if (this.isWin()) {
       return 'Datos Titular Linea Telefonica';

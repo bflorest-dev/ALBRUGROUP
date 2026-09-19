@@ -841,6 +841,19 @@ tr.is-win .est-name {
     min-width: 125px;
   }
 
+  table.ranking-detalle .campaign-cell {
+    min-width: 150px;
+    max-width: 210px;
+  }
+
+  table.ranking-detalle .campaign-name {
+    display: inline-block;
+    max-width: 210px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+  }
+
   table.ranking-detalle .tip-stack {
     max-width: 175px;
   }

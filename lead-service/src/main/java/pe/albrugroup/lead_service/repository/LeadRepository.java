@@ -3377,12 +3377,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    MAX(reg.createdAt),
                    l.lead,
                    l.usermeta,
+                   c.nombre,
                    mayor.nombreActor,
                    r.mayorRangoAt,
                    r.nombreAsesorUltimaGestion,
                    r.fechaUltimaGestion)
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            LEFT JOIN l.campana c
             LEFT JOIN Evento reg ON reg.idLead = l.id AND reg.accion IN :accionesIngreso
             LEFT JOIN Evento mayor ON mayor.id = (
                 SELECT MAX(m2.id)
@@ -3399,7 +3401,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                               WHERE ing.idLead = l.id AND ing.accion IN :accionesIngreso
                                 AND ing.createdAt >= :fechaDesde AND ing.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-            GROUP BY l.id, l.lead, l.usermeta, mayor.nombreActor, r.mayorRangoAt,
+            GROUP BY l.id, l.lead, l.usermeta, c.nombre, mayor.nombreActor, r.mayorRangoAt,
                      r.nombreAsesorUltimaGestion, r.fechaUltimaGestion
             """)
     List<ResumenEstadoLeadDetalleResponse> detalleEstadoLeadsPrimeraGtr(
@@ -3419,12 +3421,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    MAX(reg.createdAt),
                    l.lead,
                    l.usermeta,
+                   c.nombre,
                    mayor.nombreActor,
                    r.mayorRangoAt,
                    r.nombreAsesorUltimaGestion,
                    r.fechaUltimaGestion)
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            LEFT JOIN l.campana c
             LEFT JOIN Evento reg ON reg.idLead = l.id AND reg.accion IN :accionesIngreso
             LEFT JOIN Evento mayor ON mayor.id = (
                 SELECT MAX(m2.id)
@@ -3441,7 +3445,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                               WHERE ing.idLead = l.id AND ing.accion IN :accionesIngreso
                                 AND ing.createdAt >= :fechaDesde AND ing.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-            GROUP BY l.id, l.lead, l.usermeta, mayor.nombreActor, r.mayorRangoAt,
+            GROUP BY l.id, l.lead, l.usermeta, c.nombre, mayor.nombreActor, r.mayorRangoAt,
                      r.nombreAsesorUltimaGestion, r.fechaUltimaGestion
             """)
     List<ResumenEstadoLeadDetalleResponse> detalleEstadoLeadsUltimaGtr(
@@ -3461,12 +3465,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    MAX(reg.createdAt),
                    l.lead,
                    l.usermeta,
+                   c.nombre,
                    mayor.nombreActor,
                    r.mayorRangoAt,
                    r.nombreAsesorUltimaGestion,
                    r.fechaUltimaGestion)
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            LEFT JOIN l.campana c
             LEFT JOIN Evento reg ON reg.idLead = l.id AND reg.accion IN :accionesIngreso
             LEFT JOIN Evento mayor ON mayor.id = (
                 SELECT MAX(m2.id)
@@ -3483,7 +3489,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                               WHERE ing.idLead = l.id AND ing.accion IN :accionesIngreso
                                 AND ing.createdAt >= :fechaDesde AND ing.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-            GROUP BY l.id, l.lead, l.usermeta, mayor.nombreActor, r.mayorRangoAt,
+            GROUP BY l.id, l.lead, l.usermeta, c.nombre, mayor.nombreActor, r.mayorRangoAt,
                      r.nombreAsesorUltimaGestion, r.fechaUltimaGestion
             """)
     List<ResumenEstadoLeadDetalleResponse> detalleEstadoLeadsMayorGtr(
@@ -3503,12 +3509,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    MAX(reg.createdAt),
                    l.lead,
                    l.usermeta,
+                   c.nombre,
                    mayor.nombreActor,
                    r.mayorRangoAt,
                    r.nombreAsesorUltimaGestion,
                    r.fechaUltimaGestion)
             FROM Lead l
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            LEFT JOIN l.campana c
             JOIN Evento reg ON reg.idLead = l.id
                  AND reg.accion IN :accionesIngreso
                  AND reg.createdAt >= :fechaDesde
@@ -3526,7 +3534,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 OR (:usarUltima = true AND (r.id IS NULL OR r.ultimaCodigoTipificacion IS NULL OR TRIM(r.ultimaCodigoTipificacion) = ''))
                 OR (:usarMayor = true AND (r.id IS NULL OR r.mayorRangoCodigoTipificacion IS NULL OR TRIM(r.mayorRangoCodigoTipificacion) = '')))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-            GROUP BY l.id, l.lead, l.usermeta, mayor.nombreActor, r.mayorRangoAt,
+            GROUP BY l.id, l.lead, l.usermeta, c.nombre, mayor.nombreActor, r.mayorRangoAt,
                      r.nombreAsesorUltimaGestion, r.fechaUltimaGestion
             """)
     List<ResumenEstadoLeadDetalleResponse> detalleEstadoLeadsSinTipificarGtr(

@@ -1,18 +1,34 @@
 /**
- * Rampa ordinal para las tipificaciones: un solo tono, de claro a oscuro según avanza el desenlace
- * (sin contacto → preventa). Es una escala ordenada, no categorías sueltas, por eso una rampa y no
- * colores arbitrarios.
+ * Paleta ordinal sólida para las tipificaciones de campañas.
  *
- * Ambas rampas están verificadas con el validador del sistema de diseño
- * (`dataviz/scripts/validate_palette.js --ordinal`): luminosidad monótona, separación mínima entre
- * pasos y extremo visible contra su superficie. El modo oscuro **no es un volteo** de la clara: es
- * su propia rampa, desplazada para que el extremo profundo no se pierda contra el fondo.
+ * La posición es el contrato: índice 0 = Sin tipificar, índice 1 = Sin contacto, ...,
+ * índice 6 = Preventa. Los nombres no participan en la selección del color, así que una
+ * tipificación conserva su color mientras conserve su orden en el catálogo.
  *
- * Seis pasos es el techo: con más, la separación de luminosidad cae por debajo del mínimo y los
- * pasos dejan de distinguirse. Lo que exceda va a `COLOR_OTRAS`.
+ * La rampa clara sigue la referencia solicitada: dos neutros, naranja, amarillo, azul, morado y
+ * verde. Son colores categóricos intencionalmente saturados; no se mezclan con la escala suave de
+ * fondos de celda que se usa en la matriz.
  */
-const RAMPA_CLARA = ['#5FC2A4', '#3FAA8C', '#248D72', '#16705A', '#0C5445', '#05372D'];
-const RAMPA_OSCURA = ['#B7EBD8', '#8FDCC0', '#66CBA6', '#43B48D', '#2E9575', '#1F755C'];
+const RAMPA_CLARA = [
+  '#D9D9D9',
+  '#8F8F8F',
+  '#EF7D2B',
+  '#FFDD67',
+  '#8DA7D4',
+  '#8B008B',
+  '#4F7F35'
+];
+
+/** Variante de contraste para superficies oscuras, conservando el mismo orden y familias de color. */
+const RAMPA_OSCURA = [
+  '#C8C8C8',
+  '#A6A6A6',
+  '#F39245',
+  '#FFE58C',
+  '#A6BCE0',
+  '#B33DB3',
+  '#76A95B'
+];
 
 /** Gris neutro para tipificaciones históricas y para la cola agrupada. */
 export const COLOR_OTRAS = '#94A3B8';
@@ -43,11 +59,8 @@ export function celdaConTintaClara(indice: number, oscuro: boolean): boolean {
 export const PASOS_RAMPA = RAMPA_CLARA.length;
 
 /**
- * Color del paso `indice` (0 = el más claro). Fuera de rango devuelve el gris neutro.
- * `oscuro` elige la rampa del modo, no invierte la clara.
- *
- * Sirve para las dos lecturas de la rampa: orden de tipificación (barras) e intensidad de
- * magnitud (matriz de calor). Es la misma escala validada en ambos casos.
+ * Color del paso ordinal `indice` (0–6). Fuera de rango devuelve el gris neutro.
+ * `oscuro` elige la variante de contraste, sin invertir la paleta clara.
  */
 export function colorRampa(indice: number, oscuro: boolean): string {
   const rampa = oscuro ? RAMPA_OSCURA : RAMPA_CLARA;

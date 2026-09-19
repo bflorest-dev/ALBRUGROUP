@@ -10,6 +10,7 @@ public record ResumenEstadoLeadDetalleResponse(
         Instant fechaIngresoAt,
         String lead,
         String usermeta,
+        String nombreCampana,
         String nombreAsesorMayorTipificacion,
         Instant fechaMayorTipificacionAt,
         String nombreAsesorUltimaTipificacion,

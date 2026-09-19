@@ -304,6 +304,7 @@
         <thead>
           <tr>
             <th>Ingreso</th>
+            <th>Campaña</th>
             <th>Lead</th>
             <th>Asesor mayor</th>
             <th>Gestión mayor</th>
@@ -318,6 +319,15 @@
                 <span class="stack-cell time-stack">
                   <span class="stack-secondary">{{ fechaParte(row.fechaIngresoAt) }}</span>
                   <span class="stack-main">{{ horaParte(row.fechaIngresoAt) }}</span>
+                </span>
+              </td>
+              <td class="campaign-cell">
+                <span
+                  class="campaign-name"
+                  [pTooltip]="row.nombreCampana || 'Sin campaña'"
+                  tooltipPosition="top"
+                >
+                  {{ row.nombreCampana || 'Sin campaña' }}
                 </span>
               </td>
               <td class="lead-cell">
