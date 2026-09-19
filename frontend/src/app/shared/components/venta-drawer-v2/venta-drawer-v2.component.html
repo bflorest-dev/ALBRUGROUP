@@ -109,7 +109,7 @@
                     <label><span>Número de documento</span>@if (editingSection() === 'identidad') { <input pInputText formControlName="numeroDocumentoTitularServicio" /> } @else { <strong>{{ display(datosForm.get('numeroDocumentoTitularServicio')?.value) }}</strong> }</label>
                     <label class="span-2"><span>Nombre completo</span>@if (editingSection() === 'identidad') { <input pInputText formControlName="nombreTitularServicio" /> } @else { <strong>{{ display(datosForm.get('nombreTitularServicio')?.value) }}</strong> }</label>
                     <label><span>Fecha de nacimiento</span>@if (editingSection() === 'identidad') { <p-datepicker [ngModel]="pickerDate(datosForm.get('fechaNacimiento')?.value)" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy" [showIcon]="true" iconDisplay="input" [showButtonBar]="true" [readonlyInput]="false" appendTo="body" [baseZIndex]="1400" panelStyleClass="venta-v2-calendar" (ngModelChange)="setDateValue(datosForm, 'fechaNacimiento', $event)" /> } @else { <strong>{{ formatDate(datosForm.get('fechaNacimiento')?.value) }}</strong> }</label>
-                    <label class="span-3"><span>Lugar de nacimiento</span><strong>{{ display(lugarNacimiento) }}</strong></label>
+                    <label class="span-3"><span>Lugar de nacimiento</span><strong>{{ display(birthPlace()) }}</strong></label>
                   </div>
                 </section>
 

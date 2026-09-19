@@ -5270,6 +5270,9 @@ public class LeadService {
         String departamentoDomicilio = null;
         String provinciaDomicilio = null;
         String distritoDomicilio = null;
+        String departamentoNacimiento = null;
+        String provinciaNacimiento = null;
+        String distritoNacimiento = null;
         String ubigeoDomicilio = direccion == null ? null : direccion.getUbigeoDomicilio();
         if (ubigeoDomicilio != null && !ubigeoDomicilio.isBlank()) {
             var distritoUbicacion = distritoRepository.findByCodigoConUbicacion(ubigeoDomicilio).orElse(null);
@@ -5277,6 +5280,17 @@ public class LeadService {
                 distritoDomicilio = distritoUbicacion.getNombre();
                 provinciaDomicilio = distritoUbicacion.getProvincia() == null ? null : distritoUbicacion.getProvincia().getNombre();
                 departamentoDomicilio = distritoUbicacion.getDepartamento() == null ? null : distritoUbicacion.getDepartamento().getNombre();
+            }
+        }
+        String ubigeoNacimiento = datosPreventa == null ? null : datosPreventa.getUbigeoNacimiento();
+        if (ubigeoNacimiento != null && !ubigeoNacimiento.isBlank()) {
+            var distritoNacimientoUbicacion = distritoRepository.findByCodigoConUbicacion(ubigeoNacimiento).orElse(null);
+            if (distritoNacimientoUbicacion != null) {
+                distritoNacimiento = distritoNacimientoUbicacion.getNombre();
+                provinciaNacimiento = distritoNacimientoUbicacion.getProvincia() == null
+                        ? null : distritoNacimientoUbicacion.getProvincia().getNombre();
+                departamentoNacimiento = distritoNacimientoUbicacion.getDepartamento() == null
+                        ? null : distritoNacimientoUbicacion.getDepartamento().getNombre();
             }
         }
 
@@ -5307,7 +5321,10 @@ public class LeadService {
                 datosPreventa == null ? null : datosPreventa.getNombrePadre(),
                 datosPreventa == null ? null : datosPreventa.getNumeroDocumentoTitularCelularRegistro(),
                 datosPreventa == null ? null : datosPreventa.getNombreTitularCelularRegistro(),
-                datosPreventa == null ? null : datosPreventa.getUbigeoNacimiento(),
+                ubigeoNacimiento,
+                departamentoNacimiento,
+                provinciaNacimiento,
+                distritoNacimiento,
                 direccion == null ? null : direccion.getUbigeoDomicilio(),
                 departamentoDomicilio,
                 provinciaDomicilio,

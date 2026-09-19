@@ -495,6 +495,9 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   numeroDocumentoTitularCelularRegistro?: string | null;
   nombreTitularCelularRegistro?: string | null;
   ubigeoNacimiento?: string | null;
+  departamentoNacimiento?: string | null;
+  provinciaNacimiento?: string | null;
+  distritoNacimiento?: string | null;
   ubigeoDomicilio?: string | null;
   departamentoDomicilio?: string | null;
   provinciaDomicilio?: string | null;

@@ -54,6 +54,9 @@ public class LeadDetalleResponse {
     private String numeroDocumentoTitularCelularRegistro;
     private String nombreTitularCelularRegistro;
     private String ubigeoNacimiento;
+    private String departamentoNacimiento;
+    private String provinciaNacimiento;
+    private String distritoNacimiento;
     private String ubigeoDomicilio;
     private String departamentoDomicilio;
     private String provinciaDomicilio;

@@ -71,7 +71,6 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   @Input() departamentos: UbigeoItem[] = [];
   @Input() provinciasDomicilio: UbigeoItem[] = [];
   @Input() distritosDomicilio: UbigeoItem[] = [];
-  @Input() lugarNacimiento: string | null = null;
   @Input() providerOptions: ProviderOption[] = [];
   @Input() planOptions: Array<Partial<PlanResponse> & { id: number; nombre: string }> = [];
   @Input() promocionOptions: Array<Partial<PromocionComercialResponse> & { id: number; reglaComercial: string }> = [];
@@ -284,9 +283,19 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   protected summaryBirth(): string {
     const parts = [
       this.detail?.fechaNacimiento ? this.formatDate(this.detail.fechaNacimiento) : null,
-      this.lugarNacimiento || this.detail?.ubigeoNacimiento
+      this.birthPlace()
     ].filter((value): value is string => !!value && value !== 'Sin registrar');
     return parts.join(' · ') || 'Sin registrar';
+  }
+
+  protected birthPlace(): string {
+    return [
+      this.detail?.departamentoNacimiento,
+      this.detail?.provinciaNacimiento,
+      this.detail?.distritoNacimiento
+    ].filter((value): value is string => !!value && value.trim() !== '').join(' · ')
+      || this.detail?.ubigeoNacimiento
+      || '';
   }
 
   protected summaryPlan(): string {
