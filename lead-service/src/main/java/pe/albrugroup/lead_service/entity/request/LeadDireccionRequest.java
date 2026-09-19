@@ -40,4 +40,6 @@ public class LeadDireccionRequest {
     private String interior;
     private Tecnologia tecnologia;
     private Boolean esFullClaro;
+    private Boolean esJalaCobertura;
+    private Boolean esZonaPintada;
 }

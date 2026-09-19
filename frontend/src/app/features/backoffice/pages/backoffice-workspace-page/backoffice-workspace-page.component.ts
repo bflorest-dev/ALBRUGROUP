@@ -422,7 +422,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     piso: [''],
     interior: [''],
     tecnologia: [''],
-    esFullClaro: [false]
+    esFullClaro: [false],
+    esJalaCobertura: [false],
+    esZonaPintada: [false]
   });
 
   protected readonly ofertaForm = this.fb.group({
@@ -1304,17 +1306,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         action: () => firstValueFrom(this.leadService.actualizarDatosPreventa(detail.id, this.cleanObject(this.datosForm.getRawValue())))
       });
     }
-    if (this.direccionForm.dirty) {
-      if (this.direccionForm.invalid) {
-        this.notify('warn', 'Direccion incompleta: ubigeo, direccion, latitud y longitud son obligatorios.');
-        return false;
-      }
-      tasks.push({
-        label: 'Direccion',
-        markPristine: () => this.direccionForm.markAsPristine(),
-        action: () => firstValueFrom(this.leadService.actualizarDireccion(detail.id, this.getDireccionRequest()))
-      });
-    }
     if (this.isOfertaChanged()) {
       const raw = this.ofertaForm.getRawValue();
       const adicionales = this.adicionalesSeleccionados();
@@ -1338,6 +1329,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
           )
       });
     }
+    if (this.direccionForm.dirty) {
+      if (this.direccionForm.invalid) {
+        this.notify('warn', 'Direccion incompleta: ubigeo, direccion, latitud y longitud son obligatorios.');
+        return false;
+      }
+      tasks.push({
+        label: 'Direccion',
+        markPristine: () => this.direccionForm.markAsPristine(),
+        action: () => firstValueFrom(this.leadService.actualizarDireccion(detail.id, this.getDireccionRequest()))
+      });
+    }
     if (!tasks.length) {
       if (notifyEmpty) {
         this.notify('info', 'No hay cambios pendientes por guardar.');
@@ -1348,13 +1350,20 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.isSaving.set(true);
     const saved: string[] = [];
     const failed: string[] = [];
+    let ofertaSaveFailed = false;
     try {
       for (const task of tasks) {
+        if (task.label === 'Direccion' && ofertaSaveFailed) {
+          continue;
+        }
         try {
           await task.action();
           task.markPristine();
           saved.push(task.label);
         } catch (error) {
+          if (task.label === 'Oferta Comercial') {
+            ofertaSaveFailed = true;
+          }
           failed.push(`${task.label}: ${this.getErrorMessage(error, 'No se pudo guardar')}`);
         }
       }
@@ -3462,7 +3471,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       piso: detail.piso ?? '',
       interior: detail.interior ?? '',
       tecnologia: detail.tecnologia ?? '',
-      esFullClaro: detail.esFullClaro ?? false
+      esFullClaro: detail.esFullClaro ?? false,
+      esJalaCobertura: detail.esJalaCobertura ?? false,
+      esZonaPintada: detail.esZonaPintada ?? false
     });
     const idPlan = detail.idPlan ?? 0;
     const idProveedor = this.ofertaPlanes().find((plan) => plan.id === idPlan)?.idProveedor
@@ -3868,7 +3879,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       piso: raw.piso,
       interior: raw.interior,
       tecnologia: raw.tecnologia,
-      esFullClaro: raw.esFullClaro
+      esFullClaro: raw.esFullClaro,
+      esJalaCobertura: raw.esJalaCobertura,
+      esZonaPintada: raw.esZonaPintada
     });
   }
 

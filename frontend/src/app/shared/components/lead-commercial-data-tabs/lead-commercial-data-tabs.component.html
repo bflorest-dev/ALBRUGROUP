@@ -390,6 +390,38 @@
             <input pInputText type="text" formControlName="interior" [readonly]="readonly" />
           </label>
         </div>
+        @if (mostrarDatosWin && esJalaCoberturaControl && esZonaPintadaControl) {
+          <label class="address-field address-field--provider-boolean">
+            <span>Jala cobertura</span>
+            @if (readonly) {
+              <strong>{{ esJalaCoberturaControl.value ? 'Sí' : 'No' }}</strong>
+            } @else {
+              <span class="provider-boolean__control">
+                <p-checkbox
+                  inputId="lead-win-jala-cobertura"
+                  [formControl]="esJalaCoberturaControl"
+                  [binary]="true"
+                />
+                <span>Jala cobertura</span>
+              </span>
+            }
+          </label>
+          <label class="address-field address-field--provider-boolean">
+            <span>Zona pintada</span>
+            @if (readonly) {
+              <strong>{{ esZonaPintadaControl.value ? 'Sí' : 'No' }}</strong>
+            } @else {
+              <span class="provider-boolean__control">
+                <p-checkbox
+                  inputId="lead-win-zona-pintada"
+                  [formControl]="esZonaPintadaControl"
+                  [binary]="true"
+                />
+                <span>Zona pintada</span>
+              </span>
+            }
+          </label>
+        }
       </form>
     </p-tabpanel>
 

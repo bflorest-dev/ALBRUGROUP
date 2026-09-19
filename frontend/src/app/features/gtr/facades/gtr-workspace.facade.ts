@@ -577,7 +577,9 @@ export class GtrWorkspaceFacade {
     nombreCondominio: [''],
     piso: [''],
     interior: [''],
-    plano: ['']
+    plano: [''],
+    esJalaCobertura: [false],
+    esZonaPintada: [false]
   });
 
   readonly ofertaForm = this.fb.group({
@@ -677,9 +679,16 @@ export class GtrWorkspaceFacade {
   readonly tecnologiaOptions: Tecnologia[] = ['HFC', 'FTTH', 'HIBRIDA'];
   readonly esProveedorClaroSeleccionado = computed(() => {
     const provider = this.ofertaProviderOptions().find((item) => item.id === this.selectedOfertaProviderId());
-    return provider?.nombre?.trim().toUpperCase() === 'CLARO';
+    const nombreProveedor = provider?.nombre ?? this.typifyDetail()?.plan?.nombreProveedor ?? this.typifyDetail()?.nombreProveedorPlan;
+    return nombreProveedor?.trim().toUpperCase() === 'CLARO';
+  });
+  readonly esProveedorWinSeleccionado = computed(() => {
+    const provider = this.ofertaProviderOptions().find((item) => item.id === this.selectedOfertaProviderId());
+    const nombreProveedor = provider?.nombre ?? this.typifyDetail()?.plan?.nombreProveedor ?? this.typifyDetail()?.nombreProveedorPlan;
+    return nombreProveedor?.trim().toUpperCase() === 'WIN';
   });
   readonly mostrarDatosClaro = this.esProveedorClaroSeleccionado;
+  readonly mostrarDatosWin = this.esProveedorWinSeleccionado;
   readonly requiereTecnologiaClaro = computed(() => this.mostrarDatosClaro() && this.requiresVentaCompleta());
   readonly ofertaAdditionalsTotal = computed(() =>
     this.selectedOfertaAdditionals().reduce((total, adicional) => total + (adicional.precioUnitario ?? 0) * adicional.cantidad, 0)
@@ -4290,11 +4299,14 @@ export class GtrWorkspaceFacade {
   }
 
   private limpiarDatosClarosSiNoCorresponde(): void {
-    if (this.esProveedorClaroSeleccionado()) {
-      return;
+    if (!this.esProveedorClaroSeleccionado()) {
+      this.tipificacionForm.controls.tecnologia.setValue('');
+      this.tipificacionForm.controls.esFullClaro.setValue(false);
     }
-    this.tipificacionForm.controls.tecnologia.setValue('');
-    this.tipificacionForm.controls.esFullClaro.setValue(false);
+    if (!this.esProveedorWinSeleccionado()) {
+      this.direccionForm.controls.esJalaCobertura.setValue(false);
+      this.direccionForm.controls.esZonaPintada.setValue(false);
+    }
   }
 
   private patchTypifyForms(detail: LeadDetalleResponse): void {
@@ -4356,7 +4368,9 @@ export class GtrWorkspaceFacade {
       nombreCondominio: detail.nombreCondominio ?? '',
       piso: detail.piso ?? '',
       interior: detail.interior ?? '',
-      plano: detail.plano ?? ''
+      plano: detail.plano ?? '',
+      esJalaCobertura: detail.esJalaCobertura ?? false,
+      esZonaPintada: detail.esZonaPintada ?? false
     });
     void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
   }
@@ -4419,6 +4433,15 @@ export class GtrWorkspaceFacade {
       });
     }
 
+    if (forceFullSave || this.ofertaForm.dirty) {
+      tasks.push({
+        label: 'Oferta Comercial',
+        form: this.ofertaForm,
+        action: () =>
+          firstValueFrom(this.preventaService.actualizarOfertaComercial(detail.id, this.getOfertaRequest()))
+      });
+    }
+
     if (forceFullSave || this.direccionForm.dirty) {
       if (this.direccionForm.invalid) {
         this.errorMessage.set(this.getDireccionValidationMessage());
@@ -4432,26 +4455,24 @@ export class GtrWorkspaceFacade {
       });
     }
 
-    if (forceFullSave || this.ofertaForm.dirty) {
-      tasks.push({
-        label: 'Oferta Comercial',
-        form: this.ofertaForm,
-        action: () =>
-          firstValueFrom(this.preventaService.actualizarOfertaComercial(detail.id, this.getOfertaRequest()))
-      });
-    }
-
     this.isSaving.set(true);
     const saved: string[] = [];
     const failed: string[] = [];
+    let ofertaSaveFailed = false;
 
     try {
       for (const task of tasks) {
+        if (task.label === 'Direccion' && ofertaSaveFailed) {
+          continue;
+        }
         try {
           await task.action();
           task.form.markAsPristine();
           saved.push(task.label);
         } catch (error) {
+          if (task.label === 'Oferta Comercial') {
+            ofertaSaveFailed = true;
+          }
           failed.push(`${task.label}: ${this.getErrorMessage(error, 'No se pudo guardar')}`);
         }
       }
@@ -4530,7 +4551,9 @@ export class GtrWorkspaceFacade {
       nombreCondominio: raw.nombreCondominio,
       piso: raw.piso,
       interior: raw.interior,
-      plano: raw.plano
+      plano: raw.plano,
+      esJalaCobertura: raw.esJalaCobertura,
+      esZonaPintada: raw.esZonaPintada
     });
   }
 

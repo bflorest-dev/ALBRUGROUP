@@ -82,7 +82,10 @@ export class LeadCommercialDataTabsComponent implements OnChanges {
   @Input() tecnologiaControl: FormControl<string> | null = null;
   @Input() tecnologiaOptions: string[] = [];
   @Input() esFullClaroControl: FormControl<boolean> | null = null;
+  @Input() esJalaCoberturaControl: FormControl<boolean> | null = null;
+  @Input() esZonaPintadaControl: FormControl<boolean> | null = null;
   @Input() mostrarDatosClaro = false;
+  @Input() mostrarDatosWin = false;
   @Input() parentescoEnDatosProveedor = false;
   @Input() requiereTecnologiaClaro = false;
   @Input() offerLocked = false;

@@ -250,6 +250,9 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   }
 
   protected providerName(): string {
+    if (this.planEditing()) {
+      return String(this.selectedPlan()?.nombreProveedor ?? '').trim().toUpperCase();
+    }
     const nestedProvider = String(this.detail?.plan?.nombreProveedor ?? '').trim();
     const fallbackProvider = String(this.detail?.nombreProveedorPlan ?? '').trim();
     return (nestedProvider || fallbackProvider).toUpperCase();

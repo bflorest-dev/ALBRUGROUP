@@ -135,6 +135,17 @@
   grid-column: 1 / -1;
 }
 
+.address-field--provider-boolean {
+  grid-column: span 3;
+}
+
+.provider-boolean__control {
+  align-items: center;
+  display: flex;
+  gap: 0.55rem;
+  min-height: 2.65rem;
+}
+
 .coordinate-fields {
   align-items: end;
   display: grid;
@@ -721,6 +732,10 @@ label {
     grid-column: 1 / -1;
   }
 
+  .address-field--provider-boolean {
+    grid-column: span 2;
+  }
+
   .address-detail-grid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
@@ -742,7 +757,8 @@ label {
 
   .offer-additional-item,
   .wide,
-  .offer-field--half {
+  .offer-field--half,
+  .address-field--provider-boolean {
     grid-column: 1 / -1;
   }
 }

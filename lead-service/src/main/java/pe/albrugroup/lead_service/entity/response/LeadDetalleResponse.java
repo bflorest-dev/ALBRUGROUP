@@ -117,4 +117,6 @@ public class LeadDetalleResponse {
     private String comentario;
     private Tecnologia tecnologia;
     private boolean esFullClaro;
+    private boolean esJalaCobertura;
+    private boolean esZonaPintada;
 }

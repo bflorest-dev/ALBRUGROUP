@@ -60,6 +60,14 @@ public class Lead {
     // Equipo (partición de datos). Referencia lógica al Equipo administrado en auth-service.
     private Long idEquipo;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_proveedor_origen")
+    private Proveedor proveedorOrigen;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_proveedor")
+    private Proveedor proveedor;
+
     @Enumerated(EnumType.STRING)
     private Etapa etapa;
     @Enumerated(EnumType.STRING)
@@ -110,6 +118,13 @@ public class Lead {
 
     @Enumerated(EnumType.STRING)
     private Tecnologia tecnologia;
+
+    // Datos específicos de la oferta WIN, capturados desde la pestaña Dirección.
+    @Builder.Default
+    private boolean esJalaCobertura = false;
+
+    @Builder.Default
+    private boolean esZonaPintada = false;
 
     // ASESOR VENTAS
 

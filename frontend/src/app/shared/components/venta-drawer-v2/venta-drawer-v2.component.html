@@ -184,6 +184,10 @@
                     @if (isClaro()) {
                       <label><span>Full Claro</span>@if (editingSection() === 'detalle-direccion') { <span class="venta-v2__checkbox"><p-checkbox formControlName="esFullClaro" [binary]="true" inputId="direccion-es-full-claro" /><span>Es Full Claro</span></span> } @else { <strong>{{ booleanDisplay(direccionForm.get('esFullClaro')?.value) }}</strong> }</label>
                     }
+                    @if (isWin()) {
+                      <label><span>Jala cobertura</span>@if (editingSection() === 'detalle-direccion') { <span class="venta-v2__checkbox"><p-checkbox formControlName="esJalaCobertura" [binary]="true" inputId="direccion-es-jala-cobertura" /><span>Jala cobertura</span></span> } @else { <strong>{{ booleanDisplay(direccionForm.get('esJalaCobertura')?.value) }}</strong> }</label>
+                      <label><span>Zona pintada</span>@if (editingSection() === 'detalle-direccion') { <span class="venta-v2__checkbox"><p-checkbox formControlName="esZonaPintada" [binary]="true" inputId="direccion-es-zona-pintada" /><span>Zona pintada</span></span> } @else { <strong>{{ booleanDisplay(direccionForm.get('esZonaPintada')?.value) }}</strong> }</label>
+                    }
                   </div>
                 </section>
                 <section class="venta-v2__section venta-v2__geolocation">

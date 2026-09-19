@@ -548,6 +548,8 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   comentario?: string | null;
   tecnologia?: Tecnologia | string | null;
   esFullClaro?: boolean | null;
+  esJalaCobertura?: boolean | null;
+  esZonaPintada?: boolean | null;
 }
 
 export interface LeadPlanDetalleResponse {
@@ -854,6 +856,8 @@ export interface LeadDireccionRequest {
   interior?: string | null;
   tecnologia?: Tecnologia | string | null;
   esFullClaro?: boolean | null;
+  esJalaCobertura?: boolean | null;
+  esZonaPintada?: boolean | null;
 }
 
 export interface LeadOfertaAdicionalRequest {

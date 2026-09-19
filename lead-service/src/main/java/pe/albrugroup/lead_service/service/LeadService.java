@@ -26,6 +26,7 @@ import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
 import pe.albrugroup.lead_service.entity.enums.TipoNumeroLlamada;
 import pe.albrugroup.lead_service.entity.enums.TipoFechaRelevanteVenta;
+import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionMasivaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
@@ -2438,14 +2439,8 @@ public class LeadService {
     private Lead actualizarDireccionInterno(Lead lead, LeadDireccionRequest request) {
         Direccion direccion = lead.getDireccion() == null ? new Direccion() : lead.getDireccion();
         leadMapper.updateDireccion(request, direccion);
-
-        if (esProveedorPlanClaro(lead)) {
-            lead.setTecnologia(request.getTecnologia());
-            lead.setEsFullClaro(Boolean.TRUE.equals(request.getEsFullClaro()));
-        } else {
-            lead.setTecnologia(null);
-            lead.setEsFullClaro(false);
-        }
+        aplicarDatosEspecificosProveedor(lead, request.getTecnologia(), request.getEsFullClaro(),
+                request.getEsJalaCobertura(), request.getEsZonaPintada());
 
         lead.setDireccionSnapshot(direccion.getDireccion());
         lead.setDireccion(direccion);
@@ -2465,6 +2460,8 @@ public class LeadService {
 
         lead.setPromocionInterna(promocionInterna);
         lead.setNombrePromocionInternaSnapshot(promocionInterna == null ? null : promocionInterna.getReglaComercial());
+
+        normalizarDatosEspecificosProveedor(lead);
 
         reemplazarAdicionales(lead, request.getAdicionales());
         moverAEnGestionSiAplica(lead);
@@ -3136,14 +3133,59 @@ public class LeadService {
         return proveedor != null && normalizarTexto(proveedor.getNombre()).equals("CLARO");
     }
 
+    private boolean esProveedorPlanWin(Lead lead) {
+        Proveedor proveedor = lead.getPlan() == null ? null : lead.getPlan().getProveedor();
+        return proveedor != null && normalizarTexto(proveedor.getNombre()).equals("WIN");
+    }
+
+    private void normalizarDatosEspecificosProveedor(Lead lead) {
+        if (esProveedorPlanClaro(lead)) {
+            lead.setEsJalaCobertura(false);
+            lead.setEsZonaPintada(false);
+            return;
+        }
+        if (esProveedorPlanWin(lead)) {
+            lead.setTecnologia(null);
+            lead.setEsFullClaro(false);
+            return;
+        }
+        lead.setTecnologia(null);
+        lead.setEsFullClaro(false);
+        lead.setEsJalaCobertura(false);
+        lead.setEsZonaPintada(false);
+    }
+
+    private void aplicarDatosEspecificosProveedor(
+            Lead lead,
+            Tecnologia tecnologia,
+            Boolean esFullClaro,
+            Boolean esJalaCobertura,
+            Boolean esZonaPintada
+    ) {
+        if (esProveedorPlanClaro(lead)) {
+            lead.setTecnologia(tecnologia);
+            lead.setEsFullClaro(Boolean.TRUE.equals(esFullClaro));
+            lead.setEsJalaCobertura(false);
+            lead.setEsZonaPintada(false);
+            return;
+        }
+        if (esProveedorPlanWin(lead)) {
+            lead.setTecnologia(null);
+            lead.setEsFullClaro(false);
+            lead.setEsJalaCobertura(Boolean.TRUE.equals(esJalaCobertura));
+            lead.setEsZonaPintada(Boolean.TRUE.equals(esZonaPintada));
+            return;
+        }
+        normalizarDatosEspecificosProveedor(lead);
+    }
+
     private void aplicarDatosClarosAlTipificar(
             Lead lead,
             LeadTipificacionRequest request,
             boolean transicionaAVenta
     ) {
         if (!esProveedorPlanClaro(lead)) {
-            lead.setTecnologia(null);
-            lead.setEsFullClaro(false);
+            normalizarDatosEspecificosProveedor(lead);
             return;
         }
         if (transicionaAVenta && request.getTecnologia() == null) {
@@ -3151,6 +3193,8 @@ public class LeadService {
         }
         lead.setTecnologia(request.getTecnologia());
         lead.setEsFullClaro(Boolean.TRUE.equals(request.getEsFullClaro()));
+        lead.setEsJalaCobertura(false);
+        lead.setEsZonaPintada(false);
     }
 
     private boolean esTipificacionSubidaVenta(Tipificacion tipificacion) {
@@ -5317,7 +5361,9 @@ public class LeadService {
                 ofertaComercialActualizadaEnCicloActualVenta(lead),
                 lead.getComentario(),
                 lead.getTecnologia(),
-                lead.isEsFullClaro()
+                lead.isEsFullClaro(),
+                lead.isEsJalaCobertura(),
+                lead.isEsZonaPintada()
         );
     }
 
