@@ -397,6 +397,7 @@ public class SubsanacionService {
         lead.setDatosPreventa(datos);
         lead.setDireccion(direccion);
         lead.setPlan(contexto.plan());
+        lead.setProveedor(contexto.plan().getProveedor());
         lead.setNumeroDocumentoTitularServicioSnapshot(datos.getNumeroDocumentoTitularServicio());
         lead.setDireccionSnapshot(direccion.getDireccion());
         lead.setNombrePlanSnapshot(contexto.plan().getNombre());

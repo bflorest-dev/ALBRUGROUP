@@ -2457,6 +2457,9 @@ public class LeadService {
         lead.setNombrePlanSnapshot(plan == null ? null : plan.getNombre());
         lead.setNombreProveedorSnapshot(plan == null || plan.getProveedor() == null ? null : plan.getProveedor().getNombre());
         lead.setPrecioPlanSnapshot(plan == null ? null : plan.getPrecio());
+        if (plan != null && plan.getProveedor() != null) {
+            lead.setProveedor(plan.getProveedor());
+        }
 
         lead.setPromocionInterna(promocionInterna);
         lead.setNombrePromocionInternaSnapshot(promocionInterna == null ? null : promocionInterna.getReglaComercial());
@@ -4156,6 +4159,7 @@ public class LeadService {
                 identidad.prefijo(), identidad.lead(), identidad.usermeta(), request.getBase(), campana, OperationalDateTime.now());
         lead.setContacto(identidad.contacto());
         lead.setIdEquipo(resolverIdEquipoIntake(campana, idEquipoContextual));
+        lead.setProveedorOrigen(resolverProveedorOrigen(campana, lead.getIdEquipo()));
         completarNumeroParaLlamarSiFalta(lead);
 
         Lead savedLead = leadRepository.save(lead);
@@ -4182,6 +4186,7 @@ public class LeadService {
         aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
         lead.setContacto(resolverContacto(prefijo, numeroLead));
         lead.setIdEquipo(derivarIdEquipo(campana));
+        lead.setProveedorOrigen(resolverProveedorOrigen(campana, lead.getIdEquipo()));
         completarNumeroParaLlamarSiFalta(lead);
 
         Lead savedLead = leadRepository.save(lead);
@@ -4215,6 +4220,9 @@ public class LeadService {
         lead.setLastEntryAt(OperationalDateTime.now());
         if (lead.getIdEquipo() == null) {
             lead.setIdEquipo(resolverIdEquipoIntake(campana, idEquipoContextual));
+        }
+        if (lead.getProveedorOrigen() == null) {
+            lead.setProveedorOrigen(resolverProveedorOrigen(campana, lead.getIdEquipo()));
         }
 
         // Solo se reinicia a NUEVO si el lead no tuvo gestion hoy. Si ya hubo asignacion, contacto
@@ -4253,6 +4261,9 @@ public class LeadService {
         sincronizarIdentidadLead(lead, identidad);
         if (lead.getIdEquipo() == null) {
             lead.setIdEquipo(resolverIdEquipoIntake(campana, idEquipoContextual));
+        }
+        if (lead.getProveedorOrigen() == null) {
+            lead.setProveedorOrigen(resolverProveedorOrigen(campana, lead.getIdEquipo()));
         }
         lead.setRequiereAtencionGtr(true);
         lead.setLastEntryAt(OperationalDateTime.now());
@@ -4305,6 +4316,9 @@ public class LeadService {
         }
         if (lead.getIdEquipo() == null) {
             lead.setIdEquipo(derivarIdEquipo(campana));
+        }
+        if (lead.getProveedorOrigen() == null) {
+            lead.setProveedorOrigen(resolverProveedorOrigen(campana, lead.getIdEquipo()));
         }
 
         // Solo se reinicia a NUEVO si el lead no tuvo gestion hoy. Si ya hubo asignacion, contacto
@@ -5425,6 +5439,13 @@ public class LeadService {
         return proveedor == null ? null : proveedor.getNombre();
     }
 
+    private Proveedor resolverProveedorOrigen(Campana campana, Long idEquipo) {
+        if (campana != null && campana.getProveedor() != null) {
+            return campana.getProveedor();
+        }
+        return obtenerProveedorFallbackEntidadDeEquipo(idEquipo);
+    }
+
     private Proveedor obtenerProveedorFallbackEntidadDeEquipo(Long idEquipo) {
         if (idEquipo == null) {
             return null;
@@ -5649,6 +5670,7 @@ public class LeadService {
                 original.getCampana(), OperationalDateTime.now());
         nueva.setContacto(original.getContacto());
         nueva.setIdEquipo(original.getIdEquipo());
+        nueva.setProveedorOrigen(original.getProveedorOrigen());
         nueva.setIdAsesorAsignado(currentUser.empleadoID());
         nueva.setNombreAsesorAsignado(currentUser.nombreCompleto().trim());
         nueva.setEstado(EstadoSeguimiento.EN_GESTION);

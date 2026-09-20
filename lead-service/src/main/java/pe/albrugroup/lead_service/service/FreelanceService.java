@@ -124,6 +124,7 @@ public class FreelanceService {
         lead.setNumeroParaLlamar(contacto.getLead());
         lead.setUsermeta(contacto.getUsermeta());
         lead.setIdEquipo(idEquipo);
+        lead.setProveedorOrigen(plan.getProveedor());
         lead.setBase(Base.REFERIDO);
         lead.setCampana(null);
         lead.setCreatedAt(ahora);
@@ -341,6 +342,7 @@ public class FreelanceService {
         lead.setDatosPreventa(datos);
         lead.setDireccion(direccion);
         lead.setPlan(plan);
+        lead.setProveedor(plan.getProveedor());
         lead.setNumeroDocumentoTitularServicioSnapshot(datos.getNumeroDocumentoTitularServicio());
         lead.setDireccionSnapshot(direccion.getDireccion());
         lead.setNombrePlanSnapshot(plan.getNombre());
