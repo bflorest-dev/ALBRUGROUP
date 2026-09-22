@@ -79,18 +79,101 @@
         </div>
       </div>
 
-      <!-- ── EMBUDO ── -->
-      <div class="fd-funnel">
-        @for (row of funnelRows(); track row.key) {
-          <div class="fd-row" [class.fd-row--subtotal]="row.isSubtotal">
-            <div class="fd-row__label">{{ row.label }}</div>
-            <div class="fd-row__bar-track">
-              <div class="fd-row__bar is-{{ row.color }}" [style.width.%]="row.width"></div>
-            </div>
-            <div class="fd-row__value">{{ row.value | number }}</div>
-            <div class="fd-row__pct">{{ row.pct | percent:'1.1-1' }}</div>
+      <!-- ── EMBUDO: bloques anidados ── -->
+      <div class="nest-block is-brutos">
+        <div class="nest-head">
+          <span class="nest-title">Leads brutos</span>
+          <div class="nest-metrics">
+            <span class="nest-val">{{ leadsBrutos() | number }}</span>
+            <span class="nest-pct">100%</span>
           </div>
-        }
+        </div>
+
+        <div class="nest-split">
+          <!-- Sin contacto (leaf) -->
+          @if (sinContacto() > 0) {
+            <div class="nest-block nest-leaf is-sincontacto">
+              <span class="nest-title">Sin contacto</span>
+              <span class="nest-val">{{ sinContacto() | number }}</span>
+              <span class="nest-pct">{{ pctOf(sinContacto(), leadsBrutos()) | percent:'1.1-1' }}</span>
+            </div>
+          }
+
+          <!-- Netos (universe) -->
+          <div class="nest-block is-netos">
+            <div class="nest-head">
+              <span class="nest-title">Leads netos</span>
+              <div class="nest-metrics">
+                <span class="nest-val">{{ leadsNetos() | number }}</span>
+                <span class="nest-pct">{{ pctOf(leadsNetos(), leadsBrutos()) | percent:'1.1-1' }}</span>
+              </div>
+            </div>
+
+            <div class="nest-split">
+              <!-- No venta (universe) -->
+              <div class="nest-block is-noventa">
+                <div class="nest-head">
+                  <span class="nest-title">No venta</span>
+                  <div class="nest-metrics">
+                    <span class="nest-val">{{ noVenta() | number }}</span>
+                    <span class="nest-pct">{{ pctOf(noVenta(), leadsNetos()) | percent:'1.1-1' }}</span>
+                  </div>
+                </div>
+
+                <div class="nv-grid">
+                  @if (noCalifica() > 0) {
+                    <div class="nv-cell is-nocalifica" [style.flex]="noCalifica()">
+                      <span class="nv-val">{{ noCalifica() | number }}</span>
+                      <span class="nv-label">No califica</span>
+                      <span class="nv-pct">{{ pctOf(noCalifica(), leadsNetos()) | percent:'1.1-1' }}</span>
+                    </div>
+                  }
+                  @if (sinCobertura() > 0) {
+                    <div class="nv-cell is-sincobertura" [style.flex]="sinCobertura()">
+                      <span class="nv-val">{{ sinCobertura() | number }}</span>
+                      <span class="nv-label">Sin cobert.</span>
+                      <span class="nv-pct">{{ pctOf(sinCobertura(), leadsNetos()) | percent:'1.1-1' }}</span>
+                    </div>
+                  }
+                  @if (noDesea() > 0) {
+                    <div class="nv-cell is-nodesea" [style.flex]="noDesea()">
+                      <span class="nv-val">{{ noDesea() | number }}</span>
+                      <span class="nv-label">No desea</span>
+                      <span class="nv-pct">{{ pctOf(noDesea(), leadsNetos()) | percent:'1.1-1' }}</span>
+                    </div>
+                  }
+                  @if (servicioActivo() > 0) {
+                    <div class="nv-cell is-servactivo" [style.flex]="servicioActivo()">
+                      <span class="nv-val">{{ servicioActivo() | number }}</span>
+                      <span class="nv-label">Serv. activo</span>
+                      <span class="nv-pct">{{ pctOf(servicioActivo(), leadsNetos()) | percent:'1.1-1' }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Preventa (leaf) -->
+              @if (preventa() > 0) {
+                <div class="nest-block nest-leaf is-preventa">
+                  <span class="nest-title">Preventa</span>
+                  <span class="nest-val">{{ preventa() | number }}</span>
+                  <span class="nest-pct">{{ pctOf(preventa(), leadsNetos()) | percent:'1.1-1' }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nest-arrow">▼ ▼ ▼</div>
+
+      <!-- Instaladas (result) -->
+      <div class="nest-result is-instaladas">
+        <span class="nest-title">Instaladas</span>
+        <div class="nest-metrics">
+          <span class="nest-val">{{ instaladas() | number }}</span>
+          <span class="nest-pct">{{ pctOf(instaladas(), leadsNetos()) | percent:'1.1-1' }} de netos</span>
+        </div>
       </div>
     </article>
   }

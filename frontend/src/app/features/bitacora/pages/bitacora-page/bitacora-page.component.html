@@ -471,6 +471,10 @@
           </div>
         }
         <div class="acts">
+          <button type="button" class="btn danger" [disabled]="f.procesandoEliminacion()" (click)="f.abrirEliminar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg>
+            Eliminar lead
+          </button>
           <button type="button" class="btn ghost" [disabled]="!f.hayCambios() || f.guardando()" (click)="f.descartar()">Descartar</button>
           <button type="button" class="btn primary" [disabled]="!f.hayCambios() || f.guardando()" (click)="abrirActa()">
             @if (f.guardando()) { <span class="spin light"></span> Guardando… }
@@ -642,6 +646,32 @@
           <button type="button" class="btn danger" [disabled]="f.procesandoLimpiar()" (click)="f.confirmarLimpiar()">
             @if (f.procesandoLimpiar()) { <span class="spin light"></span> Limpiando… }
             @else { Limpiar datos }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (f.confirmandoEliminacion() && f.detalle(); as d) {
+    <div class="acta-scrim" (click)="f.cerrarEliminar()">
+      <div class="acta" role="dialog" aria-modal="true" aria-labelledby="eliminarLeadTitle" (click)="$event.stopPropagation()">
+        <div class="ah">
+          <div class="k danger">Acción destructiva</div>
+          <h3 id="eliminarLeadTitle">Eliminar integralmente el Lead {{ d.lead }}</h3>
+          <p>Se eliminarán el Lead y sus dependencias operativas: historial, resúmenes, calendario y periodos de facturación, pagos, encuestas, entregas digitales y relaciones de soporte.</p>
+          @if (f.esMultiLead()) {
+            <p>Este contacto tiene otras oportunidades. Se eliminará únicamente este Lead; el contacto y sus demás Leads se conservarán.</p>
+          } @else {
+            <p>Este es el único Lead del contacto, por lo que también se eliminará el contacto asociado.</p>
+          }
+          <p>Las actas de subsanación se conservarán como auditoría administrativa.</p>
+        </div>
+        <div class="af">
+          <span class="warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>No se puede deshacer</span>
+          <button type="button" class="btn ghost" (click)="f.cerrarEliminar()">Cancelar</button>
+          <button type="button" class="btn danger" [disabled]="f.procesandoEliminacion()" (click)="f.confirmarEliminacion()">
+            @if (f.procesandoEliminacion()) { <span class="spin light"></span> Eliminando… }
+            @else { Eliminar definitivamente }
           </button>
         </div>
       </div>

@@ -9,4 +9,6 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 public interface LeadMeritoCorreccionRepository extends JpaRepository<LeadMeritoCorreccion, Long> {
 
     boolean existsByIdLeadAndEtapaMerito(Long idLead, Etapa etapaMerito);
+
+    void deleteByIdLead(Long idLead);
 }

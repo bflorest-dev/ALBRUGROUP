@@ -133,6 +133,10 @@ export class BitacoraFacade {
   readonly confirmandoLimpiar = signal(false);
   readonly procesandoLimpiar = signal(false);
 
+  // Eliminación integral del lead y sus dependencias.
+  readonly confirmandoEliminacion = signal(false);
+  readonly procesandoEliminacion = signal(false);
+
   readonly identidadForm: FormGroup = this.fb.group({
     prefijo: ['51'],
     lead: [''],
@@ -480,6 +484,7 @@ export class BitacoraFacade {
   cerrarDrawer(): void {
     this.drawerAbierto.set(false);
     this.modoReestructurar.set('none');
+    this.confirmandoEliminacion.set(false);
   }
 
   // ── Reestructuración de contactos ─────────────────────
@@ -606,6 +611,42 @@ export class BitacoraFacade {
           this.recargar(idLead);
         },
         error: () => this.error.set('No se pudieron limpiar los datos. Inténtalo de nuevo.')
+      });
+  }
+
+  abrirEliminar(): void {
+    if (this.hayCambios()) {
+      this.error.set('Guarda o descarta la corrección en curso antes de eliminar el Lead.');
+      return;
+    }
+    this.confirmandoEliminacion.set(true);
+    this.error.set(null);
+  }
+
+  cerrarEliminar(): void {
+    this.confirmandoEliminacion.set(false);
+  }
+
+  confirmarEliminacion(): void {
+    const idLead = this.detalle()?.id;
+    if (!idLead || this.procesandoEliminacion()) return;
+
+    this.procesandoEliminacion.set(true);
+    this.error.set(null);
+    this.service
+      .eliminarLeadIntegral(idLead)
+      .pipe(finalize(() => this.procesandoEliminacion.set(false)))
+      .subscribe({
+        next: () => {
+          this.confirmandoEliminacion.set(false);
+          this.resultados.update((filas) => filas.filter((fila) => fila.idLead !== idLead));
+          this.cerrarDrawer();
+          this.detalle.set(null);
+          this.cluster.set(null);
+          this.guardadoOk.set(false);
+          this.limpiarStaged();
+        },
+        error: () => this.error.set('No se pudo eliminar el Lead integralmente. Verifica los permisos e inténtalo de nuevo.')
       });
   }
 

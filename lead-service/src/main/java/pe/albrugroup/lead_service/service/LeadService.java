@@ -114,16 +114,22 @@ import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.exception.UnauthorizedException;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
+import pe.albrugroup.lead_service.repository.CalendarioFacturacionPostventaRepository;
 import pe.albrugroup.lead_service.repository.ContactoRepository;
+import pe.albrugroup.lead_service.repository.EntregaCredencialDispositivoRepository;
+import pe.albrugroup.lead_service.repository.EntregaCredencialPlataformaRepository;
 import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
+import pe.albrugroup.lead_service.repository.FreelanceVentaReenvioRepository;
 import pe.albrugroup.lead_service.repository.FreelanceVentaOrigenRepository;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
+import pe.albrugroup.lead_service.repository.LeadMeritoCorreccionRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
+import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
 import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.PlataformaRepository;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
@@ -188,6 +194,11 @@ public class LeadService {
     private final LeadRealtimeNotifier leadRealtimeNotifier;
     private final LeadAsignacionCounterService leadAsignacionCounterService;
     private final LeadEtapaResumenService leadEtapaResumenService;
+    private final CalendarioFacturacionPostventaRepository calendarioFacturacionPostventaRepository;
+    private final PeriodoFacturacionPostventaRepository periodoFacturacionPostventaRepository;
+    private final EntregaCredencialPlataformaRepository entregaCredencialPlataformaRepository;
+    private final EntregaCredencialDispositivoRepository entregaCredencialDispositivoRepository;
+    private final LeadMeritoCorreccionRepository leadMeritoCorreccionRepository;
     private final CalendarioFacturacionPostventaService calendarioFacturacionPostventaService;
     private final FacturacionPostventaService facturacionPostventaService;
     private final PostventaAsesorProveedorService postventaAsesorProveedorService;
@@ -195,6 +206,7 @@ public class LeadService {
     private final PlanService planService;
     private final AuthEquipoClient authEquipoClient;
     private final FreelanceVentaOrigenRepository freelanceVentaOrigenRepository;
+    private final FreelanceVentaReenvioRepository freelanceVentaReenvioRepository;
     private final ProveedorRepository proveedorRepository;
 
     // La bandeja de Agendados GTR ya no cuelga de una tipi: el concepto vive en el comportamiento, que
@@ -2342,12 +2354,36 @@ public class LeadService {
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         Etapa etapa = lead.getEtapa();
         Long idAsesorAsignado = lead.getIdAsesorAsignado();
+        Long idContacto = lead.getContacto() == null ? null : lead.getContacto().getId();
+        boolean eliminarContacto = idContacto != null && leadRepository.countByContactoId(idContacto) == 1;
+
+        List<Long> idsEntregas = entregaCredencialPlataformaRepository.findByLeadIdOrderByCreatedAtDesc(idLead)
+                .stream()
+                .map(EntregaCredencialPlataforma::getId)
+                .toList();
+        if (!idsEntregas.isEmpty()) {
+            entregaCredencialDispositivoRepository.deleteByEntregaCredencialIdIn(idsEntregas);
+        }
+
+        freelanceVentaOrigenRepository.findByIdLead(idLead).ifPresent(origen -> {
+            freelanceVentaReenvioRepository.deleteByOrigenIdIn(List.of(origen.getId()));
+            freelanceVentaOrigenRepository.delete(origen);
+        });
 
         pagoPostventaRepository.deleteByLeadId(idLead);
         encuestaPostventaRepository.deleteByLeadId(idLead);
+        periodoFacturacionPostventaRepository.deleteByLeadId(idLead);
+        calendarioFacturacionPostventaRepository.deleteByLeadId(idLead);
+        entregaCredencialPlataformaRepository.deleteByLeadId(idLead);
         eventoRepository.deleteByIdLead(idLead);
+        leadEtapaResumenRepository.deleteByIdLead(idLead);
+        leadMeritoCorreccionRepository.deleteByIdLead(idLead);
         leadRepository.delete(lead);
         leadRepository.flush();
+
+        if (eliminarContacto) {
+            contactoRepository.deleteById(idContacto);
+        }
 
         leadRealtimeNotifier.publishAfterCommit(LeadRealtimeEvent.builder()
                 .tipo("ELIMINACION")

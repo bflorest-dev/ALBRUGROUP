@@ -17,17 +17,6 @@ import {
   ProveedorRef
 } from '../../services/dashboard-funnel.service';
 
-interface FunnelRow {
-  key: string;
-  label: string;
-  value: number;
-  pct: number;
-  width: number;
-  color: string;
-  isMoney?: boolean;
-  isSubtotal?: boolean;
-}
-
 const PROVEEDOR_ACCENT: Record<string, string> = { CLARO: '#c8384b', WIN: '#e8752b' };
 const PROVEEDOR_ACCENT_DEFAULT = '#3a3f8f';
 
@@ -105,24 +94,9 @@ export class DashboardFunnelStageComponent implements OnInit {
     return inst > 0 ? this.inversion() / inst : 0;
   });
 
-  protected readonly funnelRows = computed<FunnelRow[]>(() => {
-    const brutos = this.leadsBrutos();
-    const netos = this.leadsNetos();
-    if (!brutos) return [];
-    const max = brutos;
-    return [
-      { key: 'brutos', label: 'Leads brutos', value: brutos, pct: 1, width: 100, color: 'primary' },
-      { key: 'sinContacto', label: 'Sin contacto', value: this.sinContacto(), pct: this.pct(this.sinContacto(), brutos), width: this.w(this.sinContacto(), max), color: 'faint' },
-      { key: 'netos', label: 'Leads netos', value: netos, pct: this.pct(netos, brutos), width: this.w(netos, max), color: 'info', isSubtotal: true },
-      { key: 'noCalifica', label: 'No califica', value: this.noCalifica(), pct: this.pct(this.noCalifica(), netos), width: this.w(this.noCalifica(), max), color: 'warning' },
-      { key: 'sinCobertura', label: 'Sin cobertura', value: this.sinCobertura(), pct: this.pct(this.sinCobertura(), netos), width: this.w(this.sinCobertura(), max), color: 'warning' },
-      { key: 'noDesea', label: 'No desea', value: this.noDesea(), pct: this.pct(this.noDesea(), netos), width: this.w(this.noDesea(), max), color: 'danger' },
-      { key: 'servicioActivo', label: 'Servicio activo', value: this.servicioActivo(), pct: this.pct(this.servicioActivo(), netos), width: this.w(this.servicioActivo(), max), color: 'teal' },
-      { key: 'noVenta', label: 'No venta', value: this.noVenta(), pct: this.pct(this.noVenta(), netos), width: this.w(this.noVenta(), max), color: 'danger', isSubtotal: true },
-      { key: 'preventa', label: 'Preventa', value: this.preventa(), pct: this.pct(this.preventa(), netos), width: this.w(this.preventa(), max), color: 'success' },
-      { key: 'instaladas', label: 'Instaladas', value: this.instaladas(), pct: this.pct(this.instaladas(), netos), width: this.w(this.instaladas(), max), color: 'success' },
-    ];
-  });
+  protected pctOf(n: number, total: number): number {
+    return total > 0 ? n / total : 0;
+  }
 
   // ── Lifecycle ──────────────────────────────────────────────────────────
   async ngOnInit(): Promise<void> {
@@ -191,12 +165,6 @@ export class DashboardFunnelStageComponent implements OnInit {
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────
-  private pct(n: number, total: number): number {
-    return total > 0 ? n / total : 0;
-  }
-  private w(n: number, max: number): number {
-    return max > 0 ? Math.max(2, Math.round((n / max) * 100)) : 2;
-  }
   private formatearFecha(iso: string): string {
     const [y, m, d] = iso.split('-');
     return `${d}/${m}/${y}`;

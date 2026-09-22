@@ -80,6 +80,10 @@ export class BitacoraService {
     return this.http.post<void>(`${this.baseUrl}/${idLead}/limpiar-datos`, {});
   }
 
+  eliminarLeadIntegral(idLead: number): Observable<void> {
+    return this.http.delete<void>(`${this.leadUrl}/preventa/${idLead}`);
+  }
+
   listarDepartamentos(): Observable<UbigeoItem[]> {
     return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos`);
   }
