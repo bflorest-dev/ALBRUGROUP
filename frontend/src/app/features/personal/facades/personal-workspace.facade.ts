@@ -5,6 +5,7 @@ import { SessionService } from '../../../core/services/session.service';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response';
 import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
+import { TEAM_SCOPED_ROLES } from '../../../shared/constants/multi-team-roles';
 import { AdminEquipoService, EquipoResponse, ProveedorLite } from '../../admin/services/admin-equipo.service';
 import { AdminRrhhService } from '../../admin/services/admin-rrhh.service';
 import {
@@ -24,6 +25,7 @@ export interface PersonalDirectoryRow {
   primaryRole: string;
   secondaryRoles: string[];
   teamNames: string[];
+  teamIds: number[];
   providerNames: string[];
 }
 
@@ -42,11 +44,7 @@ export interface PersonalRoleGroup {
 
 @Injectable()
 export class PersonalWorkspaceFacade {
-  private readonly teamScopedRoles = new Set([
-    'ASESOR_GTR', 'SUPERVISOR_GTR',
-    'ASESOR_VENTAS', 'SUPERVISOR_VENTAS',
-    'OJT', 'FREELANCE'
-  ]);
+  private readonly teamScopedRoles = new Set(TEAM_SCOPED_ROLES);
   private readonly rrhh = inject(AdminRrhhService);
   private readonly teamsService = inject(AdminEquipoService);
   private readonly accessService = inject(PersonalAccessService);
@@ -56,6 +54,8 @@ export class PersonalWorkspaceFacade {
   readonly roleCatalog = signal<RoleCatalogItem[]>([]);
   readonly accessByEmployeeId = signal<Record<number, UserAccessSummary>>({});
   readonly teamNamesByEmployeeId = signal<Record<number, string[]>>({});
+  readonly teamIdsByEmployeeId = signal<Record<number, number[]>>({});
+  readonly activeTeams = signal<EquipoResponse[]>([]);
   readonly providerNamesByEmployeeId = signal<Record<number, string[]>>({});
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
@@ -74,6 +74,7 @@ export class PersonalWorkspaceFacade {
   readonly rows = computed<PersonalDirectoryRow[]>(() => {
     const access = this.accessByEmployeeId();
     const teamNames = this.teamNamesByEmployeeId();
+    const teamIds = this.teamIdsByEmployeeId();
     const providerNames = this.providerNamesByEmployeeId();
     const term = this.normalize(this.search());
     const categoryFilter = this.categoryFilter();
@@ -96,6 +97,7 @@ export class PersonalWorkspaceFacade {
           primaryRole,
           secondaryRoles: employeeAccess?.rolesSecundarios ?? [],
           teamNames: teamNames[employee.idEmpleado] ?? [],
+          teamIds: teamIds[employee.idEmpleado] ?? [],
           providerNames: providerNames[employee.idEmpleado] ?? []
         };
       })
@@ -223,9 +225,12 @@ export class PersonalWorkspaceFacade {
   private async loadTeams(): Promise<void> {
     try {
       const teams = (await firstValueFrom(this.teamsService.listarEquipos())).filter((team) => team.activo);
+      this.activeTeams.set(teams);
       await this.loadTeamMembers(teams);
     } catch {
+      this.activeTeams.set([]);
       this.teamNamesByEmployeeId.set({});
+      this.teamIdsByEmployeeId.set({});
     }
   }
 
@@ -246,12 +251,15 @@ export class PersonalWorkspaceFacade {
       members: await firstValueFrom(this.teamsService.listarMiembros(team.id))
     })));
     const names: Record<number, string[]> = {};
+    const ids: Record<number, number[]> = {};
     for (const item of membership) {
       for (const member of item.members) {
         (names[member.empleadoId] ??= []).push(item.team.nombre);
+        (ids[member.empleadoId] ??= []).push(item.team.id);
       }
     }
     this.teamNamesByEmployeeId.set(names);
+    this.teamIdsByEmployeeId.set(ids);
   }
 
   private resolveProviderNames(

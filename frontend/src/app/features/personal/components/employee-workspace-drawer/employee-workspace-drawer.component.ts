@@ -8,7 +8,9 @@ import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-respon
 import { HorarioResponse } from '../../../../shared/models/schedule/horario-response';
 import { formatApiErrorMessage } from '../../../../shared/utils/api-error.utils';
 import { formatLabel } from '../../../../shared/utils/display-label';
+import { esRolDeEquipo, puedeMultiEquipo } from '../../../../shared/constants/multi-team-roles';
 import { AdminRrhhService } from '../../../admin/services/admin-rrhh.service';
+import { AdminEquipoService, EquipoResponse } from '../../../admin/services/admin-equipo.service';
 import { PersonalDirectoryRow } from '../../facades/personal-workspace.facade';
 import {
   PersonalAccessService,
@@ -18,7 +20,7 @@ import {
 } from '../../services/personal-access.service';
 
 type DrawerSection = 'resumen' | 'contrato' | 'horario' | 'acceso' | 'asistencia';
-type DrawerSubview = 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'historial-roles';
+type DrawerSubview = 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'historial-roles';
 
 @Component({
   selector: 'app-employee-workspace-drawer',
@@ -29,6 +31,7 @@ type DrawerSubview = 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form
 })
 export class EmployeeWorkspaceDrawerComponent {
   private readonly rrhh = inject(AdminRrhhService);
+  private readonly equipos = inject(AdminEquipoService);
   private readonly accessService = inject(PersonalAccessService);
   private readonly formBuilder = inject(FormBuilder);
   private activeEmployeeId: number | null = null;
@@ -38,6 +41,7 @@ export class EmployeeWorkspaceDrawerComponent {
   readonly theme = input<'light' | 'dark'>('light');
   readonly canManageRoles = input(false);
   readonly roleCatalog = input<RoleCatalogItem[]>([]);
+  readonly teamOptions = input<EquipoResponse[]>([]);
 
   readonly closed = output<void>();
   readonly employeeChanged = output<void>();
@@ -67,6 +71,7 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly isDismissing = signal(false);
   protected readonly isSavingContract = signal(false);
   protected readonly isClosingContract = signal(false);
+  protected readonly isSavingTeam = signal(false);
   protected readonly actionError = signal('');
   protected readonly actionSuccess = signal('');
   protected readonly rolePrincipal = signal('');
@@ -75,6 +80,9 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly isSavingRoles = signal(false);
   protected readonly roleError = signal('');
   protected readonly roleSuccess = signal('');
+  protected readonly teamSelectedId = signal(0);
+  protected readonly teamSelectedIds = signal<number[]>([]);
+  protected readonly teamError = signal('');
 
   protected readonly personalForm = this.formBuilder.nonNullable.group({
     nombres: ['', [Validators.required]],
@@ -146,7 +154,25 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected isBusy(): boolean {
-    return this.isSavingPersonal() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingRoles();
+    return this.isSavingPersonal() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingRoles();
+  }
+
+  protected canManageTeam(row: PersonalDirectoryRow): boolean {
+    if (!this.canManageRoles()) return false;
+    return [row.primaryRole, ...row.secondaryRoles].some((role) => esRolDeEquipo(role));
+  }
+
+  protected canManageProviderScope(row: PersonalDirectoryRow): boolean {
+    if (!this.canManageRoles()) return false;
+    return [row.primaryRole, ...row.secondaryRoles].some((role) => [
+      'ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR',
+      'ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA'
+    ].includes(role));
+  }
+
+  protected canSelectMultipleTeams(row: PersonalDirectoryRow): boolean {
+    const teamRoles = [row.primaryRole, ...row.secondaryRoles].filter((role) => esRolDeEquipo(role));
+    return teamRoles.length > 0 && teamRoles.every((role) => puedeMultiEquipo(role));
   }
 
   protected fullName(): string {
@@ -262,6 +288,56 @@ export class EmployeeWorkspaceDrawerComponent {
     });
     this.clearActionFeedback();
     this.subview.set('contrato-form');
+  }
+
+  protected openTeamManagement(): void {
+    const row = this.row();
+    if (!row || !this.canManageTeam(row)) return;
+    this.teamSelectedId.set(row.teamIds[0] ?? 0);
+    this.teamSelectedIds.set([...row.teamIds]);
+    this.teamError.set('');
+    this.clearActionFeedback();
+    this.subview.set('gestionar-equipo');
+  }
+
+  protected closeTeamManagement(): void {
+    this.teamError.set('');
+    this.subview.set('none');
+  }
+
+  protected setTeamSelectedId(value: string | number | null): void {
+    this.teamSelectedId.set(Number(value) || 0);
+  }
+
+  protected toggleTeam(teamId: number, selected: boolean): void {
+    const current = new Set(this.teamSelectedIds());
+    if (selected) current.add(teamId); else current.delete(teamId);
+    this.teamSelectedIds.set([...current].sort((left, right) => left - right));
+  }
+
+  protected isTeamSelected(teamId: number): boolean {
+    return this.teamSelectedIds().includes(teamId);
+  }
+
+  protected async saveTeamManagement(): Promise<void> {
+    const row = this.row();
+    if (!row || !this.canManageTeam(row)) return;
+    const teamIds = this.canSelectMultipleTeams(row)
+      ? [...new Set(this.teamSelectedIds())]
+      : this.teamSelectedId() > 0 ? [this.teamSelectedId()] : [];
+    this.isSavingTeam.set(true);
+    this.teamError.set('');
+    this.clearActionFeedback();
+    try {
+      await firstValueFrom(this.equipos.asignarEquiposAEmpleado(row.employee.idEmpleado, teamIds));
+      this.subview.set('none');
+      this.actionSuccess.set(teamIds.length ? 'Equipo actualizado.' : 'El empleado quedó sin equipo.');
+      this.employeeChanged.emit();
+    } catch (error) {
+      this.teamError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo actualizar el equipo. Revisa las reglas del rol.'));
+    } finally {
+      this.isSavingTeam.set(false);
+    }
   }
 
   protected isPlanilla(): boolean {

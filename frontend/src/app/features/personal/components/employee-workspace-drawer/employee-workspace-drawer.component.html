@@ -98,6 +98,30 @@
             <label class="form-field"><span>Último día de contrato</span><input type="date" formControlName="fechaFin" /></label>
           </form>
         </section>
+      } @else if (subview() === 'gestionar-equipo') {
+        <section class="drawer-subview team-management-view">
+          <div class="subview-heading">
+            <button class="back-button" type="button" [disabled]="isSavingTeam()" (click)="closeTeamManagement()"><i class="ti ti-arrow-left"></i>Volver</button>
+            <div><h3>Gestionar equipo</h3><p>Asigna el ámbito de equipo de este empleado sin salir de su expediente.</p></div>
+          </div>
+          @if (teamError()) { <p class="feedback error" role="alert">{{ teamError() }}</p> }
+          @if (!teamOptions().length) {
+            <p class="pending-copy">No hay equipos activos disponibles para asignar.</p>
+          } @else if (canSelectMultipleTeams(current)) {
+            <fieldset class="team-checks">
+              <legend>Equipos asignados</legend>
+              <div class="team-checks-scroll">
+                @for (team of teamOptions(); track team.id) {
+                  <label><input type="checkbox" [checked]="isTeamSelected(team.id)" [disabled]="isSavingTeam()" (change)="toggleTeam(team.id, $any($event.target).checked)" /><span><strong>{{ team.nombre }}</strong>@if (team.descripcion) { <small>{{ team.descripcion }}</small> }</span></label>
+                }
+              </div>
+            </fieldset>
+            @if (!teamSelectedIds().length) { <p class="team-warning">Sin equipo, este empleado no verá datos filtrados por equipo.</p> }
+          } @else {
+            <label class="form-field team-select-field"><span>Equipo</span><select [ngModel]="teamSelectedId()" [disabled]="isSavingTeam()" (ngModelChange)="setTeamSelectedId($event)"><option [ngValue]="0">Sin equipo</option>@for (team of teamOptions(); track team.id) { <option [ngValue]="team.id">{{ team.nombre }}</option> }</select></label>
+            @if (teamSelectedId() === 0) { <p class="team-warning">Sin equipo, este empleado no verá datos filtrados por equipo.</p> }
+          }
+        </section>
       } @else if (subview() === 'historial-roles') {
         <section class="drawer-subview">
           <div class="subview-heading">
@@ -202,12 +226,19 @@
       } @else if (subview() === 'cerrar-contrato') {
         <button type="button" class="ghost-button" [disabled]="isClosingContract()" (click)="closeSubview()">Cancelar</button>
         <button type="button" class="danger-button push-right" [disabled]="isClosingContract()" (click)="confirmCloseContract()">{{ isClosingContract() ? 'Finalizando…' : 'Finalizar contrato' }}</button>
+      } @else if (subview() === 'gestionar-equipo') {
+        <button type="button" class="ghost-button" [disabled]="isSavingTeam()" (click)="closeTeamManagement()">Cancelar</button>
+        <button type="button" class="primary-button push-right" [disabled]="isSavingTeam() || !teamOptions().length" (click)="saveTeamManagement()">{{ isSavingTeam() ? 'Guardando…' : 'Guardar equipo' }}</button>
       } @else if (subview() === 'historial-roles') {
         <button type="button" class="ghost-button" (click)="closeSubview()"><i class="ti ti-arrow-left"></i>Volver a roles</button>
       } @else if (section() === 'resumen') {
         <button type="button" class="ghost-button" [disabled]="isLoadingEmployee()" (click)="openPersonalEdit()">Editar datos</button>
         @if (canManageRoles()) {
-          <button type="button" class="ghost-button" (click)="manageScope.emit(current)">Gestionar ámbito</button>
+          @if (canManageTeam(current)) {
+            <button type="button" class="ghost-button" (click)="openTeamManagement()"><i class="ti ti-users-group"></i>Gestionar equipo</button>
+          } @else if (canManageProviderScope(current)) {
+            <button type="button" class="ghost-button" (click)="manageScope.emit(current)">Gestionar proveedores</button>
+          }
           @if (current.employee.estadoOperativo !== 'INACTIVO') { <button type="button" class="danger-button push-right" (click)="openDismissConfirmation()">Dar de baja</button> }
         }
       } @else if (section() === 'contrato') {

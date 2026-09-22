@@ -371,14 +371,16 @@
           <section class="panel" [formGroup]="f.ofertaForm">
             <div class="grouptitle">Oferta comercial</div>
             <div class="offer">
-              <div class="offerrow offer-edit-row" [class.dirty]="f.campoModificado('oferta','idPlan')">
+              <div class="offerrow offer-edit-row">
                 <span class="l">Plan</span>
-                <select formControlName="idPlan" [disabled]="f.cargandoPlanes()" aria-label="Plan de la oferta comercial">
-                  <option [ngValue]="null">{{ f.cargandoPlanes() ? 'Cargando planes…' : 'Selecciona un plan' }}</option>
-                  @for (plan of f.planesDisponibles(); track plan.id) {
-                    <option [ngValue]="plan.id">{{ plan.nombre }} · S/ {{ plan.precio ?? 0 }} · {{ plan.nombreProveedor || 'sin proveedor' }}</option>
-                  }
-                </select>
+                <div class="field" [class.dirty]="f.campoModificado('oferta','idPlan')">
+                  <select formControlName="idPlan" [disabled]="f.cargandoPlanes()" aria-label="Plan de la oferta comercial">
+                    <option [ngValue]="null">{{ f.cargandoPlanes() ? 'Cargando planes…' : 'Selecciona un plan' }}</option>
+                    @for (plan of f.planesDisponibles(); track plan.id) {
+                      <option [ngValue]="plan.id">{{ plan.nombre }} · S/ {{ plan.precio ?? 0 }} · {{ plan.nombreProveedor || 'sin proveedor' }}</option>
+                    }
+                  </select>
+                </div>
                 @if (f.campoModificado('oferta','idPlan')) { <span class="was">antes <s>{{ f.valorOriginal('oferta','idPlan') || 'sin plan' }}</s></span> }
               </div>
               <div class="offerrow"><span class="l">Proveedor asociado</span><span class="r">{{ f.planSeleccionado()?.nombreProveedor || d.nombreProveedorPlan || '—' }}</span></div>

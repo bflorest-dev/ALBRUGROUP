@@ -109,6 +109,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     [theme]="theme()"
     [canManageRoles]="facade.isAdmin()"
     [roleCatalog]="facade.roleCatalog()"
+    [teamOptions]="facade.activeTeams()"
     (closed)="facade.closeEmployee()"
     (employeeChanged)="handleEmployeeChanged()"
     (rolesUpdated)="facade.applyUpdatedRoles($event)"
