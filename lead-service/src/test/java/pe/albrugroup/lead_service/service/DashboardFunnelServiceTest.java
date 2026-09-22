@@ -65,7 +65,8 @@ class DashboardFunnelServiceTest {
                 desde,
                 hasta.plusDays(1)))
                 .thenReturn(117L);
-        when(gastoRepository.sumCostoTotalByProveedorAndFechaCarga(2L, desde, hasta))
+        when(gastoRepository.sumCostoTotalByProveedorAndCierreDiario(
+                2L, Instant.parse("2026-09-01T05:00:00Z"), Instant.parse("2026-10-01T05:00:00Z")))
                 .thenReturn(BigDecimal.ZERO);
 
         var response = dashboardFunnelService.obtener(2L, desde, hasta);

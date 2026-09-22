@@ -50,16 +50,24 @@ public interface CampanaGastoRegistroRepository extends JpaRepository<CampanaGas
 
     Optional<CampanaGastoRegistro> findTopByCampanaIdAndFechaCargaOrderByIdDesc(Long idCampana, LocalDate fechaCarga);
 
-    @Query("""
-            SELECT COALESCE(SUM(g.costoTotal), 0)
-            FROM CampanaGastoRegistro g
-            WHERE g.campana.proveedor.id = :idProveedor
-              AND g.fechaCarga >= :desde
-              AND g.fechaCarga <= :hasta
-            """)
-    BigDecimal sumCostoTotalByProveedorAndFechaCarga(
+    @Query(value = """
+            SELECT COALESCE(SUM(sub.costo_total), 0)
+            FROM (
+              SELECT DISTINCT ON (g.id_campana, (g.created_at AT TIME ZONE 'America/Lima')::date)
+                     g.costo_total
+              FROM campana_gasto_registro g
+              JOIN campana c ON c.id = g.id_campana
+              WHERE c.id_proveedor = :idProveedor
+                AND g.created_at >= :inicio
+                AND g.created_at < :fin
+              ORDER BY g.id_campana,
+                       (g.created_at AT TIME ZONE 'America/Lima')::date,
+                       g.created_at DESC
+            ) sub
+            """, nativeQuery = true)
+    BigDecimal sumCostoTotalByProveedorAndCierreDiario(
             @Param("idProveedor") Long idProveedor,
-            @Param("desde") LocalDate desde,
-            @Param("hasta") LocalDate hasta
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
     );
 }

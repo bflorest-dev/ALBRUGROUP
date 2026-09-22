@@ -88,8 +88,8 @@ public class DashboardFunnelService {
         long instaladas = resumenRepository.dashboardFunnelInstaladas(
                 idProveedor, inicio, fin, Etapa.VENTA, "INSTALADO", desdeR, hastaR.plusDays(1));
 
-        BigDecimal inversion = gastoRepository.sumCostoTotalByProveedorAndFechaCarga(
-                idProveedor, desdeR, hastaR);
+        BigDecimal inversion = gastoRepository.sumCostoTotalByProveedorAndCierreDiario(
+                idProveedor, inicio, fin);
 
         return new DashboardFunnelResponse(
                 new ProveedorRef(proveedor.getId(), proveedor.getNombre()),
