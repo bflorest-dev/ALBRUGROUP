@@ -11,6 +11,7 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -509,8 +510,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
                    ) THEN 1 ELSE 0 END)
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
-            JOIN l.plan pl
-            JOIN pl.proveedor pr
+            JOIN l.proveedor pr
             LEFT JOIN l.direccion d
             JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
             WHERE pr.id = :idProveedor
@@ -579,8 +579,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             SELECT COUNT(DISTINCT l.id)
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
-            JOIN l.plan pl
-            JOIN pl.proveedor pr
+            JOIN l.proveedor pr
             JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
             WHERE pr.id = :idProveedor
               AND r.ultimaCodigoTipificacion = :codigoInstalado
@@ -1027,6 +1026,51 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("codigoInstalado") String codigoInstalado,
             @Param("desdeDate") java.time.LocalDate desdeDate,
             @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
+    );
+
+    // ── DASHBOARD FUNNEL ──
+
+    // Funnel Q1: cohorte por lead.createdAt, agrupada por mayorRangoCodigoTipificacion de PREVENTA.
+    // LEFT JOIN: leads sin resumen PREVENTA retornan NULL → el servicio los mapea a SIN CONTACTO.
+    @Query("""
+            SELECT r.mayorRangoCodigoTipificacion, COUNT(DISTINCT l.id)
+            FROM Lead l
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            WHERE l.proveedorOrigen.id = :idProveedor
+              AND l.createdAt >= :inicio
+              AND l.createdAt < :fin
+            GROUP BY r.mayorRangoCodigoTipificacion
+            """)
+    List<Object[]> dashboardFunnelPorMayorRango(
+            @Param("etapa") Etapa etapa,
+            @Param("idProveedor") Long idProveedor,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // Funnel Q2: instaladas del cohorte de VENTA. La cohorte canónica del dashboard es la entrada a VENTA
+    // (fechaIngresoEtapa), y "instalada" exige además fechaInstalacion activa dentro de la misma ventana.
+    // Se usa el proveedor operativo directo del Lead, no proveedorOrigen ni Plan.proveedor.
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaVenta
+            JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            WHERE l.proveedor.id = :idProveedor
+              AND r.ultimaCodigoTipificacion = :codigoInstalado
+              AND r.fechaIngresoEtapa >= :inicio
+              AND r.fechaIngresoEtapa < :fin
+              AND c.fechaInstalacion >= :desdeDate
+              AND c.fechaInstalacion < :hastaDateExcl
+            """)
+    long dashboardFunnelInstaladas(
+            @Param("idProveedor") Long idProveedor,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("codigoInstalado") String codigoInstalado,
+            @Param("desdeDate") LocalDate desdeDate,
+            @Param("hastaDateExcl") LocalDate hastaDateExcl
     );
 
 }

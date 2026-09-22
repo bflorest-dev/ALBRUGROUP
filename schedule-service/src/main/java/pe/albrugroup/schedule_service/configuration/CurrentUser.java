@@ -36,4 +36,14 @@ public class CurrentUser {
                 .map(a -> a.substring("ROLE_".length()))
                 .toList();
     }
+
+    public String rolActivo() {
+        return roles().stream().findFirst().orElse("SIN_ROL");
+    }
+
+    public boolean tienePermiso(String permiso) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getAuthorities() != null && auth.getAuthorities().stream()
+                .anyMatch(authority -> permiso.equals(authority.getAuthority()));
+    }
 }

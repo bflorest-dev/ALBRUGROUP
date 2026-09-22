@@ -242,13 +242,26 @@
           }
         </form>
 
+        <p-message severity="info" text="Puedes guardar la identidad ahora y completar contrato, horario y acceso más adelante desde el expediente." />
         <div class="actions">
+          <button
+            pButton
+            type="button"
+            severity="secondary"
+            [outlined]="true"
+            icon="pi pi-save"
+            label="Guardar y completar después"
+            [loading]="isSubmittingIdentity"
+            [disabled]="isSubmitting"
+            (click)="submitEmployeeOnly.emit()"
+          ></button>
           <button
             pButton
             type="button"
             icon="pi pi-arrow-right"
             iconPos="right"
             label="Continuar al Contrato"
+            [disabled]="isSubmittingIdentity"
             (click)="continueToContract.emit()"
           ></button>
         </div>
@@ -262,15 +275,15 @@
         <ng-template #content>
         <form [formGroup]="contratoForm" class="form-grid">
           <label class="field">
-            <span>Puesto de trabajo</span>
+            <span>Categoría de personal</span>
             <p-select
-              formControlName="puestoTrabajo"
-              [options]="optionItems(puestoTrabajoOptions)"
+              formControlName="categoriaPersonal"
+              [options]="optionItems(categoriaPersonalOptions)"
               optionLabel="label"
               optionValue="value"
               [filter]="true"
-              [class.p-invalid]="isInvalid(contratoForm, 'puestoTrabajo')"
-              [attr.title]="isInvalid(contratoForm, 'puestoTrabajo') ? 'Campo obligatorio.' : null"
+              [class.p-invalid]="isInvalid(contratoForm, 'categoriaPersonal')"
+              [attr.title]="isInvalid(contratoForm, 'categoriaPersonal') ? 'Campo obligatorio.' : null"
               appendTo="body"
             />
           </label>
@@ -470,8 +483,12 @@
         <ng-template #content>
         @if (creationResult; as result) {
           <div class="result-card">
-            <p-tag value="Alta completada" severity="success" />
-            <h3>Credenciales generadas</h3>
+            <p-tag value="Identidad creada" severity="success" />
+            <h3>Estado de preparación</h3>
+            <p>El contrato, el horario y el acceso pueden completarse desde el expediente del empleado.</p>
+            @if (submitErrorMessage) {
+              <p-message severity="warn" [text]="submitErrorMessage" />
+            }
 
             <dl class="review-grid">
               <div>
@@ -483,8 +500,8 @@
                 <dd>{{ result.username }}</dd>
               </div>
               <div>
-                <dt>Rol</dt>
-                <dd>{{ toLabel(result.roles[0]) }}</dd>
+                <dt>Acceso</dt>
+                <dd>{{ result.roles.length ? toLabel(result.roles[0]) : 'Pendiente de asignación' }}</dd>
               </div>
               <div>
                 <dt>Password inicializada</dt>
@@ -534,8 +551,8 @@
       <dd>{{ personalReviewSummary.correoPersonal || '-' }}</dd>
     </div>
     <div>
-      <dt>Rol asignado</dt>
-      <dd>{{ toLabel(personalReviewSummary.rolAsignado) }}</dd>
+      <dt>Categoría</dt>
+      <dd>{{ toLabel(personalReviewSummary.categoriaPersonal) }}</dd>
     </div>
   </dl>
 

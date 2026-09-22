@@ -1,6 +1,7 @@
 package pe.albrugroup.rrhh_service.usecase;
 
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
+import pe.albrugroup.rrhh_service.entity.enums.CategoriaPersonal;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
@@ -29,8 +30,12 @@ public interface IEmpleado {
     EmpleadoResponse actualizarContactoCorporativo(Long idEmpleado, DatosContactoCorporativoRequest datosCorporativos);
     EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId);
     EmpleadoResponse darDeBajaEmpleado(Long idEmpleado, String authHeader);
-    List<EmpleadoRolResponse> listarEmpleadosLight(List<PuestoTrabajo> puestosTrabajo, List<Long> empleadoIds);
-    List<EmpleadoRolResponse> listarEmpleadosAsistencia(LocalDate desde, LocalDate hasta, List<PuestoTrabajo> puestosTrabajo,
+    List<EmpleadoRolResponse> listarEmpleadosLight(List<CategoriaPersonal> categoriasPersonal,
+                                                   List<PuestoTrabajo> puestosTrabajo,
+                                                   List<Long> empleadoIds);
+    List<EmpleadoRolResponse> listarEmpleadosAsistencia(LocalDate desde, LocalDate hasta,
+                                                         List<CategoriaPersonal> categoriasPersonal,
+                                                         List<PuestoTrabajo> puestosTrabajo,
                                                          List<Long> empleadoIds);
     List<EmpleadoRolResponse> listarPersonalRecruitment();
 }

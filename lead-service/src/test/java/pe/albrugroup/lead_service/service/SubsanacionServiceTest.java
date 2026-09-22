@@ -70,7 +70,7 @@ class SubsanacionServiceTest {
         when(auditoriaRepository.findByRequestId(any())).thenReturn(Optional.empty());
         lenient().when(currentUser.empleadoID()).thenReturn(99L);
         lenient().when(currentUser.nombreCompleto()).thenReturn("Admin Prueba");
-        lenient().when(currentUser.rolPrincipal()).thenReturn("ADMINISTRADOR");
+        lenient().when(currentUser.rolActivo()).thenReturn("ADMINISTRADOR");
         lenient().when(objectMapper.writeValueAsString(any())).thenReturn("{}");
     }
 

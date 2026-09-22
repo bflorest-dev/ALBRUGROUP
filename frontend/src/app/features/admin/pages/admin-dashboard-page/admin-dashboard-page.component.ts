@@ -77,6 +77,7 @@ export class AdminDashboardPageComponent implements OnInit {
     // Vista COLABORADORES: arranque ligero y carga por categoria segun la ruta.
     // El componente se reutiliza entre categorias, asi que seguimos el paramMap.
     void this.facade.initializeColaboradores();
+    void this.openRequestedEmployeeAction();
     this.route.paramMap
       .pipe(
         map((params) => params.get('categoria')),
@@ -89,6 +90,20 @@ export class AdminDashboardPageComponent implements OnInit {
           void this.goToDefaultCategoria();
         }
       });
+  }
+
+  private async openRequestedEmployeeAction(): Promise<void> {
+    const empleadoId = Number(this.route.snapshot.queryParamMap.get('empleadoId'));
+    const action = this.route.snapshot.queryParamMap.get('accion');
+    const dni = this.route.snapshot.queryParamMap.get('dni');
+    if (!Number.isInteger(empleadoId) || !['editar', 'contrato', 'horario'].includes(action ?? '')) {
+      return;
+    }
+    await this.facade.openEmployeeAction(
+      empleadoId,
+      action as 'editar' | 'contrato' | 'horario',
+      dni
+    );
   }
 
   /** Sin categoria en la URL: aterriza en el primer equipo activo, o en "Sin equipo". */

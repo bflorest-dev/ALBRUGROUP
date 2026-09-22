@@ -366,13 +366,22 @@
           </section>
         }
 
-        <!-- OFERTA (solo lectura en esta iteración) -->
+        <!-- OFERTA -->
         @if (f.tab() === 'oferta') {
-          <section class="panel">
+          <section class="panel" [formGroup]="f.ofertaForm">
             <div class="grouptitle">Oferta comercial</div>
             <div class="offer">
-              <div class="offerrow"><span class="l">Plan</span><span class="r">{{ d.nombrePlan || '—' }}</span></div>
-              <div class="offerrow"><span class="l">Proveedor</span><span class="r">{{ d.nombreProveedorPlan || '—' }}</span></div>
+              <div class="offerrow offer-edit-row" [class.dirty]="f.campoModificado('oferta','idPlan')">
+                <span class="l">Plan</span>
+                <select formControlName="idPlan" [disabled]="f.cargandoPlanes()" aria-label="Plan de la oferta comercial">
+                  <option [ngValue]="null">{{ f.cargandoPlanes() ? 'Cargando planes…' : 'Selecciona un plan' }}</option>
+                  @for (plan of f.planesDisponibles(); track plan.id) {
+                    <option [ngValue]="plan.id">{{ plan.nombre }} · S/ {{ plan.precio ?? 0 }} · {{ plan.nombreProveedor || 'sin proveedor' }}</option>
+                  }
+                </select>
+                @if (f.campoModificado('oferta','idPlan')) { <span class="was">antes <s>{{ f.valorOriginal('oferta','idPlan') || 'sin plan' }}</s></span> }
+              </div>
+              <div class="offerrow"><span class="l">Proveedor asociado</span><span class="r">{{ f.planSeleccionado()?.nombreProveedor || d.nombreProveedorPlan || '—' }}</span></div>
               <div class="offerrow"><span class="l">Promoción interna</span><span class="r">{{ d.nombrePromocionInterna || '—' }}</span></div>
               @if (d.adicionales?.length) {
                 <div class="offerrow"><span class="l">Adicionales</span><span class="r">{{ nombresAdicionales(d) }}</span></div>
@@ -381,7 +390,13 @@
               <div class="offerrow"><span class="l">Permanencia</span><span class="r mono">{{ d.mesesPermanenciaSnapshot ? d.mesesPermanenciaSnapshot + ' meses' : '—' }}</span></div>
               <div class="offerrow total"><span class="l">Precio final</span><span class="r mono">{{ soles(d.precioFinal) }}</span></div>
             </div>
-            <p class="oferta-note">La edición de la oferta comercial (plan, promoción y adicionales) llega en la siguiente iteración. Por ahora, Datos preventa, Dirección y la depuración de eventos ya son corregibles.</p>
+            @if (f.cargandoPlanes()) {
+              <p class="oferta-note">Cargando planes vigentes disponibles para el equipo del lead…</p>
+            } @else if (f.errorPlanes()) {
+              <p class="oferta-note error-note">{{ f.errorPlanes() }}</p>
+            } @else {
+              <p class="oferta-note">El proveedor se actualiza automáticamente según el plan elegido. Al guardar, la promoción interna se reinicia para evitar conservar una regla incompatible con el nuevo plan y el precio final se recalcula.</p>
+            }
           </section>
         }
 

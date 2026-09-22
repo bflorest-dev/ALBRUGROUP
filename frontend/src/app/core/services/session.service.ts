@@ -13,7 +13,8 @@ export class SessionService {
   private readonly asesorVentasWorkspaceState = inject(AsesorVentasWorkspaceStateService);
   readonly session = this.sessionState.asReadonly();
   readonly activeRole = computed(() => this.sessionState()?.activeRole ?? this.sessionState()?.primaryRole ?? null);
-  readonly primaryRole = this.activeRole;
+  readonly primaryRole = computed(() => this.sessionState()?.primaryRole ?? null);
+  readonly assignedRoles = computed(() => this.sessionState()?.roles ?? []);
   readonly homeRoute = computed(() => {
     const activeRole = this.activeRole();
     return activeRole ? ROLE_HOME_ROUTES[activeRole] ?? '/app/admin' : '/auth/access';
@@ -45,7 +46,7 @@ export class SessionService {
   }
 
   getPrimaryRole(): string | null {
-    return this.activeRole();
+    return this.primaryRole();
   }
 
   getActiveRole(): string | null {
@@ -72,6 +73,23 @@ export class SessionService {
       homeRoute: ROLE_HOME_ROUTES[role] ?? session.homeRoute
     });
     return true;
+  }
+
+  applyRoleContext(roles: string[], primaryRole: string | null, activeRole: string | null): void {
+    const session = this.sessionState();
+    if (!session) {
+      return;
+    }
+    const normalizedActiveRole = activeRole && roles.includes(activeRole) ? activeRole : primaryRole;
+    this.sessionState.set(this.normalizeSession({
+      ...session,
+      roles,
+      primaryRole,
+      activeRole: normalizedActiveRole,
+      homeRoute: normalizedActiveRole
+        ? ROLE_HOME_ROUTES[normalizedActiveRole] ?? session.homeRoute
+        : session.homeRoute
+    }));
   }
 
   getHomeRoute(): string {

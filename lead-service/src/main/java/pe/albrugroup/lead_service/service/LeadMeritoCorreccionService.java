@@ -97,7 +97,7 @@ public class LeadMeritoCorreccionService {
                 .nombreAsesorNuevo(nombreAsesorNuevo)
                 .idActor(currentUser.empleadoID())
                 .nombreActor(currentUser.nombreCompleto())
-                .rolActor(currentUser.rolPrincipal())
+                .rolActor(currentUser.rolActivo())
                 .motivo(motivo)
                 .build();
 
@@ -173,7 +173,7 @@ public class LeadMeritoCorreccionService {
                 .nombreAsesorNuevo(nombreEmpleadoNuevo)
                 .idActor(currentUser.empleadoID())
                 .nombreActor(currentUser.nombreCompleto())
-                .rolActor(currentUser.rolPrincipal())
+                .rolActor(currentUser.rolActivo())
                 .motivo(motivo)
                 .build();
 

@@ -109,7 +109,7 @@ public class AjusteJornadaService {
         long desplazamientoMin = baseDiaria.laborable() && baseDiaria.inicio() != null
                 ? Math.abs(Duration.between(baseDiaria.inicio(), validated.inicio()).toMinutes())
                 : 0;
-        validarAutorizacionAjuste(request.getRazon(), currentUser.roles(), desplazamientoMin);
+        validarAutorizacionAjuste(request.getRazon(), desplazamientoMin);
         if (request.getRazon() == RazonAjuste.COMPENSACION) {
             validarCompensacion(idEmpleado, validated);
         }
@@ -150,7 +150,7 @@ public class AjusteJornadaService {
                 .estado(EstadoAjusteJornada.ACTIVO)
                 .origen(validated.origen())
                 .razon(request.getRazon())
-                .rolAutor(rolPrincipal(currentUser.roles()))
+                .rolAutor(currentUser.rolActivo())
                 .motivo(request.getMotivo().trim())
                 .creadoPor(currentUser.empleadoID())
                 .build());
@@ -168,32 +168,26 @@ public class AjusteJornadaService {
      * Autorizacion fina por razon (Fork 6): el permiso grueso EXTEND_HORARIO ya se valido en el
      * controller; aqui se aplican las reglas de rol + limite que un permiso booleano no expresa.
      */
-    private void validarAutorizacionAjuste(RazonAjuste razon, List<String> roles, long desplazamientoMin) {
-        boolean admin = roles.contains("ADMINISTRADOR");
+    private void validarAutorizacionAjuste(RazonAjuste razon, long desplazamientoMin) {
         switch (razon) {
             case AMPLIACION_OPERATIVA -> { /* cualquiera con EXTEND_HORARIO */ }
             case CORRIMIENTO_COMPENSABLE -> {
-                if (admin) {
-                    return;
+                if (!currentUser.tienePermiso("AJUSTAR_JORNADA_COMPENSABLE")) {
+                    throw new BadRequestException("No cuenta con permiso para aplicar una tardanza compensable");
                 }
-                boolean supervisor = roles.contains("SUPERVISOR_VENTAS") || roles.contains("SUPERVISOR_GTR");
-                if (!supervisor) {
-                    throw new BadRequestException("Solo un supervisor o el administrador pueden aplicar una tardanza compensable");
-                }
-                if (desplazamientoMin > 60) {
-                    throw new BadRequestException("Un supervisor solo puede desplazar el horario hasta 1 hora; para más, requiere al administrador");
+                if (desplazamientoMin > 60
+                        && !currentUser.tienePermiso("AJUSTAR_JORNADA_SIN_LIMITE")) {
+                    throw new BadRequestException("El corrimiento supera el límite permitido de 1 hora");
                 }
             }
             case CORRIMIENTO_JUSTIFICADA -> {
-                if (!admin && !roles.contains("RRHH")) {
-                    throw new BadRequestException("Solo RRHH puede aplicar una tardanza justificada");
+                if (!currentUser.tienePermiso("AJUSTAR_JORNADA_JUSTIFICADA")) {
+                    throw new BadRequestException("No cuenta con permiso para aplicar una tardanza justificada");
                 }
             }
             case COMPENSACION -> {
-                // Solo ADMIN o RRHH programan horas de compensacion; ademas el guard del deficit
-                // (validarCompensacion) exige que el empleado deba horas ese mes.
-                if (!admin && !roles.contains("RRHH")) {
-                    throw new BadRequestException("Solo RRHH o el administrador pueden programar horas de compensación");
+                if (!currentUser.tienePermiso("PROGRAMAR_COMPENSACION")) {
+                    throw new BadRequestException("No cuenta con permiso para programar horas de compensación");
                 }
             }
         }
@@ -246,10 +240,6 @@ public class AjusteJornadaService {
 
     private int safe(Integer valor) {
         return valor == null ? 0 : valor;
-    }
-
-    private String rolPrincipal(List<String> roles) {
-        return roles == null || roles.isEmpty() ? null : roles.getFirst();
     }
 
     @Transactional(readOnly = true)

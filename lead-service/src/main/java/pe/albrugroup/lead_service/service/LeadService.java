@@ -131,8 +131,6 @@ import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
 import pe.albrugroup.lead_service.repository.ZonaReglaRepository;
 import pe.albrugroup.lead_service.service.mapper.LeadMapper;
-import jakarta.persistence.EntityManager;
-import org.hibernate.Session;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -197,7 +195,6 @@ public class LeadService {
     private final PlanService planService;
     private final AuthEquipoClient authEquipoClient;
     private final FreelanceVentaOrigenRepository freelanceVentaOrigenRepository;
-    private final EntityManager entityManager;
     private final ProveedorRepository proveedorRepository;
 
     // La bandeja de Agendados GTR ya no cuelga de una tipi: el concepto vive en el comportamiento, que
@@ -1532,11 +1529,6 @@ public class LeadService {
     }
 
     public LeadDetalleResponse obtenerDetalleLeadAsignado(Long idLead, Etapa etapa) {
-        if (etapa == Etapa.POSTVENTA) {
-            Session session = entityManager.unwrap(Session.class);
-            session.disableFilter("proveedorFilter");
-            session.disableFilter("equipoFilter");
-        }
         Long idAsesor = currentUser.empleadoID();
         Lead lead = leadRepository.buscarDetalleAsesor(idLead, idAsesor, etapa)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
@@ -1552,9 +1544,6 @@ public class LeadService {
     }
 
     public LeadDetalleResponse obtenerDetalleLeadPostventaConsulta(Long idLead) {
-        Session session = entityManager.unwrap(Session.class);
-        session.disableFilter("proveedorFilter");
-        session.disableFilter("equipoFilter");
         Lead lead = leadRepository.buscarDetalleCompletoPorId(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         if (lead.getEtapa() != Etapa.POSTVENTA && lead.getEtapa() != Etapa.COBRANZA) {
@@ -1797,7 +1786,7 @@ public class LeadService {
                 .idLead(idLead)
                 .idActor(currentUser.empleadoID())
                 .nombreActor(currentUser.nombreCompleto())
-                .rolActor(currentUser.rolPrincipal())
+                .rolActor(currentUser.rolActivo())
                 .accion(Accion.CORRECCION)
                 .etapa(etapa)
                 .comentario(comentario)
@@ -2450,6 +2439,14 @@ public class LeadService {
 
     private Lead actualizarOfertaComercialInterno(Lead lead, LeadOfertaComercialRequest request) {
         Plan plan = request.getIdPlan() == null ? null : obtenerPlanVigente(request.getIdPlan());
+        if (plan != null && plan.getProveedor() != null && lead.getIdEquipo() != null
+                && !equipoProveedorRepository.existsByIdEquipoAndProveedorId(lead.getIdEquipo(), plan.getProveedor().getId())) {
+            throw new BadRequestException(
+                    "El proveedor del plan seleccionado no pertenece al equipo del lead",
+                    plan.getProveedor().getId(),
+                    Map.of("idEquipo", lead.getIdEquipo())
+            );
+        }
         PromocionComercial promocionInterna = request.getIdPromocionInterna() == null ? null
                 : obtenerPromocionInternaActiva(request.getIdPromocionInterna(), plan, lead);
 
@@ -2487,29 +2484,18 @@ public class LeadService {
             validarProveedorPerteneceAlEquipo(lead.getIdEquipo(), idProveedorSolicitado);
             return idProveedorSolicitado;
         }
-        if (lead.getPlan() != null && lead.getPlan().getProveedor() != null) {
-            return lead.getPlan().getProveedor().getId();
-        }
         if (etapa != Etapa.PREVENTA) {
-            String snapshot = lead.getNombreProveedorSnapshot();
-            if (snapshot != null && !snapshot.isBlank()) {
-                return proveedorRepository.findFirstByNombreIgnoreCase(snapshot.trim())
-                        .map(Proveedor::getId)
-                        .orElseThrow(() -> new BadRequestException(
-                                "El lead no tiene plan y el proveedor snapshot '" + snapshot + "' no existe en el sistema",
-                                lead.getId()));
+            if (lead.getProveedor() != null) {
+                return lead.getProveedor().getId();
             }
-            throw new BadRequestException("El lead no tiene plan con proveedor para resolver la matriz de " + etapa);
+            throw new BadRequestException("El lead no tiene proveedor para resolver la matriz de " + etapa);
         }
-        Proveedor fallback = obtenerProveedorFallbackEntidadDeEquipo(lead.getIdEquipo());
-        if (fallback == null) {
-            throw new BadRequestException(
-                    "El equipo del lead no tiene proveedor fallback para resolver la matriz de PREVENTA",
-                    lead.getIdEquipo(),
-                    null
-            );
+        if (lead.getProveedorOrigen() != null) {
+            return lead.getProveedorOrigen().getId();
         }
-        return fallback.getId();
+        throw new BadRequestException(
+                "El lead no tiene proveedor de origen para resolver la matriz de PREVENTA",
+                lead.getId(), null);
     }
 
     private void validarProveedorPerteneceAlEquipo(Long idEquipo, Long idProveedor) {
@@ -3214,13 +3200,10 @@ public class LeadService {
     }
 
     private Proveedor resolverProveedorOperativoVenta(Lead lead) {
-        if (lead.getPlan() != null && lead.getPlan().getProveedor() != null) {
-            return lead.getPlan().getProveedor();
+        if (lead.getProveedor() != null) {
+            return lead.getProveedor();
         }
-        if (lead.getCampana() != null && lead.getCampana().getProveedor() != null) {
-            return lead.getCampana().getProveedor();
-        }
-        return obtenerProveedorFallbackEntidadDeEquipo(lead.getIdEquipo());
+        return lead.getProveedorOrigen();
     }
 
     private String normalizarCodigoNumerico(String value) {
@@ -3279,6 +3262,7 @@ public class LeadService {
     public void registrarIngresoLeadRetroactivo(LeadIntakeRetroactivoRequest request) {
         Instant registroAt = calcularRegistroRetroactivo(
                 OperationalDateTime.today(),
+                request.getFechaRegistro(),
                 request.getHoraRegistro()
         );
         registrarIngresoLead(request, registroAt, null);
@@ -3288,18 +3272,68 @@ public class LeadService {
     public void registrarIngresoLeadAdminRetroactivo(Long idEquipo, LeadIntakeRetroactivoRequest request) {
         Instant registroAt = calcularRegistroRetroactivo(
                 OperationalDateTime.today(),
+                request.getFechaRegistro(),
                 request.getHoraRegistro()
         );
         registrarIngresoLead(request, registroAt, normalizarIdEquipoAdmin(idEquipo));
     }
 
     Instant calcularRegistroRetroactivo(LocalDate fechaActual, LocalTime horaRegistro) {
-        validarHoraRegistroRetroactivo(horaRegistro);
-        return fechaActual
-                .minusDays(1)
+        return calcularRegistroRetroactivo(
+                fechaActual,
+                fechaActual.minusDays(1),
+                horaRegistro,
+                LocalTime.MAX
+        );
+    }
+
+    Instant calcularRegistroRetroactivo(LocalDate fechaActual, LocalDate fechaRegistro, LocalTime horaRegistro) {
+        return calcularRegistroRetroactivo(
+                fechaActual,
+                fechaRegistro,
+                horaRegistro,
+                LocalTime.now(OperationalDateTime.ZONE)
+        );
+    }
+
+    Instant calcularRegistroRetroactivo(
+            LocalDate fechaActual,
+            LocalDate fechaRegistro,
+            LocalTime horaRegistro,
+            LocalTime horaActual
+    ) {
+        LocalDate fechaEfectiva = fechaRegistro == null ? fechaActual.minusDays(1) : fechaRegistro;
+        validarFechaRegistroRetroactivo(fechaActual, fechaEfectiva);
+        validarHoraRegistroRetroactivo(fechaActual, fechaEfectiva, horaRegistro, horaActual);
+        return fechaEfectiva
                 .atTime(horaRegistro)
                 .atZone(OperationalDateTime.ZONE)
                 .toInstant();
+    }
+
+    private void validarFechaRegistroRetroactivo(LocalDate fechaActual, LocalDate fechaRegistro) {
+        LocalDate ayer = fechaActual.minusDays(1);
+        if (fechaRegistro.isBefore(ayer) || fechaRegistro.isAfter(fechaActual)) {
+            throw new BadRequestException("La fecha del registro debe ser ayer o hoy");
+        }
+    }
+
+    private void validarHoraRegistroRetroactivo(
+            LocalDate fechaActual,
+            LocalDate fechaRegistro,
+            LocalTime horaRegistro,
+            LocalTime horaActual
+    ) {
+        if (horaRegistro == null) {
+            throw new BadRequestException("La hora del registro es obligatoria");
+        }
+        if (fechaRegistro.equals(fechaActual)) {
+            if (horaRegistro.isAfter(horaActual)) {
+                throw new BadRequestException("La hora del registro de hoy no puede estar en el futuro");
+            }
+            return;
+        }
+        validarHoraRegistroRetroactivo(horaRegistro);
     }
 
     private void registrarIngresoLead(LeadIntakeRequest request, Instant registroAt, Long idEquipoContextual) {
@@ -3553,13 +3587,6 @@ public class LeadService {
     // gestion, el 409 pide confirmar el relevo. Mismo mecanismo que tomarLeadVenta.
     @Transactional
     public void tomarLeadPostventaGestion(Long idLead, boolean confirmarReasignacion) {
-        // Leads sin plan (id_plan NULL) son invisibles para el proveedorFilter de Hibernate
-        // porque NULL IN (...) es siempre FALSE. La bandeja los muestra (consulta calendarios,
-        // no pasa por el filtro), pero findByIdAndEtapa sí lo aplica. Se desactivan los filtros
-        // y se delega la validación de acceso a validarLeadVisibleParaUsuarioActual.
-        Session session = entityManager.unwrap(Session.class);
-        session.disableFilter("proveedorFilter");
-        session.disableFilter("equipoFilter");
         Lead lead = leadRepository.findByIdAndEtapa(idLead, Etapa.POSTVENTA)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(lead);
@@ -5273,7 +5300,7 @@ public class LeadService {
         LeadPromocionDetalleResponse promocionInterna = toLeadPromocionDetalleResponse(lead.getPromocionInterna());
         LeadEtapaResumen resumenVenta = leadEtapaResumenRepository.findByIdLeadAndEtapa(lead.getId(), Etapa.VENTA).orElse(null);
         LeadEtapaResumen resumenPreventa = leadEtapaResumenRepository.findByIdLeadAndEtapa(lead.getId(), Etapa.PREVENTA).orElse(null);
-        Proveedor proveedorFallback = obtenerProveedorFallbackEntidadDeEquipo(lead.getIdEquipo());
+        Proveedor proveedorFallback = lead.getProveedorOrigen();
         List<ProveedorResponse> proveedoresEquipo = listarProveedoresEquipoDetalle(lead.getIdEquipo());
         Evento ultimaProgramacionVenta = eventoRepository
                 .findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(lead.getId(), Accion.TIPIFICACION, TIPIFICACION_PROGRAMADO)
@@ -5399,11 +5426,11 @@ public class LeadService {
     }
 
     private List<CampoConfigResponse> resolverConfigCamposCaptura(Lead lead) {
-        Long idProveedorPlan = lead.getPlan() == null || lead.getPlan().getProveedor() == null
-                ? null
-                : lead.getPlan().getProveedor().getId();
-        if (idProveedorPlan != null) {
-            return equipoCampoService.resolverConfigPorProveedor(idProveedorPlan);
+        if (lead.getProveedor() != null) {
+            return equipoCampoService.resolverConfigPorProveedor(lead.getProveedor().getId());
+        }
+        if (lead.getProveedorOrigen() != null) {
+            return equipoCampoService.resolverConfigPorProveedor(lead.getProveedorOrigen().getId());
         }
         return equipoCampoService.resolverConfig(lead.getIdEquipo());
     }
@@ -5755,11 +5782,6 @@ public class LeadService {
     }
 
     private Lead obtenerLeadAsignadoEnEtapa(Long idLead, Etapa etapa) {
-        if (etapa == Etapa.POSTVENTA) {
-            Session session = entityManager.unwrap(Session.class);
-            session.disableFilter("proveedorFilter");
-            session.disableFilter("equipoFilter");
-        }
         Lead lead = leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(idLead, currentUser.empleadoID(), etapa)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         if (etapa == Etapa.POSTVENTA) {
@@ -6618,7 +6640,7 @@ public class LeadService {
             return false;
         }
         ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(AmbitoProveedor.BACKOFFICE);
-        return !scope.vacio() || proveedorScopeService.ambitoSolicitadoExplicitamente();
+        return true;
     }
 
     private double calcularPorcentajeRanking(long cantidad, long total) {

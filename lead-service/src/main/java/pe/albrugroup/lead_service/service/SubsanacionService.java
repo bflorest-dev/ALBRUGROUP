@@ -220,7 +220,7 @@ public class SubsanacionService {
                 .modo(request.getModo())
                 .idAdmin(currentUser.empleadoID())
                 .nombreAdmin(currentUser.nombreCompleto())
-                .rolAdmin(currentUser.rolPrincipal())
+                .rolAdmin(currentUser.rolActivo())
                 .fechaGestion(request.getFechaGestion())
                 .fechaInstalacion(request.getFechaInstalacion())
                 .motivo(request.getMotivo().trim())
@@ -443,7 +443,7 @@ public class SubsanacionService {
     ) {
         Long admin = currentUser.empleadoID();
         String nombre = currentUser.nombreCompleto();
-        String rol = currentUser.rolPrincipal();
+        String rol = currentUser.rolActivo();
         Long idCampana = contexto.campana().getId();
         Long idPlan = contexto.plan().getId();
         List<Evento> eventos = List.of(

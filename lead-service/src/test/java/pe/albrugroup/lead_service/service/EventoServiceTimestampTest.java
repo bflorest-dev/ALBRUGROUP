@@ -49,7 +49,7 @@ class EventoServiceTimestampTest {
         when(leadRepository.existsById(25202L)).thenReturn(true);
         when(currentUser.empleadoID()).thenReturn(41L);
         when(currentUser.nombreCompleto()).thenReturn("GTR Prueba");
-        when(currentUser.rolPrincipal()).thenReturn("GTR");
+        when(currentUser.rolActivo()).thenReturn("GTR");
         when(eventoRepository.save(any(Evento.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         eventoService.registrarEvento(request, attributedAt);

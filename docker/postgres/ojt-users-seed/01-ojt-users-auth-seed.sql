@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TEMP TABLE seed_ojt_users (
     empleado_id BIGINT,
     usuario_id BIGINT,
@@ -51,7 +53,7 @@ INSERT INTO usuarios (
 OVERRIDING SYSTEM VALUE
 SELECT
     su.usuario_id,
-    su.username,
+    split_part(su.username, '@albru.', 1) || '@albru.pe',
     '$2a$10$EuVlRz.tIqNAnsOhz6zKpORDWllZ9/hRPPSCphurSpMG1XP3NC0tC',
     su.correo_personal,
     su.empleado_id,
@@ -88,8 +90,16 @@ JOIN usuarios u ON u.empleado_id = su.empleado_id
 JOIN roles r ON r.nombre = 'OJT'
 ON CONFLICT (usuario_id, rol_id) DO NOTHING;
 
+UPDATE usuarios u
+SET rol_principal_id = r.id
+FROM seed_ojt_users su
+JOIN roles r ON r.nombre = 'OJT'
+WHERE u.empleado_id = su.empleado_id;
+
 SELECT setval(
     pg_get_serial_sequence('usuarios', 'id'),
     GREATEST((SELECT COALESCE(MAX(id), 1) FROM usuarios), 1),
     TRUE
 );
+
+COMMIT;

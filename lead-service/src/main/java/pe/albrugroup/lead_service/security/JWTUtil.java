@@ -17,19 +17,23 @@ public class JWTUtil {
 
     private final PublicKey publicKey;
     private final String issuer;
+    private final int tokenVersion;
 
     public JWTUtil(
             @Value("${jwt.public-key-base64}") String publicKeyBase64,
-            @Value("${jwt.issuer}") String issuer
+            @Value("${jwt.issuer}") String issuer,
+            @Value("${jwt.token-version:2}") int tokenVersion
     ) {
         this.publicKey = parsePublicKey(publicKeyBase64);
         this.issuer = issuer;
+        this.tokenVersion = tokenVersion;
     }
 
     public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(publicKey)
                 .requireIssuer(issuer)
+                .require("tokenVersion", tokenVersion)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();

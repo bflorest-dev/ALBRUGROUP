@@ -10,6 +10,7 @@ spring:
 jwt:
   public-key-base64: ${JWT_PUBLIC_KEY_BASE64}
   issuer: ${JWT_ISSUER}
+  token-version: ${JWT_TOKEN_VERSION:2}
 
 services:
   auth:

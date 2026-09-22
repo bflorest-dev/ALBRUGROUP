@@ -53,6 +53,7 @@ export class PersonalRegistrationPanelComponent {
   @Input({ required: true }) horarioForm!: FormGroup;
   @Input({ required: true }) currentStep = 1;
   @Input({ required: true }) isSubmitting = false;
+  @Input({ required: true }) isSubmittingIdentity = false;
   @Input({ required: true }) submitErrorMessage = '';
   @Input({ required: true }) creationResult: UsuarioResponse | null = null;
   @Input({ required: true }) isPersonalReviewVisible = false;
@@ -65,7 +66,7 @@ export class PersonalRegistrationPanelComponent {
   @Input({ required: true }) distritoOptions: string[] = [];
   @Input({ required: true }) bancoOptions: string[] = [];
   @Input({ required: true }) parentescoOptions: string[] = [];
-  @Input({ required: true }) puestoTrabajoOptions: string[] = [];
+  @Input({ required: true }) categoriaPersonalOptions: string[] = [];
   @Input({ required: true }) regimenOptions: string[] = [];
   @Input({ required: true }) modalidadOptions: string[] = [];
   @Input({ required: true }) seguroSaludOptions: string[] = [];
@@ -77,6 +78,7 @@ export class PersonalRegistrationPanelComponent {
   @Output() readonly backToEmployee = new EventEmitter<void>();
   @Output() readonly backToContract = new EventEmitter<void>();
   @Output() readonly submitPersonalFlow = new EventEmitter<void>();
+  @Output() readonly submitEmployeeOnly = new EventEmitter<void>();
   @Output() readonly requestPersonalReview = new EventEmitter<void>();
   @Output() readonly cancelPersonalReview = new EventEmitter<void>();
   @Output() readonly confirmPersonalReview = new EventEmitter<void>();

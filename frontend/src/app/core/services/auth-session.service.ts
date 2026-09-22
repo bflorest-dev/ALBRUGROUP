@@ -43,6 +43,11 @@ export class AuthSessionService {
     const refresh$ = this.authService.refresh({ refreshToken }).pipe(
       map((response) => {
         this.tokenService.setTokens(response.token, response.refreshToken);
+        this.sessionService.applyRoleContext(
+          response.rolesAsignados,
+          response.rolPrincipal,
+          response.rolActivo
+        );
         return response.token;
       }),
       catchError((error: HttpErrorResponse) => {
@@ -57,6 +62,26 @@ export class AuthSessionService {
 
     this.refreshInFlight$ = refresh$;
     return refresh$;
+  }
+
+  switchActiveRole(role: string): Observable<string> {
+    const refreshToken = this.tokenService.getRefreshToken();
+    if (!refreshToken) {
+      this.clearSessionAndRedirect();
+      return throwError(() => new Error('Missing refresh token.'));
+    }
+
+    return this.authService.cambiarRolActivo({ rolActivo: role, refreshToken }).pipe(
+      map((response) => {
+        this.tokenService.setTokens(response.token, response.refreshToken);
+        this.sessionService.applyRoleContext(
+          response.rolesAsignados,
+          response.rolPrincipal,
+          response.rolActivo
+        );
+        return response.rolActivo;
+      })
+    );
   }
 
   async logout(): Promise<void> {

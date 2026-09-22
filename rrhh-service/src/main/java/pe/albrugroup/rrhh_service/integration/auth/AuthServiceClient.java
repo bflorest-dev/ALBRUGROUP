@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import pe.albrugroup.rrhh_service.exception.AuthServiceException;
-import pe.albrugroup.rrhh_service.integration.auth.dto.ActualizarCredencialesRequest;
 import pe.albrugroup.rrhh_service.integration.auth.dto.RegistrarUsuarioRequest;
 import pe.albrugroup.rrhh_service.integration.auth.dto.UsuarioResponse;
 
@@ -43,21 +42,6 @@ public class AuthServiceClient {
             if (e.getRawStatusCode() == 404) {
                 return null;
             }
-            throw AuthServiceException.from(e);
-        }
-    }
-
-    public void actualizarUsernameRoles(String authHeader, Long empleadoId, ActualizarCredencialesRequest request) {
-        HttpEntity<ActualizarCredencialesRequest> entity = new HttpEntity<>(request, buildHeaders(authHeader));
-        try {
-            authRestTemplate.exchange(
-                    "/autorizacion/{empleadoId}/username-roles",
-                    org.springframework.http.HttpMethod.PATCH,
-                    entity,
-                    Void.class,
-                    empleadoId
-            );
-        } catch (RestClientResponseException e) {
             throw AuthServiceException.from(e);
         }
     }

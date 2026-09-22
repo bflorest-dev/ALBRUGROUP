@@ -154,8 +154,9 @@ export class LoginPageComponent {
   }
 
   private handleLoginSuccess(response: LoginResponse): void {
-    const primaryRole = response.roles[0] ?? null;
-    const activeRole = resolveDefaultActiveRole(response.roles);
+    const roles = response.rolesAsignados?.length ? response.rolesAsignados : response.roles;
+    const primaryRole = response.rolPrincipal ?? roles[0] ?? null;
+    const activeRole = response.rolActivo ?? resolveDefaultActiveRole(roles);
     const homeRoute = activeRole ? ROLE_HOME_ROUTES[activeRole] ?? '/app/admin' : '/app/admin';
 
     this.tokenService.setTokens(response.token, response.refreshToken);
@@ -163,7 +164,7 @@ export class LoginPageComponent {
       username: response.username,
       empleadoId: response.empleadoId,
       nombreCompleto: response.nombreCompleto,
-      roles: response.roles,
+      roles,
       primaryRole,
       activeRole,
       homeRoute

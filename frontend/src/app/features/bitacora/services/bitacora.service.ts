@@ -6,6 +6,7 @@ import {
   EventoResponse,
   LeadDetalleResponse,
   LeadPage,
+  PlanResponse,
   PageQuery,
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
@@ -35,6 +36,12 @@ export class BitacoraService {
 
   obtenerDetalle(idLead: number): Observable<LeadDetalleResponse> {
     return this.http.get<LeadDetalleResponse>(`${this.baseUrl}/${idLead}/detalle`);
+  }
+
+  listarPlanes(): Observable<PlanResponse[]> {
+    return this.http.get<PlanResponse[]>(`${this.leadUrl}/planes`, {
+      params: new HttpParams().set('soloVigentes', true)
+    });
   }
 
   listarHistorial(

@@ -240,6 +240,36 @@
         ],
         "createdAt": "2026-09-16T22:03:32.791Z",
         "reason": "Board component uses its own color tokens, pre-existing design"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "11px",
+        "createdAt": "2026-09-22T16:28:41.016Z",
+        "reason": "poster dark-theme tokens: same values as dashboard-venta-stage.component.scss"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "18px",
+        "createdAt": "2026-09-22T16:28:41.108Z",
+        "reason": "poster dark-theme tokens: same values as dashboard-venta-stage.component.scss"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(0, 0, 0, 0.4)",
+        "createdAt": "2026-09-22T16:28:41.194Z",
+        "reason": "poster dark-theme tokens: same values as dashboard-venta-stage.component.scss"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(0, 0, 0, 0.7)",
+        "createdAt": "2026-09-22T16:28:41.365Z",
+        "reason": "poster dark-theme tokens: same values as dashboard-venta-stage.component.scss"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#3a3f8f",
+        "createdAt": "2026-09-22T16:28:41.634Z",
+        "reason": "poster dark-theme tokens: same values as dashboard-venta-stage.component.scss"
       }
     ]
   }

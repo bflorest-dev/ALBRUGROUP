@@ -8,7 +8,9 @@ import {
   LeadDatosPreventaRequest,
   LeadDetalleResponse,
   LeadDireccionRequest,
+  LeadOfertaComercialRequest,
   PageQuery,
+  PlanResponse,
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import {
@@ -78,11 +80,15 @@ const DIRECCION_LABELS: Record<string, string> = {
   interior: 'Interior'
 };
 
+const OFERTA_LABELS: Record<string, string> = {
+  idPlan: 'Plan'
+};
+
 const HISTORIAL_QUERY: PageQuery = { pageNumber: 0, pageSize: 100, sortBy: 'createdAt', direction: 'desc' };
 
 /**
  * Orquesta la Bitácora (tab ADMIN de corrección de leads): buscador total, apertura del expediente,
- * edición staged de Datos preventa y Dirección, marcado de eventos a eliminar en el historial, y el
+ * edición staged de Datos preventa, Dirección y Plan, marcado de eventos a eliminar en el historial, y el
  * submit atómico que deja un único evento CORRECCION. Provista a nivel de la página (estado por vista).
  */
 @Injectable()
@@ -174,12 +180,34 @@ export class BitacoraFacade {
     interior: ['']
   });
 
+  readonly ofertaForm: FormGroup = this.fb.group({
+    idPlan: [null as number | null]
+  });
+
   private readonly identidadOriginal = signal<Record<string, string>>({});
   private readonly identidadValues = signal<Record<string, string>>({});
   private readonly datosOriginal = signal<Record<string, string>>({});
   private readonly direccionOriginal = signal<Record<string, string>>({});
+  private readonly ofertaOriginal = signal<Record<string, string>>({});
   private readonly datosValues = signal<Record<string, string>>({});
   private readonly direccionValues = signal<Record<string, string>>({});
+  private readonly ofertaValues = signal<Record<string, string>>({});
+  readonly planes = signal<PlanResponse[]>([]);
+  readonly cargandoPlanes = signal(false);
+  readonly errorPlanes = signal<string | null>(null);
+  readonly planesDisponibles = computed(() => {
+    const detalle = this.detalle();
+    const proveedores = new Set((detalle?.proveedoresEquipo ?? []).map((item) => item.id));
+    const idPlanActual = detalle?.idPlan ?? null;
+    return this.planes().filter((plan) =>
+      plan.id === idPlanActual || (plan.idProveedor != null && (!proveedores.size || proveedores.has(plan.idProveedor)))
+    );
+  });
+  readonly planSeleccionado = computed(() => {
+    this.ofertaValues();
+    const idPlan = this.ofertaForm.controls['idPlan'].value;
+    return this.planesDisponibles().find((plan) => plan.id === idPlan) ?? null;
+  });
   readonly departamentos = signal<UbigeoItem[]>([]);
   readonly provinciasNacimiento = signal<UbigeoItem[]>([]);
   readonly distritosNacimiento = signal<UbigeoItem[]>([]);
@@ -206,7 +234,8 @@ export class BitacoraFacade {
   readonly camposModificados = computed<BitacoraFieldChange[]>(() => [
     ...this.diffGrupo(this.identidadOriginal(), this.identidadValues(), IDENTIDAD_LABELS),
     ...this.diffGrupo(this.datosOriginal(), this.datosValues(), DATOS_LABELS),
-    ...this.diffGrupo(this.direccionOriginal(), this.direccionValues(), DIRECCION_LABELS)
+    ...this.diffGrupo(this.direccionOriginal(), this.direccionValues(), DIRECCION_LABELS),
+    ...this.diffGrupo(this.ofertaOriginal(), this.ofertaValues(), OFERTA_LABELS)
   ]);
   readonly fieldCount = computed(() => this.camposModificados().length);
   readonly evtCount = computed(() => this.marcadosEventos().length);
@@ -233,6 +262,9 @@ export class BitacoraFacade {
     this.direccionForm.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => this.direccionValues.set(this.normalizeRecord(value)));
+    this.ofertaForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => this.ofertaValues.set(this.normalizeRecord(value)));
   }
 
   private configurarValidadores(): void {
@@ -426,6 +458,7 @@ export class BitacoraFacade {
         next: (detalle) => {
           this.detalle.set(detalle);
           this.patchForms(detalle);
+          this.cargarPlanes();
           void this.cargarDepartamentos();
           void this.resolverUbigeoGuardado(detalle.ubigeoNacimiento, 'nacimiento');
           void this.resolverUbigeoGuardado(detalle.ubigeoDomicilio, 'domicilio');
@@ -645,10 +678,11 @@ export class BitacoraFacade {
     if (!detalle || !this.hayCambios() || this.guardando()) {
       return;
     }
-    if (this.identidadForm.invalid || this.datosForm.invalid || this.direccionForm.invalid) {
+    if (this.identidadForm.invalid || this.datosForm.invalid || this.direccionForm.invalid || this.ofertaForm.invalid) {
       this.identidadForm.markAllAsTouched();
       this.datosForm.markAllAsTouched();
       this.direccionForm.markAllAsTouched();
+      this.ofertaForm.markAllAsTouched();
       this.error.set('Hay campos con formato inválido. Revisa los valores señalados antes de guardar.');
       return;
     }
@@ -656,10 +690,12 @@ export class BitacoraFacade {
     const identidadCambio = this.grupoTieneCambios(this.identidadOriginal(), this.identidadValues());
     const datosCambio = this.grupoTieneCambios(this.datosOriginal(), this.datosValues());
     const direccionCambio = this.grupoTieneCambios(this.direccionOriginal(), this.direccionValues());
+    const ofertaCambio = this.grupoTieneCambios(this.ofertaOriginal(), this.ofertaValues());
 
     const identidad = identidadCambio ? this.construirIdentidadRequest() : null;
     const datosPreventa = datosCambio ? this.construirDatosRequest() : null;
     const direccion = direccionCambio ? this.construirDireccionRequest() : null;
+    const ofertaComercial = ofertaCambio ? this.construirOfertaRequest() : null;
 
     this.guardando.set(true);
     this.error.set(null);
@@ -668,7 +704,7 @@ export class BitacoraFacade {
         identidad,
         datosPreventa,
         direccion,
-        ofertaComercial: null,
+        ofertaComercial,
         idsEventosAEliminar: this.marcadosEventos().map((e) => e.id),
         motivo: motivo?.trim() || null,
         resumenCambios: this.construirResumen()
@@ -750,6 +786,10 @@ export class BitacoraFacade {
     this.identidadOriginal.set(this.normalizeRecord(identidad));
     this.datosOriginal.set(this.normalizeRecord(datos));
     this.direccionOriginal.set(this.normalizeRecord(direccion));
+    const oferta = { idPlan: detalle.idPlan ?? null };
+    this.ofertaForm.reset(oferta, { emitEvent: false });
+    this.ofertaOriginal.set(this.normalizeRecord(oferta));
+    this.ofertaValues.set(this.normalizeRecord(oferta));
     this.identidadValues.set(this.normalizeRecord(identidad));
     this.datosValues.set(this.normalizeRecord(datos));
     this.direccionValues.set(this.normalizeRecord(direccion));
@@ -803,6 +843,45 @@ export class BitacoraFacade {
       piso: raw.piso || null,
       interior: raw.interior || null
     };
+  }
+
+  private construirOfertaRequest(): LeadOfertaComercialRequest {
+    const detalle = this.detalle();
+    const idPlan = this.ofertaForm.getRawValue().idPlan ?? null;
+    const plan = this.planSeleccionado();
+    const proveedorAnterior = (detalle?.nombreProveedorPlan ?? '').trim().toLocaleUpperCase();
+    const proveedorNuevo = (plan?.nombreProveedor ?? '').trim().toLocaleUpperCase();
+    const cambiaProveedor = !!proveedorAnterior && !!proveedorNuevo && proveedorAnterior !== proveedorNuevo;
+
+    return {
+      idPlan,
+      // La Bitácora solo edita el plan. Una promoción de la oferta anterior puede dejar de aplicar
+      // al nuevo plan, por eso se descarta de forma explícita y se evita una asociación inválida.
+      idPromocionInterna: null,
+      adicionales: cambiaProveedor
+        ? []
+        : (detalle?.adicionales ?? [])
+            .filter((adicional) => adicional.idAdicional != null && (adicional.cantidad ?? 0) > 0)
+            .map((adicional) => ({
+              idAdicional: adicional.idAdicional as number,
+              cantidad: adicional.cantidad as number
+            }))
+    };
+  }
+
+  private cargarPlanes(): void {
+    this.cargandoPlanes.set(true);
+    this.errorPlanes.set(null);
+    this.service
+      .listarPlanes()
+      .pipe(finalize(() => this.cargandoPlanes.set(false)))
+      .subscribe({
+        next: (planes) => this.planes.set(planes),
+        error: () => {
+          this.planes.set([]);
+          this.errorPlanes.set('No se pudo cargar el catálogo de planes. Inténtalo nuevamente.');
+        }
+      });
   }
 
   private cargarDepartamentos(): Promise<UbigeoItem[]> {
@@ -911,21 +990,23 @@ export class BitacoraFacade {
     return tipo === 'nacimiento' ? sequence === this.nacimientoResolveSeq : sequence === this.domicilioResolveSeq;
   }
 
-  private originalDe(grupo: 'identidad' | 'datos' | 'direccion'): Record<string, string> {
+  private originalDe(grupo: 'identidad' | 'datos' | 'direccion' | 'oferta'): Record<string, string> {
     if (grupo === 'identidad') return this.identidadOriginal();
-    return grupo === 'datos' ? this.datosOriginal() : this.direccionOriginal();
+    if (grupo === 'datos') return this.datosOriginal();
+    return grupo === 'direccion' ? this.direccionOriginal() : this.ofertaOriginal();
   }
 
-  private valuesDe(grupo: 'identidad' | 'datos' | 'direccion'): Record<string, string> {
+  private valuesDe(grupo: 'identidad' | 'datos' | 'direccion' | 'oferta'): Record<string, string> {
     if (grupo === 'identidad') return this.identidadValues();
-    return grupo === 'datos' ? this.datosValues() : this.direccionValues();
+    if (grupo === 'datos') return this.datosValues();
+    return grupo === 'direccion' ? this.direccionValues() : this.ofertaValues();
   }
 
-  campoModificado(grupo: 'identidad' | 'datos' | 'direccion', control: string): boolean {
+  campoModificado(grupo: 'identidad' | 'datos' | 'direccion' | 'oferta', control: string): boolean {
     return (this.originalDe(grupo)[control] ?? '') !== (this.valuesDe(grupo)[control] ?? '');
   }
 
-  valorOriginal(grupo: 'identidad' | 'datos' | 'direccion', control: string): string {
+  valorOriginal(grupo: 'identidad' | 'datos' | 'direccion' | 'oferta', control: string): string {
     return this.originalDe(grupo)[control] ?? '';
   }
 
@@ -964,8 +1045,13 @@ export class BitacoraFacade {
     this.identidadValues.set({});
     this.datosOriginal.set({});
     this.direccionOriginal.set({});
+    this.ofertaOriginal.set({});
     this.datosValues.set({});
     this.direccionValues.set({});
+    this.ofertaValues.set({});
+    this.ofertaForm.reset({ idPlan: null }, { emitEvent: false });
+    this.planes.set([]);
+    this.errorPlanes.set(null);
     this.provinciasNacimiento.set([]);
     this.distritosNacimiento.set([]);
     this.provinciasDomicilio.set([]);

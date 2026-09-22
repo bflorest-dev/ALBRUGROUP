@@ -46,7 +46,7 @@ public class CalendarioFacturacionPostventaService {
             return;
         }
 
-        CalculadoraFacturacionPostventa calculadora = calculadoraResolver.resolver(lead.getNombreProveedorSnapshot());
+        CalculadoraFacturacionPostventa calculadora = calculadoraResolver.resolver(lead);
         CalendarioFacturacionPostventa calendarioNuevo = calculadora.crearCalendario(lead, fechaInstalacion);
         calendarioNuevo.setCreatedAt(createdAt);
         CalendarioFacturacionPostventa calendario = calendarioRepository.save(calendarioNuevo);
@@ -70,7 +70,7 @@ public class CalendarioFacturacionPostventaService {
             Lead lead,
             LocalDate fechaInstalacion
     ) {
-        CalculadoraFacturacionPostventa calculadora = calculadoraResolver.resolver(lead.getNombreProveedorSnapshot());
+        CalculadoraFacturacionPostventa calculadora = calculadoraResolver.resolver(lead);
         CalendarioFacturacionPostventa recalculado = calculadora.crearCalendario(lead, fechaInstalacion);
 
         calendario.setFechaInstalacion(recalculado.getFechaInstalacion());

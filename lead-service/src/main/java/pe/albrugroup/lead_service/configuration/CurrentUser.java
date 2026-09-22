@@ -27,7 +27,7 @@ public class CurrentUser {
     public List<String> roles() {
         return get().roles();
     }
-    public String rolPrincipal() {
+    public String rolActivo() {
         return roles().stream()
                 .findFirst()
                 .orElse("SIN_ROL");

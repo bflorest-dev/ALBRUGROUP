@@ -725,6 +725,7 @@ export interface LeadIntakeRequest {
 }
 
 export interface LeadIntakeRetroactivoRequest extends LeadIntakeRequest {
+  fechaRegistro?: string;
   horaRegistro: string;
 }
 

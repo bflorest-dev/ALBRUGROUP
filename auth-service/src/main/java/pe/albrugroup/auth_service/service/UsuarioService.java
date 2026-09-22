@@ -5,25 +5,22 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import pe.albrugroup.auth_service.entity.Equipo;
-import pe.albrugroup.auth_service.security.CustomUserDetails;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.auth_service.entity.Equipo;
 import pe.albrugroup.auth_service.entity.Response.CredencialesResponse;
 import pe.albrugroup.auth_service.entity.Response.EstadoAccesoResponse;
-import pe.albrugroup.auth_service.entity.Response.UsuarioRolResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioResponse;
+import pe.albrugroup.auth_service.entity.Response.UsuarioRolResponse;
 import pe.albrugroup.auth_service.entity.Rol;
 import pe.albrugroup.auth_service.entity.Usuario;
-import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
-import pe.albrugroup.auth_service.entity.request.ActualizarCredencialesRequest;
 import pe.albrugroup.auth_service.entity.request.ForgotPasswordRequest;
 import pe.albrugroup.auth_service.entity.request.RegistrarUsuarioRequest;
-import pe.albrugroup.auth_service.exception.BadRequestException;
 import pe.albrugroup.auth_service.exception.ConflictException;
 import pe.albrugroup.auth_service.exception.NotFoundException;
+import pe.albrugroup.auth_service.exception.UnprocessableEntityException;
 import pe.albrugroup.auth_service.mapper.Mapper;
-import pe.albrugroup.auth_service.repository.RolRepository;
 import pe.albrugroup.auth_service.repository.UsuarioRepository;
+import pe.albrugroup.auth_service.security.CustomUserDetails;
 import pe.albrugroup.auth_service.usecase.IUsuario;
 
 import java.security.SecureRandom;
@@ -37,70 +34,83 @@ import java.util.Set;
 @Transactional
 public class UsuarioService implements IUsuario {
 
-    private final UsuarioRepository usuarioRepository;
-    private final RolRepository rolRepository;
-    private final PasswordEncoder passwordEncoder;
-
     private static final int PASSWORD_LENGTH = 10;
+    private static final String ROL_ADMINISTRADOR = "ADMINISTRADOR";
+
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
+    private final SessionInvalidationService sessionInvalidationService;
 
     @Override
     public void upsertUsuario(RegistrarUsuarioRequest request) {
         usuarioRepository.findByEmpleadoId(request.getEmpleadoId())
                 .ifPresentOrElse(
-                        usuario -> actualizarUsuarioExistente(usuario, request),
-                        () -> registrarUsuarioInternal(request)
+                        usuario -> actualizarIdentidad(usuario, request),
+                        () -> registrarUsuario(request)
                 );
     }
 
-    @Override
-    public UsuarioResponse actualizarUsernameRoles(Long empleadoId, ActualizarCredencialesRequest request) {
-        Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado por EmpleadoID", empleadoId));
+    private void registrarUsuario(RegistrarUsuarioRequest request) {
+        String email = request.getEmail().trim();
+        if (usuarioRepository.existsByEmail(email)) {
+            throw new ConflictException("El email ya existe: " + email);
+        }
 
-        PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
-        Set<Rol> roles = obtenerRoles(puestoTrabajo);
+        String username = usernameGenerator(request.getNombres(), request.getApellidos(), request.getDni());
+        validarUsernameDisponible(username, null);
+        String plainPassword = passwordGenerator();
 
-        String nuevoUsername = usernameGenerator(
-                request.getNombres(),
-                request.getApellidos(),
-                request.getDni(),
-                puestoTrabajo
-        );
+        Usuario usuario = Usuario.builder()
+                .username(username)
+                .password(passwordEncoder.encode(plainPassword))
+                .email(email)
+                .empleadoId(request.getEmpleadoId())
+                .dni(request.getDni().trim())
+                .nombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()))
+                .activo(true)
+                .passwordInicializada(false)
+                .roles(new HashSet<>())
+                .rolPrincipal(null)
+                .build();
+        usuarioRepository.save(usuario);
+        log.info("Identidad de usuario creada sin rol para empleado {}", request.getEmpleadoId());
+    }
 
+    private void actualizarIdentidad(Usuario usuario, RegistrarUsuarioRequest request) {
+        String nuevoUsername = usernameGenerator(request.getNombres(), request.getApellidos(), request.getDni());
+        String nuevoEmail = request.getEmail().trim();
         validarUsernameDisponible(nuevoUsername, usuario.getUsername());
+        validarEmailDisponible(nuevoEmail, usuario.getEmail());
 
+        boolean cambioUsername = !nuevoUsername.equalsIgnoreCase(usuario.getUsername());
         usuario.setUsername(nuevoUsername);
+        usuario.setEmail(nuevoEmail);
         usuario.setDni(request.getDni().trim());
         usuario.setNombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()));
-        usuario.setRoles(new HashSet<>(roles));
         Usuario guardado = usuarioRepository.save(usuario);
-        return Mapper.toResponse(guardado);
+        if (cambioUsername) {
+            invalidarSesiones(guardado, "cambio de username");
+        }
     }
 
     @Override
     public CredencialesResponse resetPassword(Long empleadoId) {
-        Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado por EmpleadoID", empleadoId));
+        Usuario usuario = buscarPorEmpleado(empleadoId);
         String plainPassword = passwordGenerator();
         usuario.setPassword(passwordEncoder.encode(plainPassword));
         usuario.setPasswordInicializada(true);
         Usuario guardado = usuarioRepository.save(usuario);
-        return CredencialesResponse.builder()
-                .username(guardado.getUsername())
-                .password(plainPassword)
-                .build();
+        invalidarSesiones(guardado, "reset de password");
+        return CredencialesResponse.builder().username(guardado.getUsername()).password(plainPassword).build();
     }
 
     @Override
     public CredencialesResponse forgotPassword(ForgotPasswordRequest request) {
         Usuario usuario = usuarioRepository.findByUsernameAndEmailAndDni(
-                        request.getUsername().trim(),
-                        request.getEmail().trim(),
-                        request.getDni().trim()
-                )
+                        request.getUsername().trim(), request.getEmail().trim(), request.getDni().trim())
                 .orElseThrow(() -> new NotFoundException("No se encontraron datos coincidentes para recuperar acceso"));
-
-        if (!usuario.getActivo()) {
+        if (!Boolean.TRUE.equals(usuario.getActivo())) {
             throw new NotFoundException("No se encontraron datos coincidentes para recuperar acceso");
         }
 
@@ -108,10 +118,8 @@ public class UsuarioService implements IUsuario {
         usuario.setPassword(passwordEncoder.encode(plainPassword));
         usuario.setPasswordInicializada(true);
         Usuario guardado = usuarioRepository.save(usuario);
-        return CredencialesResponse.builder()
-                .username(guardado.getUsername())
-                .password(plainPassword)
-                .build();
+        invalidarSesiones(guardado, "recuperacion de password");
+        return CredencialesResponse.builder().username(guardado.getUsername()).password(plainPassword).build();
     }
 
     @Override
@@ -126,137 +134,18 @@ public class UsuarioService implements IUsuario {
                 .build();
     }
 
-    private RegistroUsuarioResult registrarUsuarioInternal(RegistrarUsuarioRequest request) {
-        log.info("Registrando nuevo usuario: DNI[{}]", request.getDni());
-
-        if (usuarioRepository.existsByEmail(request.getEmail())) {
-            log.error("El email ya existe: {}", request.getEmail());
-            throw new ConflictException("El email ya existe: " + request.getEmail());
-        }
-
-        PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
-        Set<Rol> roles = obtenerRoles(puestoTrabajo);
-        log.info("Roles asignados: {}", roles.stream().map(Rol::getNombre).toList());
-
-        String plainPassword = passwordGenerator();
-        Usuario usuario = Usuario.builder()
-                .username(usernameGenerator(
-                        request.getNombres(),
-                        request.getApellidos(),
-                        request.getDni(),
-                        puestoTrabajo))
-                .password(passwordEncoder.encode(plainPassword))
-                .email(request.getEmail())
-                .empleadoId(request.getEmpleadoId())
-                .dni(request.getDni().trim())
-                .nombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()))
-                .activo(true)
-                .passwordInicializada(false)
-                .roles(new HashSet<>(roles))
-                .build();
-
-        Usuario guardado = usuarioRepository.save(usuario);
-        log.info("Usuario registrado: {} (ID: {})", guardado.getUsername(), guardado.getId());
-        log.info("Roles asignados: {}", roles.stream().map(Rol::getNombre).toList());
-
-        return new RegistroUsuarioResult(guardado, plainPassword);
-    }
-
-    private void actualizarUsuarioExistente(Usuario usuario, RegistrarUsuarioRequest request) {
-        PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
-        Set<Rol> roles = obtenerRoles(puestoTrabajo);
-
-        String nuevoUsername = usernameGenerator(
-                request.getNombres(),
-                request.getApellidos(),
-                request.getDni(),
-                puestoTrabajo
-        );
-
-        validarUsernameDisponible(nuevoUsername, usuario.getUsername());
-        validarEmailDisponible(request.getEmail(), usuario.getEmail());
-
-        usuario.setUsername(nuevoUsername);
-        usuario.setEmail(request.getEmail().trim());
-        usuario.setDni(request.getDni().trim());
-        usuario.setNombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()));
-        usuario.setActivo(true);
-        usuario.setRoles(new HashSet<>(roles));
-        usuarioRepository.save(usuario);
-    }
-
-    private Set<Rol> obtenerRoles(PuestoTrabajo puestoTrabajo) {
-        Rol rolPrincipal = obtenerRol(puestoTrabajo);
-        if (puestoTrabajo == PuestoTrabajo.ASESOR_POSTVENTA) {
-            return Set.of(rolPrincipal, obtenerRol(PuestoTrabajo.ASESOR_BACKOFFICE));
-        }
-        return Set.of(rolPrincipal);
-    }
-
-    private Rol obtenerRol(PuestoTrabajo puestoTrabajo) {
-        if (puestoTrabajo == null) {
-            throw new BadRequestException("Falta Puesto de Trabajo");
-        }
-        return rolRepository.findByNombre(puestoTrabajo.name())
-                .orElseThrow(() -> new NotFoundException("Rol no encontrado: " + puestoTrabajo.name()));
-    }
-
-    private void validarUsernameDisponible(String nuevoUsername, String usernameActual) {
-        if (usuarioRepository.existsByUsername(nuevoUsername)
-                && !nuevoUsername.equalsIgnoreCase(usernameActual)) {
-            throw new ConflictException("El username ya existe: " + nuevoUsername);
-        }
-    }
-
-    private void validarEmailDisponible(String nuevoEmail, String emailActual) {
-        if (usuarioRepository.existsByEmail(nuevoEmail)
-                && !nuevoEmail.equalsIgnoreCase(emailActual)) {
-            throw new ConflictException("El email ya existe: " + nuevoEmail);
-        }
-    }
-
-    private String usernameGenerator(String nombres, String apellidos, String dni, PuestoTrabajo puesto) {
-        String first = nombres.trim().substring(0, 1).toUpperCase();
-        String last = apellidos.trim().substring(0, 1).toUpperCase();
-        String cargoIngles = puesto.getEnglishName();
-
-        return first + dni + last + "@albru." + cargoIngles + ".pe";
-    }
-
-    private String passwordGenerator() {
-        String caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZ" + "abcdefghijkmnopqrstuvwxyz" + "23456789" + "@#$%&*-_";
-        SecureRandom random = new SecureRandom();
-
-        StringBuilder pass = new StringBuilder(UsuarioService.PASSWORD_LENGTH);
-        for (int i = 0; i < UsuarioService.PASSWORD_LENGTH; i++) {
-            pass.append(caracteres.charAt(random.nextInt(caracteres.length())));
-        }
-        return pass.toString();
-    }
-
-    private String construirNombreCompleto(String nombres, String apellidos) {
-        String nombresLimpios = nombres == null ? "" : nombres.trim();
-        String apellidosLimpios = apellidos == null ? "" : apellidos.trim();
-        return (nombresLimpios + " " + apellidosLimpios).trim();
-    }
-
     @Override
+    @Transactional(readOnly = true)
     public UsuarioResponse getUsuarioPorEmpleadoID(Long empleadoId) {
-        log.info("Buscando usuario por EmpleadoID: {}", empleadoId);
-
-        Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado por EmpleadoID", empleadoId));
-        return Mapper.toResponse(usuario);
+        return Mapper.toResponse(buscarPorEmpleado(empleadoId));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<UsuarioRolResponse> listarUsuariosActivosPorRol(PuestoTrabajo puestoTrabajo) {
+    public List<UsuarioRolResponse> listarUsuariosActivosPorRol(String rolNombre) {
         Set<Long> equiposDelSolicitante = equiposDelUsuarioActual();
-        return usuarioRepository.findDistinctByRolesNombreAndActivoTrue(puestoTrabajo.name())
+        return usuarioRepository.findDistinctByRolesNombreAndActivoTrue(rolNombre.trim().toUpperCase())
                 .stream()
-                // Si el solicitante pertenece a equipo(s) (GTR/supervisor), solo ve a quienes comparten
-                // su equipo. Si no tiene equipo (ADMIN/RRHH), ve a todos.
                 .filter(usuario -> equiposDelSolicitante.isEmpty()
                         || usuario.getEquipos().stream().anyMatch(e -> equiposDelSolicitante.contains(e.getId())))
                 .map(usuario -> UsuarioRolResponse.builder()
@@ -266,6 +155,25 @@ public class UsuarioService implements IUsuario {
                         .equipoIds(usuario.getEquipos().stream().map(Equipo::getId).collect(java.util.stream.Collectors.toSet()))
                         .build())
                 .toList();
+    }
+
+    @Override
+    public void deshabilitarUsuario(Long empleadoId) {
+        Usuario usuario = buscarPorEmpleado(empleadoId);
+        if (!Boolean.TRUE.equals(usuario.getActivo())) return;
+
+        boolean esAdmin = usuario.getRoles().stream().anyMatch(rol -> ROL_ADMINISTRADOR.equals(rol.getNombre()));
+        if (esAdmin && usuarioRepository.findActiveByRoleForUpdate(ROL_ADMINISTRADOR).size() <= 1) {
+            throw new UnprocessableEntityException("No se puede deshabilitar al ultimo administrador activo");
+        }
+        usuario.setActivo(false);
+        Usuario guardado = usuarioRepository.save(usuario);
+        invalidarSesiones(guardado, "usuario deshabilitado");
+    }
+
+    private Usuario buscarPorEmpleado(Long empleadoId) {
+        return usuarioRepository.findByEmpleadoId(empleadoId)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado por EmpleadoID", empleadoId));
     }
 
     private Set<Long> equiposDelUsuarioActual() {
@@ -278,21 +186,43 @@ public class UsuarioService implements IUsuario {
         return Set.of();
     }
 
-    @Override
-    public void deshabilitarUsuario(Long empleadoId) {
-        log.info("Deshabilitando Empleado ID: {}", empleadoId);
-
-        Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado", empleadoId));
-        if (!usuario.getActivo()) {
-            log.warn("El usuario ya se encuentra deshabilitado");
-            return;
-        }
-        usuario.setActivo(false);
-        usuarioRepository.save(usuario);
-
-        log.info("Usuario deshabilitado: {}", usuario.getUsername());
+    private void invalidarSesiones(Usuario usuario, String motivo) {
+        int tokensRevocados = refreshTokenService.revokeActiveTokens(usuario);
+        sessionInvalidationService.invalidateAfterCommit(usuario.getEmpleadoId());
+        log.info("Sesiones invalidadas para empleado {} por {} ({} refresh tokens)",
+                usuario.getEmpleadoId(), motivo, tokensRevocados);
     }
 
-    private record RegistroUsuarioResult(Usuario usuario, String plainPassword) {}
+    private void validarUsernameDisponible(String nuevoUsername, String usernameActual) {
+        if (usuarioRepository.existsByUsername(nuevoUsername)
+                && (usernameActual == null || !nuevoUsername.equalsIgnoreCase(usernameActual))) {
+            throw new ConflictException("El username ya existe: " + nuevoUsername);
+        }
+    }
+
+    private void validarEmailDisponible(String nuevoEmail, String emailActual) {
+        if (usuarioRepository.existsByEmail(nuevoEmail) && !nuevoEmail.equalsIgnoreCase(emailActual)) {
+            throw new ConflictException("El email ya existe: " + nuevoEmail);
+        }
+    }
+
+    private String usernameGenerator(String nombres, String apellidos, String dni) {
+        String first = nombres.trim().substring(0, 1).toUpperCase();
+        String last = apellidos.trim().substring(0, 1).toUpperCase();
+        return first + dni.trim() + last + "@albru.pe";
+    }
+
+    private String passwordGenerator() {
+        String caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$%&*-_";
+        SecureRandom random = new SecureRandom();
+        StringBuilder pass = new StringBuilder(PASSWORD_LENGTH);
+        for (int i = 0; i < PASSWORD_LENGTH; i++) {
+            pass.append(caracteres.charAt(random.nextInt(caracteres.length())));
+        }
+        return pass.toString();
+    }
+
+    private String construirNombreCompleto(String nombres, String apellidos) {
+        return (nombres.trim() + " " + apellidos.trim()).trim();
+    }
 }

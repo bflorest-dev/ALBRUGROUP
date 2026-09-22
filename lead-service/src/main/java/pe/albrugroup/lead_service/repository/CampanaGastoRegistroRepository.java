@@ -1,9 +1,12 @@
 package pe.albrugroup.lead_service.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.CampanaGastoRegistro;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -46,4 +49,17 @@ public interface CampanaGastoRegistroRepository extends JpaRepository<CampanaGas
     boolean existsByCampanaIdAndCreatedAtAndFechaCarga(Long idCampana, Instant createdAt, LocalDate fechaCarga);
 
     Optional<CampanaGastoRegistro> findTopByCampanaIdAndFechaCargaOrderByIdDesc(Long idCampana, LocalDate fechaCarga);
+
+    @Query("""
+            SELECT COALESCE(SUM(g.costoTotal), 0)
+            FROM CampanaGastoRegistro g
+            WHERE g.campana.proveedor.id = :idProveedor
+              AND g.fechaCarga >= :desde
+              AND g.fechaCarga <= :hasta
+            """)
+    BigDecimal sumCostoTotalByProveedorAndFechaCarga(
+            @Param("idProveedor") Long idProveedor,
+            @Param("desde") LocalDate desde,
+            @Param("hasta") LocalDate hasta
+    );
 }

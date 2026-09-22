@@ -92,8 +92,11 @@ public final class VentaMetricaSpec {
                 if (dia) {
                     p.put("inicio", ctx.inicio());
                     p.put("fin", ctx.fin());
+                    p.put("desdeDate", ctx.desdeDate());
+                    p.put("hastaDateExcl", ctx.hastaDateExcl());
                     w = "rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin "
-                            + "AND rv.ultimaCodigoTipificacion = :codigoInstalado";
+                            + "AND rv.ultimaCodigoTipificacion = :codigoInstalado "
+                            + "AND c.fechaInstalacion >= :desdeDate AND c.fechaInstalacion < :hastaDateExcl";
                 } else {
                     p.put("desdeDate", ctx.desdeDate());
                     p.put("hastaDateExcl", ctx.hastaDateExcl());

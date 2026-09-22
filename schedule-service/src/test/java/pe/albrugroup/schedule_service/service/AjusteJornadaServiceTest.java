@@ -236,7 +236,7 @@ class AjusteJornadaServiceTest {
         // Defensa en profundidad: un ajuste ADITIVO (horas extra) que se solapa con el base NO debe
         // reclasificarse como corrimiento ni pisar el base; se rechaza.
         prepararHorario(horario(true, LocalTime.of(8, 0), LocalTime.of(17, 0)));
-        lenient().when(currentUser.roles()).thenReturn(List.of("RRHH"));
+        lenient().when(currentUser.rolActivo()).thenReturn("RRHH");
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.registrarV2(
                         21L, requestV2("2026-06-15T16:00:00", "2026-06-15T18:00:00", RazonAjuste.AMPLIACION_OPERATIVA)))
@@ -249,7 +249,8 @@ class AjusteJornadaServiceTest {
     @Test
     void compensacionSeRegistraCuandoHayDeficitYCabe() {
         prepararHorario(horario(true, LocalTime.of(8, 0), LocalTime.of(17, 0)));
-        lenient().when(currentUser.roles()).thenReturn(List.of("RRHH"));
+        lenient().when(currentUser.rolActivo()).thenReturn("RRHH");
+        when(currentUser.tienePermiso("PROGRAMAR_COMPENSACION")).thenReturn(true);
         when(asistenciaRepository.findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(
                 21L, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)))
                 .thenReturn(List.of(asistenciaConBalance(-30)));
@@ -263,7 +264,8 @@ class AjusteJornadaServiceTest {
     @Test
     void compensacionSinDeficitDelMesSeRechaza() {
         prepararHorarioVigente(horario(true, LocalTime.of(8, 0), LocalTime.of(17, 0)));
-        lenient().when(currentUser.roles()).thenReturn(List.of("RRHH"));
+        lenient().when(currentUser.rolActivo()).thenReturn("RRHH");
+        when(currentUser.tienePermiso("PROGRAMAR_COMPENSACION")).thenReturn(true);
         when(asistenciaRepository.findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(
                 21L, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)))
                 .thenReturn(List.of(asistenciaConBalance(0)));
@@ -277,7 +279,8 @@ class AjusteJornadaServiceTest {
     @Test
     void compensacionQueExcedeElDeficitSeRechaza() {
         prepararHorarioVigente(horario(true, LocalTime.of(8, 0), LocalTime.of(17, 0)));
-        lenient().when(currentUser.roles()).thenReturn(List.of("RRHH"));
+        lenient().when(currentUser.rolActivo()).thenReturn("RRHH");
+        when(currentUser.tienePermiso("PROGRAMAR_COMPENSACION")).thenReturn(true);
         when(asistenciaRepository.findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(
                 21L, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)))
                 .thenReturn(List.of(asistenciaConBalance(-30)));
@@ -291,7 +294,8 @@ class AjusteJornadaServiceTest {
     @Test
     void compensacionQueReemplazaLaBaseSeRechaza() {
         prepararHorarioVigente(horario(true, LocalTime.of(8, 0), LocalTime.of(17, 0)));
-        lenient().when(currentUser.roles()).thenReturn(List.of("RRHH"));
+        lenient().when(currentUser.rolActivo()).thenReturn("RRHH");
+        when(currentUser.tienePermiso("PROGRAMAR_COMPENSACION")).thenReturn(true);
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.registrarV2(
                         21L, requestV2("2026-06-15T08:00:00", "2026-06-15T09:00:00", RazonAjuste.COMPENSACION)))

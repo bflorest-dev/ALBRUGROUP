@@ -8,6 +8,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Contrato;
 import pe.albrugroup.rrhh_service.entity.Empleado;
+import pe.albrugroup.rrhh_service.entity.enums.CategoriaPersonal;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.PageRequest;
@@ -70,6 +71,7 @@ public class ContratoService implements IContrato {
     @Override @Transactional
     public ContratoResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato, String authHeader, Long responsableId) {
         validarAuthorizationRequerida(authHeader);
+        normalizarCategoriaPersonal(nuevoContrato);
         validarPuestoContratable(nuevoContrato);
         Empleado empleado = empleadoRepository.findById(idEmpleado)
                 .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
@@ -96,6 +98,20 @@ public class ContratoService implements IContrato {
     private void validarPuestoContratable(RegistrarContratoRequest nuevoContrato) {
         if (nuevoContrato.getPuestoTrabajo() == PuestoTrabajo.OJT) {
             throw new BadRequestException("El puesto OJT solo puede crearse mediante el seeder operativo OJT");
+        }
+    }
+
+    private void normalizarCategoriaPersonal(RegistrarContratoRequest nuevoContrato) {
+        CategoriaPersonal categoriaDerivada = CategoriaPersonal.desdePuestoTrabajo(nuevoContrato.getPuestoTrabajo());
+        if (nuevoContrato.getCategoriaPersonal() == null) {
+            if (categoriaDerivada == null) {
+                throw new BadRequestException("La categoria de personal es obligatoria");
+            }
+            nuevoContrato.setCategoriaPersonal(categoriaDerivada);
+            return;
+        }
+        if (categoriaDerivada != null && nuevoContrato.getCategoriaPersonal() != categoriaDerivada) {
+            throw new BadRequestException("La categoria de personal no corresponde al puesto de trabajo legado");
         }
     }
 
@@ -171,9 +187,7 @@ public class ContratoService implements IContrato {
                 ));
     }
 
-    private void registrarUsuarioAuth(Empleado empleado,
-                                      RegistrarContratoRequest nuevoContrato,
-                                      String authHeader) {
+    private void registrarUsuarioAuth(Empleado empleado, String authHeader) {
         String email = (empleado.getCorreoCorporativo() != null && !empleado.getCorreoCorporativo().isBlank())
                 ? empleado.getCorreoCorporativo()
                 : empleado.getCorreoPersonal();
@@ -184,7 +198,6 @@ public class ContratoService implements IContrato {
                 .apellidos(empleado.getApellidos())
                 .dni(empleado.getNumeroDocumento())
                 .email(email)
-                .puestoTrabajo(nuevoContrato.getPuestoTrabajo())
                 .build();
 
         authServiceClient.upsertUsuario(authHeader, request);
@@ -225,7 +238,7 @@ public class ContratoService implements IContrato {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                registrarUsuarioAuth(empleado, nuevoContrato, authHeader);
+                registrarUsuarioAuth(empleado, authHeader);
                 confirmarContratacionRecruitment(empleado, nuevoContrato, authHeader);
             }
         });

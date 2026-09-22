@@ -11,6 +11,7 @@ import { LoginResponse } from '../../../shared/models/auth/login-response';
 import { LogoutRequest } from '../../../shared/models/auth/logout-request';
 import { RefreshRequest } from '../../../shared/models/auth/refresh-request';
 import { RefreshResponse } from '../../../shared/models/auth/refresh-response';
+import { CambiarRolActivoRequest } from '../../../shared/models/auth/cambiar-rol-activo-request';
 
 interface AuthEquipoResponse {
   id: number;
@@ -41,6 +42,10 @@ export class AuthService {
 
   refresh(request: RefreshRequest): Observable<RefreshResponse> {
     return this.http.post<RefreshResponse>(`${this.authUrl}/refresh`, request);
+  }
+
+  cambiarRolActivo(request: CambiarRolActivoRequest): Observable<RefreshResponse> {
+    return this.http.post<RefreshResponse>(`${this.authUrl}/sesion/rol-activo`, request);
   }
 
   logout(request: LogoutRequest): Observable<void> {

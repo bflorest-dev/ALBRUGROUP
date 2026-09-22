@@ -38,7 +38,7 @@ public class UsuarioProveedorController {
     private final ProveedorMapper proveedorMapper;
 
     @GetMapping("/proveedores")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('READ_USUARIO_PROVEEDORES')")
     public ResponseEntity<List<AsignacionUsuarioProveedorResponse>> listarAsignaciones(
             @RequestParam AmbitoProveedor ambito
     ) {
@@ -46,7 +46,7 @@ public class UsuarioProveedorController {
     }
 
     @GetMapping("/{idEmpleado}/proveedores")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('READ_USUARIO_PROVEEDORES')")
     public ResponseEntity<List<ProveedorResponse>> listarProveedores(
             @PathVariable Long idEmpleado,
             @RequestParam AmbitoProveedor ambito
@@ -55,7 +55,7 @@ public class UsuarioProveedorController {
     }
 
     @PutMapping("/{idEmpleado}/proveedores")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('ASSIGN_USUARIO_PROVEEDORES')")
     public ResponseEntity<List<ProveedorResponse>> asignarProveedores(
             @PathVariable Long idEmpleado,
             @RequestParam AmbitoProveedor ambito,

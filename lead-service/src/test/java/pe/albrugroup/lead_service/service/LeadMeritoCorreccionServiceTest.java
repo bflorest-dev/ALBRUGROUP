@@ -62,7 +62,7 @@ class LeadMeritoCorreccionServiceTest {
         when(authEquipoClient.obtenerAsesorVentasDelEquipo(3L, 14L)).thenReturn(asesorNuevo);
         when(currentUser.empleadoID()).thenReturn(1L);
         when(currentUser.nombreCompleto()).thenReturn("Admin Principal");
-        when(currentUser.rolPrincipal()).thenReturn("ADMINISTRADOR");
+        when(currentUser.rolActivo()).thenReturn("ADMINISTRADOR");
         when(correccionRepository.saveAndFlush(any(LeadMeritoCorreccion.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = service.corregirMerito(100L, request);

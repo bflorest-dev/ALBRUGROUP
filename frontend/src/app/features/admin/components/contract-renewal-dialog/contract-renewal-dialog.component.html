@@ -12,7 +12,7 @@
       <div>
         <p-tag value="Contrato" severity="info" />
         <h3>{{ selectedEmployee.nombres }} {{ selectedEmployee.apellidos }}</h3>
-        <p>{{ selectedEmployee.numeroDocumento }} · {{ toLabel(selectedEmployee.puestoTrabajo) }}</p>
+        <p>{{ selectedEmployee.numeroDocumento }} · {{ toLabel(selectedEmployee.categoriaPersonal || 'SIN_CATEGORIA') }}</p>
       </div>
     </div>
 
@@ -29,15 +29,15 @@
     } @else {
       <form [formGroup]="contractForm" class="form-grid">
         <label class="field">
-          <span>Puesto de trabajo</span>
+          <span>Categoría de personal</span>
           <p-select
-            formControlName="puestoTrabajo"
-            [options]="optionItems(puestoTrabajoOptions)"
+            formControlName="categoriaPersonal"
+            [options]="optionItems(categoriaPersonalOptions)"
             optionLabel="label"
             optionValue="value"
             [filter]="true"
-            [class.p-invalid]="isInvalid('puestoTrabajo')"
-            [attr.title]="isInvalid('puestoTrabajo') ? 'Campo obligatorio.' : null"
+            [class.p-invalid]="isInvalid('categoriaPersonal')"
+            [attr.title]="isInvalid('categoriaPersonal') ? 'Campo obligatorio.' : null"
             appendTo="body"
           />
         </label>

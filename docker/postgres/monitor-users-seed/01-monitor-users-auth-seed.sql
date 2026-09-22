@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TEMP TABLE seed_monitor_users (
     empleado_id BIGINT,
     usuario_id BIGINT,
@@ -25,7 +27,7 @@ CREATE TEMP TABLE seed_monitor_users (
 UPDATE seed_monitor_users su
 SET usuario_id = u.id
 FROM usuarios u
-WHERE u.username = su.username;
+WHERE u.username = split_part(su.username, '@albru.', 1) || '@albru.pe';
 
 INSERT INTO roles (nombre, descripcion)
 VALUES ('MONITOR', 'Backoffice - Monitor siempre operativo por proveedor')
@@ -63,7 +65,7 @@ INSERT INTO usuarios (
 OVERRIDING SYSTEM VALUE
 SELECT
     su.usuario_id,
-    su.username,
+    split_part(su.username, '@albru.', 1) || '@albru.pe',
     '$2a$10$EuVlRz.tIqNAnsOhz6zKpORDWllZ9/hRPPSCphurSpMG1XP3NC0tC',
     su.correo_personal,
     su.empleado_id,
@@ -100,8 +102,16 @@ JOIN usuarios u ON u.empleado_id = su.empleado_id
 JOIN roles r ON r.nombre = 'MONITOR'
 ON CONFLICT (usuario_id, rol_id) DO NOTHING;
 
+UPDATE usuarios u
+SET rol_principal_id = r.id
+FROM seed_monitor_users su
+JOIN roles r ON r.nombre = 'MONITOR'
+WHERE u.empleado_id = su.empleado_id;
+
 SELECT setval(
     pg_get_serial_sequence('usuarios', 'id'),
     GREATEST((SELECT COALESCE(MAX(id), 1) FROM usuarios), 1),
     TRUE
 );
+
+COMMIT;

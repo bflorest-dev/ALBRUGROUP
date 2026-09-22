@@ -8,6 +8,8 @@ import pe.albrugroup.lead_service.entity.enums.BloqueFacturacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoPeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.TipoReglaFacturacion;
 
+import static pe.albrugroup.lead_service.service.facturacion.CalculadoraFacturacionPostventaResolver.resolverNombreProveedor;
+
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -19,8 +21,8 @@ public class CalculadoraFacturacionClaro implements CalculadoraFacturacionPostve
     private static final int DIAS_HASTA_VENCIMIENTO = 15;
 
     @Override
-    public boolean soporta(String proveedorSnapshot) {
-        return proveedorSnapshot != null && proveedorSnapshot.trim().equalsIgnoreCase("CLARO");
+    public boolean soporta(TipoReglaFacturacion tipoRegla) {
+        return tipoRegla == TipoReglaFacturacion.CLARO;
     }
 
     @Override
@@ -31,7 +33,7 @@ public class CalculadoraFacturacionClaro implements CalculadoraFacturacionPostve
         return CalendarioFacturacionPostventa.builder()
                 .lead(lead)
                 .fechaInstalacion(fechaInstalacion)
-                .proveedorSnapshot(lead.getNombreProveedorSnapshot())
+                .proveedorSnapshot(resolverNombreProveedor(lead))
                 .planSnapshot(lead.getNombrePlanSnapshot())
                 .mesesPermanenciaSnapshot(lead.getMesesPermanenciaSnapshot())
                 .montoPlanSnapshot(lead.getPrecioFinal())

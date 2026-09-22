@@ -13,7 +13,9 @@ public class ContratoResponse {
 
     private Long id;
     private Long idEmpleado;
-    // PUESTO DE TRABAJO
+    // CLASIFICACION CONTRACTUAL
+    private CategoriaPersonal categoriaPersonal;
+    @Deprecated(forRemoval = true)
     private PuestoTrabajo puestoTrabajo;
     private Regimen regimen;
     private Modalidad modalidad;

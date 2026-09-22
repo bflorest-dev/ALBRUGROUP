@@ -1,6 +1,7 @@
 export interface RegistrarContratoRequest {
   idPostulacion?: number | null;
-  puestoTrabajo: string;
+  categoriaPersonal?: 'ESTRUCTURAL' | 'OPERATIVO';
+  puestoTrabajo?: string | null;
   regimen: string;
   modalidad: string;
   seguroSalud?: string | null;

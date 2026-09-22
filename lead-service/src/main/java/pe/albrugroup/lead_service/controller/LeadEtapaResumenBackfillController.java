@@ -23,23 +23,23 @@ public class LeadEtapaResumenBackfillController {
 
     private final LeadEtapaResumenBackfillService backfillService;
 
-    @PostMapping @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PostMapping @PreAuthorize("hasAuthority('RUN_LEAD_ETAPA_BACKFILL')")
     public ResponseEntity<BackfillEstadoResponse> iniciarBackfill() {
         return ResponseEntity.accepted().body(backfillService.iniciarBackfillTodos());
     }
 
-    @GetMapping("/estado") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @GetMapping("/estado") @PreAuthorize("hasAuthority('RUN_LEAD_ETAPA_BACKFILL')")
     public ResponseEntity<BackfillEstadoResponse> estado() {
         return ResponseEntity.ok(backfillService.estadoActual());
     }
 
-    @PostMapping("/{idLead}") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PostMapping("/{idLead}") @PreAuthorize("hasAuthority('RUN_LEAD_ETAPA_BACKFILL')")
     public ResponseEntity<Void> backfillUnLead(@PathVariable Long idLead) {
         backfillService.backfillUnLead(idLead);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/numero/{lead}") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PostMapping("/numero/{lead}") @PreAuthorize("hasAuthority('RUN_LEAD_ETAPA_BACKFILL')")
     public ResponseEntity<Void> backfillPorNumeroLead(@PathVariable String lead) {
         backfillService.backfillPorNumeroLead(lead);
         return ResponseEntity.ok().build();

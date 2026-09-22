@@ -197,7 +197,7 @@ public class VentaController {
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
-    @GetMapping("/correcciones/instalacion") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @GetMapping("/correcciones/instalacion") @PreAuthorize("hasAuthority('CORREGIR_INSTALACION_LEAD')")
     public ResponseEntity<PageResponse<LeadInstalacionCorreccionCandidatoResponse>> listarCorreccionesInstalacionVenta(
             @RequestParam(required = false) String buscar,
             @RequestParam(required = false) Long idEquipo,
@@ -308,7 +308,7 @@ public class VentaController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{idLead}/corregir-instalacion") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PatchMapping("/{idLead}/corregir-instalacion") @PreAuthorize("hasAuthority('CORREGIR_INSTALACION_LEAD')")
     public ResponseEntity<LeadInstalacionCorreccionResponse> corregirInstalacionLeadVenta(
             @PathVariable Long idLead,
             @RequestBody LeadInstalacionCorreccionRequest request

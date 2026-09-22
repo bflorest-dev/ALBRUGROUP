@@ -1,0 +1,111 @@
+:host {
+  --drawer-bg: #f8f9fb;
+  --drawer-panel: #fff;
+  --drawer-ink: #172033;
+  --drawer-muted: #657086;
+  --drawer-line: #dbe0e8;
+}
+
+.creation-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 980;
+  width: 100%;
+  border: 0;
+  background: rgb(11 16 27 / 48%);
+  backdrop-filter: blur(2px);
+}
+
+.creation-drawer {
+  --app-surface-raised: var(--drawer-panel);
+  --app-surface-soft: color-mix(in srgb, var(--drawer-bg) 84%, var(--drawer-panel));
+  --app-border-soft: var(--drawer-line);
+  --role-panel-text: var(--drawer-ink);
+  --role-muted: var(--drawer-muted);
+  --app-shadow-soft: none;
+  position: fixed;
+  z-index: 990;
+  inset: 0 0 0 auto;
+  width: min(900px, calc(100vw - 48px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  color: var(--drawer-ink);
+  background: var(--drawer-bg);
+  box-shadow: -20px 0 48px rgb(14 23 38 / 18%);
+  animation: drawer-enter 220ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.creation-drawer[data-theme='dark'] {
+  --drawer-bg: #11151b;
+  --drawer-panel: #161a21;
+  --drawer-ink: #e9edf3;
+  --drawer-muted: #a9b3c1;
+  --drawer-line: #2b323d;
+  --app-danger: #ef8b8b;
+  color-scheme: dark;
+}
+
+header {
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 28px;
+  border-bottom: 1px solid var(--drawer-line);
+  background: var(--drawer-panel);
+}
+
+h2 {
+  margin: 0 0 6px;
+  font-family: Archivo, sans-serif;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  letter-spacing: -.025em;
+}
+
+p {
+  margin: 0;
+  color: var(--drawer-muted);
+}
+
+.close-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--drawer-line);
+  border-radius: 10px;
+  color: var(--drawer-ink);
+  background: var(--drawer-panel);
+  cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus-visible {
+  border-color: #a66b05;
+  outline: 3px solid rgb(203 139 28 / 18%);
+  outline-offset: 2px;
+}
+
+.creation-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 22px 24px 40px;
+  scrollbar-color: #9ca6b7 transparent;
+  scrollbar-width: thin;
+}
+
+@keyframes drawer-enter {
+  from { transform: translateX(28px); opacity: .72; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (max-width: 720px) {
+  .creation-drawer { width: 100vw; }
+  header { padding: 18px; }
+  .creation-body { padding: 16px 12px 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .creation-drawer { animation: none; }
+}

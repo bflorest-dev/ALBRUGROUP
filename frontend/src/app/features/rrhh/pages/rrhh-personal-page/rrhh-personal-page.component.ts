@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -43,6 +44,7 @@ import { AdminPersonalFacade } from '../../../admin/facades/admin-personal.facad
 })
 export class RrhhPersonalPageComponent implements OnInit {
   protected readonly facade = inject(AdminPersonalFacade);
+  private readonly route = inject(ActivatedRoute);
   protected readonly activeSection = signal<'activos' | 'alta'>('activos');
   private simpleTimeSnapshot: {
     horaEntrada: string;
@@ -53,6 +55,20 @@ export class RrhhPersonalPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.facade.initialize();
+    const action = this.route.snapshot.queryParamMap.get('accion');
+    if (action === 'crear') {
+      this.activeSection.set('alta');
+      return;
+    }
+    const empleadoId = Number(this.route.snapshot.queryParamMap.get('empleadoId'));
+    const dni = this.route.snapshot.queryParamMap.get('dni');
+    if (Number.isInteger(empleadoId) && ['editar', 'contrato', 'horario'].includes(action ?? '')) {
+      void this.facade.openEmployeeAction(
+        empleadoId,
+        action as 'editar' | 'contrato' | 'horario',
+        dni
+      );
+    }
   }
 
   private readonly pickerDateCache = new Map<string, Date | null>();

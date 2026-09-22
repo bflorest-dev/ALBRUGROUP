@@ -19,7 +19,7 @@ public class EquipoProveedorController {
 
     private final EquipoProveedorService equipoProveedorService;
 
-    @PutMapping("/{idEquipo}/proveedores") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PutMapping("/{idEquipo}/proveedores") @PreAuthorize("hasAuthority('ASSIGN_EQUIPO_PROVEEDORES')")
     public ResponseEntity<List<ProveedorResponse>> asignarProveedores(
             @PathVariable Long idEquipo,
             @Valid @RequestBody AsignarProveedoresRequest request
@@ -31,13 +31,13 @@ public class EquipoProveedorController {
         ));
     }
 
-    @GetMapping("/{idEquipo}/proveedores") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @GetMapping("/{idEquipo}/proveedores") @PreAuthorize("hasAuthority('READ_EQUIPO_PROVEEDORES')")
     public ResponseEntity<List<ProveedorResponse>> listarProveedoresDeEquipo(@PathVariable Long idEquipo) {
         return ResponseEntity.ok(equipoProveedorService.listarProveedoresDeEquipo(idEquipo));
     }
 
     // Limpieza al eliminar un equipo: quita mappings de proveedores y desvincula sus leads.
-    @DeleteMapping("/{idEquipo}") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @DeleteMapping("/{idEquipo}") @PreAuthorize("hasAuthority('DELETE_EQUIPO_PROVEEDORES')")
     public ResponseEntity<Void> eliminarDatosDeEquipo(@PathVariable Long idEquipo) {
         equipoProveedorService.eliminarDatosDeEquipo(idEquipo);
         return ResponseEntity.noContent().build();

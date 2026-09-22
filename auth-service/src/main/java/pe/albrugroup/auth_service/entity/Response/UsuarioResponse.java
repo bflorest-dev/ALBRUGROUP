@@ -16,5 +16,7 @@ public class UsuarioResponse {
     private Boolean passwordInicializada;
     private String email;
     private Set<String> roles;
+    private String rolPrincipal;
+    private Set<String> rolesSecundarios;
     private Set<String> equipos;
 }

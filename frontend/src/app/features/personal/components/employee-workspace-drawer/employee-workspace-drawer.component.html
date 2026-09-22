@@ -1,0 +1,222 @@
+@if (visible() && row(); as current) {
+  <button class="drawer-scrim" type="button" aria-label="Cerrar expediente" (click)="close()"></button>
+  <aside
+    class="employee-drawer"
+    role="dialog"
+    aria-modal="true"
+    [attr.data-theme]="theme()"
+    [attr.aria-label]="'Expediente de ' + fullName()"
+  >
+    <header class="drawer-head">
+      <div class="drawer-identity">
+        <h2>{{ fullName() }}</h2>
+        <p>
+          <span class="mono">DNI {{ current.employee.numeroDocumento }}</span>
+          <span aria-hidden="true">·</span>
+          {{ label(current.category) }}
+          <span aria-hidden="true">·</span>
+          {{ label(current.primaryRole) }}
+        </p>
+      </div>
+      <button class="icon-button" type="button" aria-label="Cerrar" [disabled]="isBusy()" (click)="close()">
+        <i class="ti ti-x" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    @if (subview() === 'none') {
+      <nav class="drawer-tabs" aria-label="Secciones del expediente">
+        <button type="button" [class.active]="section() === 'resumen'" (click)="setSection('resumen')">Resumen</button>
+        <button type="button" [class.active]="section() === 'contrato'" (click)="setSection('contrato')">Contrato</button>
+        <button type="button" [class.active]="section() === 'horario'" (click)="setSection('horario')">Horario</button>
+        @if (canManageRoles()) {
+          <button type="button" [class.active]="section() === 'acceso'" (click)="setSection('acceso')">Acceso y roles</button>
+        }
+        <button type="button" [class.active]="section() === 'asistencia'" (click)="setSection('asistencia')">Asistencia</button>
+      </nav>
+    }
+
+    <div class="drawer-body" [class.drawer-body--access]="section() === 'acceso' && subview() === 'none'">
+      @if (actionError()) { <p class="feedback error" role="alert">{{ actionError() }}</p> }
+      @if (actionSuccess()) { <p class="feedback success" role="status">{{ actionSuccess() }}</p> }
+
+      @if (subview() === 'editar-datos') {
+        <section class="drawer-subview">
+          <div class="subview-heading">
+            <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left"></i>Volver</button>
+            <div><h3>Editar datos personales</h3><p>Estos cambios actualizan la identidad del empleado sin modificar su contrato, horario o acceso.</p></div>
+          </div>
+          <form class="form-grid" [formGroup]="personalForm">
+            <label class="form-field"><span>Nombres</span><input type="text" formControlName="nombres" autocomplete="off" /></label>
+            <label class="form-field"><span>Apellidos</span><input type="text" formControlName="apellidos" autocomplete="off" /></label>
+            <label class="form-field"><span>Tipo de documento</span><select formControlName="tipoDocumento">@for (option of documentoOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
+            <label class="form-field"><span>Número de documento</span><input type="text" inputmode="numeric" maxlength="15" formControlName="numeroDocumento" (input)="normalizeDocument($any($event.target).value)" /></label>
+            <label class="form-field"><span>Fecha de nacimiento</span><input type="date" formControlName="fechaNacimiento" /></label>
+            <label class="form-field"><span>Nacionalidad</span><select formControlName="nacionalidad">@for (option of nacionalidadOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
+            <label class="form-field"><span>Estado civil</span><select formControlName="estadoCivil">@for (option of estadoCivilOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
+            <label class="form-field"><span>¿Tiene hijos?</span><select formControlName="tieneHijos"><option [ngValue]="false">No</option><option [ngValue]="true">Sí</option></select></label>
+          </form>
+        </section>
+      } @else if (subview() === 'confirmar-baja') {
+        <section class="danger-view">
+          <div class="danger-symbol"><i class="ti ti-user-off" aria-hidden="true"></i></div>
+          <div>
+            <h3>Dar de baja a {{ fullName() }}</h3>
+            <p>Esta acción marcará al empleado como inactivo, finalizará su contrato vigente y deshabilitará su acceso. No modifica el historial laboral.</p>
+          </div>
+          <dl class="confirmation-facts">
+            <div><dt>Empleado</dt><dd>{{ fullName() }}</dd></div>
+            <div><dt>Documento</dt><dd class="mono">{{ current.employee.numeroDocumento }}</dd></div>
+            <div><dt>Estado resultante</dt><dd>Inactivo</dd></div>
+          </dl>
+          <p class="danger-note"><strong>Confirma únicamente si la relación laboral debe cerrarse ahora.</strong></p>
+        </section>
+      } @else if (subview() === 'contrato-form') {
+        <section class="drawer-subview">
+          <div class="subview-heading">
+            <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left"></i>Volver</button>
+            <div><h3>{{ contract() ? 'Registrar nuevo contrato' : 'Registrar contrato' }}</h3><p>El contrato se guarda de forma independiente. El horario se asigna después desde su propia sección.</p></div>
+          </div>
+          <form class="form-grid" [formGroup]="contractForm">
+            <label class="form-field"><span>Categoría de personal</span><select formControlName="categoriaPersonal">@for (option of categoriaPersonalOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
+            <label class="form-field"><span>Régimen</span><select formControlName="regimen">@for (option of regimenOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
+            <label class="form-field"><span>Modalidad</span><select formControlName="modalidad">@for (option of modalidadOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
+            <label class="form-field"><span>Sueldo base</span><input type="number" min="0.01" step="0.01" formControlName="sueldoBase" /></label>
+            <label class="form-field"><span>Fecha de inicio</span><input type="date" formControlName="fechaInicio" /></label>
+            @if (isPlanilla()) {
+              <label class="form-field"><span>Seguro de salud</span><select formControlName="seguroSalud">@for (option of seguroSaludOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
+              <label class="form-field"><span>Sistema de pensiones</span><select formControlName="sistemaPensiones">@for (option of sistemaPensionesOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
+            }
+            <label class="check-field form-field--wide"><input type="checkbox" [checked]="hasContractEndDate()" (change)="toggleContractEndDate($any($event.target).checked)" /><span>Este contrato tiene fecha de finalización definida</span></label>
+            @if (hasContractEndDate()) { <label class="form-field form-field--wide"><span>Fecha de finalización</span><input type="date" formControlName="fechaFin" /></label> }
+          </form>
+        </section>
+      } @else if (subview() === 'cerrar-contrato') {
+        <section class="danger-view">
+          <div class="danger-symbol"><i class="ti ti-file-off" aria-hidden="true"></i></div>
+          <div><h3>Finalizar contrato vigente</h3><p>Finalizar el contrato también marcará al empleado como inactivo y deshabilitará su acceso.</p></div>
+          <form [formGroup]="closeContractForm">
+            <label class="form-field"><span>Último día de contrato</span><input type="date" formControlName="fechaFin" /></label>
+          </form>
+        </section>
+      } @else if (subview() === 'historial-roles') {
+        <section class="drawer-subview">
+          <div class="subview-heading">
+            <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left"></i>Volver</button>
+            <div><h3>Historial de roles</h3><p>Cambios administrativos registrados para este empleado.</p></div>
+          </div>
+          @if (roleAudit().length) {
+            <div class="audit-list">
+              @for (entry of roleAudit(); track entry.id) {
+                <article><strong>{{ label(entry.rolPrincipalNuevo) }}</strong><span>{{ entry.actorUsername }} · <time class="mono">{{ entry.fecha | date:'dd/MM/yyyy HH:mm' }}</time></span></article>
+              }
+            </div>
+          } @else { <p class="empty-copy">No existen cambios de roles registrados.</p> }
+        </section>
+      } @else if (section() === 'resumen') {
+        <section class="summary-block">
+          <h3>Preparación</h3>
+          <div class="readiness-list">
+            <div><span class="status-dot ok"></span><span>Datos personales</span><strong>Completo</strong></div>
+            <div><span class="status-dot" [class.ok]="contract()" [class.pending]="!contract()"></span><span>Contrato</span><strong>{{ contract() ? 'Completo' : 'Pendiente' }}</strong></div>
+            <div><span class="status-dot" [class.ok]="schedule()" [class.pending]="!schedule()"></span><span>Horario</span><strong>{{ schedule() ? 'Completo' : 'Pendiente' }}</strong></div>
+            <div><span class="status-dot" [class.ok]="current.access?.rolPrincipal" [class.pending]="!current.access?.rolPrincipal"></span><span>Acceso y roles</span><strong>{{ current.access?.rolPrincipal ? 'Completo' : canManageRoles() ? 'Pendiente' : 'Solo Admin' }}</strong></div>
+            <div><span class="status-dot" [class.ok]="current.teamNames.length || current.providerNames.length || current.category === 'ESTRUCTURAL'" [class.pending]="current.category === 'OPERATIVO' && !current.teamNames.length && !current.providerNames.length"></span><span>Ámbito operativo</span><strong>{{ current.category === 'ESTRUCTURAL' || current.teamNames.length || current.providerNames.length ? 'Completo' : 'Pendiente' }}</strong></div>
+          </div>
+        </section>
+        <section class="summary-block">
+          <h3>Contacto</h3>
+          <dl class="detail-grid">
+            <div><dt>Celular</dt><dd class="mono">{{ current.employee.celularPersonal }}</dd></div>
+            <div><dt>Correo</dt><dd>{{ current.employee.correoPersonal }}</dd></div>
+            @if (current.access?.username) { <div><dt>Usuario</dt><dd class="mono">{{ current.access?.username }}</dd></div> }
+            <div><dt>Estado</dt><dd><span class="state-chip" [class.inactive]="current.employee.estadoOperativo === 'INACTIVO'"><i></i>{{ label(current.employee.estadoOperativo) }}</span></dd></div>
+          </dl>
+        </section>
+        <section class="summary-block">
+          <h3>Ámbito actual</h3>
+          <div class="scope-lines">
+            @if (current.teamNames.length) { <div><span>Equipos</span><strong>{{ current.teamNames.join(', ') }}</strong></div> }
+            @if (current.providerNames.length) { <div><span>Proveedores</span><strong>{{ current.providerNames.join(', ') }}</strong></div> }
+            @if (!current.teamNames.length && !current.providerNames.length) { <div><span>Ámbito</span><strong>No aplica o está pendiente</strong></div> }
+            @if (current.secondaryRoles.length) { <div><span>Roles secundarios</span><strong>{{ labels(current.secondaryRoles) }}</strong></div> }
+          </div>
+        </section>
+      } @else if (section() === 'contrato') {
+        <section class="summary-block">
+          <h3>Contrato vigente</h3>
+          @if (isLoadingEmployment()) { <p class="muted">Consultando contrato…</p> }
+          @else if (contract(); as activeContract) {
+            <dl class="detail-grid contract-details">
+              <div><dt>Categoría</dt><dd>{{ label(activeContract.categoriaPersonal) }}</dd></div>
+              <div><dt>Modalidad</dt><dd>{{ label(activeContract.modalidad) }}</dd></div>
+              <div><dt>Régimen</dt><dd>{{ label(activeContract.regimen) }}</dd></div>
+              <div><dt>Sueldo base</dt><dd class="mono">{{ formatMoney(activeContract.sueldoBase) }}</dd></div>
+              <div><dt>Inicio</dt><dd class="mono">{{ activeContract.fechaInicio }}</dd></div>
+              <div><dt>Finalización</dt><dd class="mono">{{ activeContract.fechaFin || 'Indefinido' }}</dd></div>
+            </dl>
+          } @else { <p class="pending-copy">Este empleado todavía no tiene un contrato vigente.</p> }
+        </section>
+        <section class="summary-block">
+          <h3>Historial contractual</h3>
+          @if (contractHistory().length) {
+            <div class="contract-history">
+              @for (item of contractHistory(); track item.id) {
+                <article><div><strong>{{ label(item.categoriaPersonal) }} · {{ label(item.modalidad) }}</strong><span>{{ label(item.regimen) }} · {{ formatMoney(item.sueldoBase) }}</span></div><time class="mono">{{ item.fechaInicio }} — {{ item.fechaFin || 'vigente' }}</time></article>
+              }
+            </div>
+          } @else { <p class="empty-copy">Sin contratos anteriores registrados.</p> }
+        </section>
+      } @else if (section() === 'horario') {
+        <section class="summary-block attendance-callout">
+          <h3>Horario del empleado</h3>
+          <p class="schedule-value">{{ contract() ? scheduleSummary() : 'Primero registra un contrato' }}</p>
+          <p>La edición completa del horario y sus ajustes diarios continúa temporalmente en la experiencia de Asistencia.</p>
+          <button class="primary-button" type="button" [disabled]="!contract()" (click)="manageSchedule.emit(current)">Gestionar horario</button>
+        </section>
+      } @else if (section() === 'acceso' && canManageRoles()) {
+        <section class="access-layout">
+          <div class="access-intro"><h3>Roles asignados</h3><p>Cambiar esta configuración cerrará todas las sesiones del empleado.</p></div>
+          <label class="form-field principal-role"><span>Rol principal</span><select [ngModel]="rolePrincipal()" (ngModelChange)="changePrincipal($event)"><option value="">Seleccionar rol</option>@for (role of roleCatalog(); track role.nombre) { <option [value]="role.nombre">{{ label(role.nombre) }}</option> }</select></label>
+          <fieldset class="role-checks"><legend>Roles secundarios</legend><div class="role-checks-scroll">@for (role of roleCatalog(); track role.nombre) { @if (role.nombre !== rolePrincipal()) { <label><input type="checkbox" [checked]="isSecondarySelected(role.nombre)" (change)="toggleSecondaryRole(role.nombre, $any($event.target).checked)"/><span><strong>{{ label(role.nombre) }}</strong><small>{{ role.descripcion }}</small></span></label> } }</div></fieldset>
+          <div class="access-messages">@if (roleError()) { <p class="feedback error" role="alert">{{ roleError() }}</p> } @if (roleSuccess()) { <p class="feedback success" role="status">{{ roleSuccess() }}</p> }</div>
+        </section>
+      } @else if (section() === 'asistencia') {
+        <section class="summary-block attendance-callout">
+          <h3>Asistencia del empleado</h3>
+          <p>Abre temporalmente el registro mensual, el horario y los ajustes diarios en el drawer operativo de Asistencia.</p>
+          <button class="primary-button" type="button" (click)="openAttendance.emit(current)">Abrir asistencia</button>
+        </section>
+      }
+    </div>
+
+    <footer class="drawer-actions">
+      @if (subview() === 'editar-datos') {
+        <button type="button" class="ghost-button" [disabled]="isSavingPersonal()" (click)="closeSubview()">Cancelar</button>
+        <button type="button" class="primary-button push-right" [disabled]="isSavingPersonal()" (click)="submitPersonalEdit()">{{ isSavingPersonal() ? 'Guardando…' : 'Guardar cambios' }}</button>
+      } @else if (subview() === 'confirmar-baja') {
+        <button type="button" class="ghost-button" [disabled]="isDismissing()" (click)="closeSubview()">Cancelar</button>
+        <button type="button" class="danger-button push-right" [disabled]="isDismissing()" (click)="confirmDismiss()">{{ isDismissing() ? 'Procesando…' : 'Confirmar baja' }}</button>
+      } @else if (subview() === 'contrato-form') {
+        <button type="button" class="ghost-button" [disabled]="isSavingContract()" (click)="closeSubview()">Cancelar</button>
+        <button type="button" class="primary-button push-right" [disabled]="isSavingContract()" (click)="submitContract()">{{ isSavingContract() ? 'Registrando…' : 'Registrar contrato' }}</button>
+      } @else if (subview() === 'cerrar-contrato') {
+        <button type="button" class="ghost-button" [disabled]="isClosingContract()" (click)="closeSubview()">Cancelar</button>
+        <button type="button" class="danger-button push-right" [disabled]="isClosingContract()" (click)="confirmCloseContract()">{{ isClosingContract() ? 'Finalizando…' : 'Finalizar contrato' }}</button>
+      } @else if (subview() === 'historial-roles') {
+        <button type="button" class="ghost-button" (click)="closeSubview()"><i class="ti ti-arrow-left"></i>Volver a roles</button>
+      } @else if (section() === 'resumen') {
+        <button type="button" class="ghost-button" [disabled]="isLoadingEmployee()" (click)="openPersonalEdit()">Editar datos</button>
+        @if (canManageRoles()) {
+          <button type="button" class="ghost-button" (click)="manageScope.emit(current)">Gestionar ámbito</button>
+          @if (current.employee.estadoOperativo !== 'INACTIVO') { <button type="button" class="danger-button push-right" (click)="openDismissConfirmation()">Dar de baja</button> }
+        }
+      } @else if (section() === 'contrato') {
+        <button type="button" class="primary-button" (click)="openContractForm()">{{ contract() ? 'Nuevo contrato' : 'Registrar contrato' }}</button>
+        @if (contract()) { <button type="button" class="danger-ghost-button push-right" (click)="openCloseContract()">Finalizar contrato</button> }
+      } @else if (section() === 'acceso' && canManageRoles()) {
+        <button type="button" class="ghost-button" (click)="openRoleHistory()"><i class="ti ti-history"></i>Ver historial</button>
+        <button class="primary-button push-right" type="button" [disabled]="isSavingRoles()" (click)="saveRoles()">{{ isSavingRoles() ? 'Guardando…' : 'Guardar roles' }}</button>
+      }
+    </footer>
+  </aside>
+}

@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { debounceTime, filter, take } from 'rxjs';
+import { debounceTime, filter, firstValueFrom, take } from 'rxjs';
 import { AttendanceFacade } from '../../facades/attendance.facade';
 import { AttendanceRealtimeService } from '../../services/attendance-realtime.service';
 import { AuthSessionService } from '../../services/auth-session.service';
@@ -24,7 +24,7 @@ import { ATTENDANCE_STATUS_META, AttendanceActionId } from '../../../shared/mode
 import { AsesorVentasWorkspaceStateService } from '../../services/asesor-ventas-workspace-state.service';
 import { STORAGE_KEYS } from '../../constants/storage.constants';
 import { ALWAYS_OPERATIONAL_ROLES } from '../../constants/operational-roles.constants';
-import { POSTVENTA_BACKOFFICE_ROLE, POSTVENTA_ROLE, ROLE_HOME_ROUTES } from '../../constants/role.constants';
+import { ROLE_HOME_ROUTES } from '../../constants/role.constants';
 import { GtrAgendadosAlertFacade } from '../../../features/gtr/facades/gtr-agendados-alert.facade';
 import { EquiposNavService } from '../../services/equipos-nav.service';
 import { CurrentUserProviderScopeService } from '../../services/current-user-provider-scope.service';
@@ -55,6 +55,24 @@ const ROLE_THEME_CLASS: Record<string, string> = {
   SUPERVISOR_POSTVENTA: 'theme-postventa',
   COMMUNITY: 'theme-community',
   MONITOR: 'theme-monitor'
+};
+
+const ROLE_MODE_ICON: Record<string, string> = {
+  ADMINISTRADOR: 'ti ti-shield-lock',
+  RRHH: 'ti ti-users-group',
+  RECLUTADOR: 'ti ti-user-search',
+  CAPACITADOR: 'ti ti-school',
+  ASESOR_GTR: 'ti ti-headphones',
+  SUPERVISOR_GTR: 'ti ti-headphones-filled',
+  ASESOR_VENTAS: 'ti ti-shopping-cart',
+  SUPERVISOR_VENTAS: 'ti ti-chart-dots',
+  OJT: 'ti ti-user-star',
+  ASESOR_BACKOFFICE: 'ti ti-briefcase',
+  SUPERVISOR_BACKOFFICE: 'ti ti-briefcase-filled',
+  ASESOR_POSTVENTA: 'ti ti-headset',
+  SUPERVISOR_POSTVENTA: 'ti ti-chart-bar',
+  COMMUNITY: 'ti ti-speakerphone',
+  MONITOR: 'ti ti-device-desktop-analytics'
 };
 
 @Component({
@@ -175,24 +193,22 @@ export class PrivateLayoutComponent implements AfterViewInit {
   protected readonly primaryRoleLabel = computed(() => formatLabel(this.activeRole()));
   protected readonly proyeccionData = signal<ProyeccionBannerData | null>(null);
   protected readonly roleModes = computed<SidebarRoleModeOption[]>(() => {
-    const roles = this.session()?.roles ?? [];
-    if (!roles.includes(POSTVENTA_ROLE) || !roles.includes(POSTVENTA_BACKOFFICE_ROLE)) {
-      return [];
-    }
-    return [
-      {
-        role: POSTVENTA_ROLE,
-        label: 'Postventa',
-        description: 'Gestionar cartera postventa',
-        icon: 'ti ti-headset'
-      },
-      {
-        role: POSTVENTA_BACKOFFICE_ROLE,
-        label: 'Backoffice',
-        description: 'Gestionar operación comercial',
-        icon: 'ti ti-briefcase'
-      }
-    ];
+    const session = this.session();
+    const roles = [...new Set(session?.roles ?? [])];
+    if (roles.length < 2) return [];
+    const principal = session?.primaryRole;
+    return roles
+      .sort((left, right) => {
+        if (left === principal) return -1;
+        if (right === principal) return 1;
+        return formatLabel(left).localeCompare(formatLabel(right), 'es');
+      })
+      .map((role) => ({
+        role,
+        label: formatLabel(role),
+        description: role === principal ? 'Rol principal' : 'Rol secundario',
+        icon: ROLE_MODE_ICON[role] ?? 'ti ti-switch-horizontal'
+      }));
   });
   protected readonly userDisplayName = computed(() => {
     const session = this.session();
@@ -207,22 +223,12 @@ export class PrivateLayoutComponent implements AfterViewInit {
     }
 
     if (activeRole === 'ADMINISTRADOR') {
-      const colaboradoresChildren: SidebarItem[] = [
-        ...this.equiposNav.activeTeams().map((team) => ({
-          label: team.nombre,
-          route: `/app/admin/colaboradores/equipo-${team.id}`,
-          icon: 'pi pi-users',
-          exact: true
-        })),
-        { label: 'Sin equipo', route: '/app/admin/colaboradores/sin-equipo', icon: 'pi pi-user', exact: true, startsGroup: true },
-        { label: 'Inactivos', route: '/app/admin/colaboradores/inactivos', icon: 'pi pi-user-minus', exact: true }
-      ];
-
       const dashboardChildren: SidebarItem[] = [
         { label: 'Preventa', route: '/app/admin/dashboard/preventa', icon: 'pi pi-users', exact: true },
         { label: 'Venta', route: '/app/admin/dashboard/venta', icon: 'pi pi-shopping-cart', exact: true },
         { label: 'Postventa', route: '/app/admin/dashboard/postventa', icon: 'pi pi-briefcase', exact: true },
-        { label: 'Cobranza', route: '/app/admin/dashboard/cobranza', icon: 'pi pi-wallet', exact: true }
+        { label: 'Cobranza', route: '/app/admin/dashboard/cobranza', icon: 'pi pi-wallet', exact: true },
+        { label: 'Funnel', route: '/app/admin/dashboard/funnel', icon: 'pi pi-filter', exact: true }
       ];
 
       const plataformasChildren: SidebarItem[] = [
@@ -314,8 +320,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
         { domainId: 'overview', label: 'Dashboard', icon: 'pi pi-chart-pie', children: dashboardChildren },
         { domainId: 'overview', label: 'Bitácora', route: '/app/admin/bitacora', icon: 'pi pi-book', exact: true },
         { domainId: 'operation', key: 'Plataformas', label: 'Plataformas', icon: 'pi pi-th-large', children: plataformasChildren },
-        { domainId: 'people', label: 'Colaboradores', icon: 'pi pi-users', children: colaboradoresChildren },
-        { domainId: 'people', label: 'Personal', route: '/app/admin/personal', icon: 'pi pi-id-card', exact: true },
+        { domainId: 'people', label: 'Personal', route: '/app/personal', icon: 'pi pi-users', exact: true },
         { domainId: 'people', label: 'Asistencia', route: '/app/admin/asistencia', icon: 'pi pi-clock', exact: true },
         { domainId: 'people', label: 'Empleabilidad', route: '/app/admin/empleabilidad', icon: 'pi pi-briefcase' },
         { domainId: 'system', label: 'Tipificaciones', route: '/app/admin/tipificaciones', icon: 'pi pi-sitemap', exact: true },
@@ -339,7 +344,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     if (activeRole === 'RRHH') {
       return [
         { label: 'Asistencia', route: '/app/rrhh/asistencia', icon: 'pi pi-clock', exact: true },
-        { label: 'Personal', route: '/app/rrhh/personal', icon: 'pi pi-users', exact: true }
+        { label: 'Personal', route: '/app/personal', icon: 'pi pi-users', exact: true }
       ];
     }
 
@@ -513,7 +518,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ['/app/admin/finanzas', 2],
       ['/app/admin/leads-del-dia', 3],
       ['Plataformas', 3.5],
-      ['Colaboradores', 4],
+      ['/app/personal', 4],
       ['/app/admin/asistencia', 4.5],
       ['/app/admin/correccion-campana', 6],
       ['/app/admin/mantenimiento', 8],
@@ -521,7 +526,6 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ['/app/admin/equipos', 10],
       ['/app/admin/proveedores', 10.5],
       ['/app/admin/operaciones', 11],
-      ['/app/admin/personal', 12],
       ['/app/admin/empleabilidad', 13]
     ]);
     items.sort((left, right) => {
@@ -676,13 +680,18 @@ export class PrivateLayoutComponent implements AfterViewInit {
   }
 
   protected async seleccionarModoTrabajo(role: string): Promise<void> {
-    if (!this.sessionService.setActiveRole(role)) {
+    if (!this.sessionService.hasRole(role) || role === this.activeRole()) {
       return;
     }
-    this.providerScope.resetForOperationalScopeChange();
-    const route = ROLE_HOME_ROUTES[role] ?? this.sessionService.getHomeRoute();
-    await this.providerScope.load();
-    void this.router.navigate([route]);
+    try {
+      await firstValueFrom(this.authSessionService.switchActiveRole(role));
+      this.providerScope.resetForOperationalScopeChange();
+      const route = ROLE_HOME_ROUTES[role] ?? this.sessionService.getHomeRoute();
+      await this.providerScope.load();
+      void this.router.navigate([route]);
+    } catch {
+      // La sesión conserva el rol anterior cuando el backend rechaza el cambio.
+    }
   }
 
   @HostListener('window:resize')

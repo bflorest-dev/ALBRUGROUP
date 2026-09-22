@@ -54,7 +54,7 @@ VALUES (
     '943763301',
     'jevbxx@gmail.com',
     '943763301',
-    'admin@albru.admin.pe',
+    'admin@albru.pe',
     'COMPUTRABAJO',
     'CALLAO',
     'Prolongacion Centenario 07046',

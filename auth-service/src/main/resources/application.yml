@@ -13,6 +13,7 @@ jwt:
   expiration: ${JWT_EXPIRATION:15m}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:8h}
   issuer: ${JWT_ISSUER}
+  token-version: ${JWT_TOKEN_VERSION:2}
 
 app:
   docs:

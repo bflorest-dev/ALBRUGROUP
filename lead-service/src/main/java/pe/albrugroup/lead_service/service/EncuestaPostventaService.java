@@ -25,8 +25,6 @@ import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
 import pe.albrugroup.lead_service.service.mapper.EncuestaPostventaMapper;
-import jakarta.persistence.EntityManager;
-import org.hibernate.Session;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -45,7 +43,6 @@ public class EncuestaPostventaService {
     private final CurrentUser currentUser;
     private final EncuestaPostventaMapper mapper;
     private final PaginationService paginationService;
-    private final EntityManager entityManager;
     private final PostventaAsesorProveedorService postventaAsesorProveedorService;
 
     private static final Set<Etapa> ETAPAS_GESTION_POSTVENTA = Set.of(Etapa.POSTVENTA);
@@ -186,9 +183,6 @@ public class EncuestaPostventaService {
     }
 
     private Lead obtenerLeadAsignadoGestionable(Long idLead) {
-        Session session = entityManager.unwrap(Session.class);
-        session.disableFilter("proveedorFilter");
-        session.disableFilter("equipoFilter");
         Lead lead = leadRepository.findByIdAndIdAsesorAsignadoAndEtapaIn(
                         idLead,
                         currentUser.empleadoID(),

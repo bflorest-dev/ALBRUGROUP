@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.rrhh_service.entity.Contrato;
+import pe.albrugroup.rrhh_service.entity.enums.CategoriaPersonal;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.repository.projection.EmpleadoRolProjection;
@@ -50,6 +51,7 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.numeroDocumento AS numeroDocumento,
                 e.celularPersonal AS celularPersonal,
                 e.correoPersonal AS correoPersonal,
+                c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo
             FROM Contrato c
@@ -72,6 +74,31 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.numeroDocumento AS numeroDocumento,
                 e.celularPersonal AS celularPersonal,
                 e.correoPersonal AS correoPersonal,
+                c.categoriaPersonal AS categoriaPersonal,
+                c.puestoTrabajo AS puestoTrabajo,
+                e.estadoOperativo AS estadoOperativo
+            FROM Contrato c
+            JOIN c.empleado e
+            WHERE e.estadoOperativo = :estadoOperativo
+              AND c.fechaInicio <= :fechaActual
+              AND (c.fechaFin IS NULL OR c.fechaFin >= :fechaActual)
+              AND c.categoriaPersonal IN :categoriasPersonal
+            ORDER BY e.nombres ASC, e.apellidos ASC
+            """)
+    List<EmpleadoRolProjection> findEmpleadosActivosByCategoriasPersonal(
+            @Param("estadoOperativo") EstadoOperativo estadoOperativo,
+            @Param("fechaActual") LocalDate fechaActual,
+            @Param("categoriasPersonal") List<CategoriaPersonal> categoriasPersonal);
+
+    @Query("""
+            SELECT
+                e.id AS idEmpleado,
+                e.nombres AS nombres,
+                e.apellidos AS apellidos,
+                e.numeroDocumento AS numeroDocumento,
+                e.celularPersonal AS celularPersonal,
+                e.correoPersonal AS correoPersonal,
+                c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo
             FROM Contrato c
@@ -92,6 +119,7 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.numeroDocumento AS numeroDocumento,
                 e.celularPersonal AS celularPersonal,
                 e.correoPersonal AS correoPersonal,
+                c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo
             FROM Contrato c
@@ -114,6 +142,7 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.numeroDocumento AS numeroDocumento,
                 e.celularPersonal AS celularPersonal,
                 e.correoPersonal AS correoPersonal,
+                c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo
             FROM Contrato c
@@ -133,6 +162,7 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.numeroDocumento AS numeroDocumento,
                 e.celularPersonal AS celularPersonal,
                 e.correoPersonal AS correoPersonal,
+                c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo
             FROM Contrato c
@@ -155,6 +185,30 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.numeroDocumento AS numeroDocumento,
                 e.celularPersonal AS celularPersonal,
                 e.correoPersonal AS correoPersonal,
+                c.categoriaPersonal AS categoriaPersonal,
+                c.puestoTrabajo AS puestoTrabajo,
+                e.estadoOperativo AS estadoOperativo
+            FROM Contrato c
+            JOIN c.empleado e
+            WHERE c.fechaInicio <= :hasta
+              AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
+              AND c.categoriaPersonal IN :categoriasPersonal
+            ORDER BY e.nombres ASC, e.apellidos ASC
+            """)
+    List<EmpleadoRolProjection> findEmpleadosConContratoEnRangoByCategoriasPersonal(
+            @Param("desde") LocalDate desde,
+            @Param("hasta") LocalDate hasta,
+            @Param("categoriasPersonal") List<CategoriaPersonal> categoriasPersonal);
+
+    @Query("""
+            SELECT DISTINCT
+                e.id AS idEmpleado,
+                e.nombres AS nombres,
+                e.apellidos AS apellidos,
+                e.numeroDocumento AS numeroDocumento,
+                e.celularPersonal AS celularPersonal,
+                e.correoPersonal AS correoPersonal,
+                c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo
             FROM Contrato c

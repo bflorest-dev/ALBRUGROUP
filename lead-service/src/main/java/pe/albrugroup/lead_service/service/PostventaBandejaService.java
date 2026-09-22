@@ -33,8 +33,6 @@ import pe.albrugroup.lead_service.repository.EntregaCredencialPlataformaReposito
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
-import jakarta.persistence.EntityManager;
-import org.hibernate.Session;
 
 import java.time.LocalDate;
 import java.time.Instant;
@@ -61,7 +59,6 @@ public class PostventaBandejaService {
     private final PeriodoFacturacionPostventaRepository periodoRepository;
     private final PaginationService paginationService;
     private final PostventaAsesorProveedorService postventaAsesorProveedorService;
-    private final EntityManager entityManager;
 
     private static final Set<String> BANDEJA_SORT_FIELDS = Set.of(
             "fechaInstalacion", "createdAt", "updatedAt"
@@ -112,9 +109,6 @@ public class PostventaBandejaService {
     }
 
     public LeadPostventaBusquedaResponse buscarLead(String buscar) {
-        Session session = entityManager.unwrap(Session.class);
-        session.disableFilter("proveedorFilter");
-        session.disableFilter("equipoFilter");
         BusquedaPostventaFiltro filtro = resolverBusquedaPostventa(buscar);
         if (!filtro.buscando()) {
             return LeadPostventaBusquedaResponse.builder()

@@ -186,12 +186,14 @@ export class DashboardVentaStageComponent implements OnInit {
     () => PROVEEDOR_ACCENT[this.proveedorNombre().toUpperCase()] ?? PROVEEDOR_ACCENT_DEFAULT
   );
   protected readonly periodoLabel = computed(() => {
-    const p = this.periodo();
-    if (p === 'mes') return 'Mensual';
-    if (p === 'semana') return 'Semanal';
+    const periodo = this.data()?.periodo;
+    if (periodo?.desde && periodo.hasta) {
+      const desde = this.formatearFecha(periodo.desde);
+      const hasta = this.formatearFecha(periodo.hasta);
+      return periodo.desde === periodo.hasta ? desde : `${desde} – ${hasta}`;
+    }
     const d = this.dia();
-    // Un día suelto (sin rango) que es hoy se muestra como "Hoy"; cualquier otro, como su fecha.
-    return !d || (d === localToday() && !this.hasta()) ? 'Hoy' : d;
+    return !d || (d === localToday() && !this.hasta()) ? 'Hoy' : this.formatearFecha(d);
   });
   /**
    * Etiqueta de la fila del cohorte (enfoque DÍA), acorde al período: "Del día" solo cuando es un día
@@ -228,12 +230,12 @@ export class DashboardVentaStageComponent implements OnInit {
     // Las 6 conversiones usan el EMBUDO (mayor rango, anidado), NO los cards: así son monotónicas y ≤100%.
     // Al hacer click, el drawer muestra el NUMERADOR (el subconjunto del embudo) de esa conversión.
     return [
-      { label: 'Preventas → Registradas', pct: this.pct(c.registradasFunnel, c.preventasCompletas), frac: `${c.registradasFunnel}/${c.preventasCompletas}`, metrica: 'EMBUDO_REGISTRADAS' },
-      { label: 'Preventas → Instaladas', pct: this.pct(c.instaladasFunnel, c.preventasCompletas), frac: `${c.instaladasFunnel}/${c.preventasCompletas}`, metrica: 'EMBUDO_INSTALADAS' },
-      { label: 'Registradas → Instaladas', pct: this.pct(c.instaladasFunnel, c.registradasFunnel), frac: `${c.instaladasFunnel}/${c.registradasFunnel}`, metrica: 'EMBUDO_INSTALADAS' },
-      { label: 'Preventas → Rechazadas', pct: this.pct(c.rechazadasFunnel, c.preventasCompletas), frac: `${c.rechazadasFunnel}/${c.preventasCompletas}`, metrica: 'EMBUDO_RECHAZADAS' },
-      { label: 'Programadas → Instaladas', pct: this.pct(c.programadasInstaladas, c.programadasTotal), frac: `${c.programadasInstaladas}/${c.programadasTotal}`, metrica: 'EMBUDO_PROGRAMADAS_INSTALADAS' },
-      { label: 'Programadas → Rechazadas', pct: this.pct(c.programadasRechazadas, c.programadasTotal), frac: `${c.programadasRechazadas}/${c.programadasTotal}`, metrica: 'EMBUDO_PROGRAMADAS_RECHAZADAS' }
+      { label: 'Preventas → Registradas', pct: this.pct(c.registradasFunnel, c.preventasCompletas), frac: `${c.preventasCompletas}/${c.registradasFunnel}`, metrica: 'EMBUDO_REGISTRADAS' },
+      { label: 'Preventas → Instaladas', pct: this.pct(c.instaladasFunnel, c.preventasCompletas), frac: `${c.preventasCompletas}/${c.instaladasFunnel}`, metrica: 'EMBUDO_INSTALADAS' },
+      { label: 'Registradas → Instaladas', pct: this.pct(c.instaladasFunnel, c.registradasFunnel), frac: `${c.registradasFunnel}/${c.instaladasFunnel}`, metrica: 'EMBUDO_INSTALADAS' },
+      { label: 'Preventas → Rechazadas', pct: this.pct(c.rechazadasFunnel, c.preventasCompletas), frac: `${c.preventasCompletas}/${c.rechazadasFunnel}`, metrica: 'EMBUDO_RECHAZADAS' },
+      { label: 'Programadas → Instaladas', pct: this.pct(c.programadasInstaladas, c.programadasTotal), frac: `${c.programadasTotal}/${c.programadasInstaladas}`, metrica: 'EMBUDO_PROGRAMADAS_INSTALADAS' },
+      { label: 'Programadas → Rechazadas', pct: this.pct(c.programadasRechazadas, c.programadasTotal), frac: `${c.programadasTotal}/${c.programadasRechazadas}`, metrica: 'EMBUDO_PROGRAMADAS_RECHAZADAS' }
     ];
   });
 
@@ -259,10 +261,11 @@ export class DashboardVentaStageComponent implements OnInit {
     const e = this.data()?.enfoqueDia ?? null;
     return this.cuadranteStates.map((s) => {
       let tip = '';
-      if (s.key === 'instaladas' && e && e.instaladasEnVentana < e.instaladas) {
-        tip = `De estas ${e.instaladas}, ${e.instaladasEnVentana} se instalaron dentro de la fecha o rango elegido.`;
+      if (s.key === 'instaladas' && e) {
+        tip = `${e.instaladasEnVentana} se instalaron dentro de la fecha o rango elegido. ${e.instaladas} preventas del período están instaladas actualmente.`;
       }
-      return { key: s.key, label: s.label, value: e ? e[s.key] : 0, tip };
+      const value = s.key === 'instaladas' && e ? e.instaladasEnVentana : e ? e[s.key] : 0;
+      return { key: s.key, label: s.label, value, tip };
     });
   });
 
@@ -519,6 +522,12 @@ export class DashboardVentaStageComponent implements OnInit {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private formatearFecha(value: string | null | undefined): string {
+    if (!value) return '—';
+    const [year, month, day] = value.split('-');
+    return day ? `${day}/${month}/${year}` : value;
   }
 
   private pct(num: number, den: number): number {

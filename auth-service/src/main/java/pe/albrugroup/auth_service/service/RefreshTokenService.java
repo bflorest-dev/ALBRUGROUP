@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.auth_service.entity.RefreshToken;
+import pe.albrugroup.auth_service.entity.Rol;
 import pe.albrugroup.auth_service.entity.Usuario;
 import pe.albrugroup.auth_service.exception.NotFoundException;
 import pe.albrugroup.auth_service.exception.UnauthorizedException;
@@ -35,11 +36,12 @@ public class RefreshTokenService {
     @Value("${jwt.refresh-expiration:8h}")
     private Duration refreshExpiration;
 
-    public String createRefreshToken(Usuario usuario) {
+    public String createRefreshToken(Usuario usuario, Rol rolActivo) {
         String plainToken = generateOpaqueToken();
         RefreshToken refreshToken = RefreshToken.builder()
                 .tokenHash(hashToken(plainToken))
                 .usuario(usuario)
+                .rolActivo(rolActivo)
                 .expiresAt(Instant.now().plus(refreshExpiration))
                 .build();
         refreshTokenRepository.save(refreshToken);
@@ -48,7 +50,7 @@ public class RefreshTokenService {
 
     public TokenPair rotate(String plainRefreshToken) {
         Instant now = Instant.now();
-        RefreshToken currentToken = refreshTokenRepository.findByTokenHash(hashToken(plainRefreshToken.trim()))
+        RefreshToken currentToken = refreshTokenRepository.findByTokenHashForUpdate(hashToken(plainRefreshToken.trim()))
                 .orElseThrow(() -> new UnauthorizedException("Refresh token invalido"));
 
         if (currentToken.isRevoked() || currentToken.isExpired(now)) {
@@ -61,6 +63,13 @@ public class RefreshTokenService {
             throw new NotFoundException("Usuario no encontrado");
         }
 
+        Rol rolActivo = currentToken.getRolActivo();
+        if (usuario.getRolPrincipal() == null || rolActivo == null
+                || usuario.getRoles().stream().noneMatch(rol -> rol.getId().equals(rolActivo.getId()))) {
+            currentToken.setRevokedAt(now);
+            throw new UnauthorizedException("El rol activo ya no esta asignado al usuario");
+        }
+
         String newRefreshToken = generateOpaqueToken();
         String newRefreshTokenHash = hashToken(newRefreshToken);
 
@@ -70,12 +79,48 @@ public class RefreshTokenService {
         RefreshToken replacement = RefreshToken.builder()
                 .tokenHash(newRefreshTokenHash)
                 .usuario(usuario)
+                .rolActivo(rolActivo)
                 .expiresAt(now.plus(refreshExpiration))
                 .build();
         refreshTokenRepository.save(replacement);
 
-        String accessToken = jwtUtil.generateToken(new CustomUserDetails(usuario));
-        return new TokenPair(accessToken, newRefreshToken, jwtUtil.getExpiresInSeconds());
+        String accessToken = jwtUtil.generateToken(new CustomUserDetails(usuario), rolActivo);
+        return new TokenPair(accessToken, newRefreshToken, jwtUtil.getExpiresInSeconds(), usuario, rolActivo);
+    }
+
+    public TokenPair switchActiveRole(String plainRefreshToken, Long empleadoId, Rol nuevoRolActivo) {
+        Instant now = Instant.now();
+        RefreshToken currentToken = refreshTokenRepository.findByTokenHashForUpdate(hashToken(plainRefreshToken.trim()))
+                .orElseThrow(() -> new UnauthorizedException("Refresh token invalido"));
+        if (currentToken.isRevoked() || currentToken.isExpired(now)) {
+            throw new UnauthorizedException("Refresh token invalido o expirado");
+        }
+        Usuario usuario = currentToken.getUsuario();
+        if (!usuario.getEmpleadoId().equals(empleadoId)) {
+            throw new UnauthorizedException("El refresh token no pertenece a la sesion autenticada");
+        }
+        if (!Boolean.TRUE.equals(usuario.getActivo())) {
+            currentToken.setRevokedAt(now);
+            throw new NotFoundException("Usuario no encontrado");
+        }
+        boolean asignado = usuario.getRoles().stream().anyMatch(rol -> rol.getId().equals(nuevoRolActivo.getId()));
+        if (!asignado) {
+            throw new UnauthorizedException("El rol solicitado no esta asignado al usuario");
+        }
+
+        String newRefreshToken = generateOpaqueToken();
+        String newRefreshTokenHash = hashToken(newRefreshToken);
+        currentToken.setRevokedAt(now);
+        currentToken.setReplacedByTokenHash(newRefreshTokenHash);
+        refreshTokenRepository.save(RefreshToken.builder()
+                .tokenHash(newRefreshTokenHash)
+                .usuario(usuario)
+                .rolActivo(nuevoRolActivo)
+                .expiresAt(now.plus(refreshExpiration))
+                .build());
+
+        String accessToken = jwtUtil.generateToken(new CustomUserDetails(usuario), nuevoRolActivo);
+        return new TokenPair(accessToken, newRefreshToken, jwtUtil.getExpiresInSeconds(), usuario, nuevoRolActivo);
     }
 
     public void revoke(String plainRefreshToken) {
@@ -107,6 +152,12 @@ public class RefreshTokenService {
         }
     }
 
-    public record TokenPair(String accessToken, String refreshToken, Long expiresIn) {
+    public record TokenPair(
+            String accessToken,
+            String refreshToken,
+            Long expiresIn,
+            Usuario usuario,
+            Rol rolActivo
+    ) {
     }
 }

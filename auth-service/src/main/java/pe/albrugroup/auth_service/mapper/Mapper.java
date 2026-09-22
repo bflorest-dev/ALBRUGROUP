@@ -7,11 +7,20 @@ import pe.albrugroup.auth_service.entity.Rol;
 import pe.albrugroup.auth_service.entity.Usuario;
 
 import java.util.stream.Collectors;
+import java.util.Set;
 
 public class Mapper {
 
     public static UsuarioResponse toResponse(Usuario usuario) {
         if (usuario == null) return null;
+
+        Set<String> roles = usuario.getRoles().stream()
+                .map(Rol::getNombre)
+                .collect(Collectors.toSet());
+        String rolPrincipal = usuario.getRolPrincipal() == null ? null : usuario.getRolPrincipal().getNombre();
+        Set<String> rolesSecundarios = roles.stream()
+                .filter(rol -> !rol.equals(rolPrincipal))
+                .collect(Collectors.toSet());
 
         return UsuarioResponse.builder()
                 .empleadoId(usuario.getEmpleadoId())
@@ -21,12 +30,9 @@ public class Mapper {
                 .activo(usuario.getActivo())
                 .passwordInicializada(usuario.getPasswordInicializada())
                 .email(usuario.getEmail())
-                .roles
-                (
-                        usuario.getRoles().stream()
-                                .map(Rol::getNombre)
-                                .collect(Collectors.toSet())
-                )
+                .roles(roles)
+                .rolPrincipal(rolPrincipal)
+                .rolesSecundarios(rolesSecundarios)
                 .equipos
                 (
                         usuario.getEquipos().stream()

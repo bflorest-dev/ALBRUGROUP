@@ -7,7 +7,6 @@ import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.UsuarioProveedor;
 import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.exception.BadRequestException;
-import pe.albrugroup.lead_service.exception.ForbiddenException;
 import pe.albrugroup.lead_service.repository.UsuarioProveedorRepository;
 
 import java.util.List;
@@ -25,41 +24,32 @@ class ProveedorScopeServiceTest {
     private final ProveedorScopeService service = new ProveedorScopeService(repository, currentUser, request);
 
     @Test
-    void usuarioDualRespetaAmbitoPostventaSolicitado() {
-        when(currentUser.roles()).thenReturn(List.of("ASESOR_BACKOFFICE", "ASESOR_POSTVENTA"));
-        when(request.getHeader(ProveedorScopeService.HEADER_AMBITO)).thenReturn("POSTVENTA");
+    void rolActivoPostventaDeterminaElAmbito() {
+        when(currentUser.roles()).thenReturn(List.of("ASESOR_POSTVENTA"));
+        when(request.getHeader("X-Operational-Scope")).thenReturn("BACKOFFICE");
 
         assertThat(service.ambitoActual()).isEqualTo(AmbitoProveedor.POSTVENTA);
     }
 
     @Test
-    void usuarioDualRespetaAmbitoBackofficeSolicitado() {
-        when(currentUser.roles()).thenReturn(List.of("ASESOR_BACKOFFICE", "ASESOR_POSTVENTA"));
-        when(request.getHeader(ProveedorScopeService.HEADER_AMBITO)).thenReturn("BACKOFFICE");
+    void rolActivoBackofficeDeterminaElAmbito() {
+        when(currentUser.roles()).thenReturn(List.of("ASESOR_BACKOFFICE"));
 
         assertThat(service.ambitoActual()).isEqualTo(AmbitoProveedor.BACKOFFICE);
     }
 
     @Test
-    void usuarioSinRolCompatibleNoPuedeForzarAmbitoBackoffice() {
+    void headerOperacionalNoPuedeForzarOtroAmbito() {
         when(currentUser.roles()).thenReturn(List.of("ASESOR_POSTVENTA"));
-        when(request.getHeader(ProveedorScopeService.HEADER_AMBITO)).thenReturn("BACKOFFICE");
+        when(request.getHeader("X-Operational-Scope")).thenReturn("VENTAS");
 
-        assertThatThrownBy(service::ambitoActual).isInstanceOf(ForbiddenException.class);
-    }
-
-    @Test
-    void headerAmbitoInvalidoFallaCerrado() {
-        when(currentUser.roles()).thenReturn(List.of("ASESOR_POSTVENTA"));
-        when(request.getHeader(ProveedorScopeService.HEADER_AMBITO)).thenReturn("VENTAS");
-
-        assertThatThrownBy(service::ambitoActual).isInstanceOf(BadRequestException.class);
+        assertThat(service.ambitoActual()).isEqualTo(AmbitoProveedor.POSTVENTA);
     }
 
     @Test
     void proveedorActivoFueraDelAmbitoFallaCerrado() {
         Proveedor claro = Proveedor.builder().id(2L).nombre("CLARO").activo(true).build();
-        when(currentUser.roles()).thenReturn(List.of("ASESOR_BACKOFFICE", "ASESOR_POSTVENTA"));
+        when(currentUser.roles()).thenReturn(List.of("ASESOR_BACKOFFICE"));
         when(currentUser.empleadoID()).thenReturn(15L);
         when(request.getHeader(ProveedorScopeService.HEADER_PROVEEDOR)).thenReturn("1");
         when(repository.findByIdEmpleadoAndAmbitoAndActivoTrueOrderByProveedorNombreAsc(15L, AmbitoProveedor.BACKOFFICE))
@@ -76,21 +66,15 @@ class ProveedorScopeServiceTest {
     }
 
     @Test
-    void usuarioDualConAmbitoExplicitoSinProveedorActivoFallaCerrado() {
-        Proveedor claro = Proveedor.builder().id(2L).nombre("CLARO").activo(true).build();
-        when(currentUser.roles()).thenReturn(List.of("ASESOR_BACKOFFICE", "ASESOR_POSTVENTA"));
+    void proveedorActivoInvalidoSeRechaza() {
         when(currentUser.empleadoID()).thenReturn(15L);
-        when(request.getHeader(ProveedorScopeService.HEADER_AMBITO)).thenReturn("BACKOFFICE");
-        when(repository.findByIdEmpleadoAndAmbitoAndActivoTrueOrderByProveedorNombreAsc(15L, AmbitoProveedor.BACKOFFICE))
-                .thenReturn(List.of(UsuarioProveedor.builder()
-                        .idEmpleado(15L)
-                        .proveedor(claro)
-                        .ambito(AmbitoProveedor.BACKOFFICE)
-                        .activo(true)
-                        .build()));
+        when(request.getHeader(ProveedorScopeService.HEADER_PROVEEDOR)).thenReturn("abc");
+        when(repository.findByIdEmpleadoAndAmbitoAndActivoTrueOrderByProveedorNombreAsc(15L, AmbitoProveedor.POSTVENTA))
+                .thenReturn(List.of());
 
-        var scope = service.resolverScope(AmbitoProveedor.BACKOFFICE);
-
-        assertThat(scope.vacio()).isTrue();
+        assertThatThrownBy(() -> service.resolverScope(AmbitoProveedor.POSTVENTA))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Proveedor activo invalido");
     }
+
 }

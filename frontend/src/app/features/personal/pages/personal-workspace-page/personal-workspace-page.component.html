@@ -1,0 +1,124 @@
+<!--
+THESIS: Un directorio único revela categoría, rol y ámbito progresivamente sin duplicar empleados ni convertir la vista en un muro de acciones.
+OWN-WORLD: Consola de precisión V2; neutros fríos, Archivo, datos mono, hairlines y un único ámbar para acción o pendiente.
+STORY: Admin y RR. HH. encuentran una persona, comprenden qué falta y abren el flujo autorizado desde un expediente común.
+FIRST VIEWPORT: Cabecera compacta, una sola barra de búsqueda y filtros, y matriz plegable Estructural / Operativo / Rol / Equipo.
+FORM: Matriz de dotación, primera dirección elegida; seed 75966938.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<main class="personal-workspace" [attr.data-theme]="theme()">
+  <h2 class="sr-only">Gestión integral del personal, contratos, horarios, accesos, ámbitos y asistencia.</h2>
+
+  <header class="page-head">
+    <div>
+      <h1>Personal</h1>
+      <p>Gestiona la vida laboral, el acceso y el ámbito operativo de cada empleado sin mezclar sus flujos.</p>
+    </div>
+    <div class="head-actions">
+      <button class="theme-button" type="button" (click)="toggleTheme()" [attr.aria-label]="theme() === 'light' ? 'Usar tema oscuro' : 'Usar tema claro'">
+        <i class="ti" [class.ti-sun]="theme() === 'light'" [class.ti-moon]="theme() === 'dark'"></i>
+        <span>{{ theme() === 'light' ? 'Claro' : 'Oscuro' }}</span>
+      </button>
+      <button class="primary-action" type="button" (click)="openCreation()"><i class="ti ti-plus"></i>Nuevo empleado</button>
+    </div>
+  </header>
+
+  <section class="control-rail" aria-label="Buscar y filtrar personal">
+    <label class="search-field">
+      <i class="ti ti-search" aria-hidden="true"></i>
+      <span class="sr-only">Buscar personal</span>
+      <input type="search" [ngModel]="facade.search()" (ngModelChange)="facade.search.set($event)" placeholder="Nombre, DNI, correo o usuario…" />
+    </label>
+    <div class="category-segments" role="group" aria-label="Categoría de personal">
+      @for (option of [{value:'TODOS',label:'Activos'},{value:'OPERATIVO',label:'Operativo'},{value:'ESTRUCTURAL',label:'Estructural'},{value:'INACTIVO',label:'Inactivos'}]; track option.value) {
+        <button type="button" [class.active]="facade.categoryFilter() === option.value" (click)="setCategoryFilter($any(option.value))">{{ option.label }}</button>
+      }
+    </div>
+    <label class="select-field"><span class="sr-only">Rol principal</span><select [ngModel]="facade.roleFilter()" (ngModelChange)="facade.roleFilter.set($event)"><option value="">Rol principal</option>@for (role of facade.roleOptions(); track role) {<option [value]="role">{{ label(role) }}</option>}</select></label>
+    <label class="hidden-role-toggle"><input type="checkbox" [checked]="facade.showHiddenRoles()" (change)="facade.showHiddenRoles.set($any($event.target).checked)"/><i class="ti ti-eye"></i><span>Roles ocultos</span></label>
+  </section>
+
+  <div class="directory-meta"><span><strong class="mono">{{ facade.visibleCount() }}</strong> de <span class="mono">{{ facade.totalCount() }}</span> empleados</span><span>·</span><span>búsqueda total</span><span>·</span><span>visibilidad {{ facade.isAdmin() ? 'ADMIN' : 'RR. HH.' }}</span><button type="button" (click)="facade.refresh()"><i class="ti ti-refresh"></i>Actualizar</button></div>
+
+  <section class="directory" aria-label="Directorio de empleados">
+    <div class="table-head" role="row"><span>Empleado</span><span>DNI</span><span>Categoría</span><span>Rol principal</span><span>Equipo / proveedor</span><span>Preparación</span><span>Estado</span><span class="sr-only">Acciones</span></div>
+
+    @if (facade.isLoading()) {
+      <div class="loading-state"><span class="spinner"></span><p>Cargando personal…</p></div>
+    } @else if (facade.errorMessage()) {
+      <div class="error-state"><p>{{ facade.errorMessage() }}</p><button type="button" (click)="facade.refresh()">Volver a intentar</button></div>
+    } @else if (!facade.rows().length) {
+      <div class="empty-state"><i class="ti ti-user-search"></i><p>No hay empleados que coincidan con los filtros.</p></div>
+    } @else {
+      @if (facade.unclassifiedRows().length) {
+        <button class="category-row pending-category" type="button" (click)="toggleCategory('SIN_CATEGORIA')"><i class="ti" [class.ti-chevron-down]="isCategoryExpanded('SIN_CATEGORIA')" [class.ti-chevron-right]="!isCategoryExpanded('SIN_CATEGORIA')"></i><strong>{{ facade.categoryFilter() === 'INACTIVO' ? 'SIN CONTRATO VIGENTE' : 'PENDIENTES DE CONTRATO' }}</strong><span class="mono">{{ facade.unclassifiedRows().length }}</span></button>
+        @if (isCategoryExpanded('SIN_CATEGORIA')) {
+          @for (row of facade.unclassifiedRows(); track row.employee.idEmpleado) { <ng-container [ngTemplateOutlet]="employeeRow" [ngTemplateOutletContext]="{$implicit:row}"></ng-container> }
+        }
+      }
+
+      @if (facade.structuralRows().length) {
+        <button class="category-row" type="button" (click)="toggleCategory('ESTRUCTURAL')"><i class="ti" [class.ti-chevron-down]="isCategoryExpanded('ESTRUCTURAL')" [class.ti-chevron-right]="!isCategoryExpanded('ESTRUCTURAL')"></i><strong>ESTRUCTURAL</strong><span class="mono">{{ facade.structuralRows().length }}</span></button>
+        @if (isCategoryExpanded('ESTRUCTURAL')) {
+          @for (row of facade.structuralRows(); track row.employee.idEmpleado) { <ng-container [ngTemplateOutlet]="employeeRow" [ngTemplateOutletContext]="{$implicit:row}"></ng-container> }
+        }
+      }
+
+      @if (facade.operationalGroups().length) {
+        <button class="category-row" type="button" (click)="toggleCategory('OPERATIVO')"><i class="ti" [class.ti-chevron-down]="isCategoryExpanded('OPERATIVO')" [class.ti-chevron-right]="!isCategoryExpanded('OPERATIVO')"></i><strong>OPERATIVO</strong><span class="mono">{{ facade.operationalGroups().length }} roles</span></button>
+        @if (isCategoryExpanded('OPERATIVO')) {
+          @for (group of facade.operationalGroups(); track group.role) {
+            <button class="role-row" type="button" (click)="toggleRole(group.role)"><i class="ti" [class.ti-chevron-down]="isRoleExpanded(group.role)" [class.ti-chevron-right]="!isRoleExpanded(group.role)"></i><strong>{{ label(group.role) }}</strong><span class="mono">{{ group.employees.length }}</span></button>
+            @if (isRoleExpanded(group.role)) {
+              @if (group.usesTeams) {
+                @for (team of group.teams; track team.key) {
+                  <button class="team-row" type="button" (click)="toggleTeam(group.role, team.key)"><i class="ti" [class.ti-chevron-down]="isTeamExpanded(group.role, team.key)" [class.ti-chevron-right]="!isTeamExpanded(group.role, team.key)"></i><strong>{{ team.label }}</strong><span class="mono">{{ team.employees.length }}</span></button>
+                  @if (isTeamExpanded(group.role, team.key)) {
+                    @for (row of team.employees; track row.employee.idEmpleado) { <ng-container [ngTemplateOutlet]="employeeRow" [ngTemplateOutletContext]="{$implicit:row}"></ng-container> }
+                  }
+                }
+              } @else {
+                @for (row of group.employees; track row.employee.idEmpleado) { <ng-container [ngTemplateOutlet]="employeeRow" [ngTemplateOutletContext]="{$implicit:row}"></ng-container> }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    <ng-template #employeeRow let-row>
+      @let prep = preparation(row);
+      <button class="employee-row" type="button" [class.selected]="facade.selectedEmployeeId() === row.employee.idEmpleado" (click)="facade.selectEmployee(row.employee.idEmpleado)">
+        <span class="employee-cell"><span class="avatar">{{ initials(row) }}</span><span><strong>{{ row.employee.nombres }} {{ row.employee.apellidos }}</strong>@if (row.secondaryRoles.length) {<small>+ {{ row.secondaryRoles.length }} rol secundario{{ row.secondaryRoles.length > 1 ? 's' : '' }}</small>}</span></span>
+        <span class="mono">{{ row.employee.numeroDocumento }}</span>
+        <span><span class="category-chip">{{ label(row.category) }}</span></span>
+        <span>{{ label(row.primaryRole) }}</span>
+        <span class="scope-cell">@if (row.teamNames.length) {<strong>{{ row.teamNames.join(', ') }}</strong>}@if (row.providerNames.length) {<small>{{ row.providerNames.join(' · ') }}</small>}@if (!row.teamNames.length && !row.providerNames.length) {<em>Sin ámbito</em>}</span>
+        <span class="preparation-cell"><span class="prep-marks"><i [class.done]="row.hasContract" [class.pending]="!row.hasContract" title="Contrato">C</i><i class="unknown" title="El horario se verifica al abrir el expediente">H</i><i [class.done]="facade.canReadRoles() && row.access?.rolPrincipal" [class.pending]="facade.canReadRoles() && !row.access?.rolPrincipal" [class.unknown]="!facade.canReadRoles()" title="Acceso">A</i><i [class.done]="scopeState(row) === 'done'" [class.pending]="scopeState(row) === 'pending'" [class.unknown]="scopeState(row) === 'unknown'" title="Ámbito">Á</i></span><small>{{ prep.summary }}</small></span>
+        <span><span class="state-chip" [class.inactive]="row.employee.estadoOperativo === 'INACTIVO'"><i></i>{{ label(row.employee.estadoOperativo) }}</span></span>
+        <span class="row-more"><i class="ti ti-dots-vertical"></i></span>
+      </button>
+    </ng-template>
+
+    <footer class="directory-hint"><i class="ti ti-info-circle"></i>Selecciona un empleado para abrir su expediente y las acciones disponibles.</footer>
+  </section>
+
+  <app-employee-workspace-drawer
+    [visible]="facade.selectedRow() !== null"
+    [row]="facade.selectedRow()"
+    [theme]="theme()"
+    [canManageRoles]="facade.isAdmin()"
+    [roleCatalog]="facade.roleCatalog()"
+    (closed)="facade.closeEmployee()"
+    (employeeChanged)="handleEmployeeChanged()"
+    (rolesUpdated)="facade.applyUpdatedRoles($event)"
+    (manageSchedule)="openLegacySchedule($event)"
+    (manageScope)="openScope($event)"
+    (openAttendance)="openAttendance($event)"
+  />
+  <app-personal-creation-drawer
+    [visible]="creationVisible()"
+    [theme]="theme()"
+    (closed)="closeCreation($event)"
+  />
+</main>

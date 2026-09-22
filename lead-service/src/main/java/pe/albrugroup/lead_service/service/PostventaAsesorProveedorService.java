@@ -7,10 +7,8 @@ import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
 import pe.albrugroup.lead_service.exception.ForbiddenException;
-import pe.albrugroup.lead_service.repository.CalendarioFacturacionPostventaRepository;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -23,7 +21,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class PostventaAsesorProveedorService {
 
-    private final CalendarioFacturacionPostventaRepository calendarioRepository;
     private final ProveedorScopeService proveedorScopeService;
     private final UsuarioProveedorService usuarioProveedorService;
 
@@ -63,24 +60,7 @@ public class PostventaAsesorProveedorService {
         if (lead == null || scope.vacio()) {
             return false;
         }
-        Long idProveedorPlan = lead.getPlan() == null || lead.getPlan().getProveedor() == null
-                ? null
-                : lead.getPlan().getProveedor().getId();
-        if (idProveedorPlan != null && scope.proveedorIds().contains(idProveedorPlan)) {
-            return true;
-        }
-        String proveedorSnapshot = normalizarNombre(lead.getNombreProveedorSnapshot());
-        if (proveedorSnapshot != null && scope.proveedorNombres().contains(proveedorSnapshot)) {
-            return true;
-        }
-        return calendarioRepository.findByLeadId(lead.getId())
-                .map(calendario -> normalizarNombre(calendario.getProveedorSnapshot()))
-                .filter(nombre -> nombre != null && !nombre.isBlank())
-                .map(scope.proveedorNombres()::contains)
-                .orElse(false);
-    }
-
-    private String normalizarNombre(String nombre) {
-        return nombre == null ? null : nombre.trim().toUpperCase(Locale.ROOT);
+        Long idProveedor = lead.getProveedor() == null ? null : lead.getProveedor().getId();
+        return idProveedor != null && scope.proveedorIds().contains(idProveedor);
     }
 }

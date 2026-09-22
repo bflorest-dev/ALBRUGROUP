@@ -38,6 +38,10 @@ public class RefreshToken {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "rol_activo_id", nullable = false)
+    private Rol rolActivo;
+
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 

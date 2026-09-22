@@ -24,7 +24,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DataLoader {
 
-    private static final String ADMIN_USERNAME = "admin@albru.admin.pe";
+    private static final String ADMIN_USERNAME = "admin@albru.pe";
     private static final String ADMIN_PASSWORD = "albruadminpe";
     private static final String ADMIN_EMAIL = "jevbxx@gmail.com";
     private static final Long ADMIN_EMPLEADO_ID = 1L;
@@ -205,6 +205,22 @@ public class DataLoader {
         // EQUIPOS
         savePermiso("VER_TODOS_LOS_EQUIPOS", "Puede ver datos de todos los equipos (salta el filtro por equipo)", "EQUIPO", "READ_ALL");
 
+        // Gestión de acceso y permisos finos que sustituyen autorizaciones por nombre de rol.
+        savePermiso("READ_ROLES", "Puede consultar roles y asignaciones de acceso", "ROL", "READ");
+        savePermiso("ASSIGN_ROLES", "Puede asignar roles a usuarios", "ROL", "ASSIGN");
+        savePermiso("READ_ROLE_AUDIT", "Puede consultar la auditoria de roles", "ROL", "READ_AUDIT");
+        savePermiso("RESET_PASSWORD_USUARIOS", "Puede resetear contrasenas de usuarios", "USUARIO", "RESET_PASSWORD");
+        savePermiso("READ_USUARIO_PROVEEDORES", "Puede consultar proveedores asignados a usuarios", "USUARIO_PROVEEDOR", "READ");
+        savePermiso("ASSIGN_USUARIO_PROVEEDORES", "Puede asignar proveedores a usuarios", "USUARIO_PROVEEDOR", "ASSIGN");
+        savePermiso("READ_EQUIPO_PROVEEDORES", "Puede consultar proveedores asignados a equipos", "EQUIPO_PROVEEDOR", "READ");
+        savePermiso("ASSIGN_EQUIPO_PROVEEDORES", "Puede asignar proveedores a equipos", "EQUIPO_PROVEEDOR", "ASSIGN");
+        savePermiso("DELETE_EQUIPO_PROVEEDORES", "Puede eliminar datos de proveedores de equipos", "EQUIPO_PROVEEDOR", "DELETE");
+        savePermiso("RUN_LEAD_ETAPA_BACKFILL", "Puede ejecutar el backfill de etapas de leads", "LEAD_ETAPA_BACKFILL", "RUN");
+        savePermiso("AJUSTAR_JORNADA_COMPENSABLE", "Puede registrar corrimientos compensables", "JORNADA", "ADJUST_COMPENSABLE");
+        savePermiso("AJUSTAR_JORNADA_SIN_LIMITE", "Puede registrar corrimientos sin limite de minutos", "JORNADA", "ADJUST_UNLIMITED");
+        savePermiso("AJUSTAR_JORNADA_JUSTIFICADA", "Puede registrar tardanzas justificadas", "JORNADA", "ADJUST_JUSTIFIED");
+        savePermiso("PROGRAMAR_COMPENSACION", "Puede programar horas de compensacion", "JORNADA", "SCHEDULE_COMPENSATION");
+
         log.info("Permisos Creados");
     }
 
@@ -270,6 +286,7 @@ public class DataLoader {
                 getPermiso("CANCEL_CONTRATOS"),
 
                 getPermiso("READ_EVENTOS"),
+                getPermiso("READ_ROLES"),
                 getPermiso("CREATE_EQUIPOS"),
                 getPermiso("READ_EQUIPOS"),
                 getPermiso("UPDATE_EQUIPOS"),
@@ -284,7 +301,9 @@ public class DataLoader {
                 getPermiso("READ_ASISTENCIAS"),
                 getPermiso("READ_ASISTENCIAS_CUMPLIMIENTO"),
                 getPermiso("UPDATE_ASISTENCIAS"),
-                getPermiso("READ_ASISTENCIAS_MONITOR")
+                getPermiso("READ_ASISTENCIAS_MONITOR"),
+                getPermiso("AJUSTAR_JORNADA_JUSTIFICADA"),
+                getPermiso("PROGRAMAR_COMPENSACION")
 
         );
         saveRol("RRHH", "Recursos Humanos - Gestion de personal", rrhhPermisos);
@@ -423,7 +442,8 @@ public class DataLoader {
                 getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS"),
-                getPermiso("EXTEND_HORARIO")
+                getPermiso("EXTEND_HORARIO"),
+                getPermiso("AJUSTAR_JORNADA_COMPENSABLE")
         );
         saveRol("SUPERVISOR_GTR", "GTR - Supervision de asignacion de leads", supervisorGtrPermisos);
 
@@ -477,7 +497,8 @@ public class DataLoader {
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("READ_ASISTENCIAS"),
                 getPermiso("UPDATE_ASISTENCIAS"),
-                getPermiso("EXTEND_HORARIO")
+                getPermiso("EXTEND_HORARIO"),
+                getPermiso("AJUSTAR_JORNADA_COMPENSABLE")
         );
         saveRol("SUPERVISOR_VENTAS", "Ventas - Supervision de leads asignados", supervisorVentasPermisos);
 
@@ -602,6 +623,7 @@ public class DataLoader {
                     usuario.setNombreCompleto(ADMIN_NOMBRE_COMPLETO);
                     usuario.setActivo(true);
                     usuario.setRoles(new HashSet<>(Set.of(adminRol)));
+                    usuario.setRolPrincipal(adminRol);
                     return usuario;
                 })
                 .orElseGet(() -> Usuario.builder()
@@ -614,6 +636,7 @@ public class DataLoader {
                         .nombreCompleto(ADMIN_NOMBRE_COMPLETO)
                         .activo(true)
                         .roles(new HashSet<>(Set.of(adminRol)))
+                        .rolPrincipal(adminRol)
                         .build());
         usuarioRepository.save(adminUsuario);
 

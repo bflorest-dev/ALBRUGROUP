@@ -14,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
+import pe.albrugroup.rrhh_service.entity.enums.CategoriaPersonal;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
@@ -106,36 +107,41 @@ public class EmpleadoController {
 
     @Operation(
             summary = "Listar empleados vigentes de forma ligera",
-            description = "Devuelve empleados activos con contrato vigente a la fecha actual. Permite filtrar opcionalmente por uno o varios puestos de trabajo, " +
-                    "o por un conjunto de IDs de empleado (carga granular por categoria). Si se envian ambos, prevalece el filtro por IDs."
+            description = "Devuelve empleados activos con contrato vigente a la fecha actual. Permite filtrar por categoria contractual, " +
+                    "por el puesto legado durante la transicion o por IDs. La prioridad es IDs, categoria y puesto legado."
     )
     @GetMapping("/light")
     @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
     public ResponseEntity<List<EmpleadoRolResponse>> listarEmpleadosLight(
+            @RequestParam(required = false) List<CategoriaPersonal> categoriasPersonal,
+            @Deprecated(forRemoval = true)
             @RequestParam(required = false) List<PuestoTrabajo> puestosTrabajo,
             @Parameter(description = "IDs de empleado para carga granular; si se envia, prevalece sobre puestosTrabajo")
             @RequestParam(required = false) List<Long> empleadoIds
     ) {
-        return ResponseEntity.ok(empleadoService.listarEmpleadosLight(puestosTrabajo, empleadoIds));
+        return ResponseEntity.ok(empleadoService.listarEmpleadosLight(categoriasPersonal, puestosTrabajo, empleadoIds));
     }
 
     @Operation(
             summary = "Listar empleados para asistencia por periodo",
             description = "Devuelve empleados con contrato que se solapa con el rango consultado, incluyendo bajas históricas. " +
-                    "Si se envían IDs, prevalecen sobre puestosTrabajo."
+                    "La prioridad de filtros es IDs, categoria contractual y puesto legado."
     )
     @GetMapping("/asistencia")
     @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
     public ResponseEntity<List<EmpleadoRolResponse>> listarEmpleadosAsistencia(
             @RequestParam LocalDate desde,
             @RequestParam LocalDate hasta,
+            @RequestParam(required = false) List<CategoriaPersonal> categoriasPersonal,
+            @Deprecated(forRemoval = true)
             @RequestParam(required = false) List<PuestoTrabajo> puestosTrabajo,
             @RequestParam(required = false) List<Long> empleadoIds
     ) {
         if (hasta.isBefore(desde)) {
             throw new IllegalArgumentException("El rango de asistencia es inválido.");
         }
-        return ResponseEntity.ok(empleadoService.listarEmpleadosAsistencia(desde, hasta, puestosTrabajo, empleadoIds));
+        return ResponseEntity.ok(empleadoService.listarEmpleadosAsistencia(
+                desde, hasta, categoriasPersonal, puestosTrabajo, empleadoIds));
     }
 
     @Operation(

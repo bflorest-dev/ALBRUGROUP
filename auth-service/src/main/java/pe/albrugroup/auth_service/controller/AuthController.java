@@ -22,17 +22,19 @@ import pe.albrugroup.auth_service.entity.Response.LoginResponse;
 import pe.albrugroup.auth_service.entity.Response.TokenRefreshResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioRolResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioResponse;
-import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
-import pe.albrugroup.auth_service.entity.request.ActualizarCredencialesRequest;
+import pe.albrugroup.auth_service.entity.Rol;
+import pe.albrugroup.auth_service.entity.request.CambiarRolActivoRequest;
 import pe.albrugroup.auth_service.entity.request.ForgotPasswordRequest;
 import pe.albrugroup.auth_service.entity.request.LoginRequest;
 import pe.albrugroup.auth_service.entity.request.LogoutRequest;
 import pe.albrugroup.auth_service.entity.request.RefreshTokenRequest;
 import pe.albrugroup.auth_service.entity.request.RegistrarUsuarioRequest;
 import pe.albrugroup.auth_service.exception.NotFoundException;
+import pe.albrugroup.auth_service.exception.ForbiddenException;
 import pe.albrugroup.auth_service.security.CustomUserDetails;
 import pe.albrugroup.auth_service.security.JWTUtil;
 import pe.albrugroup.auth_service.service.RefreshTokenService;
+import pe.albrugroup.auth_service.service.RolService;
 import pe.albrugroup.auth_service.usecase.IUsuario;
 
 import java.util.Map;
@@ -50,6 +52,7 @@ public class AuthController {
     private final AuthenticationManager authManager;
     private final JWTUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
+    private final RolService rolService;
 
     @PostMapping("/login")
     @Operation(summary = "Iniciar sesion", description = "Autentica al usuario y retorna el JWT con su contexto de acceso.")
@@ -64,8 +67,16 @@ public class AuthController {
                     )
             );
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            String token = jwtUtil.generateToken(userDetails);
-            String refreshToken = refreshTokenService.createRefreshToken(userDetails.getUsuario());
+            Rol rolPrincipal = userDetails.getUsuario().getRolPrincipal();
+            if (rolPrincipal == null) {
+                throw new ForbiddenException("El usuario aun no tiene un rol principal asignado");
+            }
+            String token = jwtUtil.generateToken(userDetails, rolPrincipal);
+            String refreshToken = refreshTokenService.createRefreshToken(userDetails.getUsuario(), rolPrincipal);
+            List<String> rolesAsignados = userDetails.getUsuario().getRoles().stream()
+                    .map(Rol::getNombre)
+                    .sorted()
+                    .toList();
 
             LoginResponse response = LoginResponse.builder()
                     .token(token)
@@ -75,10 +86,10 @@ public class AuthController {
                     .username(userDetails.getUsername())
                     .empleadoId(userDetails.getEmpleadoId())
                     .nombreCompleto(userDetails.getNombreCompleto())
-                    .roles(userDetails.getAuthorities().stream()
-                            .filter(auth -> auth.getAuthority().startsWith("ROLE_"))
-                            .map(auth -> auth.getAuthority().replace("ROLE_", ""))
-                            .toList())
+                    .roles(List.of(rolPrincipal.getNombre()))
+                    .rolesAsignados(rolesAsignados)
+                    .rolPrincipal(rolPrincipal.getNombre())
+                    .rolActivo(rolPrincipal.getNombre())
                     .build();
             log.info("Login Exitoso: {}", request.getUsername());
             return ResponseEntity.ok(response);
@@ -99,12 +110,14 @@ public class AuthController {
     @Operation(summary = "Renovar token", description = "Rota un refresh token valido y retorna un nuevo JWT de acceso.")
     public ResponseEntity<TokenRefreshResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         var tokens = refreshTokenService.rotate(request.getRefreshToken());
-        return ResponseEntity.ok(TokenRefreshResponse.builder()
-                .token(tokens.accessToken())
-                .refreshToken(tokens.refreshToken())
-                .type("Bearer")
-                .expiresIn(tokens.expiresIn())
-                .build());
+        return ResponseEntity.ok(rolService.toTokenResponse(tokens));
+    }
+
+    @PostMapping("/sesion/rol-activo")
+    @Operation(summary = "Cambiar rol activo", description = "Rota los tokens de la sesion usando otro rol asignado al usuario.")
+    public ResponseEntity<TokenRefreshResponse> cambiarRolActivo(
+            @Valid @RequestBody CambiarRolActivoRequest request) {
+        return ResponseEntity.ok(rolService.cambiarRolActivo(request));
     }
 
     @PostMapping("/logout")
@@ -124,21 +137,8 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("{empleadoId}/username-roles")
-    @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
-    @Operation(summary = "Actualizar credenciales y roles", description = "Actualiza username y configuracion de roles del usuario por empleado.")
-    public ResponseEntity<UsuarioResponse> actualizarUsernameRoles(
-            @PathVariable @Positive Long empleadoId,
-            @Valid @RequestBody ActualizarCredencialesRequest request
-    ) {
-        log.info("Actualizando username/roles para usuario: {}", empleadoId);
-        var usuario = usuarioService.actualizarUsernameRoles(empleadoId, request);
-        log.info("Usuario actualizado exitosamente: {}", usuario.getUsername());
-        return ResponseEntity.ok(usuario);
-    }
-
     @PostMapping("{empleadoId}/reset-password")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('RESET_PASSWORD_USUARIOS')")
     @Operation(summary = "Resetear password", description = "Genera nuevas credenciales temporales para el usuario del empleado indicado.")
     public ResponseEntity<CredencialesResponse> resetPassword(@PathVariable @Positive Long empleadoId) {
         log.info("Reseteando password para usuario: {}", empleadoId);
@@ -172,11 +172,11 @@ public class AuthController {
         return ResponseEntity.ok(usuario);
     }
 
-    @GetMapping("/roles/{puestoTrabajo}/usuarios")
+    @GetMapping("/roles/{rol}/usuarios")
     @PreAuthorize("hasAnyAuthority('READ_EMPLEADOS','READ_LEADS_GTR','READ_LEADS_SUPERVISOR_VENTAS_RESUMEN')")
     @Operation(summary = "Listar usuarios activos por rol", description = "Retorna los usuarios activos asociados al rol solicitado.")
-    public ResponseEntity<List<UsuarioRolResponse>> listarUsuariosActivosPorRol(@PathVariable PuestoTrabajo puestoTrabajo) {
-        return ResponseEntity.ok(usuarioService.listarUsuariosActivosPorRol(puestoTrabajo));
+    public ResponseEntity<List<UsuarioRolResponse>> listarUsuariosActivosPorRol(@PathVariable String rol) {
+        return ResponseEntity.ok(usuarioService.listarUsuariosActivosPorRol(rol));
     }
 
     @DeleteMapping("{empleadoId}/deshabilitar")

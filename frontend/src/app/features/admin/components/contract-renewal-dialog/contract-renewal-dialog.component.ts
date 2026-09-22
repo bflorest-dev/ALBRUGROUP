@@ -46,7 +46,7 @@ export class ContractRenewalDialogComponent {
   @Input({ required: true }) employee: EmpleadoRolResponse | null = null;
   @Input({ required: true }) contractForm!: FormGroup;
   @Input({ required: true }) horarioForm!: FormGroup;
-  @Input({ required: true }) puestoTrabajoOptions: string[] = [];
+  @Input({ required: true }) categoriaPersonalOptions: string[] = [];
   @Input({ required: true }) regimenOptions: string[] = [];
   @Input({ required: true }) modalidadOptions: string[] = [];
   @Input({ required: true }) seguroSaludOptions: string[] = [];

@@ -20,10 +20,6 @@ export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   }
 
   if (!allowedRoles?.includes(activeRole)) {
-    const matchingRole = allowedRoles?.find((role) => sessionService.hasRole(role));
-    if (matchingRole && sessionService.setActiveRole(matchingRole)) {
-      return true;
-    }
     const homeRoute = sessionService.getHomeRoute();
     return router.createUrlTree([homeRoute]);
   }

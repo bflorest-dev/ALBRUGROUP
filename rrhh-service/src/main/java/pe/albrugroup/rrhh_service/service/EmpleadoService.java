@@ -8,6 +8,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.EmpresaContratista;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
+import pe.albrugroup.rrhh_service.entity.enums.CategoriaPersonal;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
@@ -181,7 +182,7 @@ public class EmpleadoService implements IEmpleado {
             return;
         }
         contratoRepository.findContratoVigenteByEmpleadoId(empleado.getId(), LocalDate.now())
-                .ifPresent(contrato -> {
+                .ifPresent(contratoVigente -> {
                     String email = (empleado.getCorreoCorporativo() != null && !empleado.getCorreoCorporativo().isBlank())
                             ? empleado.getCorreoCorporativo()
                             : empleado.getCorreoPersonal();
@@ -191,7 +192,6 @@ public class EmpleadoService implements IEmpleado {
                             .apellidos(empleado.getApellidos())
                             .dni(empleado.getNumeroDocumento())
                             .email(email)
-                            .puestoTrabajo(contrato.getPuestoTrabajo())
                             .build();
                     TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                         @Override
@@ -228,7 +228,9 @@ public class EmpleadoService implements IEmpleado {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EmpleadoRolResponse> listarEmpleadosLight(List<PuestoTrabajo> puestosTrabajo, List<Long> empleadoIds) {
+    public List<EmpleadoRolResponse> listarEmpleadosLight(List<CategoriaPersonal> categoriasPersonal,
+                                                          List<PuestoTrabajo> puestosTrabajo,
+                                                          List<Long> empleadoIds) {
         // Filtro por IDs (carga granular por categoria): si se pide un conjunto vacio,
         // devolvemos vacio en lugar de caer al listado completo.
         if (empleadoIds != null) {
@@ -240,23 +242,28 @@ public class EmpleadoService implements IEmpleado {
             );
         }
 
-        List<EmpleadoRolResponse> empleados = empleadoRolMapper.toResponseList(
-                puestosTrabajo == null || puestosTrabajo.isEmpty()
-                        ? contratoRepository.findEmpleadosActivos(EstadoOperativo.ACTIVO, LocalDate.now())
-                        : contratoRepository.findEmpleadosActivosByPuestosTrabajo(
-                                EstadoOperativo.ACTIVO,
-                                LocalDate.now(),
-                                puestosTrabajo
-                        )
-        );
+        List<EmpleadoRolResponse> empleados;
+        if (categoriasPersonal != null && !categoriasPersonal.isEmpty()) {
+            empleados = empleadoRolMapper.toResponseList(
+                    contratoRepository.findEmpleadosActivosByCategoriasPersonal(
+                            EstadoOperativo.ACTIVO, LocalDate.now(), categoriasPersonal));
+        } else if (puestosTrabajo != null && !puestosTrabajo.isEmpty()) {
+            empleados = empleadoRolMapper.toResponseList(
+                    contratoRepository.findEmpleadosActivosByPuestosTrabajo(
+                            EstadoOperativo.ACTIVO, LocalDate.now(), puestosTrabajo));
+        } else {
+            empleados = empleadoRolMapper.toResponseList(
+                    contratoRepository.findEmpleadosActivos(EstadoOperativo.ACTIVO, LocalDate.now()));
+        }
         return empleados;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<EmpleadoRolResponse> listarEmpleadosAsistencia(LocalDate desde, LocalDate hasta,
-                                                                 List<PuestoTrabajo> puestosTrabajo,
-                                                                 List<Long> empleadoIds) {
+                                                                List<CategoriaPersonal> categoriasPersonal,
+                                                                List<PuestoTrabajo> puestosTrabajo,
+                                                                List<Long> empleadoIds) {
         if (empleadoIds != null) {
             if (empleadoIds.isEmpty()) {
                 return List.of();
@@ -266,11 +273,18 @@ public class EmpleadoService implements IEmpleado {
             );
         }
 
+        if (categoriasPersonal != null && !categoriasPersonal.isEmpty()) {
+            return empleadoRolMapper.toResponseList(
+                    contratoRepository.findEmpleadosConContratoEnRangoByCategoriasPersonal(
+                            desde, hasta, categoriasPersonal));
+        }
+        if (puestosTrabajo != null && !puestosTrabajo.isEmpty()) {
+            return empleadoRolMapper.toResponseList(
+                    contratoRepository.findEmpleadosConContratoEnRangoByPuestosTrabajo(
+                            desde, hasta, puestosTrabajo));
+        }
         return empleadoRolMapper.toResponseList(
-                puestosTrabajo == null || puestosTrabajo.isEmpty()
-                        ? contratoRepository.findEmpleadosConContratoEnRango(desde, hasta)
-                        : contratoRepository.findEmpleadosConContratoEnRangoByPuestosTrabajo(desde, hasta, puestosTrabajo)
-        );
+                contratoRepository.findEmpleadosConContratoEnRango(desde, hasta));
     }
 
     @Override

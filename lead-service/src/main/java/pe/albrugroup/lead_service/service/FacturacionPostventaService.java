@@ -270,7 +270,7 @@ public class FacturacionPostventaService {
             CalendarioFacturacionPostventa calendario,
             PeriodoFacturacionPostventa periodoActual
     ) {
-        CalculadoraFacturacionPostventa calculadora = calculadoraResolver.resolver(calendario.getProveedorSnapshot());
+        CalculadoraFacturacionPostventa calculadora = calculadoraResolver.resolver(calendario.getTipoReglaProveedor());
         PeriodoFacturacionPostventa recalculado = calculadora.crearPeriodo(calendario, NUMERO_PERIODO_INICIAL);
 
         periodoActual.setFechaInicioPeriodo(recalculado.getFechaInicioPeriodo());
@@ -421,7 +421,7 @@ public class FacturacionPostventaService {
             return;
         }
 
-        CalculadoraFacturacionPostventa calculadora = calculadoraResolver.resolver(calendario.getProveedorSnapshot());
+        CalculadoraFacturacionPostventa calculadora = calculadoraResolver.resolver(calendario.getTipoReglaProveedor());
         periodoRepository.save(calculadora.crearPeriodo(calendario, siguienteNumero));
     }
 

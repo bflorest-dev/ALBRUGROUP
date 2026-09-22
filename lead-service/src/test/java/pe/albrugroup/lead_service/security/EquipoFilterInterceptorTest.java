@@ -57,7 +57,6 @@ class EquipoFilterInterceptorTest {
         when(proveedorScopeService.ambitoActual()).thenReturn(AmbitoProveedor.BACKOFFICE);
         when(proveedorScopeService.resolverScope(AmbitoProveedor.BACKOFFICE))
                 .thenReturn(new ProveedorScopeService.Scope(true, Set.of(2L), Set.of("CLARO")));
-        when(proveedorScopeService.ambitoSolicitadoExplicitamente()).thenReturn(true);
         when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
 
         interceptor.preHandle(mock(HttpServletRequest.class), mock(HttpServletResponse.class), new Object());

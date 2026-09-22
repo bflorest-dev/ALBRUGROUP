@@ -64,6 +64,10 @@ public class Usuario {
     @Builder.Default
     private Set<Rol> roles = new HashSet<>();
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "rol_principal_id")
+    private Rol rolPrincipal;
+
     // Equipos a los que pertenece el usuario (partición de datos, ortogonal al rol).
     // Roles operativos: normalmente 1 equipo (ASESOR_VENTAS puede pertenecer a varios);
     // ADMIN/COMMUNITY: sin equipo (acceso global por permiso).

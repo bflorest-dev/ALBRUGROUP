@@ -7,4 +7,7 @@ export interface LoginResponse {
   empleadoId: number;
   nombreCompleto: string;
   roles: string[];
+  rolesAsignados: string[];
+  rolPrincipal: string;
+  rolActivo: string;
 }

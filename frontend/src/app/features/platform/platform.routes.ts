@@ -12,6 +12,7 @@ import { AdminDashboardPostventaPageComponent } from '../admin/pages/admin-dashb
 import { DashboardCobranzaStageComponent } from '../admin/components/dashboard-cobranza-stage/dashboard-cobranza-stage.component';
 import { DashboardPostventaStageComponent } from '../admin/components/dashboard-postventa-stage/dashboard-postventa-stage.component';
 import { DashboardPreventaStageComponent } from '../admin/components/dashboard-preventa-stage/dashboard-preventa-stage.component';
+import { DashboardFunnelStageComponent } from '../admin/components/dashboard-funnel-stage/dashboard-funnel-stage.component';
 import { DashboardVentaStageComponent } from '../admin/components/dashboard-venta-stage/dashboard-venta-stage.component';
 import { AdminDataOpsPageComponent } from '../admin/pages/admin-data-ops-page/admin-data-ops-page.component';
 import {
@@ -39,11 +40,20 @@ import { TrainerWorkspacePageComponent } from '../trainer/pages/trainer-workspac
 import { FreelancePageComponent } from '../freelance/pages/freelance-page/freelance-page.component';
 import { RoleHomeRedirectComponent } from './pages/role-home-redirect/role-home-redirect.component';
 import { RolePlatformPageComponent } from './pages/role-platform-page/role-platform-page.component';
+import { PersonalWorkspacePageComponent } from '../personal/pages/personal-workspace-page/personal-workspace-page.component';
 
 export const PLATFORM_ROUTES: Routes = [
   {
     path: '',
     component: RoleHomeRedirectComponent
+  },
+  {
+    path: 'personal',
+    component: PersonalWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR', 'RRHH']
+    }
   },
   {
     path: 'admin',
@@ -87,6 +97,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin/dashboard/cobranza',
     component: DashboardCobranzaStageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+    }
+  },
+  {
+    path: 'admin/dashboard/funnel',
+    component: DashboardFunnelStageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],

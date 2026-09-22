@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TEMP TABLE seed_permisos (
@@ -437,7 +439,7 @@ INSERT INTO usuarios (
     password_inicializada
 )
 VALUES (
-    'admin@albru.admin.pe',
+    'admin@albru.pe',
     crypt('albruadminpe', gen_salt('bf')),
     'jevbxx@gmail.com',
     1,
@@ -459,10 +461,18 @@ INSERT INTO usuario_rol (usuario_id, rol_id)
 SELECT u.id, r.id
 FROM usuarios u
 JOIN roles r ON r.nombre = 'ADMINISTRADOR'
-WHERE u.username = 'admin@albru.admin.pe'
+WHERE u.username = 'admin@albru.pe'
   AND NOT EXISTS (
       SELECT 1
       FROM usuario_rol ur
       WHERE ur.usuario_id = u.id
         AND ur.rol_id = r.id
   );
+
+UPDATE usuarios u
+SET rol_principal_id = r.id
+FROM roles r
+WHERE u.username = 'admin@albru.pe'
+  AND r.nombre = 'ADMINISTRADOR';
+
+COMMIT;

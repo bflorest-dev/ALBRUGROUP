@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -88,6 +89,7 @@ type AdjustmentOp = 'extra' | 'compensacion' | 'corrimiento' | 'jornada-extra' |
 export class RrhhAsistenciaPageComponent implements OnInit {
   protected readonly facade = inject(RrhhAsistenciaFacade);
   private readonly session = inject(SessionService);
+  private readonly route = inject(ActivatedRoute);
 
   /** ADMIN puede correr con déficit (compensable); ADMIN y RRHH pueden justificar. */
   protected readonly canCorrimientoCompensable = computed(() =>
@@ -126,8 +128,12 @@ export class RrhhAsistenciaPageComponent implements OnInit {
     return cached;
   });
 
-  ngOnInit(): void {
-    void this.facade.recargar();
+  async ngOnInit(): Promise<void> {
+    await this.facade.recargar();
+    const empleadoId = Number(this.route.snapshot.queryParamMap.get('empleadoId'));
+    if (Number.isInteger(empleadoId)) {
+      await this.facade.openEmployeeDrawer(empleadoId);
+    }
   }
 
   protected onSectionChange(value: string | number | undefined): void {

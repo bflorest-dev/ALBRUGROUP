@@ -112,7 +112,7 @@ export type PersonalReviewSummary = {
   nombreCompleto: string;
   numeroDocumento: string;
   correoPersonal: string;
-  rolAsignado: string;
+  categoriaPersonal: string;
 };
 
 @Injectable()
@@ -392,25 +392,7 @@ export class AdminPersonalFacade implements OnDestroy {
   ];
   readonly bancoOptions = ['BCP', 'BBVA', 'INTERBANK', 'SCOTIABANK', 'BANCO_DE_LA_NACION'];
   readonly parentescoOptions = ['PADRE', 'MADRE', 'TIO', 'ESPOSO', 'HERMANO', 'ABUELO', 'PAREJA', 'OTRO'];
-  readonly puestoTrabajoOptions = [
-    'ADMINISTRADOR',
-    'RRHH',
-    'RECLUTADOR',
-    'CAPACITADOR',
-    'DESARROLLADOR',
-    'CONTADOR',
-    'COMMUNITY',
-    'MONITOR',
-    'SUPERVISOR_VENTAS',
-    'ASESOR_VENTAS',
-    'SUPERVISOR_BACKOFFICE',
-    'ASESOR_BACKOFFICE',
-    'SUPERVISOR_GTR',
-    'ASESOR_GTR',
-    'FREELANCE',
-    'SUPERVISOR_POSTVENTA',
-    'ASESOR_POSTVENTA'
-  ];
+  readonly categoriaPersonalOptions = ['ESTRUCTURAL', 'OPERATIVO'];
   readonly regimenOptions = ['RECIBO_POR_HONORARIOS', 'PLANILLA'];
   readonly modalidadOptions = ['PART_TIME', 'FULL_TIME', 'SEMI_FULL', 'SUPER_FULL'];
   readonly seguroSaludOptions = ['SIS', 'ESSALUD'];
@@ -449,7 +431,7 @@ export class AdminPersonalFacade implements OnDestroy {
   });
 
   readonly contratoForm = this.formBuilder.nonNullable.group({
-    puestoTrabajo: ['RECLUTADOR', [Validators.required]],
+    categoriaPersonal: ['ESTRUCTURAL', [Validators.required]],
     regimen: ['PLANILLA', [Validators.required]],
     modalidad: ['FULL_TIME', [Validators.required]],
     seguroSalud: ['ESSALUD'],
@@ -461,7 +443,7 @@ export class AdminPersonalFacade implements OnDestroy {
   });
 
   readonly contractRenewalForm = this.formBuilder.nonNullable.group({
-    puestoTrabajo: ['RECLUTADOR', [Validators.required]],
+    categoriaPersonal: ['ESTRUCTURAL', [Validators.required]],
     regimen: ['PLANILLA', [Validators.required]],
     modalidad: ['FULL_TIME', [Validators.required]],
     seguroSalud: ['ESSALUD'],
@@ -631,6 +613,7 @@ export class AdminPersonalFacade implements OnDestroy {
   );
 
   readonly isSubmitting = computed(() => this.createFlowState().status === 'loading');
+  readonly isSubmittingIdentity = signal(false);
   readonly personalReviewSummary = computed<PersonalReviewSummary>(() => {
     const empleado = this.empleadoFormValue();
     const contrato = this.contratoFormValue();
@@ -639,7 +622,7 @@ export class AdminPersonalFacade implements OnDestroy {
       nombreCompleto: `${(empleado.nombres ?? '').trim()} ${(empleado.apellidos ?? '').trim()}`.trim(),
       numeroDocumento: (empleado.numeroDocumento ?? '').trim(),
       correoPersonal: (empleado.correoPersonal ?? '').trim(),
-      rolAsignado: contrato.puestoTrabajo ?? ''
+      categoriaPersonal: contrato.categoriaPersonal ?? ''
     };
   });
   readonly employeeRows = computed(() => this.employeesPage()?.content ?? []);
@@ -871,6 +854,56 @@ export class AdminPersonalFacade implements OnDestroy {
     this.executePersonalFlow();
   }
 
+  async submitEmployeeOnly(): Promise<void> {
+    if (this.empleadoForm.invalid || this.isSubmittingIdentity()) {
+      this.currentStep.set(1);
+      this.empleadoForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSubmittingIdentity.set(true);
+    this.submitErrorMessage.set('');
+    this.creationResult.set(null);
+    try {
+      const empleado = await firstValueFrom(
+        this.adminRrhhService
+          .registrarEmpleado(this.buildEmpleadoRequest())
+          .pipe(timeout(this.requestTimeoutMs))
+      );
+      this.creationResult.set({
+        empleadoId: empleado.id,
+        dni: empleado.numeroDocumento,
+        nombreCompleto: `${empleado.nombres} ${empleado.apellidos}`.trim(),
+        username: 'Pendiente de sincronización',
+        activo: false,
+        passwordInicializada: false,
+        email: empleado.correoPersonal,
+        roles: []
+      });
+      this.currentStep.set(4);
+      this.loadEmployees(0, true);
+      void this.loadActiveEmployees();
+      try {
+        const usuario = await firstValueFrom(
+          this.authService
+            .getUsuarioPorEmpleadoId(empleado.id)
+            .pipe(timeout(this.requestTimeoutMs))
+        );
+        this.creationResult.set(usuario);
+      } catch {
+        this.submitErrorMessage.set(
+          'La identidad se guardó en RR. HH., pero no fue posible confirmar todavía su cuenta de acceso.'
+        );
+      }
+    } catch (error) {
+      this.submitErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No fue posible guardar la identidad del empleado.')
+      );
+    } finally {
+      this.isSubmittingIdentity.set(false);
+    }
+  }
+
   requestPersonalReview(): void {
     if (!this.validatePersonalForms()) {
       return;
@@ -972,7 +1005,7 @@ export class AdminPersonalFacade implements OnDestroy {
       idEmpresaContratista: ''
     });
     this.contratoForm.reset({
-      puestoTrabajo: 'RECLUTADOR',
+      categoriaPersonal: 'ESTRUCTURAL',
       regimen: 'PLANILLA',
       modalidad: 'FULL_TIME',
       seguroSalud: 'ESSALUD',
@@ -1112,6 +1145,56 @@ export class AdminPersonalFacade implements OnDestroy {
     } finally {
       this.isLoadingActiveEmployees.set(false);
     }
+  }
+
+  async openEmployeeAction(
+    empleadoId: number,
+    action: 'editar' | 'contrato' | 'horario',
+    numeroDocumento?: string | null
+  ): Promise<boolean> {
+    let employee = this.activeEmployees().find((item) => item.idEmpleado === empleadoId);
+    if (!employee) {
+      await this.loadActiveEmployees();
+      employee = this.activeEmployees().find((item) => item.idEmpleado === empleadoId);
+    }
+    const hasCurrentContract = Boolean(employee);
+    if (!employee && numeroDocumento) {
+      try {
+        const detail = await firstValueFrom(
+          this.adminRrhhService.getEmpleadoPorDocumento(numeroDocumento).pipe(timeout(this.requestTimeoutMs))
+        );
+        employee = {
+          idEmpleado: detail.id,
+          nombres: detail.nombres,
+          apellidos: detail.apellidos,
+          numeroDocumento: detail.numeroDocumento,
+          celularPersonal: detail.celularPersonal,
+          correoPersonal: detail.correoPersonal,
+          puestoTrabajo: 'SIN_CONTRATO',
+          estadoOperativo: detail.estadoOperativo === 'INACTIVO' ? 'INACTIVO' : 'ACTIVO'
+        };
+      } catch {
+        this.activeEmployeeListErrorMessage.set('No se pudo cargar el expediente solicitado.');
+        return false;
+      }
+    }
+    if (!employee) {
+      this.activeEmployeeListErrorMessage.set('No se encontró al empleado solicitado.');
+      return false;
+    }
+
+    if (action === 'editar') {
+      await this.openEditDialog(employee);
+    } else if (action === 'contrato') {
+      await this.openContractRenewal(employee, hasCurrentContract);
+    } else {
+      if (!hasCurrentContract) {
+        this.activeEmployeeListErrorMessage.set('Registra un contrato antes de asignar un horario.');
+        return false;
+      }
+      await this.openScheduleChange(employee);
+    }
+    return true;
   }
 
   /**
@@ -2636,7 +2719,7 @@ export class AdminPersonalFacade implements OnDestroy {
     const raw = form.getRawValue();
 
     return {
-      puestoTrabajo: raw.puestoTrabajo,
+      categoriaPersonal: raw.categoriaPersonal as 'ESTRUCTURAL' | 'OPERATIVO',
       regimen: raw.regimen,
       modalidad: raw.modalidad,
       seguroSalud: raw.regimen === 'PLANILLA' && raw.seguroSalud ? raw.seguroSalud : null,
@@ -2649,7 +2732,7 @@ export class AdminPersonalFacade implements OnDestroy {
 
   private populateContractRenewalForm(contrato: ContratoResponse): void {
     this.contractRenewalForm.reset({
-      puestoTrabajo: contrato.puestoTrabajo,
+      categoriaPersonal: contrato.categoriaPersonal ?? 'ESTRUCTURAL',
       regimen: contrato.regimen,
       modalidad: contrato.modalidad,
       seguroSalud: contrato.seguroSalud ?? 'ESSALUD',
@@ -2663,7 +2746,7 @@ export class AdminPersonalFacade implements OnDestroy {
 
   private resetContractRenewalForm(): void {
     this.contractRenewalForm.reset({
-      puestoTrabajo: 'RECLUTADOR',
+      categoriaPersonal: 'ESTRUCTURAL',
       regimen: 'PLANILLA',
       modalidad: 'FULL_TIME',
       seguroSalud: 'ESSALUD',

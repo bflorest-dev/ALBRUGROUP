@@ -25,7 +25,16 @@ public class Contrato {
     @OneToMany(mappedBy = "contrato", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Pago> pagos = new ArrayList<>();
-    // PUESTO DE TRABAJO
+    // CLASIFICACION CONTRACTUAL
+    @Enumerated(EnumType.STRING)
+    @Column(name = "categoria_personal", nullable = false)
+    private CategoriaPersonal categoriaPersonal;
+
+    /**
+     * Compatibilidad temporal con consumidores que aun consultan roles en RRHH.
+     * La fuente de verdad futura de este dato es auth-service.
+     */
+    @Deprecated(forRemoval = true)
     @Enumerated(EnumType.STRING)
     @Column(name = "puesto_trabajo")
     private PuestoTrabajo puestoTrabajo;

@@ -94,7 +94,7 @@ class CorreccionAdminServiceTest {
         when(eventoRepository.findByIdInAndIdLead(List.of(5L), 10L)).thenReturn(List.of(registro));
         when(currentUser.empleadoID()).thenReturn(1L);
         when(currentUser.nombreCompleto()).thenReturn("Admin Uno");
-        when(currentUser.rolPrincipal()).thenReturn("ADMINISTRADOR");
+        when(currentUser.rolActivo()).thenReturn("ADMINISTRADOR");
         LeadDetalleResponse detalle = LeadDetalleResponse.builder().id(10L).build();
         when(leadService.obtenerDetalleParaCorreccion(10L)).thenReturn(detalle);
 

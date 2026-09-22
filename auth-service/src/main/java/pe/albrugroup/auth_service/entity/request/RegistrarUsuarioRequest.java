@@ -4,7 +4,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
 
 @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
@@ -21,8 +20,6 @@ public class RegistrarUsuarioRequest {
     @NotBlank(message = "Falta Email")
     @Email(message = "Email Invalido")
     private String email;
-    @NotNull(message = "Falta Puesto de Trabajo")
-    private PuestoTrabajo puestoTrabajo;
 }
 
 

@@ -1,0 +1,97 @@
+<section class="funnel-dash">
+  <div class="fd-controls">
+    @if (proveedorOptions().length > 1) {
+      <div class="fd-control">
+        <span class="fd-control__label">Proveedor</span>
+        <p-selectButton
+          [options]="proveedorOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="proveedorId()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onProveedorChange($event.value)"
+        />
+      </div>
+    }
+    <div class="fd-control">
+      <span class="fd-control__label">Período</span>
+      <app-period-selector
+        [periodo]="periodo()"
+        [dia]="dia()"
+        [hasta]="hasta()"
+        (periodoChange)="onPeriodoChange($event)"
+        (rangoChange)="onRangoChange($event)"
+      />
+    </div>
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      severity="secondary"
+      [rounded]="true"
+      [outlined]="true"
+      [loading]="isLoading()"
+      (click)="recargar()"
+      pTooltip="Actualizar"
+      tooltipPosition="top"
+      aria-label="Actualizar"
+      class="fd-refresh"
+    ></button>
+  </div>
+
+  @if (errorMessage()) {
+    <p-message severity="error" [text]="errorMessage()" styleClass="fd-message" />
+  }
+  @if (!hayDatos() && !errorMessage()) {
+    <div class="fd-empty">{{ isLoading() ? 'Cargando métricas…' : 'Sin datos para el período.' }}</div>
+  }
+
+  @if (hayDatos()) {
+    <article class="poster" [style.--team-accent]="providerAccent()">
+      <header class="poster-head">
+        <div class="poster-head__left">
+          <p class="eyebrow">Dashboard · Funnel</p>
+          <h2 class="poster-title">Embudo de leads</h2>
+        </div>
+        <div class="poster-head__right">
+          <span class="ph-chip"><span class="ph-dot"></span>{{ proveedorNombre() }}</span>
+          <span class="ph-sep"></span>
+          <span class="ph-chip">{{ periodoLabel() }}</span>
+        </div>
+      </header>
+
+      <!-- ── INVERSIÓN + COSTO POR LEAD ── -->
+      <div class="fd-money-row">
+        <div class="fd-money-card">
+          <span class="fd-money-card__label">Inversión</span>
+          <span class="fd-money-card__value">S/. {{ inversion() | number:'1.2-2' }}</span>
+        </div>
+        <div class="fd-money-card">
+          <span class="fd-money-card__label">Costo por lead instalado</span>
+          <span class="fd-money-card__value">
+            @if (instaladas() > 0) {
+              S/. {{ costoPorLead() | number:'1.2-2' }}
+            } @else {
+              –
+            }
+          </span>
+        </div>
+      </div>
+
+      <!-- ── EMBUDO ── -->
+      <div class="fd-funnel">
+        @for (row of funnelRows(); track row.key) {
+          <div class="fd-row" [class.fd-row--subtotal]="row.isSubtotal">
+            <div class="fd-row__label">{{ row.label }}</div>
+            <div class="fd-row__bar-track">
+              <div class="fd-row__bar is-{{ row.color }}" [style.width.%]="row.width"></div>
+            </div>
+            <div class="fd-row__value">{{ row.value | number }}</div>
+            <div class="fd-row__pct">{{ row.pct | percent:'1.1-1' }}</div>
+          </div>
+        }
+      </div>
+    </article>
+  }
+</section>

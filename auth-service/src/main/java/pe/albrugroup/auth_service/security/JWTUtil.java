@@ -4,9 +4,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import pe.albrugroup.auth_service.entity.Equipo;
+import pe.albrugroup.auth_service.entity.Permiso;
+import pe.albrugroup.auth_service.entity.Rol;
 
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
@@ -28,34 +29,44 @@ public class JWTUtil {
     private final PublicKey publicKey;
     private final Duration jwtExpiration;
     private final String issuer;
+    private final int tokenVersion;
 
     public JWTUtil(
             @Value("${jwt.private-key-base64}") String privateKeyBase64,
             @Value("${jwt.public-key-base64}") String publicKeyBase64,
             @Value("${jwt.expiration:30m}") Duration jwtExpiration,
-            @Value("${jwt.issuer}") String issuer
+            @Value("${jwt.issuer}") String issuer,
+            @Value("${jwt.token-version:2}") int tokenVersion
     ) {
         this.privateKey = parsePrivateKey(privateKeyBase64);
         this.publicKey = parsePublicKey(publicKeyBase64);
         this.jwtExpiration = jwtExpiration;
         this.issuer = issuer;
+        this.tokenVersion = tokenVersion;
     }
 
-    public String generateToken(CustomUserDetails userDetails) {
+    public String generateToken(CustomUserDetails userDetails, Rol rolActivo) {
+        if (rolActivo == null || userDetails.getUsuario().getRoles().stream()
+                .noneMatch(rol -> rol.getId().equals(rolActivo.getId()))) {
+            throw new IllegalArgumentException("El rol activo debe estar asignado al usuario");
+        }
         Map<String, Object> claims = new HashMap<>();
         claims.put("sessionIssuedAt", System.currentTimeMillis());
+        claims.put("tokenVersion", tokenVersion);
         claims.put("empleadoId", userDetails.getEmpleadoId());
         claims.put("nombreCompleto", userDetails.getNombreCompleto());
+        claims.put("roles", java.util.List.of(rolActivo.getNombre()));
+        claims.put("rolActivo", rolActivo.getNombre());
+        claims.put("rolPrincipal", userDetails.getUsuario().getRolPrincipal().getNombre());
+        claims.put("rolesAsignados", userDetails.getUsuario().getRoles().stream()
+                .map(Rol::getNombre)
+                .sorted()
+                .toList());
 
-        var roles = userDetails.getAuthorities().stream()
-                .filter(auth -> auth.getAuthority().startsWith("ROLE_"))
-                .map(auth -> auth.getAuthority().replace("ROLE_", ""))
-                .toList();
-        claims.put("roles", roles);
-
-        var permisos = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .filter(authority -> !authority.startsWith("ROLE_"))
+        var permisos = rolActivo.getPermisos().stream()
+                .map(Permiso::getNombre)
+                .distinct()
+                .sorted()
                 .toList();
         claims.put("permisos", permisos);
 
@@ -87,7 +98,10 @@ public class JWTUtil {
 
     public Boolean validateToken(String token, String username) {
         final String tokenUsername = extractUsername(token);
-        return (tokenUsername.equals(username) && !isTokenExpired(token));
+        Integer version = extractClaim(token, claims -> claims.get("tokenVersion", Integer.class));
+        return tokenUsername.equals(username)
+                && Integer.valueOf(tokenVersion).equals(version)
+                && !isTokenExpired(token);
     }
 
     private Boolean isTokenExpired(String token) {
@@ -115,10 +129,23 @@ public class JWTUtil {
         return issuedAt == null ? null : issuedAt.getTime();
     }
 
+    public java.util.List<String> extractRoles(String token) {
+        Object value = extractAllClaims(token).get("roles");
+        if (!(value instanceof java.util.List<?> list)) return java.util.List.of();
+        return list.stream().map(String::valueOf).toList();
+    }
+
+    public java.util.List<String> extractPermisos(String token) {
+        Object value = extractAllClaims(token).get("permisos");
+        if (!(value instanceof java.util.List<?> list)) return java.util.List.of();
+        return list.stream().map(String::valueOf).toList();
+    }
+
     public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(publicKey)
                 .requireIssuer(issuer)
+                .require("tokenVersion", tokenVersion)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();

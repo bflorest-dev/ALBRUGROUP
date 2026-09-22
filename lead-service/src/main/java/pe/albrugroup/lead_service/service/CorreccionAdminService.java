@@ -127,7 +127,7 @@ public class CorreccionAdminService {
                 .idLead(idLead)
                 .idActor(currentUser.empleadoID())
                 .nombreActor(currentUser.nombreCompleto())
-                .rolActor(currentUser.rolPrincipal())
+                .rolActor(currentUser.rolActivo())
                 .accion(Accion.CORRECCION)
                 .etapa(lead.getEtapa())
                 .comentario(construirComentario(request, idsEventos.size()))

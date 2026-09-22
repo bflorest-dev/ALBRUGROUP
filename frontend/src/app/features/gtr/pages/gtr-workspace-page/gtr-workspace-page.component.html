@@ -72,9 +72,9 @@
               severity="secondary"
               [outlined]="true"
               [rounded]="true"
-              pTooltip="Registrar lead de ayer"
+              pTooltip="Registrar lead con fecha alternativa"
               tooltipPosition="bottom"
-              aria-label="Registrar lead de ayer"
+              aria-label="Registrar lead con fecha alternativa"
               [disabled]="!facade.canMutateOperationalData()"
               (click)="facade.openRetroactiveLead()"
             ></button>
@@ -309,27 +309,40 @@
   >
     <form class="form-grid" [formGroup]="facade.intakeForm" (ngSubmit)="facade.submitIntake()">
       @if (facade.isRetroactiveIntake()) {
-        <section class="retroactive-intake wide" aria-label="Datos del registro de ayer">
+        <section class="retroactive-intake wide" aria-label="Datos del registro alternativo">
           <div class="retroactive-intake__context">
             <i class="pi pi-clock" aria-hidden="true"></i>
             <div>
-              <strong>Registro atribuido a ayer</strong>
+              <strong>Registro atribuido a</strong>
               <span>{{ facade.retroactiveDateLabel() }}</span>
             </div>
           </div>
+          <label>
+            <span>Fecha del registro</span>
+            <p-select
+              [formControl]="facade.retroactiveDateControl"
+              [options]="facade.retroactiveDateOptions()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Selecciona una fecha"
+              appendTo="body"
+              (onChange)="facade.onRetroactiveDateChange()"
+            />
+            <small>Solo puedes elegir ayer o hoy</small>
+          </label>
           <label>
             <span>Hora del registro</span>
             <p-datepicker
               [formControl]="facade.retroactiveHourControl"
               [timeOnly]="true"
               hourFormat="24"
-              [minDate]="facade.retroactiveMinTime"
-              [maxDate]="facade.retroactiveMaxTime"
+              [minDate]="facade.retroactiveMinTime()"
+              [maxDate]="facade.retroactiveMaxTime()"
               [showIcon]="true"
               iconDisplay="input"
               appendTo="body"
             />
-            <small>Entre 18:00 y 23:59</small>
+            <small>{{ facade.retroactiveHourHint() }}</small>
           </label>
         </section>
       }
@@ -402,7 +415,7 @@
           pButton
           type="submit"
           label="Registrar"
-          [disabled]="!facade.canMutateOperationalData() || facade.intakeForm.invalid || !facade.isRetroactiveHourValid()"
+          [disabled]="!facade.canMutateOperationalData() || facade.intakeForm.invalid || !facade.isRetroactiveDateValid() || !facade.isRetroactiveHourValid()"
           [loading]="facade.isSaving()"
         ></button>
       </div>

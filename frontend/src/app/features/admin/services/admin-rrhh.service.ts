@@ -17,6 +17,7 @@ import { ReemplazarHorarioRequest } from '../../../shared/models/schedule/reempl
 import { CorregirHorarioRequest } from '../../../shared/models/schedule/corregir-horario-request';
 import { RegistrarExcepcionHorarioRequest } from '../../../shared/models/schedule/registrar-excepcion-horario-request';
 import { ExcepcionHorarioResponse } from '../../../shared/models/schedule/excepcion-horario-response';
+import { CerrarContratoRequest } from '../../../shared/models/rrhh/cerrar-contrato-request';
 
 @Injectable({
   providedIn: 'root'
@@ -54,6 +55,19 @@ export class AdminRrhhService {
 
   getContratoVigente(empleadoId: number): Observable<ContratoResponse> {
     return this.http.get<ContratoResponse>(`${this.contratosUrl}/${empleadoId}/vigente`);
+  }
+
+  listarContratos(empleadoId: number, pageNumber = 0, pageSize = 20): Observable<PageResponse<ContratoResponse>> {
+    const params = new HttpParams()
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize)
+      .set('sortBy', 'fechaInicio')
+      .set('direction', 'desc');
+    return this.http.get<PageResponse<ContratoResponse>>(`${this.contratosUrl}/${empleadoId}/historico`, { params });
+  }
+
+  finalizarContrato(empleadoId: number, request: CerrarContratoRequest): Observable<ContratoResponse> {
+    return this.http.patch<ContratoResponse>(`${this.contratosUrl}/${empleadoId}/cesar-contrato`, request);
   }
 
   registrarHorario(request: RegistrarHorarioRequest): Observable<HorarioResponse> {

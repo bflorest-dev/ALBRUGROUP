@@ -15,6 +15,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import pe.albrugroup.auth_service.service.SessionInvalidationService;
 
 import java.io.IOException;
+import java.util.stream.Stream;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 @Component
 @RequiredArgsConstructor
@@ -48,11 +50,17 @@ public class AuthenticationFilter extends OncePerRequestFilter {
               Long sessionIssuedAt = jwtUtil.extractSessionIssuedAt(jwt);
               if(jwtUtil.validateToken(jwt, userDetails.getUsername())
                       && !sessionInvalidationService.isInvalidated(empleadoId, sessionIssuedAt)) {
+                  var authorities = Stream.concat(
+                                  jwtUtil.extractRoles(jwt).stream()
+                                          .map(rol -> new SimpleGrantedAuthority("ROLE_" + rol)),
+                                  jwtUtil.extractPermisos(jwt).stream()
+                                          .map(SimpleGrantedAuthority::new))
+                          .toList();
                   UsernamePasswordAuthenticationToken authToken =
                           new UsernamePasswordAuthenticationToken(
                                   userDetails,
                                   null,
-                                  userDetails.getAuthorities());
+                                  authorities);
                   authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                   SecurityContextHolder.getContext().setAuthentication(authToken);
               }

@@ -1,0 +1,220 @@
+:host {
+  display: block;
+}
+
+.funnel-dash {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fd-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 16px;
+  margin: 8px 2px 14px;
+}
+.fd-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  &__label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--app-text-muted);
+  }
+}
+.fd-refresh { align-self: flex-end; }
+.fd-message { display: block; margin: 8px 0; }
+.fd-empty {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--app-text-muted);
+  font-size: 14px;
+}
+
+// ── POSTER ───────────────────────────────────────────────────────────────────
+.poster {
+  --ink: #eceefb;
+  --ink-2: #c3c9e2;
+  --muted: #9aa1bd;
+  --faint: #6d7597;
+  --deep: #0d1120;
+  --card: #161b2b;
+  --soft: #1e2436;
+  --line: rgba(255, 255, 255, 0.08);
+
+  --fd-primary: #9095ee;
+  --fd-info: #6ea4f0;
+  --fd-warning: #e0a53c;
+  --fd-teal: #54cfcf;
+  --fd-danger: #f0768c;
+  --fd-success: #43cf8f;
+  --fd-faint: var(--faint);
+
+  --team-on: #fff;
+  --r: 14px;
+
+  background: var(--deep);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px 24px 26px;
+  color: var(--ink);
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 24px 60px -28px rgba(0, 0, 0, 0.7);
+}
+
+// ── header band ──────────────────────────────────────────────────────────────
+.poster-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin: -22px -24px 22px;
+  padding: 20px 24px;
+  background: linear-gradient(
+    100deg,
+    var(--team-accent, #3a3f8f) 0%,
+    var(--team-accent, #3a3f8f) 32%,
+    color-mix(in srgb, var(--team-accent, #3a3f8f) 34%, var(--deep)) 68%,
+    var(--deep) 100%
+  );
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--team-on);
+  opacity: 0.85;
+  margin: 0 0 5px;
+}
+.poster-title {
+  font-size: clamp(1.5rem, 2.4vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--team-on);
+  margin: 0;
+}
+.poster-head__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink);
+}
+.ph-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+.ph-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; }
+.ph-sep { width: 1px; }
+
+// ── MONEY ROW ────────────────────────────────────────────────────────────────
+.fd-money-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.fd-money-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 16px 20px;
+  &__label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  &__value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--ink);
+  }
+}
+
+// ── FUNNEL ROWS ──────────────────────────────────────────────────────────────
+.fd-funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fd-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 80px 60px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.15s;
+
+  &:hover { background: rgba(255, 255, 255, 0.03); }
+
+  &--subtotal {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    .fd-row__label, .fd-row__value {
+      font-weight: 800;
+    }
+  }
+
+  &__label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  &__bar-track {
+    height: 22px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  &__bar {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.4s ease;
+  }
+  &__value {
+    text-align: right;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  &__pct {
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+}
+
+// colores de barras
+.is-primary  { background: var(--fd-primary); }
+.is-info     { background: var(--fd-info); }
+.is-warning  { background: var(--fd-warning); }
+.is-teal     { background: var(--fd-teal); }
+.is-danger   { background: var(--fd-danger); }
+.is-success  { background: var(--fd-success); }
+.is-faint    { background: var(--fd-faint); }

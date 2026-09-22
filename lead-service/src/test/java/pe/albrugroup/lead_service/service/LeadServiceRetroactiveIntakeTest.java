@@ -1027,6 +1027,68 @@ class LeadServiceRetroactiveIntakeTest {
                 .hasMessageContaining("23:59");
     }
 
+    @Test
+    void calculaLaFechaAlternativaElegidaYConservaLaCompatibilidadSinFecha() {
+        LocalDate hoy = LocalDate.of(2026, 6, 10);
+        ZoneId lima = OperationalDateTime.ZONE;
+
+        assertThat(leadService.calcularRegistroRetroactivo(
+                hoy,
+                hoy.minusDays(1),
+                LocalTime.of(19, 0),
+                LocalTime.of(8, 0)
+        ).atZone(lima).toLocalDate()).isEqualTo(hoy.minusDays(1));
+
+        assertThat(leadService.calcularRegistroRetroactivo(
+                hoy,
+                null,
+                LocalTime.of(19, 0),
+                LocalTime.of(8, 0)
+        ).atZone(lima).toLocalDate()).isEqualTo(hoy.minusDays(1));
+    }
+
+    @Test
+    void permiteHoyHastaLaHoraActualYRechazaUnaHoraFutura() {
+        LocalDate hoy = LocalDate.of(2026, 6, 10);
+        LocalTime horaActual = LocalTime.of(10, 30);
+
+        assertThat(leadService.calcularRegistroRetroactivo(
+                hoy,
+                hoy,
+                horaActual,
+                horaActual
+        ).atZone(OperationalDateTime.ZONE).toLocalDate()).isEqualTo(hoy);
+
+        assertThatThrownBy(() -> leadService.calcularRegistroRetroactivo(
+                hoy,
+                hoy,
+                LocalTime.of(10, 31),
+                horaActual
+        )).isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("futuro");
+    }
+
+    @Test
+    void rechazaFechasFueraDeAyerYHoy() {
+        LocalDate hoy = LocalDate.of(2026, 6, 10);
+
+        assertThatThrownBy(() -> leadService.calcularRegistroRetroactivo(
+                hoy,
+                hoy.minusDays(2),
+                LocalTime.of(19, 0),
+                LocalTime.of(8, 0)
+        )).isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("ayer o hoy");
+
+        assertThatThrownBy(() -> leadService.calcularRegistroRetroactivo(
+                hoy,
+                hoy.plusDays(1),
+                LocalTime.of(19, 0),
+                LocalTime.of(20, 0)
+        )).isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("ayer o hoy");
+    }
+
     private Lead leadCompletoParaCierrePreventa() {
         return Lead.builder()
                 .id(25202L)

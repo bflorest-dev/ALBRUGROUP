@@ -504,11 +504,21 @@ export class GtrWorkspaceFacade {
     idCampana: [null as number | null],
     base: [null as BaseLead | null, [Validators.required]]
   }, { validators: GtrWorkspaceFacade.intakeIdentityValidator });
+  readonly retroactiveDateControl = new FormControl<string | null>(null, {
+    validators: [Validators.required]
+  });
   readonly retroactiveHourControl = new FormControl<Date | null>(this.createTimeValue(19, 0), {
     validators: [Validators.required]
   });
-  readonly retroactiveMinTime = this.createTimeValue(18, 0);
-  readonly retroactiveMaxTime = this.createTimeValue(23, 59);
+  readonly retroactiveDateOptions = computed<SelectOption<string>[]>(() => {
+    const now = this.currentOperationalClock();
+    const today = this.limaDateValue(now);
+    const yesterday = this.previousLimaDateValue(now);
+    return [
+      { value: yesterday, label: `Ayer — ${this.limaDateLabel(yesterday)}` },
+      { value: today, label: `Hoy — ${this.limaDateLabel(today)}` }
+    ];
+  });
   readonly isRetroactiveIntake = computed(() => this.intakeMode() === 'retroactivo');
   readonly canShowRetroactiveIntake = computed(() => {
     if (this.section() === 'ranking') {
@@ -520,11 +530,8 @@ export class GtrWorkspaceFacade {
     const hour = this.getLimaDateParts(this.currentOperationalClock()).hour;
     return hour >= 4 && hour < 9;
   });
-  readonly retroactiveDateLabel = computed(() =>
-    this.formatPreviousLimaDate(this.currentOperationalClock())
-  );
   readonly intakeDialogTitle = computed(() =>
-    this.isRetroactiveIntake() ? 'Registrar lead de ayer' : 'Nuevo Lead'
+    this.isRetroactiveIntake() ? 'Registrar lead con fecha alternativa' : 'Nuevo Lead'
   );
 
   readonly assignmentForm = this.fb.group({
@@ -1392,9 +1399,10 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
-    if (this.intakeForm.invalid || !this.isRetroactiveHourValid()) {
+    if (this.intakeForm.invalid || !this.isRetroactiveDateValid() || !this.isRetroactiveHourValid()) {
       this.intakeForm.markAllAsTouched();
       if (this.isRetroactiveIntake()) {
+        this.retroactiveDateControl.markAsTouched();
         this.retroactiveHourControl.markAsTouched();
       }
       this.intakeError.set(null);
@@ -1435,10 +1443,17 @@ export class GtrWorkspaceFacade {
     this.intakeError.set(null);
     try {
       const isRetroactive = this.isRetroactiveIntake();
+      const retroactiveDate = this.retroactiveDateControl.value;
+      const retroactiveDateLabel = this.retroactiveDateLabel();
       const retroactiveTime = this.toApiTime(this.retroactiveHourControl.value);
-      if (isRetroactive && retroactiveTime) {
+      if (isRetroactive) {
+        if (!retroactiveDate || !retroactiveTime) {
+          this.intakeError.set('Selecciona una fecha y hora validas para el registro alternativo.');
+          return;
+        }
         const retroactiveRequest: LeadIntakeRetroactivoRequest = {
           ...request,
+          fechaRegistro: retroactiveDate,
           horaRegistro: retroactiveTime
         };
         if (adminEquipoId !== null) {
@@ -1457,7 +1472,7 @@ export class GtrWorkspaceFacade {
       this.pendingIntakeLookup.set(null);
       this.successMessage.set(
         isRetroactive
-          ? `Lead anadido a la bandeja de hoy. Su registro quedo atribuido al ${this.retroactiveDateLabel()} a las ${retroactiveTime}.`
+          ? `Lead anadido a la bandeja de hoy. Su registro quedo atribuido al ${retroactiveDateLabel} a las ${retroactiveTime}.`
           : 'Lead registrado, puedes gestionarlo para anadir informacion basica de validacion.'
       );
       this.intakeMode.set('normal');
@@ -1594,20 +1609,83 @@ export class GtrWorkspaceFacade {
     this.activeDialog.set('lead');
   }
 
+  isRetroactiveDateValid(): boolean {
+    if (!this.isRetroactiveIntake()) {
+      return true;
+    }
+    const value = this.retroactiveDateControl.value;
+    return !!value && this.retroactiveDateOptions().some((option) => option.value === value);
+  }
+
   isRetroactiveHourValid(): boolean {
     if (!this.isRetroactiveIntake()) {
       return true;
+    }
+    if (!this.isRetroactiveDateValid()) {
+      return false;
     }
     const value = this.retroactiveHourControl.value;
     if (!value || Number.isNaN(value.getTime())) {
       return false;
     }
     const minutes = value.getHours() * 60 + value.getMinutes();
+    const today = this.limaDateValue(this.currentOperationalClock());
+    if (this.retroactiveDateControl.value === today) {
+      const current = this.getLimaDateParts(this.currentOperationalClock());
+      return minutes <= current.hour * 60 + current.minute;
+    }
     return minutes >= 18 * 60 && minutes <= 23 * 60 + 59;
+  }
+
+  retroactiveDateLabel(): string {
+    const selected = this.retroactiveDateControl.value;
+    return this.retroactiveDateOptions().find((option) => option.value === selected)?.label
+      ?? this.retroactiveDateOptions()[0]?.label
+      ?? 'Ayer';
   }
 
   retroactiveHourLabel(): string {
     return this.toApiTime(this.retroactiveHourControl.value) ?? '19:00';
+  }
+
+  retroactiveHourHint(): string {
+    return this.retroactiveDateControl.value === this.limaDateValue(this.currentOperationalClock())
+      ? 'Desde las 00:00 hasta la hora actual de Lima'
+      : 'Entre 18:00 y 23:59';
+  }
+
+  retroactiveMinTime(): Date {
+    return this.retroactiveDateControl.value === this.limaDateValue(this.currentOperationalClock())
+      ? this.createTimeValue(0, 0)
+      : this.createTimeValue(18, 0);
+  }
+
+  retroactiveMaxTime(): Date {
+    if (this.retroactiveDateControl.value !== this.limaDateValue(this.currentOperationalClock())) {
+      return this.createTimeValue(23, 59);
+    }
+    const current = this.getLimaDateParts(this.currentOperationalClock());
+    return this.createTimeValue(current.hour, current.minute);
+  }
+
+  onRetroactiveDateChange(): void {
+    if (!this.isRetroactiveIntake()) {
+      return;
+    }
+    const current = this.getLimaDateParts(this.currentOperationalClock());
+    const selectedToday = this.retroactiveDateControl.value === this.limaDateValue(this.currentOperationalClock());
+    const currentMinutes = current.hour * 60 + current.minute;
+    const selectedMinutes = this.retroactiveHourControl.value
+      ? this.retroactiveHourControl.value.getHours() * 60 + this.retroactiveHourControl.value.getMinutes()
+      : null;
+    const valid = selectedToday
+      ? selectedMinutes !== null && selectedMinutes <= currentMinutes
+      : selectedMinutes !== null && selectedMinutes >= 18 * 60 && selectedMinutes <= 23 * 60 + 59;
+    if (!valid) {
+      this.retroactiveHourControl.setValue(
+        selectedToday ? this.createTimeValue(current.hour, current.minute) : this.createTimeValue(19, 0)
+      );
+    }
   }
 
   normalizeLeadNumber(value: string): void {
@@ -5103,6 +5181,9 @@ export class GtrWorkspaceFacade {
     });
     this.selectedIntakeCampaignId.set(null);
     this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
+    this.retroactiveDateControl.reset(this.previousLimaDateValue(this.currentOperationalClock()));
+    this.retroactiveDateControl.markAsPristine();
+    this.retroactiveDateControl.markAsUntouched();
     this.retroactiveHourControl.reset(this.createTimeValue(19, 0));
     this.retroactiveHourControl.markAsPristine();
     this.retroactiveHourControl.markAsUntouched();
@@ -5351,11 +5432,13 @@ export class GtrWorkspaceFacade {
 
   private startRetroactiveWindowClock(): void {
     this.currentOperationalClock.set(new Date());
+    this.normalizeRetroactiveDateSelection();
     if (this.retroactiveWindowTimerId !== null) {
       return;
     }
     this.retroactiveWindowTimerId = window.setInterval(() => {
       this.currentOperationalClock.set(new Date());
+      this.normalizeRetroactiveDateSelection();
     }, 60_000);
   }
 
@@ -5378,6 +5461,7 @@ export class GtrWorkspaceFacade {
     month: number;
     day: number;
     hour: number;
+    minute: number;
   } {
     const values = new Map(
       new Intl.DateTimeFormat('en-CA', {
@@ -5386,6 +5470,7 @@ export class GtrWorkspaceFacade {
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
+        minute: '2-digit',
         hourCycle: 'h23'
       })
         .formatToParts(date)
@@ -5395,21 +5480,41 @@ export class GtrWorkspaceFacade {
       year: Number(values.get('year')),
       month: Number(values.get('month')),
       day: Number(values.get('day')),
-      hour: Number(values.get('hour'))
+      hour: Number(values.get('hour')),
+      minute: Number(values.get('minute'))
     };
   }
 
-  private formatPreviousLimaDate(date: Date): string {
+  private limaDateValue(date: Date): string {
+    const current = this.getLimaDateParts(date);
+    return `${current.year}-${String(current.month).padStart(2, '0')}-${String(current.day).padStart(2, '0')}`;
+  }
+
+  private previousLimaDateValue(date: Date): string {
     const current = this.getLimaDateParts(date);
     const previousDate = new Date(Date.UTC(current.year, current.month - 1, current.day - 1, 12));
+    return `${previousDate.getUTCFullYear()}-${String(previousDate.getUTCMonth() + 1).padStart(2, '0')}-${String(previousDate.getUTCDate()).padStart(2, '0')}`;
+  }
+
+  private limaDateLabel(value: string): string {
+    const date = new Date(`${value}T12:00:00Z`);
     const label = new Intl.DateTimeFormat('es-PE', {
       timeZone: 'UTC',
       weekday: 'long',
       day: '2-digit',
       month: 'long',
       year: 'numeric'
-    }).format(previousDate);
+    }).format(date);
     return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
+  private normalizeRetroactiveDateSelection(): void {
+    const selected = this.retroactiveDateControl.value;
+    if (selected && this.retroactiveDateOptions().some((option) => option.value === selected)) {
+      return;
+    }
+    this.retroactiveDateControl.setValue(this.previousLimaDateValue(this.currentOperationalClock()));
+    this.onRetroactiveDateChange();
   }
 
   private applyPresenceRealtimeEvent(event: PresenceRealtimeEvent): void {

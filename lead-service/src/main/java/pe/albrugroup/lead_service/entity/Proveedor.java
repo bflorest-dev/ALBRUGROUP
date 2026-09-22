@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import pe.albrugroup.lead_service.entity.enums.TipoReglaFacturacion;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -15,6 +16,10 @@ public class Proveedor {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String nombre;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_regla_facturacion")
+    private TipoReglaFacturacion tipoReglaFacturacion;
 
     @ElementCollection
     @CollectionTable(

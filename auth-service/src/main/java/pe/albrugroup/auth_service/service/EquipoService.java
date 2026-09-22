@@ -57,9 +57,8 @@ public class EquipoService implements IEquipo {
     );
 
     // Roles cuyo acceso se acota por PROVEEDOR, no por equipo. No se les asignan equipos: se gestionan
-    // en la vista de Proveedores (tabla usuario_proveedor en lead-service). Fase 2 no destructiva:
-    // se bloquean nuevas asignaciones a equipo, pero NO se vacían las membresías existentes (el
-    // fallback por equipo de lead-service sigue protegiendo a quien aún no tiene proveedor asignado).
+    // en la vista de Proveedores (tabla usuario_proveedor en lead-service). Se bloquean nuevas
+    // asignaciones incompatibles y cualquier combinación existente debe corregirse antes del cambio.
     private static final Set<String> ROLES_GESTIONADOS_POR_PROVEEDOR = Set.of(
             "ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE",
             "MONITOR",
@@ -341,6 +340,22 @@ public class EquipoService implements IEquipo {
         }
     }
 
+    public void validarRolesCompatibles(Set<Rol> rolesNuevos, Set<Equipo> equiposActuales) {
+        Set<String> roles = rolesNuevos.stream().map(Rol::getNombre).collect(Collectors.toSet());
+        boolean gestionadoPorProveedor = roles.stream().anyMatch(ROLES_GESTIONADOS_POR_PROVEEDOR::contains);
+        boolean tieneRolDeEquipo = roles.stream().anyMatch(ROLES_OPERATIVOS::contains);
+        if (gestionadoPorProveedor && !tieneRolDeEquipo && !equiposActuales.isEmpty()) {
+            throw new BadRequestException(
+                    "Quite primero las membresias de equipo antes de asignar exclusivamente roles por proveedor");
+        }
+        boolean limitadoAUnEquipo = roles.stream()
+                .anyMatch(rol -> ROLES_OPERATIVOS.contains(rol) && !ROLES_MULTIEQUIPO.contains(rol));
+        if (limitadoAUnEquipo && equiposActuales.size() > 1) {
+            throw new BadRequestException(
+                    "La combinacion de roles solicitada solo admite un equipo; ajuste primero las membresias");
+        }
+    }
+
     private void validarEquipoVisible(Long equipoId) {
         if (tieneVisibilidadGlobalEquipos()) {
             return;
@@ -353,10 +368,9 @@ public class EquipoService implements IEquipo {
     }
 
     private boolean tieneVisibilidadGlobalEquipos() {
-        return usuarioActual().getRoles().stream().map(Rol::getNombre).anyMatch("ADMINISTRADOR"::equals)
-                || usuarioActual().getRoles().stream()
-                .flatMap(rol -> rol.getPermisos().stream())
-                .anyMatch(permiso -> "VER_TODOS_LOS_EQUIPOS".equals(permiso.getNombre()));
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getAuthorities().stream()
+                .anyMatch(authority -> "VER_TODOS_LOS_EQUIPOS".equals(authority.getAuthority()));
     }
 
     private Usuario usuarioActual() {

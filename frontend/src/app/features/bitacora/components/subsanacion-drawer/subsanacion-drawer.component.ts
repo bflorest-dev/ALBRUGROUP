@@ -102,6 +102,7 @@ export class SubsanacionDrawerComponent implements OnInit {
   readonly verificandoTelefono = signal(false);
   readonly enviando = signal(false);
   readonly error = signal<string | null>(null);
+  readonly validacionDetalle = signal<string[]>([]);
   readonly preparacion = signal<SubsanacionPreparacion | null>(null);
   readonly opciones = signal<SubsanacionOpciones | null>(null);
   readonly camposConfig = signal<CampoConfigItem[]>([]);
@@ -389,6 +390,7 @@ export class SubsanacionDrawerComponent implements OnInit {
 
   avanzar(): void {
     this.error.set(null);
+    this.validacionDetalle.set([]);
     if (!this.validarPasoActual()) return;
     if (this.paso() === 0 && this.modo() === 'NUEVO') {
       this.verificarDuplicado(true);
@@ -399,6 +401,7 @@ export class SubsanacionDrawerComponent implements OnInit {
 
   retroceder(): void {
     this.error.set(null);
+    this.validacionDetalle.set([]);
     this.paso.update((value) => Math.max(0, value - 1));
   }
 
@@ -471,7 +474,11 @@ export class SubsanacionDrawerComponent implements OnInit {
   }
 
   cerrarDrawer(): void {
-    if (!this.enviando()) this.cerrar.emit();
+    if (this.enviando()) return;
+    if (this.tieneProcesoEnCurso() && !window.confirm('Hay una subsanación en curso. Si sales ahora, se perderán los datos cargados en este flujo. ¿Deseas salir?')) {
+      return;
+    }
+    this.cerrar.emit();
   }
 
   abrirLeadResultado(): void {
@@ -755,8 +762,8 @@ export class SubsanacionDrawerComponent implements OnInit {
     this.direccionForm.controls.tipoDomicilio.setValidators([Validators.required]);
     this.direccionForm.controls.direccion.setValidators([Validators.required]);
     this.direccionForm.controls.referencia.setValidators([Validators.required]);
-    this.direccionForm.controls.latitud.setValidators([coordenadaValidator('latitud', true)]);
-    this.direccionForm.controls.longitud.setValidators([coordenadaValidator('longitud', true)]);
+    this.direccionForm.controls.latitud.setValidators([coordenadaValidator('latitud')]);
+    this.direccionForm.controls.longitud.setValidators([coordenadaValidator('longitud')]);
   }
 
   private actualizarValidadoresVenta(): void {
@@ -848,22 +855,30 @@ export class SubsanacionDrawerComponent implements OnInit {
   }
 
   private validarPasoActual(): boolean {
-    if (this.paso() === 0) return this.validarGrupo(this.identidadForm, 'Completa una identidad válida.');
+    if (this.paso() === 0) return this.validarGrupo(this.identidadForm, 'Completa una identidad válida.', this.labelsIdentidad());
     if (this.paso() === 1) {
       this.validarFechasCliente();
-      return this.validarGrupo(this.fechasForm, 'Revisa el rango de las fechas históricas.');
+      return this.validarGrupo(this.fechasForm, 'Revisa el rango de las fechas históricas.', this.labelsFechas());
     }
     if (this.paso() === 2) {
       const ubicacionNacimiento = this.validarUbigeoNacimientoCompleto();
-      const datos = this.validarGrupo(this.datosForm, 'Completa los datos obligatorios de Preventa.');
-      const direccion = this.validarGrupo(this.direccionForm, 'Completa la dirección de instalación.');
-      if (!ubicacionNacimiento) this.error.set('Completa los tres niveles de la ubicación de nacimiento o déjalos vacíos.');
-      return ubicacionNacimiento && datos && direccion;
+      this.datosForm.markAllAsTouched();
+      this.direccionForm.markAllAsTouched();
+      const detalles = [
+        ...this.camposInvalidos(this.datosForm, this.labelsDatos(), 'Titular'),
+        ...this.camposInvalidos(this.direccionForm, this.labelsDireccion(), 'Dirección'),
+        ...(!ubicacionNacimiento ? ['Titular: ubicación de nacimiento incompleta'] : [])
+      ];
+      if (detalles.length) {
+        this.registrarValidacion('Completa el expediente antes de continuar.', detalles);
+        return false;
+      }
+      return true;
     }
     if (this.paso() === 3) {
       this.actualizarValidadoresVenta();
       this.validarPlanSeleccionado();
-      return this.validarGrupo(this.comercialForm, 'Completa el flujo comercial y sus tipificaciones.');
+      return this.validarGrupo(this.comercialForm, 'Completa el flujo comercial y sus tipificaciones.', this.labelsComercial());
     }
     return true;
   }
@@ -877,16 +892,120 @@ export class SubsanacionDrawerComponent implements OnInit {
     forms.forEach((form) => form.markAllAsTouched());
     this.motivoControl.markAsTouched();
     if (forms.some((form) => form.invalid) || this.motivoControl.invalid) {
-      this.error.set('Todavía hay campos obligatorios o inválidos. Revisa los pasos señalados.');
+      this.registrarValidacion('Todavía hay campos obligatorios o inválidos. Revisa los pasos señalados.', [
+        ...this.camposInvalidos(this.identidadForm, this.labelsIdentidad(), 'Identidad'),
+        ...this.camposInvalidos(this.fechasForm, this.labelsFechas(), 'Fechas'),
+        ...this.camposInvalidos(this.datosForm, this.labelsDatos(), 'Expediente'),
+        ...this.camposInvalidos(this.direccionForm, this.labelsDireccion(), 'Dirección'),
+        ...this.camposInvalidos(this.comercialForm, this.labelsComercial(), 'Flujo ideal'),
+        ...(this.motivoControl.invalid ? ['Revisión: motivo de la subsanación'] : [])
+      ]);
       return false;
     }
     return true;
   }
 
-  private validarGrupo(form: FormGroup, mensaje: string): boolean {
+  private validarGrupo(form: FormGroup, mensaje: string, labels: Record<string, string>): boolean {
     form.markAllAsTouched();
-    if (form.invalid) this.error.set(mensaje);
+    if (form.invalid) this.registrarValidacion(mensaje, this.camposInvalidos(form, labels));
     return form.valid;
+  }
+
+  private registrarValidacion(mensaje: string, detalles: string[]): void {
+    this.error.set(mensaje);
+    this.validacionDetalle.set(Array.from(new Set(detalles)).slice(0, 8));
+  }
+
+  private camposInvalidos(form: FormGroup, labels: Record<string, string>, prefijo?: string): string[] {
+    return Object.entries(form.controls)
+      .filter(([, control]) => control.invalid)
+      .map(([nombre, control]) => {
+        const label = labels[nombre] ?? nombre;
+        const motivo = this.motivoInvalido(control.errors ?? {});
+        return `${prefijo ? `${prefijo}: ` : ''}${label}${motivo ? ` — ${motivo}` : ''}`;
+      });
+  }
+
+  private motivoInvalido(errors: Record<string, unknown>): string {
+    if (errors['required']) return 'obligatorio';
+    if (errors['email']) return 'correo inválido';
+    if (errors['telefonoPeru']) return 'debe empezar en 9 y tener 9 dígitos';
+    if (errors['telefonoInternacional']) return 'debe tener entre 6 y 15 dígitos';
+    if (errors['dni']) return 'DNI debe tener 8 dígitos';
+    if (errors['ruc']) return 'RUC debe tener 11 dígitos';
+    if (errors['ce']) return 'CE debe tener entre 6 y 12 dígitos';
+    if (errors['coordenada']) return 'usa formato decimal válido';
+    if (errors['rangoCoordenada']) return 'fuera de rango';
+    if (errors['rango']) return 'fuera del rango permitido';
+    if (errors['vigenciaHistorica']) return 'fuera de vigencia para la fecha de gestión';
+    if (errors['pattern']) return 'formato inválido';
+    if (errors['seleccionIncompleta']) return 'selección incompleta';
+    if (errors['ubigeoNoReconocido']) return 'selecciona nuevamente';
+    return '';
+  }
+
+  private labelsIdentidad(): Record<string, string> {
+    return { prefijo: 'Prefijo', lead: 'Teléfono', usermeta: 'Usermeta' };
+  }
+
+  private labelsFechas(): Record<string, string> {
+    return { fechaGestion: 'Fecha de gestión', fechaInstalacion: 'Fecha de instalación' };
+  }
+
+  private labelsDatos(): Record<string, string> {
+    return {
+      tipoDocumento: 'Tipo de documento',
+      numeroDocumentoTitularServicio: 'N.º documento',
+      ubigeoNacimiento: 'Ubicación de nacimiento',
+      nombreTitularServicio: 'Nombre del titular',
+      celularRegistro: 'Celular de registro',
+      celularReferencia: 'Celular de referencia',
+      celularGrabacion: 'Celular de grabación',
+      correo: 'Correo',
+      fechaNacimiento: 'Fecha de nacimiento',
+      parentesco: 'Parentesco',
+      nombreMadre: 'Nombre de la madre',
+      nombrePadre: 'Nombre del padre',
+      numeroDocumentoTitularCelularRegistro: 'Doc. titular del celular',
+      nombreTitularCelularRegistro: 'Nombre titular del celular'
+    };
+  }
+
+  private labelsDireccion(): Record<string, string> {
+    return {
+      ubigeoDomicilio: 'Ubicación del domicilio',
+      idDepartamentoDomicilio: 'Departamento del domicilio',
+      idProvinciaDomicilio: 'Provincia del domicilio',
+      idDistritoDomicilio: 'Distrito del domicilio',
+      tipoDomicilio: 'Tipo de domicilio',
+      tipoVia: 'Tipo de vía',
+      via: 'Vía',
+      direccion: 'Dirección',
+      referencia: 'Referencia',
+      latitud: 'Latitud',
+      longitud: 'Longitud'
+    };
+  }
+
+  private labelsComercial(): Record<string, string> {
+    return {
+      idEquipo: 'Equipo',
+      idProveedor: 'Proveedor',
+      idCampana: 'Campaña',
+      idPlan: 'Plan',
+      base: 'Base',
+      preventa: 'Tipificación PREVENTA',
+      venta: 'Tipificación VENTA',
+      sec: 'SEC',
+      sot: 'SOT',
+      customerId: 'Customer ID'
+    };
+  }
+
+  private tieneProcesoEnCurso(): boolean {
+    if (this.resultado()) return false;
+    return this.confirmacionAbierta() || this.paso() > 0 || this.identidadForm.dirty || this.fechasForm.dirty ||
+      this.datosForm.dirty || this.direccionForm.dirty || this.comercialForm.dirty || this.motivoControl.dirty;
   }
 
   private validarUbigeoNacimientoCompleto(): boolean {

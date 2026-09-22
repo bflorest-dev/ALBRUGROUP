@@ -22,11 +22,10 @@ import java.util.List;
  * Reglas:
  * - Sin usuario autenticado (público/health): no se filtra.
  * - Visibilidad global (permiso VER_TODOS_LOS_EQUIPOS): no se filtra (ve todo).
- * - Rol acotado por PROVEEDOR (BACKOFFICE / POSTVENTA) CON proveedores asignados: filtro `proveedorFilter`
+ * - Rol activo acotado por PROVEEDOR (BACKOFFICE / POSTVENTA): filtro `proveedorFilter`
  *   por sus proveedores (estrechado al proveedor activo del selector, header X-Proveedor-Id). Se usa
  *   proveedorFilter EN LUGAR de equipoFilter (nunca ambos) para evitar doble filtro.
- * - SIN proveedores asignados (aún no migrado): cae al filtro por equipo (dual-run: no se rompe a
- *   nadie; la migración es por-usuario a medida que ADMIN asigna proveedores).
+ * - SIN proveedores asignados: filtro vacío, por lo que la autorización falla cerrada.
  * - Resto (GTR/ventas): filtro `equipoFilter` por sus equipos; sin equipos → [-1] (fail-closed).
  */
 @Component
@@ -47,20 +46,14 @@ public class EquipoFilterInterceptor implements HandlerInterceptor {
         AmbitoProveedor ambito = proveedorScopeService.ambitoActual();
         if (ambito != null) {
             ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(ambito);
-            // Dual-run: con ambito explicito el scope por proveedor es obligatorio y puede cerrar en
-            // vacio; sin ambito explicito, un usuario aun no migrado conserva el fallback por equipo.
-            // Aplica a BACKOFFICE y POSTVENTA: la bandeja de postventa va por calendario (no por este
-            // filtro), pero las consultas de Lead (detalle, búsqueda) quedan acotadas por proveedor.
-            if (!scope.vacio() || proveedorScopeService.ambitoSolicitadoExplicitamente()) {
-                try {
-                    entityManager.unwrap(Session.class)
-                            .enableFilter("proveedorFilter")
-                            .setParameterList("proveedores", List.copyOf(scope.idsParaQuery()));
-                } catch (Exception e) {
-                    log.warn("No se pudo habilitar el filtro por proveedor: {}", e.getMessage());
-                }
-                return true;
+            try {
+                entityManager.unwrap(Session.class)
+                        .enableFilter("proveedorFilter")
+                        .setParameterList("proveedores", List.copyOf(scope.idsParaQuery()));
+            } catch (Exception e) {
+                log.warn("No se pudo habilitar el filtro por proveedor: {}", e.getMessage());
             }
+            return true;
         }
         if (currentUser.tieneVisibilidadGlobalEquipos()) {
             return true;

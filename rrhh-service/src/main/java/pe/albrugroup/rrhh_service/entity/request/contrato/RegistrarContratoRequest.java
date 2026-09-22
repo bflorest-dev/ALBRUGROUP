@@ -1,5 +1,6 @@
 package pe.albrugroup.rrhh_service.entity.request.contrato;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import pe.albrugroup.rrhh_service.entity.enums.*;
@@ -12,8 +13,15 @@ import java.time.LocalDate;
 public class RegistrarContratoRequest {
 
     @Positive private Long idPostulacion;
-    // PUESTO DE TRABAJO
-    @NotNull private PuestoTrabajo puestoTrabajo;
+    // CLASIFICACION CONTRACTUAL
+    private CategoriaPersonal categoriaPersonal;
+
+    /**
+     * Campo legado para mantener compatibles los clientes actuales durante la migracion.
+     * Los nuevos clientes deben enviar categoriaPersonal y asignar roles desde auth-service.
+     */
+    @Deprecated(forRemoval = true)
+    private PuestoTrabajo puestoTrabajo;
     @NotNull private Regimen regimen;
     @NotNull private Modalidad modalidad;
     private SeguroSalud seguroSalud;
@@ -24,6 +32,17 @@ public class RegistrarContratoRequest {
     // VIGENCIA
     @NotNull private LocalDate fechaInicio;
     private LocalDate fechaFin;
+
+    @AssertTrue(message = "Debe indicar categoriaPersonal; puestoTrabajo solo se admite durante la transicion")
+    @JsonIgnore
+    public boolean isClasificacionContractualValida() {
+        if (categoriaPersonal == null && puestoTrabajo == null) {
+            return false;
+        }
+        return categoriaPersonal == null
+                || puestoTrabajo == null
+                || categoriaPersonal == CategoriaPersonal.desdePuestoTrabajo(puestoTrabajo);
+    }
 
     // TODO: Agregar campo created_at
 }

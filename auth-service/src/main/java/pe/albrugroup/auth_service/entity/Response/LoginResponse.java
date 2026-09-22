@@ -16,4 +16,7 @@ public class LoginResponse {
     private Long empleadoId;
     private String nombreCompleto;
     private List<String> roles;
+    private List<String> rolesAsignados;
+    private String rolPrincipal;
+    private String rolActivo;
 }

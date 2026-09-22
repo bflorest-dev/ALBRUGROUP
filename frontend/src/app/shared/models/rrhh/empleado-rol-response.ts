@@ -5,6 +5,7 @@ export interface EmpleadoRolResponse {
   numeroDocumento: string;
   celularPersonal: string;
   correoPersonal: string;
+  categoriaPersonal?: 'ESTRUCTURAL' | 'OPERATIVO';
   puestoTrabajo: string;
   estadoOperativo: 'ACTIVO' | 'INACTIVO';
 }
