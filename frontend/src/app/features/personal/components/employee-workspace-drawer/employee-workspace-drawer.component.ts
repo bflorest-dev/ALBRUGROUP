@@ -12,6 +12,8 @@ import { esRolDeEquipo, puedeMultiEquipo, PROVIDER_SCOPED_ROLES } from '../../..
 import { AdminRrhhService } from '../../../admin/services/admin-rrhh.service';
 import { AdminEquipoService, EquipoResponse, ProveedorLite } from '../../../admin/services/admin-equipo.service';
 import { PersonalDirectoryRow } from '../../facades/personal-workspace.facade';
+import { PersonalScheduleFacade } from '../../facades/personal-schedule.facade';
+import { ScheduleWeekEditorComponent } from '../../../../shared/components/schedule-week-editor/schedule-week-editor.component';
 import {
   PersonalAccessService,
   RoleAuditEntry,
@@ -20,7 +22,7 @@ import {
 } from '../../services/personal-access.service';
 
 type DrawerSection = 'resumen' | 'contrato' | 'roles' | 'horario' | 'asistencia';
-type DrawerSubview = 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles';
+type DrawerSubview = 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario';
 
 export interface DrawerScopeCapabilities {
   team: boolean;
@@ -36,7 +38,8 @@ export function scopeCapabilitiesForRoles(roles: string[]): DrawerScopeCapabilit
 
 @Component({
   selector: 'app-employee-workspace-drawer',
-  imports: [DatePipe, FormsModule, ReactiveFormsModule],
+  imports: [DatePipe, FormsModule, ReactiveFormsModule, ScheduleWeekEditorComponent],
+  providers: [PersonalScheduleFacade],
   templateUrl: './employee-workspace-drawer.component.html',
   styleUrl: './employee-workspace-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -45,6 +48,7 @@ export class EmployeeWorkspaceDrawerComponent {
   private readonly rrhh = inject(AdminRrhhService);
   private readonly equipos = inject(AdminEquipoService);
   private readonly accessService = inject(PersonalAccessService);
+  protected readonly scheduleFacade = inject(PersonalScheduleFacade);
   private readonly formBuilder = inject(FormBuilder);
   private activeEmployeeId: number | null = null;
 
@@ -77,7 +81,7 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly employeeDetails = signal<EmpleadoResponse | null>(null);
   protected readonly contract = signal<ContratoResponse | null>(null);
   protected readonly contractHistory = signal<ContratoResponse[]>([]);
-  protected readonly schedule = signal<HorarioResponse | null>(null);
+  protected readonly schedule = this.scheduleFacade.schedule;
   protected readonly isLoadingEmployment = signal(false);
   protected readonly isLoadingEmployee = signal(false);
   protected readonly isSavingPersonal = signal(false);
@@ -142,6 +146,7 @@ export class EmployeeWorkspaceDrawerComponent {
       this.section.set('resumen');
       this.subview.set('none');
       this.employeeDetails.set(null);
+      this.scheduleFacade.reset();
       this.rolePrincipal.set(row.access?.rolPrincipal ?? '');
       this.secondaryRoles.set([...(row.access?.rolesSecundarios ?? [])].sort());
       this.persistedRolePrincipal.set(row.access?.rolPrincipal ?? '');
@@ -176,7 +181,7 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected isBusy(): boolean {
-    return this.isSavingPersonal() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingProviders() || this.isSavingRoles();
+    return this.isSavingPersonal() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingProviders() || this.isSavingRoles() || this.scheduleFacade.isSaving() || this.scheduleFacade.isApplyingCorrection();
   }
 
   protected canManageTeam(row?: PersonalDirectoryRow | null): boolean {
@@ -462,6 +467,42 @@ export class EmployeeWorkspaceDrawerComponent {
     this.subview.set('historial-roles');
   }
 
+  protected openScheduleEditor(schedule: HorarioResponse | null = this.schedule()): void {
+    if (!this.contract()) return;
+    this.scheduleFacade.openEditor(schedule);
+    this.clearActionFeedback();
+    this.subview.set('editar-horario');
+  }
+
+  protected closeScheduleEditor(): void {
+    this.scheduleFacade.closeEditor();
+    this.subview.set('none');
+  }
+
+  protected selectScheduleHistory(schedule: HorarioResponse): void {
+    this.openScheduleEditor(schedule);
+  }
+
+  protected async saveSchedule(): Promise<void> {
+    const saved = await this.scheduleFacade.save();
+    if (!saved) return;
+    this.subview.set('none');
+    this.actionSuccess.set(this.scheduleFacade.success());
+    this.employeeChanged.emit();
+  }
+
+  protected cancelScheduleCorrection(): void {
+    this.scheduleFacade.cancelCorrection();
+  }
+
+  protected async applyScheduleCorrection(action: 'today' | 'tomorrow' | 'today-and-tomorrow' | 'custom'): Promise<void> {
+    const applied = await this.scheduleFacade.applyCorrection(action);
+    if (!applied) return;
+    this.subview.set('none');
+    this.actionSuccess.set(this.scheduleFacade.success());
+    this.employeeChanged.emit();
+  }
+
   protected openProviderManagement(): void {
     const row = this.row();
     if (!row || !this.hasProviderScopeForSelectedRoles() || this.scopeActionsDisabled()) return;
@@ -555,6 +596,11 @@ export class EmployeeWorkspaceDrawerComponent {
     return ranges.length === 1 ? ranges[0] : 'Horario variable';
   }
 
+  protected restDayLabel(schedule: HorarioResponse | null): string {
+    const restDay = schedule?.detalles.find((detail) => !detail.laborable)?.dia;
+    return restDay ? this.label(restDay) : 'No definido';
+  }
+
   private async loadEmployeeDetails(row: PersonalDirectoryRow): Promise<void> {
     this.isLoadingEmployee.set(true);
     try {
@@ -574,6 +620,11 @@ export class EmployeeWorkspaceDrawerComponent {
     ]);
     this.contract.set(contract.status === 'fulfilled' ? contract.value : null);
     this.schedule.set(schedule.status === 'fulfilled' ? schedule.value : null);
+    this.scheduleFacade.initialize(
+      employeeId,
+      contract.status === 'fulfilled' ? contract.value : null,
+      schedule.status === 'fulfilled' ? schedule.value : null
+    );
     this.isLoadingEmployment.set(false);
   }
 

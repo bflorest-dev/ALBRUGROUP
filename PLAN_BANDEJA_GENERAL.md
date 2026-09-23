@@ -47,6 +47,10 @@
 
 ## Fase 0 — LeadSeguimiento (backend, migración)
 
+> **Esta fase es el cimiento de todo el plan.** Si las fechas están mal, las métricas, los
+> filtros y el ordenamiento de la bandeja nacen rotos. NO es un paso rápido — requiere
+> investigación por campo, fallbacks con coherencia temporal, y verificación exhaustiva.
+
 ### 0a. Entidad JPA + tabla
 
 ```
@@ -55,53 +59,156 @@ lead_seguimiento
 ├── id_lead (BIGINT FK → lead, UNIQUE)
 │
 │  ── PREVENTA ──
-├── fecha_agendamiento_preventa (TIMESTAMPTZ)
-├── fecha_conversion_preventa (TIMESTAMPTZ)
+├── fecha_agendamiento_preventa (TIMESTAMPTZ)  -- created_at del evento con APARECE_EN_AGENDADOS_GTR
 │
 │  ── VENTA ──
-├── fecha_ingreso_venta (TIMESTAMPTZ)
-├── fecha_grabacion (TIMESTAMPTZ)
-├── fecha_programacion (DATE)
-├── hora_programada (VARCHAR)
-├── fecha_rechazo (DATE)
-├── fecha_instalacion (DATE)
+├── fecha_ingreso_venta (TIMESTAMPTZ)          -- cuando se usó tipi INGRESADO (NO cuando entró a la etapa)
+├── fecha_grabacion (TIMESTAMPTZ)              -- created_at del evento con ES_GRABACION (nuevo comportamiento)
+├── fecha_programacion (TIMESTAMPTZ)           -- fecha_programacion + hora_programada fusionados
+├── fecha_rechazo (DATE)                       -- evento con REQUIERE_FECHA_RECHAZO
+├── fecha_instalacion (DATE)                   -- evento con REQUIERE_FECHA_INSTALACION
 │
 │  ── POSTVENTA ──
-├── fecha_agendamiento_postventa (TIMESTAMPTZ)
+├── fecha_ingreso_postventa (TIMESTAMPTZ)      -- fecha_ingreso_etapa del resumen POSTVENTA
 ├── fecha_suspension (DATE)
 ├── fecha_baja (DATE)
 │
 ├── updated_at (TIMESTAMPTZ)
 ```
 
-> Las columnas crecerán conforme se identifiquen nuevas fechas de negocio. Postgres
-> no penaliza columnas NULL (bitmap de nulls).
+Cambios vs. versión original:
+- `fecha_conversion_preventa` ELIMINADA (redundante)
+- `fecha_programacion` (DATE) + `hora_programada` (VARCHAR) → un solo `TIMESTAMPTZ`
+  (hora_programada es `LocalTime` en Java / `time` en BD, NO un rango de texto)
+- `fecha_agendamiento_postventa` → `fecha_ingreso_postventa` (más claro)
 
-### 0b. Migración Flyway: poblar desde Eventos existentes
+> Postgres no penaliza columnas NULL (bitmap de nulls). Columnas nuevas se agregan
+> conforme se identifiquen fechas de negocio adicionales.
+
+### 0b. Nuevo comportamiento: ES_GRABACION
+
+Agregar `ES_GRABACION` a `ComportamientoTipificacion` y marcarlo en la matriz:
+- WIN: subtipis de tipi GRABADO
+- CLARO: subtipi "CON SEC - GRABADO" bajo SIN INGRESAR
+- MIFIBRA/PERUFIBRA: subtipi "GRABADO" bajo SIN INGRESAR
+
+La migración Flyway crea el valor del enum y actualiza `subtipificacion_comportamiento`.
+Esto estandariza el concepto — el dual-write y futuras matrices usan el comportamiento
+en vez de códigos hardcodeados que varían por proveedor.
+
+Para `fecha_ingreso_venta` (tipi INGRESADO): como es un concepto a nivel de TIPI (no subtipi)
+y los comportamientos viven en subtipis, el dual-write usa el código de tipi directamente.
+Si algún día renombran INGRESADO, será el momento de crear `ES_INGRESO_VENTA`.
+
+### 0c. Migración Flyway: poblar desde Eventos existentes
+
+**Principio rector: fechas manuales > fechas automáticas.**
+
+Las fechas manuales (fecha_programacion, fecha_rechazo, fecha_instalacion) son la verdad
+del negocio. Las automáticas (created_at de eventos) reflejan cuándo se subió al sistema,
+que puede ser muy posterior al hecho real. Un lead ingresado manualmente la semana pasada
+pero instalado hace 2 meses tendría fecha_ingreso > fecha_instalacion — incoherente.
+
+#### Datos reales investigados (base local, copia de prod):
+
+| Dato | Cobertura |
+|------|-----------|
+| Leads con resumen VENTA | 5811 |
+| Leads con evento INGRESADO en VENTA | 893 (15%) |
+| Leads INSTALADOS sin haber pasado por PROGRAMADO | 3523 (80%) |
+| Leads con resumen VENTA pero sin ningún evento de tipi | 167 |
+| `fecha_ingreso_etapa` poblado en resumen VENTA | 5811/5811 (100%) |
+
+#### Cadena de fallback por campo:
+
+**`fecha_ingreso_venta`** (= timestamp de cuando se usó tipi INGRESADO)
+1. `created_at` del ÚLTIMO evento con `tipificacion = 'INGRESADO'` en VENTA
+2. **MIN(fechas manuales)** del lead en VENTA: `MIN(fecha_programacion, fecha_rechazo, fecha_instalacion)`
+3. `created_at` del PRIMER evento con cualquier tipi en VENTA
+4. `fecha_ingreso_etapa` del `lead_etapa_resumen` VENTA (último recurso, 167 leads)
+
+**`fecha_grabacion`** (hardcodeado por proveedor en migración, por comportamiento en dual-write)
+1. WIN: `created_at` del evento con `tipificacion = 'GRABADO'` en VENTA
+2. CLARO: `created_at` del evento con `subtipificacion = 'CON SEC - GRABADO'` en VENTA
+3. MIFIBRA/PERUFIBRA: `created_at` del evento con `subtipificacion = 'GRABADO'` en VENTA
+4. Si no existe: NULL (legítimamente opcional; 589 leads totales lo tienen)
+
+**`fecha_programacion`** (fusión fecha + hora → TIMESTAMPTZ)
+1. `fecha_programacion + hora_programada` del ÚLTIMO evento con `REQUIERE_FECHA_PROGRAMACION`
+2. Si solo tiene fecha sin hora: `fecha_programacion` a medianoche
+3. Si nunca fue programado: NULL (legítimo — 80% de INSTALADOS históricos)
+
+**`fecha_rechazo`**
+1. `fecha_rechazo` del ÚLTIMO evento con `REQUIERE_FECHA_RECHAZO` en VENTA
+2. NULL si nunca fue rechazado
+
+**`fecha_instalacion`**
+1. `fecha_instalacion` del ÚLTIMO evento con `REQUIERE_FECHA_INSTALACION` en VENTA
+2. NULL si no está instalado
+
+**`fecha_agendamiento_preventa`**
+1. `created_at` del ÚLTIMO evento con subtipi que tiene `APARECE_EN_AGENDADOS_GTR` en PREVENTA
+2. NULL si nunca fue agendado
+
+**`fecha_ingreso_postventa`**
+1. `fecha_ingreso_etapa` del `lead_etapa_resumen` POSTVENTA
+2. NULL si nunca llegó a POSTVENTA
+
+#### Paso de coherencia temporal (post-INSERT):
+
+Invariante: `ingreso_venta ≤ grabación ≤ programación ≤ instalación`
 
 ```sql
--- V65: Crear tabla + poblar con datos históricos
-INSERT INTO lead_seguimiento (id_lead, fecha_programacion, hora_programada, ...)
-SELECT l.id,
-       (SELECT e.fecha_programacion FROM evento e WHERE e.id_lead = l.id
-        AND e.accion = 'TIPIFICACION' AND e.etapa = 'VENTA'
-        AND e.fecha_programacion IS NOT NULL ORDER BY e.id DESC LIMIT 1),
-       ...
-FROM lead l;
+-- Capear fechas automáticas que excedan a manuales posteriores
+UPDATE lead_seguimiento seg SET
+  fecha_ingreso_venta = LEAST(
+    seg.fecha_ingreso_venta,
+    COALESCE(seg.fecha_grabacion, seg.fecha_ingreso_venta),
+    COALESCE(seg.fecha_programacion, seg.fecha_ingreso_venta),
+    COALESCE(seg.fecha_instalacion::timestamptz, seg.fecha_ingreso_venta)
+  ),
+  fecha_grabacion = CASE
+    WHEN seg.fecha_grabacion IS NOT NULL
+     AND seg.fecha_grabacion > LEAST(
+           COALESCE(seg.fecha_programacion, seg.fecha_grabacion),
+           COALESCE(seg.fecha_instalacion::timestamptz, seg.fecha_grabacion))
+    THEN LEAST(
+           COALESCE(seg.fecha_programacion, seg.fecha_instalacion::timestamptz))
+    ELSE seg.fecha_grabacion END
+WHERE seg.fecha_ingreso_venta IS NOT NULL;
 ```
 
-### 0c. Escritura dual: Evento + LeadSeguimiento
+#### Verificación post-migración (obligatoria):
 
-Actualizar el flujo de tipificación para que, al aplicar una tipificación con comportamiento
-REQUIERE_FECHA_PROGRAMACION/RECHAZO/INSTALACION, además de escribir en Evento, escriba
-(upsert) en LeadSeguimiento. Esto es transitorio — eventualmente Evento dejará de guardar
-estas fechas.
+```sql
+-- NO debe devolver filas si la coherencia es correcta
+SELECT id_lead FROM lead_seguimiento
+WHERE fecha_ingreso_venta > COALESCE(fecha_grabacion, fecha_ingreso_venta)
+   OR fecha_ingreso_venta > COALESCE(fecha_programacion, fecha_ingreso_venta)
+   OR fecha_ingreso_venta > COALESCE(fecha_instalacion::timestamptz, fecha_ingreso_venta)
+   OR fecha_grabacion > COALESCE(fecha_programacion, fecha_grabacion)
+   OR fecha_grabacion > COALESCE(fecha_instalacion::timestamptz, fecha_grabacion)
+   OR fecha_programacion > COALESCE(fecha_instalacion::timestamptz, fecha_programacion);
+```
+
+### 0d. Escritura dual: Evento + LeadSeguimiento
+
+Actualizar el flujo de tipificación para que, al aplicar una tipificación:
+- Con `REQUIERE_FECHA_PROGRAMACION`: escribir `fecha_programacion` (fusionando fecha+hora) en LeadSeguimiento
+- Con `REQUIERE_FECHA_RECHAZO`: escribir `fecha_rechazo` en LeadSeguimiento
+- Con `REQUIERE_FECHA_INSTALACION`: escribir `fecha_instalacion` en LeadSeguimiento
+- Con `ES_GRABACION` (nuevo): escribir `fecha_grabacion = now()` en LeadSeguimiento
+- Con tipi = `INGRESADO`: escribir `fecha_ingreso_venta = now()` en LeadSeguimiento
+
+Además de escribir en Evento (transitorio — eventualmente Evento dejará de guardar estas fechas).
 
 **Archivos a tocar:**
 - `entity/LeadSeguimiento.java` (nueva)
 - `repository/LeadSeguimientoRepository.java` (nuevo)
+- `entity/enums/ComportamientoTipificacion.java` (agregar `ES_GRABACION`)
 - `service/LeadService.java` → método de tipificación (escritura dual)
-- `resources/db/migration/V65__create_lead_seguimiento.sql`
+- `resources/db/migration/V__create_lead_seguimiento.sql` (crear tabla + backfill + coherencia)
+- `resources/db/migration/V__add_es_grabacion_comportamiento.sql` (nuevo comportamiento + marcar en matriz)
 
 ---
 
@@ -294,26 +401,31 @@ El drawer detecta si es VIVO o CONSULTA y muestra los controles apropiados.
 
 ## Orden de ejecución recomendado
 
-| Paso | Fase | Riesgo | Bloquea a |
-|------|------|--------|-----------|
-| 1 | 0a-0b | Medio | Fase 1 (query necesita LeadSeguimiento) |
-| 2 | 0c | Bajo | — (escritura dual, sin romper nada) |
-| 3 | 1a-1c | Alto | Fase 3, 4, 5 (toda la bandeja depende de la query) |
-| 4 | 2a | Bajo | Fase 3a (la bandeja consume tree-select) |
-| 5 | 2b-2c | Medio | — |
-| 6 | 3a | Medio | — (endpoints geo nuevos) |
-| 7 | 3b-3c | Bajo | — |
-| 8 | 4a-4b | Bajo | — |
-| 9 | 5a-5c | Bajo | — |
-| 10 | 6 | Bajo | — (limpieza final) |
+| Paso | Fase | Peso | Bloquea a |
+|------|------|------|-----------|
+| 1 | 0a (schema) | Bajo | Todo lo demás |
+| 2 | 0b (ES_GRABACION) | Bajo | 0c (migración necesita el comportamiento en la matriz) |
+| 3 | **0c (migración backfill)** | **ALTO** | Fase 1 (query JOINea LeadSeguimiento) |
+| 4 | 0d (dual-write) | Medio | — (sin romper nada, pero necesita la tabla de paso 1) |
+| 5 | 1a-1c (query unificada) | Alto | Fase 3, 4, 5 |
+| 6 | 2a (tree-select componente) | Bajo | Fase 3 (la bandeja lo consume) |
+| 7 | 2b-2c (tipis por proveedor + históricas) | Medio | — |
+| 8 | 3a (filtro geo cascada) | Medio | — |
+| 9 | 3b-3c (filtro proveedor + barra) | Bajo | — |
+| 10 | 4a-4b (ORGANIZAR + sort) | Bajo | — |
+| 11 | 5a-5c (visual VIVO/CONSULTA) | Bajo | — |
+| 12 | 6 (limpieza) | Bajo | — |
+
+> **El paso 3 (migración backfill) es la pieza más crítica del plan.** Requiere investigar
+> campo por campo las fuentes de datos reales, construir cadenas de fallback con coherencia
+> temporal, y verificar exhaustivamente. No es un script INSERT trivial.
 
 ---
 
-## Preguntas abiertas
+## Preguntas resueltas
 
-1. **LeadSeguimiento — fechas adicionales por definir**: ¿hay más fechas de POSTVENTA o futuras
-   etapas que debamos considerar desde ya para el schema?
-2. **Proveedor en tree select**: ¿mostrar todas las matrices de proveedor o solo la del proveedor
-   seleccionado en el filtro? (Recomiendo: solo la del proveedor filtrado, o todas si no hay filtro.)
-3. **Replicar a otras etapas**: una vez validada en VENTA, ¿la bandeja de PREVENTA y POSTVENTA
-   usarían exactamente el mismo componente con diferente `etapaBandeja`?
+1. **Proveedor en tree select**: solo tipis/subtipis ACTIVAS del proveedor del scope actual.
+   Si el empleado cambia de proveedor, el tree select se limpia y recarga con la matriz del
+   nuevo proveedor. Nunca mezclar tipis de proveedores distintos.
+2. **Replicar a otras etapas**: no por ahora. Esta bandeja (VENTA) es la primera con esta
+   lógica. La arquitectura lo permite pero la réplica se hará cuando se necesite.

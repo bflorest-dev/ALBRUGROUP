@@ -111,6 +111,18 @@ export class AdminRrhhService {
     return this.http.get<HorarioResponse>(`${this.horariosUrl}/empleados/${empleadoId}/vigente`, { params });
   }
 
+  listarHistoricoHorarios(empleadoId: number, pageSize = 50): Observable<PageResponse<HorarioResponse>> {
+    const params = new HttpParams()
+      .set('pageNumber', 0)
+      .set('pageSize', pageSize)
+      .set('sortBy', 'fechaInicio')
+      .set('direction', 'desc');
+    return this.http.get<PageResponse<HorarioResponse>>(
+      `${this.horariosUrl}/empleados/${empleadoId}/historico`,
+      { params }
+    );
+  }
+
   getEmpleados(pageNumber = 0, pageSize = 8, estado?: string): Observable<PageResponse<EmpleadoResponse>> {
     const params = new HttpParams()
       .set('pageNumber', pageNumber)

@@ -67,9 +67,12 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   @Input() dateLabel = 'Fecha de inicio';
   /** Fecha mínima seleccionable (ISO yyyy-mm-dd). Por defecto, hoy: nunca se elige un día pasado. */
   @Input() minDate = '';
+  /** Cambia cuando el consumidor vuelve a cargar el mismo FormGroup con otra versión. */
+  @Input() refreshKey = 0;
 
   private readonly destroyRef = inject(DestroyRef);
   private boundForm: FormGroup | null = null;
+  private boundRefreshKey = -1;
 
   protected readonly rows = signal<RawDay[]>([]);
   protected readonly selected = signal<number | null>(null);
@@ -145,17 +148,23 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   });
 
   ngOnChanges(): void {
-    if (this.horarioForm === this.boundForm) return;
-    this.boundForm = this.horarioForm;
-    this.forceAdvanced();
-    const detalles = this.detalles();
-    detalles.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      // Cualquier cambio de detalles (populate/reset del facade, preset por modalidad, edición) reafirma
-      // el modo por día: asi el submit usa siempre los detalles y no los pisa el modo simple.
+    const formChanged = this.horarioForm !== this.boundForm;
+    const refreshRequested = this.refreshKey !== this.boundRefreshKey;
+    if (!formChanged && !refreshRequested) return;
+    this.boundRefreshKey = this.refreshKey;
+    if (formChanged) {
+      this.boundForm = this.horarioForm;
       this.forceAdvanced();
-      this.refresh();
-    });
+      const detalles = this.detalles();
+      detalles.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+        // Cualquier cambio de detalles (populate/reset del facade, preset por modalidad, edición) reafirma
+        // el modo por día: asi el submit usa siempre los detalles y no los pisa el modo simple.
+        this.forceAdvanced();
+        this.refresh();
+      });
+    }
     this.refresh();
+    this.selected.set(null);
     this.resetBufferToPattern();
     // Fecha: nunca antes del mínimo (hoy por defecto). Si el horario vigente arrancó en el pasado, el
     // prefill se "adelanta" al mínimo para que "dejar la fecha como está" signifique aplicar desde hoy.

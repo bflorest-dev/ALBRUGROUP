@@ -160,6 +160,51 @@
             </div>
           } @else { <p class="empty-copy">No existen cambios de roles registrados.</p> }
         </section>
+      } @else if (subview() === 'editar-horario') {
+        <section class="drawer-subview schedule-editor-view">
+          <div class="subview-heading">
+            <button class="back-button" type="button" [disabled]="scheduleFacade.isSaving() || scheduleFacade.isApplyingCorrection()" (click)="closeScheduleEditor()"><i class="ti ti-arrow-left"></i>Volver</button>
+            <div>
+              <h3>Editar horario base</h3>
+              <p>Define la jornada recurrente del empleado por día y conserva el historial de cambios.</p>
+            </div>
+          </div>
+
+          @if (scheduleFacade.error()) { <p class="feedback error" role="alert">{{ scheduleFacade.error() }}</p> }
+          @if (scheduleFacade.success()) { <p class="feedback success" role="status">{{ scheduleFacade.success() }}</p> }
+
+          @if (scheduleFacade.correctionVisible()) {
+            <section class="schedule-conflict" aria-labelledby="schedule-conflict-title">
+              <div class="schedule-conflict__icon"><i class="ti ti-calendar-exclamation" aria-hidden="true"></i></div>
+              <div>
+                <h4 id="schedule-conflict-title">Este horario ya tiene marcaciones</h4>
+                <p>No podemos corregir la vigencia actual directamente. Elige cómo aplicar la modificación.</p>
+              </div>
+              <label class="form-field form-field--wide">
+                <span>Motivo</span>
+                <input type="text" [ngModel]="scheduleFacade.correctionReason()" [ngModelOptions]="{ standalone: true }" (ngModelChange)="scheduleFacade.setCorrectionReason($event)" />
+              </label>
+              <label class="form-field form-field--wide">
+                <span>Fecha de inicio alternativa</span>
+                <input type="date" [ngModel]="scheduleFacade.correctionDate()" [ngModelOptions]="{ standalone: true }" (ngModelChange)="scheduleFacade.setCorrectionDate($event)" />
+              </label>
+            </section>
+          } @else {
+            @if (!scheduleFacade.canMutateOperationalData()) {
+              <p class="feedback blocked" role="status">{{ scheduleFacade.blockedMessage() }}</p>
+            }
+            <app-schedule-week-editor
+              [horarioForm]="scheduleFacade.form"
+              [requiresLunch]="scheduleFacade.requiresLunch()"
+              [perDayLunch]="true"
+              [lunchMinutes]="60"
+              [showDate]="true"
+              [showCompensable]="true"
+              dateLabel="Fecha de inicio"
+              [refreshKey]="scheduleFacade.editorKey()"
+            />
+          }
+        </section>
       } @else if (section() === 'resumen') {
         <section class="summary-block">
           <h3>Preparación</h3>
@@ -215,11 +260,52 @@
           } @else { <p class="empty-copy">Sin contratos anteriores registrados.</p> }
         </section>
       } @else if (section() === 'horario') {
-        <section class="summary-block attendance-callout">
-          <h3>Horario del empleado</h3>
-          <p class="schedule-value">{{ contract() ? scheduleSummary() : 'Primero registra un contrato' }}</p>
-          <p>La edición completa del horario y sus ajustes diarios continúa temporalmente en la experiencia de Asistencia.</p>
-          <button class="primary-button" type="button" [disabled]="!contract()" (click)="manageSchedule.emit(current)">Gestionar horario</button>
+        <section class="summary-block schedule-overview">
+          <div class="schedule-overview__heading">
+            <div>
+              <h3>Horario base</h3>
+              <p class="schedule-value">{{ contract() ? (schedule() ? scheduleSummary() : 'Pendiente de asignación') : 'Primero registra un contrato' }}</p>
+            </div>
+            @if (schedule()) { <span class="schedule-state">{{ schedule()?.modalidad ? label(schedule()?.modalidad) : 'Horario vigente' }}</span> }
+          </div>
+          @if (isLoadingEmployment()) {
+            <p class="muted">Consultando horario vigente…</p>
+          } @else if (!contract()) {
+            <p class="pending-copy">Registra un contrato antes de asignar el horario base.</p>
+          } @else if (!schedule()) {
+            <p class="pending-copy">Este empleado todavía no tiene un horario base asignado.</p>
+          } @else {
+            <dl class="schedule-facts">
+              <div><dt>Inicio</dt><dd class="mono">{{ schedule()?.fechaInicio }}</dd></div>
+              <div><dt>Descanso</dt><dd>{{ restDayLabel(schedule()) }}</dd></div>
+              <div><dt>Almuerzo</dt><dd>{{ schedule()?.minutosAlmuerzo ? schedule()?.minutosAlmuerzo + ' min' : 'Sin almuerzo' }}</dd></div>
+            </dl>
+          }
+          @if (!scheduleFacade.canMutateOperationalData()) {
+            <p class="feedback blocked" role="status">{{ scheduleFacade.blockedMessage() }}</p>
+          }
+        </section>
+
+        <section class="summary-block schedule-history-block">
+          <h3>Historial de horarios</h3>
+          @if (scheduleFacade.isLoadingHistory()) {
+            <p class="muted">Cargando historial…</p>
+          } @else if (scheduleFacade.historyError()) {
+            <p class="feedback error" role="alert">{{ scheduleFacade.historyError() }}</p>
+          } @else if (!scheduleFacade.historyItems().length) {
+            <p class="empty-copy">Sin versiones de horario registradas.</p>
+          } @else {
+            <div class="schedule-history-list">
+              @for (item of scheduleFacade.historyItems(); track item.schedule.id) {
+                <button type="button" class="schedule-history-item" [class.is-current]="item.kind === 'actual'" (click)="selectScheduleHistory(item.schedule)">
+                  <span class="schedule-history-item__badge" [class.is-current]="item.kind === 'actual'" [class.is-future]="item.kind === 'futuro'">{{ item.label }}</span>
+                  <span class="schedule-history-item__body"><strong>{{ item.range }}</strong><small>{{ item.validity }} · descansa {{ item.restDay }}</small></span>
+                  <i class="ti ti-pencil" aria-hidden="true"></i>
+                </button>
+              }
+            </div>
+            <p class="schedule-history-hint">Selecciona una versión para cargarla en el editor.</p>
+          }
         </section>
       } @else if (section() === 'roles' && canManageRoles()) {
         <section class="access-layout">
@@ -272,6 +358,17 @@
       } @else if (subview() === 'gestionar-proveedores') {
         <button type="button" class="ghost-button" [disabled]="isSavingProviders()" (click)="closeProviderManagement()">Cancelar</button>
         <button type="button" class="primary-button push-right" [disabled]="isSavingProviders() || !providerOptions().length" (click)="saveProviderManagement()">{{ isSavingProviders() ? 'Guardando…' : 'Guardar proveedores' }}</button>
+      } @else if (subview() === 'editar-horario') {
+        @if (scheduleFacade.correctionVisible()) {
+          <button type="button" class="ghost-button" [disabled]="scheduleFacade.isApplyingCorrection()" (click)="cancelScheduleCorrection()">Cancelar</button>
+          <button type="button" class="ghost-button" [disabled]="scheduleFacade.isApplyingCorrection()" (click)="applyScheduleCorrection('today')">Solo hoy</button>
+          <button type="button" class="ghost-button" [disabled]="scheduleFacade.isApplyingCorrection()" (click)="applyScheduleCorrection('tomorrow')">Desde mañana</button>
+          <button type="button" class="ghost-button" [disabled]="scheduleFacade.isApplyingCorrection()" (click)="applyScheduleCorrection('today-and-tomorrow')">Hoy + mañana</button>
+          <button type="button" class="primary-button push-right" [disabled]="scheduleFacade.isApplyingCorrection()" (click)="applyScheduleCorrection('custom')">{{ scheduleFacade.isApplyingCorrection() ? 'Aplicando…' : 'Aplicar fecha' }}</button>
+        } @else {
+          <button type="button" class="ghost-button" [disabled]="scheduleFacade.isSaving()" (click)="closeScheduleEditor()">Cancelar</button>
+          <button type="button" class="primary-button push-right" [disabled]="scheduleFacade.isSaving() || !contract() || !scheduleFacade.canMutateOperationalData()" (click)="saveSchedule()">{{ scheduleFacade.isSaving() ? 'Guardando…' : (schedule() ? 'Guardar horario' : 'Asignar horario') }}</button>
+        }
       } @else if (subview() === 'historial-roles') {
         <button type="button" class="ghost-button" (click)="closeSubview()"><i class="ti ti-arrow-left"></i>Volver a roles</button>
       } @else if (section() === 'resumen') {
@@ -282,6 +379,8 @@
       } @else if (section() === 'contrato') {
         <button type="button" class="primary-button" (click)="openContractForm()">{{ contract() ? 'Nuevo contrato' : 'Registrar contrato' }}</button>
         @if (contract()) { <button type="button" class="danger-ghost-button push-right" (click)="openCloseContract()">Finalizar contrato</button> }
+      } @else if (section() === 'horario') {
+        <button type="button" class="primary-button push-right" [disabled]="!contract() || !scheduleFacade.canMutateOperationalData()" (click)="openScheduleEditor()">{{ schedule() ? 'Editar horario base' : 'Asignar horario base' }}</button>
       } @else if (section() === 'roles' && canManageRoles()) {
         <button type="button" class="ghost-button" (click)="openRoleHistory()"><i class="ti ti-history"></i>Ver historial</button>
         <button class="primary-button push-right" type="button" [disabled]="isSavingRoles()" (click)="saveRoles()">{{ isSavingRoles() ? 'Guardando…' : 'Guardar roles' }}</button>

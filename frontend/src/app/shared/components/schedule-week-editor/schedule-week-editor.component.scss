@@ -67,7 +67,7 @@
       padding: 0 0.5rem;
       border: 1px solid var(--app-border-soft);
       border-radius: 8px;
-      background: #ffffff;
+      background: var(--schedule-control-bg, #ffffff);
       color: var(--role-panel-text);
       font-size: 0.85rem;
     }
@@ -84,14 +84,14 @@
     height: 34px;
     padding: 0 1rem;
     border: 0;
-    background: #ffffff;
+    background: var(--schedule-control-bg, #ffffff);
     color: var(--role-muted);
     font-size: 0.85rem;
     cursor: pointer;
 
     &--on {
-      background: #15803d;
-      color: #ffffff;
+      background: var(--schedule-accent, #15803d);
+      color: var(--schedule-accent-contrast, #ffffff);
     }
   }
 }
@@ -127,7 +127,7 @@
       padding: 0 0.5rem;
       border: 1px solid var(--app-border-soft);
       border-radius: 8px;
-      background: #ffffff;
+      background: var(--schedule-control-bg, #ffffff);
       color: var(--role-panel-text);
       font-size: 0.85rem;
     }
@@ -143,7 +143,7 @@
     input {
       width: 16px;
       height: 16px;
-      accent-color: #15803d;
+      accent-color: var(--schedule-accent, #15803d);
     }
   }
 
@@ -161,7 +161,7 @@
     input {
       width: 15px;
       height: 15px;
-      accent-color: #15803d;
+      accent-color: var(--schedule-accent, #15803d);
     }
   }
 }
@@ -194,7 +194,7 @@
 
     &--selected {
       background: var(--app-surface-soft);
-      outline: 2px solid #15803d;
+      outline: 2px solid var(--schedule-accent, #15803d);
       outline-offset: -1px;
     }
   }
@@ -219,7 +219,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    background: #c0dd97;
+    background: var(--schedule-work, #c0dd97);
     border-radius: 4px;
   }
 
@@ -227,7 +227,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    background: #ef9f27;
+    background: var(--schedule-lunch, #ef9f27);
   }
 
   &__cap {
@@ -238,7 +238,7 @@
     display: flex;
     align-items: center;
     font-size: 0.68rem;
-    color: #166534;
+    color: var(--schedule-work-text, #166534);
     white-space: nowrap;
   }
 
@@ -278,10 +278,10 @@
   border-radius: 3px;
 
   &--work {
-    background: #c0dd97;
+    background: var(--schedule-work, #c0dd97);
   }
   &--lunch {
-    background: #ef9f27;
+    background: var(--schedule-lunch, #ef9f27);
   }
   &--rest {
     background: var(--app-border-soft);
