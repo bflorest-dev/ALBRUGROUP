@@ -31,6 +31,8 @@ export class LunchDayEditorComponent {
   readonly lunchMinutes = input(60);
   readonly saving = input(false);
   readonly error = input<string | null>(null);
+  /** El drawer puede renderizar las acciones en su footer fijo. */
+  readonly showActions = input(true);
 
   readonly save = output<{ inicio: string | null; fin: string | null }>();
   readonly cancel = output<void>();
@@ -64,6 +66,8 @@ export class LunchDayEditorComponent {
   });
 
   protected readonly baseLabel = computed(() => `${hhmm(this.baseStart())} – ${hhmm(this.baseEnd())}`);
+  protected readonly baseStartLabel = computed(() => hhmm(this.baseStart()));
+  protected readonly baseEndLabel = computed(() => hhmm(this.baseEnd()));
 
   protected readonly ticks = computed(() => {
     const s = this.baseStart();
@@ -122,6 +126,15 @@ export class LunchDayEditorComponent {
   protected emitSave(): void {
     if (!this.canSave()) return;
     this.save.emit(this.hasLunch() ? { inicio: this.li(), fin: this.lf() } : { inicio: null, fin: null });
+  }
+
+  /** Permite que un contenedor con footer propio dispare el guardado. */
+  submit(): void {
+    this.emitSave();
+  }
+
+  canSubmit(): boolean {
+    return this.canSave();
   }
 
   protected emitCancel(): void {

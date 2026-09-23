@@ -1,0 +1,113 @@
+:host {
+  display: inline-block;
+}
+
+.tree-select-btn--active {
+  font-weight: 800;
+}
+
+.tree-select {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 16rem;
+  max-width: 24rem;
+}
+
+.tree-select__search {
+  align-items: center;
+  background: var(--board-soft, #f5f7fa);
+  border: 1px solid var(--board-line, #d9dee7);
+  border-radius: 6px;
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.3rem 0.45rem;
+}
+
+.tree-select__search > i {
+  color: var(--board-muted, #5b6573);
+  font-size: 0.78rem;
+}
+
+.tree-select__search input {
+  border: 0;
+  box-shadow: none;
+  flex: 1;
+  font-size: 0.8rem;
+  min-width: 0;
+  padding: 0.15rem 0;
+}
+
+.tree-select__list {
+  display: grid;
+  gap: 0.15rem;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.tree-select__group-header {
+  border-bottom: 1px solid var(--board-line, #d9dee7);
+  color: var(--board-muted, #5b6573);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.35rem 0.25rem;
+  text-transform: uppercase;
+}
+
+.tree-select__group-header:first-child {
+  margin-top: 0;
+}
+
+.tree-select__node {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.tree-select__row {
+  align-items: center;
+  border-radius: 5px;
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.28rem 0.35rem;
+}
+
+.tree-select__row:hover {
+  background: var(--board-soft, #f5f7fa);
+}
+
+.tree-select__row--child {
+  padding-left: 1.6rem;
+}
+
+.tree-select__label {
+  color: var(--board-ink, #141922);
+  flex: 1;
+  font-size: 0.8rem;
+  font-weight: 800;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-select__label--child {
+  color: var(--board-muted, #5b6573);
+  font-weight: 700;
+}
+
+.tree-select__children {
+  display: grid;
+  gap: 0.06rem;
+}
+
+.tree-select__empty {
+  color: var(--board-muted, #5b6573);
+  font-size: 0.78rem;
+  padding: 0.6rem;
+  text-align: center;
+}
+
+:host ::ng-deep .tree-select-popover .p-popover-content {
+  padding: 0.75rem;
+}

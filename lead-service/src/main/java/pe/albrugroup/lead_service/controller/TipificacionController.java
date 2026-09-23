@@ -19,7 +19,10 @@ import pe.albrugroup.lead_service.entity.request.CatalogoEstadoRequest;
 import pe.albrugroup.lead_service.entity.request.CatalogoRequest;
 import pe.albrugroup.lead_service.entity.request.ClonarMatrizRequest;
 import pe.albrugroup.lead_service.entity.request.MatrizCatalogoRequest;
+import pe.albrugroup.lead_service.entity.response.CatalogoProveedorResponse;
 import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
+
+import java.util.List;
 import pe.albrugroup.lead_service.service.LeadService;
 import pe.albrugroup.lead_service.service.TipificacionService;
 
@@ -59,6 +62,11 @@ public class TipificacionController {
     @GetMapping("/{etapa}/catalogo-agregado") @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa)")
     public ResponseEntity<CatalogoResponse> getCatalogoAgregado(@PathVariable Etapa etapa) {
         return ResponseEntity.ok(service.getCatalogoAgregado(etapa));
+    }
+
+    @GetMapping("/{etapa}/catalogo-por-proveedor") @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa)")
+    public ResponseEntity<List<CatalogoProveedorResponse>> getCatalogoPorProveedor(@PathVariable Etapa etapa) {
+        return ResponseEntity.ok(service.getCatalogoPorProveedor(etapa));
     }
 
     @PutMapping("/catalogo") @PreAuthorize("hasAuthority('UPDATE_TIPIFICACIONES')")

@@ -1745,6 +1745,161 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     );
 
     @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadBandejaVentaResponse(
+                l.id, ultTip.id,
+                CASE WHEN l.etapa = :etapaBandeja THEN 0 ELSE 1 END,
+                l.etapa, l.estado, l.estadoClientePostventa,
+                l.prefijo, l.lead, l.usermeta, dp.tipoDocumento,
+                COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
+                dp.nombreTitularServicio,
+                CASE
+                  WHEN :groupBy = 'DEPARTAMENTO' THEN dept.nombre
+                  WHEN :groupBy = 'PROVINCIA' THEN CONCAT(COALESCE(dept.nombre, '?'), ' / ', COALESCE(prov.nombre, '?'))
+                  WHEN :groupBy = 'DISTRITO' THEN CONCAT(COALESCE(dept.nombre, '?'), ' / ', COALESCE(prov.nombre, '?'), ' / ', COALESCE(dist.nombre, '?'))
+                  WHEN dir.ubigeoDomicilio IS NULL OR TRIM(dir.ubigeoDomicilio) = '' THEN null
+                  WHEN SUBSTRING(dir.ubigeoDomicilio, 1, 2) IN ('07', '15') THEN 'Lima'
+                  ELSE 'Provincia'
+                END,
+                l.base, l.idTipificacion, l.codigoTipificacion,
+                l.idSubtipificacion, l.codigoSubtipificacion,
+                r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion,
+                l.nombreProveedorSnapshot, l.nombrePlanSnapshot, l.precioPlanSnapshot,
+                l.nombrePromocionInternaSnapshot, l.precioAdicionalesSnapshot, l.precioFinal,
+                l.diaCorteFacturacion, l.mesesPermanenciaSnapshot, l.createdAt, l.lastEntryAt,
+                r.fechaIngresoEtapa, l.updatedAt, l.sec, l.sot, l.customerId,
+                COALESCE(lprov.requiereSecSotVenta, false),
+                rp.nombreAsesorMerito, r.nombreAsesorUltimaGestion, r.fechaUltimaGestion,
+                ultTip.idActor, ultTip.nombreActor,
+                seg.fechaProgramacion, seg.fechaRechazo, seg.fechaInstalacion,
+                r.ultimaTipificacionAt, ultTip.comentario, l.comentario
+            )
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaBandeja
+            LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
+            LEFT JOIN Evento ultTip ON ultTip.id = (
+                SELECT MAX(ev.id)
+                FROM Evento ev
+                WHERE ev.idLead = l.id AND ev.accion = :accionTipificacion AND ev.etapa = :etapaBandeja
+            )
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.direccion dir
+            LEFT JOIN l.plan pl
+            LEFT JOIN l.proveedor lprov
+            LEFT JOIN l.campana c
+            LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = r.ultimaCodigoTipificacion AND tAct.matriz.etapa = :etapaBandeja AND tAct.matriz.proveedor.id = lprov.id
+            LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = r.ultimaCodigoSubtipificacion
+            LEFT JOIN Distrito dist ON dist.codigo = dir.ubigeoDomicilio
+            LEFT JOIN dist.provincia prov
+            LEFT JOIN dist.departamento dept
+            WHERE
+              (:searchPattern = '%'
+                OR (:buscarPorUsermeta = false AND (
+                    l.lead LIKE :searchPattern
+                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+                    OR l.sec LIKE :searchPattern
+                    OR l.sot LIKE :searchPattern
+                ))
+                OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
+              )
+              AND (:filtrarTipificaciones = false OR r.ultimaCodigoTipificacion IN :codigosTipificacion)
+              AND (:filtrarSubtipificaciones = false OR r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion OR (:sinSubtipificacion = true AND r.ultimaCodigoSubtipificacion IS NULL))
+              AND (
+                    (:campoFecha = 'AUTO' AND (
+                        (seg.fechaProgramacion IS NOT NULL AND seg.fechaProgramacion >= :tsDesde AND seg.fechaProgramacion < :tsHasta)
+                        OR (seg.fechaProgramacion IS NULL AND seg.fechaRechazo IS NOT NULL AND seg.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta)
+                        OR (seg.fechaProgramacion IS NULL AND seg.fechaRechazo IS NULL AND seg.fechaInstalacion IS NOT NULL AND seg.fechaInstalacion BETWEEN :fechaDesde AND :fechaHasta)
+                        OR (seg.fechaProgramacion IS NULL AND seg.fechaRechazo IS NULL AND seg.fechaInstalacion IS NULL AND r.ultimaTipificacionAt >= :tsDesde AND r.ultimaTipificacionAt < :tsHasta)
+                    ))
+                    OR (:campoFecha = 'PROGRAMACION' AND seg.fechaProgramacion >= :tsDesde AND seg.fechaProgramacion < :tsHasta)
+                    OR (:campoFecha = 'RECHAZO' AND seg.fechaRechazo BETWEEN :fechaDesde AND :fechaHasta)
+                    OR (:campoFecha = 'INSTALACION' AND seg.fechaInstalacion BETWEEN :fechaDesde AND :fechaHasta)
+                    OR (:campoFecha IN ('TIPIFICACION', 'TIPIFICACION_INSTALADO') AND r.ultimaTipificacionAt >= :tsDesde AND r.ultimaTipificacionAt < :tsHasta)
+                    OR (:campoFecha = 'INGRESO' AND r.fechaIngresoEtapa >= :tsDesde AND r.fechaIngresoEtapa < :tsHasta)
+                    OR (:campoFecha = 'ULTIMA_GESTION' AND r.fechaUltimaGestion >= :tsDesde AND r.fechaUltimaGestion < :tsHasta)
+              )
+              AND (:filtrarProveedores = false OR lprov.id IN :proveedorIds)
+            ORDER BY
+              CASE WHEN :groupBy = 'ESTADO' THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END ASC,
+              CASE WHEN :groupBy = 'PLAN' THEN l.nombrePlanSnapshot END ASC,
+              CASE WHEN :groupBy = 'ULTIMO_GESTOR' THEN r.nombreAsesorUltimaGestion END ASC,
+              CASE WHEN :groupBy = 'ASESOR_PREVENTA' THEN rp.nombreAsesorMerito END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN tAct.orden END ASC,
+              CASE WHEN :groupBy = 'TIPIFICACION' THEN sAct.orden END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN tAct.orden END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN CASE WHEN sAct.orden IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy = 'SUBTIPIFICACION' THEN sAct.orden END ASC,
+              CASE WHEN :groupBy IN ('DEPARTAMENTO', 'PROVINCIA', 'DISTRITO') THEN CASE WHEN dept.nombre IS NULL THEN 1 ELSE 0 END END ASC,
+              CASE WHEN :groupBy IN ('DEPARTAMENTO', 'PROVINCIA', 'DISTRITO') THEN dept.nombre END ASC,
+              CASE WHEN :groupBy IN ('PROVINCIA', 'DISTRITO') THEN prov.nombre END ASC,
+              CASE WHEN :groupBy = 'DISTRITO' THEN dist.nombre END ASC,
+              CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = false THEN r.fechaIngresoEtapa END ASC,
+              CASE WHEN :sortBy = 'fechaIngresoEtapa' AND :sortDesc = true THEN r.fechaIngresoEtapa END DESC,
+              CASE WHEN :sortBy = 'fechaUltimaGestion' AND :sortDesc = false THEN r.fechaUltimaGestion END ASC,
+              CASE WHEN :sortBy = 'fechaUltimaGestion' AND :sortDesc = true THEN r.fechaUltimaGestion END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN seg.fechaProgramacion END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'AUTO' THEN seg.fechaProgramacion END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN seg.fechaRechazo END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'AUTO' THEN seg.fechaRechazo END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN seg.fechaInstalacion END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'AUTO' THEN seg.fechaInstalacion END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'AUTO' THEN r.ultimaTipificacionAt END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'AUTO' THEN r.ultimaTipificacionAt END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'PROGRAMACION' THEN seg.fechaProgramacion END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'PROGRAMACION' THEN seg.fechaProgramacion END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'RECHAZO' THEN seg.fechaRechazo END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'RECHAZO' THEN seg.fechaRechazo END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'INSTALACION' THEN seg.fechaInstalacion END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'INSTALACION' THEN seg.fechaInstalacion END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha IN ('TIPIFICACION', 'TIPIFICACION_INSTALADO') THEN r.ultimaTipificacionAt END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha IN ('TIPIFICACION', 'TIPIFICACION_INSTALADO') THEN r.ultimaTipificacionAt END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'INGRESO' THEN r.fechaIngresoEtapa END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'INGRESO' THEN r.fechaIngresoEtapa END DESC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = false AND :campoFecha = 'ULTIMA_GESTION' THEN r.fechaUltimaGestion END ASC,
+              CASE WHEN :sortBy = 'fechaRelevante' AND :sortDesc = true AND :campoFecha = 'ULTIMA_GESTION' THEN r.fechaUltimaGestion END DESC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = false THEN l.lead END ASC,
+              CASE WHEN :sortBy = 'lead' AND :sortDesc = true THEN l.lead END DESC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = false THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END ASC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = true THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END DESC,
+              CASE WHEN :sortBy = 'tipificacion' THEN CASE WHEN tAct.orden IS NULL THEN 1 ELSE 0 END ELSE 0 END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN tAct.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN tAct.orden END DESC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN sAct.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN sAct.orden END DESC,
+              r.fechaIngresoEtapa DESC,
+              l.id DESC
+            """)
+    Page<LeadBandejaVentaResponse> listarBandejaVentaUnificada(
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("etapaBandeja") Etapa etapaBandeja,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("searchPattern") String searchPattern,
+            @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("codigosTipificacion") Collection<String> codigosTipificacion,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
+            @Param("sinSubtipificacion") boolean sinSubtipificacion,
+            @Param("campoFecha") String campoFecha,
+            @Param("fechaDesde") java.time.LocalDate fechaDesde,
+            @Param("fechaHasta") java.time.LocalDate fechaHasta,
+            @Param("tsDesde") Instant tsDesde,
+            @Param("tsHasta") Instant tsHasta,
+            @Param("filtrarProveedores") boolean filtrarProveedores,
+            @Param("proveedorIds") Collection<Long> proveedorIds,
+            @Param("groupBy") String groupBy,
+            @Param("sortBy") String sortBy,
+            @Param("sortDesc") boolean sortDesc,
+            @Param("estadoNuevo") EstadoSeguimiento estadoNuevo,
+            @Param("estadoEnGestion") EstadoSeguimiento estadoEnGestion,
+            @Param("estadoAsignado") EstadoSeguimiento estadoAsignado,
+            @Param("estadoGestionado") EstadoSeguimiento estadoGestionado,
+            Pageable pageable
+    );
+
+    @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadResponse(
                 l.id,
                 l.prefijo,

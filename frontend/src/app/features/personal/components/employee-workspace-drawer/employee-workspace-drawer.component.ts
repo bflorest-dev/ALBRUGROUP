@@ -1,11 +1,13 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, ViewChild } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ContratoResponse } from '../../../../shared/models/rrhh/contrato-response';
 import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-response';
 import { HorarioResponse } from '../../../../shared/models/schedule/horario-response';
+import { AjusteJornadaRequest, RegistrarAjusteV2Request, RazonAjuste } from '../../../../shared/models/schedule/jornada-efectiva-response';
+import { TipoDiaNoLaborable } from '../../../../shared/models/schedule/dia-no-laborable-request';
 import { formatApiErrorMessage } from '../../../../shared/utils/api-error.utils';
 import { formatLabel } from '../../../../shared/utils/display-label';
 import { esRolDeEquipo, puedeMultiEquipo, PROVIDER_SCOPED_ROLES } from '../../../../shared/constants/multi-team-roles';
@@ -14,6 +16,10 @@ import { AdminEquipoService, EquipoResponse, ProveedorLite } from '../../../admi
 import { PersonalDirectoryRow } from '../../facades/personal-workspace.facade';
 import { PersonalScheduleFacade } from '../../facades/personal-schedule.facade';
 import { ScheduleWeekEditorComponent } from '../../../../shared/components/schedule-week-editor/schedule-week-editor.component';
+import { ScheduleExtensionTimelineComponent } from '../../../../shared/components/schedule-extension-timeline/schedule-extension-timeline.component';
+import { ScheduleShiftEditorComponent } from '../../../../shared/components/schedule-shift-editor/schedule-shift-editor.component';
+import { LunchDayEditorComponent } from '../../../../shared/components/lunch-day-editor/lunch-day-editor.component';
+import { SessionService } from '../../../../core/services/session.service';
 import {
   PersonalAccessService,
   RoleAuditEntry,
@@ -22,7 +28,8 @@ import {
 } from '../../services/personal-access.service';
 
 type DrawerSection = 'resumen' | 'contrato' | 'roles' | 'horario' | 'asistencia';
-type DrawerSubview = 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario';
+type DrawerSubview = 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
+type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario'>;
 
 export interface DrawerScopeCapabilities {
   team: boolean;
@@ -38,7 +45,7 @@ export function scopeCapabilitiesForRoles(roles: string[]): DrawerScopeCapabilit
 
 @Component({
   selector: 'app-employee-workspace-drawer',
-  imports: [DatePipe, FormsModule, ReactiveFormsModule, ScheduleWeekEditorComponent],
+  imports: [DatePipe, FormsModule, ReactiveFormsModule, ScheduleWeekEditorComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent],
   providers: [PersonalScheduleFacade],
   templateUrl: './employee-workspace-drawer.component.html',
   styleUrl: './employee-workspace-drawer.component.scss',
@@ -48,6 +55,7 @@ export class EmployeeWorkspaceDrawerComponent {
   private readonly rrhh = inject(AdminRrhhService);
   private readonly equipos = inject(AdminEquipoService);
   private readonly accessService = inject(PersonalAccessService);
+  private readonly session = inject(SessionService);
   protected readonly scheduleFacade = inject(PersonalScheduleFacade);
   private readonly formBuilder = inject(FormBuilder);
   private activeEmployeeId: number | null = null;
@@ -105,6 +113,36 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly teamError = signal('');
   protected readonly providerSelectedIds = signal<number[]>([]);
   protected readonly providerError = signal('');
+  protected readonly adjustmentSubview = computed<DayAdjustmentSubview | null>(() => {
+    const current = this.subview();
+    return current.startsWith('ajuste-') ? current as DayAdjustmentSubview : null;
+  });
+  protected readonly adjustmentDate = this.scheduleFacade.adjustmentDate;
+  protected readonly adjustmentJornada = this.scheduleFacade.adjustmentJornada;
+  protected readonly adjustmentReport = this.scheduleFacade.adjustmentReport;
+  protected readonly isLoadingAdjustment = this.scheduleFacade.isLoadingAdjustment;
+  protected readonly isSavingAdjustment = this.scheduleFacade.isSavingAdjustment;
+  protected readonly adjustmentError = this.scheduleFacade.adjustmentError;
+  protected readonly adjustmentReportError = this.scheduleFacade.adjustmentReportError;
+  protected readonly adjustmentSuccess = this.scheduleFacade.adjustmentSuccess;
+  protected readonly adjustmentExtraEntrada = signal('09:00');
+  protected readonly adjustmentExtraSalida = signal('18:00');
+  protected readonly adjustmentExtraMotivo = signal('');
+  protected readonly adjustmentLunchDate = signal(this.today());
+  protected readonly adjustmentDayOffDate = signal(this.today());
+  protected readonly adjustmentDayOffType = signal<TipoDiaNoLaborable>('FERIADO');
+  protected readonly adjustmentDayOffGlobal = signal(false);
+  protected readonly adjustmentDayOffReason = signal('');
+  protected readonly tipoDiaNoLaborableOptions: { label: string; value: TipoDiaNoLaborable }[] = [
+    { label: 'Feriado', value: 'FERIADO' },
+    { label: 'Vacaciones', value: 'VACACIONES' },
+    { label: 'Permiso', value: 'PERMISO' },
+    { label: 'Descanso de equipo', value: 'DESCANSO_EQUIPO' }
+  ];
+
+  @ViewChild(ScheduleExtensionTimelineComponent) private extensionEditor?: ScheduleExtensionTimelineComponent;
+  @ViewChild(ScheduleShiftEditorComponent) private shiftEditor?: ScheduleShiftEditorComponent;
+  @ViewChild(LunchDayEditorComponent) private lunchEditor?: LunchDayEditorComponent;
 
   protected readonly personalForm = this.formBuilder.nonNullable.group({
     nombres: ['', [Validators.required]],
@@ -181,7 +219,7 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected isBusy(): boolean {
-    return this.isSavingPersonal() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingProviders() || this.isSavingRoles() || this.scheduleFacade.isSaving() || this.scheduleFacade.isApplyingCorrection();
+    return this.isSavingPersonal() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingProviders() || this.isSavingRoles() || this.scheduleFacade.isSaving() || this.scheduleFacade.isApplyingCorrection() || this.isSavingAdjustment();
   }
 
   protected canManageTeam(row?: PersonalDirectoryRow | null): boolean {
@@ -500,6 +538,147 @@ export class EmployeeWorkspaceDrawerComponent {
     if (!applied) return;
     this.subview.set('none');
     this.actionSuccess.set(this.scheduleFacade.success());
+    this.employeeChanged.emit();
+  }
+
+  protected canCorrimientoCompensable(): boolean {
+    return (this.session.session()?.roles ?? []).includes('ADMINISTRADOR');
+  }
+
+  protected canCorrimientoJustificada(): boolean {
+    const roles = this.session.session()?.roles ?? [];
+    return roles.includes('ADMINISTRADOR') || roles.includes('RRHH');
+  }
+
+  protected openDayAdjustment(view: DayAdjustmentSubview): void {
+    if (!this.scheduleFacade.canMutateOperationalData()) return;
+    const base = this.adjustmentBaseTimes();
+    this.adjustmentExtraEntrada.set(base.entrada);
+    this.adjustmentExtraSalida.set(base.salida);
+    this.adjustmentExtraMotivo.set(view === 'ajuste-compensar-falta' ? 'Compensación de falta' : '');
+    this.adjustmentLunchDate.set(this.adjustmentDate());
+    this.adjustmentDayOffDate.set(this.adjustmentDate());
+    this.adjustmentDayOffType.set('FERIADO');
+    this.adjustmentDayOffGlobal.set(false);
+    this.adjustmentDayOffReason.set('');
+    this.clearActionFeedback();
+    this.subview.set(view);
+    void this.scheduleFacade.loadDayAdjustment(this.row()?.employee.idEmpleado, this.adjustmentDate());
+  }
+
+  protected closeDayAdjustment(): void {
+    this.subview.set('none');
+    this.scheduleFacade.adjustmentError.set('');
+    this.scheduleFacade.adjustmentReportError.set('');
+  }
+
+  protected onAdjustmentDateChange(value: string): void {
+    if (!value) return;
+    void this.scheduleFacade.loadDayAdjustment(this.row()?.employee.idEmpleado, value);
+  }
+
+  protected adjustmentTitle(): string {
+    switch (this.subview()) {
+      case 'ajuste-extra': return 'Agregar horas extra';
+      case 'ajuste-compensacion': return 'Compensar horas';
+      case 'ajuste-corrimiento': return 'Correr horario';
+      case 'ajuste-jornada-extra': return 'Habilitar jornada en día libre';
+      case 'ajuste-compensar-falta': return 'Compensar falta con día libre';
+      case 'ajuste-almuerzo': return 'Modificar almuerzo del día';
+      case 'ajuste-dia-libre': return 'Declarar día libre';
+      default: return 'Ajuste del día';
+    }
+  }
+
+  protected adjustmentBaseTimes(): { entrada: string; salida: string } {
+    const tramo = this.adjustmentJornada()?.tramos.find((item) => item.base);
+    return {
+      entrada: this.timeOnly(tramo?.inicio) || '09:00',
+      salida: this.timeOnly(tramo?.fin) || '18:00'
+    };
+  }
+
+  protected canCompensateHours(): boolean {
+    return !this.scheduleFacade.isLoadingMonthlyBalance()
+      && !this.scheduleFacade.monthlyBalanceError()
+      && this.scheduleFacade.monthlyBalanceMinutes() !== null
+      && this.scheduleFacade.monthlyDebtMinutes() > 0;
+  }
+
+  protected compensationDebtLabel(): string {
+    const minutes = this.scheduleFacade.monthlyDebtMinutes();
+    if (!minutes) return '';
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    const duration = hours === 0 ? `${rest} min` : rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+    return `Debe ${duration}`;
+  }
+
+  protected adjustmentLunchStart(): string | null {
+    return this.timeOnly(this.adjustmentReport()?.inicioAlmuerzoProgramado);
+  }
+
+  protected adjustmentLunchEnd(): string | null {
+    return this.timeOnly(this.adjustmentReport()?.finAlmuerzoProgramado);
+  }
+
+  private timeOnly(value: string | null | undefined): string | null {
+    if (!value) return null;
+    const match = /(?:T|\s)?(\d{2}:\d{2})/.exec(value);
+    return match?.[1] ?? null;
+  }
+
+  protected async saveDayAdjustment(): Promise<void> {
+    const view = this.subview();
+    if (view === 'ajuste-extra') {
+      this.extensionEditor?.submit();
+    } else if (view === 'ajuste-compensacion') {
+      this.extensionEditor?.submit();
+    } else if (view === 'ajuste-corrimiento') {
+      this.shiftEditor?.submit();
+    } else if (view === 'ajuste-almuerzo') {
+      this.lunchEditor?.submit();
+    } else if (view === 'ajuste-jornada-extra' || view === 'ajuste-compensar-falta') {
+      const fecha = this.adjustmentDate();
+      const razon: RazonAjuste = view === 'ajuste-compensar-falta' ? 'COMPENSACION' : 'AMPLIACION_OPERATIVA';
+      const saved = await this.scheduleFacade.submitJornadaExtraordinaria(
+        fecha,
+        this.adjustmentExtraEntrada(),
+        this.adjustmentExtraSalida(),
+        this.adjustmentExtraMotivo().trim() || (razon === 'COMPENSACION' ? 'Compensación de falta' : 'Jornada extraordinaria'),
+        razon
+      );
+      if (saved) this.finishDayAdjustment();
+    } else if (view === 'ajuste-dia-libre') {
+      const saved = await this.scheduleFacade.submitDiaLibre(
+        this.adjustmentDayOffDate(),
+        this.adjustmentDayOffType(),
+        this.adjustmentDayOffReason().trim() || 'Día libre declarado',
+        this.adjustmentDayOffGlobal()
+      );
+      if (saved) this.finishDayAdjustment();
+    }
+  }
+
+  protected async onSaveDayExtension(requests: AjusteJornadaRequest[]): Promise<void> {
+    const reason: RazonAjuste = this.subview() === 'ajuste-compensacion' ? 'COMPENSACION' : 'AMPLIACION_OPERATIVA';
+    const saved = await this.scheduleFacade.submitDayExtension(requests, reason);
+    if (saved) this.finishDayAdjustment();
+  }
+
+  protected async onSaveDayShift(request: RegistrarAjusteV2Request): Promise<void> {
+    const saved = await this.scheduleFacade.submitCorrimiento(request);
+    if (saved) this.finishDayAdjustment();
+  }
+
+  protected async onSaveDayLunch(value: { inicio: string | null; fin: string | null }): Promise<void> {
+    const saved = await this.scheduleFacade.submitLunchAdjustment(value.inicio, value.fin);
+    if (saved) this.finishDayAdjustment();
+  }
+
+  private finishDayAdjustment(): void {
+    this.subview.set('none');
+    this.actionSuccess.set(this.scheduleFacade.adjustmentSuccess());
     this.employeeChanged.emit();
   }
 

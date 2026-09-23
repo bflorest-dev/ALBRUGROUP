@@ -29,12 +29,15 @@
   --role-panel-text: var(--ink);
   --role-muted: var(--ink-2);
   --app-surface-soft: var(--panel-2);
+  --app-surface-raised: var(--panel);
   --app-border-soft: var(--line);
+  --app-text-muted: var(--ink-2);
   --app-danger: var(--danger);
   --schedule-work: #c0dd97;
   --schedule-work-text: #166534;
   --schedule-lunch: #ef9f27;
   --schedule-control-bg: var(--panel);
+  --schedule-input-bg: var(--panel-sunk);
   --schedule-accent: var(--signal);
   --schedule-accent-contrast: #fff;
 
@@ -221,6 +224,48 @@ dd { margin: 4px 0 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere
 .schedule-history-item__body small { color: var(--ink-3); font-size: 11px; overflow-wrap: anywhere; }
 .schedule-history-hint { margin: 10px 0 0; color: var(--ink-3); font-size: 11.5px; }
 
+.schedule-adjustments-disclosure { margin-top: 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.schedule-adjustments-disclosure summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 2px; color: var(--ink-2); cursor: pointer; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; list-style: none; }
+.schedule-adjustments-disclosure summary::-webkit-details-marker { display: none; }
+.schedule-adjustments-disclosure[open] summary i { transform: rotate(180deg); }
+.schedule-adjustments-disclosure summary i { transition: transform .18s ease; }
+.schedule-adjustments-block { padding: 0 2px 14px; }
+.adjustment-date-row { display: grid; grid-template-columns: minmax(170px, 220px) 1fr; gap: 14px; align-items: end; padding: 3px 0 14px; }
+.adjustment-date-row__hint { padding-bottom: 11px; color: var(--ink-3); font-size: 11.5px; }
+.adjustment-actions-list { border-top: 1px solid var(--line); }
+.adjustment-action-row { width: 100%; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 11px 2px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; }
+.adjustment-action-row:hover:not(:disabled) { background: var(--panel-2); }
+.adjustment-action-row:disabled { cursor: not-allowed; opacity: .52; }
+.adjustment-action-row > span:nth-child(2) { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.adjustment-action-row strong { font-size: 12.5px; }
+.adjustment-action-row small { color: var(--ink-3); font-size: 11.5px; overflow-wrap: anywhere; }
+.adjustment-action-row > i { color: var(--ink-3); font-size: 14px; }
+.adjustment-action-row__badge { justify-self: end; white-space: nowrap; padding: 4px 8px; border: 1px solid var(--signal-line); border-radius: 999px; background: var(--signal-wash); color: var(--signal); font-size: 10.5px; font-weight: 700; }
+.adjustment-action-row__icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--panel-2); color: var(--focus); font-size: 15px; }
+.adjustment-action-row__icon--extra { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+.adjustment-action-row__icon--comp { background: color-mix(in srgb, var(--signal) 16%, transparent); color: var(--signal); }
+.adjustment-action-row__icon--shift { background: color-mix(in srgb, var(--focus) 15%, transparent); color: var(--focus); }
+.adjustment-action-row__icon--lunch { background: color-mix(in srgb, #e3a21a 17%, transparent); color: #d18b00; }
+.adjustment-action-row__icon--calendar { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+.adjustment-action-row__icon--danger { background: var(--danger-wash); color: var(--danger); }
+
+.day-adjustment-view { max-width: none; }
+.adjustment-context { display: grid; grid-template-columns: minmax(190px, 240px) 1fr; gap: 18px; align-items: end; margin-bottom: 20px; padding: 0 0 16px; border-bottom: 1px solid var(--line); }
+.adjustment-context .form-field > span { color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+.adjustment-context__hint { padding-bottom: 11px; color: var(--ink-2); font-size: 12px; line-height: 1.45; }
+.adjustment-balance-reference { display: flex; align-items: center; gap: 8px; margin: -4px 0 18px; padding: 10px 12px; border: 1px solid var(--signal-line); border-radius: 9px; background: var(--signal-wash); color: var(--signal); font-size: 12px; }
+.adjustment-balance-reference i { font-size: 15px; }
+.adjustment-balance-reference strong { font-weight: 800; }
+.adjustment-form { display: grid; gap: 20px; }
+.adjustment-form__intro { display: flex; gap: 12px; align-items: flex-start; padding: 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.adjustment-form__intro strong { display: block; margin-bottom: 4px; font-size: 13px; }
+.adjustment-form__intro p { margin: 0; color: var(--ink-2); font-size: 12px; line-height: 1.45; }
+.adjustment-form__icon { width: 32px; height: 32px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 8px; background: var(--ok-wash); color: var(--ok); }
+.adjustment-form__icon--danger { background: var(--danger-wash); color: var(--danger); }
+.day-adjustment-view app-schedule-extension-timeline,
+.day-adjustment-view app-schedule-shift-editor,
+.day-adjustment-view app-lunch-day-editor { display: block; width: 100%; }
+
 .schedule-editor-view { max-width: none; }
 .schedule-conflict { display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; margin-bottom: 18px; padding: 14px; border: 1px solid var(--signal-line); background: var(--signal-wash); border-radius: 10px; }
 .schedule-conflict__icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; background: color-mix(in srgb, var(--signal) 16%, transparent); color: var(--signal); font-size: 17px; }
@@ -359,6 +404,8 @@ select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .schedule-facts > div + div { padding-inline-start: 0; border-inline-start: 0; }
   .schedule-history-item { grid-template-columns: auto 1fr; }
   .schedule-history-item > i { grid-column: 2; grid-row: 1; justify-self: end; }
+  .adjustment-date-row, .adjustment-context { grid-template-columns: 1fr; }
+  .adjustment-date-row__hint, .adjustment-context__hint { padding-bottom: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

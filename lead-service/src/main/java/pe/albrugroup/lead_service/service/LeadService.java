@@ -901,16 +901,13 @@ public class LeadService {
             List<String> codigosTipificacion,
             List<String> codigosSubtipificacion,
             boolean sinSubtipificacion,
-            OrigenFilaBandejaVenta origen,
-            List<Etapa> etapasActuales,
-            Long idEquipo,
+            Long idProveedor,
             LocalDate fechaDesde,
             LocalDate fechaHasta,
             CampoFechaListadoVenta campoFecha,
             TipoGrupoVenta groupBy,
             PageRequest pageRequest
     ) {
-        OrigenFilaBandejaVenta origenEfectivo = origen == null ? OrigenFilaBandejaVenta.ESTADO_ACTUAL : origen;
         CampoFechaListadoVenta campo = campoFecha == null ? CampoFechaListadoVenta.INGRESO : campoFecha;
         if (!CAMPO_FECHA_BANDEJA_VENTA_NORMALIZADA_PERMITIDOS.contains(campo.name())) {
             throw new BadRequestException("Campo de fecha no permitido para bandeja normalizada: " + campo);
@@ -931,7 +928,7 @@ public class LeadService {
                 : resolverRangoUltimosDias(fechaDesde, fechaHasta, 30);
         Instant tsDesde = OperationalDateTime.startOfDay(rango.desde());
         Instant tsHasta = OperationalDateTime.endExclusiveOfDay(rango.hasta());
-        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        ProveedorScopeService.Scope provScope = resolverProveedoresBandeja(idProveedor);
         BusquedaVentaFiltro busqueda = resolverBusquedaVenta(lead);
         var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
         List<String> tips = normalizarCodigosBandeja(codigosTipificacion);
@@ -945,41 +942,10 @@ public class LeadService {
                 pageRequest.getPageSize()
         );
 
-        Page<LeadBandejaVentaResponse> leads = origenEfectivo == OrigenFilaBandejaVenta.EVENTO_TIPIFICACION
-                ? leadRepository.listarBandejaVentaNormalizadaPorEvento(
+        Page<LeadBandejaVentaResponse> leads = leadRepository.listarBandejaVentaUnificada(
                 Accion.TIPIFICACION,
                 Etapa.VENTA,
                 Etapa.PREVENTA,
-                origenEfectivo,
-                busqueda.searchPattern(),
-                busqueda.buscarPorUsermeta(),
-                etapasActualesBandejaVenta(etapasActuales),
-                filtrarTipificaciones,
-                tipsQuery,
-                filtrarSubtipificaciones,
-                subtipsQuery,
-                sinSubtipificacion,
-                campo.name(),
-                rango.desde(),
-                rango.hasta(),
-                tsDesde,
-                tsHasta,
-                equipos.filtrar(),
-                equipos.ids(),
-                groupByName,
-                sortBy,
-                sortDesc,
-                estadoOrden.nuevo(),
-                estadoOrden.enGestion(),
-                estadoOrden.asignado(),
-                estadoOrden.gestionado(),
-                pageable
-        )
-                : leadRepository.listarBandejaVentaNormalizadaActual(
-                Accion.TIPIFICACION,
-                Etapa.VENTA,
-                Etapa.PREVENTA,
-                origenEfectivo,
                 busqueda.searchPattern(),
                 busqueda.buscarPorUsermeta(),
                 filtrarTipificaciones,
@@ -992,8 +958,8 @@ public class LeadService {
                 rango.hasta(),
                 tsDesde,
                 tsHasta,
-                equipos.filtrar(),
-                equipos.ids(),
+                provScope.restringido(),
+                provScope.idsParaQuery(),
                 groupByName,
                 sortBy,
                 sortDesc,
@@ -6694,6 +6660,22 @@ public class LeadService {
         }
         ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(AmbitoProveedor.BACKOFFICE);
         return true;
+    }
+
+    private ProveedorScopeService.Scope resolverProveedoresBandeja(Long idProveedorSolicitado) {
+        ProveedorScopeService.Scope scope = proveedorScopeService.resolverScopeActual();
+        if (scope.restringido()) {
+            if (idProveedorSolicitado != null && !scope.proveedorIds().contains(idProveedorSolicitado)) {
+                throw new UnauthorizedException("No tienes acceso al proveedor seleccionado.");
+            }
+            return idProveedorSolicitado != null
+                    ? new ProveedorScopeService.Scope(true, Set.of(idProveedorSolicitado), Set.of())
+                    : scope;
+        }
+        if (idProveedorSolicitado != null) {
+            return new ProveedorScopeService.Scope(true, Set.of(idProveedorSolicitado), Set.of());
+        }
+        return scope;
     }
 
     private double calcularPorcentajeRanking(long cantidad, long total) {

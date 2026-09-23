@@ -27,41 +27,49 @@
 
   @if (!readOnly) {
     <div class="editor-bar">
-    <div class="editor-bar__field">
-      <span>Entrada</span>
-      <input type="time" [value]="bE()" (input)="onEntrada($any($event.target).value)" />
-    </div>
-    <div class="editor-bar__field">
-      <span>Salida</span>
-      <input type="time" [value]="bS()" (input)="onSalida($any($event.target).value)" />
-    </div>
+      <div class="editor-bar__heading">
+        <strong>{{ selected() === null ? 'Patrón de jornada' : 'Día seleccionado' }}</strong>
+        <span>{{ selected() === null ? 'Define los valores que puedes aplicar a todos los días.' : 'Ajusta este día sin modificar los demás.' }}</span>
+      </div>
+      <div class="editor-bar__controls">
+        <label class="editor-bar__field">
+          <span>Entrada</span>
+          <input type="time" [value]="bE()" (input)="onEntrada($any($event.target).value)" />
+        </label>
+        <label class="editor-bar__field">
+          <span>Salida</span>
+          <input type="time" [value]="bS()" (input)="onSalida($any($event.target).value)" />
+        </label>
 
-    @if (requiresLunch) {
-      <div class="editor-bar__field editor-bar__field--lunch">
-        @if (perDayLunch) {
-          <label class="editor-bar__lunch-check">
-            <input type="checkbox" [checked]="bLunch()" (change)="toggleLunch($any($event.target).checked)" />
-            <span>Almuerzo</span>
-          </label>
-        } @else {
-          <span>Almuerzo</span>
+        @if (requiresLunch || perDayLunch) {
+          <div class="editor-bar__field editor-bar__field--lunch">
+            @if (perDayLunch) {
+              <label class="editor-bar__lunch-check">
+                <input type="checkbox" [checked]="bLunch()" (change)="toggleLunch($any($event.target).checked)" />
+                <span>Almuerzo</span>
+              </label>
+            } @else {
+              <span>Almuerzo</span>
+            }
+            @if (lunchOn()) {
+              <div class="editor-bar__lunch-range">
+                <input type="time" [value]="bLi()" (input)="onLunchStart($any($event.target).value)" />
+                <em>–</em>
+                <input type="time" [value]="bLf()" (input)="onLunchEnd($any($event.target).value)" />
+              </div>
+            }
+          </div>
         }
-        @if (lunchOn()) {
-          <input type="time" [value]="bLi()" (input)="onLunchStart($any($event.target).value)" />
-          <em>–</em>
-          <input type="time" [value]="bLf()" (input)="onLunchEnd($any($event.target).value)" />
+
+        @if (selected() === null) {
+          <button pButton class="schedule-apply-button" type="button" size="small" icon="pi pi-copy" label="Aplicar a todos" (click)="applyToAll()"></button>
+        } @else {
+          <label class="editor-bar__laborable">
+            <span>Laborable</span>
+            <input type="checkbox" [checked]="bLab()" (change)="toggleLaborable($any($event.target).checked)" />
+          </label>
         }
       </div>
-    }
-
-      @if (selected() === null) {
-        <button pButton class="schedule-apply-button" type="button" size="small" icon="pi pi-copy" label="Aplicar a todos" (click)="applyToAll()"></button>
-      } @else {
-        <label class="editor-bar__laborable">
-          <span>Laborable</span>
-          <input type="checkbox" [checked]="bLab()" (change)="toggleLaborable($any($event.target).checked)" />
-        </label>
-      }
     </div>
   }
 

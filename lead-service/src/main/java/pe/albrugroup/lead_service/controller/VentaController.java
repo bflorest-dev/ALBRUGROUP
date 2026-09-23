@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.CampoFechaListadoVenta;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
-import pe.albrugroup.lead_service.entity.enums.OrigenFilaBandejaVenta;
+
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
@@ -103,9 +103,7 @@ public class VentaController {
             @RequestParam(required = false) List<String> codigosTipificacion,
             @RequestParam(required = false) List<String> codigosSubtipificacion,
             @RequestParam(required = false, defaultValue = "false") boolean sinSubtipificacion,
-            @RequestParam(required = false, defaultValue = "ESTADO_ACTUAL") OrigenFilaBandejaVenta origen,
-            @RequestParam(required = false) List<Etapa> etapasActuales,
-            @RequestParam(required = false) Long idEquipo,
+            @RequestParam(required = false) Long idProveedor,
             @RequestParam(required = false) LocalDate fechaDesde,
             @RequestParam(required = false) LocalDate fechaHasta,
             @RequestParam(required = false) CampoFechaListadoVenta campoFecha,
@@ -117,9 +115,7 @@ public class VentaController {
                 codigosTipificacion,
                 codigosSubtipificacion,
                 sinSubtipificacion,
-                origen,
-                etapasActuales,
-                idEquipo,
+                idProveedor,
                 fechaDesde,
                 fechaHasta,
                 campoFecha,

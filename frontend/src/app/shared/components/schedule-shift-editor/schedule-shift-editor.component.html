@@ -127,16 +127,18 @@
     }
   }
 
-  <div class="shift__foot">
-    <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="emitCancel()"></button>
-    <button
-      pButton
-      type="button"
-      label="Correr horario"
-      icon="pi pi-check"
-      [disabled]="!canSave()"
-      [loading]="saving()"
-      (click)="save()"
-    ></button>
-  </div>
+  @if (showActions()) {
+    <div class="shift__foot">
+      <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="emitCancel()"></button>
+      <button
+        pButton
+        type="button"
+        label="Correr horario"
+        icon="pi pi-check"
+        [disabled]="!canSave()"
+        [loading]="saving()"
+        (click)="save()"
+      ></button>
+    </div>
+  }
 </div>

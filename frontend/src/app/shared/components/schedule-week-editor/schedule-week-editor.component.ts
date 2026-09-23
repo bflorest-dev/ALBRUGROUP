@@ -93,7 +93,7 @@ export class ScheduleWeekEditorComponent implements OnChanges {
 
   /** ¿Se muestran/escriben los campos de almuerzo para el buffer actual? */
   protected lunchOn(): boolean {
-    return this.requiresLunch && (!this.perDayLunch || this.bLunch());
+    return !this.perDayLunch || this.bLunch();
   }
 
   private prevEntrada: string | null = null;
@@ -234,8 +234,8 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     const base = this.rows().find((r) => r.laborable && r.e) ?? this.rows().find((r) => r.laborable);
     this.bE.set(base?.e ?? '');
     this.bS.set(base?.s ?? '');
-    this.bLi.set(this.requiresLunch ? base?.li ?? '' : '');
-    this.bLf.set(this.requiresLunch ? base?.lf ?? '' : '');
+    this.bLi.set(base?.li ?? '');
+    this.bLf.set(base?.lf ?? '');
     this.bLunch.set(this.perDayLunch ? !!(base?.li && base?.lf) : true);
     this.prevEntrada = base?.e ?? null;
   }
@@ -262,7 +262,7 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   protected toggleLunch(checked: boolean): void {
     this.error.set(null);
     this.bLunch.set(checked);
-    if (checked && this.requiresLunch) {
+    if (checked) {
       if (!this.bLi()) this.bLi.set('13:00');
       if (!this.bLf()) this.bLf.set(shift(this.bLi() || '13:00', this.lunchMinutes));
     }
@@ -277,7 +277,7 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     if (before !== null && after !== null && before !== after) {
       const delta = after - before;
       this.bS.set(shift(this.bS(), delta));
-      if (this.requiresLunch) {
+      if (this.lunchOn()) {
         this.bLi.set(shift(this.bLi(), delta));
         this.bLf.set(shift(this.bLf(), delta));
       }
@@ -295,7 +295,7 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   protected onLunchStart(value: string): void {
     this.error.set(null);
     this.bLi.set(value);
-    if (this.requiresLunch && toMin(value) !== null) {
+    if (toMin(value) !== null) {
       this.bLf.set(shift(value, this.lunchMinutes));
     }
     this.commitIfDay();

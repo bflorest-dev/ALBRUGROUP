@@ -18,8 +18,8 @@
     </div>
     <div class="lunch-editor__track">
       <div class="lunch-editor__base">
-        <i class="pi pi-lock"></i>
-        <span>Base {{ baseLabel() }}</span>
+        <span class="lunch-editor__base-start"><i class="pi pi-lock"></i><strong>Base</strong><b>{{ baseStartLabel() }}</b></span>
+        <span class="lunch-editor__base-end">{{ baseEndLabel() }}</span>
       </div>
       @if (hasLunch() && lunchWidth() > 0) {
         <div class="lunch-editor__lunch" [style.left.%]="lunchLeft()" [style.width.%]="lunchWidth()">
@@ -60,16 +60,18 @@
     <p class="lunch-editor__warn">{{ error() }}</p>
   }
 
-  <div class="lunch-editor__actions">
-    <button pButton type="button" severity="secondary" label="Cancelar" (click)="emitCancel()"></button>
-    <button
-      pButton
-      type="button"
-      icon="pi pi-save"
-      [label]="hasLunch() ? 'Guardar almuerzo' : 'Quitar almuerzo'"
-      [loading]="saving()"
-      [disabled]="!canSave()"
-      (click)="emitSave()"
-    ></button>
-  </div>
+  @if (showActions()) {
+    <div class="lunch-editor__actions">
+      <button pButton type="button" severity="secondary" label="Cancelar" (click)="emitCancel()"></button>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-save"
+        [label]="hasLunch() ? 'Guardar almuerzo' : 'Quitar almuerzo'"
+        [loading]="saving()"
+        [disabled]="!canSave()"
+        (click)="emitSave()"
+      ></button>
+    </div>
+  }
 </div>

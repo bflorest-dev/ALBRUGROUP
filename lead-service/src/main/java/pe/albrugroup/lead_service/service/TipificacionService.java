@@ -19,6 +19,7 @@ import pe.albrugroup.lead_service.entity.request.FlujoMatrizTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.MatrizCatalogoRequest;
 import pe.albrugroup.lead_service.entity.request.SubtipificacionCatalogoRequest;
 import pe.albrugroup.lead_service.entity.request.TipificacionCatalogoRequest;
+import pe.albrugroup.lead_service.entity.response.CatalogoProveedorResponse;
 import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import pe.albrugroup.lead_service.entity.response.FlujoMatrizTipificacionResponse;
 import pe.albrugroup.lead_service.entity.response.SubtipificacionResponse;
@@ -178,6 +179,39 @@ public class TipificacionService {
                 ))
                 .toList();
         return new CatalogoResponse(etapa, tipificacionesResponse);
+    }
+
+    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "'porProveedor_' + #etapa")
+    public List<CatalogoProveedorResponse> getCatalogoPorProveedor(Etapa etapa) {
+        List<Tipificacion> todas = tipificacionRepository.findByMatrizEtapaAndActivoTrueOrderByOrdenAsc(etapa);
+        if (todas.isEmpty()) {
+            return List.of();
+        }
+        List<Subtipificacion> subs = subtipificacionRepository
+                .findByTipificacionInAndActivoTrueOrderByTipificacion_IdAscOrdenAsc(todas);
+        Map<Long, List<SubtipificacionResponse>> subsPorTipiId = new HashMap<>();
+        for (Subtipificacion sub : subs) {
+            subsPorTipiId
+                    .computeIfAbsent(sub.getTipificacion().getId(), k -> new ArrayList<>())
+                    .add(mapper.toResponse(sub));
+        }
+        Map<Long, List<Tipificacion>> tipisPorProveedor = new LinkedHashMap<>();
+        for (Tipificacion t : todas) {
+            tipisPorProveedor.computeIfAbsent(t.getMatriz().getProveedor().getId(), k -> new ArrayList<>()).add(t);
+        }
+        List<CatalogoProveedorResponse> result = new ArrayList<>();
+        for (var entry : tipisPorProveedor.entrySet()) {
+            Proveedor prov = entry.getValue().get(0).getMatriz().getProveedor();
+            Map<String, Tipificacion> dedup = new LinkedHashMap<>();
+            for (Tipificacion t : entry.getValue()) {
+                dedup.putIfAbsent(t.getCodigo(), t);
+            }
+            List<TipificacionResponse> tipis = dedup.values().stream()
+                    .map(t -> mapper.toResponse(t, subsPorTipiId.getOrDefault(t.getId(), List.of())))
+                    .toList();
+            result.add(new CatalogoProveedorResponse(prov.getId(), prov.getNombre(), etapa, tipis));
+        }
+        return result;
     }
 
     @Transactional

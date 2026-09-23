@@ -13,6 +13,8 @@ import pe.albrugroup.lead_service.entity.enums.OrigenFilaBandejaVenta;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 import pe.albrugroup.lead_service.entity.enums.TipoFechaRelevanteVenta;
 
+import pe.albrugroup.lead_service.configuration.OperationalDateTime;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -171,6 +173,109 @@ public class LeadBandejaVentaResponse {
         this.nombreAsesorEvento = nombreAsesorEvento;
         this.fechaProgramacion = fechaProgramacion;
         this.horaProgramada = horaProgramada;
+        this.fechaRechazo = fechaRechazo;
+        this.fechaInstalacion = fechaInstalacion;
+        this.fechaTipificacion = fechaTipificacion;
+        this.comentarioTipificacion = comentarioTipificacion;
+        this.comentarioLead = comentarioLead;
+    }
+
+    // Constructor para la query unificada: fechaProgramacion viene como Instant (fusionada) desde LeadSeguimiento
+    public LeadBandejaVentaResponse(
+            Long idLead,
+            Long idEventoReferencia,
+            Object origenFila,
+            Etapa etapaActual,
+            EstadoSeguimiento estadoSeguimiento,
+            EstadoClientePostventa estadoClientePostventa,
+            String prefijo,
+            String lead,
+            String usermeta,
+            TipoDocumento tipoDocumento,
+            String numeroDocumento,
+            String nombreCliente,
+            String departamentoGrupo,
+            Base base,
+            Long idTipificacionActual,
+            String codigoTipificacionActual,
+            Long idSubtipificacionActual,
+            String codigoSubtipificacionActual,
+            String codigoTipificacionBandeja,
+            String codigoSubtipificacionBandeja,
+            String proveedor,
+            String plan,
+            BigDecimal precioPlan,
+            String promocion,
+            BigDecimal precioAdicionales,
+            BigDecimal precioFinal,
+            Integer diaCorteFacturacion,
+            Integer mesesPermanencia,
+            Instant createdAt,
+            Instant lastEntryAt,
+            Instant fechaIngresoEtapa,
+            Instant updatedAt,
+            String sec,
+            String sot,
+            String customerId,
+            Boolean requiereSecSotVenta,
+            String nombreAsesorMeritoPreventa,
+            String nombreAsesorUltimaGestion,
+            Instant fechaUltimaGestion,
+            Long idAsesorEvento,
+            String nombreAsesorEvento,
+            Instant fechaProgramacionAt,
+            LocalDate fechaRechazo,
+            LocalDate fechaInstalacion,
+            Instant fechaTipificacion,
+            String comentarioTipificacion,
+            String comentarioLead
+    ) {
+        this.idLead = idLead;
+        this.idEventoReferencia = idEventoReferencia;
+        this.origenFila = resolverOrigenFila(origenFila);
+        this.etapaActual = etapaActual;
+        this.estadoSeguimiento = estadoSeguimiento;
+        this.estadoClientePostventa = estadoClientePostventa;
+        this.prefijo = prefijo;
+        this.lead = lead;
+        this.usermeta = usermeta;
+        this.tipoDocumento = tipoDocumento;
+        this.numeroDocumento = numeroDocumento;
+        this.nombreCliente = nombreCliente;
+        this.departamentoGrupo = departamentoGrupo;
+        this.base = base;
+        this.idTipificacionActual = idTipificacionActual;
+        this.codigoTipificacionActual = codigoTipificacionActual;
+        this.idSubtipificacionActual = idSubtipificacionActual;
+        this.codigoSubtipificacionActual = codigoSubtipificacionActual;
+        this.codigoTipificacionBandeja = codigoTipificacionBandeja;
+        this.codigoSubtipificacionBandeja = codigoSubtipificacionBandeja;
+        this.proveedor = proveedor;
+        this.plan = plan;
+        this.precioPlan = precioPlan;
+        this.promocion = promocion;
+        this.precioAdicionales = precioAdicionales;
+        this.precioFinal = precioFinal;
+        this.diaCorteFacturacion = diaCorteFacturacion;
+        this.mesesPermanencia = mesesPermanencia;
+        this.createdAt = createdAt;
+        this.lastEntryAt = lastEntryAt;
+        this.fechaIngresoEtapa = fechaIngresoEtapa;
+        this.updatedAt = updatedAt;
+        this.sec = sec;
+        this.sot = sot;
+        this.customerId = customerId;
+        this.requiereSecSotVenta = requiereSecSotVenta;
+        this.nombreAsesorMeritoPreventa = nombreAsesorMeritoPreventa;
+        this.nombreAsesorUltimaGestion = nombreAsesorUltimaGestion;
+        this.fechaUltimaGestion = fechaUltimaGestion;
+        this.idAsesorEvento = idAsesorEvento;
+        this.nombreAsesorEvento = nombreAsesorEvento;
+        if (fechaProgramacionAt != null) {
+            var zoned = fechaProgramacionAt.atZone(OperationalDateTime.ZONE);
+            this.fechaProgramacion = zoned.toLocalDate();
+            this.horaProgramada = zoned.toLocalTime();
+        }
         this.fechaRechazo = fechaRechazo;
         this.fechaInstalacion = fechaInstalacion;
         this.fechaTipificacion = fechaTipificacion;

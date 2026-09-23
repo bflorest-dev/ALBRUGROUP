@@ -33,6 +33,8 @@ export class ScheduleShiftEditorComponent {
   readonly error = input<string | null>(null);
   readonly canCompensable = input(false);
   readonly canJustificada = input(true);
+  /** El drawer puede renderizar las acciones en su footer fijo. */
+  readonly showActions = input(true);
 
   readonly saveRequested = output<RegistrarAjusteV2Request>();
   readonly cancel = output<void>();
@@ -219,6 +221,15 @@ export class ScheduleShiftEditorComponent {
       motivo: this.motivo().trim(),
       razon: this.razon()
     });
+  }
+
+  /** Permite que un contenedor con footer propio dispare el guardado. */
+  submit(): void {
+    this.save();
+  }
+
+  canSubmit(): boolean {
+    return this.canSave();
   }
 
   private reset(): void {

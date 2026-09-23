@@ -1,0 +1,97 @@
+<button
+  pButton
+  type="button"
+  [icon]="icon()"
+  [label]="buttonLabel()"
+  severity="secondary"
+  [outlined]="!filterCount()"
+  [class.tree-select-btn--active]="filterCount() > 0"
+  (click)="pop.toggle($event)"
+></button>
+
+<p-popover #pop appendTo="body" styleClass="tree-select-popover">
+  <div class="tree-select">
+    @if (searchable()) {
+      <div class="tree-select__search">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <input
+          pInputText
+          type="text"
+          placeholder="Buscar..."
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+        />
+      </div>
+    }
+
+    <div class="tree-select__list">
+      @for (node of displayNodes(); track node.key) {
+        @if (node.showGroupHeader) {
+          <div class="tree-select__group-header">{{ node.group }}</div>
+        }
+        <div class="tree-select__node">
+          <div class="tree-select__row">
+            <p-checkbox
+              [binary]="true"
+              [ngModel]="isParentSelected(node.key)"
+              (ngModelChange)="toggleParent(node.key, node.children)"
+            />
+            <span
+              class="tree-select__label"
+              [pTooltip]="node.tooltip ?? ''"
+              tooltipPosition="right"
+              appendTo="body"
+            >{{ node.label }}</span>
+            @if (node.children.length) {
+              <button
+                pButton
+                type="button"
+                [icon]="isExpanded(node.key) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                severity="secondary"
+                text
+                size="small"
+                (click)="toggleExpand(node.key)"
+              ></button>
+            }
+          </div>
+          @if (isExpanded(node.key) && node.children.length) {
+            <div class="tree-select__children">
+              @for (child of node.children; track child.key) {
+                <div class="tree-select__row tree-select__row--child">
+                  <p-checkbox
+                    [binary]="true"
+                    [ngModel]="isChildSelected(child.key) || isParentSelected(node.key)"
+                    [disabled]="isParentSelected(node.key)"
+                    (ngModelChange)="toggleChild(node.key, child.key, node.children)"
+                  />
+                  <span
+                    class="tree-select__label tree-select__label--child"
+                    [pTooltip]="child.tooltip ?? ''"
+                    tooltipPosition="right"
+                    appendTo="body"
+                  >{{ child.label }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+      @if (!displayNodes().length) {
+        <div class="tree-select__empty">Sin resultados</div>
+      }
+    </div>
+
+    @if (filterCount()) {
+      <button
+        pButton
+        type="button"
+        icon="pi pi-filter-slash"
+        label="Limpiar filtros"
+        severity="secondary"
+        text
+        size="small"
+        (click)="clear(); pop.hide()"
+      ></button>
+    }
+  </div>
+</p-popover>

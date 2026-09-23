@@ -37,6 +37,8 @@ export class ScheduleExtensionTimelineComponent {
   readonly mode = input<ExtensionMode>('extra');
   /** Tope total en minutos (déficit para compensación). null = sin tope (horas extra). */
   readonly maxTotal = input<number | null>(null);
+  /** El drawer puede renderizar las acciones en su footer fijo. */
+  readonly showActions = input(true);
 
   readonly saveRequested = output<AjusteJornadaRequest[]>();
   readonly cancel = output<void>();
@@ -317,6 +319,15 @@ export class ScheduleExtensionTimelineComponent {
     const det = this.detachedRange();
     if (det) requests.push(this.segment(b.fecha, det.start, det.end, motivo));
     this.saveRequested.emit(requests);
+  }
+
+  /** Permite que un contenedor con footer propio dispare el guardado. */
+  submit(): void {
+    this.save();
+  }
+
+  canSubmit(): boolean {
+    return this.canSave();
   }
 
   private resetForm(): void {

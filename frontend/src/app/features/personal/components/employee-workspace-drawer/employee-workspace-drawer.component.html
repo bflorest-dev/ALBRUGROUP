@@ -146,6 +146,97 @@
             @if (!providerSelectedIds().length) { <p class="team-warning">Sin proveedor, el empleado no verá datos filtrados por proveedor.</p> }
           }
         </section>
+      } @else if (adjustmentSubview(); as adjustmentView) {
+        <section class="drawer-subview day-adjustment-view">
+          <div class="subview-heading">
+            <button class="back-button" type="button" [disabled]="isSavingAdjustment()" (click)="closeDayAdjustment()"><i class="ti ti-arrow-left"></i>Volver</button>
+            <div>
+              <h3>{{ adjustmentTitle() }}</h3>
+              <p>Gestiona una excepción del día sin salir del expediente del empleado.</p>
+            </div>
+          </div>
+
+          <div class="adjustment-context">
+            <label class="form-field">
+              <span>Fecha del ajuste</span>
+              <input type="date" [value]="adjustmentDate()" [disabled]="isSavingAdjustment()" (change)="onAdjustmentDateChange($any($event.target).value)" />
+            </label>
+            <span class="adjustment-context__hint">El cambio se aplicará únicamente a la fecha seleccionada.</span>
+          </div>
+
+          @if (adjustmentView === 'ajuste-compensacion' && canCompensateHours()) {
+            <p class="adjustment-balance-reference"><i class="ti ti-clock-exclamation" aria-hidden="true"></i><span><strong>{{ compensationDebtLabel() }}</strong> disponibles para compensar este mes.</span></p>
+          }
+
+          @if (adjustmentError()) { <p class="feedback error" role="alert">{{ adjustmentError() }}</p> }
+          @if (adjustmentSuccess()) { <p class="feedback success" role="status">{{ adjustmentSuccess() }}</p> }
+
+          @if (adjustmentView === 'ajuste-extra' || adjustmentView === 'ajuste-compensacion') {
+            <app-schedule-extension-timeline
+              #extensionEditor
+              [jornada]="adjustmentJornada()"
+              [loading]="isLoadingAdjustment()"
+              [saving]="isSavingAdjustment()"
+              [error]="adjustmentError()"
+              [showActions]="false"
+              [mode]="adjustmentView === 'ajuste-compensacion' ? 'compensacion' : 'extra'"
+              [maxTotal]="adjustmentView === 'ajuste-compensacion' ? scheduleFacade.monthlyDebtMinutes() : null"
+              (cancel)="closeDayAdjustment()"
+              (saveRequested)="onSaveDayExtension($event)"
+            />
+          } @else if (adjustmentView === 'ajuste-corrimiento') {
+            <app-schedule-shift-editor
+              #shiftEditor
+              [jornada]="adjustmentJornada()"
+              [loading]="isLoadingAdjustment()"
+              [saving]="isSavingAdjustment()"
+              [error]="adjustmentError()"
+              [canCompensable]="canCorrimientoCompensable()"
+              [canJustificada]="canCorrimientoJustificada()"
+              [showActions]="false"
+              (cancel)="closeDayAdjustment()"
+              (saveRequested)="onSaveDayShift($event)"
+            />
+          } @else if (adjustmentView === 'ajuste-almuerzo') {
+            <app-lunch-day-editor
+              #lunchEditor
+              [entrada]="adjustmentBaseTimes().entrada"
+              [salida]="adjustmentBaseTimes().salida"
+              [inicio]="adjustmentLunchStart()"
+              [fin]="adjustmentLunchEnd()"
+              [saving]="isSavingAdjustment()"
+              [error]="adjustmentReportError() || adjustmentError()"
+              [showActions]="false"
+              (cancel)="closeDayAdjustment()"
+              (save)="onSaveDayLunch($event)"
+            />
+          } @else if (adjustmentView === 'ajuste-jornada-extra' || adjustmentView === 'ajuste-compensar-falta') {
+            <div class="adjustment-form">
+              <div class="adjustment-form__intro">
+                <span class="adjustment-form__icon"><i class="ti ti-calendar-plus"></i></span>
+                <div><strong>{{ adjustmentView === 'ajuste-compensar-falta' ? 'Recuperar una falta' : 'Habilitar una jornada especial' }}</strong><p>{{ adjustmentView === 'ajuste-compensar-falta' ? 'Registra una jornada extraordinaria para compensar horas pendientes.' : 'Permite trabajar en un día que normalmente no es laborable.' }}</p></div>
+              </div>
+              <div class="form-grid">
+                <label class="form-field"><span>Entrada</span><input type="time" [value]="adjustmentExtraEntrada()" (input)="adjustmentExtraEntrada.set($any($event.target).value)" /></label>
+                <label class="form-field"><span>Salida</span><input type="time" [value]="adjustmentExtraSalida()" (input)="adjustmentExtraSalida.set($any($event.target).value)" /></label>
+                <label class="form-field form-field--wide"><span>Motivo</span><input type="text" maxlength="300" placeholder="Indica el motivo" [value]="adjustmentExtraMotivo()" (input)="adjustmentExtraMotivo.set($any($event.target).value)" /></label>
+              </div>
+            </div>
+          } @else if (adjustmentView === 'ajuste-dia-libre') {
+            <div class="adjustment-form">
+              <div class="adjustment-form__intro">
+                <span class="adjustment-form__icon adjustment-form__icon--danger"><i class="ti ti-calendar-off"></i></span>
+                <div><strong>Declarar un día no laborable</strong><p>Elige si la declaración corresponde solo a este empleado o a toda la operación.</p></div>
+              </div>
+              <div class="form-grid">
+                <label class="form-field"><span>Fecha</span><input type="date" [value]="adjustmentDayOffDate()" (change)="adjustmentDayOffDate.set($any($event.target).value)" /></label>
+                <label class="form-field"><span>Tipo</span><select [value]="adjustmentDayOffType()" (change)="adjustmentDayOffType.set($any($event.target).value)">@for (option of tipoDiaNoLaborableOptions; track option.value) { <option [value]="option.value">{{ option.label }}</option> }</select></label>
+                <label class="check-field form-field--wide"><input type="checkbox" [checked]="adjustmentDayOffGlobal()" (change)="adjustmentDayOffGlobal.set($any($event.target).checked)" /><span>Declarar para todos los empleados</span></label>
+                <label class="form-field form-field--wide"><span>Motivo</span><input type="text" maxlength="300" placeholder="Ej: Feriado nacional" [value]="adjustmentDayOffReason()" (input)="adjustmentDayOffReason.set($any($event.target).value)" /></label>
+              </div>
+            </div>
+          }
+        </section>
       } @else if (subview() === 'historial-roles') {
         <section class="drawer-subview">
           <div class="subview-heading">
@@ -293,6 +384,30 @@
           }
         </section>
 
+        <details class="schedule-adjustments-disclosure">
+          <summary>
+            <span>Ajustes del día</span>
+            <span class="schedule-history-disclosure__meta">Selecciona una fecha <i class="ti ti-chevron-down" aria-hidden="true"></i></span>
+          </summary>
+          <div class="schedule-adjustments-block">
+            <div class="adjustment-date-row">
+              <label class="form-field"><span>Fecha de trabajo</span><input type="date" [value]="adjustmentDate()" [disabled]="!scheduleFacade.canMutateOperationalData()" (change)="onAdjustmentDateChange($any($event.target).value)" /></label>
+              <span class="adjustment-date-row__hint">Las acciones se aplican solo al día seleccionado.</span>
+            </div>
+            @if (isLoadingAdjustment()) { <p class="muted">Consultando jornada del día…</p> }
+            @if (adjustmentError()) { <p class="feedback error" role="alert">{{ adjustmentError() }}</p> }
+            <div class="adjustment-actions-list">
+              <button type="button" class="adjustment-action-row" [disabled]="!scheduleFacade.canMutateOperationalData()" (click)="openDayAdjustment('ajuste-extra')"><span class="adjustment-action-row__icon adjustment-action-row__icon--extra"><i class="ti ti-plus"></i></span><span><strong>Agregar horas extra</strong><small>Antes, después o en un período aparte.</small></span><i class="ti ti-chevron-right"></i></button>
+              <button type="button" class="adjustment-action-row" [disabled]="!scheduleFacade.canMutateOperationalData() || !canCompensateHours()" (click)="openDayAdjustment('ajuste-compensacion')"><span class="adjustment-action-row__icon adjustment-action-row__icon--comp"><i class="ti ti-clock-up"></i></span><span><strong>Compensar horas</strong><small>{{ scheduleFacade.isLoadingMonthlyBalance() ? 'Consultando saldo del mes…' : scheduleFacade.monthlyBalanceError() ? 'Saldo no disponible para calcular el límite.' : canCompensateHours() ? 'Recupera horas que quedaron debiendo.' : 'No debe horas este mes.' }}</small></span>@if (scheduleFacade.isLoadingMonthlyBalance()) { <span class="adjustment-action-row__badge">Consultando…</span> } @else if (canCompensateHours()) { <span class="adjustment-action-row__badge">{{ compensationDebtLabel() }}</span> } @else { <i class="ti ti-lock adjustment-action-row__chevron"></i> }</button>
+              <button type="button" class="adjustment-action-row" [disabled]="!scheduleFacade.canMutateOperationalData()" (click)="openDayAdjustment('ajuste-corrimiento')"><span class="adjustment-action-row__icon adjustment-action-row__icon--shift"><i class="ti ti-arrows-right-left"></i></span><span><strong>Correr horario</strong><small>Mueve la ventana del día por una tardanza.</small></span><i class="ti ti-chevron-right"></i></button>
+              <button type="button" class="adjustment-action-row" [disabled]="!scheduleFacade.canMutateOperationalData()" (click)="openDayAdjustment('ajuste-almuerzo')"><span class="adjustment-action-row__icon adjustment-action-row__icon--lunch"><i class="ti ti-sun"></i></span><span><strong>Modificar almuerzo</strong><small>Mueve, habilita o quita el almuerzo programado.</small></span><i class="ti ti-chevron-right"></i></button>
+              <button type="button" class="adjustment-action-row" [disabled]="!scheduleFacade.canMutateOperationalData()" (click)="openDayAdjustment('ajuste-jornada-extra')"><span class="adjustment-action-row__icon adjustment-action-row__icon--calendar"><i class="ti ti-calendar-plus"></i></span><span><strong>Habilitar jornada en día libre</strong><small>Permite trabajar en un descanso o feriado.</small></span><i class="ti ti-chevron-right"></i></button>
+              <button type="button" class="adjustment-action-row" [disabled]="!scheduleFacade.canMutateOperationalData()" (click)="openDayAdjustment('ajuste-compensar-falta')"><span class="adjustment-action-row__icon adjustment-action-row__icon--comp"><i class="ti ti-calendar-repeat"></i></span><span><strong>Compensar falta con día libre</strong><small>Registra una jornada para recuperar horas.</small></span><i class="ti ti-chevron-right"></i></button>
+              <button type="button" class="adjustment-action-row" [disabled]="!scheduleFacade.canMutateOperationalData()" (click)="openDayAdjustment('ajuste-dia-libre')"><span class="adjustment-action-row__icon adjustment-action-row__icon--danger"><i class="ti ti-calendar-off"></i></span><span><strong>Declarar día libre</strong><small>Feriado, vacaciones, permiso o descanso.</small></span><i class="ti ti-chevron-right"></i></button>
+            </div>
+          </div>
+        </details>
+
         <details class="schedule-history-disclosure">
           <summary>
             <span>Historial de horarios</span>
@@ -383,7 +498,15 @@
         } @else {
           <button type="button" class="ghost-button" [disabled]="scheduleFacade.isSaving()" (click)="closeScheduleEditor()">Cancelar</button>
           <button type="button" class="primary-button push-right" [disabled]="scheduleFacade.isSaving() || !contract() || !scheduleFacade.canMutateOperationalData()" (click)="saveSchedule()">{{ scheduleFacade.isSaving() ? 'Guardando…' : (schedule() ? 'Guardar horario' : 'Asignar horario') }}</button>
-        }
+          }
+      } @else if (adjustmentSubview(); as adjustmentView) {
+        <button type="button" class="ghost-button" [disabled]="isSavingAdjustment()" (click)="closeDayAdjustment()">Cancelar</button>
+        <button
+          type="button"
+          class="primary-button push-right"
+          [disabled]="isSavingAdjustment() || isLoadingAdjustment() || (adjustmentView === 'ajuste-dia-libre' && !adjustmentDayOffDate()) || ((adjustmentView === 'ajuste-jornada-extra' || adjustmentView === 'ajuste-compensar-falta') && (!adjustmentExtraEntrada() || !adjustmentExtraSalida()))"
+          (click)="saveDayAdjustment()"
+        >{{ isSavingAdjustment() ? 'Guardando…' : (adjustmentView === 'ajuste-almuerzo' ? 'Guardar almuerzo' : adjustmentView === 'ajuste-corrimiento' ? 'Correr horario' : adjustmentView === 'ajuste-dia-libre' ? 'Declarar día libre' : 'Guardar ajuste') }}</button>
       } @else if (subview() === 'historial-roles') {
         <button type="button" class="ghost-button" (click)="closeSubview()"><i class="ti ti-arrow-left"></i>Volver a roles</button>
       } @else if (section() === 'resumen') {

@@ -270,6 +270,24 @@
         "value": "#3a3f8f",
         "createdAt": "2026-09-22T16:28:41.634Z",
         "reason": "poster dark-theme tokens: same values as dashboard-venta-stage.component.scss"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "6px",
+        "createdAt": "2026-09-23T20:27:23.697Z",
+        "reason": "Inherited from backoffice-general-board-page existing design"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "5px",
+        "createdAt": "2026-09-23T20:27:23.860Z",
+        "reason": "Inherited from backoffice-general-board-page existing design"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.8rem",
+        "createdAt": "2026-09-23T20:27:24.003Z",
+        "reason": "Inherited from backoffice-general-board-page existing design"
       }
     ]
   }
