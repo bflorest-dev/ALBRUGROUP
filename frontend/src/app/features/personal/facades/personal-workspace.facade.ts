@@ -5,7 +5,12 @@ import { SessionService } from '../../../core/services/session.service';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response';
 import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
-import { TEAM_SCOPED_ROLES } from '../../../shared/constants/multi-team-roles';
+import {
+  ambitoProveedorPorRol,
+  ProviderScope,
+  PROVIDER_SCOPED_ROLES,
+  TEAM_SCOPED_ROLES
+} from '../../../shared/constants/multi-team-roles';
 import { AdminEquipoService, EquipoResponse, ProveedorLite } from '../../admin/services/admin-equipo.service';
 import { AdminRrhhService } from '../../admin/services/admin-rrhh.service';
 import {
@@ -26,6 +31,7 @@ export interface PersonalDirectoryRow {
   secondaryRoles: string[];
   teamNames: string[];
   teamIds: number[];
+  providerIds: number[];
   providerNames: string[];
 }
 
@@ -35,16 +41,107 @@ export interface PersonalTeamGroup {
   employees: PersonalDirectoryRow[];
 }
 
+export interface PersonalProviderGroup {
+  key: string;
+  label: string;
+  employees: PersonalDirectoryRow[];
+}
+
+export type PersonalScopeType = 'TEAM' | 'PROVIDER' | 'NONE';
+
 export interface PersonalRoleGroup {
   role: string;
   employees: PersonalDirectoryRow[];
+  scopeType: PersonalScopeType;
   usesTeams: boolean;
   teams: PersonalTeamGroup[];
+  providers: PersonalProviderGroup[];
 }
+
+export interface PersonalProviderEntry {
+  id: number;
+  name: string;
+}
+
+export type PersonalProviderAssignments = Record<number, PersonalProviderEntry[]>;
+
+export function personalScopeTypeForRole(role: string): PersonalScopeType {
+  if (TEAM_SCOPED_ROLES.includes(role)) return 'TEAM';
+  if (PROVIDER_SCOPED_ROLES[role]) return 'PROVIDER';
+  return 'NONE';
+}
+
+export function resolveProviderAssignments(
+  providers: ProveedorLite[],
+  assignments: Array<{ idEmpleado: number; proveedorIds: number[] }>
+): PersonalProviderAssignments {
+  const providerById = new Map(providers.map((provider) => [provider.id, provider.nombre]));
+  const entriesByEmployee = new Map<number, Map<number, string>>();
+  for (const assignment of assignments) {
+    const entries = entriesByEmployee.get(assignment.idEmpleado) ?? new Map<number, string>();
+    for (const providerId of assignment.proveedorIds) {
+      const name = providerById.get(providerId);
+      if (name) entries.set(providerId, name);
+    }
+    entriesByEmployee.set(assignment.idEmpleado, entries);
+  }
+  return Object.fromEntries([...entriesByEmployee.entries()].map(([employeeId, entries]) => [
+    employeeId,
+    [...entries.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((left, right) => left.name.localeCompare(right.name, 'es'))
+  ]));
+}
+
+export function groupPersonalRowsByTeam(employees: PersonalDirectoryRow[]): PersonalTeamGroup[] {
+  const grouped = new Map<string, PersonalDirectoryRow[]>();
+  for (const row of employees) {
+    const label = row.teamNames.length > 1
+      ? 'Varios equipos'
+      : row.teamNames[0] || 'Sin equipo';
+    grouped.set(label, [...(grouped.get(label) ?? []), row]);
+  }
+  return [...grouped.entries()]
+    .map(([label, rows]) => ({ key: normalizeScopeLabel(label), label, employees: rows }))
+    .sort((left, right) => {
+      if (left.label === 'Sin equipo') return 1;
+      if (right.label === 'Sin equipo') return -1;
+      return left.label.localeCompare(right.label, 'es');
+    });
+}
+
+export function groupPersonalRowsByProvider(employees: PersonalDirectoryRow[]): PersonalProviderGroup[] {
+  const grouped = new Map<number, PersonalDirectoryRow[]>();
+  const withoutProvider: PersonalDirectoryRow[] = [];
+  for (const row of employees) {
+    let groupedInProvider = false;
+    row.providerIds.forEach((providerId, index) => {
+      const providerName = row.providerNames[index];
+      if (!providerName) return;
+      groupedInProvider = true;
+      grouped.set(providerId, [...(grouped.get(providerId) ?? []), row]);
+    });
+    if (!groupedInProvider) withoutProvider.push(row);
+  }
+  const groups = [...grouped.entries()]
+    .map(([providerId, rows]) => ({
+      key: `proveedor-${providerId}`,
+      label: rows[0]?.providerNames[rows[0].providerIds.indexOf(providerId)] ?? `Proveedor ${providerId}`,
+      employees: rows
+    }))
+    .sort((left, right) => left.label.localeCompare(right.label, 'es'));
+  if (withoutProvider.length) groups.push({ key: 'sin-proveedor', label: 'Sin proveedor', employees: withoutProvider });
+  return groups;
+}
+
+function normalizeScopeLabel(value: string): string {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, '-');
+}
+
+type PersonalProviderAssignmentsByScope = Record<ProviderScope, PersonalProviderAssignments>;
 
 @Injectable()
 export class PersonalWorkspaceFacade {
-  private readonly teamScopedRoles = new Set(TEAM_SCOPED_ROLES);
   private readonly rrhh = inject(AdminRrhhService);
   private readonly teamsService = inject(AdminEquipoService);
   private readonly accessService = inject(PersonalAccessService);
@@ -56,7 +153,13 @@ export class PersonalWorkspaceFacade {
   readonly teamNamesByEmployeeId = signal<Record<number, string[]>>({});
   readonly teamIdsByEmployeeId = signal<Record<number, number[]>>({});
   readonly activeTeams = signal<EquipoResponse[]>([]);
-  readonly providerNamesByEmployeeId = signal<Record<number, string[]>>({});
+  readonly activeProviders = signal<ProveedorLite[]>([]);
+  readonly providerAssignmentsByScope = signal<PersonalProviderAssignmentsByScope>({
+    BACKOFFICE: {},
+    POSTVENTA: {}
+  });
+  readonly providerScopeStatus = signal<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  readonly providerScopeError = signal('');
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
   readonly search = signal('');
@@ -75,7 +178,7 @@ export class PersonalWorkspaceFacade {
     const access = this.accessByEmployeeId();
     const teamNames = this.teamNamesByEmployeeId();
     const teamIds = this.teamIdsByEmployeeId();
-    const providerNames = this.providerNamesByEmployeeId();
+    const providerAssignments = this.providerAssignmentsByScope();
     const term = this.normalize(this.search());
     const categoryFilter = this.categoryFilter();
     const roleFilter = this.roleFilter();
@@ -89,6 +192,15 @@ export class PersonalWorkspaceFacade {
         const primaryRole = employeeAccess?.rolPrincipal || legacyPosition || 'SIN_ROL';
         const category = employee.categoriaPersonal
           ?? (legacyPosition ? this.inferCategory(legacyPosition) : 'SIN_CATEGORIA');
+        const assignedRoles = [primaryRole, ...(employeeAccess?.rolesSecundarios ?? [])];
+        const providerEntries = assignedRoles
+          .filter((role) => Boolean(ambitoProveedorPorRol(role)))
+          .flatMap((role) => {
+            const scope = ambitoProveedorPorRol(role);
+            return scope ? providerAssignments[scope][employee.idEmpleado] ?? [] : [];
+          })
+          .filter((entry, index, entries) => entries.findIndex((candidate) => candidate.id === entry.id) === index)
+          .sort((left, right) => left.name.localeCompare(right.name, 'es'));
         return {
           employee,
           access: employeeAccess,
@@ -98,7 +210,8 @@ export class PersonalWorkspaceFacade {
           secondaryRoles: employeeAccess?.rolesSecundarios ?? [],
           teamNames: teamNames[employee.idEmpleado] ?? [],
           teamIds: teamIds[employee.idEmpleado] ?? [],
-          providerNames: providerNames[employee.idEmpleado] ?? []
+          providerIds: providerEntries.map((entry) => entry.id),
+          providerNames: providerEntries.map((entry) => entry.name)
         };
       })
       .filter((row) => {
@@ -132,12 +245,17 @@ export class PersonalWorkspaceFacade {
     }
     return [...roles.entries()]
       .map(([role, employees]) => {
-        const usesTeams = this.teamScopedRoles.has(role);
+        const scopeType = personalScopeTypeForRole(role);
+        const usesTeams = scopeType === 'TEAM';
         return {
           role,
           employees,
+          scopeType,
           usesTeams,
-          teams: usesTeams ? this.groupByTeam(employees) : []
+          teams: usesTeams ? this.groupByTeam(employees) : [],
+          providers: scopeType === 'PROVIDER' && this.providerScopeStatus() === 'ready'
+            ? this.groupByProvider(employees)
+            : []
         };
       })
       .sort((left, right) => left.role.localeCompare(right.role, 'es'));
@@ -163,7 +281,7 @@ export class PersonalWorkspaceFacade {
       await Promise.all([
         this.loadTeams(),
         this.canReadRoles() ? this.loadRoleDirectory() : Promise.resolve(),
-        this.isAdmin() ? this.loadAdminProviderScopes() : Promise.resolve()
+        this.canReadRoles() ? this.loadProviderScopes() : Promise.resolve()
       ]);
     } catch (error) {
       this.errorMessage.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo cargar el personal.'));
@@ -209,16 +327,26 @@ export class PersonalWorkspaceFacade {
     this.accessByEmployeeId.set(Object.fromEntries(users.map((item) => [item.empleadoId, item])));
   }
 
-  private async loadAdminProviderScopes(): Promise<void> {
+  private async loadProviderScopes(): Promise<void> {
+    this.providerScopeStatus.set('loading');
+    this.providerScopeError.set('');
     try {
       const [providers, backoffice, postventa] = await Promise.all([
         firstValueFrom(this.teamsService.listarProveedores()),
         firstValueFrom(this.teamsService.listarAsignacionesProveedor('BACKOFFICE')),
         firstValueFrom(this.teamsService.listarAsignacionesProveedor('POSTVENTA'))
       ]);
-      this.providerNamesByEmployeeId.set(this.resolveProviderNames(providers, [...backoffice, ...postventa]));
+      this.providerAssignmentsByScope.set({
+        BACKOFFICE: resolveProviderAssignments(providers, backoffice),
+        POSTVENTA: resolveProviderAssignments(providers, postventa)
+      });
+      this.activeProviders.set(providers.filter((provider) => provider.activo !== false));
+      this.providerScopeStatus.set('ready');
     } catch {
-      this.providerNamesByEmployeeId.set({});
+      this.providerAssignmentsByScope.set({ BACKOFFICE: {}, POSTVENTA: {} });
+      this.activeProviders.set([]);
+      this.providerScopeStatus.set('error');
+      this.providerScopeError.set('No se pudo cargar el ámbito por proveedor. Intenta actualizar.');
     }
   }
 
@@ -262,38 +390,12 @@ export class PersonalWorkspaceFacade {
     this.teamIdsByEmployeeId.set(ids);
   }
 
-  private resolveProviderNames(
-    providers: ProveedorLite[],
-    assignments: Array<{ idEmpleado: number; proveedorIds: number[] }>
-  ): Record<number, string[]> {
-    const providerById = new Map(providers.map((provider) => [provider.id, provider.nombre]));
-    const result: Record<number, string[]> = {};
-    for (const assignment of assignments) {
-      const current = new Set(result[assignment.idEmpleado] ?? []);
-      for (const id of assignment.proveedorIds) {
-        const name = providerById.get(id);
-        if (name) current.add(name);
-      }
-      result[assignment.idEmpleado] = [...current].sort((left, right) => left.localeCompare(right, 'es'));
-    }
-    return result;
+  private groupByTeam(employees: PersonalDirectoryRow[]): PersonalTeamGroup[] {
+    return groupPersonalRowsByTeam(employees);
   }
 
-  private groupByTeam(employees: PersonalDirectoryRow[]): PersonalTeamGroup[] {
-    const grouped = new Map<string, PersonalDirectoryRow[]>();
-    for (const row of employees) {
-      const label = row.teamNames.length > 1
-        ? 'Varios equipos'
-        : row.teamNames[0] || 'Sin equipo';
-      grouped.set(label, [...(grouped.get(label) ?? []), row]);
-    }
-    return [...grouped.entries()]
-      .map(([label, rows]) => ({ key: this.normalize(label).replace(/\s+/g, '-'), label, employees: rows }))
-      .sort((left, right) => {
-        if (left.label === 'Sin equipo') return 1;
-        if (right.label === 'Sin equipo') return -1;
-        return left.label.localeCompare(right.label, 'es');
-      });
+  private groupByProvider(employees: PersonalDirectoryRow[]): PersonalProviderGroup[] {
+    return groupPersonalRowsByProvider(employees);
   }
 
   private inferCategory(role: string): 'OPERATIVO' | 'ESTRUCTURAL' {

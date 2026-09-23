@@ -9,6 +9,7 @@ import { PersonalCreationDrawerComponent } from '../../components/personal-creat
 import {
   PersonalCategoryFilter,
   PersonalDirectoryRow,
+  personalScopeTypeForRole,
   PersonalWorkspaceFacade
 } from '../../facades/personal-workspace.facade';
 
@@ -101,14 +102,10 @@ export class PersonalWorkspacePageComponent {
   }
 
   protected scopeState(row: PersonalDirectoryRow): 'done' | 'pending' | 'unknown' {
-    const teamScopedRoles = ['ASESOR_GTR', 'SUPERVISOR_GTR', 'ASESOR_VENTAS', 'SUPERVISOR_VENTAS', 'OJT', 'FREELANCE'];
-    const providerScopedRoles = [
-      'ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR',
-      'ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA'
-    ];
-    if (teamScopedRoles.includes(row.primaryRole)) return row.teamNames.length ? 'done' : 'pending';
-    if (providerScopedRoles.includes(row.primaryRole)) {
-      if (!this.facade.isAdmin()) return 'unknown';
+    const scopeType = personalScopeTypeForRole(row.primaryRole);
+    if (scopeType === 'TEAM') return row.teamNames.length ? 'done' : 'pending';
+    if (scopeType === 'PROVIDER') {
+      if (!this.facade.canReadRoles() || this.facade.providerScopeStatus() !== 'ready') return 'unknown';
       return row.providerNames.length ? 'done' : 'pending';
     }
     return 'done';
@@ -132,12 +129,6 @@ export class PersonalWorkspacePageComponent {
         accion: 'horario'
       }
     });
-  }
-
-  protected openScope(row: PersonalDirectoryRow): void {
-    if (!this.facade.isAdmin()) return;
-    const providerScoped = row.primaryRole.includes('BACKOFFICE') || row.primaryRole.includes('POSTVENTA') || row.primaryRole === 'MONITOR';
-    void this.router.navigate([providerScoped ? '/app/admin/proveedores' : '/app/admin/equipos']);
   }
 
   protected openAttendance(row: PersonalDirectoryRow): void {

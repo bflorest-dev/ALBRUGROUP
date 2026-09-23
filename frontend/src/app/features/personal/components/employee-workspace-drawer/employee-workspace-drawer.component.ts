@@ -8,9 +8,9 @@ import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-respon
 import { HorarioResponse } from '../../../../shared/models/schedule/horario-response';
 import { formatApiErrorMessage } from '../../../../shared/utils/api-error.utils';
 import { formatLabel } from '../../../../shared/utils/display-label';
-import { esRolDeEquipo, puedeMultiEquipo } from '../../../../shared/constants/multi-team-roles';
+import { esRolDeEquipo, puedeMultiEquipo, PROVIDER_SCOPED_ROLES } from '../../../../shared/constants/multi-team-roles';
 import { AdminRrhhService } from '../../../admin/services/admin-rrhh.service';
-import { AdminEquipoService, EquipoResponse } from '../../../admin/services/admin-equipo.service';
+import { AdminEquipoService, EquipoResponse, ProveedorLite } from '../../../admin/services/admin-equipo.service';
 import { PersonalDirectoryRow } from '../../facades/personal-workspace.facade';
 import {
   PersonalAccessService,
@@ -19,8 +19,20 @@ import {
   UserRoles
 } from '../../services/personal-access.service';
 
-type DrawerSection = 'resumen' | 'contrato' | 'horario' | 'acceso' | 'asistencia';
-type DrawerSubview = 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'historial-roles';
+type DrawerSection = 'resumen' | 'contrato' | 'roles' | 'horario' | 'asistencia';
+type DrawerSubview = 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles';
+
+export interface DrawerScopeCapabilities {
+  team: boolean;
+  provider: boolean;
+}
+
+export function scopeCapabilitiesForRoles(roles: string[]): DrawerScopeCapabilities {
+  return {
+    team: roles.some((role) => esRolDeEquipo(role)),
+    provider: roles.some((role) => Boolean(PROVIDER_SCOPED_ROLES[role]))
+  };
+}
 
 @Component({
   selector: 'app-employee-workspace-drawer',
@@ -42,11 +54,12 @@ export class EmployeeWorkspaceDrawerComponent {
   readonly canManageRoles = input(false);
   readonly roleCatalog = input<RoleCatalogItem[]>([]);
   readonly teamOptions = input<EquipoResponse[]>([]);
+  readonly providerOptions = input<ProveedorLite[]>([]);
+  readonly providerLoadError = input('');
 
   readonly closed = output<void>();
   readonly employeeChanged = output<void>();
   readonly manageSchedule = output<PersonalDirectoryRow>();
-  readonly manageScope = output<PersonalDirectoryRow>();
   readonly openAttendance = output<PersonalDirectoryRow>();
   readonly rolesUpdated = output<UserRoles>();
 
@@ -72,10 +85,13 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly isSavingContract = signal(false);
   protected readonly isClosingContract = signal(false);
   protected readonly isSavingTeam = signal(false);
+  protected readonly isSavingProviders = signal(false);
   protected readonly actionError = signal('');
   protected readonly actionSuccess = signal('');
   protected readonly rolePrincipal = signal('');
   protected readonly secondaryRoles = signal<string[]>([]);
+  private readonly persistedRolePrincipal = signal('');
+  private readonly persistedSecondaryRoles = signal<string[]>([]);
   protected readonly roleAudit = signal<RoleAuditEntry[]>([]);
   protected readonly isSavingRoles = signal(false);
   protected readonly roleError = signal('');
@@ -83,6 +99,8 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly teamSelectedId = signal(0);
   protected readonly teamSelectedIds = signal<number[]>([]);
   protected readonly teamError = signal('');
+  protected readonly providerSelectedIds = signal<number[]>([]);
+  protected readonly providerError = signal('');
 
   protected readonly personalForm = this.formBuilder.nonNullable.group({
     nombres: ['', [Validators.required]],
@@ -125,11 +143,15 @@ export class EmployeeWorkspaceDrawerComponent {
       this.subview.set('none');
       this.employeeDetails.set(null);
       this.rolePrincipal.set(row.access?.rolPrincipal ?? '');
-      this.secondaryRoles.set(row.access?.rolesSecundarios ?? []);
+      this.secondaryRoles.set([...(row.access?.rolesSecundarios ?? [])].sort());
+      this.persistedRolePrincipal.set(row.access?.rolPrincipal ?? '');
+      this.persistedSecondaryRoles.set([...(row.access?.rolesSecundarios ?? [])].sort());
       this.roleAudit.set([]);
       this.clearActionFeedback();
       this.roleError.set('');
       this.roleSuccess.set('');
+      this.providerSelectedIds.set([...row.providerIds]);
+      this.providerError.set('');
       void Promise.all([
         this.loadEmployeeDetails(row),
         this.loadEmployment(row.employee.idEmpleado),
@@ -142,7 +164,7 @@ export class EmployeeWorkspaceDrawerComponent {
     this.section.set(section);
     this.subview.set('none');
     this.clearActionFeedback();
-    if (section === 'acceso' && this.canManageRoles() && !this.roleAudit().length) {
+    if (section === 'roles' && this.canManageRoles() && !this.roleAudit().length) {
       const employeeId = this.row()?.employee.idEmpleado;
       if (employeeId) void this.loadAudit(employeeId);
     }
@@ -154,25 +176,46 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected isBusy(): boolean {
-    return this.isSavingPersonal() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingRoles();
+    return this.isSavingPersonal() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingProviders() || this.isSavingRoles();
   }
 
-  protected canManageTeam(row: PersonalDirectoryRow): boolean {
+  protected canManageTeam(row?: PersonalDirectoryRow | null): boolean {
     if (!this.canManageRoles()) return false;
-    return [row.primaryRole, ...row.secondaryRoles].some((role) => esRolDeEquipo(role));
+    const roles = row ? [row.primaryRole, ...row.secondaryRoles] : this.selectedRoles();
+    return scopeCapabilitiesForRoles(roles).team;
   }
 
-  protected canManageProviderScope(row: PersonalDirectoryRow): boolean {
+  protected canManageProviderScope(row?: PersonalDirectoryRow | null): boolean {
     if (!this.canManageRoles()) return false;
-    return [row.primaryRole, ...row.secondaryRoles].some((role) => [
-      'ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR',
-      'ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA'
-    ].includes(role));
+    const roles = row ? [row.primaryRole, ...row.secondaryRoles] : this.selectedRoles();
+    return scopeCapabilitiesForRoles(roles).provider;
   }
 
-  protected canSelectMultipleTeams(row: PersonalDirectoryRow): boolean {
-    const teamRoles = [row.primaryRole, ...row.secondaryRoles].filter((role) => esRolDeEquipo(role));
+  protected canSelectMultipleTeams(row?: PersonalDirectoryRow | null): boolean {
+    const roles = row ? [row.primaryRole, ...row.secondaryRoles] : this.selectedRoles();
+    const teamRoles = roles.filter((role) => esRolDeEquipo(role));
     return teamRoles.length > 0 && teamRoles.every((role) => puedeMultiEquipo(role));
+  }
+
+  protected rolesDirty(): boolean {
+    return this.rolePrincipal() !== this.persistedRolePrincipal()
+      || this.secondaryRoles().join('|') !== this.persistedSecondaryRoles().join('|');
+  }
+
+  protected selectedRoles(): string[] {
+    return [this.rolePrincipal(), ...this.secondaryRoles()].filter(Boolean);
+  }
+
+  protected hasTeamScopeForSelectedRoles(): boolean {
+    return this.canManageTeam();
+  }
+
+  protected hasProviderScopeForSelectedRoles(): boolean {
+    return this.canManageProviderScope();
+  }
+
+  protected scopeActionsDisabled(): boolean {
+    return this.rolesDirty() || this.isSavingRoles();
   }
 
   protected fullName(): string {
@@ -292,7 +335,7 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected openTeamManagement(): void {
     const row = this.row();
-    if (!row || !this.canManageTeam(row)) return;
+    if (!row || !this.hasTeamScopeForSelectedRoles() || this.scopeActionsDisabled()) return;
     this.teamSelectedId.set(row.teamIds[0] ?? 0);
     this.teamSelectedIds.set([...row.teamIds]);
     this.teamError.set('');
@@ -321,8 +364,8 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected async saveTeamManagement(): Promise<void> {
     const row = this.row();
-    if (!row || !this.canManageTeam(row)) return;
-    const teamIds = this.canSelectMultipleTeams(row)
+    if (!row || !this.hasTeamScopeForSelectedRoles() || this.scopeActionsDisabled()) return;
+    const teamIds = this.canSelectMultipleTeams()
       ? [...new Set(this.teamSelectedIds())]
       : this.teamSelectedId() > 0 ? [this.teamSelectedId()] : [];
     this.isSavingTeam.set(true);
@@ -419,6 +462,48 @@ export class EmployeeWorkspaceDrawerComponent {
     this.subview.set('historial-roles');
   }
 
+  protected openProviderManagement(): void {
+    const row = this.row();
+    if (!row || !this.hasProviderScopeForSelectedRoles() || this.scopeActionsDisabled()) return;
+    this.providerSelectedIds.set([...row.providerIds]);
+    this.providerError.set('');
+    this.clearActionFeedback();
+    this.subview.set('gestionar-proveedores');
+  }
+
+  protected toggleProvider(providerId: number, selected: boolean): void {
+    const current = new Set(this.providerSelectedIds());
+    if (selected) current.add(providerId); else current.delete(providerId);
+    this.providerSelectedIds.set([...current].sort((left, right) => left - right));
+  }
+
+  protected isProviderSelected(providerId: number): boolean {
+    return this.providerSelectedIds().includes(providerId);
+  }
+
+  protected closeProviderManagement(): void {
+    this.providerError.set('');
+    this.subview.set('none');
+  }
+
+  protected async saveProviderManagement(): Promise<void> {
+    const row = this.row();
+    if (!row || !this.hasProviderScopeForSelectedRoles() || this.scopeActionsDisabled()) return;
+    this.isSavingProviders.set(true);
+    this.providerError.set('');
+    this.clearActionFeedback();
+    try {
+      await firstValueFrom(this.equipos.asignarScopeProveedor(row.employee.idEmpleado, this.providerSelectedIds()));
+      this.subview.set('none');
+      this.actionSuccess.set(this.providerSelectedIds().length ? 'Proveedores actualizados.' : 'El empleado quedó sin proveedor.');
+      this.employeeChanged.emit();
+    } catch (error) {
+      this.providerError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudieron actualizar los proveedores.'));
+    } finally {
+      this.isSavingProviders.set(false);
+    }
+  }
+
   protected toggleSecondaryRole(role: string, selected: boolean): void {
     const current = new Set(this.secondaryRoles());
     if (selected) current.add(role); else current.delete(role);
@@ -450,6 +535,9 @@ export class EmployeeWorkspaceDrawerComponent {
         this.accessService.updateRoles(row.employee.idEmpleado, principal, this.secondaryRoles())
       );
       this.rolesUpdated.emit(updated);
+      this.persistedRolePrincipal.set(updated.rolPrincipal ?? '');
+      this.persistedSecondaryRoles.set([...updated.rolesSecundarios].sort());
+      this.employeeChanged.emit();
       this.roleSuccess.set('Roles actualizados. Las sesiones anteriores fueron cerradas.');
       await this.loadAudit(row.employee.idEmpleado);
     } catch (error) {

@@ -47,6 +47,15 @@ public class RolService {
     private final RefreshTokenService refreshTokenService;
     private final SessionInvalidationService sessionInvalidationService;
     private final EquipoService equipoService;
+    private final RoleScopeReconciliationClient roleScopeReconciliationClient;
+
+    private static final Set<String> ROLES_DE_EQUIPO = Set.of(
+            "ASESOR_GTR", "SUPERVISOR_GTR", "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "OJT", "FREELANCE"
+    );
+    private static final Set<String> ROLES_DE_PROVEEDOR = Set.of(
+            "ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE", "MONITOR",
+            "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA"
+    );
 
     @Transactional(readOnly = true)
     public List<RolResponse> catalogo() {
@@ -104,10 +113,10 @@ public class RolService {
                 .filter(rol -> principalNombre.equals(rol.getNombre()))
                 .findFirst()
                 .orElseThrow();
-        Set<Rol> nuevosRoles = new LinkedHashSet<>(rolesEncontrados);
-        equipoService.validarRolesCompatibles(nuevosRoles, usuario.getEquipos());
-
         Set<String> anteriores = nombresRoles(usuario);
+        Set<Rol> nuevosRoles = new LinkedHashSet<>(rolesEncontrados);
+        boolean conservaRolDeEquipo = nombresSolicitados.stream().anyMatch(ROLES_DE_EQUIPO::contains);
+        equipoService.validarRolesCompatibles(nuevosRoles, conservaRolDeEquipo ? usuario.getEquipos() : Set.of());
         String principalAnterior = usuario.getRolPrincipal() == null ? null : usuario.getRolPrincipal().getNombre();
         if (anteriores.equals(nombresSolicitados) && principalNombre.equals(principalAnterior)) {
             return toRolesResponse(usuario);
@@ -115,9 +124,16 @@ public class RolService {
 
         validarUltimoAdministrador(usuario, anteriores, nombresSolicitados);
         Usuario actor = usuarioActual();
+        boolean retiraUltimoRolDeEquipo = tieneRolDeEquipo(anteriores) && !conservaRolDeEquipo;
         usuario.setRoles(nuevosRoles);
         usuario.setRolPrincipal(nuevoPrincipal);
+        if (retiraUltimoRolDeEquipo) {
+            usuario.setEquipos(new LinkedHashSet<>());
+        }
         Usuario guardado = usuarioRepository.saveAndFlush(usuario);
+        if (tieneRolDeProveedor(anteriores) || tieneRolDeProveedor(nombresSolicitados)) {
+            roleScopeReconciliationClient.reconcile(guardado.getEmpleadoId(), nombresSolicitados);
+        }
 
         auditoriaRepository.save(UsuarioRolAuditoria.builder()
                 .usuario(guardado)
@@ -181,6 +197,14 @@ public class RolService {
                 && usuarioRepository.findActiveByRoleForUpdate(ADMINISTRADOR).size() <= 1) {
             throw new UnprocessableEntityException("No se puede retirar el rol al ultimo administrador activo");
         }
+    }
+
+    private boolean tieneRolDeEquipo(Set<String> roles) {
+        return roles.stream().anyMatch(ROLES_DE_EQUIPO::contains);
+    }
+
+    private boolean tieneRolDeProveedor(Set<String> roles) {
+        return roles.stream().anyMatch(ROLES_DE_PROVEEDOR::contains);
     }
 
     private AccesoUsuarioResponse toAccesoResponse(Usuario usuario) {

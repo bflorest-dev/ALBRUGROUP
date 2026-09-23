@@ -61,6 +61,23 @@
   color-scheme: dark;
 }
 
+// Todo subflujo debe mantener sus acciones junto al contenido que modifican.
+.employee-drawer[data-subview]:not([data-subview='none']) {
+  grid-template-rows: auto auto auto auto;
+  align-content: start;
+  overflow-y: auto;
+}
+.employee-drawer[data-subview]:not([data-subview='none']) .drawer-body {
+  min-height: auto;
+  overflow: visible;
+}
+.employee-drawer[data-subview]:not([data-subview='none']) .drawer-subview {
+  min-height: auto;
+}
+.employee-drawer[data-subview]:not([data-subview='none']) .drawer-actions {
+  box-shadow: none;
+}
+
 @keyframes drawer-in {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
@@ -115,7 +132,7 @@
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
 }
-.drawer-body--access { overflow: hidden; padding-bottom: 16px; }
+.drawer-body--roles { overflow: hidden; padding-bottom: 16px; }
 
 .summary-block + .summary-block { margin-top: 26px; }
 .summary-block h3,
@@ -209,6 +226,23 @@ dd { margin: 4px 0 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere
 .team-checks small { color: var(--ink-3); font-size: 11.5px; overflow-wrap: anywhere; }
 .team-warning { margin: 15px 0 0; padding: 11px 13px; border: 1px solid var(--signal-line); border-radius: 8px; background: var(--signal-wash); color: var(--signal); font-size: 12.5px; }
 
+.provider-management-view { max-width: 58ch; }
+.provider-checks { min-width: 0; margin: 0; padding: 0; border: 0; }
+.provider-checks legend { margin-bottom: 8px; color: var(--ink-2); font-size: 11px; font-weight: 700; }
+.provider-checks-scroll { max-height: min(48dvh, 390px); overflow-y: auto; border-block: 1px solid var(--line); scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.provider-checks label { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 11px 2px; border-bottom: 1px solid var(--line); }
+.provider-checks label:last-child { border-bottom: 0; }
+.provider-checks input { margin-top: 3px; accent-color: var(--signal); }
+.provider-checks label span { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.provider-checks strong { font-size: 13px; }
+
+.scope-management { min-width: 0; padding-top: 12px; border-top: 1px solid var(--line); }
+.scope-management-heading h3 { margin: 0 0 5px; color: var(--ink-2); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.scope-management-heading p { margin: 0 0 10px; color: var(--ink-2); font-size: 12px; }
+.scope-pending { margin: 0 0 10px; padding: 9px 11px; border: 1px solid var(--signal-line); border-radius: 8px; background: var(--signal-wash); color: var(--signal); font-size: 12px; }
+.scope-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.scope-action { min-height: 36px; }
+
 .danger-view { max-width: 56ch; margin: 8px auto 0; display: grid; gap: 18px; }
 .danger-symbol { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); border-radius: 10px; background: var(--danger-wash); color: var(--danger); font-size: 22px; }
 .confirmation-facts { margin: 0; border-top: 1px solid var(--line); }
@@ -265,6 +299,8 @@ select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .confirmation-facts > div { grid-template-columns: 1fr; gap: 4px; }
   .drawer-actions .primary-button,
   .drawer-actions .danger-button { flex: 1; }
+  .scope-actions { flex-direction: column; }
+  .scope-action { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

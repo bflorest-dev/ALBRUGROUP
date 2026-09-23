@@ -26,7 +26,7 @@ import java.util.List;
 @Slf4j
 public class PresenciaTramoService {
 
-    private static final long INACTIVITY_BACKDATE_MINUTES = 15;
+    private static final long INACTIVITY_BACKDATE_MINUTES = 30;
 
     private final PresenciaTramoRepository presenciaTramoRepository;
     private final AsistenciaRepository asistenciaRepository;

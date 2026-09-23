@@ -38,6 +38,9 @@ app:
     gateway-url: ${LEAD_DOCS_GATEWAY_URL:http://localhost:8080/leads}
     public-url: ${LEAD_DOCS_PUBLIC_URL:https://api.albrugroup.com/leads}
 
+internal:
+  shared-secret: ${INTERNAL_SHARED_SECRET:}
+
 management:
   endpoints:
     web:

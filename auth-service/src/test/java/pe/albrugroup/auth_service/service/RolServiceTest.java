@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import pe.albrugroup.auth_service.entity.Rol;
+import pe.albrugroup.auth_service.entity.Equipo;
 import pe.albrugroup.auth_service.entity.Usuario;
 import pe.albrugroup.auth_service.entity.UsuarioRolAuditoria;
 import pe.albrugroup.auth_service.entity.request.AsignarRolesRequest;
@@ -26,6 +27,7 @@ import pe.albrugroup.auth_service.security.CustomUserDetails;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,11 +48,14 @@ class RolServiceTest {
     @Mock private RefreshTokenService refreshTokenService;
     @Mock private SessionInvalidationService sessionInvalidationService;
     @Mock private EquipoService equipoService;
+    @Mock private RoleScopeReconciliationClient roleScopeReconciliationClient;
 
     @InjectMocks private RolService service;
 
     private final Rol postventa = Rol.builder().id(1L).nombre("ASESOR_POSTVENTA").build();
     private final Rol backoffice = Rol.builder().id(2L).nombre("ASESOR_BACKOFFICE").build();
+    private final Rol asesorVentas = Rol.builder().id(3L).nombre("ASESOR_VENTAS").build();
+    private final Rol supervisorVentas = Rol.builder().id(4L).nombre("SUPERVISOR_VENTAS").build();
 
     @BeforeEach
     void autenticarAdministrador() {
@@ -170,6 +175,41 @@ class RolServiceTest {
 
         verify(usuarioRepository, never()).saveAndFlush(any());
         verify(refreshTokenService, never()).revokeActiveTokens(any());
+    }
+
+    @Test
+    void retirarElUltimoRolDeEquipoLimpiaSusMembresias() {
+        Usuario empleado = usuario(20L, asesorVentas);
+        empleado.setEquipos(new LinkedHashSet<>(List.of(Equipo.builder().id(7L).build())));
+        when(usuarioRepository.findByEmpleadoId(20L)).thenReturn(Optional.of(empleado));
+        when(rolRepository.findAllByNombreIn(any())).thenReturn(List.of(postventa));
+        when(usuarioRepository.saveAndFlush(empleado)).thenReturn(empleado);
+
+        service.asignarRoles(20L, AsignarRolesRequest.builder()
+                .rolPrincipal("ASESOR_POSTVENTA")
+                .rolesSecundarios(List.of())
+                .build());
+
+        assertThat(empleado.getEquipos()).isEmpty();
+        verify(roleScopeReconciliationClient).reconcile(20L, Set.of("ASESOR_POSTVENTA"));
+    }
+
+    @Test
+    void retirarUnRolDeEquipoConservaElEquipoSiQuedaOtroRolDeEquipo() {
+        Usuario empleado = usuario(20L, asesorVentas);
+        empleado.setRoles(new LinkedHashSet<>(List.of(asesorVentas, supervisorVentas)));
+        empleado.setEquipos(new LinkedHashSet<>(List.of(Equipo.builder().id(7L).build())));
+        when(usuarioRepository.findByEmpleadoId(20L)).thenReturn(Optional.of(empleado));
+        when(rolRepository.findAllByNombreIn(any())).thenReturn(List.of(supervisorVentas));
+        when(usuarioRepository.saveAndFlush(empleado)).thenReturn(empleado);
+
+        service.asignarRoles(20L, AsignarRolesRequest.builder()
+                .rolPrincipal("SUPERVISOR_VENTAS")
+                .rolesSecundarios(List.of())
+                .build());
+
+        assertThat(empleado.getEquipos()).extracting(Equipo::getId).containsExactly(7L);
+        verify(roleScopeReconciliationClient, never()).reconcile(any(), any());
     }
 
     @Test

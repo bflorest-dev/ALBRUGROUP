@@ -13,9 +13,11 @@ import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.UsuarioProveedorRepository;
 import pe.albrugroup.lead_service.service.mapper.ProveedorMapper;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,6 +29,11 @@ import java.util.Set;
 @Transactional
 @RequiredArgsConstructor
 public class UsuarioProveedorService {
+
+    private static final Set<String> ROLES_GESTIONADOS_POR_PROVEEDOR = Set.of(
+            "ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE", "MONITOR",
+            "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA"
+    );
 
     private final UsuarioProveedorRepository repository;
     private final ProveedorRepository proveedorRepository;
@@ -50,6 +57,33 @@ public class UsuarioProveedorService {
             reemplazarProveedores(idEmpleado, AmbitoProveedor.BACKOFFICE, proveedores);
         }
         return listarProveedoresDeEmpleado(idEmpleado, ambito);
+    }
+
+    /**
+     * Reconciliación interna del scope por proveedor después de un cambio de roles.
+     * Ambos ámbitos técnicos representan el mismo scope conceptual y deben conservar
+     * exactamente el mismo conjunto cuando todavía existe un rol por proveedor.
+     */
+    public void reconciliarScopePorRoles(Long idEmpleado, Set<String> roles) {
+        Set<String> rolesNormalizados = roles == null ? Set.of() : roles.stream()
+                .filter(role -> role != null && !role.isBlank())
+                .map(role -> role.trim().toUpperCase(Locale.ROOT))
+                .collect(java.util.stream.Collectors.toSet());
+        boolean conservaRolPorProveedor = rolesNormalizados.stream()
+                .anyMatch(ROLES_GESTIONADOS_POR_PROVEEDOR::contains);
+
+        Map<Long, Proveedor> proveedoresPorId = new LinkedHashMap<>();
+        if (conservaRolPorProveedor) {
+            for (AmbitoProveedor ambito : AmbitoProveedor.values()) {
+                repository.findByIdEmpleadoAndAmbitoAndActivoTrueOrderByProveedorNombreAsc(idEmpleado, ambito)
+                        .forEach(asignacion -> proveedoresPorId.putIfAbsent(
+                                asignacion.getProveedor().getId(), asignacion.getProveedor()));
+            }
+        }
+
+        List<Proveedor> proveedores = new ArrayList<>(proveedoresPorId.values());
+        reemplazarProveedores(idEmpleado, AmbitoProveedor.BACKOFFICE, proveedores);
+        reemplazarProveedores(idEmpleado, AmbitoProveedor.POSTVENTA, proveedores);
     }
 
     private void reemplazarProveedores(Long idEmpleado, AmbitoProveedor ambito, List<Proveedor> proveedores) {

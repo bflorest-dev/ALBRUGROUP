@@ -77,7 +77,7 @@ export type DisponibilidadOperativa =
 
 @Injectable({ providedIn: 'root' })
 export class PresenceService {
-  private static readonly IDLE_THRESHOLD_MS = 15 * 60 * 1000;
+  private static readonly IDLE_THRESHOLD_MS = 30 * 60 * 1000;
 
   private readonly http = inject(HttpClient);
   private readonly sessionService = inject(SessionService);

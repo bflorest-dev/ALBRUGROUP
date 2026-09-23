@@ -131,6 +131,11 @@ export class AdminEquipoService {
     );
   }
 
+  /** Scope conceptual único del empleado; POSTVENTA replica internamente a BACKOFFICE. */
+  asignarScopeProveedor(empleadoId: number, proveedorIds: number[]): Observable<ProveedorLite[]> {
+    return this.asignarProveedoresUsuario(empleadoId, 'POSTVENTA', proveedorIds);
+  }
+
   // --- Empleados (rrhh) para elegir a quién asignar ---
   listarEmpleados(): Observable<EmpleadoLite[]> {
     return this.http.get<EmpleadoLite[]>(this.empleadosLightUrl);

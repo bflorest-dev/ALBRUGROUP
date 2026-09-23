@@ -5,5 +5,7 @@
 .personal-workspace[data-theme='dark'] .select-field option { background: var(--panel-2); color: var(--ink); }
 .state-chip.inactive { background: #f8eaea; border-color: rgb(162 59 59 / 30%); color: #a23b3b; }
 .personal-workspace[data-theme='dark'] .state-chip.inactive { background: #321b1d; border-color: rgb(239 139 139 / 34%); color: #ef8b8b; }
+.scope-status { display:flex; align-items:center; gap:8px; min-height:38px; padding:0 15px; border-bottom:1px solid var(--line); background:var(--panel-sunk); color:var(--ink-2); font-size:11.5px; }
+.scope-status.error { color:var(--signal); }
 @media(max-width:960px){.control-rail{grid-template-columns:1fr 1fr}}
 @media(max-width:640px){.control-rail{grid-template-columns:1fr}}

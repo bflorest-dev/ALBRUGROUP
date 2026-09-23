@@ -5,6 +5,7 @@
     role="dialog"
     aria-modal="true"
     [attr.data-theme]="theme()"
+    [attr.data-subview]="subview()"
     [attr.aria-label]="'Expediente de ' + fullName()"
   >
     <header class="drawer-head">
@@ -27,15 +28,15 @@
       <nav class="drawer-tabs" aria-label="Secciones del expediente">
         <button type="button" [class.active]="section() === 'resumen'" (click)="setSection('resumen')">Resumen</button>
         <button type="button" [class.active]="section() === 'contrato'" (click)="setSection('contrato')">Contrato</button>
-        <button type="button" [class.active]="section() === 'horario'" (click)="setSection('horario')">Horario</button>
         @if (canManageRoles()) {
-          <button type="button" [class.active]="section() === 'acceso'" (click)="setSection('acceso')">Acceso y roles</button>
+          <button type="button" [class.active]="section() === 'roles'" (click)="setSection('roles')">Roles</button>
         }
+        <button type="button" [class.active]="section() === 'horario'" (click)="setSection('horario')">Horario</button>
         <button type="button" [class.active]="section() === 'asistencia'" (click)="setSection('asistencia')">Asistencia</button>
       </nav>
     }
 
-    <div class="drawer-body" [class.drawer-body--access]="section() === 'acceso' && subview() === 'none'">
+    <div class="drawer-body" [class.drawer-body--roles]="section() === 'roles' && subview() === 'none'">
       @if (actionError()) { <p class="feedback error" role="alert">{{ actionError() }}</p> }
       @if (actionSuccess()) { <p class="feedback success" role="status">{{ actionSuccess() }}</p> }
 
@@ -122,6 +123,29 @@
             @if (teamSelectedId() === 0) { <p class="team-warning">Sin equipo, este empleado no verá datos filtrados por equipo.</p> }
           }
         </section>
+      } @else if (subview() === 'gestionar-proveedores') {
+        <section class="drawer-subview provider-management-view">
+          <div class="subview-heading">
+            <button class="back-button" type="button" [disabled]="isSavingProviders()" (click)="closeProviderManagement()"><i class="ti ti-arrow-left"></i>Volver</button>
+            <div><h3>Gestionar proveedores</h3><p>Asigna el ámbito de proveedores del empleado sin separar BACKOFFICE y POSTVENTA.</p></div>
+          </div>
+          @if (providerError()) { <p class="feedback error" role="alert">{{ providerError() }}</p> }
+          @if (providerLoadError()) {
+            <p class="feedback error" role="alert">{{ providerLoadError() }}</p>
+          } @else if (!providerOptions().length) {
+            <p class="pending-copy">No hay proveedores activos disponibles para asignar.</p>
+          } @else {
+            <fieldset class="provider-checks">
+              <legend>Proveedores asignados</legend>
+              <div class="provider-checks-scroll">
+                @for (provider of providerOptions(); track provider.id) {
+                  <label><input type="checkbox" [checked]="isProviderSelected(provider.id)" [disabled]="isSavingProviders()" (change)="toggleProvider(provider.id, $any($event.target).checked)" /><span><strong>{{ provider.nombre }}</strong></span></label>
+                }
+              </div>
+            </fieldset>
+            @if (!providerSelectedIds().length) { <p class="team-warning">Sin proveedor, el empleado no verá datos filtrados por proveedor.</p> }
+          }
+        </section>
       } @else if (subview() === 'historial-roles') {
         <section class="drawer-subview">
           <div class="subview-heading">
@@ -143,7 +167,7 @@
             <div><span class="status-dot ok"></span><span>Datos personales</span><strong>Completo</strong></div>
             <div><span class="status-dot" [class.ok]="contract()" [class.pending]="!contract()"></span><span>Contrato</span><strong>{{ contract() ? 'Completo' : 'Pendiente' }}</strong></div>
             <div><span class="status-dot" [class.ok]="schedule()" [class.pending]="!schedule()"></span><span>Horario</span><strong>{{ schedule() ? 'Completo' : 'Pendiente' }}</strong></div>
-            <div><span class="status-dot" [class.ok]="current.access?.rolPrincipal" [class.pending]="!current.access?.rolPrincipal"></span><span>Acceso y roles</span><strong>{{ current.access?.rolPrincipal ? 'Completo' : canManageRoles() ? 'Pendiente' : 'Solo Admin' }}</strong></div>
+            <div><span class="status-dot" [class.ok]="current.access?.rolPrincipal" [class.pending]="!current.access?.rolPrincipal"></span><span>Roles</span><strong>{{ current.access?.rolPrincipal ? 'Completo' : canManageRoles() ? 'Pendiente' : 'Solo Admin' }}</strong></div>
             <div><span class="status-dot" [class.ok]="current.teamNames.length || current.providerNames.length || current.category === 'ESTRUCTURAL'" [class.pending]="current.category === 'OPERATIVO' && !current.teamNames.length && !current.providerNames.length"></span><span>Ámbito operativo</span><strong>{{ current.category === 'ESTRUCTURAL' || current.teamNames.length || current.providerNames.length ? 'Completo' : 'Pendiente' }}</strong></div>
           </div>
         </section>
@@ -197,11 +221,27 @@
           <p>La edición completa del horario y sus ajustes diarios continúa temporalmente en la experiencia de Asistencia.</p>
           <button class="primary-button" type="button" [disabled]="!contract()" (click)="manageSchedule.emit(current)">Gestionar horario</button>
         </section>
-      } @else if (section() === 'acceso' && canManageRoles()) {
+      } @else if (section() === 'roles' && canManageRoles()) {
         <section class="access-layout">
           <div class="access-intro"><h3>Roles asignados</h3><p>Cambiar esta configuración cerrará todas las sesiones del empleado.</p></div>
           <label class="form-field principal-role"><span>Rol principal</span><select [ngModel]="rolePrincipal()" (ngModelChange)="changePrincipal($event)"><option value="">Seleccionar rol</option>@for (role of roleCatalog(); track role.nombre) { <option [value]="role.nombre">{{ label(role.nombre) }}</option> }</select></label>
           <fieldset class="role-checks"><legend>Roles secundarios</legend><div class="role-checks-scroll">@for (role of roleCatalog(); track role.nombre) { @if (role.nombre !== rolePrincipal()) { <label><input type="checkbox" [checked]="isSecondarySelected(role.nombre)" (change)="toggleSecondaryRole(role.nombre, $any($event.target).checked)"/><span><strong>{{ label(role.nombre) }}</strong><small>{{ role.descripcion }}</small></span></label> } }</div></fieldset>
+          <section class="scope-management" aria-labelledby="scope-management-title">
+            <div class="scope-management-heading"><h3 id="scope-management-title">Ámbitos operativos</h3><p>La asignación es opcional y se gestiona con todos los roles seleccionados.</p></div>
+            @if (rolesDirty()) { <p class="scope-pending" role="status">Guarda los roles para habilitar la gestión de ámbitos.</p> }
+            @if (!hasTeamScopeForSelectedRoles() && !hasProviderScopeForSelectedRoles()) {
+              <p class="muted">Los roles seleccionados no requieren un ámbito operativo.</p>
+            } @else {
+              <div class="scope-actions">
+                @if (hasTeamScopeForSelectedRoles()) {
+                  <button class="ghost-button scope-action" type="button" [disabled]="scopeActionsDisabled()" (click)="openTeamManagement()"><i class="ti ti-users-group"></i>Gestionar equipos</button>
+                }
+                @if (hasProviderScopeForSelectedRoles()) {
+                  <button class="ghost-button scope-action" type="button" [disabled]="scopeActionsDisabled()" (click)="openProviderManagement()"><i class="ti ti-building-store"></i>Gestionar proveedores</button>
+                }
+              </div>
+            }
+          </section>
           <div class="access-messages">@if (roleError()) { <p class="feedback error" role="alert">{{ roleError() }}</p> } @if (roleSuccess()) { <p class="feedback success" role="status">{{ roleSuccess() }}</p> }</div>
         </section>
       } @else if (section() === 'asistencia') {
@@ -229,22 +269,20 @@
       } @else if (subview() === 'gestionar-equipo') {
         <button type="button" class="ghost-button" [disabled]="isSavingTeam()" (click)="closeTeamManagement()">Cancelar</button>
         <button type="button" class="primary-button push-right" [disabled]="isSavingTeam() || !teamOptions().length" (click)="saveTeamManagement()">{{ isSavingTeam() ? 'Guardando…' : 'Guardar equipo' }}</button>
+      } @else if (subview() === 'gestionar-proveedores') {
+        <button type="button" class="ghost-button" [disabled]="isSavingProviders()" (click)="closeProviderManagement()">Cancelar</button>
+        <button type="button" class="primary-button push-right" [disabled]="isSavingProviders() || !providerOptions().length" (click)="saveProviderManagement()">{{ isSavingProviders() ? 'Guardando…' : 'Guardar proveedores' }}</button>
       } @else if (subview() === 'historial-roles') {
         <button type="button" class="ghost-button" (click)="closeSubview()"><i class="ti ti-arrow-left"></i>Volver a roles</button>
       } @else if (section() === 'resumen') {
         <button type="button" class="ghost-button" [disabled]="isLoadingEmployee()" (click)="openPersonalEdit()">Editar datos</button>
         @if (canManageRoles()) {
-          @if (canManageTeam(current)) {
-            <button type="button" class="ghost-button" (click)="openTeamManagement()"><i class="ti ti-users-group"></i>Gestionar equipo</button>
-          } @else if (canManageProviderScope(current)) {
-            <button type="button" class="ghost-button" (click)="manageScope.emit(current)">Gestionar proveedores</button>
-          }
           @if (current.employee.estadoOperativo !== 'INACTIVO') { <button type="button" class="danger-button push-right" (click)="openDismissConfirmation()">Dar de baja</button> }
         }
       } @else if (section() === 'contrato') {
         <button type="button" class="primary-button" (click)="openContractForm()">{{ contract() ? 'Nuevo contrato' : 'Registrar contrato' }}</button>
         @if (contract()) { <button type="button" class="danger-ghost-button push-right" (click)="openCloseContract()">Finalizar contrato</button> }
-      } @else if (section() === 'acceso' && canManageRoles()) {
+      } @else if (section() === 'roles' && canManageRoles()) {
         <button type="button" class="ghost-button" (click)="openRoleHistory()"><i class="ti ti-history"></i>Ver historial</button>
         <button class="primary-button push-right" type="button" [disabled]="isSavingRoles()" (click)="saveRoles()">{{ isSavingRoles() ? 'Guardando…' : 'Guardar roles' }}</button>
       }

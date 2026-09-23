@@ -24,6 +24,13 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+services:
+  lead:
+    base-url: ${LEAD_SERVICE_URL:http://lead-service:8083}
+
+internal:
+  shared-secret: ${INTERNAL_SHARED_SECRET:}
+
 management:
   endpoints:
     web:

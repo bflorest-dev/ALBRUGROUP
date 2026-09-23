@@ -287,6 +287,7 @@ public class DataLoader {
 
                 getPermiso("READ_EVENTOS"),
                 getPermiso("READ_ROLES"),
+                getPermiso("READ_USUARIO_PROVEEDORES"),
                 getPermiso("CREATE_EQUIPOS"),
                 getPermiso("READ_EQUIPOS"),
                 getPermiso("UPDATE_EQUIPOS"),

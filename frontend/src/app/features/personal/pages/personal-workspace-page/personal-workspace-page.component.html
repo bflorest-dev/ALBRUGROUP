@@ -67,6 +67,9 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       @if (facade.operationalGroups().length) {
         <button class="category-row" type="button" (click)="toggleCategory('OPERATIVO')"><i class="ti" [class.ti-chevron-down]="isCategoryExpanded('OPERATIVO')" [class.ti-chevron-right]="!isCategoryExpanded('OPERATIVO')"></i><strong>OPERATIVO</strong><span class="mono">{{ facade.operationalGroups().length }} roles</span></button>
         @if (isCategoryExpanded('OPERATIVO')) {
+          @if (facade.operationalGroups().some(group => group.scopeType === 'PROVIDER') && facade.providerScopeStatus() === 'error') {
+            <div class="scope-status error" role="alert"><i class="ti ti-alert-triangle"></i>{{ facade.providerScopeError() }}</div>
+          }
           @for (group of facade.operationalGroups(); track group.role) {
             <button class="role-row" type="button" (click)="toggleRole(group.role)"><i class="ti" [class.ti-chevron-down]="isRoleExpanded(group.role)" [class.ti-chevron-right]="!isRoleExpanded(group.role)"></i><strong>{{ label(group.role) }}</strong><span class="mono">{{ group.employees.length }}</span></button>
             @if (isRoleExpanded(group.role)) {
@@ -77,7 +80,14 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
                     @for (row of team.employees; track row.employee.idEmpleado) { <ng-container [ngTemplateOutlet]="employeeRow" [ngTemplateOutletContext]="{$implicit:row}"></ng-container> }
                   }
                 }
-              } @else {
+              } @else if (group.scopeType === 'PROVIDER' && facade.providerScopeStatus() === 'ready') {
+                @for (provider of group.providers; track provider.key) {
+                  <button class="team-row provider-row" type="button" (click)="toggleTeam(group.role, provider.key)"><i class="ti" [class.ti-chevron-down]="isTeamExpanded(group.role, provider.key)" [class.ti-chevron-right]="!isTeamExpanded(group.role, provider.key)"></i><strong>{{ provider.label }}</strong><span class="mono">{{ provider.employees.length }}</span></button>
+                  @if (isTeamExpanded(group.role, provider.key)) {
+                    @for (row of provider.employees; track row.employee.idEmpleado) { <ng-container [ngTemplateOutlet]="employeeRow" [ngTemplateOutletContext]="{$implicit:row}"></ng-container> }
+                  }
+                }
+              } @else if (group.scopeType === 'NONE') {
                 @for (row of group.employees; track row.employee.idEmpleado) { <ng-container [ngTemplateOutlet]="employeeRow" [ngTemplateOutletContext]="{$implicit:row}"></ng-container> }
               }
             }
@@ -108,13 +118,14 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     [row]="facade.selectedRow()"
     [theme]="theme()"
     [canManageRoles]="facade.isAdmin()"
-    [roleCatalog]="facade.roleCatalog()"
-    [teamOptions]="facade.activeTeams()"
+      [roleCatalog]="facade.roleCatalog()"
+      [teamOptions]="facade.activeTeams()"
+      [providerOptions]="facade.activeProviders()"
+      [providerLoadError]="facade.providerScopeError()"
     (closed)="facade.closeEmployee()"
     (employeeChanged)="handleEmployeeChanged()"
     (rolesUpdated)="facade.applyUpdatedRoles($event)"
     (manageSchedule)="openLegacySchedule($event)"
-    (manageScope)="openScope($event)"
     (openAttendance)="openAttendance($event)"
   />
   <app-personal-creation-drawer
