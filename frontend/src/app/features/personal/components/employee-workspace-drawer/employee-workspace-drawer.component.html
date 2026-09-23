@@ -264,7 +264,7 @@
           <div class="schedule-overview__heading">
             <div>
               <h3>Horario base</h3>
-              <p class="schedule-value">{{ contract() ? (schedule() ? scheduleSummary() : 'Pendiente de asignación') : 'Primero registra un contrato' }}</p>
+              <p class="schedule-overview__description">Consulta la jornada configurada y sus pausas por día.</p>
             </div>
             @if (schedule()) { <span class="schedule-state">{{ schedule()?.modalidad ? label(schedule()?.modalidad) : 'Horario vigente' }}</span> }
           </div>
@@ -275,6 +275,13 @@
           } @else if (!schedule()) {
             <p class="pending-copy">Este empleado todavía no tiene un horario base asignado.</p>
           } @else {
+            <app-schedule-week-editor
+              [horarioForm]="scheduleFacade.form"
+              [requiresLunch]="scheduleFacade.requiresLunch()"
+              [perDayLunch]="true"
+              [readOnly]="true"
+              [refreshKey]="scheduleFacade.editorKey()"
+            />
             <dl class="schedule-facts">
               <div><dt>Inicio</dt><dd class="mono">{{ schedule()?.fechaInicio }}</dd></div>
               <div><dt>Descanso</dt><dd>{{ restDayLabel(schedule()) }}</dd></div>
@@ -286,27 +293,35 @@
           }
         </section>
 
-        <section class="summary-block schedule-history-block">
-          <h3>Historial de horarios</h3>
-          @if (scheduleFacade.isLoadingHistory()) {
-            <p class="muted">Cargando historial…</p>
-          } @else if (scheduleFacade.historyError()) {
-            <p class="feedback error" role="alert">{{ scheduleFacade.historyError() }}</p>
-          } @else if (!scheduleFacade.historyItems().length) {
-            <p class="empty-copy">Sin versiones de horario registradas.</p>
-          } @else {
-            <div class="schedule-history-list">
-              @for (item of scheduleFacade.historyItems(); track item.schedule.id) {
-                <button type="button" class="schedule-history-item" [class.is-current]="item.kind === 'actual'" (click)="selectScheduleHistory(item.schedule)">
-                  <span class="schedule-history-item__badge" [class.is-current]="item.kind === 'actual'" [class.is-future]="item.kind === 'futuro'">{{ item.label }}</span>
-                  <span class="schedule-history-item__body"><strong>{{ item.range }}</strong><small>{{ item.validity }} · descansa {{ item.restDay }}</small></span>
-                  <i class="ti ti-pencil" aria-hidden="true"></i>
-                </button>
-              }
-            </div>
-            <p class="schedule-history-hint">Selecciona una versión para cargarla en el editor.</p>
-          }
-        </section>
+        <details class="schedule-history-disclosure">
+          <summary>
+            <span>Historial de horarios</span>
+            <span class="schedule-history-disclosure__meta">
+              {{ scheduleFacade.historyItems().length }} versiones
+              <i class="ti ti-chevron-down" aria-hidden="true"></i>
+            </span>
+          </summary>
+          <div class="schedule-history-block">
+            @if (scheduleFacade.isLoadingHistory()) {
+              <p class="muted">Cargando historial…</p>
+            } @else if (scheduleFacade.historyError()) {
+              <p class="feedback error" role="alert">{{ scheduleFacade.historyError() }}</p>
+            } @else if (!scheduleFacade.historyItems().length) {
+              <p class="empty-copy">Sin versiones de horario registradas.</p>
+            } @else {
+              <div class="schedule-history-list">
+                @for (item of scheduleFacade.historyItems(); track item.schedule.id) {
+                  <button type="button" class="schedule-history-item" [class.is-current]="item.kind === 'actual'" (click)="selectScheduleHistory(item.schedule)">
+                    <span class="schedule-history-item__badge" [class.is-current]="item.kind === 'actual'" [class.is-future]="item.kind === 'futuro'">{{ item.label }}</span>
+                    <span class="schedule-history-item__body"><strong>{{ item.range }}</strong><small>{{ item.validity }} · descansa {{ item.restDay }}</small></span>
+                    <i class="ti ti-pencil" aria-hidden="true"></i>
+                  </button>
+                }
+              </div>
+              <p class="schedule-history-hint">Selecciona una versión para cargarla en el editor.</p>
+            }
+          </div>
+        </details>
       } @else if (section() === 'roles' && canManageRoles()) {
         <section class="access-layout">
           <div class="access-intro"><h3>Roles asignados</h3><p>Cambiar esta configuración cerrará todas las sesiones del empleado.</p></div>

@@ -1,5 +1,5 @@
 <div class="week-editor">
-  @if (showDate || showCompensable) {
+  @if (!readOnly && (showDate || showCompensable)) {
     <div class="meta-bar">
       @if (showDate) {
         <label class="meta-bar__field">
@@ -19,9 +19,14 @@
     </div>
   }
 
-  <div class="week-editor__scope">{{ scopeLabel() }}</div>
+  @if (readOnly) {
+    <div class="week-editor__read-only-label">Jornada semanal configurada</div>
+  } @else {
+    <div class="week-editor__scope">{{ scopeLabel() }}</div>
+  }
 
-  <div class="editor-bar">
+  @if (!readOnly) {
+    <div class="editor-bar">
     <div class="editor-bar__field">
       <span>Entrada</span>
       <input type="time" [value]="bE()" (input)="onEntrada($any($event.target).value)" />
@@ -49,15 +54,16 @@
       </div>
     }
 
-    @if (selected() === null) {
-      <button pButton type="button" size="small" icon="pi pi-copy" label="Aplicar a todos" (click)="applyToAll()"></button>
-    } @else {
-      <label class="editor-bar__laborable">
-        <span>Laborable</span>
-        <input type="checkbox" [checked]="bLab()" (change)="toggleLaborable($any($event.target).checked)" />
-      </label>
-    }
-  </div>
+      @if (selected() === null) {
+        <button pButton class="schedule-apply-button" type="button" size="small" icon="pi pi-copy" label="Aplicar a todos" (click)="applyToAll()"></button>
+      } @else {
+        <label class="editor-bar__laborable">
+          <span>Laborable</span>
+          <input type="checkbox" [checked]="bLab()" (change)="toggleLaborable($any($event.target).checked)" />
+        </label>
+      }
+    </div>
+  }
 
   <div class="timeline">
     <div class="timeline__ticks">
@@ -69,8 +75,9 @@
     @for (bar of bars(); track bar.index) {
       <div
         class="timeline__row"
+        [class.timeline__row--readonly]="readOnly"
         [class.timeline__row--selected]="selected() === bar.index"
-        (click)="selectDay(bar.index)"
+        (click)="!readOnly && selectDay(bar.index)"
       >
         <span class="timeline__day">{{ bar.short }}</span>
         <div class="timeline__track">
@@ -78,7 +85,7 @@
             <span class="timeline__rest">Descanso</span>
           } @else if (bar.hasWindow) {
             <div class="timeline__work" [style.left.%]="bar.leftPct" [style.width.%]="bar.widthPct">
-              <span class="timeline__cap">{{ bar.e }} – {{ bar.s }}</span>
+              <span class="timeline__cap"><span>{{ bar.e }}</span><span>{{ bar.s }}</span></span>
             </div>
             @if (bar.showLunch) {
               <div class="timeline__lunch" [style.left.%]="bar.lunchLeftPct" [style.width.%]="bar.lunchWidthPct"></div>
@@ -97,11 +104,13 @@
     <span><i class="legend-dot legend-dot--rest"></i> Descanso</span>
   </div>
 
-  <p class="week-editor__hint">
-    * Haz click en algun dia para editarlo, vuelve hacerle click para volver a editar todos
-  </p>
+  @if (!readOnly) {
+    <p class="week-editor__hint">
+      * Haz click en algun dia para editarlo, vuelve hacerle click para volver a editar todos
+    </p>
+  }
 
-  @if (error(); as message) {
+  @if (!readOnly && error(); as message) {
     <p class="week-editor__error">{{ message }}</p>
   }
 </div>

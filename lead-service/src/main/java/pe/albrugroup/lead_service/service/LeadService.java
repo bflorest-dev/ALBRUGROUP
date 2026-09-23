@@ -208,6 +208,7 @@ public class LeadService {
     private final FreelanceVentaOrigenRepository freelanceVentaOrigenRepository;
     private final FreelanceVentaReenvioRepository freelanceVentaReenvioRepository;
     private final ProveedorRepository proveedorRepository;
+    private final LeadSeguimientoService leadSeguimientoService;
 
     // La bandeja de Agendados GTR ya no cuelga de una tipi: el concepto vive en el comportamiento, que
     // cada equipo marca en las subtipis que correspondan (hoy, varias de NO DESEA).
@@ -2618,6 +2619,10 @@ public class LeadService {
         actualizarResumenEtapaTipificacion(
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, resultado, idAsesorAnterior, nombreAsesorAnterior,
                 subtipificacion.getComportamientos());
+        leadSeguimientoService.actualizarPorTipificacion(
+                savedLead.getId(), etapaActual, etapaDestino,
+                subtipificacion.getComportamientos(),
+                null, null, null, null);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         registrarEventoTipificacion(
                 savedLead.getId(),
@@ -2791,6 +2796,13 @@ public class LeadService {
         actualizarResumenEtapaTipificacion(
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, resultado, idAsesorAnterior, nombreAsesorAnterior,
                 subtipificacion.getComportamientos());
+        leadSeguimientoService.actualizarPorTipificacion(
+                savedLead.getId(), etapaActual, etapaDestino,
+                subtipificacion.getComportamientos(),
+                requiereProgramacion ? request.getFechaProgramacion() : null,
+                requiereProgramacion ? request.getHoraProgramada() : null,
+                requiereFechaRechazo ? request.getFechaRechazo() : null,
+                etapaDestino == Etapa.POSTVENTA ? request.getFechaInstalacion() : null);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
         registrarEventoTipificacion(

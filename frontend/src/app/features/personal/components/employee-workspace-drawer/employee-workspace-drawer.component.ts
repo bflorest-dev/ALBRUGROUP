@@ -593,7 +593,7 @@ export class EmployeeWorkspaceDrawerComponent {
     const workingDays = schedule?.detalles?.filter((detail) => detail.laborable) ?? [];
     if (!workingDays.length) return 'Pendiente de asignación';
     const ranges = [...new Set(workingDays.map((detail) => `${detail.horaEntrada}–${detail.horaSalida}`))];
-    return ranges.length === 1 ? ranges[0] : 'Horario variable';
+    return ranges.length === 1 ? ranges[0] : `${workingDays.length} días configurados`;
   }
 
   protected restDayLabel(schedule: HorarioResponse | null): string {

@@ -382,8 +382,25 @@ export class PersonalScheduleFacade {
 
   private scheduleRange(schedule: HorarioResponse): string {
     const working = schedule.detalles.filter((detail) => detail.laborable);
+    if (!working.length) return 'Sin horario laborable';
+    const entries = working.map((detail) => `${this.shortDay(detail.dia)} ${detail.horaEntrada.slice(0, 5)}–${detail.horaSalida.slice(0, 5)}`);
     const ranges = [...new Set(working.map((detail) => `${detail.horaEntrada.slice(0, 5)}–${detail.horaSalida.slice(0, 5)}`))];
-    return ranges.length === 1 ? ranges[0] : ranges.length ? 'Horario variable' : 'Sin horario laborable';
+    if (ranges.length === 1) return ranges[0];
+    const visible = entries.slice(0, 3);
+    const remaining = entries.length - visible.length;
+    return `${visible.join(' · ')}${remaining > 0 ? ` · +${remaining} días` : ''}`;
+  }
+
+  private shortDay(day: string): string {
+    return ({
+      LUNES: 'Lun',
+      MARTES: 'Mar',
+      MIERCOLES: 'Mié',
+      JUEVES: 'Jue',
+      VIERNES: 'Vie',
+      SABADO: 'Sáb',
+      DOMINGO: 'Dom'
+    } as Record<string, string>)[day] ?? day;
   }
 
   private labelDay(day: string): string {

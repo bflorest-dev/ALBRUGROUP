@@ -69,6 +69,8 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   @Input() minDate = '';
   /** Cambia cuando el consumidor vuelve a cargar el mismo FormGroup con otra versión. */
   @Input() refreshKey = 0;
+  /** Presenta la jornada sin controles ni edición; conserva las barras para lectura y captura. */
+  @Input() readOnly = false;
 
   private readonly destroyRef = inject(DestroyRef);
   private boundForm: FormGroup | null = null;
