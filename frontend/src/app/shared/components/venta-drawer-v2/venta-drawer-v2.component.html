@@ -236,7 +236,11 @@
                 @if (planEditing()) {
                   <form class="venta-v2__plan-editor" [formGroup]="ofertaForm">
                     <label><span>Proveedor</span><p-select formControlName="idProveedor" [options]="providerOptions" optionLabel="nombre" optionValue="id" appendTo="body" (onChange)="ofertaProviderChange.emit($event.value)" /></label>
-                    <label><span>Plan</span><p-select formControlName="idPlan" [options]="planOptions" optionLabel="nombre" optionValue="id" appendTo="body" (onChange)="planChange.emit()" /></label>
+                    <label class="venta-v2__plan-picker" (wheel)="onPlanWheel($event)">
+                      <span>Plan</span>
+                      <p-select formControlName="idPlan" [options]="planOptions" optionLabel="nombre" optionValue="id" appendTo="body" (onChange)="planChange.emit()" />
+                      <small class="venta-v2__plan-hint">Usa la rueda para recorrer planes y comparar sus detalles</small>
+                    </label>
                     <label><span>Promoción</span><p-select formControlName="idPromocionInterna" [options]="promocionOptions" optionLabel="reglaComercial" optionValue="id" appendTo="body" /></label>
                   </form>
                 }

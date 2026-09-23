@@ -233,6 +233,30 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
     }
   }
 
+  protected onPlanWheel(event: WheelEvent): void {
+    if (!this.planEditing() || this.readOnly || this.offerLocked || !this.canMutate || this.planOptions.length < 2) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const direction = event.deltaY > 0 ? 1 : event.deltaY < 0 ? -1 : 0;
+    if (!direction) return;
+
+    const control = this.ofertaForm.get('idPlan');
+    const currentId = Number(control?.value ?? 0);
+    const currentIndex = this.planOptions.findIndex((plan) => plan.id === currentId);
+    if (!control || currentIndex < 0) return;
+
+    const nextIndex = Math.max(0, Math.min(this.planOptions.length - 1, currentIndex + direction));
+    if (nextIndex === currentIndex) return;
+
+    control.setValue(this.planOptions[nextIndex].id);
+    control.markAsDirty();
+    this.planChange.emit();
+  }
+
   protected formForSection(section: Exclude<EditableSection, null>): FormGroup {
     return section === 'identidad' || section === 'contacto' || section === 'proveedor'
       ? this.datosForm
@@ -484,34 +508,49 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   }
 
   protected internetSpeed(): string {
-    const internet = this.detail?.plan?.internet;
     const catalogPlan = this.selectedPlan();
+    const internet = this.planEditing() ? null : this.detail?.plan?.internet;
     const speed = internet?.velocidad ?? catalogPlan?.internetVelocidad;
     const unit = internet?.unidad ?? catalogPlan?.internetUnidad ?? 'Mbps';
     return speed ? `${speed} ${unit}` : 'No incluido';
   }
 
   protected internetPromotion(): string {
-    const speed = this.detail?.plan?.velocidadPromocional ?? this.selectedPlan()?.velocidadPromocional;
-    const months = this.detail?.plan?.mesesPromocionVelocidad ?? this.selectedPlan()?.mesesPromocionVelocidad;
+    const catalogPlan = this.selectedPlan();
+    const speed = (this.planEditing() ? catalogPlan?.velocidadPromocional : this.detail?.plan?.velocidadPromocional)
+      ?? catalogPlan?.velocidadPromocional;
+    const months = (this.planEditing() ? catalogPlan?.mesesPromocionVelocidad : this.detail?.plan?.mesesPromocionVelocidad)
+      ?? catalogPlan?.mesesPromocionVelocidad;
     return speed ? `${speed} Mbps${months ? ` por ${months} meses` : ''}` : '';
   }
 
   protected televisionName(): string {
-    return this.display(this.detail?.plan?.television?.nombre ?? this.selectedPlan()?.televisionNombre, 'No incluida');
+    const catalogPlan = this.selectedPlan();
+    return this.display(
+      (this.planEditing() ? catalogPlan?.televisionNombre : this.detail?.plan?.television?.nombre) ?? catalogPlan?.televisionNombre,
+      'No incluida'
+    );
   }
 
   protected televisionDetail(): string {
-    const channels = this.detail?.plan?.television?.cantidadCanales ?? this.selectedPlan()?.televisionCanales;
+    const catalogPlan = this.selectedPlan();
+    const channels = (this.planEditing() ? catalogPlan?.televisionCanales : this.detail?.plan?.television?.cantidadCanales)
+      ?? catalogPlan?.televisionCanales;
     return channels ? `${channels} canales` : '';
   }
 
   protected phoneName(): string {
-    return this.display(this.detail?.plan?.telefono?.descripcion ?? this.selectedPlan()?.telefonoDescripcion, 'No incluida');
+    const catalogPlan = this.selectedPlan();
+    return this.display(
+      (this.planEditing() ? catalogPlan?.telefonoDescripcion : this.detail?.plan?.telefono?.descripcion) ?? catalogPlan?.telefonoDescripcion,
+      'No incluida'
+    );
   }
 
   protected phoneDetail(): string {
-    const minutes = this.detail?.plan?.telefono?.minutos ?? this.selectedPlan()?.telefonoMinutos;
+    const catalogPlan = this.selectedPlan();
+    const minutes = (this.planEditing() ? catalogPlan?.telefonoMinutos : this.detail?.plan?.telefono?.minutos)
+      ?? catalogPlan?.telefonoMinutos;
     return minutes ? `${minutes} minutos` : '';
   }
 

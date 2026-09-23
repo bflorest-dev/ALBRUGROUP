@@ -3796,10 +3796,15 @@ public class LeadService {
         lead.setIdAsesorAsignado(idAsesorAsignado);
         lead.setNombreAsesorAsignado(nombreAsesorAsignado.trim());
         lead.setEsDerivado(esDerivado);
-        lead.setIdTipificacion(null);
-        lead.setCodigoTipificacion(null);
-        lead.setIdSubtipificacion(null);
-        lead.setCodigoSubtipificacion(null);
+        // Una asignacion en PREVENTA inicia una nueva gestion y requiere una nueva tipificacion.
+        // En otras etapas (por ejemplo, VENTA atendida por GTR), la asignacion no debe borrar
+        // la ultima tipificacion de la etapa real del lead.
+        if (lead.getEtapa() == Etapa.PREVENTA) {
+            lead.setIdTipificacion(null);
+            lead.setCodigoTipificacion(null);
+            lead.setIdSubtipificacion(null);
+            lead.setCodigoSubtipificacion(null);
+        }
         lead.setEstado(EstadoSeguimiento.ASIGNADO);
         lead.setLastEntryAt(OperationalDateTime.now());
 

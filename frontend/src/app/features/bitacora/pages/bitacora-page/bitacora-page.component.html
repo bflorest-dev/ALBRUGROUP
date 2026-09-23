@@ -471,9 +471,8 @@
           </div>
         }
         <div class="acts">
-          <button type="button" class="btn danger" [disabled]="f.procesandoEliminacion()" (click)="f.abrirEliminar()">
+          <button type="button" class="btn danger" pTooltip="Eliminar Lead" tooltipPosition="top" aria-label="Eliminar Lead" [disabled]="f.procesandoEliminacion()" (click)="f.abrirEliminar()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg>
-            Eliminar lead
           </button>
           <button type="button" class="btn ghost" [disabled]="!f.hayCambios() || f.guardando()" (click)="f.descartar()">Descartar</button>
           <button type="button" class="btn primary" [disabled]="!f.hayCambios() || f.guardando()" (click)="abrirActa()">
