@@ -13,7 +13,6 @@ import pe.albrugroup.lead_service.entity.enums.CampoConfigurable;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.ModoConteo;
 import pe.albrugroup.lead_service.entity.enums.OrdenRankingAsesor;
-import pe.albrugroup.lead_service.entity.enums.OrigenFilaBandejaVenta;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.CampoFechaListadoVenta;
@@ -899,6 +898,7 @@ public class LeadService {
     public PageResponse<LeadBandejaVentaResponse> listarBandejaVentaNormalizada(
             String lead,
             List<String> codigosTipificacion,
+            boolean sinTipificacion,
             List<String> codigosSubtipificacion,
             boolean sinSubtipificacion,
             Long idProveedor,
@@ -936,7 +936,7 @@ public class LeadService {
         var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
         List<String> tips = normalizarCodigosBandeja(codigosTipificacion);
         List<String> subtips = normalizarCodigosBandeja(codigosSubtipificacion);
-        boolean filtrarTipificaciones = !tips.isEmpty();
+        boolean filtrarTipificaciones = !tips.isEmpty() || sinTipificacion;
         boolean filtrarSubtipificaciones = !subtips.isEmpty() || sinSubtipificacion;
         List<String> tipsQuery = filtrarTipificaciones ? tips : List.of("__SIN_FILTRO__");
         List<String> subtipsQuery = !subtips.isEmpty() ? subtips : List.of("__SIN_FILTRO__");
@@ -953,6 +953,7 @@ public class LeadService {
                 busqueda.buscarPorUsermeta(),
                 filtrarTipificaciones,
                 tipsQuery,
+                sinTipificacion,
                 filtrarSubtipificaciones,
                 subtipsQuery,
                 sinSubtipificacion,

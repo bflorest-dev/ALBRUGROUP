@@ -38,6 +38,7 @@ export interface LeadRechazadosFilters {
 export interface LeadBandejaVentaNormalizadaQuery extends PageQuery {
   lead?: string | null;
   codigosTipificacion?: string[];
+  sinTipificacion?: boolean;
   codigosSubtipificacion?: string[];
   sinSubtipificacion?: boolean;
   idProveedor?: number | null;
@@ -94,6 +95,9 @@ export class BackofficeLeadService {
     }
     for (const codigo of query.codigosSubtipificacion ?? []) {
       params = params.append('codigosSubtipificacion', codigo);
+    }
+    if (query.sinTipificacion) {
+      params = params.set('sinTipificacion', true);
     }
     if (query.sinSubtipificacion) {
       params = params.set('sinSubtipificacion', true);

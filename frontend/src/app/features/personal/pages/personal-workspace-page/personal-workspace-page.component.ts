@@ -28,19 +28,13 @@ export class PersonalWorkspacePageComponent {
 
   protected readonly theme = signal<'light' | 'dark'>(this.readTheme());
   protected readonly expandedCategories = signal(new Set(['OPERATIVO']));
-  protected readonly expandedRoles = signal(new Set(['ASESOR_VENTAS']));
+  protected readonly expandedRoles = signal(new Set<string>());
   protected readonly expandedTeams = signal(new Set<string>());
   protected readonly creationVisible = signal(false);
   protected readonly activeRole = computed(() => this.session.getActiveRole());
 
   constructor() {
-    void this.facade.initialize().then(() => {
-      const firstRole = this.facade.operationalGroups()[0];
-      if (firstRole && !this.expandedRoles().size) this.toggleRole(firstRole.role);
-      const firstTeam = this.facade.operationalGroups()
-        .find((group) => this.expandedRoles().has(group.role))?.teams[0];
-      if (firstRole && firstTeam) this.expandedTeams.set(new Set([this.teamKey(firstRole.role, firstTeam.key)]));
-    });
+    void this.facade.initialize();
   }
 
   protected setCategoryFilter(value: PersonalCategoryFilter): void {

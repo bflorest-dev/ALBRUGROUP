@@ -101,6 +101,7 @@ public class VentaController {
     public ResponseEntity<PageResponse<LeadBandejaVentaResponse>> listarBandejaVentaNormalizada(
             @RequestParam(required = false) String lead,
             @RequestParam(required = false) List<String> codigosTipificacion,
+            @RequestParam(required = false, defaultValue = "false") boolean sinTipificacion,
             @RequestParam(required = false) List<String> codigosSubtipificacion,
             @RequestParam(required = false, defaultValue = "false") boolean sinSubtipificacion,
             @RequestParam(required = false) Long idProveedor,
@@ -116,6 +117,7 @@ public class VentaController {
         var leads = leadService.listarBandejaVentaNormalizada(
                 lead,
                 codigosTipificacion,
+                sinTipificacion,
                 codigosSubtipificacion,
                 sinSubtipificacion,
                 idProveedor,

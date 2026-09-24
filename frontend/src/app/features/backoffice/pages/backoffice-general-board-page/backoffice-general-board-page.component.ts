@@ -89,6 +89,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected readonly direction = signal<SortDirection>(BackofficeGeneralBoardPageComponent.DEFAULT_DIRECTION);
 
   // --- Tipificacion tree-select ---
+  private static readonly SIN_TIP_KEY = '__SIN_TIPIFICACION__';
   protected readonly tipGroups = signal<TreeSelectGroup[]>([]);
   protected readonly selectedTipificaciones = signal<string[]>([]);
   protected readonly selectedSubtipificaciones = signal<string[]>([]);
@@ -116,8 +117,10 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected readonly tipificationPaletteByCode = computed<TipificationPaletteByCode>(() => {
     const palette: TipificationPaletteByCode = {};
     const totalPalettes = 8;
+    const SIN = BackofficeGeneralBoardPageComponent.SIN_TIP_KEY;
     for (const group of this.tipGroups()) {
       for (const node of group.nodes) {
+        if (node.key === SIN) continue;
         const tipResp = this.catalogoFlat().find(t => t.codigo === node.key);
         const orden = tipResp?.orden ?? 0;
         palette[node.key.toUpperCase()] = Number.isFinite(orden) && orden > 0 ? (orden - 1) % totalPalettes : 0;
@@ -205,6 +208,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
         this.rows.set([]);
         this.total.set(0);
         this.page.set(0);
+        void this.loadCatalogo();
         void this.loadRows();
       });
     });
@@ -586,8 +590,12 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     this.catalogLoading.set(true);
     try {
       const porProveedor = await firstValueFrom(this.leadService.getCatalogoPorProveedor('VENTA'));
+      const activeProveedor = this.providerScope.activeId();
+      const filtered = activeProveedor != null
+        ? porProveedor.filter(p => p.idProveedor === activeProveedor)
+        : porProveedor;
       const flat: TipificacionResponse[] = [];
-      const groups: TreeSelectGroup[] = porProveedor.map(prov => {
+      const groups: TreeSelectGroup[] = filtered.map(prov => {
         const sorted = [...(prov.tipificaciones ?? [])].sort((a, b) => a.orden - b.orden);
         for (const t of sorted) {
           if (!flat.some(f => f.codigo === t.codigo)) flat.push(t);
@@ -606,8 +614,17 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
           }))
         };
       });
+      const SIN = BackofficeGeneralBoardPageComponent.SIN_TIP_KEY;
+      const sinTipNode = { key: SIN, label: 'Sin tipificación', tooltip: 'Leads sin tipificación en la etapa', children: [] as { key: string; label: string; tooltip?: string }[] };
+      if (groups.length > 0) {
+        groups[0] = { ...groups[0], nodes: [sinTipNode, ...groups[0].nodes] };
+      } else {
+        groups.push({ label: '', nodes: [sinTipNode] });
+      }
       this.catalogoFlat.set(flat);
       this.tipGroups.set(groups);
+      this.selectedTipificaciones.set([SIN]);
+      this.selectedSubtipificaciones.set([]);
     } finally {
       this.catalogLoading.set(false);
     }
@@ -617,13 +634,18 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
+      const SIN = BackofficeGeneralBoardPageComponent.SIN_TIP_KEY;
+      const allTips = this.selectedTipificaciones();
+      const realCodes = allTips.filter(k => k !== SIN);
+      const sinTipChecked = allTips.includes(SIN);
       const response = await firstValueFrom(this.leadService.listarBandejaVentaNormalizada({
         pageNumber: this.page(),
         pageSize: this.pageSize,
         sortBy: this.sortBy(),
         direction: this.direction(),
         lead: this.searchActive() || null,
-        codigosTipificacion: this.selectedTipificaciones(),
+        codigosTipificacion: realCodes,
+        sinTipificacion: realCodes.length > 0 ? sinTipChecked : undefined,
         codigosSubtipificacion: this.selectedSubtipificaciones(),
         idProveedor: this.providerScope.activeId(),
         idDepartamento: this.selectedDepartamento(),
