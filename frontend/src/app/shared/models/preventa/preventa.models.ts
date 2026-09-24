@@ -939,6 +939,13 @@ export interface CatalogoResponse {
   flujos?: FlujoMatrizTipificacionResponse[];
 }
 
+export interface CatalogoProveedorResponse {
+  idProveedor: number;
+  nombreProveedor: string;
+  etapa: string;
+  tipificaciones: TipificacionResponse[];
+}
+
 export interface FlujoMatrizTipificacionResponse {
   id?: number | null;
   tipificacionOrigenId?: number | null;

@@ -1,16 +1,38 @@
 :host {
   // Tramos
-  --dr-base-bg: #e8eef7; --dr-base-fg: #2b5c94; --dr-base-bd: #cdd9ec;
-  --dr-extra-bg: #fbeecb; --dr-extra-fg: #8a6d1a; --dr-extra-bd: #ecd9a6;
-  --dr-comp-bg: #ffedd5; --dr-comp-fg: #c2410c; --dr-comp-bd: #f4cba0;
+  --dr-base-bg: #d6e1ee; --dr-base-fg: #2c4f77; --dr-base-bd: #c2d1e3;
+  --dr-extra-bg: #f4e2b0; --dr-extra-fg: #7a5e12; --dr-extra-bd: #e5ce91;
+  --dr-comp-bg: #f6cfa6; --dr-comp-fg: #9a4a17; --dr-comp-bd: #e8b98b;
   // Estados
-  --dr-online: #37c676; --dr-lunch: #f3c247; --dr-serv: #41b8d5;
-  --dr-pausa: #12b5a5; --dr-capa: #ff9b54; --dr-off: #8f96ad;
+  --dr-online: #8fc86a; --dr-online-fg: #245b2c; --dr-lunch: #ef9f27; --dr-lunch-fg: #5a3200;
+  --dr-serv: #41b8d5; --dr-serv-fg: #08404f;
+  --dr-pausa: #12b5a5; --dr-pausa-fg: #053b35;
+  --dr-capa: #ff9b54; --dr-capa-fg: #7a3600; --dr-off: #8f96ad;
   --dr-danger: #b91c1c; --dr-sec: #64748b;
-  --dr-border: var(--p-content-border-color, #e2e8f0);
-  --dr-muted: var(--p-text-muted-color, #6b7280);
+  --dr-card-bg: var(--panel, var(--p-content-background, #fff));
+  --dr-track-bg: var(--panel-2, var(--app-surface-soft, #f5f8fb));
+  --dr-track-inc-bg: var(--panel-sunk, #f0f3f7);
+  --dr-dead-bg: rgba(185, 28, 28, 0.12); --dr-dead-bg-soft: rgba(185, 28, 28, 0.03); --dr-dead-line: rgba(185, 28, 28, 0.55);
+  --dr-exceso-bg: rgba(217, 119, 6, 0.14); --dr-exceso-bg-soft: rgba(217, 119, 6, 0.03); --dr-exceso-line: rgba(217, 119, 6, 0.6); --dr-exceso-fg: #b45309;
+  --dr-soft-bg: #e7ebf0; --dr-soft-fg: #64748b;
+  --dr-border: var(--line, var(--p-content-border-color, #e2e8f0));
+  --dr-muted: var(--ink-2, var(--p-text-muted-color, #6b7280));
 
   display: block;
+}
+
+:host-context(.employee-drawer[data-theme='dark']) {
+  --dr-base-bg: #2b4058; --dr-base-fg: #c7dcf3; --dr-base-bd: #496783;
+  --dr-extra-bg: #4a3b21; --dr-extra-fg: #f2d17b; --dr-extra-bd: #796033;
+  --dr-comp-bg: #4e3427; --dr-comp-fg: #ffc39c; --dr-comp-bd: #865d48;
+  --dr-online: #95cf72; --dr-online-fg: #1f3b13; --dr-lunch: #e99a27; --dr-lunch-fg: #3b2300;
+  --dr-serv: #55c2dc; --dr-serv-fg: #073b49;
+  --dr-pausa: #38cabb; --dr-pausa-fg: #062f2b;
+  --dr-capa: #ffb175; --dr-capa-fg: #512500;
+  --dr-danger: #f49b9b; --dr-sec: #9aa7b8;
+  --dr-dead-bg: rgba(244, 139, 139, 0.13); --dr-dead-bg-soft: rgba(244, 139, 139, 0.035); --dr-dead-line: rgba(244, 139, 139, 0.58);
+  --dr-exceso-bg: rgba(232, 160, 67, 0.15); --dr-exceso-bg-soft: rgba(232, 160, 67, 0.035); --dr-exceso-line: rgba(232, 160, 67, 0.6); --dr-exceso-fg: #f0bd70;
+  --dr-soft-bg: #28313d; --dr-soft-fg: #9aa7b8;
 }
 
 .dr-loading {
@@ -43,7 +65,7 @@
 }
 
 .dr-card {
-  background: var(--p-content-background, #fff);
+  background: var(--dr-card-bg);
   border: 1px solid var(--dr-border);
   border-radius: 12px;
   padding: 0.85rem 0.95rem;
@@ -98,14 +120,14 @@
   flex: 1;
   min-width: 0;
   height: 24px;
-  background: var(--app-surface-soft, #f5f8fb);
+  background: var(--dr-track-bg);
   border: 1px solid var(--dr-border);
   border-radius: 6px;
   overflow: hidden;
 
   &--inc {
     border-style: dashed;
-    background: #fbfcfe;
+    background: var(--dr-track-inc-bg);
   }
 }
 
@@ -129,6 +151,12 @@
   border-radius: 4px;
 }
 
+.tl__block:focus-visible {
+  outline: 2px solid var(--focus, #2c6e8f);
+  outline-offset: 1px;
+  z-index: 2;
+}
+
 .tl__cap {
   position: absolute;
   top: 0;
@@ -147,9 +175,9 @@
 
 // 1 · Programado (tramos por tipo)
 .band {
-  &.band--base { background: #c9d6ea; .tl__cap { color: #26456b; } }
-  &.band--extra { background: #f4e2b0; .tl__cap { color: #7a5e12; } }
-  &.band--comp { background: #f6cfa6; .tl__cap { color: #9a4a17; } }
+  &.band--base { background: var(--dr-base-bg); .tl__cap { color: var(--dr-base-fg); } }
+  &.band--extra { background: var(--dr-extra-bg); .tl__cap { color: var(--dr-extra-fg); } }
+  &.band--comp { background: var(--dr-comp-bg); .tl__cap { color: var(--dr-comp-fg); } }
 
   &.is-anulado {
     opacity: 0.6;
@@ -160,44 +188,44 @@
 
 // Almuerzo programado sobre la línea Programado (rayado, para distinguirlo del real sólido).
 .tl__lunchprog {
-  background: repeating-linear-gradient(45deg, rgba(239, 159, 39, 0.5) 0 5px, rgba(239, 159, 39, 0.12) 5px 10px);
-  border: 1px dashed #e0a92c;
+  background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--dr-lunch) 50%, transparent) 0 5px, color-mix(in srgb, var(--dr-lunch) 12%, transparent) 5px 10px);
+  border: 1px dashed var(--dr-lunch);
 }
 
 // 2 · Marcaciones
 .tl__pres {
-  background: #c0dd97;
-  .tl__cap { color: #166534; }
+  background: var(--dr-online);
+  .tl__cap { color: var(--dr-online-fg); }
 
   // Tramo sin cierre (día pasado sin salida marcada): rayado + borde derecho punteado.
   &--abierta {
-    background: repeating-linear-gradient(45deg, #c0dd97 0 6px, #e2efd6 6px 12px);
-    border-right: 2px dashed #7fae57;
+    background: repeating-linear-gradient(45deg, var(--dr-online) 0 6px, color-mix(in srgb, var(--dr-online) 45%, var(--dr-card-bg)) 6px 12px);
+    border-right: 2px dashed color-mix(in srgb, var(--dr-online) 70%, var(--dr-card-bg));
   }
 }
 
 .tl__seg {
-  &.seg--lunch { background: #ef9f27; .tl__cap { color: #5a3200; } }
-  &.seg--serv { background: var(--dr-serv); .tl__cap { color: #08404f; } }
-  &.seg--pausa { background: var(--dr-pausa); .tl__cap { color: #053b35; } }
-  &.seg--capa { background: var(--dr-capa); .tl__cap { color: #7a3600; } }
+  &.seg--lunch { background: var(--dr-lunch); .tl__cap { color: var(--dr-lunch-fg); } }
+  &.seg--serv { background: var(--dr-serv); .tl__cap { color: var(--dr-serv-fg); } }
+  &.seg--pausa { background: var(--dr-pausa); .tl__cap { color: var(--dr-pausa-fg); } }
+  &.seg--capa { background: var(--dr-capa); .tl__cap { color: var(--dr-capa-fg); } }
 }
 
 // 3 · Incidencias
 .tl__inc {
   &.inc--dead {
-    background: repeating-linear-gradient(45deg, rgba(185, 28, 28, 0.2) 0 5px, rgba(185, 28, 28, 0.05) 5px 10px);
-    border: 1px dashed rgba(185, 28, 28, 0.55);
+    background: repeating-linear-gradient(45deg, var(--dr-dead-bg) 0 5px, var(--dr-dead-bg-soft) 5px 10px);
+    border: 1px dashed var(--dr-dead-line);
     .tl__cap { color: var(--dr-danger); }
   }
   &.inc--soft {
-    background: #dbe1ea;
-    .tl__cap { color: var(--dr-sec); }
+    background: var(--dr-soft-bg);
+    .tl__cap { color: var(--dr-soft-fg); }
   }
   &.inc--exceso {
-    background: repeating-linear-gradient(45deg, rgba(217, 119, 6, 0.22) 0 5px, rgba(217, 119, 6, 0.05) 5px 10px);
-    border: 1px dashed rgba(217, 119, 6, 0.6);
-    .tl__cap { color: #b45309; }
+    background: repeating-linear-gradient(45deg, var(--dr-exceso-bg) 0 5px, var(--dr-exceso-bg-soft) 5px 10px);
+    border: 1px dashed var(--dr-exceso-line);
+    .tl__cap { color: var(--dr-exceso-fg); }
   }
 }
 
@@ -217,16 +245,16 @@
     border-radius: 3px;
     display: inline-block;
 
-    &--base { background: #c9d6ea; }
-    &--extra { background: #f4e2b0; }
-    &--comp { background: #f6cfa6; }
-    &--pres { background: #c0dd97; }
-    &--lunch { background: #ef9f27; }
-    &--lunchprog { background: repeating-linear-gradient(45deg, rgba(239, 159, 39, 0.6) 0 3px, transparent 3px 6px); border: 1px dashed #e0a92c; }
+    &--base { background: var(--dr-base-bg); }
+    &--extra { background: var(--dr-extra-bg); }
+    &--comp { background: var(--dr-comp-bg); }
+    &--pres { background: var(--dr-online); }
+    &--lunch { background: var(--dr-lunch); }
+    &--lunchprog { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--dr-lunch) 60%, transparent) 0 3px, transparent 3px 6px); border: 1px dashed var(--dr-lunch); }
     &--serv { background: var(--dr-serv); }
     &--pausa { background: var(--dr-pausa); }
-    &--dead { background: repeating-linear-gradient(45deg, rgba(185, 28, 28, 0.4) 0 4px, transparent 4px 8px); border: 1px dashed rgba(185, 28, 28, 0.6); }
-    &--exceso { background: repeating-linear-gradient(45deg, rgba(217, 119, 6, 0.5) 0 3px, transparent 3px 6px); border: 1px dashed rgba(217, 119, 6, 0.6); }
+    &--dead { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--dr-danger) 40%, transparent) 0 4px, transparent 4px 8px); border: 1px dashed var(--dr-dead-line); }
+    &--exceso { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--dr-exceso-fg) 50%, transparent) 0 3px, transparent 3px 6px); border: 1px dashed var(--dr-exceso-line); }
   }
 }
 

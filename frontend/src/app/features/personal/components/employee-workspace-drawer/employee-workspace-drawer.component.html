@@ -461,11 +461,7 @@
           <div class="access-messages">@if (roleError()) { <p class="feedback error" role="alert">{{ roleError() }}</p> } @if (roleSuccess()) { <p class="feedback success" role="status">{{ roleSuccess() }}</p> }</div>
         </section>
       } @else if (section() === 'asistencia') {
-        <section class="summary-block attendance-callout">
-          <h3>Asistencia del empleado</h3>
-          <p>Abre temporalmente el registro mensual, el horario y los ajustes diarios en el drawer operativo de Asistencia.</p>
-          <button class="primary-button" type="button" (click)="openAttendance.emit(current)">Abrir asistencia</button>
-        </section>
+        <app-personal-attendance-panel [employeeId]="current.employee.idEmpleado" />
       }
     </div>
 

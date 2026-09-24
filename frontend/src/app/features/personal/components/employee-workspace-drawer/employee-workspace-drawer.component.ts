@@ -20,6 +20,8 @@ import { ScheduleExtensionTimelineComponent } from '../../../../shared/component
 import { ScheduleShiftEditorComponent } from '../../../../shared/components/schedule-shift-editor/schedule-shift-editor.component';
 import { LunchDayEditorComponent } from '../../../../shared/components/lunch-day-editor/lunch-day-editor.component';
 import { SessionService } from '../../../../core/services/session.service';
+import { PersonalAttendancePanelComponent } from '../personal-attendance-panel/personal-attendance-panel.component';
+import { PersonalAttendanceFacade } from '../../facades/personal-attendance.facade';
 import {
   PersonalAccessService,
   RoleAuditEntry,
@@ -45,8 +47,8 @@ export function scopeCapabilitiesForRoles(roles: string[]): DrawerScopeCapabilit
 
 @Component({
   selector: 'app-employee-workspace-drawer',
-  imports: [DatePipe, FormsModule, ReactiveFormsModule, ScheduleWeekEditorComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent],
-  providers: [PersonalScheduleFacade],
+  imports: [DatePipe, FormsModule, ReactiveFormsModule, ScheduleWeekEditorComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent, PersonalAttendancePanelComponent],
+  providers: [PersonalScheduleFacade, PersonalAttendanceFacade],
   templateUrl: './employee-workspace-drawer.component.html',
   styleUrl: './employee-workspace-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -72,7 +74,6 @@ export class EmployeeWorkspaceDrawerComponent {
   readonly closed = output<void>();
   readonly employeeChanged = output<void>();
   readonly manageSchedule = output<PersonalDirectoryRow>();
-  readonly openAttendance = output<PersonalDirectoryRow>();
   readonly rolesUpdated = output<UserRoles>();
 
   protected readonly documentoOptions = ['DNI', 'CE'];

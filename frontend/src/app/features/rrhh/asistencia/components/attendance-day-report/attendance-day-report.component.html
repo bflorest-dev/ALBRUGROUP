@@ -8,7 +8,7 @@
 } @else if (sinDatos()) {
   <p-message severity="info" text="Este día no tiene jornada programada." />
 } @else if (reporte()) {
-  <div class="dr">
+  <div class="dr" [class.dr--personal]="variant() === 'personal'">
 
     <!-- ── Línea de tiempo (3 carriles, eje compartido) ── -->
     <div class="dr-card">
@@ -40,18 +40,21 @@
                 [style.width.%]="b.widthPct"
                 [pTooltip]="b.title"
                 tooltipPosition="top"
+                tabindex="0"
+                role="img"
+                [attr.aria-label]="b.title"
               >
-                @if (b.center) {
+                @if (showSegmentLabels() && b.center) {
                   <span class="tl__cap tl__cap--c">{{ b.center }}</span>
-                } @else {
+                } @else if (showSegmentLabels()) {
                   @if (b.capLeft) { <span class="tl__cap">{{ b.capLeft }}</span> }
                   @if (b.capRight) { <span class="tl__cap tl__cap--r">{{ b.capRight }}</span> }
                 }
               </div>
             }
             @if (lunchProgBlock(); as lp) {
-              <div class="tl__block tl__lunchprog" [style.left.%]="lp.leftPct" [style.width.%]="lp.widthPct"
-                   [pTooltip]="lp.title" tooltipPosition="top"></div>
+               <div class="tl__block tl__lunchprog" [style.left.%]="lp.leftPct" [style.width.%]="lp.widthPct"
+                    [pTooltip]="lp.title" tooltipPosition="top" tabindex="0" role="img" [attr.aria-label]="lp.title"></div>
             }
           </div>
         </div>
@@ -63,9 +66,9 @@
             @for (p of presenceBlocks(); track $index) {
               <div class="tl__block tl__pres" [class.tl__pres--abierta]="p.open"
                    [style.left.%]="p.leftPct" [style.width.%]="p.widthPct"
-                   [pTooltip]="p.title" tooltipPosition="top">
-                @if (p.capLeft) { <span class="tl__cap tl__cap--l">{{ p.capLeft }}</span> }
-                @if (p.capRight) { <span class="tl__cap tl__cap--r">{{ p.capRight }}</span> }
+                   [pTooltip]="p.title" tooltipPosition="top" tabindex="0" role="img" [attr.aria-label]="p.title">
+                 @if (showSegmentLabels() && p.capLeft) { <span class="tl__cap tl__cap--l">{{ p.capLeft }}</span> }
+                 @if (showSegmentLabels() && p.capRight) { <span class="tl__cap tl__cap--r">{{ p.capRight }}</span> }
               </div>
             }
             @for (s of overlaySegments(); track $index) {
@@ -75,11 +78,14 @@
                 [class.seg--serv]="s.kind === 'serv'"
                 [class.seg--pausa]="s.kind === 'pausa'"
                 [class.seg--capa]="s.kind === 'capa'"
-                [style.left.%]="s.leftPct"
-                [style.width.%]="s.widthPct"
-                [pTooltip]="s.title"
-                tooltipPosition="top"
-              ><span class="tl__cap tl__cap--c">{{ s.label }}</span></div>
+                 [style.left.%]="s.leftPct"
+                 [style.width.%]="s.widthPct"
+                 [pTooltip]="s.title"
+                 tooltipPosition="top"
+                 tabindex="0"
+                 role="img"
+                 [attr.aria-label]="s.title"
+               >@if (showSegmentLabels()) { <span class="tl__cap tl__cap--c">{{ s.label }}</span> }</div>
             }
           </div>
         </div>
@@ -99,7 +105,10 @@
                 [style.width.%]="b.widthPct"
                 [pTooltip]="b.title"
                 tooltipPosition="top"
-              ><span class="tl__cap tl__cap--c">{{ b.label }}</span></div>
+                tabindex="0"
+                role="img"
+                [attr.aria-label]="b.title"
+              >@if (showSegmentLabels()) { <span class="tl__cap tl__cap--c">{{ b.label }}</span> }</div>
             }
           </div>
         </div>

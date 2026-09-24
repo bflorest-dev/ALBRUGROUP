@@ -2,11 +2,11 @@ import { LowerCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { CheckboxModule } from 'primeng/checkbox';
 import { DatePickerModule } from 'primeng/datepicker';
+import { DrawerModule } from 'primeng/drawer';
 import { InputTextModule } from 'primeng/inputtext';
 import { PaginatorModule } from 'primeng/paginator';
 import { PopoverModule } from 'primeng/popover';
@@ -18,14 +18,16 @@ import { TooltipModule } from 'primeng/tooltip';
 import { CurrentUserProviderScopeService } from '../../../../core/services/current-user-provider-scope.service';
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { TipificationPaletteByCode, TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
+import { TreeSelectComponent, TreeSelectGroup, TreeSelectSelection } from '../../../../shared/components/tree-select/tree-select.component';
 import { MetricsRango } from '../../../../shared/utils/metrics-period';
 import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
 import {
   CampoFechaListadoVenta,
+  EventoResponse,
   LeadBandejaVentaResponse,
   OrigenFilaBandejaVenta,
-  SubtipificacionResponse,
-  TipificacionResponse
+  TipificacionResponse,
+  UbigeoItem
 } from '../../../../shared/models/preventa/preventa.models';
 import { BackofficeLeadService } from '../../services/backoffice-lead.service';
 
@@ -34,14 +36,6 @@ type SortDirection = 'asc' | 'desc';
 type GroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'PLAN' | 'TIPIFICACION' | 'SUBTIPIFICACION' | 'ULTIMO_GESTOR' | 'ASESOR_PREVENTA' | 'DEPARTAMENTO' | 'PROVINCIA' | 'DISTRITO';
 type Option<T extends string = string> = { label: string; value: T };
 
-interface TipificacionNode {
-  codigo: string;
-  descripcion: string;
-  orden: number;
-  expanded: boolean;
-  subtipificaciones: SubtipificacionResponse[];
-}
-
 @Component({
   selector: 'app-backoffice-general-board-page',
   standalone: true,
@@ -49,8 +43,8 @@ interface TipificacionNode {
     LowerCasePipe,
     FormsModule,
     ButtonModule,
-    CheckboxModule,
     DatePickerModule,
+    DrawerModule,
     InputTextModule,
     PaginatorModule,
     PopoverModule,
@@ -60,7 +54,8 @@ interface TipificacionNode {
     TagModule,
     TooltipModule,
     PeriodSelectorComponent,
-    TipificationStackComponent
+    TipificationStackComponent,
+    TreeSelectComponent
   ],
   templateUrl: './backoffice-general-board-page.component.html',
   styleUrl: './backoffice-general-board-page.component.scss',
@@ -68,8 +63,8 @@ interface TipificacionNode {
 })
 export class BackofficeGeneralBoardPageComponent implements OnInit {
   private readonly leadService = inject(BackofficeLeadService);
-  private readonly route = inject(ActivatedRoute);
   private readonly providerScope = inject(CurrentUserProviderScopeService);
+  private readonly router = inject(Router);
   private lastProviderId: number | null | undefined = undefined;
 
   private static readonly DEFAULT_SORT: SortField = 'fechaIngresoEtapa';
@@ -82,23 +77,36 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected readonly loading = signal(false);
   protected readonly catalogLoading = signal(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly catalogo = signal<TipificacionResponse[]>([]);
+  private readonly catalogoFlat = signal<TipificacionResponse[]>([]);
   protected readonly searchInput = signal('');
   protected readonly searchActive = signal('');
   protected readonly periodo = signal<MetricsPeriodo>('dia');
   protected readonly dia = signal<string | null>(this.today());
   protected readonly hasta = signal<string | null>(this.today());
-  protected readonly origen = signal<OrigenFilaBandejaVenta>('ESTADO_ACTUAL');
   protected readonly campoFecha = signal<CampoFechaListadoVenta>('INGRESO');
   protected readonly groupBy = signal<GroupMode>('SIN_AGRUPAR');
   protected readonly sortBy = signal<SortField>(BackofficeGeneralBoardPageComponent.DEFAULT_SORT);
   protected readonly direction = signal<SortDirection>(BackofficeGeneralBoardPageComponent.DEFAULT_DIRECTION);
 
-  // --- Tipificacion filter ---
+  // --- Tipificacion tree-select ---
+  protected readonly tipGroups = signal<TreeSelectGroup[]>([]);
   protected readonly selectedTipificaciones = signal<string[]>([]);
   protected readonly selectedSubtipificaciones = signal<string[]>([]);
-  protected readonly tipSearchTerm = signal('');
-  protected readonly tipNodes = signal<TipificacionNode[]>([]);
+
+  // --- Geo cascade filter ---
+  protected readonly departamentos = signal<UbigeoItem[]>([]);
+  protected readonly provincias = signal<UbigeoItem[]>([]);
+  protected readonly distritos = signal<UbigeoItem[]>([]);
+  protected readonly selectedDepartamento = signal<number | null>(null);
+  protected readonly selectedProvincia = signal<number | null>(null);
+  protected readonly selectedDistrito = signal<number | null>(null);
+
+  // --- Detail drawer ---
+  protected readonly drawerOpen = signal(false);
+  protected readonly drawerRow = signal<LeadBandejaVentaResponse | null>(null);
+  protected readonly drawerHistorial = signal<EventoResponse[]>([]);
+  protected readonly drawerHistorialLoading = signal(false);
+  protected readonly drawerIsConsulta = computed(() => this.drawerRow()?.origenFila === 'EVENTO_TIPIFICACION');
 
   protected readonly skeletonRows = Array.from({ length: 8 });
   protected readonly showSecSotColumn = computed(() =>
@@ -108,39 +116,31 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected readonly tipificationPaletteByCode = computed<TipificationPaletteByCode>(() => {
     const palette: TipificationPaletteByCode = {};
     const totalPalettes = 8;
-    for (const tipificacion of this.catalogo()) {
-      const orden = tipificacion.orden;
-      palette[tipificacion.codigo.toUpperCase()] = Number.isFinite(orden) && orden > 0 ? (orden - 1) % totalPalettes : 0;
+    for (const group of this.tipGroups()) {
+      for (const node of group.nodes) {
+        const tipResp = this.catalogoFlat().find(t => t.codigo === node.key);
+        const orden = tipResp?.orden ?? 0;
+        palette[node.key.toUpperCase()] = Number.isFinite(orden) && orden > 0 ? (orden - 1) % totalPalettes : 0;
+      }
     }
     return palette;
-  });
-
-  protected readonly filteredTipNodes = computed(() => {
-    const term = this.tipSearchTerm().trim().toLowerCase();
-    const nodes = this.tipNodes();
-    if (!term) return nodes;
-    return nodes.filter((n) =>
-      n.codigo.toLowerCase().includes(term)
-      || n.descripcion.toLowerCase().includes(term)
-      || n.subtipificaciones.some((s) => s.codigo.toLowerCase().includes(term) || s.descripcion.toLowerCase().includes(term))
-    );
   });
 
   protected readonly tipFilterCount = computed(() =>
     this.selectedTipificaciones().length + this.selectedSubtipificaciones().length
   );
 
+  protected readonly geoFilterActive = computed(() =>
+    this.selectedDepartamento() !== null
+  );
+
   protected readonly activeFilterCount = computed(() => {
     let count = this.tipFilterCount();
     if (this.searchActive()) count += 1;
     if (this.groupBy() !== 'SIN_AGRUPAR') count += 1;
+    if (this.geoFilterActive()) count += 1;
     return count;
   });
-
-  protected readonly origenOptions: Option<OrigenFilaBandejaVenta>[] = [
-    { label: 'Estado actual', value: 'ESTADO_ACTUAL' },
-    { label: 'Último evento', value: 'EVENTO_TIPIFICACION' }
-  ];
 
   protected readonly campoFechaOptions: Option<CampoFechaListadoVenta>[] = [
     { label: 'Fecha ingreso', value: 'INGRESO' },
@@ -212,7 +212,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.providerScope.load();
-    await Promise.all([this.loadCatalogo(), this.loadRows()]);
+    await Promise.all([this.loadCatalogo(), this.loadRows(), this.loadDepartamentos()]);
   }
 
   protected async refresh(): Promise<void> {
@@ -234,77 +234,85 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     await this.loadRows();
   }
 
-  // --- Tipificacion selector ---
+  // --- Detail drawer ---
 
-  protected isTipSelected(codigo: string): boolean {
-    return this.selectedTipificaciones().includes(codigo);
+  protected async onRowClick(row: LeadBandejaVentaResponse): Promise<void> {
+    this.drawerRow.set(row);
+    this.drawerHistorial.set([]);
+    this.drawerOpen.set(true);
+    await this.loadDrawerHistorial(row.idLead);
   }
 
-  protected isSubtipSelected(codigo: string): boolean {
-    return this.selectedSubtipificaciones().includes(codigo);
+  protected closeDrawer(): void {
+    this.drawerOpen.set(false);
   }
 
-  protected toggleTipificacion(codigo: string): void {
-    const tipis = [...this.selectedTipificaciones()];
-    const subtipis = [...this.selectedSubtipificaciones()];
-    const idx = tipis.indexOf(codigo);
-    if (idx >= 0) {
-      tipis.splice(idx, 1);
-    } else {
-      tipis.push(codigo);
-      const node = this.tipNodes().find((n) => n.codigo === codigo);
-      if (node) {
-        for (const sub of node.subtipificaciones) {
-          const si = subtipis.indexOf(sub.codigo);
-          if (si >= 0) subtipis.splice(si, 1);
-        }
+  protected goToGestion(): void {
+    void this.router.navigate(['/backoffice'], { queryParams: { section: 'plataforma' } });
+  }
+
+  private async loadDrawerHistorial(idLead: number): Promise<void> {
+    this.drawerHistorialLoading.set(true);
+    try {
+      const response = await firstValueFrom(this.leadService.listarHistorialBackofficeVenta(
+        idLead,
+        { pageNumber: 0, pageSize: 20, sortBy: 'createdAt', direction: 'desc' }
+      ));
+      if (this.drawerRow()?.idLead === idLead) {
+        this.drawerHistorial.set(response.content ?? []);
       }
+    } catch {
+      this.drawerHistorial.set([]);
+    } finally {
+      this.drawerHistorialLoading.set(false);
     }
-    this.selectedTipificaciones.set(tipis);
-    this.selectedSubtipificaciones.set(subtipis);
+  }
+
+  protected onTipSelectionChange(_sel: TreeSelectSelection): void {
     this.page.set(0);
     void this.loadRows();
   }
 
-  protected toggleSubtipificacion(tipCodigo: string, subCodigo: string): void {
-    const tipis = [...this.selectedTipificaciones()];
-    const subtipis = [...this.selectedSubtipificaciones()];
-    const tipIdx = tipis.indexOf(tipCodigo);
-    if (tipIdx >= 0) {
-      tipis.splice(tipIdx, 1);
-      const node = this.tipNodes().find((n) => n.codigo === tipCodigo);
-      if (node) {
-        for (const sub of node.subtipificaciones) {
-          if (sub.codigo !== subCodigo && !subtipis.includes(sub.codigo)) {
-            subtipis.push(sub.codigo);
-          }
-        }
-      }
-    } else {
-      const si = subtipis.indexOf(subCodigo);
-      if (si >= 0) {
-        subtipis.splice(si, 1);
-      } else {
-        subtipis.push(subCodigo);
-      }
+  // --- Geo cascade ---
+
+  protected async onDepartamentoChange(id: number | null): Promise<void> {
+    this.selectedDepartamento.set(id);
+    this.selectedProvincia.set(null);
+    this.selectedDistrito.set(null);
+    this.provincias.set([]);
+    this.distritos.set([]);
+    if (id !== null) {
+      const provs = await firstValueFrom(this.leadService.listarProvincias(id));
+      this.provincias.set(provs);
     }
-    this.selectedTipificaciones.set(tipis);
-    this.selectedSubtipificaciones.set(subtipis);
     this.page.set(0);
-    void this.loadRows();
+    await this.loadRows();
   }
 
-  protected toggleExpand(node: TipificacionNode): void {
-    const nodes = this.tipNodes().map((n) =>
-      n.codigo === node.codigo ? { ...n, expanded: !n.expanded } : n
-    );
-    this.tipNodes.set(nodes);
+  protected async onProvinciaChange(id: number | null): Promise<void> {
+    this.selectedProvincia.set(id);
+    this.selectedDistrito.set(null);
+    this.distritos.set([]);
+    if (id !== null) {
+      const dists = await firstValueFrom(this.leadService.listarDistritos(id));
+      this.distritos.set(dists);
+    }
+    this.page.set(0);
+    await this.loadRows();
   }
 
-  protected clearTipFilter(): void {
-    this.selectedTipificaciones.set([]);
-    this.selectedSubtipificaciones.set([]);
-    this.tipSearchTerm.set('');
+  protected async onDistritoChange(id: number | null): Promise<void> {
+    this.selectedDistrito.set(id);
+    this.page.set(0);
+    await this.loadRows();
+  }
+
+  protected clearGeoFilter(): void {
+    this.selectedDepartamento.set(null);
+    this.selectedProvincia.set(null);
+    this.selectedDistrito.set(null);
+    this.provincias.set([]);
+    this.distritos.set([]);
     this.page.set(0);
     void this.loadRows();
   }
@@ -318,14 +326,6 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected async onRangoChange(rango: MetricsRango): Promise<void> {
     this.dia.set(rango.desde);
     this.hasta.set(rango.hasta);
-    this.page.set(0);
-    await this.loadRows();
-  }
-
-  // --- Origen ---
-
-  protected async setOrigen(value: OrigenFilaBandejaVenta): Promise<void> {
-    this.origen.set(value);
     this.page.set(0);
     await this.loadRows();
   }
@@ -389,10 +389,13 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected async clearFilters(): Promise<void> {
     this.selectedTipificaciones.set([]);
     this.selectedSubtipificaciones.set([]);
-    this.tipSearchTerm.set('');
+    this.selectedDepartamento.set(null);
+    this.selectedProvincia.set(null);
+    this.selectedDistrito.set(null);
+    this.provincias.set([]);
+    this.distritos.set([]);
     this.searchInput.set('');
     this.searchActive.set('');
-    this.origen.set('ESTADO_ACTUAL');
     this.campoFecha.set('INGRESO');
     this.groupBy.set('SIN_AGRUPAR');
     this.sortBy.set(BackofficeGeneralBoardPageComponent.DEFAULT_SORT);
@@ -512,6 +515,15 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     return (row.comentarioLead ?? '').trim();
   }
 
+  protected isConsulta(row: LeadBandejaVentaResponse): boolean {
+    return row.origenFila === 'EVENTO_TIPIFICACION';
+  }
+
+  protected consultaLabel(row: LeadBandejaVentaResponse): string {
+    const etapa = String(row.etapaActual ?? '').trim().toUpperCase();
+    return etapa && etapa !== 'VENTA' ? `En ${etapa}` : 'Consulta';
+  }
+
   protected etapaTagClass(row: LeadBandejaVentaResponse): string {
     const etapa = String(row.etapaActual ?? '').trim().toUpperCase();
     const known = ['PREVENTA', 'VENTA', 'POSTVENTA', 'COBRANZA'];
@@ -561,19 +573,41 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     return this.showSecSotColumn() ? 9 : 8;
   }
 
+  private async loadDepartamentos(): Promise<void> {
+    try {
+      const deptos = await firstValueFrom(this.leadService.listarDepartamentos());
+      this.departamentos.set(deptos);
+    } catch {
+      this.departamentos.set([]);
+    }
+  }
+
   private async loadCatalogo(): Promise<void> {
     this.catalogLoading.set(true);
     try {
-      const catalogo = await firstValueFrom(this.leadService.getCatalogoAgregado('VENTA'));
-      const sorted = [...(catalogo.tipificaciones ?? [])].sort((a, b) => a.orden - b.orden);
-      this.catalogo.set(sorted);
-      this.tipNodes.set(sorted.map((t) => ({
-        codigo: t.codigo,
-        descripcion: t.descripcion,
-        orden: t.orden,
-        expanded: false,
-        subtipificaciones: [...(t.subtipificaciones ?? [])].sort((a, b) => a.orden - b.orden)
-      })));
+      const porProveedor = await firstValueFrom(this.leadService.getCatalogoPorProveedor('VENTA'));
+      const flat: TipificacionResponse[] = [];
+      const groups: TreeSelectGroup[] = porProveedor.map(prov => {
+        const sorted = [...(prov.tipificaciones ?? [])].sort((a, b) => a.orden - b.orden);
+        for (const t of sorted) {
+          if (!flat.some(f => f.codigo === t.codigo)) flat.push(t);
+        }
+        return {
+          label: prov.nombreProveedor,
+          nodes: sorted.map(t => ({
+            key: t.codigo,
+            label: t.codigo,
+            tooltip: t.descripcion,
+            children: [...(t.subtipificaciones ?? [])].sort((a, b) => a.orden - b.orden).map(s => ({
+              key: s.codigo,
+              label: s.codigo,
+              tooltip: s.descripcion
+            }))
+          }))
+        };
+      });
+      this.catalogoFlat.set(flat);
+      this.tipGroups.set(groups);
     } finally {
       this.catalogLoading.set(false);
     }
@@ -591,8 +625,10 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
         lead: this.searchActive() || null,
         codigosTipificacion: this.selectedTipificaciones(),
         codigosSubtipificacion: this.selectedSubtipificaciones(),
-        origen: this.origen(),
-        idEquipo: this.adminEquipoId(),
+        idProveedor: this.providerScope.activeId(),
+        idDepartamento: this.selectedDepartamento(),
+        idProvincia: this.selectedProvincia(),
+        idDistrito: this.selectedDistrito(),
         fechaDesde: this.dia(),
         fechaHasta: this.hasta(),
         campoFecha: this.campoFecha(),
@@ -608,12 +644,6 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
-  }
-
-  private adminEquipoId(): number | null {
-    const raw = this.route.snapshot.paramMap.get('idEquipo');
-    const id = raw ? Number(raw) : NaN;
-    return Number.isFinite(id) ? id : null;
   }
 
   private today(): string {

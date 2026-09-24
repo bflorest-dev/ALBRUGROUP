@@ -23,6 +23,8 @@ public class CumplimientoDetalleDiaResponse {
     private LocalTime horaEntradaAsistencia;
     private LocalTime horaSalidaEstablecida;
     private LocalTime horaSalidaAsistencia;
+    /** true cuando la salida fue cerrada automáticamente o por reconciliación, no por marca manual. */
+    private Boolean salidaForzada;
     private Boolean jornadaCerrada;
     private Integer minutosObjetivoDia;
     private Integer minutosTrabajados;

@@ -1,0 +1,86 @@
+<section class="personal-attendance" aria-labelledby="personal-attendance-title">
+  <header class="attendance-heading">
+    <div>
+      <h3 id="personal-attendance-title">Asistencia</h3>
+      <p>Consulta el cumplimiento, las marcaciones y el balance diario del empleado.</p>
+    </div>
+    <label class="attendance-month">
+      <span>Mes de consulta</span>
+      <input
+        type="month"
+        [value]="attendance.selectedMonth()"
+        [disabled]="attendance.isLoading()"
+        (change)="setMonth($any($event.target).value)"
+      />
+    </label>
+  </header>
+
+  @if (attendance.error()) {
+    <section class="attendance-state attendance-state--error" role="alert">
+      <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+      <div><strong>No se pudo cargar la asistencia</strong><p>{{ attendance.error() }}</p></div>
+      <button type="button" class="attendance-retry" (click)="retry()">Reintentar</button>
+    </section>
+  } @else if (attendance.isLoading()) {
+    <div class="attendance-state" role="status"><span class="attendance-spinner"></span><span>Cargando asistencia…</span></div>
+  } @else {
+    <section class="attendance-metrics" aria-label="Métricas del mes">
+      <div class="attendance-metric"><span>Presentes</span><strong>{{ attendance.metrics().presentes }}</strong></div>
+      <div class="attendance-metric"><span>Faltas</span><strong [class.is-danger]="attendance.metrics().faltas > 0">{{ attendance.metrics().faltas }}</strong></div>
+      <div class="attendance-metric"><span>Tardanzas</span><strong [class.is-warning]="attendance.metrics().tardanzas > 0">{{ attendance.metrics().tardanzas }}</strong></div>
+      <div class="attendance-metric"><span>Balance</span><strong [class.is-danger]="attendance.metrics().balance < 0">{{ balanceLabel(attendance.metrics().balance) }}</strong></div>
+      <div class="attendance-metric"><span>Extra</span><strong>{{ durationLabel(attendance.metrics().extra) }}</strong></div>
+      <div class="attendance-metric"><span>Compensado</span><strong>{{ durationLabel(attendance.metrics().compensado) }}</strong></div>
+    </section>
+
+    @if (!attendance.days().length) {
+      <section class="attendance-empty">
+        <i class="ti ti-calendar-off" aria-hidden="true"></i>
+        <strong>Sin registros para {{ monthLabel(attendance.selectedMonth()) }}</strong>
+        <p>No hay jornadas o marcaciones disponibles para este periodo.</p>
+      </section>
+    } @else {
+      <section class="attendance-ledger" aria-labelledby="attendance-ledger-title">
+        <div class="attendance-section-heading">
+          <div><h4 id="attendance-ledger-title">Registro diario</h4><span>{{ monthLabel(attendance.selectedMonth()) }}</span><em class="attendance-period">{{ monthStatus(attendance.selectedMonth()) }}</em></div>
+          <span class="attendance-count">{{ attendance.days().length }} días</span>
+        </div>
+
+        <div class="attendance-list" role="list">
+          @for (day of attendance.days(); track trackDay($index, day)) {
+            <article class="attendance-day" [class.is-expanded]="attendance.expandedDay() === day.fecha" role="listitem">
+              <button
+                class="attendance-day__summary"
+                type="button"
+                [attr.aria-expanded]="attendance.expandedDay() === day.fecha"
+                [attr.aria-controls]="'attendance-detail-' + day.fecha"
+                (click)="toggleDay(day.fecha)"
+              >
+                <span class="attendance-day__date"><strong>{{ dayDate(day.fecha) }}</strong><small>{{ day.fecha }}</small></span>
+                <span class="attendance-status" [class]="'attendance-status attendance-status--' + dayState(day)">{{ dayStateLabel(day) }}</span>
+                <span class="attendance-day__cell attendance-day__cell--scheduled"><small>Programado</small><strong>{{ scheduleLabel(day) }}</strong><span class="attendance-tags">@if (day.minutosExtra > 0) {<em>+ Extra</em>} @if (day.minutosCompensados > 0) {<em>+ Comp</em>}</span></span>
+                <span class="attendance-day__cell"><small>Marcaciones</small><strong>{{ connectionLabel(day) }}</strong>@if (day.salidaForzada && day.horaSalidaAsistencia) {<span class="attendance-note">Salida automática</span>} @if (day.horaEntradaAsistencia && !day.horaSalidaAsistencia) {<span class="attendance-note">Jornada abierta</span>} @if (lunchLabel(day, true)) {<span class="attendance-note">Alm. {{ lunchLabel(day, true) }}</span>}</span>
+                <span class="attendance-day__balance"><small>Balance</small><strong [class.is-danger]="day.minutosBalance < 0">{{ balanceLabel(day.minutosBalance) }}</strong></span>
+                <i class="ti" [class.ti-chevron-down]="attendance.expandedDay() === day.fecha" [class.ti-chevron-right]="attendance.expandedDay() !== day.fecha" aria-hidden="true"></i>
+              </button>
+
+              @if (attendance.expandedDay() === day.fecha) {
+                <div class="attendance-day__detail" [id]="'attendance-detail-' + day.fecha">
+                  <app-attendance-day-report
+                    [reporte]="attendance.dayReport()"
+                    [loading]="attendance.isLoadingDay()"
+                    [error]="attendance.dayError()"
+                    variant="personal"
+                  />
+                  @if (attendance.dayError()) {
+                    <button class="attendance-retry attendance-retry--day" type="button" (click)="retryDay()">Reintentar detalle</button>
+                  }
+                </div>
+              }
+            </article>
+          }
+        </div>
+      </section>
+    }
+  }
+</section>

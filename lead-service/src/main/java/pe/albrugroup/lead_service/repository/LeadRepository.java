@@ -1819,6 +1819,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:campoFecha = 'ULTIMA_GESTION' AND r.fechaUltimaGestion >= :tsDesde AND r.fechaUltimaGestion < :tsHasta)
               )
               AND (:filtrarProveedores = false OR lprov.id IN :proveedorIds)
+              AND (:filtrarDepartamento = false OR dept.id = :idDepartamento)
+              AND (:filtrarProvincia = false OR prov.id = :idProvincia)
+              AND (:filtrarDistrito = false OR dist.id = :idDistrito)
             ORDER BY
               CASE WHEN :groupBy = 'ESTADO' THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END ASC,
               CASE WHEN :groupBy = 'PLAN' THEN l.nombrePlanSnapshot END ASC,
@@ -1889,6 +1892,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("tsHasta") Instant tsHasta,
             @Param("filtrarProveedores") boolean filtrarProveedores,
             @Param("proveedorIds") Collection<Long> proveedorIds,
+            @Param("filtrarDepartamento") boolean filtrarDepartamento,
+            @Param("idDepartamento") Long idDepartamento,
+            @Param("filtrarProvincia") boolean filtrarProvincia,
+            @Param("idProvincia") Long idProvincia,
+            @Param("filtrarDistrito") boolean filtrarDistrito,
+            @Param("idDistrito") Long idDistrito,
             @Param("groupBy") String groupBy,
             @Param("sortBy") String sortBy,
             @Param("sortDesc") boolean sortDesc,

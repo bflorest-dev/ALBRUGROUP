@@ -25,6 +25,7 @@ export interface CumplimientoDetalleDiaResponse {
   horaEntradaAsistencia: string | null;
   horaSalidaEstablecida: string | null;
   horaSalidaAsistencia: string | null;
+  salidaForzada: boolean;
   jornadaCerrada: boolean;
   minutosObjetivoDia: number;
   minutosTrabajados: number;

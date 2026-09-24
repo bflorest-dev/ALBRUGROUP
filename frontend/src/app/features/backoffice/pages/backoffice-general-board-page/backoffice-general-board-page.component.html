@@ -39,28 +39,51 @@
     </form>
 
     <div class="filter-strip">
-      <!-- Tipificacion tree selector -->
-      <button
-        pButton
-        type="button"
+      <app-tree-select
+        [groups]="tipGroups()"
+        [(selectedParents)]="selectedTipificaciones"
+        [(selectedChildren)]="selectedSubtipificaciones"
+        placeholder="Tipificaciones"
         icon="pi pi-tags"
-        [label]="tipFilterCount() ? tipFilterCount() + ' filtros' : 'Tipificaciones'"
-        severity="secondary"
-        [outlined]="!tipFilterCount()"
-        [class.filter-btn--active]="tipFilterCount() > 0"
-        (click)="tipPopover.toggle($event)"
-      ></button>
-
-      <!-- Origen toggle -->
-      <p-select
-        styleClass="origen-select"
-        [options]="origenOptions"
-        [ngModel]="origen()"
-        optionLabel="label"
-        optionValue="value"
-        appendTo="body"
-        (ngModelChange)="setOrigen($event)"
+        (selectionChange)="onTipSelectionChange($event)"
       />
+
+      <p-select
+        [options]="departamentos()"
+        [ngModel]="selectedDepartamento()"
+        optionLabel="nombre"
+        optionValue="id"
+        placeholder="Departamento"
+        [showClear]="true"
+        appendTo="body"
+        (ngModelChange)="onDepartamentoChange($event)"
+      />
+
+      @if (selectedDepartamento() !== null) {
+        <p-select
+          [options]="provincias()"
+          [ngModel]="selectedProvincia()"
+          optionLabel="nombre"
+          optionValue="id"
+          placeholder="Provincia"
+          [showClear]="true"
+          appendTo="body"
+          (ngModelChange)="onProvinciaChange($event)"
+        />
+      }
+
+      @if (selectedProvincia() !== null) {
+        <p-select
+          [options]="distritos()"
+          [ngModel]="selectedDistrito()"
+          optionLabel="nombre"
+          optionValue="id"
+          placeholder="Distrito"
+          [showClear]="true"
+          appendTo="body"
+          (ngModelChange)="onDistritoChange($event)"
+        />
+      }
 
       <app-period-selector
         [periodo]="periodo()"
@@ -93,83 +116,6 @@
       ></button>
     </div>
   </section>
-
-  <!-- Tipificacion tree popover -->
-  <p-popover #tipPopover appendTo="body" styleClass="general-board-popover tip-tree-popover">
-    <div class="tip-tree">
-      <div class="tip-tree__search">
-        <i class="pi pi-search" aria-hidden="true"></i>
-        <input
-          pInputText
-          type="text"
-          placeholder="Buscar tipificación..."
-          [ngModel]="tipSearchTerm()"
-          (ngModelChange)="tipSearchTerm.set($event)"
-        />
-      </div>
-
-      <div class="tip-tree__list">
-        @for (node of filteredTipNodes(); track node.codigo) {
-          <div class="tip-tree__node">
-            <div class="tip-tree__row">
-              <p-checkbox
-                [binary]="true"
-                [ngModel]="isTipSelected(node.codigo)"
-                (ngModelChange)="toggleTipificacion(node.codigo)"
-              />
-              <span class="tip-tree__label" [pTooltip]="node.descripcion" tooltipPosition="right" appendTo="body">
-                {{ node.codigo }}
-              </span>
-              @if (node.subtipificaciones.length) {
-                <button
-                  pButton
-                  type="button"
-                  [icon]="node.expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
-                  severity="secondary"
-                  text
-                  size="small"
-                  (click)="toggleExpand(node)"
-                ></button>
-              }
-            </div>
-            @if (node.expanded && node.subtipificaciones.length) {
-              <div class="tip-tree__children">
-                @for (sub of node.subtipificaciones; track sub.codigo) {
-                  <div class="tip-tree__row tip-tree__row--child">
-                    <p-checkbox
-                      [binary]="true"
-                      [ngModel]="isSubtipSelected(sub.codigo) || isTipSelected(node.codigo)"
-                      [disabled]="isTipSelected(node.codigo)"
-                      (ngModelChange)="toggleSubtipificacion(node.codigo, sub.codigo)"
-                    />
-                    <span class="tip-tree__label tip-tree__label--sub" [pTooltip]="sub.descripcion" tooltipPosition="right" appendTo="body">
-                      {{ sub.codigo }}
-                    </span>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        }
-        @if (!filteredTipNodes().length) {
-          <div class="tip-tree__empty">Sin resultados</div>
-        }
-      </div>
-
-      @if (tipFilterCount()) {
-        <button
-          pButton
-          type="button"
-          icon="pi pi-filter-slash"
-          label="Limpiar filtros"
-          severity="secondary"
-          text
-          size="small"
-          (click)="clearTipFilter(); tipPopover.hide()"
-        ></button>
-      }
-    </div>
-  </p-popover>
 
   <!-- Organize popover -->
   <p-popover #organize appendTo="body" styleClass="general-board-popover">
@@ -248,6 +194,13 @@
       <i class="pi pi-tags" aria-hidden="true"></i>
       {{ tipFilterCount() ? tipFilterCount() + ' filtros de tipificación' : 'Todas las tipificaciones' }}
     </span>
+    @if (geoFilterActive()) {
+      <span class="selection-rail__item">
+        <i class="pi pi-map-marker" aria-hidden="true"></i>
+        Filtro geográfico activo
+        <button pButton type="button" icon="pi pi-times" severity="secondary" text [rounded]="true" size="small" aria-label="Limpiar filtro geo" (click)="clearGeoFilter()"></button>
+      </span>
+    }
   </div>
 
   @if (error()) {
@@ -311,12 +264,15 @@
             <td [attr.colspan]="tableColumnCount()">{{ groupLabel(row) }}</td>
           </tr>
         }
-        <tr class="board-row" tabindex="0" aria-label="Abrir gestión del lead">
+        <tr class="board-row" [class.board-row--consulta]="isConsulta(row)" tabindex="0" aria-label="Abrir detalle del lead" (click)="onRowClick(row)" (keydown.enter)="onRowClick(row)">
           <td class="cell-date cell-ingreso">
             <div class="date-cell">
               <strong>{{ formatIngreso(row) }}</strong>
               <span>{{ formatIngresoTime(row) || 'VENTA' }}</span>
             </div>
+            @if (isConsulta(row)) {
+              <span class="consulta-chip">{{ consultaLabel(row) }}</span>
+            }
           </td>
           <td class="cell-date cell-relevant">
             <div class="date-cell date-cell--relevant" [class.date-cell--empty]="!formatRelevantDate(row)">
@@ -420,3 +376,135 @@
     (onPageChange)="onPage($event)"
   />
 </section>
+
+<!-- Detail drawer -->
+<p-drawer
+  [visible]="drawerOpen()"
+  position="right"
+  [modal]="true"
+  styleClass="detail-drawer"
+  (visibleChange)="!$event && closeDrawer()"
+>
+  @if (drawerRow(); as row) {
+    <ng-template #header>
+      <div class="detail-drawer__head">
+        <div class="detail-drawer__identity">
+          <strong>{{ display(row.tipoDocumento, 'DOC') }} {{ display(row.numeroDocumento, '') }}</strong>
+          <span>{{ display(row.nombreCliente) }}</span>
+        </div>
+        <div class="detail-drawer__badges">
+          @if (isConsulta(row)) {
+            <span class="consulta-chip">{{ consultaLabel(row) }}</span>
+          } @else {
+            <span class="vivo-chip">Vivo</span>
+          }
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="detail-drawer__body">
+      <section class="detail-section">
+        <div class="detail-field">
+          <span class="detail-label">Lead</span>
+          <span class="detail-value">{{ display(row.usermeta) }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Plan</span>
+          <span class="detail-value">{{ display(row.plan, 'Sin plan') }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Precio</span>
+          <span class="detail-value">{{ money(row.precioFinal ?? row.precioPlan) }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Proveedor</span>
+          <span class="detail-value">{{ display(row.proveedor, 'Sin proveedor') }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Etapa actual</span>
+          <span class="detail-value">
+            <p-tag [styleClass]="etapaTagClass(row)" [value]="display(row.etapaActual)" />
+          </span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Estado</span>
+          <span class="detail-value">{{ display(row.estadoSeguimiento) }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Tipificación</span>
+          <span class="detail-value">
+            <app-tipification-stack
+              [codigoTipificacion]="row.codigoTipificacionBandeja"
+              [codigoSubtipificacion]="row.codigoSubtipificacionBandeja"
+              [paletteByCode]="tipificationPaletteByCode()"
+              emptyText="Sin tipificación"
+            />
+          </span>
+        </div>
+        @if (row.sec || row.sot || row.customerId) {
+          <div class="detail-field">
+            <span class="detail-label">Operación</span>
+            <span class="detail-value">
+              @if (row.sec) { SEC {{ row.sec }} }
+              @if (row.sot) { SOT {{ row.sot }} }
+              @if (row.customerId) { ID {{ row.customerId }} }
+            </span>
+          </div>
+        }
+        <div class="detail-field">
+          <span class="detail-label">Fecha ingreso</span>
+          <span class="detail-value">{{ formatIngreso(row) }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="detail-label">Última gestión</span>
+          <span class="detail-value">{{ formatInstantShort(row.fechaUltimaGestion) || 'Sin última gestión' }}</span>
+        </div>
+        @if (row.comentarioLead) {
+          <div class="detail-field detail-field--full">
+            <span class="detail-label">Comentario</span>
+            <span class="detail-value detail-value--comment">{{ row.comentarioLead }}</span>
+          </div>
+        }
+      </section>
+
+      <section class="detail-section">
+        <h4>Historial</h4>
+        @if (drawerHistorialLoading()) {
+          <div class="state">
+            <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+            <span>Cargando historial…</span>
+          </div>
+        } @else if (!drawerHistorial().length) {
+          <div class="state">
+            <i class="pi pi-inbox" aria-hidden="true"></i>
+            <span>Sin historial de gestión.</span>
+          </div>
+        } @else {
+          <div class="historial-list">
+            @for (evento of drawerHistorial(); track evento.id) {
+              <div class="historial-item">
+                <div class="historial-item__head">
+                  <strong>{{ display(evento.tipificacionResultado ?? evento.tipificacion ?? evento.accion) }}</strong>
+                  <span>{{ formatInstantShort(evento.createdAt) }}</span>
+                </div>
+                @if (evento.subtipificacionResultado ?? evento.subtipificacion) {
+                  <span class="historial-item__sub">{{ evento.subtipificacionResultado ?? evento.subtipificacion }}</span>
+                }
+                <span class="historial-item__actor">{{ display(evento.nombreActor, 'Sistema') }}</span>
+                @if (evento.comentario) {
+                  <span class="historial-item__comment">{{ evento.comentario }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      @if (!drawerIsConsulta()) {
+        <div class="detail-actions">
+          <button pButton type="button" icon="pi pi-external-link" label="Gestionar en bandeja" (click)="goToGestion()"></button>
+        </div>
+      }
+    </div>
+  }
+</p-drawer>

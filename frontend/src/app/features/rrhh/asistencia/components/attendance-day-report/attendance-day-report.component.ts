@@ -90,6 +90,9 @@ export class AttendanceDayReportComponent {
   readonly reporte = input<ReporteDiaResponse | null>(null);
   readonly loading = input(false);
   readonly error = input<string | null>(null);
+  /** PERSONAL oculta las cifras dentro de los bloques y deja el detalle en el tooltip/foco. */
+  readonly variant = input<'legacy' | 'personal'>('legacy');
+  protected readonly showSegmentLabels = computed(() => this.variant() !== 'personal');
 
   /** [min, span] del eje en minutos del día, con margen de media hora a cada lado. */
   private readonly axisRange = computed<{ min: number; span: number }>(() => {

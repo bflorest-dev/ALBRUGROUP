@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import {
   AdicionalResponse,
+  CatalogoProveedorResponse,
   CatalogoResponse,
   EventoResponse,
   CampoFechaListadoVenta,
@@ -23,7 +24,6 @@ import {
   LeadVentaGroupFilter,
   LeadVentaGroupsResponse,
   LeadVentaResponse,
-  OrigenFilaBandejaVenta,
   PageQuery,
   PlanResponse,
   PromocionComercialResponse,
@@ -40,9 +40,10 @@ export interface LeadBandejaVentaNormalizadaQuery extends PageQuery {
   codigosTipificacion?: string[];
   codigosSubtipificacion?: string[];
   sinSubtipificacion?: boolean;
-  origen?: OrigenFilaBandejaVenta;
-  etapasActuales?: string[];
-  idEquipo?: number | null;
+  idProveedor?: number | null;
+  idDepartamento?: number | null;
+  idProvincia?: number | null;
+  idDistrito?: number | null;
   fechaDesde?: string | null;
   fechaHasta?: string | null;
   campoFecha?: CampoFechaListadoVenta | string | null;
@@ -97,14 +98,17 @@ export class BackofficeLeadService {
     if (query.sinSubtipificacion) {
       params = params.set('sinSubtipificacion', true);
     }
-    if (query.origen) {
-      params = params.set('origen', query.origen);
+    if (query.idProveedor !== null && query.idProveedor !== undefined) {
+      params = params.set('idProveedor', query.idProveedor);
     }
-    for (const etapa of query.etapasActuales ?? []) {
-      params = params.append('etapasActuales', etapa);
+    if (query.idDepartamento !== null && query.idDepartamento !== undefined) {
+      params = params.set('idDepartamento', query.idDepartamento);
     }
-    if (query.idEquipo !== null && query.idEquipo !== undefined) {
-      params = params.set('idEquipo', query.idEquipo);
+    if (query.idProvincia !== null && query.idProvincia !== undefined) {
+      params = params.set('idProvincia', query.idProvincia);
+    }
+    if (query.idDistrito !== null && query.idDistrito !== undefined) {
+      params = params.set('idDistrito', query.idDistrito);
     }
     if (query.fechaDesde) {
       params = params.set('fechaDesde', query.fechaDesde);
@@ -344,6 +348,10 @@ export class BackofficeLeadService {
   // Catálogo AGREGADO cross-equipo (unión por código) para la paleta/filtro de la bandeja.
   getCatalogoAgregado(etapa: string): Observable<CatalogoResponse> {
     return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-agregado`);
+  }
+
+  getCatalogoPorProveedor(etapa: string): Observable<CatalogoProveedorResponse[]> {
+    return this.http.get<CatalogoProveedorResponse[]>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-por-proveedor`);
   }
 
   listarPlanes(idProveedor?: number, soloVigentes = true): Observable<PlanResponse[]> {

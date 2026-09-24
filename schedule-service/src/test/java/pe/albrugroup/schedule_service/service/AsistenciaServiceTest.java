@@ -103,6 +103,7 @@ class AsistenciaServiceTest {
                 fechaFueraTolerancia,
                 LocalDateTime.of(2026, 6, 12, 13, 6, 0)
         );
+        fueraTolerancia.setSalidaForzada(true);
         ConsultaCumplimientoRequest request = ConsultaCumplimientoRequest.builder()
                 .empleadoIds(List.of(32L))
                 .desde(fechaDentroTolerancia)
@@ -124,6 +125,8 @@ class AsistenciaServiceTest {
         assertThat(detalle.getEmpleados().getFirst().getDias().get(0).getTardanza()).isFalse();
         assertThat(detalle.getEmpleados().getFirst().getDias().get(1).getTardanza()).isTrue();
         assertThat(detalle.getEmpleados().getFirst().getDias().get(0).getMinutosBalance()).isEqualTo(-6);
+        assertThat(detalle.getEmpleados().getFirst().getDias().get(0).getSalidaForzada()).isFalse();
+        assertThat(detalle.getEmpleados().getFirst().getDias().get(1).getSalidaForzada()).isTrue();
     }
 
     @Test

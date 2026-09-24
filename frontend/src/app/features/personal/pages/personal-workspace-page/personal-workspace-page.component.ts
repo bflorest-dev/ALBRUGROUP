@@ -131,11 +131,6 @@ export class PersonalWorkspacePageComponent {
     });
   }
 
-  protected openAttendance(row: PersonalDirectoryRow): void {
-    const route = this.activeRole() === 'RRHH' ? '/app/rrhh/asistencia' : '/app/admin/asistencia';
-    void this.router.navigate([route], { queryParams: { empleadoId: row.employee.idEmpleado } });
-  }
-
   protected async handleEmployeeChanged(): Promise<void> {
     await this.facade.refresh();
   }

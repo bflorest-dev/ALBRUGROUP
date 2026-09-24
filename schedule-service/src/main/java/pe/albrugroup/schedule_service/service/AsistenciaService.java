@@ -951,6 +951,7 @@ public class AsistenciaService implements IAsistencia {
                 .horaEntradaAsistencia(horaEntradaAsistencia)
                 .horaSalidaEstablecida(horaSalidaEstablecida)
                 .horaSalidaAsistencia(horaSalidaAsistencia)
+                .salidaForzada(asistencia != null && Boolean.TRUE.equals(asistencia.getSalidaForzada()))
                 .jornadaCerrada(asistencia != null && asistencia.getFechaHoraSalida() != null)
                 .minutosObjetivoDia(asistencia != null ? asistencia.getMinutosObjetivoDia() : programacion.minutosObjetivo())
                 .minutosTrabajados(asistencia != null ? asistencia.getMinutosTrabajados() : 0)
