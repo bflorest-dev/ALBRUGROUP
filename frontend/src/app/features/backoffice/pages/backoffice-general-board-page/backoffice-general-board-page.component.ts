@@ -93,6 +93,9 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected readonly tipGroups = signal<TreeSelectGroup[]>([]);
   protected readonly selectedTipificaciones = signal<string[]>([]);
   protected readonly selectedSubtipificaciones = signal<string[]>([]);
+  private readonly allTipKeys = computed(() =>
+    this.tipGroups().flatMap(g => g.nodes.map(n => n.key))
+  );
 
   // --- Geo cascade filter ---
   protected readonly departamentos = signal<UbigeoItem[]>([]);
@@ -129,9 +132,14 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     return palette;
   });
 
-  protected readonly tipFilterCount = computed(() =>
-    this.selectedTipificaciones().length + this.selectedSubtipificaciones().length
-  );
+  protected readonly tipFilterCount = computed(() => {
+    const tips = this.selectedTipificaciones();
+    const subtips = this.selectedSubtipificaciones();
+    if (tips.length === 0 && subtips.length === 0) return 0;
+    const all = this.allTipKeys();
+    if (subtips.length === 0 && tips.length === all.length && all.every(k => tips.includes(k))) return 0;
+    return tips.length + subtips.length;
+  });
 
   protected readonly geoFilterActive = computed(() =>
     this.selectedDepartamento() !== null
@@ -204,11 +212,11 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
         return;
       }
       this.lastProviderId = activeId;
-      untracked(() => {
+      untracked(async () => {
         this.rows.set([]);
         this.total.set(0);
         this.page.set(0);
-        void this.loadCatalogo();
+        await this.loadCatalogo();
         void this.loadRows();
       });
     });
@@ -216,7 +224,8 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.providerScope.load();
-    await Promise.all([this.loadCatalogo(), this.loadRows(), this.loadDepartamentos()]);
+    await this.loadCatalogo();
+    await Promise.all([this.loadRows(), this.loadDepartamentos()]);
   }
 
   protected async refresh(): Promise<void> {
@@ -272,7 +281,10 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     }
   }
 
-  protected onTipSelectionChange(_sel: TreeSelectSelection): void {
+  protected onTipSelectionChange(sel: TreeSelectSelection): void {
+    if (sel.parents.length === 0 && sel.children.length === 0) {
+      this.selectedTipificaciones.set(this.allTipKeys());
+    }
     this.page.set(0);
     void this.loadRows();
   }
@@ -391,7 +403,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   }
 
   protected async clearFilters(): Promise<void> {
-    this.selectedTipificaciones.set([]);
+    this.selectedTipificaciones.set(this.allTipKeys());
     this.selectedSubtipificaciones.set([]);
     this.selectedDepartamento.set(null);
     this.selectedProvincia.set(null);
@@ -621,7 +633,8 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
       }
       this.catalogoFlat.set(flat);
       this.tipGroups.set(groups);
-      this.selectedTipificaciones.set([SIN]);
+      const allKeys = groups.flatMap(g => g.nodes.map(n => n.key));
+      this.selectedTipificaciones.set(allKeys);
       this.selectedSubtipificaciones.set([]);
     } catch (err) {
       console.error('[Bandeja General] Error cargando catálogo tipificaciones', err);
@@ -636,17 +649,31 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     try {
       const SIN = BackofficeGeneralBoardPageComponent.SIN_TIP_KEY;
       const allTips = this.selectedTipificaciones();
+      const allSubtips = this.selectedSubtipificaciones();
+
+      if (allTips.length === 0 && allSubtips.length === 0) {
+        this.rows.set([]);
+        this.total.set(0);
+        return;
+      }
+
       const realCodes = allTips.filter(k => k !== SIN);
       const sinTipChecked = allTips.includes(SIN);
+      const allKeys = this.allTipKeys().filter(k => k !== SIN);
+      const isFullSelection = sinTipChecked
+        && allSubtips.length === 0
+        && realCodes.length >= allKeys.length
+        && allKeys.every(k => realCodes.includes(k));
+
       const response = await firstValueFrom(this.leadService.listarBandejaVentaNormalizada({
         pageNumber: this.page(),
         pageSize: this.pageSize,
         sortBy: this.sortBy(),
         direction: this.direction(),
         lead: this.searchActive() || null,
-        codigosTipificacion: realCodes,
-        sinTipificacion: realCodes.length > 0 ? sinTipChecked : undefined,
-        codigosSubtipificacion: this.selectedSubtipificaciones(),
+        codigosTipificacion: isFullSelection ? [] : realCodes,
+        sinTipificacion: isFullSelection ? undefined : (sinTipChecked || undefined),
+        codigosSubtipificacion: isFullSelection ? [] : allSubtips,
         idProveedor: this.providerScope.activeId(),
         idDepartamento: this.selectedDepartamento(),
         idProvincia: this.selectedProvincia(),

@@ -4511,15 +4511,6 @@ export class GtrWorkspaceFacade {
       });
     }
 
-    if (forceFullSave || this.ofertaForm.dirty) {
-      tasks.push({
-        label: 'Oferta Comercial',
-        form: this.ofertaForm,
-        action: () =>
-          firstValueFrom(this.preventaService.actualizarOfertaComercial(detail.id, this.getOfertaRequest()))
-      });
-    }
-
     if (forceFullSave || this.direccionForm.dirty) {
       if (this.direccionForm.invalid) {
         this.errorMessage.set(this.getDireccionValidationMessage());
@@ -4533,14 +4524,23 @@ export class GtrWorkspaceFacade {
       });
     }
 
+    if (forceFullSave || this.ofertaForm.dirty) {
+      tasks.push({
+        label: 'Oferta Comercial',
+        form: this.ofertaForm,
+        action: () =>
+          firstValueFrom(this.preventaService.actualizarOfertaComercial(detail.id, this.getOfertaRequest()))
+      });
+    }
+
     this.isSaving.set(true);
     const saved: string[] = [];
     const failed: string[] = [];
-    let ofertaSaveFailed = false;
+    let direccionSaveFailed = false;
 
     try {
       for (const task of tasks) {
-        if (task.label === 'Direccion' && ofertaSaveFailed) {
+        if (task.label === 'Oferta Comercial' && direccionSaveFailed) {
           continue;
         }
         try {
@@ -4548,8 +4548,8 @@ export class GtrWorkspaceFacade {
           task.form.markAsPristine();
           saved.push(task.label);
         } catch (error) {
-          if (task.label === 'Oferta Comercial') {
-            ofertaSaveFailed = true;
+          if (task.label === 'Direccion') {
+            direccionSaveFailed = true;
           }
           failed.push(`${task.label}: ${this.getErrorMessage(error, 'No se pudo guardar')}`);
         }
