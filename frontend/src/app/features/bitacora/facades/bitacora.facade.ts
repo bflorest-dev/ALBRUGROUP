@@ -1,4 +1,5 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { finalize, firstValueFrom } from 'rxjs';
@@ -112,6 +113,7 @@ export class BitacoraFacade {
   readonly guardando = signal(false);
   readonly guardadoOk = signal(false);
   readonly error = signal<string | null>(null);
+  readonly validacionDetalle = signal<string[]>([]);
 
   // Contacto (identidad) del lead abierto + sus oportunidades (para advertencia multi-lead y pickers).
   readonly cluster = signal<BitacoraContactoCluster | null>(null);
@@ -719,19 +721,23 @@ export class BitacoraFacade {
     if (!detalle || !this.hayCambios() || this.guardando()) {
       return;
     }
-    if (this.identidadForm.invalid || this.datosForm.invalid || this.direccionForm.invalid || this.ofertaForm.invalid) {
-      this.identidadForm.markAllAsTouched();
-      this.datosForm.markAllAsTouched();
-      this.direccionForm.markAllAsTouched();
-      this.ofertaForm.markAllAsTouched();
-      this.error.set('Hay campos con formato inválido. Revisa los valores señalados antes de guardar.');
-      return;
-    }
+    this.validacionDetalle.set([]);
 
     const identidadCambio = this.grupoTieneCambios(this.identidadOriginal(), this.identidadValues());
     const datosCambio = this.grupoTieneCambios(this.datosOriginal(), this.datosValues());
     const direccionCambio = this.grupoTieneCambios(this.direccionOriginal(), this.direccionValues());
     const ofertaCambio = this.grupoTieneCambios(this.ofertaOriginal(), this.ofertaValues());
+    const invalidDetails = [
+      ...(identidadCambio ? this.camposInvalidosModificados(this.identidadForm, this.identidadOriginal(), this.identidadValues(), IDENTIDAD_LABELS, 'Identidad') : []),
+      ...(datosCambio ? this.camposInvalidosModificados(this.datosForm, this.datosOriginal(), this.datosValues(), DATOS_LABELS, 'Titular') : []),
+      ...(direccionCambio ? this.camposInvalidosModificados(this.direccionForm, this.direccionOriginal(), this.direccionValues(), DIRECCION_LABELS, 'Dirección') : []),
+      ...(ofertaCambio ? this.camposInvalidosModificados(this.ofertaForm, this.ofertaOriginal(), this.ofertaValues(), OFERTA_LABELS, 'Oferta') : [])
+    ];
+    if (invalidDetails.length) {
+      this.validacionDetalle.set(Array.from(new Set(invalidDetails)).slice(0, 8));
+      this.error.set('No se puede guardar todavía. Revisa estos campos:');
+      return;
+    }
 
     const identidad = identidadCambio ? this.construirIdentidadRequest() : null;
     const datosPreventa = datosCambio ? this.construirDatosRequest() : null;
@@ -757,9 +763,14 @@ export class BitacoraFacade {
           this.patchForms(actualizado);
           this.marcadosEventos.set([]);
           this.guardadoOk.set(true);
+          this.validacionDetalle.set([]);
           this.recargarHistorial(actualizado.id);
         },
-        error: () => this.error.set('No se pudo aplicar la corrección. Revisa los datos e inténtalo de nuevo.')
+        error: (error: unknown) => {
+          const apiError = this.extraerErrorApi(error);
+          this.error.set(apiError.message);
+          this.validacionDetalle.set(apiError.details);
+        }
       });
   }
 
@@ -1071,6 +1082,61 @@ export class BitacoraFacade {
     return Object.keys(actual).some((k) => (original[k] ?? '') !== (actual[k] ?? ''));
   }
 
+  private camposInvalidosModificados(
+    form: FormGroup,
+    original: Record<string, string>,
+    actual: Record<string, string>,
+    labels: Record<string, string>,
+    grupo: string
+  ): string[] {
+    return Object.entries(form.controls)
+      .filter(([nombre, control]) =>
+        (original[nombre] ?? '') !== (actual[nombre] ?? '') && control.invalid
+      )
+      .map(([nombre, control]) => {
+        const motivo = this.motivoInvalido(control.errors ?? {});
+        return `${grupo}: ${labels[nombre] ?? nombre}${motivo ? ` — ${motivo}` : ''}`;
+      });
+  }
+
+  private motivoInvalido(errors: Record<string, unknown>): string {
+    if (errors['email']) return 'correo inválido';
+    if (errors['telefonoPeru']) return 'debe tener 9 dígitos y empezar en 9';
+    if (errors['telefonoInternacional']) return 'debe tener entre 6 y 15 dígitos';
+    if (errors['soloDigitos']) return 'solo se permiten dígitos';
+    if (errors['dni']) return 'el DNI debe tener 8 dígitos';
+    if (errors['ruc']) return 'el RUC debe tener 11 dígitos';
+    if (errors['ce']) return 'el CE debe tener entre 6 y 12 dígitos';
+    if (errors['documento']) return 'debe tener entre 6 y 12 dígitos';
+    if (errors['coordenada']) return 'coordenada inválida';
+    if (errors['rangoCoordenada']) return 'fuera de rango';
+    if (errors['prefijo']) return 'formato inválido';
+    if (errors['pattern']) return 'formato inválido';
+    return 'revisa el formato';
+  }
+
+  private extraerErrorApi(error: unknown): { message: string; details: string[] } {
+    if (!(error instanceof HttpErrorResponse)) {
+      return { message: 'No se pudo aplicar la corrección. Revisa los datos e inténtalo de nuevo.', details: [] };
+    }
+    if (error.status === 401) {
+      return { message: 'Tu sesión ya no es válida. Vuelve a iniciar sesión para guardar la corrección.', details: [] };
+    }
+    if (error.status === 403) {
+      return { message: 'Tu usuario no tiene permiso para aplicar correcciones en la Bitácora.', details: [] };
+    }
+    const body = error.error as { message?: unknown; detail?: unknown; error?: unknown } | string | null;
+    if (typeof body === 'string' && body.trim()) {
+      return { message: body.trim(), details: [] };
+    }
+    if (body && typeof body === 'object') {
+      const message = [body.message, body.detail, body.error]
+        .find((value) => typeof value === 'string' && value.trim() && value !== 'Bad Request');
+      if (typeof message === 'string') return { message: message.trim(), details: [] };
+    }
+    return { message: 'No se pudo aplicar la corrección. Revisa los datos e inténtalo de nuevo.', details: [] };
+  }
+
   private normalizeRecord(value: Record<string, unknown>): Record<string, string> {
     const out: Record<string, string> = {};
     for (const key of Object.keys(value)) {
@@ -1082,6 +1148,7 @@ export class BitacoraFacade {
 
   private limpiarStaged(): void {
     this.marcadosEventos.set([]);
+    this.validacionDetalle.set([]);
     this.identidadOriginal.set({});
     this.identidadValues.set({});
     this.datosOriginal.set({});

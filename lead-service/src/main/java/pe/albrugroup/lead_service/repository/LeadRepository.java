@@ -1468,8 +1468,13 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 ))
                 OR (:buscarPorUsermeta = true AND LOWER(l.usermeta) LIKE LOWER(:searchPattern))
               )
-              AND (:filtrarTipificaciones = false OR r.ultimaCodigoTipificacion IN :codigosTipificacion OR (:sinTipificacion = true AND r.ultimaCodigoTipificacion IS NULL))
-              AND (:filtrarSubtipificaciones = false OR r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion OR (:sinSubtipificacion = true AND r.ultimaCodigoSubtipificacion IS NULL))
+              AND (
+                    :filtrarTipSub = false
+                    OR r.ultimaCodigoTipificacion IN :codigosTipificacion
+                    OR r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion
+                    OR (:sinTipificacion = true AND r.ultimaCodigoTipificacion IS NULL)
+                    OR (:sinSubtipificacion = true AND r.ultimaCodigoSubtipificacion IS NULL)
+              )
               AND (
                     (:campoFecha = 'AUTO' AND (
                         (seg.fechaProgramacion IS NOT NULL AND seg.fechaProgramacion >= :tsDesde AND seg.fechaProgramacion < :tsHasta)
@@ -1546,10 +1551,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapaPreventa") Etapa etapaPreventa,
             @Param("searchPattern") String searchPattern,
             @Param("buscarPorUsermeta") boolean buscarPorUsermeta,
-            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("filtrarTipSub") boolean filtrarTipSub,
             @Param("codigosTipificacion") Collection<String> codigosTipificacion,
             @Param("sinTipificacion") boolean sinTipificacion,
-            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
             @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
             @Param("sinSubtipificacion") boolean sinSubtipificacion,
             @Param("campoFecha") String campoFecha,

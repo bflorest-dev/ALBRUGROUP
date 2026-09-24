@@ -181,9 +181,11 @@ public class TipificacionService {
         return new CatalogoResponse(etapa, tipificacionesResponse);
     }
 
-    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "'porProveedor_' + #etapa")
-    public List<CatalogoProveedorResponse> getCatalogoPorProveedor(Etapa etapa) {
-        List<Tipificacion> todas = tipificacionRepository.findByMatrizEtapaAndActivoTrueOrderByOrdenAsc(etapa);
+    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "'porProveedor_' + #etapa + '_' + #idProveedor")
+    public List<CatalogoProveedorResponse> getCatalogoPorProveedor(Etapa etapa, Long idProveedor) {
+        List<Tipificacion> todas = idProveedor != null
+                ? tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndActivoTrueOrderByOrdenAsc(etapa, idProveedor)
+                : tipificacionRepository.findByMatrizEtapaAndActivoTrueOrderByOrdenAsc(etapa);
         if (todas.isEmpty()) {
             return List.of();
         }

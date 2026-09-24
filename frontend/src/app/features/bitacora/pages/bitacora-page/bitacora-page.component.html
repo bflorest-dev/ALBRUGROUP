@@ -482,7 +482,18 @@
         </div>
       </div>
 
-      @if (f.error()) { <div class="drawer-error">{{ f.error() }}</div> }
+      @if (f.error(); as message) {
+        <div class="drawer-error" role="alert">
+          <span>{{ message }}</span>
+          @if (f.validacionDetalle().length) {
+            <ul>
+              @for (detalle of f.validacionDetalle(); track detalle) {
+                <li>{{ detalle }}</li>
+              }
+            </ul>
+          }
+        </div>
+      }
       @if (errorActaSubsanacion()) { <div class="drawer-error">{{ errorActaSubsanacion() }}</div> }
     }
   </aside>

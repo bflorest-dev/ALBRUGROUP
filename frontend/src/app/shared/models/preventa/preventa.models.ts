@@ -847,8 +847,8 @@ export interface LeadDireccionRequest {
   via?: string | null;
   direccion: string;
   referencia?: string | null;
-  latitud: string;
-  longitud: string;
+  latitud?: string | null;
+  longitud?: string | null;
   urbanizacion?: string | null;
   numero?: string | null;
   manzana?: string | null;

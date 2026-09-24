@@ -589,13 +589,11 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   private async loadCatalogo(): Promise<void> {
     this.catalogLoading.set(true);
     try {
-      const porProveedor = await firstValueFrom(this.leadService.getCatalogoPorProveedor('VENTA'));
-      const activeProveedor = this.providerScope.activeId();
-      const filtered = activeProveedor != null
-        ? porProveedor.filter(p => p.idProveedor === activeProveedor)
-        : porProveedor;
+      const porProveedor = await firstValueFrom(
+        this.leadService.getCatalogoPorProveedor('VENTA', this.providerScope.activeId())
+      );
       const flat: TipificacionResponse[] = [];
-      const groups: TreeSelectGroup[] = filtered.map(prov => {
+      const groups: TreeSelectGroup[] = porProveedor.map(prov => {
         const sorted = [...(prov.tipificaciones ?? [])].sort((a, b) => a.orden - b.orden);
         for (const t of sorted) {
           if (!flat.some(f => f.codigo === t.codigo)) flat.push(t);
@@ -625,6 +623,8 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
       this.tipGroups.set(groups);
       this.selectedTipificaciones.set([SIN]);
       this.selectedSubtipificaciones.set([]);
+    } catch (err) {
+      console.error('[Bandeja General] Error cargando catálogo tipificaciones', err);
     } finally {
       this.catalogLoading.set(false);
     }

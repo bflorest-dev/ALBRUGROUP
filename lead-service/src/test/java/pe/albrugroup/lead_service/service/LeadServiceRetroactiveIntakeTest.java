@@ -33,6 +33,7 @@ import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoNumeroLlamada;
 import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.request.LeadIdentidadRequest;
+import pe.albrugroup.lead_service.entity.request.LeadIdentidadCorreccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
@@ -115,6 +116,35 @@ class LeadServiceRetroactiveIntakeTest {
     void setUp() {
         lenient().when(leadEtapaResumenRepository.findByIdLeadAndEtapa(any(), any()))
                 .thenReturn(Optional.empty());
+    }
+
+    @Test
+    void corregirUsermetaPermiteLeadSinTelefono() {
+        Contacto contacto = Contacto.builder().id(100L).usermeta("usuarioAnterior").build();
+        Lead lead = Lead.builder()
+                .id(25202L)
+                .usermeta("usuarioAnterior")
+                .contacto(contacto)
+                .etapa(Etapa.PREVENTA)
+                .build();
+        LeadIdentidadCorreccionRequest identidad = new LeadIdentidadCorreccionRequest();
+        identidad.setUsermeta("ximedisan3095");
+
+        when(leadRepository.buscarDetalleCompletoPorId(25202L)).thenReturn(Optional.of(lead));
+        when(contactoRepository.findById(100L)).thenReturn(Optional.of(contacto));
+        when(leadMapper.trimToNull(any())).thenAnswer(invocation -> {
+            String value = invocation.getArgument(0);
+            return value == null || value.trim().isEmpty() ? null : value.trim();
+        });
+        when(contactoRepository.save(contacto)).thenReturn(contacto);
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.aplicarCambiosCorreccion(25202L, identidad, null, null, null);
+
+        assertThat(contacto.getUsermeta()).isEqualTo("ximedisan3095");
+        assertThat(lead.getUsermeta()).isEqualTo("ximedisan3095");
+        assertThat(lead.getLead()).isNull();
+        verify(leadRepository).sincronizarIdentidadHermanas(100L, 25202L, null, null, "ximedisan3095");
     }
 
     @Test

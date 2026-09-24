@@ -14,6 +14,7 @@ import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { HttpErrorResponse } from '@angular/common/http';
 import { finalize, firstValueFrom } from 'rxjs';
 import { EquiposNavService } from '../../../../core/services/equipos-nav.service';
+import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { CampoConfigItem, UbigeoItem } from '../../../../shared/models/preventa/preventa.models';
 import {
   SubsanacionModo,
@@ -46,6 +47,14 @@ interface CambioVisible {
   despues: string;
 }
 
+type ApiErrorBody = {
+  message?: unknown;
+  error?: unknown;
+  detail?: unknown;
+  details?: unknown;
+  errors?: unknown;
+};
+
 const LABELS: Record<string, string> = {
   prefijo: 'Prefijo',
   usermeta: 'Usermeta',
@@ -73,7 +82,7 @@ const LABELS: Record<string, string> = {
 @Component({
   selector: 'app-subsanacion-drawer',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule],
+  imports: [FormsModule, ReactiveFormsModule, DateFieldComponent],
   templateUrl: './subsanacion-drawer.component.html',
   styleUrl: './subsanacion-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -103,6 +112,8 @@ export class SubsanacionDrawerComponent implements OnInit {
   readonly enviando = signal(false);
   readonly error = signal<string | null>(null);
   readonly validacionDetalle = signal<string[]>([]);
+  readonly confirmacionError = signal<string | null>(null);
+  readonly confirmacionDetalle = signal<string[]>([]);
   readonly preparacion = signal<SubsanacionPreparacion | null>(null);
   readonly opciones = signal<SubsanacionOpciones | null>(null);
   readonly camposConfig = signal<CampoConfigItem[]>([]);
@@ -417,7 +428,8 @@ export class SubsanacionDrawerComponent implements OnInit {
       .pipe(finalize(() => this.verificandoTelefono.set(false)))
       .subscribe({
         next: (leads) => {
-          const exacto = leads.find((item) => item.lead === raw.lead && item.prefijo === raw.prefijo);
+          const prefijoActual = limpiarPrefijo(raw.prefijo);
+          const exacto = leads.find((item) => item.lead === raw.lead && limpiarPrefijo(item.prefijo) === prefijoActual);
           this.duplicado.set(exacto ? { idLead: exacto.idLead, titular: exacto.titular } : null);
           if (!exacto && avanzar) this.paso.set(1);
         },
@@ -445,6 +457,8 @@ export class SubsanacionDrawerComponent implements OnInit {
 
   abrirConfirmacion(): void {
     if (!this.validarTodo()) return;
+    this.confirmacionError.set(null);
+    this.confirmacionDetalle.set([]);
     this.confirmacionAbierta.set(true);
   }
 
@@ -458,6 +472,9 @@ export class SubsanacionDrawerComponent implements OnInit {
     if (!request) return;
     this.enviando.set(true);
     this.error.set(null);
+    this.validacionDetalle.set([]);
+    this.confirmacionError.set(null);
+    this.confirmacionDetalle.set([]);
     this.api.ejecutar(request)
       .pipe(finalize(() => this.enviando.set(false)))
       .subscribe({
@@ -467,8 +484,11 @@ export class SubsanacionDrawerComponent implements OnInit {
           this.completada.emit(resultado);
         },
         error: (error: HttpErrorResponse) => {
-          this.confirmacionAbierta.set(false);
-          this.error.set(this.mensajeError(error));
+          const apiError = this.extraerErrorApi(error);
+          this.confirmacionError.set(apiError.message);
+          this.confirmacionDetalle.set(apiError.details);
+          this.error.set(apiError.message);
+          this.validacionDetalle.set(apiError.details);
         }
       });
   }
@@ -852,6 +872,12 @@ export class SubsanacionDrawerComponent implements OnInit {
     for (const form of forms) {
       form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.formVersion.update((value) => value + 1));
     }
+    this.fechasForm.controls.fechaGestion.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.cambiarFechaGestion());
+    this.fechasForm.controls.fechaInstalacion.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.cambiarFechaInstalacion());
   }
 
   private validarPasoActual(): boolean {
@@ -1053,7 +1079,7 @@ export class SubsanacionDrawerComponent implements OnInit {
       requestId: this.requestId,
       modo: this.modo(),
       idLead: this.modo() === 'EXISTENTE' ? this.idLead() : null,
-      prefijo: identidad.prefijo ?? '', lead: identidad.lead ?? '', usermeta: this.nulo(identidad.usermeta),
+      prefijo: this.prefijoApi(identidad.prefijo), lead: identidad.lead ?? '', usermeta: this.nulo(identidad.usermeta),
       idEquipo: comercial.idEquipo, idCampana: comercial.idCampana, idPlan: comercial.idPlan,
       base: comercial.base ?? '',
       datosPreventa: {
@@ -1069,7 +1095,7 @@ export class SubsanacionDrawerComponent implements OnInit {
       direccion: {
         ubigeoDomicilio: direccion.ubigeoDomicilio ?? '', tipoDomicilio: this.nulo(direccion.tipoDomicilio),
         tipoVia: this.nulo(direccion.tipoVia), via: this.nulo(direccion.via), direccion: direccion.direccion ?? '',
-        referencia: this.nulo(direccion.referencia), latitud: String(direccion.latitud ?? '').replace(',', '.'), longitud: String(direccion.longitud ?? '').replace(',', '.'),
+        referencia: this.nulo(direccion.referencia), latitud: this.coordenadaApi(direccion.latitud), longitud: this.coordenadaApi(direccion.longitud),
         urbanizacion: this.nulo(direccion.urbanizacion), numero: this.nulo(direccion.numero), manzana: this.nulo(direccion.manzana),
         lote: this.nulo(direccion.lote), nombreEdificio: this.nulo(direccion.nombreEdificio),
         nombreCondominio: this.nulo(direccion.nombreCondominio), plano: this.nulo(direccion.plano),
@@ -1108,11 +1134,55 @@ export class SubsanacionDrawerComponent implements OnInit {
     return clean ? clean : null;
   }
 
+  private prefijoApi(value?: string | null): string {
+    const limpio = limpiarPrefijo(value ?? '51') || '51';
+    return `+${limpio}`;
+  }
+
+  private coordenadaApi(value?: string | null): string | null {
+    return this.nulo(String(value ?? '').replace(',', '.'));
+  }
+
   private mensajeError(error: HttpErrorResponse): string {
-    const body = error.error as { message?: string; error?: string } | string | null;
-    if (typeof body === 'string' && body.trim()) return body;
-    if (body && typeof body === 'object') return body.message || body.error || 'No se pudo completar la subsanación.';
-    return 'No se pudo completar la subsanación. Revisa los datos e inténtalo nuevamente.';
+    return this.extraerErrorApi(error).message;
+  }
+
+  private extraerErrorApi(error: HttpErrorResponse): { message: string; details: string[] } {
+    const fallback = 'No se pudo completar la subsanación. Revisa los datos e inténtalo nuevamente.';
+    const body = error.error as ApiErrorBody | string | null;
+    if (typeof body === 'string') {
+      const clean = body.trim();
+      return { message: clean || fallback, details: [] };
+    }
+    if (!body || typeof body !== 'object') {
+      return { message: fallback, details: [] };
+    }
+    const details = [
+      ...this.extraerDetalles(body.details),
+      ...this.extraerDetalles(body.errors)
+    ];
+    const rawMessage = this.primerTexto(body.message) || this.primerTexto(body.detail) || this.primerTexto(body.error);
+    const message = rawMessage && rawMessage !== 'Bad Request'
+      ? rawMessage
+      : details[0] ?? fallback;
+    return { message, details: details.filter((item) => item !== message).slice(0, 8) };
+  }
+
+  private extraerDetalles(value: unknown): string[] {
+    if (!value) return [];
+    if (typeof value === 'string') return value.trim() ? [value.trim()] : [];
+    if (Array.isArray(value)) return value.flatMap((item) => this.extraerDetalles(item));
+    if (typeof value === 'object') {
+      return Object.entries(value as Record<string, unknown>).flatMap(([key, item]) => {
+        const textos = this.extraerDetalles(item);
+        return textos.length ? textos.map((texto) => key ? `${key}: ${texto}` : texto) : [];
+      });
+    }
+    return [String(value)];
+  }
+
+  private primerTexto(value: unknown): string | null {
+    return this.extraerDetalles(value)[0] ?? null;
   }
 
   private nuevoRequestId(): string {

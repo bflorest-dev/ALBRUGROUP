@@ -15,10 +15,14 @@
     [showButtonBar]="true"
     [readonlyInput]="readonly"
     [disabled]="isDisabled || readonly"
+    [showOnFocus]="openOnHover"
+    [keepInvalid]="keepInvalid"
+    [baseZIndex]="baseZIndex"
     dateFormat="dd/mm/yy"
     appendTo="body"
-    inputStyleClass="date-field__input"
-    panelStyleClass="date-field__panel"
+    [inputStyleClass]="inputStyleClass"
+    [panelStyleClass]="panelStyleClass"
     (onBlur)="onInputBlur()"
+    (mouseenter)="onMouseEnter()"
   />
 </div>

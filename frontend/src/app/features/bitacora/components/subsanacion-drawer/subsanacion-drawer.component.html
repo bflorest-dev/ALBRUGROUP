@@ -96,8 +96,40 @@
             <p>Estas fechas determinan las métricas. La ejecución real quedará separada en el acta.</p>
           </div>
           <div class="field-grid two">
-            <label class="field"><span>Fecha de gestión</span><input class="mono" type="date" formControlName="fechaGestion" [min]="fechaGestionMin" [max]="fechaGestionMax" (change)="cambiarFechaGestion()" /><small>Desde {{ fechaGestionMin }} hasta ayer.</small></label>
-            <label class="field"><span>Fecha de instalación</span><input class="mono" type="date" formControlName="fechaInstalacion" [min]="fechasForm.controls.fechaGestion.value || fechaGestionMin" [max]="fechaInstalacionMax" (change)="cambiarFechaInstalacion()" /><small>Entre la gestión y hoy.</small></label>
+            <div class="historical-date-field">
+              <app-date-field
+                class="subsanacion-date-field"
+                formControlName="fechaGestion"
+                label="Fecha de gestión"
+                inputId="subsanacion-fecha-gestion"
+                placeholder="dd/mm/aaaa"
+                panelStyleClass="subsanacion-date-panel"
+                [openOnHover]="true"
+                [keepInvalid]="true"
+                [baseZIndex]="1400"
+                fixedYearPrefix="20"
+                [min]="fechaGestionMin"
+                [max]="fechaGestionMax"
+              />
+              <small>Desde {{ fechaGestionMin }} hasta ayer.</small>
+            </div>
+            <div class="historical-date-field">
+              <app-date-field
+                class="subsanacion-date-field"
+                formControlName="fechaInstalacion"
+                label="Fecha de instalación"
+                inputId="subsanacion-fecha-instalacion"
+                placeholder="dd/mm/aaaa"
+                panelStyleClass="subsanacion-date-panel"
+                [openOnHover]="true"
+                [keepInvalid]="true"
+                [baseZIndex]="1400"
+                fixedYearPrefix="20"
+                [min]="fechasForm.controls.fechaGestion.value || fechaGestionMin"
+                [max]="fechaInstalacionMax"
+              />
+              <small>Entre la gestión y hoy.</small>
+            </div>
           </div>
           <div class="canonical-timeline">
             <div><time class="mono">09:00</time><span>Subsanación</span><small>Evidencia administrativa</small></div>
@@ -125,7 +157,17 @@
               <label class="field"><span>Celular de referencia</span><input class="mono" formControlName="celularReferencia" inputmode="numeric" maxlength="15" /></label>
               <label class="field"><span>Celular de grabación</span><input class="mono" formControlName="celularGrabacion" inputmode="numeric" maxlength="15" /></label>
               <label class="field span2"><span>Correo</span><input type="email" formControlName="correo" autocapitalize="none" spellcheck="false" /></label>
-              <label class="field"><span>Fecha de nacimiento</span><input class="mono" type="date" formControlName="fechaNacimiento" /></label>
+              <app-date-field
+                class="subsanacion-date-field"
+                formControlName="fechaNacimiento"
+                label="Fecha de nacimiento"
+                inputId="subsanacion-fecha-nacimiento"
+                placeholder="dd/mm/aaaa"
+                panelStyleClass="subsanacion-date-panel"
+                [openOnHover]="true"
+                [keepInvalid]="true"
+                [baseZIndex]="1400"
+              />
               <label class="field"><span>Parentesco</span><select formControlName="parentesco"><option value="">Selecciona</option>@for (item of parentescos; track item) { <option [value]="item">{{ item }}</option> }</select></label>
               <div class="location-block span2">
                 <div class="location-heading"><span>Ubicación de nacimiento</span><small>opcional</small></div>
@@ -305,6 +347,22 @@
         }
         @if (preparacion()?.impacto?.requiereConfirmacionContacto && identidadModificada()) {
           <label class="confirmation-check"><input type="checkbox" [checked]="confirmarContacto()" (change)="confirmarContacto.set($any($event.target).checked)" /><span><b>Confirmo el impacto sobre el Contacto.</b> Prefijo o usermeta se sincronizarán en sus oportunidades hermanas.</span></label>
+        }
+        @if (confirmacionError(); as message) {
+          <div class="confirm-error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+            <div>
+              <b>No se pudo completar la subsanación</b>
+              <span>{{ message }}</span>
+              @if (confirmacionDetalle().length) {
+                <ul>
+                  @for (detalle of confirmacionDetalle(); track detalle) {
+                    <li>{{ detalle }}</li>
+                  }
+                </ul>
+              }
+            </div>
+          </div>
         }
         <div class="irreversible"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>La reconstrucción operativa no puede deshacerse desde la interfaz.</span></div>
       </div>

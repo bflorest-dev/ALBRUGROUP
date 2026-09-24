@@ -936,9 +936,8 @@ public class LeadService {
         var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
         List<String> tips = normalizarCodigosBandeja(codigosTipificacion);
         List<String> subtips = normalizarCodigosBandeja(codigosSubtipificacion);
-        boolean filtrarTipificaciones = !tips.isEmpty() || sinTipificacion;
-        boolean filtrarSubtipificaciones = !subtips.isEmpty() || sinSubtipificacion;
-        List<String> tipsQuery = filtrarTipificaciones ? tips : List.of("__SIN_FILTRO__");
+        boolean filtrarTipSub = !tips.isEmpty() || !subtips.isEmpty() || sinTipificacion || sinSubtipificacion;
+        List<String> tipsQuery = !tips.isEmpty() ? tips : List.of("__SIN_FILTRO__");
         List<String> subtipsQuery = !subtips.isEmpty() ? subtips : List.of("__SIN_FILTRO__");
         org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPageNumber(),
@@ -951,10 +950,9 @@ public class LeadService {
                 Etapa.PREVENTA,
                 busqueda.searchPattern(),
                 busqueda.buscarPorUsermeta(),
-                filtrarTipificaciones,
+                filtrarTipSub,
                 tipsQuery,
                 sinTipificacion,
-                filtrarSubtipificaciones,
                 subtipsQuery,
                 sinSubtipificacion,
                 campo.name(),
@@ -1635,17 +1633,29 @@ public class LeadService {
         String nuevoPrefijo = leadMapper.trimToNull(req.getPrefijo());
         String nuevoLead = leadMapper.trimToNull(req.getLead());
         String nuevoUsermeta = leadMapper.trimToNull(req.getUsermeta());
-        if (nuevoLead == null) {
-            throw new BadRequestException("El telefono (lead) no puede quedar vacio");
-        }
 
         Contacto contacto = lead.getContacto() == null
                 ? null
                 : contactoRepository.findById(lead.getContacto().getId()).orElse(null);
 
-        boolean telefonoCambia = contacto == null
+        // Un lead identificado solo por usermeta es válido. Cuando el formulario no envía
+        // teléfono, conserva el teléfono actual del contacto y permite corregir únicamente el
+        // usermeta; no debe convertir una corrección parcial en un teléfono vacío.
+        if (nuevoPrefijo == null && nuevoLead == null && contacto != null) {
+            nuevoPrefijo = leadMapper.trimToNull(contacto.getPrefijo());
+            nuevoLead = leadMapper.trimToNull(contacto.getLead());
+        }
+        if ((nuevoPrefijo == null) != (nuevoLead == null)) {
+            throw new BadRequestException("Para corregir el telefono debes enviar prefijo y lead");
+        }
+        if (nuevoLead == null && nuevoUsermeta == null) {
+            throw new BadRequestException("La identidad debe contener un telefono o un usermeta");
+        }
+
+        boolean telefonoNuevo = tieneTelefono(nuevoPrefijo, nuevoLead);
+        boolean telefonoCambia = telefonoNuevo && (contacto == null
                 || !java.util.Objects.equals(contacto.getPrefijo(), nuevoPrefijo)
-                || !java.util.Objects.equals(contacto.getLead(), nuevoLead);
+                || !java.util.Objects.equals(contacto.getLead(), nuevoLead));
         if (telefonoCambia) {
             contactoRepository.findByPrefijoAndLead(nuevoPrefijo, nuevoLead).ifPresent(existente -> {
                 if (contacto == null || !existente.getId().equals(contacto.getId())) {

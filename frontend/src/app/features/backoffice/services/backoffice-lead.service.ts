@@ -354,8 +354,12 @@ export class BackofficeLeadService {
     return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-agregado`);
   }
 
-  getCatalogoPorProveedor(etapa: string): Observable<CatalogoProveedorResponse[]> {
-    return this.http.get<CatalogoProveedorResponse[]>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-por-proveedor`);
+  getCatalogoPorProveedor(etapa: string, idProveedor?: number | null): Observable<CatalogoProveedorResponse[]> {
+    let params = new HttpParams();
+    if (idProveedor != null) {
+      params = params.set('idProveedor', idProveedor);
+    }
+    return this.http.get<CatalogoProveedorResponse[]>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-por-proveedor`, { params });
   }
 
   listarPlanes(idProveedor?: number, soloVigentes = true): Observable<PlanResponse[]> {

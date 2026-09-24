@@ -65,8 +65,10 @@ public class TipificacionController {
     }
 
     @GetMapping("/{etapa}/catalogo-por-proveedor") @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa)")
-    public ResponseEntity<List<CatalogoProveedorResponse>> getCatalogoPorProveedor(@PathVariable Etapa etapa) {
-        return ResponseEntity.ok(service.getCatalogoPorProveedor(etapa));
+    public ResponseEntity<List<CatalogoProveedorResponse>> getCatalogoPorProveedor(
+            @PathVariable Etapa etapa,
+            @RequestParam(required = false) Long idProveedor) {
+        return ResponseEntity.ok(service.getCatalogoPorProveedor(etapa, idProveedor));
     }
 
     @PutMapping("/catalogo") @PreAuthorize("hasAuthority('UPDATE_TIPIFICACIONES')")
