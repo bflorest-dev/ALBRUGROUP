@@ -1493,6 +1493,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarDepartamento = false OR dept.id = :idDepartamento)
               AND (:filtrarProvincia = false OR prov.id = :idProvincia)
               AND (:filtrarDistrito = false OR dist.id = :idDistrito)
+              AND (:filtrarEstado = false OR l.estado = :estadoFiltro)
+              AND (:filtrarPlan = false OR l.nombrePlanSnapshot = :nombrePlanFiltro)
+              AND (:filtrarGestor = false OR r.nombreAsesorUltimaGestion = :nombreGestorFiltro)
             ORDER BY
               CASE WHEN :groupBy = 'ESTADO' THEN CASE WHEN l.estado = :estadoNuevo THEN 0 WHEN l.estado = :estadoEnGestion THEN 1 WHEN l.estado = :estadoAsignado THEN 2 WHEN l.estado = :estadoGestionado THEN 3 ELSE 4 END END ASC,
               CASE WHEN :groupBy = 'PLAN' THEN l.nombrePlanSnapshot END ASC,
@@ -1569,6 +1572,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("idProvincia") Long idProvincia,
             @Param("filtrarDistrito") boolean filtrarDistrito,
             @Param("idDistrito") Long idDistrito,
+            @Param("filtrarEstado") boolean filtrarEstado,
+            @Param("estadoFiltro") EstadoSeguimiento estadoFiltro,
+            @Param("filtrarPlan") boolean filtrarPlan,
+            @Param("nombrePlanFiltro") String nombrePlanFiltro,
+            @Param("filtrarGestor") boolean filtrarGestor,
+            @Param("nombreGestorFiltro") String nombreGestorFiltro,
             @Param("groupBy") String groupBy,
             @Param("sortBy") String sortBy,
             @Param("sortDesc") boolean sortDesc,
@@ -3485,5 +3494,21 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("sinCambioDesde") Instant sinCambioDesde,
             @Param("contactoDesde") Instant contactoDesde,
             @Param("diasContactoMinimo") int diasContactoMinimo
+    );
+
+    @Query("""
+            SELECT DISTINCT r.nombreAsesorUltimaGestion
+            FROM LeadEtapaResumen r
+            JOIN Lead l ON l.id = r.idLead
+            LEFT JOIN l.proveedor lprov
+            WHERE r.etapa = :etapa
+              AND r.nombreAsesorUltimaGestion IS NOT NULL
+              AND (:filtrarProveedores = false OR lprov.id IN :proveedorIds)
+            ORDER BY r.nombreAsesorUltimaGestion
+            """)
+    List<String> listarGestoresDistintos(
+            @Param("etapa") Etapa etapa,
+            @Param("filtrarProveedores") boolean filtrarProveedores,
+            @Param("proveedorIds") Collection<Long> proveedorIds
     );
 }

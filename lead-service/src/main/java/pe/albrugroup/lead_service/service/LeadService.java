@@ -905,6 +905,9 @@ public class LeadService {
             Long idDepartamento,
             Long idProvincia,
             Long idDistrito,
+            String estado,
+            String nombrePlan,
+            String nombreGestor,
             LocalDate fechaDesde,
             LocalDate fechaHasta,
             CampoFechaListadoVenta campoFecha,
@@ -933,6 +936,7 @@ public class LeadService {
         Instant tsHasta = OperationalDateTime.endExclusiveOfDay(rango.hasta());
         ProveedorScopeService.Scope provScope = resolverProveedoresBandeja(idProveedor);
         BusquedaVentaFiltro busqueda = resolverBusquedaVenta(lead);
+        EstadoSeguimiento estadoFiltro = estado != null ? EstadoSeguimiento.valueOf(estado) : null;
         var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
         List<String> tips = normalizarCodigosBandeja(codigosTipificacion);
         List<String> subtips = normalizarCodigosBandeja(codigosSubtipificacion);
@@ -968,6 +972,12 @@ public class LeadService {
                 idProvincia != null ? idProvincia : 0L,
                 idDistrito != null,
                 idDistrito != null ? idDistrito : 0L,
+                estadoFiltro != null,
+                estadoFiltro != null ? estadoFiltro : EstadoSeguimiento.NUEVO,
+                nombrePlan != null && !nombrePlan.isBlank(),
+                nombrePlan != null ? nombrePlan.trim() : "",
+                nombreGestor != null && !nombreGestor.isBlank(),
+                nombreGestor != null ? nombreGestor.trim() : "",
                 groupByName,
                 sortBy,
                 sortDesc,
@@ -979,6 +989,15 @@ public class LeadService {
         );
         leads.getContent().forEach(row -> normalizarFechaRelevanteBandejaVenta(row, CampoFechaListadoVenta.AUTO));
         return PageResponse.from(leads);
+    }
+
+    public List<String> listarGestoresDistintosBandejaVenta(Long idProveedor) {
+        ProveedorScopeService.Scope provScope = resolverProveedoresBandeja(idProveedor);
+        return leadRepository.listarGestoresDistintos(
+                Etapa.VENTA,
+                provScope.restringido(),
+                provScope.idsParaQuery()
+        );
     }
 
     private List<String> normalizarCodigosBandeja(List<String> codigos) {

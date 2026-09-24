@@ -45,6 +45,9 @@ export interface LeadBandejaVentaNormalizadaQuery extends PageQuery {
   idDepartamento?: number | null;
   idProvincia?: number | null;
   idDistrito?: number | null;
+  estado?: string | null;
+  nombrePlan?: string | null;
+  nombreGestor?: string | null;
   fechaDesde?: string | null;
   fechaHasta?: string | null;
   campoFecha?: CampoFechaListadoVenta | string | null;
@@ -113,6 +116,15 @@ export class BackofficeLeadService {
     }
     if (query.idDistrito !== null && query.idDistrito !== undefined) {
       params = params.set('idDistrito', query.idDistrito);
+    }
+    if (query.estado) {
+      params = params.set('estado', query.estado);
+    }
+    if (query.nombrePlan) {
+      params = params.set('nombrePlan', query.nombrePlan);
+    }
+    if (query.nombreGestor) {
+      params = params.set('nombreGestor', query.nombreGestor);
     }
     if (query.fechaDesde) {
       params = params.set('fechaDesde', query.fechaDesde);
@@ -360,6 +372,14 @@ export class BackofficeLeadService {
       params = params.set('idProveedor', idProveedor);
     }
     return this.http.get<CatalogoProveedorResponse[]>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-por-proveedor`, { params });
+  }
+
+  listarGestoresBandeja(idProveedor?: number | null): Observable<string[]> {
+    let params = new HttpParams();
+    if (idProveedor !== null && idProveedor !== undefined) {
+      params = params.set('idProveedor', idProveedor);
+    }
+    return this.http.get<string[]>(`${this.leadUrl}/venta/bandeja/gestores`, { params });
   }
 
   listarPlanes(idProveedor?: number, soloVigentes = true): Observable<PlanResponse[]> {

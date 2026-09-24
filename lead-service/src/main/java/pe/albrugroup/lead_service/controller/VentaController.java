@@ -108,6 +108,9 @@ public class VentaController {
             @RequestParam(required = false) Long idDepartamento,
             @RequestParam(required = false) Long idProvincia,
             @RequestParam(required = false) Long idDistrito,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String nombrePlan,
+            @RequestParam(required = false) String nombreGestor,
             @RequestParam(required = false) LocalDate fechaDesde,
             @RequestParam(required = false) LocalDate fechaHasta,
             @RequestParam(required = false) CampoFechaListadoVenta campoFecha,
@@ -124,6 +127,9 @@ public class VentaController {
                 idDepartamento,
                 idProvincia,
                 idDistrito,
+                estado,
+                nombrePlan,
+                nombreGestor,
                 fechaDesde,
                 fechaHasta,
                 campoFecha,
@@ -131,6 +137,13 @@ public class VentaController {
                 pageRequest
         );
         return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+
+    @GetMapping("/bandeja/gestores") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<List<String>> listarGestoresBandeja(
+            @RequestParam(required = false) Long idProveedor
+    ) {
+        return ResponseEntity.ok(leadService.listarGestoresDistintosBandejaVenta(idProveedor));
     }
 
     // Resumen diario de VENTA (replica web del reporte Excel del equipo): contadores + desglose por

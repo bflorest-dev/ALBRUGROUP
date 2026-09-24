@@ -401,6 +401,11 @@ app-tipification-stack {
   display: grid;
   gap: 0.78rem;
   min-width: 18rem;
+
+  &__separator {
+    border-top: 1px solid var(--board-border, #e5e7eb);
+    margin: 0.2rem 0;
+  }
 }
 
 .organize-panel label {

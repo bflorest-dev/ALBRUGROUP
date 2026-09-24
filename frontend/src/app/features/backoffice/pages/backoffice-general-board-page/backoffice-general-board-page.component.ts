@@ -34,6 +34,7 @@ import { BackofficeLeadService } from '../../services/backoffice-lead.service';
 type SortField = 'fechaIngresoEtapa' | 'fechaRelevante' | 'fechaUltimaGestion' | 'lead' | 'estado' | 'tipificacion';
 type SortDirection = 'asc' | 'desc';
 type GroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'PLAN' | 'TIPIFICACION' | 'SUBTIPIFICACION' | 'ULTIMO_GESTOR' | 'ASESOR_PREVENTA' | 'DEPARTAMENTO' | 'PROVINCIA' | 'DISTRITO';
+type FilterColumn = 'NINGUNO' | 'DEPARTAMENTO' | 'ESTADO' | 'PLAN' | 'ULTIMO_GESTOR';
 type Option<T extends string = string> = { label: string; value: T };
 
 @Component({
@@ -97,6 +98,14 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     this.tipGroups().flatMap(g => g.nodes.map(n => n.key))
   );
 
+  // --- Filtrar por ---
+  protected readonly filterColumn = signal<FilterColumn>('NINGUNO');
+  protected readonly filterEstado = signal<string | null>(null);
+  protected readonly filterPlan = signal<string | null>(null);
+  protected readonly filterGestor = signal<string | null>(null);
+  protected readonly planOptions = signal<Option[]>([]);
+  protected readonly gestorOptions = signal<Option[]>([]);
+
   // --- Geo cascade filter ---
   protected readonly departamentos = signal<UbigeoItem[]>([]);
   protected readonly provincias = signal<UbigeoItem[]>([]);
@@ -141,15 +150,11 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     return tips.length + subtips.length;
   });
 
-  protected readonly geoFilterActive = computed(() =>
-    this.selectedDepartamento() !== null
-  );
-
   protected readonly activeFilterCount = computed(() => {
     let count = this.tipFilterCount();
     if (this.searchActive()) count += 1;
     if (this.groupBy() !== 'SIN_AGRUPAR') count += 1;
-    if (this.geoFilterActive()) count += 1;
+    if (this.hasActiveFilter()) count += 1;
     return count;
   });
 
@@ -189,11 +194,61 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
       : [{ label: 'A-Z', value: 'asc' }, { label: 'Z-A', value: 'desc' }];
   });
 
+  protected readonly filterColumnOptions: Option<FilterColumn>[] = [
+    { label: 'Ninguno', value: 'NINGUNO' },
+    { label: 'Departamento', value: 'DEPARTAMENTO' },
+    { label: 'Estado', value: 'ESTADO' },
+    { label: 'Plan', value: 'PLAN' },
+    { label: 'Último gestor', value: 'ULTIMO_GESTOR' }
+  ];
+
+  protected readonly estadoOptions: Option[] = [
+    { label: 'Nuevo', value: 'NUEVO' },
+    { label: 'En gestión', value: 'EN_GESTION' },
+    { label: 'Asignado', value: 'ASIGNADO' },
+    { label: 'Gestionado', value: 'GESTIONADO' }
+  ];
+
+  protected readonly hasActiveFilter = computed(() =>
+    this.filterColumn() !== 'NINGUNO' && (
+      this.selectedDepartamento() !== null
+      || this.filterEstado() !== null
+      || this.filterPlan() !== null
+      || this.filterGestor() !== null
+    )
+  );
+
+  protected readonly activeFilterLabel = computed(() => {
+    switch (this.filterColumn()) {
+      case 'DEPARTAMENTO': {
+        const parts: string[] = [];
+        const dep = this.departamentos().find(d => d.id === this.selectedDepartamento());
+        if (dep) parts.push(dep.nombre);
+        const prov = this.provincias().find(p => p.id === this.selectedProvincia());
+        if (prov) parts.push(prov.nombre);
+        const dist = this.distritos().find(d => d.id === this.selectedDistrito());
+        if (dist) parts.push(dist.nombre);
+        return parts.length ? parts.join(' · ') : 'Departamento';
+      }
+      case 'ESTADO':
+        return this.filterEstado()
+          ? this.estadoOptions.find(o => o.value === this.filterEstado())?.label ?? this.filterEstado()!
+          : 'Estado';
+      case 'PLAN':
+        return this.filterPlan() ?? 'Plan';
+      case 'ULTIMO_GESTOR':
+        return this.filterGestor() ?? 'Último gestor';
+      default:
+        return '';
+    }
+  });
+
   protected readonly isOrganizationDefault = computed(() =>
     this.campoFecha() === 'INGRESO'
     && this.groupBy() === 'SIN_AGRUPAR'
     && this.sortBy() === BackofficeGeneralBoardPageComponent.DEFAULT_SORT
     && this.direction() === BackofficeGeneralBoardPageComponent.DEFAULT_DIRECTION
+    && !this.hasActiveFilter()
   );
 
   protected readonly campoFechaLabel = computed(() => {
@@ -216,7 +271,15 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
         this.rows.set([]);
         this.total.set(0);
         this.page.set(0);
+        this.filterColumn.set('NINGUNO');
+        this.filterEstado.set(null);
+        this.filterPlan.set(null);
+        this.filterGestor.set(null);
+        this.selectedDepartamento.set(null);
+        this.selectedProvincia.set(null);
+        this.selectedDistrito.set(null);
         await this.loadCatalogo();
+        void this.loadFilterCatalogs();
         void this.loadRows();
       });
     });
@@ -225,7 +288,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     await this.providerScope.load();
     await this.loadCatalogo();
-    await Promise.all([this.loadRows(), this.loadDepartamentos()]);
+    await Promise.all([this.loadRows(), this.loadDepartamentos(), this.loadFilterCatalogs()]);
   }
 
   protected async refresh(): Promise<void> {
@@ -281,10 +344,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     }
   }
 
-  protected onTipSelectionChange(sel: TreeSelectSelection): void {
-    if (sel.parents.length === 0 && sel.children.length === 0) {
-      this.selectedTipificaciones.set(this.allTipKeys());
-    }
+  protected onTipSelectionChange(_sel: TreeSelectSelection): void {
     this.page.set(0);
     void this.loadRows();
   }
@@ -323,14 +383,36 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     await this.loadRows();
   }
 
-  protected clearGeoFilter(): void {
+  protected async onFilterColumnChange(col: FilterColumn): Promise<void> {
+    this.filterColumn.set(col);
+    this.filterEstado.set(null);
+    this.filterPlan.set(null);
+    this.filterGestor.set(null);
     this.selectedDepartamento.set(null);
     this.selectedProvincia.set(null);
     this.selectedDistrito.set(null);
     this.provincias.set([]);
     this.distritos.set([]);
     this.page.set(0);
-    void this.loadRows();
+    await this.loadRows();
+  }
+
+  protected async onFilterEstadoChange(val: string | null): Promise<void> {
+    this.filterEstado.set(val);
+    this.page.set(0);
+    await this.loadRows();
+  }
+
+  protected async onFilterPlanChange(val: string | null): Promise<void> {
+    this.filterPlan.set(val);
+    this.page.set(0);
+    await this.loadRows();
+  }
+
+  protected async onFilterGestorChange(val: string | null): Promise<void> {
+    this.filterGestor.set(val);
+    this.page.set(0);
+    await this.loadRows();
   }
 
   // --- Period ---
@@ -398,6 +480,15 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     this.groupBy.set('SIN_AGRUPAR');
     this.sortBy.set(BackofficeGeneralBoardPageComponent.DEFAULT_SORT);
     this.direction.set(BackofficeGeneralBoardPageComponent.DEFAULT_DIRECTION);
+    this.filterColumn.set('NINGUNO');
+    this.filterEstado.set(null);
+    this.filterPlan.set(null);
+    this.filterGestor.set(null);
+    this.selectedDepartamento.set(null);
+    this.selectedProvincia.set(null);
+    this.selectedDistrito.set(null);
+    this.provincias.set([]);
+    this.distritos.set([]);
     this.page.set(0);
     await this.loadRows();
   }
@@ -405,6 +496,10 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected async clearFilters(): Promise<void> {
     this.selectedTipificaciones.set(this.allTipKeys());
     this.selectedSubtipificaciones.set([]);
+    this.filterColumn.set('NINGUNO');
+    this.filterEstado.set(null);
+    this.filterPlan.set(null);
+    this.filterGestor.set(null);
     this.selectedDepartamento.set(null);
     this.selectedProvincia.set(null);
     this.selectedDistrito.set(null);
@@ -598,6 +693,20 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     }
   }
 
+  private async loadFilterCatalogs(): Promise<void> {
+    try {
+      const [planes, gestores] = await Promise.all([
+        firstValueFrom(this.leadService.listarPlanes(undefined, true)),
+        firstValueFrom(this.leadService.listarGestoresBandeja(this.providerScope.activeId()))
+      ]);
+      this.planOptions.set(planes.map(p => ({ label: p.nombre, value: p.nombre })));
+      this.gestorOptions.set(gestores.map(g => ({ label: g, value: g })));
+    } catch {
+      this.planOptions.set([]);
+      this.gestorOptions.set([]);
+    }
+  }
+
   private async loadCatalogo(): Promise<void> {
     this.catalogLoading.set(true);
     try {
@@ -678,6 +787,9 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
         idDepartamento: this.selectedDepartamento(),
         idProvincia: this.selectedProvincia(),
         idDistrito: this.selectedDistrito(),
+        estado: this.filterEstado(),
+        nombrePlan: this.filterPlan(),
+        nombreGestor: this.filterGestor(),
         fechaDesde: this.dia(),
         fechaHasta: this.hasta(),
         campoFecha: this.campoFecha(),

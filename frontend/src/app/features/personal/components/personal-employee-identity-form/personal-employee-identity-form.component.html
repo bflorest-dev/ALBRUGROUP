@@ -25,42 +25,41 @@
         <h3>Crear empleado</h3>
         <p>Registra la identidad y los datos administrativos básicos. Contrato, usuario, rol y horario se completan después.</p>
       </div>
-      <span class="status-pill"><i class="ti ti-lock-open-2" aria-hidden="true"></i>Sin configuración operativa</span>
     </div>
 
     <div class="flow-note">
-      <i class="ti ti-route" aria-hidden="true"></i>
-      <div><strong>Flujo desacoplado</strong><span>Primero guardamos la persona; luego podrás completar su expediente desde PERSONAL.</span></div>
+      <i class="ti ti-info-circle" aria-hidden="true"></i>
+      <span>Primero se guarda la persona. Luego puedes completar contrato, usuario, roles y horario desde su expediente en PERSONAL.</span>
     </div>
 
     <form [formGroup]="empleadoForm" class="form-grid">
-      <label class="field field--wide"><span>Empresa contratista <small>(opcional)</small></span><p-select formControlName="idEmpresaContratista" [options]="empresaItems()" optionLabel="label" optionValue="value" appendTo="body" /></label>
+      <label class="form-field form-field--wide"><span>Empresa contratista <small>(opcional)</small></span><select formControlName="idEmpresaContratista"><option [value]="''">No aplica</option>@for (empresa of empresasContratistas; track empresa.id) { <option [value]="empresa.id">{{ empresa.nombre }}</option> }</select></label>
 
-      <label class="field"><span>Nombres</span><input appNormalizeText="personName" pInputText type="text" formControlName="nombres" [class.p-invalid]="isInvalid('nombres')" /></label>
-      <label class="field"><span>Apellidos</span><input appNormalizeText="personName" pInputText type="text" formControlName="apellidos" [class.p-invalid]="isInvalid('apellidos')" /></label>
-      <label class="field"><span>Tipo de documento</span><p-select formControlName="tipoDocumento" [options]="optionItems(documentoOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
+      <label class="form-field"><span>Nombres</span><input appNormalizeText="personName" type="text" formControlName="nombres" [class.invalid]="isInvalid('nombres')" /></label>
+      <label class="form-field"><span>Apellidos</span><input appNormalizeText="personName" type="text" formControlName="apellidos" [class.invalid]="isInvalid('apellidos')" /></label>
+      <label class="form-field"><span>Tipo de documento</span><select formControlName="tipoDocumento">@for (option of documentoOptions; track option) { <option [value]="option">{{ toLabel(option) }}</option> }</select></label>
 
-      <label class="field"><span>Número de documento</span><input pInputText type="text" formControlName="numeroDocumento" [class.p-invalid]="isInvalid('numeroDocumento')" /></label>
-      <label class="field"><span>Nacionalidad</span><p-select formControlName="nacionalidad" [options]="optionItems(nacionalidadOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
-      <label class="field"><span>Fecha de nacimiento</span><p-datepicker [ngModel]="toPickerDate(empleadoForm.get('fechaNacimiento')?.value)" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy" [showIcon]="true" [class.p-invalid]="isInvalid('fechaNacimiento')" appendTo="body" (ngModelChange)="setDateControl($event)" /></label>
+      <label class="form-field"><span>Número de documento</span><input type="text" formControlName="numeroDocumento" [class.invalid]="isInvalid('numeroDocumento')" /></label>
+      <label class="form-field"><span>Nacionalidad</span><select formControlName="nacionalidad">@for (option of nacionalidadOptions; track option) { <option [value]="option">{{ toLabel(option) }}</option> }</select></label>
+      <label class="form-field"><span>Fecha de nacimiento</span><input type="date" formControlName="fechaNacimiento" [class.invalid]="isInvalid('fechaNacimiento')" /></label>
 
-      <label class="field"><span>Estado civil</span><p-select formControlName="estadoCivil" [options]="optionItems(estadoCivilOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
-      <label class="field"><span>Tiene hijos</span><p-select formControlName="tieneHijos" [options]="noYesOptions" optionLabel="label" optionValue="value" appendTo="body" /></label>
-      <label class="field"><span>Celular personal</span><input pInputText type="text" formControlName="celularPersonal" inputmode="numeric" maxlength="9" (input)="setNumericDigits('celularPersonal', $any($event.target).value, 9)" [class.p-invalid]="isInvalid('celularPersonal')" /></label>
+      <label class="form-field"><span>Estado civil</span><select formControlName="estadoCivil">@for (option of estadoCivilOptions; track option) { <option [value]="option">{{ toLabel(option) }}</option> }</select></label>
+      <label class="form-field"><span>Tiene hijos</span><select formControlName="tieneHijos">@for (option of noYesOptions; track option.value) { <option [value]="option.value">{{ option.label }}</option> }</select></label>
+      <label class="form-field"><span>Celular personal</span><input type="text" formControlName="celularPersonal" inputmode="numeric" maxlength="9" (input)="setNumericDigits('celularPersonal', $any($event.target).value, 9)" [class.invalid]="isInvalid('celularPersonal')" /></label>
 
-      <label class="field"><span>Correo personal</span><input pInputText type="email" formControlName="correoPersonal" [class.p-invalid]="isInvalid('correoPersonal')" /></label>
-      <label class="field"><span>Origen</span><p-select formControlName="origen" [options]="optionItems(origenOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
-      <label class="field"><span>Distrito</span><p-select formControlName="distrito" [options]="optionItems(distritoOptions)" optionLabel="label" optionValue="value" [filter]="true" appendTo="body" /></label>
+      <label class="form-field"><span>Correo personal</span><input type="email" formControlName="correoPersonal" [class.invalid]="isInvalid('correoPersonal')" /></label>
+      <label class="form-field"><span>Origen</span><select formControlName="origen">@for (option of origenOptions; track option) { <option [value]="option">{{ toLabel(option) }}</option> }</select></label>
+      <label class="form-field"><span>Distrito</span><select formControlName="distrito">@for (option of distritoOptions; track option) { <option [value]="option">{{ toLabel(option) }}</option> }</select></label>
 
-      <label class="field field--wide"><span>Dirección</span><input pInputText type="text" formControlName="direccion" [class.p-invalid]="isInvalid('direccion')" /></label>
-      <label class="field"><span>Banco</span><p-select formControlName="banco" [options]="optionItems(bancoOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
-      <label class="field"><span>Cuenta bancaria</span><input pInputText type="text" formControlName="cuentaBancaria" [class.p-invalid]="isInvalid('cuentaBancaria')" /></label>
-      <label class="field"><span>Cuenta interbancaria</span><input pInputText type="text" formControlName="cuentaInterbancaria" [class.p-invalid]="isInvalid('cuentaInterbancaria')" /></label>
+      <label class="form-field form-field--wide"><span>Dirección</span><input type="text" formControlName="direccion" [class.invalid]="isInvalid('direccion')" /></label>
+      <label class="form-field"><span>Banco</span><select formControlName="banco">@for (option of bancoOptions; track option) { <option [value]="option">{{ toLabel(option) }}</option> }</select></label>
+      <label class="form-field"><span>Cuenta bancaria</span><input type="text" formControlName="cuentaBancaria" [class.invalid]="isInvalid('cuentaBancaria')" /></label>
+      <label class="form-field"><span>Cuenta interbancaria</span><input type="text" formControlName="cuentaInterbancaria" [class.invalid]="isInvalid('cuentaInterbancaria')" /></label>
 
-      <label class="field"><span>Cuenta propia</span><p-select formControlName="cuentaPropia" [options]="yesNoOptions" optionLabel="label" optionValue="value" appendTo="body" /></label>
+      <label class="form-field"><span>Cuenta propia</span><select formControlName="cuentaPropia">@for (option of yesNoOptions; track option.value) { <option [value]="option.value">{{ option.label }}</option> }</select></label>
       @if (!isOwnAccount()) {
-        <label class="field"><span>Parentesco</span><p-select formControlName="parentesco" [options]="optionalOptionItems(parentescoOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
-        <label class="field"><span>Celular de transferencia</span><input pInputText type="text" formControlName="celularTransferencia" /></label>
+        <label class="form-field"><span>Parentesco</span><select formControlName="parentesco"><option [value]="''">No aplica</option>@for (option of parentescoOptions; track option) { <option [value]="option">{{ toLabel(option) }}</option> }</select></label>
+        <label class="form-field"><span>Celular de transferencia</span><input type="text" formControlName="celularTransferencia" /></label>
       }
     </form>
 

@@ -2,6 +2,10 @@
   display: inline-block;
 }
 
+:host ::ng-deep > .p-button {
+  min-width: 9rem;
+}
+
 .tree-select-btn--active {
   font-weight: 800;
 }

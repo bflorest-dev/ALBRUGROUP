@@ -48,43 +48,6 @@
         (selectionChange)="onTipSelectionChange($event)"
       />
 
-      <p-select
-        [options]="departamentos()"
-        [ngModel]="selectedDepartamento()"
-        optionLabel="nombre"
-        optionValue="id"
-        placeholder="Departamento"
-        [showClear]="true"
-        appendTo="body"
-        (ngModelChange)="onDepartamentoChange($event)"
-      />
-
-      @if (selectedDepartamento() !== null) {
-        <p-select
-          [options]="provincias()"
-          [ngModel]="selectedProvincia()"
-          optionLabel="nombre"
-          optionValue="id"
-          placeholder="Provincia"
-          [showClear]="true"
-          appendTo="body"
-          (ngModelChange)="onProvinciaChange($event)"
-        />
-      }
-
-      @if (selectedProvincia() !== null) {
-        <p-select
-          [options]="distritos()"
-          [ngModel]="selectedDistrito()"
-          optionLabel="nombre"
-          optionValue="id"
-          placeholder="Distrito"
-          [showClear]="true"
-          appendTo="body"
-          (ngModelChange)="onDistritoChange($event)"
-        />
-      }
-
       <app-period-selector
         [periodo]="periodo()"
         [dia]="dia()"
@@ -168,6 +131,118 @@
         />
       </label>
 
+      <div class="organize-panel__separator"></div>
+
+      <label>
+        <span>Filtrar por</span>
+        <p-select
+          [options]="filterColumnOptions"
+          [ngModel]="filterColumn()"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          (ngModelChange)="onFilterColumnChange($event)"
+        />
+      </label>
+
+      @if (filterColumn() === 'DEPARTAMENTO') {
+        <label>
+          <span>Departamento</span>
+          <p-select
+            [options]="departamentos()"
+            [ngModel]="selectedDepartamento()"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Seleccionar"
+            [showClear]="true"
+            appendTo="body"
+            (ngModelChange)="onDepartamentoChange($event)"
+          />
+        </label>
+        @if (selectedDepartamento() !== null) {
+          <label>
+            <span>Provincia</span>
+            <p-select
+              [options]="provincias()"
+              [ngModel]="selectedProvincia()"
+              optionLabel="nombre"
+              optionValue="id"
+              placeholder="Seleccionar"
+              [showClear]="true"
+              appendTo="body"
+              (ngModelChange)="onProvinciaChange($event)"
+            />
+          </label>
+        }
+        @if (selectedProvincia() !== null) {
+          <label>
+            <span>Distrito</span>
+            <p-select
+              [options]="distritos()"
+              [ngModel]="selectedDistrito()"
+              optionLabel="nombre"
+              optionValue="id"
+              placeholder="Seleccionar"
+              [showClear]="true"
+              appendTo="body"
+              (ngModelChange)="onDistritoChange($event)"
+            />
+          </label>
+        }
+      }
+
+      @if (filterColumn() === 'ESTADO') {
+        <label>
+          <span>Estado</span>
+          <p-select
+            [options]="estadoOptions"
+            [ngModel]="filterEstado()"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccionar"
+            [showClear]="true"
+            appendTo="body"
+            (ngModelChange)="onFilterEstadoChange($event)"
+          />
+        </label>
+      }
+
+      @if (filterColumn() === 'PLAN') {
+        <label>
+          <span>Plan</span>
+          <p-select
+            [options]="planOptions()"
+            [ngModel]="filterPlan()"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccionar"
+            [showClear]="true"
+            [filter]="true"
+            filterBy="label"
+            appendTo="body"
+            (ngModelChange)="onFilterPlanChange($event)"
+          />
+        </label>
+      }
+
+      @if (filterColumn() === 'ULTIMO_GESTOR') {
+        <label>
+          <span>Último gestor</span>
+          <p-select
+            [options]="gestorOptions()"
+            [ngModel]="filterGestor()"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccionar"
+            [showClear]="true"
+            [filter]="true"
+            filterBy="label"
+            appendTo="body"
+            (ngModelChange)="onFilterGestorChange($event)"
+          />
+        </label>
+      }
+
       <button
         pButton
         type="button"
@@ -194,11 +269,10 @@
       <i class="pi pi-tags" aria-hidden="true"></i>
       {{ tipFilterCount() ? tipFilterCount() + ' filtros de tipificación' : 'Todas las tipificaciones' }}
     </span>
-    @if (geoFilterActive()) {
+    @if (hasActiveFilter()) {
       <span class="selection-rail__item">
-        <i class="pi pi-map-marker" aria-hidden="true"></i>
-        Filtro geográfico activo
-        <button pButton type="button" icon="pi pi-times" severity="secondary" text [rounded]="true" size="small" aria-label="Limpiar filtro geo" (click)="clearGeoFilter()"></button>
+        <i class="pi pi-filter" aria-hidden="true"></i>
+        {{ activeFilterLabel() }}
       </span>
     }
   </div>
