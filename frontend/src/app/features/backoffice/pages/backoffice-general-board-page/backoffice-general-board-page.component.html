@@ -12,8 +12,8 @@
   </header>
 
   <section class="general-board__controls" aria-label="Filtros de bandeja general">
-    <form class="search-strip" (ngSubmit)="buscar()">
-      <i class="pi pi-search" aria-hidden="true"></i>
+    <form class="search-strip" role="search" aria-label="Buscar en bandeja general" [attr.aria-busy]="loading()" (ngSubmit)="buscar()">
+      <i [class]="loading() ? 'pi pi-spin pi-spinner' : 'pi pi-search'" aria-hidden="true"></i>
       <input
         pInputText
         type="text"
@@ -22,7 +22,7 @@
         autocomplete="off"
         placeholder="Lead, documento, SEC, SOT o @usermeta"
         [ngModel]="searchInput()"
-        (ngModelChange)="searchInput.set($event)"
+        (ngModelChange)="onSearchInput($event)"
       />
       @if (searchActive()) {
         <button
@@ -35,7 +35,6 @@
           (click)="limpiarBusqueda()"
         ></button>
       }
-      <button pButton type="submit" icon="pi pi-arrow-right" label="Buscar" [loading]="loading()"></button>
     </form>
 
     <div class="filter-strip">
@@ -277,25 +276,28 @@
     }
   </div>
 
-  @if (error()) {
-    <div class="state state--error" role="alert">
-      <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-      <span>{{ error() }}</span>
-      <button pButton type="button" label="Reintentar" size="small" (click)="refresh()"></button>
+  <div class="general-board__body">
+    <div class="general-board__error-slot">
+      @if (error()) {
+        <div class="state state--error" role="alert">
+          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+          <span>{{ error() }}</span>
+          <button pButton type="button" label="Reintentar" size="small" (click)="refresh()"></button>
+        </div>
+      }
     </div>
-  }
 
-  <section class="table-shell">
-    <p-table
-      [value]="rows()"
-      dataKey="idLead"
-      [loading]="loading()"
-      [rowHover]="true"
-      [scrollable]="true"
-      scrollHeight="flex"
-      [tableStyle]="{ 'min-width': showSecSotColumn() ? '1060px' : '940px', 'width': '100%', 'table-layout': 'fixed' }"
-      styleClass="p-datatable-sm general-table"
-    >
+    <section class="table-shell">
+      <p-table
+        [value]="rows()"
+        dataKey="idLead"
+        [loading]="loading()"
+        [rowHover]="true"
+        [scrollable]="true"
+        scrollHeight="flex"
+        [tableStyle]="{ 'min-width': showSecSotColumn() ? '1060px' : '940px', 'width': '100%', 'table-layout': 'fixed' }"
+        styleClass="p-datatable-sm general-table"
+      >
       <ng-template #header>
         <tr>
           <th class="col-date col-ingreso">
@@ -438,147 +440,45 @@
           </td>
         </tr>
       </ng-template>
-    </p-table>
-  </section>
+      </p-table>
+    </section>
 
-  <p-paginator
-    [rows]="pageSize"
-    [totalRecords]="total()"
-    [first]="page() * pageSize"
-    [showCurrentPageReport]="true"
-    currentPageReportTemplate="{first} - {last} de {totalRecords}"
-    (onPageChange)="onPage($event)"
-  />
+    <p-paginator
+      [rows]="pageSize"
+      [totalRecords]="total()"
+      [first]="page() * pageSize"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="{first} - {last} de {totalRecords}"
+      (onPageChange)="onPage($event)"
+    />
+  </div>
 </section>
 
-<!-- Detail drawer -->
-<p-drawer
+<!-- Detail drawer (VentaDrawerV2) -->
+<app-venta-drawer-v2
   [visible]="drawerOpen()"
-  position="right"
-  [modal]="true"
-  styleClass="detail-drawer"
-  (visibleChange)="!$event && closeDrawer()"
->
-  @if (drawerRow(); as row) {
-    <ng-template #header>
-      <div class="detail-drawer__head">
-        <div class="detail-drawer__identity">
-          <strong>{{ display(row.tipoDocumento, 'DOC') }} {{ display(row.numeroDocumento, '') }}</strong>
-          <span>{{ display(row.nombreCliente) }}</span>
-        </div>
-        <div class="detail-drawer__badges">
-          @if (isConsulta(row)) {
-            <span class="consulta-chip">{{ consultaLabel(row) }}</span>
-          } @else {
-            <span class="vivo-chip">Vivo</span>
-          }
-        </div>
-      </div>
-    </ng-template>
-
-    <div class="detail-drawer__body">
-      <section class="detail-section">
-        <div class="detail-field">
-          <span class="detail-label">Lead</span>
-          <span class="detail-value">{{ display(row.usermeta) }}</span>
-        </div>
-        <div class="detail-field">
-          <span class="detail-label">Plan</span>
-          <span class="detail-value">{{ display(row.plan, 'Sin plan') }}</span>
-        </div>
-        <div class="detail-field">
-          <span class="detail-label">Precio</span>
-          <span class="detail-value">{{ money(row.precioFinal ?? row.precioPlan) }}</span>
-        </div>
-        <div class="detail-field">
-          <span class="detail-label">Proveedor</span>
-          <span class="detail-value">{{ display(row.proveedor, 'Sin proveedor') }}</span>
-        </div>
-        <div class="detail-field">
-          <span class="detail-label">Etapa actual</span>
-          <span class="detail-value">
-            <p-tag [styleClass]="etapaTagClass(row)" [value]="display(row.etapaActual)" />
-          </span>
-        </div>
-        <div class="detail-field">
-          <span class="detail-label">Estado</span>
-          <span class="detail-value">{{ display(row.estadoSeguimiento) }}</span>
-        </div>
-        <div class="detail-field">
-          <span class="detail-label">Tipificación</span>
-          <span class="detail-value">
-            <app-tipification-stack
-              [codigoTipificacion]="row.codigoTipificacionBandeja"
-              [codigoSubtipificacion]="row.codigoSubtipificacionBandeja"
-              [paletteByCode]="tipificationPaletteByCode()"
-              emptyText="Sin tipificación"
-            />
-          </span>
-        </div>
-        @if (row.sec || row.sot || row.customerId) {
-          <div class="detail-field">
-            <span class="detail-label">Operación</span>
-            <span class="detail-value">
-              @if (row.sec) { SEC {{ row.sec }} }
-              @if (row.sot) { SOT {{ row.sot }} }
-              @if (row.customerId) { ID {{ row.customerId }} }
-            </span>
-          </div>
-        }
-        <div class="detail-field">
-          <span class="detail-label">Fecha ingreso</span>
-          <span class="detail-value">{{ formatIngreso(row) }}</span>
-        </div>
-        <div class="detail-field">
-          <span class="detail-label">Última gestión</span>
-          <span class="detail-value">{{ formatInstantShort(row.fechaUltimaGestion) || 'Sin última gestión' }}</span>
-        </div>
-        @if (row.comentarioLead) {
-          <div class="detail-field detail-field--full">
-            <span class="detail-label">Comentario</span>
-            <span class="detail-value detail-value--comment">{{ row.comentarioLead }}</span>
-          </div>
-        }
-      </section>
-
-      <section class="detail-section">
-        <h4>Historial</h4>
-        @if (drawerHistorialLoading()) {
-          <div class="state">
-            <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-            <span>Cargando historial…</span>
-          </div>
-        } @else if (!drawerHistorial().length) {
-          <div class="state">
-            <i class="pi pi-inbox" aria-hidden="true"></i>
-            <span>Sin historial de gestión.</span>
-          </div>
-        } @else {
-          <div class="historial-list">
-            @for (evento of drawerHistorial(); track evento.id) {
-              <div class="historial-item">
-                <div class="historial-item__head">
-                  <strong>{{ display(evento.tipificacionResultado ?? evento.tipificacion ?? evento.accion) }}</strong>
-                  <span>{{ formatInstantShort(evento.createdAt) }}</span>
-                </div>
-                @if (evento.subtipificacionResultado ?? evento.subtipificacion) {
-                  <span class="historial-item__sub">{{ evento.subtipificacionResultado ?? evento.subtipificacion }}</span>
-                }
-                <span class="historial-item__actor">{{ display(evento.nombreActor, 'Sistema') }}</span>
-                @if (evento.comentario) {
-                  <span class="historial-item__comment">{{ evento.comentario }}</span>
-                }
-              </div>
-            }
-          </div>
-        }
-      </section>
-
-      @if (!drawerIsConsulta()) {
-        <div class="detail-actions">
-          <button pButton type="button" icon="pi pi-external-link" label="Gestionar en bandeja" (click)="goToGestion()"></button>
-        </div>
-      }
-    </div>
-  }
-</p-drawer>
+  mode="consulta"
+  [detail]="detail()"
+  [datosForm]="datosForm"
+  [direccionForm]="direccionForm"
+  [ofertaForm]="ofertaForm"
+  [tipificacionForm]="tipificacionForm"
+  [departamentos]="departamentos()"
+  [provinciasDomicilio]="[]"
+  [distritosDomicilio]="[]"
+  [providerOptions]="[]"
+  [planOptions]="[]"
+  [promocionOptions]="[]"
+  [adicionales]="[]"
+  [selectedAdditionals]="[]"
+  [tipificaciones]="[]"
+  [subtipificaciones]="[]"
+  [canMutate]="false"
+  [saving]="false"
+  [eventos]="eventos()"
+  [historyLoading]="historialLoading()"
+  [historyError]="historialError()"
+  [saveChanges]="null"
+  (closeRequested)="closeDrawer()"
+  (retryHistory)="retryHistorial()"
+/>

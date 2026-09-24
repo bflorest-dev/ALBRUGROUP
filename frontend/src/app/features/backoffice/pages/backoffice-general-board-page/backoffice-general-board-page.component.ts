@@ -1,17 +1,13 @@
 import { LowerCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { DatePickerModule } from 'primeng/datepicker';
-import { DrawerModule } from 'primeng/drawer';
 import { InputTextModule } from 'primeng/inputtext';
 import { PaginatorModule } from 'primeng/paginator';
 import { PopoverModule } from 'primeng/popover';
 import { SelectModule } from 'primeng/select';
-import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
@@ -19,13 +15,14 @@ import { CurrentUserProviderScopeService } from '../../../../core/services/curre
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { TipificationPaletteByCode, TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { TreeSelectComponent, TreeSelectGroup, TreeSelectSelection } from '../../../../shared/components/tree-select/tree-select.component';
+import { VentaDrawerV2Component } from '../../../../shared/components/venta-drawer-v2/venta-drawer-v2.component';
 import { MetricsRango } from '../../../../shared/utils/metrics-period';
 import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
 import {
   CampoFechaListadoVenta,
   EventoResponse,
   LeadBandejaVentaResponse,
-  OrigenFilaBandejaVenta,
+  LeadDetalleResponse,
   TipificacionResponse,
   UbigeoItem
 } from '../../../../shared/models/preventa/preventa.models';
@@ -43,20 +40,19 @@ type Option<T extends string = string> = { label: string; value: T };
   imports: [
     LowerCasePipe,
     FormsModule,
+    ReactiveFormsModule,
     ButtonModule,
-    DatePickerModule,
-    DrawerModule,
     InputTextModule,
     PaginatorModule,
     PopoverModule,
     SelectModule,
-    SkeletonModule,
     TableModule,
     TagModule,
     TooltipModule,
     PeriodSelectorComponent,
     TipificationStackComponent,
-    TreeSelectComponent
+    TreeSelectComponent,
+    VentaDrawerV2Component
   ],
   templateUrl: './backoffice-general-board-page.component.html',
   styleUrl: './backoffice-general-board-page.component.scss',
@@ -65,11 +61,12 @@ type Option<T extends string = string> = { label: string; value: T };
 export class BackofficeGeneralBoardPageComponent implements OnInit {
   private readonly leadService = inject(BackofficeLeadService);
   private readonly providerScope = inject(CurrentUserProviderScopeService);
-  private readonly router = inject(Router);
+  private readonly fb = inject(FormBuilder);
   private lastProviderId: number | null | undefined = undefined;
 
   private static readonly DEFAULT_SORT: SortField = 'fechaIngresoEtapa';
   private static readonly DEFAULT_DIRECTION: SortDirection = 'desc';
+  private static readonly SEARCH_DEBOUNCE_MS = 320;
 
   protected readonly pageSize = 15;
   protected readonly rows = signal<LeadBandejaVentaResponse[]>([]);
@@ -81,6 +78,8 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   private readonly catalogoFlat = signal<TipificacionResponse[]>([]);
   protected readonly searchInput = signal('');
   protected readonly searchActive = signal('');
+  private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private loadRequestToken = 0;
   protected readonly periodo = signal<MetricsPeriodo>('dia');
   protected readonly dia = signal<string | null>(this.today());
   protected readonly hasta = signal<string | null>(this.today());
@@ -114,14 +113,77 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected readonly selectedProvincia = signal<number | null>(null);
   protected readonly selectedDistrito = signal<number | null>(null);
 
-  // --- Detail drawer ---
+  // --- Detail drawer (VentaDrawerV2) ---
   protected readonly drawerOpen = signal(false);
-  protected readonly drawerRow = signal<LeadBandejaVentaResponse | null>(null);
-  protected readonly drawerHistorial = signal<EventoResponse[]>([]);
-  protected readonly drawerHistorialLoading = signal(false);
-  protected readonly drawerIsConsulta = computed(() => this.drawerRow()?.origenFila === 'EVENTO_TIPIFICACION');
+  protected readonly detail = signal<LeadDetalleResponse | null>(null);
+  protected readonly eventos = signal<EventoResponse[]>([]);
+  protected readonly historialLoading = signal(false);
+  protected readonly historialError = signal<string | null>(null);
+  private selectedLeadId = signal<number | null>(null);
 
-  protected readonly skeletonRows = Array.from({ length: 8 });
+  protected readonly datosForm = this.fb.group({
+    tipoDocumento: ['DNI'],
+    numeroDocumentoTitularServicio: [''],
+    ubigeoNacimiento: [''],
+    nombreTitularServicio: [''],
+    celularRegistro: [''],
+    celularReferencia: [''],
+    celularGrabacion: [''],
+    correo: [''],
+    fechaNacimiento: [''],
+    parentesco: [''],
+    nombreMadre: [''],
+    nombrePadre: [''],
+    numeroDocumentoTitularCelularRegistro: [''],
+    nombreTitularCelularRegistro: ['']
+  });
+
+  protected readonly direccionForm = this.fb.group({
+    idDepartamentoDomicilio: [0],
+    idProvinciaDomicilio: [0],
+    idDistritoDomicilio: [0],
+    ubigeoDomicilio: [''],
+    tipoDomicilio: [''],
+    tipoVia: [''],
+    via: [''],
+    direccion: [''],
+    referencia: [''],
+    latitud: ['' as string | number | null],
+    longitud: ['' as string | number | null],
+    urbanizacion: [''],
+    numero: [''],
+    manzana: [''],
+    lote: [''],
+    nombreEdificio: [''],
+    nombreCondominio: [''],
+    plano: [''],
+    piso: [''],
+    interior: [''],
+    tecnologia: [''],
+    esFullClaro: [false],
+    esJalaCobertura: [false],
+    esZonaPintada: [false]
+  });
+
+  protected readonly ofertaForm = this.fb.group({
+    idProveedor: [0],
+    idPlan: [0],
+    idPromocionInterna: [0]
+  });
+
+  protected readonly tipificacionForm = this.fb.group({
+    codigoTipificacion: [''],
+    codigoSubtipificacion: [''],
+    comentario: [''],
+    fechaInstalacion: [''],
+    fechaProgramacion: [''],
+    fechaRechazo: [''],
+    horaProgramada: [''],
+    sec: [''],
+    sot: [''],
+    customerId: ['']
+  });
+
   protected readonly showSecSotColumn = computed(() =>
     this.rows().some((row) => Boolean(row.sec?.trim()) || Boolean(row.sot?.trim()) || row.requiereSecSotVenta === true)
   );
@@ -295,8 +357,25 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     await this.loadRows();
   }
 
+  protected onSearchInput(value: string): void {
+    this.searchInput.set(value);
+    this.cancelSearchDebounce();
+    this.searchDebounceTimer = setTimeout(() => {
+      this.searchDebounceTimer = null;
+      const raw = this.searchInput().trim();
+      if (raw && !this.normalizeSearch(raw)) {
+        return;
+      }
+      void this.buscar();
+    }, BackofficeGeneralBoardPageComponent.SEARCH_DEBOUNCE_MS);
+  }
+
   protected async buscar(): Promise<void> {
+    this.cancelSearchDebounce();
     const term = this.normalizeSearch(this.searchInput());
+    if (term === this.searchActive() && term === this.searchInput()) {
+      return;
+    }
     this.searchInput.set(term);
     this.searchActive.set(term);
     this.page.set(0);
@@ -304,44 +383,122 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   }
 
   protected async limpiarBusqueda(): Promise<void> {
+    this.cancelSearchDebounce();
     this.searchInput.set('');
     this.searchActive.set('');
     this.page.set(0);
     await this.loadRows();
   }
 
-  // --- Detail drawer ---
+  // --- Detail drawer (VentaDrawerV2) ---
 
   protected async onRowClick(row: LeadBandejaVentaResponse): Promise<void> {
-    this.drawerRow.set(row);
-    this.drawerHistorial.set([]);
-    this.drawerOpen.set(true);
-    await this.loadDrawerHistorial(row.idLead);
+    this.selectedLeadId.set(row.idLead);
+    this.eventos.set([]);
+    this.historialError.set(null);
+    try {
+      const detalle = await firstValueFrom(this.leadService.obtenerDetalleConsulta(row.idLead));
+      if (this.selectedLeadId() !== row.idLead) return;
+      this.detail.set(detalle);
+      this.patchForms(detalle);
+      this.drawerOpen.set(true);
+      void this.loadHistorial(row.idLead);
+    } catch (error) {
+      this.error.set(this.resolveLoadError(error));
+    }
   }
 
   protected closeDrawer(): void {
     this.drawerOpen.set(false);
+    this.detail.set(null);
+    this.selectedLeadId.set(null);
   }
 
-  protected goToGestion(): void {
-    void this.router.navigate(['/backoffice'], { queryParams: { section: 'plataforma' } });
+  protected async retryHistorial(): Promise<void> {
+    const id = this.selectedLeadId();
+    if (id) await this.loadHistorial(id);
   }
 
-  private async loadDrawerHistorial(idLead: number): Promise<void> {
-    this.drawerHistorialLoading.set(true);
+  private async loadHistorial(idLead: number): Promise<void> {
+    this.historialLoading.set(true);
+    this.historialError.set(null);
     try {
-      const response = await firstValueFrom(this.leadService.listarHistorialBackofficeVenta(
+      const page = await firstValueFrom(this.leadService.listarHistorialBackofficeVenta(
         idLead,
-        { pageNumber: 0, pageSize: 20, sortBy: 'createdAt', direction: 'desc' }
+        { pageNumber: 0, pageSize: 100, sortBy: 'createdAt', direction: 'desc' }
       ));
-      if (this.drawerRow()?.idLead === idLead) {
-        this.drawerHistorial.set(response.content ?? []);
-      }
+      if (this.selectedLeadId() !== idLead) return;
+      this.eventos.set(page.content ?? []);
     } catch {
-      this.drawerHistorial.set([]);
+      if (this.selectedLeadId() === idLead) {
+        this.eventos.set([]);
+        this.historialError.set('No se pudo cargar el historial.');
+      }
     } finally {
-      this.drawerHistorialLoading.set(false);
+      if (this.selectedLeadId() === idLead) this.historialLoading.set(false);
     }
+  }
+
+  private patchForms(d: LeadDetalleResponse): void {
+    this.datosForm.patchValue({
+      tipoDocumento: d.tipoDocumento ?? 'DNI',
+      numeroDocumentoTitularServicio: d.numeroDocumentoTitularServicio ?? '',
+      ubigeoNacimiento: d.ubigeoNacimiento ?? '',
+      nombreTitularServicio: d.nombreTitular ?? '',
+      celularRegistro: d.celularRegistro ?? '',
+      celularReferencia: d.celularReferencia ?? '',
+      celularGrabacion: d.celularGrabacion ?? '',
+      correo: d.correo ?? '',
+      fechaNacimiento: d.fechaNacimiento ?? '',
+      parentesco: d.parentesco ?? '',
+      nombreMadre: d.nombreMadre ?? '',
+      nombrePadre: d.nombrePadre ?? '',
+      numeroDocumentoTitularCelularRegistro: d.numeroDocumentoTitularCelularRegistro ?? '',
+      nombreTitularCelularRegistro: d.nombreTitularCelularRegistro ?? ''
+    });
+    this.direccionForm.patchValue({
+      idDepartamentoDomicilio: 0,
+      idProvinciaDomicilio: 0,
+      idDistritoDomicilio: 0,
+      ubigeoDomicilio: d.ubigeoDomicilio ?? '',
+      tipoDomicilio: d.tipoDomicilio ?? '',
+      tipoVia: d.tipoVia ?? '',
+      via: d.via ?? '',
+      direccion: d.direccion ?? '',
+      referencia: d.referencia ?? '',
+      latitud: d.latitud ?? '',
+      longitud: d.longitud ?? '',
+      urbanizacion: d.urbanizacion ?? '',
+      numero: d.numero ?? '',
+      manzana: d.manzana ?? '',
+      lote: d.lote ?? '',
+      nombreEdificio: d.nombreEdificio ?? '',
+      nombreCondominio: d.nombreCondominio ?? '',
+      plano: d.plano ?? '',
+      piso: d.piso ?? '',
+      interior: d.interior ?? '',
+      tecnologia: d.tecnologia ?? '',
+      esFullClaro: d.esFullClaro ?? false,
+      esJalaCobertura: d.esJalaCobertura ?? false,
+      esZonaPintada: d.esZonaPintada ?? false
+    });
+    this.ofertaForm.patchValue({
+      idProveedor: 0,
+      idPlan: d.idPlan ?? 0,
+      idPromocionInterna: d.idPromocionInterna ?? 0
+    });
+    this.tipificacionForm.reset({
+      codigoTipificacion: '',
+      codigoSubtipificacion: '',
+      comentario: d.comentario ?? '',
+      fechaInstalacion: '',
+      fechaProgramacion: d.fechaProgramacion ?? '',
+      fechaRechazo: d.fechaRechazo ?? '',
+      horaProgramada: d.horaProgramada ?? '',
+      sec: d.sec ?? '',
+      sot: d.sot ?? '',
+      customerId: d.customerId ?? ''
+    }, { emitEvent: false });
   }
 
   protected onTipSelectionChange(_sel: TreeSelectSelection): void {
@@ -753,6 +910,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   }
 
   private async loadRows(): Promise<void> {
+    const requestToken = ++this.loadRequestToken;
     this.loading.set(true);
     this.error.set(null);
     try {
@@ -795,15 +953,30 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
         campoFecha: this.campoFecha(),
         groupBy: this.groupBy() === 'SIN_AGRUPAR' ? null : this.groupBy()
       }));
+      if (requestToken !== this.loadRequestToken) {
+        return;
+      }
       this.rows.set(response.content ?? []);
       this.total.set(response.totalElements ?? 0);
     } catch (error) {
+      if (requestToken !== this.loadRequestToken) {
+        return;
+      }
       console.error('Error al cargar bandeja general de venta', error);
       this.rows.set([]);
       this.total.set(0);
       this.error.set(this.resolveLoadError(error));
     } finally {
-      this.loading.set(false);
+      if (requestToken === this.loadRequestToken) {
+        this.loading.set(false);
+      }
+    }
+  }
+
+  private cancelSearchDebounce(): void {
+    if (this.searchDebounceTimer !== null) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
     }
   }
 

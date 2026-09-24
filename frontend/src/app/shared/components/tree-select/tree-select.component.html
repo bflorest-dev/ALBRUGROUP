@@ -6,11 +6,19 @@
   severity="secondary"
   [outlined]="!filterCount()"
   [class.tree-select-btn--active]="filterCount() > 0"
-  (click)="pop.toggle($event)"
+  (mouseenter)="onTriggerEnter($event, pop)"
+  (mouseleave)="onTriggerLeave(pop)"
+  (click)="onTriggerClick($event, pop)"
 ></button>
 
-<p-popover #pop appendTo="body" styleClass="tree-select-popover">
-  <div class="tree-select">
+<p-popover
+  #pop
+  appendTo="body"
+  styleClass="tree-select-popover"
+  (onShow)="onPopoverShow()"
+  (onHide)="onPopoverHide()"
+>
+  <div class="tree-select" (mouseenter)="onPanelEnter()" (mouseleave)="onPanelLeave(pop)">
     @if (searchable()) {
       <div class="tree-select__search">
         <i class="pi pi-search" aria-hidden="true"></i>

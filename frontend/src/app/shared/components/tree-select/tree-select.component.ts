@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
-import { PopoverModule } from 'primeng/popover';
+import { Popover, PopoverModule } from 'primeng/popover';
 import { TooltipModule } from 'primeng/tooltip';
 
 export interface TreeSelectGroup {
@@ -47,6 +47,9 @@ interface DisplayNode {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TreeSelectComponent {
+  private static readonly HOVER_OPEN_MS = 180;
+  private static readonly HOVER_CLOSE_MS = 220;
+
   readonly groups = input<TreeSelectGroup[]>([]);
   readonly searchable = input(true);
   readonly placeholder = input('Seleccionar');
@@ -59,6 +62,10 @@ export class TreeSelectComponent {
 
   protected readonly searchTerm = signal('');
   protected readonly expandedKeys = signal<Set<string>>(new Set());
+  protected readonly popoverOpen = signal(false);
+
+  private hoverOpenTimer: ReturnType<typeof setTimeout> | null = null;
+  private hoverCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly filterCount = computed(() =>
     this.selectedParents().length + this.selectedChildren().length
@@ -68,6 +75,49 @@ export class TreeSelectComponent {
     const count = this.filterCount();
     return count ? `${count} filtros` : this.placeholder();
   });
+
+  protected onTriggerEnter(event: MouseEvent, popover: Popover): void {
+    this.cancelClose();
+    this.cancelOpen();
+    if (this.popoverOpen()) {
+      return;
+    }
+    const target = event.currentTarget as HTMLElement;
+    this.hoverOpenTimer = setTimeout(() => {
+      this.hoverOpenTimer = null;
+      popover.show(event, target);
+    }, TreeSelectComponent.HOVER_OPEN_MS);
+  }
+
+  protected onTriggerLeave(popover: Popover): void {
+    this.cancelOpen();
+    this.scheduleClose(popover);
+  }
+
+  protected onPanelEnter(): void {
+    this.cancelClose();
+  }
+
+  protected onPanelLeave(popover: Popover): void {
+    this.scheduleClose(popover);
+  }
+
+  protected onPopoverShow(): void {
+    this.popoverOpen.set(true);
+  }
+
+  protected onPopoverHide(): void {
+    this.popoverOpen.set(false);
+  }
+
+  protected onTriggerClick(event: MouseEvent, popover: Popover): void {
+    this.cancelOpen();
+    this.cancelClose();
+    if (this.popoverOpen()) {
+      return;
+    }
+    popover.show(event, event.currentTarget as HTMLElement);
+  }
 
   protected readonly displayNodes = computed<DisplayNode[]>(() => {
     const groups = this.groups();
@@ -177,5 +227,27 @@ export class TreeSelectComponent {
       parents: this.selectedParents(),
       children: this.selectedChildren()
     });
+  }
+
+  private scheduleClose(popover: Popover): void {
+    this.cancelClose();
+    this.hoverCloseTimer = setTimeout(() => {
+      this.hoverCloseTimer = null;
+      popover.hide();
+    }, TreeSelectComponent.HOVER_CLOSE_MS);
+  }
+
+  private cancelOpen(): void {
+    if (this.hoverOpenTimer !== null) {
+      clearTimeout(this.hoverOpenTimer);
+      this.hoverOpenTimer = null;
+    }
+  }
+
+  private cancelClose(): void {
+    if (this.hoverCloseTimer !== null) {
+      clearTimeout(this.hoverCloseTimer);
+      this.hoverCloseTimer = null;
+    }
   }
 }

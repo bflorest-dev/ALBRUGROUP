@@ -7,7 +7,17 @@
   --board-signal: var(--role-accent, #b5680e);
   display: grid;
   gap: 0.9rem;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  height: calc(100dvh - 4rem);
+  max-height: calc(100dvh - 4rem);
+  min-height: 0;
   min-width: 0;
+  overflow: hidden;
+}
+
+// Los overlays se montan en `body`; no deben consumir una fila del layout de la bandeja.
+.general-board > p-popover {
+  display: contents;
 }
 
 .general-board__head {
@@ -63,8 +73,8 @@
 .general-board__controls {
   align-items: center;
   display: grid;
-  gap: 0.7rem;
-  grid-template-columns: minmax(18rem, 0.8fr) minmax(28rem, 1.2fr);
+  gap: 0.4rem;
+  grid-template-columns: minmax(24rem, 1.35fr) minmax(31rem, 1fr);
 }
 
 .search-strip,
@@ -76,31 +86,42 @@
 }
 
 .search-strip {
+  align-items: center;
   background: var(--board-panel);
   border: 1px solid var(--board-line);
-  border-radius: 8px;
-  gap: 0.45rem;
+  border-radius: 7px;
+  gap: 0.35rem;
   min-width: 0;
-  padding: 0.38rem;
+  min-height: 2.35rem;
+  padding: 0.16rem 0.25rem 0.16rem 0.5rem;
 }
 
 .search-strip > i {
   color: var(--board-signal);
   flex: 0 0 auto;
-  padding-left: 0.35rem;
+  font-size: 0.88rem;
 }
 
 .search-strip input {
+  background: var(--board-soft);
+  border-radius: 5px;
   border: 0;
   box-shadow: none;
   flex: 1 1 auto;
   min-width: 8rem;
+  min-height: 1.95rem;
+  padding: 0.3rem 0.55rem;
+}
+
+.search-strip input::placeholder {
+  color: var(--board-muted);
+  opacity: 0.82;
 }
 
 .filter-strip {
   flex-wrap: wrap;
   gap: 0.55rem;
-  justify-content: flex-end;
+  justify-content: flex-start;
   min-width: 0;
 }
 
@@ -129,11 +150,24 @@
   font-size: 0.8rem;
 }
 
+.general-board__body {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.general-board__error-slot {
+  min-height: 0;
+}
+
 .table-shell {
   background: var(--board-panel);
   border: 1px solid var(--board-line);
   border-radius: 8px;
-  min-height: calc(100dvh - 18rem);
+  display: flex;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -195,11 +229,12 @@
 
 .plan-cell {
   align-items: center;
-  display: inline-flex;
+  display: grid;
   gap: 0.5rem;
-  justify-content: center;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
   line-height: 1.15;
   min-width: 0;
+  width: 100%;
 }
 
 .plan-cell__text {
@@ -244,16 +279,17 @@
 .plan-cell > div {
   display: grid;
   gap: 0.14rem;
-  justify-items: center;
+  justify-items: start;
   min-width: 0;
-  text-align: center;
+  text-align: left;
 }
 
 .provider-cell {
   align-items: center;
   display: inline-flex;
   justify-content: center;
-  min-width: 0;
+  min-width: 2.25rem;
+  width: 2.25rem;
 }
 
 .provider-cell img {
@@ -430,6 +466,13 @@ app-tipification-stack {
     font-family: "Archivo", "Segoe UI", Arial, sans-serif;
   }
 
+  .table-shell > p-table {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+  }
+
   .general-table .col-date,
   .general-table .cell-date {
     width: 9.25rem;
@@ -535,162 +578,6 @@ app-tipification-stack {
     border-radius: 8px;
   }
 
-  .detail-drawer {
-    width: min(28rem, 90vw);
-  }
-
-  .detail-drawer .p-drawer-content {
-    padding: 0;
-  }
-}
-
-.vivo-chip {
-  background: #dcfce7;
-  border: 1px solid #bbf7d0;
-  border-radius: 4px;
-  color: #166534;
-  display: inline-block;
-  font-size: 0.6rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  padding: 0.08rem 0.38rem;
-  text-transform: uppercase;
-}
-
-.detail-drawer__head {
-  align-items: start;
-  display: flex;
-  gap: 0.6rem;
-  justify-content: space-between;
-}
-
-.detail-drawer__identity {
-  display: grid;
-  gap: 0.12rem;
-}
-
-.detail-drawer__identity strong {
-  color: var(--board-ink, #141922);
-  font-size: 1rem;
-}
-
-.detail-drawer__identity span {
-  color: var(--board-muted, #5b6573);
-  font-size: 0.82rem;
-}
-
-.detail-drawer__body {
-  display: grid;
-  gap: 1.2rem;
-  padding: 1rem 1.25rem 1.5rem;
-}
-
-.detail-section {
-  display: grid;
-  gap: 0.55rem;
-}
-
-.detail-section h4 {
-  border-bottom: 1px solid var(--board-line, #d9dee7);
-  color: var(--board-ink, #141922);
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  margin: 0;
-  padding-bottom: 0.35rem;
-  text-transform: uppercase;
-}
-
-.detail-field {
-  align-items: baseline;
-  display: grid;
-  gap: 0.18rem;
-  grid-template-columns: 7.5rem 1fr;
-}
-
-.detail-field--full {
-  grid-template-columns: 1fr;
-}
-
-.detail-label {
-  color: var(--board-muted, #5b6573);
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
-.detail-value {
-  color: var(--board-ink, #141922);
-  font-size: 0.82rem;
-  font-weight: 700;
-  overflow-wrap: break-word;
-}
-
-.detail-value--comment {
-  background: var(--board-soft, #f5f7fa);
-  border-radius: 6px;
-  font-weight: 600;
-  margin-top: 0.2rem;
-  padding: 0.35rem 0.55rem;
-}
-
-.detail-actions {
-  border-top: 1px solid var(--board-line, #d9dee7);
-  padding-top: 0.8rem;
-}
-
-.historial-list {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.historial-item {
-  background: var(--board-soft, #f5f7fa);
-  border: 1px solid color-mix(in srgb, var(--board-line, #d9dee7) 72%, transparent);
-  border-radius: 7px;
-  display: grid;
-  gap: 0.12rem;
-  padding: 0.5rem 0.65rem;
-}
-
-.historial-item__head {
-  align-items: baseline;
-  display: flex;
-  gap: 0.45rem;
-  justify-content: space-between;
-}
-
-.historial-item__head strong {
-  color: var(--board-ink, #141922);
-  font-size: 0.78rem;
-  font-weight: 900;
-}
-
-.historial-item__head span {
-  color: var(--board-muted, #5b6573);
-  font-size: 0.68rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.historial-item__sub {
-  color: var(--board-signal, #b5680e);
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
-.historial-item__actor {
-  color: var(--board-muted, #5b6573);
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
-.historial-item__comment {
-  border-top: 1px solid color-mix(in srgb, var(--board-line, #d9dee7) 50%, transparent);
-  color: var(--board-muted, #5b6573);
-  font-size: 0.72rem;
-  font-weight: 600;
-  margin-top: 0.12rem;
-  padding-top: 0.25rem;
 }
 
 @media (max-width: 1100px) {
@@ -771,10 +658,6 @@ app-tipification-stack {
     align-items: stretch;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-
-  .search-strip button:last-child {
-    grid-column: 1 / -1;
   }
 
   :host ::ng-deep {
