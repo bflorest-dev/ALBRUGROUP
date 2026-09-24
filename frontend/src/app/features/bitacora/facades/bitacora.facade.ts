@@ -140,7 +140,7 @@ export class BitacoraFacade {
   readonly procesandoEliminacion = signal(false);
 
   readonly identidadForm: FormGroup = this.fb.group({
-    prefijo: ['51'],
+    prefijo: [''],
     lead: [''],
     usermeta: ['']
   });
@@ -788,9 +788,12 @@ export class BitacoraFacade {
 
   // ── Helpers de forms / diff ───────────────────────────
   private patchForms(detalle: LeadDetalleResponse): void {
+    const lead = detalle.lead ?? '';
     const identidad = {
-      prefijo: limpiarPrefijo(detalle.prefijo ?? '51'),
-      lead: detalle.lead ?? '',
+      // 51 is only a telephone default. A usermeta-only lead must not look like
+      // an incomplete phone just because the country prefix was prefilled.
+      prefijo: lead ? limpiarPrefijo(detalle.prefijo ?? '51') : '',
+      lead,
       usermeta: detalle.usermeta ?? ''
     };
     const datos = {
@@ -849,9 +852,10 @@ export class BitacoraFacade {
 
   private construirIdentidadRequest(): BitacoraIdentidadRequest {
     const raw = this.identidadForm.getRawValue();
+    const lead = String(raw.lead ?? '').trim();
     return {
-      prefijo: raw.prefijo ?? null,
-      lead: raw.lead ?? null,
+      prefijo: lead ? raw.prefijo ?? null : null,
+      lead: lead || null,
       usermeta: raw.usermeta ?? null
     };
   }

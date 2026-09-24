@@ -115,6 +115,14 @@ export type PersonalReviewSummary = {
   categoriaPersonal: string;
 };
 
+export type PersonalIdentityCreationResult = {
+  empleado: EmpleadoResponse;
+  usuario: 'PENDIENTE_DE_CONTRATO';
+  contrato: 'PENDIENTE';
+  rol: 'PENDIENTE';
+  horario: 'PENDIENTE';
+};
+
 @Injectable()
 export class AdminPersonalFacade implements OnDestroy {
   private readonly requestTimeoutMs = 15000;
@@ -427,7 +435,7 @@ export class AdminPersonalFacade implements OnDestroy {
     cuentaPropia: ['true', [Validators.required]],
     parentesco: [''],
     celularTransferencia: [''],
-    idEmpresaContratista: ['', [Validators.required]]
+    idEmpresaContratista: ['']
   });
 
   readonly contratoForm = this.formBuilder.nonNullable.group({
@@ -491,6 +499,7 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly currentStep = signal(1);
   readonly submitErrorMessage = signal('');
   readonly creationResult = signal<UsuarioResponse | null>(null);
+  readonly identityCreationResult = signal<PersonalIdentityCreationResult | null>(null);
   readonly isPersonalReviewVisible = signal(false);
   readonly isContractRenewalVisible = signal(false);
   readonly employeesPage = signal<PageResponse<EmpleadoResponse> | null>(null);
@@ -904,6 +913,41 @@ export class AdminPersonalFacade implements OnDestroy {
     }
   }
 
+  async submitIdentityOnly(): Promise<void> {
+    if (this.empleadoForm.invalid || this.isSubmittingIdentity()) {
+      this.empleadoForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSubmittingIdentity.set(true);
+    this.submitErrorMessage.set('');
+    this.identityCreationResult.set(null);
+
+    try {
+      const empleado = await firstValueFrom(
+        this.adminRrhhService
+          .registrarEmpleado(this.buildEmpleadoRequest())
+          .pipe(timeout(this.requestTimeoutMs))
+      );
+
+      this.identityCreationResult.set({
+        empleado,
+        usuario: 'PENDIENTE_DE_CONTRATO',
+        contrato: 'PENDIENTE',
+        rol: 'PENDIENTE',
+        horario: 'PENDIENTE'
+      });
+      this.loadEmployees(0, true);
+      void this.loadActiveEmployees();
+    } catch (error) {
+      this.submitErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No fue posible crear el empleado.')
+      );
+    } finally {
+      this.isSubmittingIdentity.set(false);
+    }
+  }
+
   requestPersonalReview(): void {
     if (!this.validatePersonalForms()) {
       return;
@@ -980,6 +1024,7 @@ export class AdminPersonalFacade implements OnDestroy {
   resetFlow(): void {
     this.currentStep.set(1);
     this.creationResult.set(null);
+    this.identityCreationResult.set(null);
     this.isPersonalReviewVisible.set(false);
     this.submitErrorMessage.set('');
     this.empleadoForm.reset({

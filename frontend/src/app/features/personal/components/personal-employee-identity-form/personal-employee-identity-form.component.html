@@ -1,0 +1,76 @@
+@if (result; as created) {
+  <section class="creation-success" aria-live="polite">
+    <div class="success-icon"><i class="ti ti-check" aria-hidden="true"></i></div>
+    <p class="eyebrow">Empleado creado</p>
+    <h3>{{ created.empleado.nombres }} {{ created.empleado.apellidos }}</h3>
+    <p class="success-copy">La identidad se guardó correctamente. El resto de la configuración puede completarse desde su expediente.</p>
+
+    <dl class="pending-grid">
+      <div><dt>Contrato</dt><dd>Pendiente</dd></div>
+      <div><dt>Usuario</dt><dd>Se crea con el contrato</dd></div>
+      <div><dt>Rol</dt><dd>Pendiente</dd></div>
+      <div><dt>Horario</dt><dd>Pendiente</dd></div>
+    </dl>
+
+    <div class="success-note"><i class="ti ti-info-circle" aria-hidden="true"></i><span>El empleado quedó inactivo hasta completar su contrato.</span></div>
+    <div class="form-actions form-actions--end">
+      <button class="secondary-button" type="button" (click)="closed.emit()">Cerrar</button>
+    </div>
+  </section>
+} @else {
+  <section class="identity-form">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Alta de personal</p>
+        <h3>Crear empleado</h3>
+        <p>Registra la identidad y los datos administrativos básicos. Contrato, usuario, rol y horario se completan después.</p>
+      </div>
+      <span class="status-pill"><i class="ti ti-lock-open-2" aria-hidden="true"></i>Sin configuración operativa</span>
+    </div>
+
+    <div class="flow-note">
+      <i class="ti ti-route" aria-hidden="true"></i>
+      <div><strong>Flujo desacoplado</strong><span>Primero guardamos la persona; luego podrás completar su expediente desde PERSONAL.</span></div>
+    </div>
+
+    <form [formGroup]="empleadoForm" class="form-grid">
+      <label class="field field--wide"><span>Empresa contratista <small>(opcional)</small></span><p-select formControlName="idEmpresaContratista" [options]="empresaItems()" optionLabel="label" optionValue="value" appendTo="body" /></label>
+
+      <label class="field"><span>Nombres</span><input appNormalizeText="personName" pInputText type="text" formControlName="nombres" [class.p-invalid]="isInvalid('nombres')" /></label>
+      <label class="field"><span>Apellidos</span><input appNormalizeText="personName" pInputText type="text" formControlName="apellidos" [class.p-invalid]="isInvalid('apellidos')" /></label>
+      <label class="field"><span>Tipo de documento</span><p-select formControlName="tipoDocumento" [options]="optionItems(documentoOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
+
+      <label class="field"><span>Número de documento</span><input pInputText type="text" formControlName="numeroDocumento" [class.p-invalid]="isInvalid('numeroDocumento')" /></label>
+      <label class="field"><span>Nacionalidad</span><p-select formControlName="nacionalidad" [options]="optionItems(nacionalidadOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
+      <label class="field"><span>Fecha de nacimiento</span><p-datepicker [ngModel]="toPickerDate(empleadoForm.get('fechaNacimiento')?.value)" [ngModelOptions]="{ standalone: true }" dateFormat="dd/mm/yy" [showIcon]="true" [class.p-invalid]="isInvalid('fechaNacimiento')" appendTo="body" (ngModelChange)="setDateControl($event)" /></label>
+
+      <label class="field"><span>Estado civil</span><p-select formControlName="estadoCivil" [options]="optionItems(estadoCivilOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
+      <label class="field"><span>Tiene hijos</span><p-select formControlName="tieneHijos" [options]="noYesOptions" optionLabel="label" optionValue="value" appendTo="body" /></label>
+      <label class="field"><span>Celular personal</span><input pInputText type="text" formControlName="celularPersonal" inputmode="numeric" maxlength="9" (input)="setNumericDigits('celularPersonal', $any($event.target).value, 9)" [class.p-invalid]="isInvalid('celularPersonal')" /></label>
+
+      <label class="field"><span>Correo personal</span><input pInputText type="email" formControlName="correoPersonal" [class.p-invalid]="isInvalid('correoPersonal')" /></label>
+      <label class="field"><span>Origen</span><p-select formControlName="origen" [options]="optionItems(origenOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
+      <label class="field"><span>Distrito</span><p-select formControlName="distrito" [options]="optionItems(distritoOptions)" optionLabel="label" optionValue="value" [filter]="true" appendTo="body" /></label>
+
+      <label class="field field--wide"><span>Dirección</span><input pInputText type="text" formControlName="direccion" [class.p-invalid]="isInvalid('direccion')" /></label>
+      <label class="field"><span>Banco</span><p-select formControlName="banco" [options]="optionItems(bancoOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
+      <label class="field"><span>Cuenta bancaria</span><input pInputText type="text" formControlName="cuentaBancaria" [class.p-invalid]="isInvalid('cuentaBancaria')" /></label>
+      <label class="field"><span>Cuenta interbancaria</span><input pInputText type="text" formControlName="cuentaInterbancaria" [class.p-invalid]="isInvalid('cuentaInterbancaria')" /></label>
+
+      <label class="field"><span>Cuenta propia</span><p-select formControlName="cuentaPropia" [options]="yesNoOptions" optionLabel="label" optionValue="value" appendTo="body" /></label>
+      @if (!isOwnAccount()) {
+        <label class="field"><span>Parentesco</span><p-select formControlName="parentesco" [options]="optionalOptionItems(parentescoOptions)" optionLabel="label" optionValue="value" appendTo="body" /></label>
+        <label class="field"><span>Celular de transferencia</span><input pInputText type="text" formControlName="celularTransferencia" /></label>
+      }
+    </form>
+
+    @if (errorMessage) {
+      <div class="error-note" role="alert"><i class="ti ti-alert-circle" aria-hidden="true"></i><span>{{ errorMessage }}</span></div>
+    }
+
+    <div class="form-actions form-actions--end">
+      <button class="secondary-button" type="button" (click)="closed.emit()">Cancelar</button>
+      <button class="primary-button" type="button" [disabled]="isSubmitting" (click)="submitted.emit()"><i class="ti ti-user-plus" aria-hidden="true"></i>{{ isSubmitting ? 'Creando empleado…' : 'Crear empleado' }}</button>
+    </div>
+  </section>
+}

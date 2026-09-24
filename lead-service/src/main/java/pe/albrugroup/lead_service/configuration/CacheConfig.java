@@ -21,6 +21,7 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import pe.albrugroup.lead_service.entity.response.AdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaResponse;
+import pe.albrugroup.lead_service.entity.response.CatalogoProveedorResponse;
 import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import pe.albrugroup.lead_service.entity.response.CuentaPublicitariaResponse;
 import pe.albrugroup.lead_service.entity.response.DepartamentoResponse;
@@ -63,6 +64,12 @@ public class CacheConfig {
                 new Jackson2JsonRedisSerializer<>(redisMapper, CatalogoResponse.class);
         RedisCacheConfiguration tipificacionesConfig = defaultConfig.serializeValuesWith(
                 RedisSerializationContext.SerializationPair.fromSerializer(tipificacionesSerializer)
+        );
+
+        RedisCacheConfiguration tipificacionesPorProveedorConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, CatalogoProveedorResponse.class)
+                )
         );
 
         RedisCacheConfiguration serviciosProveedorConfig = defaultConfig.serializeValuesWith(
@@ -126,6 +133,7 @@ public class CacheConfig {
                 Map.entry(CacheNames.PLANES, planesConfig),
                 Map.entry(CacheNames.SERVICIOS_PROVEEDOR, serviciosProveedorConfig),
                 Map.entry(CacheNames.TIPIFICACIONES, tipificacionesConfig),
+                Map.entry(CacheNames.TIPIFICACIONES_POR_PROVEEDOR, tipificacionesPorProveedorConfig),
                 Map.entry(CacheNames.PROMOCIONES_COMERCIALES, promocionesConfig),
                 Map.entry(CacheNames.ADICIONALES, adicionalesConfig),
                 Map.entry(CacheNames.PROVEEDORES, proveedoresConfig),

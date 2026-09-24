@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, output } from '@angular/core';
-import { PersonalRegistrationPanelComponent } from '../../../admin/components/personal-registration-panel/personal-registration-panel.component';
 import { AdminPersonalFacade } from '../../../admin/facades/admin-personal.facade';
+import { PersonalEmployeeIdentityFormComponent } from '../personal-employee-identity-form/personal-employee-identity-form.component';
 
 @Component({
   selector: 'app-personal-creation-drawer',
-  imports: [PersonalRegistrationPanelComponent],
+  imports: [PersonalEmployeeIdentityFormComponent],
   providers: [AdminPersonalFacade],
   templateUrl: './personal-creation-drawer.component.html',
   styleUrl: './personal-creation-drawer.component.scss',
@@ -23,6 +23,6 @@ export class PersonalCreationDrawerComponent {
   }
 
   protected close(): void {
-    this.closed.emit(Boolean(this.facade.creationResult()));
+    this.closed.emit(Boolean(this.facade.identityCreationResult()));
   }
 }

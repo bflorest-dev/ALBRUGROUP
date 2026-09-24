@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import pe.albrugroup.lead_service.configuration.CacheNames;
@@ -181,7 +182,7 @@ public class TipificacionService {
         return new CatalogoResponse(etapa, tipificacionesResponse);
     }
 
-    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "'porProveedor_' + #etapa + '_' + #idProveedor")
+    @Cacheable(value = CacheNames.TIPIFICACIONES_POR_PROVEEDOR, key = "#etapa + '_' + #idProveedor")
     public List<CatalogoProveedorResponse> getCatalogoPorProveedor(Etapa etapa, Long idProveedor) {
         List<Tipificacion> todas = idProveedor != null
                 ? tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndActivoTrueOrderByOrdenAsc(etapa, idProveedor)
@@ -217,7 +218,10 @@ public class TipificacionService {
     }
 
     @Transactional
-    @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true),
+            @CacheEvict(value = CacheNames.TIPIFICACIONES_POR_PROVEEDOR, allEntries = true)
+    })
     public CatalogoResponse upsertCatalogo(CatalogoRequest request) {
         List<TipificacionCatalogoRequest> tipificacionesRequest = Objects.requireNonNullElse(
                 request.getTipificaciones(),
@@ -240,7 +244,10 @@ public class TipificacionService {
     }
 
     @Transactional
-    @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true),
+            @CacheEvict(value = CacheNames.TIPIFICACIONES_POR_PROVEEDOR, allEntries = true)
+    })
     public CatalogoResponse actualizarEstadoCatalogo(CatalogoEstadoRequest request) {
         List<Long> tipificacionesActivar = normalizarIds(request.getTipificacionesActivar());
         List<Long> tipificacionesDesactivar = normalizarIds(request.getTipificacionesDesactivar());
@@ -277,7 +284,10 @@ public class TipificacionService {
     }
 
     @Transactional
-    @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true),
+            @CacheEvict(value = CacheNames.TIPIFICACIONES_POR_PROVEEDOR, allEntries = true)
+    })
     public CatalogoResponse guardarMatrizCatalogo(MatrizCatalogoRequest request) {
         List<TipificacionCatalogoRequest> matriz = Objects.requireNonNullElse(
                 request.getTipificaciones(),
@@ -418,7 +428,10 @@ public class TipificacionService {
      * alta la matriz de un proveedor nuevo o dejar la de un proveedor igual a otro.
      */
     @Transactional
-    @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true),
+            @CacheEvict(value = CacheNames.TIPIFICACIONES_POR_PROVEEDOR, allEntries = true)
+    })
     public CatalogoResponse clonarMatriz(Etapa etapa, Long idProveedorOrigen, Long idProveedorDestino) {
         if (Objects.equals(idProveedorOrigen, idProveedorDestino)) {
             throw new BadRequestException("El proveedor origen y destino no pueden ser el mismo", idProveedorOrigen, null);
