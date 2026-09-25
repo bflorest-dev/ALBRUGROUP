@@ -1439,6 +1439,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 r.fechaIngresoEtapa, l.updatedAt, l.sec, l.sot, l.customerId,
                 COALESCE(lprov.requiereSecSotVenta, false),
                 rp.nombreAsesorMerito, r.nombreAsesorUltimaGestion, r.fechaUltimaGestion,
+                seg.fechaIngresoVenta, seg.fechaGrabacion,
                 ultTip.idActor, ultTip.nombreActor,
                 seg.fechaProgramacion, seg.fechaRechazo, seg.fechaInstalacion,
                 r.ultimaTipificacionAt, ultTip.comentario, l.comentario

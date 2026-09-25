@@ -709,6 +709,8 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
       PROGRAMACION: 'Programación',
       RECHAZO: 'Rechazo',
       INSTALACION: 'Instalación',
+      INGRESO_VENTA: 'Ingresado',
+      GRABACION: 'Grabación',
       TIPIFICACION: 'Tipificación',
       INGRESO: 'Ingreso',
       ULTIMA_GESTION: 'Última gestión'

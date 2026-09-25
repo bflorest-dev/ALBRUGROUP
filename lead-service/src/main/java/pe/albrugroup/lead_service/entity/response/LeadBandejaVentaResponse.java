@@ -66,6 +66,8 @@ public class LeadBandejaVentaResponse {
     private String nombreAsesorMeritoPreventa;
     private String nombreAsesorUltimaGestion;
     private Instant fechaUltimaGestion;
+    private Instant fechaIngresoVenta;
+    private Instant fechaGrabacion;
     private Long idAsesorEvento;
     private String nombreAsesorEvento;
     private LocalDate fechaProgramacion;
@@ -120,6 +122,8 @@ public class LeadBandejaVentaResponse {
             String nombreAsesorMeritoPreventa,
             String nombreAsesorUltimaGestion,
             Instant fechaUltimaGestion,
+            Instant fechaIngresoVenta,
+            Instant fechaGrabacion,
             Long idAsesorEvento,
             String nombreAsesorEvento,
             LocalDate fechaProgramacion,
@@ -169,6 +173,8 @@ public class LeadBandejaVentaResponse {
         this.nombreAsesorMeritoPreventa = nombreAsesorMeritoPreventa;
         this.nombreAsesorUltimaGestion = nombreAsesorUltimaGestion;
         this.fechaUltimaGestion = fechaUltimaGestion;
+        this.fechaIngresoVenta = fechaIngresoVenta;
+        this.fechaGrabacion = fechaGrabacion;
         this.idAsesorEvento = idAsesorEvento;
         this.nombreAsesorEvento = nombreAsesorEvento;
         this.fechaProgramacion = fechaProgramacion;
@@ -221,6 +227,8 @@ public class LeadBandejaVentaResponse {
             String nombreAsesorMeritoPreventa,
             String nombreAsesorUltimaGestion,
             Instant fechaUltimaGestion,
+            Instant fechaIngresoVenta,
+            Instant fechaGrabacion,
             Long idAsesorEvento,
             String nombreAsesorEvento,
             Instant fechaProgramacionAt,
@@ -269,6 +277,8 @@ public class LeadBandejaVentaResponse {
         this.nombreAsesorMeritoPreventa = nombreAsesorMeritoPreventa;
         this.nombreAsesorUltimaGestion = nombreAsesorUltimaGestion;
         this.fechaUltimaGestion = fechaUltimaGestion;
+        this.fechaIngresoVenta = fechaIngresoVenta;
+        this.fechaGrabacion = fechaGrabacion;
         this.idAsesorEvento = idAsesorEvento;
         this.nombreAsesorEvento = nombreAsesorEvento;
         if (fechaProgramacionAt != null) {

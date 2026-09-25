@@ -987,7 +987,16 @@ public class LeadService {
                 estadoOrden.gestionado(),
                 pageable
         );
-        leads.getContent().forEach(row -> normalizarFechaRelevanteBandejaVenta(row, CampoFechaListadoVenta.AUTO));
+        CampoFechaListadoVenta campoPresentacion = campo == CampoFechaListadoVenta.INGRESO
+                ? CampoFechaListadoVenta.AUTO
+                : campo;
+        Map<Long, Set<ComportamientoTipificacion>> comportamientosPorSubtipificacion =
+                resolverComportamientosBandejaVenta(leads.getContent());
+        leads.getContent().forEach(row -> normalizarFechaRelevanteBandejaVenta(
+                row,
+                campoPresentacion,
+                comportamientosPorSubtipificacion.get(row.getIdSubtipificacionActual())
+        ));
         return PageResponse.from(leads);
     }
 
@@ -1019,9 +1028,32 @@ public class LeadService {
         return etapasActuales.stream().filter(Objects::nonNull).distinct().toList();
     }
 
-    private void normalizarFechaRelevanteBandejaVenta(LeadBandejaVentaResponse lead, CampoFechaListadoVenta campo) {
+    private Map<Long, Set<ComportamientoTipificacion>> resolverComportamientosBandejaVenta(
+            List<LeadBandejaVentaResponse> leads
+    ) {
+        Set<Long> ids = leads.stream()
+                .map(LeadBandejaVentaResponse::getIdSubtipificacionActual)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return subtipificacionRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(
+                        Subtipificacion::getId,
+                        subtipificacion -> subtipificacion.getComportamientos() == null
+                                ? Set.of()
+                                : new HashSet<>(subtipificacion.getComportamientos())
+                ));
+    }
+
+    private void normalizarFechaRelevanteBandejaVenta(
+            LeadBandejaVentaResponse lead,
+            CampoFechaListadoVenta campo,
+            Set<ComportamientoTipificacion> comportamientos
+    ) {
         TipoFechaRelevanteVenta tipo = switch (campo) {
-            case AUTO -> inferirTipoFechaRelevanteBandejaVenta(lead);
+            case AUTO -> inferirTipoFechaRelevanteBandejaVenta(lead, comportamientos);
             case PROGRAMACION -> TipoFechaRelevanteVenta.PROGRAMACION;
             case RECHAZO -> TipoFechaRelevanteVenta.RECHAZO;
             case INSTALACION -> TipoFechaRelevanteVenta.INSTALACION;
@@ -1037,20 +1069,37 @@ public class LeadService {
             }
             case RECHAZO -> lead.setFechaRelevante(lead.getFechaRechazo());
             case INSTALACION -> lead.setFechaRelevante(lead.getFechaInstalacion());
+            case INGRESO_VENTA -> lead.setFechaRelevanteAt(lead.getFechaIngresoVenta());
+            case GRABACION -> lead.setFechaRelevanteAt(lead.getFechaGrabacion());
             case TIPIFICACION -> lead.setFechaRelevanteAt(lead.getFechaTipificacion());
             case INGRESO -> lead.setFechaRelevanteAt(lead.getFechaIngresoEtapa() == null ? lead.getLastEntryAt() : lead.getFechaIngresoEtapa());
             case ULTIMA_GESTION -> lead.setFechaRelevanteAt(lead.getFechaUltimaGestion());
         }
     }
 
-    private TipoFechaRelevanteVenta inferirTipoFechaRelevanteBandejaVenta(LeadBandejaVentaResponse lead) {
-        if (lead.getFechaProgramacion() != null) {
+    private TipoFechaRelevanteVenta inferirTipoFechaRelevanteBandejaVenta(
+            LeadBandejaVentaResponse lead,
+            Set<ComportamientoTipificacion> comportamientos
+    ) {
+        Set<ComportamientoTipificacion> efectivos = comportamientos == null ? Set.of() : comportamientos;
+        if (efectivos.contains(ComportamientoTipificacion.REGISTRA_INGRESO_VENTA)
+                && lead.getFechaIngresoVenta() != null) {
+            return TipoFechaRelevanteVenta.INGRESO_VENTA;
+        }
+        if (efectivos.contains(ComportamientoTipificacion.ES_GRABACION)
+                && lead.getFechaGrabacion() != null) {
+            return TipoFechaRelevanteVenta.GRABACION;
+        }
+        if (efectivos.contains(ComportamientoTipificacion.REQUIERE_FECHA_PROGRAMACION)
+                && lead.getFechaProgramacion() != null) {
             return TipoFechaRelevanteVenta.PROGRAMACION;
         }
-        if (lead.getFechaRechazo() != null) {
+        if (efectivos.contains(ComportamientoTipificacion.REQUIERE_FECHA_RECHAZO)
+                && lead.getFechaRechazo() != null) {
             return TipoFechaRelevanteVenta.RECHAZO;
         }
-        if (lead.getFechaInstalacion() != null) {
+        if (efectivos.contains(ComportamientoTipificacion.REQUIERE_FECHA_INSTALACION)
+                && lead.getFechaInstalacion() != null) {
             return TipoFechaRelevanteVenta.INSTALACION;
         }
         return TipoFechaRelevanteVenta.TIPIFICACION;
@@ -2626,7 +2675,7 @@ public class LeadService {
                 subtipificacion.getComportamientos());
         leadSeguimientoService.actualizarPorTipificacion(
                 savedLead.getId(), etapaActual, etapaDestino,
-                subtipificacion.getComportamientos(),
+                combinarComportamientos(subtipificacion, resultado.subtipificacion()),
                 null, null, null, null);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         registrarEventoTipificacion(
@@ -2803,7 +2852,7 @@ public class LeadService {
                 subtipificacion.getComportamientos());
         leadSeguimientoService.actualizarPorTipificacion(
                 savedLead.getId(), etapaActual, etapaDestino,
-                subtipificacion.getComportamientos(),
+                combinarComportamientos(subtipificacion, resultado.subtipificacion()),
                 requiereProgramacion ? request.getFechaProgramacion() : null,
                 requiereProgramacion ? request.getHoraProgramada() : null,
                 requiereFechaRechazo ? request.getFechaRechazo() : null,
@@ -2947,6 +2996,20 @@ public class LeadService {
     ) {
         return subtipificacion.getComportamientos() != null
                 && subtipificacion.getComportamientos().contains(comportamiento);
+    }
+
+    private Set<ComportamientoTipificacion> combinarComportamientos(
+            Subtipificacion origen,
+            Subtipificacion resultado
+    ) {
+        Set<ComportamientoTipificacion> combinados = new HashSet<>();
+        if (origen != null && origen.getComportamientos() != null) {
+            combinados.addAll(origen.getComportamientos());
+        }
+        if (resultado != null && resultado.getComportamientos() != null) {
+            combinados.addAll(resultado.getComportamientos());
+        }
+        return combinados;
     }
 
     private boolean codigoEquals(String actual, String esperado) {

@@ -38,7 +38,7 @@ public class LeadSeguimientoService {
             seg.setFechaAgendamientoPreventa(ahora);
         }
 
-        if (cambiaEtapa && etapaDestino == Etapa.VENTA) {
+        if (comportamientos.contains(ComportamientoTipificacion.REGISTRA_INGRESO_VENTA)) {
             seg.setFechaIngresoVenta(ahora);
         }
 

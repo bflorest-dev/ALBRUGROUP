@@ -285,6 +285,8 @@ export type TipoFechaRelevanteVenta =
   | 'PROGRAMACION'
   | 'RECHAZO'
   | 'INSTALACION'
+  | 'INGRESO_VENTA'
+  | 'GRABACION'
   | 'TIPIFICACION'
   | 'INGRESO'
   | 'ULTIMA_GESTION';
@@ -344,6 +346,8 @@ export interface LeadBandejaVentaResponse {
   horaProgramada?: string | null;
   fechaRechazo?: string | null;
   fechaInstalacion?: string | null;
+  fechaIngresoVenta?: string | null;
+  fechaGrabacion?: string | null;
   fechaTipificacion?: string | null;
   comentarioTipificacion?: string | null;
   comentarioLead?: string | null;
