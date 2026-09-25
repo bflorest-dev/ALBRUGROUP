@@ -189,6 +189,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 l.usermeta,
                 c.nombre,
+                cp.nombreCuenta,
                 p.nombre,
                 (SELECT peFallback.nombre
                  FROM EquipoProveedor epFallback
@@ -221,6 +222,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.plan pl
             LEFT JOIN pl.proveedor pp
             LEFT JOIN l.campana c
+            LEFT JOIN c.cuentaPublicitaria cp
             LEFT JOIN c.proveedor p
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo
@@ -337,6 +339,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 l.usermeta,
                 c.nombre,
+                cp.nombreCuenta,
                 p.nombre,
                 (SELECT peFallback.nombre
                  FROM EquipoProveedor epFallback
@@ -369,6 +372,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.plan pl
             LEFT JOIN pl.proveedor pp
             LEFT JOIN l.campana c
+            LEFT JOIN c.cuentaPublicitaria cp
             LEFT JOIN c.proveedor p
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo
@@ -2633,6 +2637,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 l.usermeta,
                 c.nombre,
+                cp.nombreCuenta,
                 p.nombre,
                 (SELECT peFallback.nombre
                  FROM EquipoProveedor epFallback
@@ -2665,6 +2670,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.plan pl
             LEFT JOIN pl.proveedor pp
             LEFT JOIN l.campana c
+            LEFT JOIN c.cuentaPublicitaria cp
             LEFT JOIN c.proveedor p
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo

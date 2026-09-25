@@ -691,8 +691,10 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   }
 
   protected formatRelevantDate(row: LeadBandejaVentaResponse): string {
-    const raw = row.fechaRelevanteAt ?? row.fechaRelevante;
-    return raw ? this.formatDate(raw) : '';
+    if (row.fechaRelevanteAt) {
+      return this.formatInstantDate(row.fechaRelevanteAt);
+    }
+    return row.fechaRelevante ? this.formatDate(row.fechaRelevante) : '';
   }
 
   protected formatRelevantTime(row: LeadBandejaVentaResponse): string {
@@ -715,7 +717,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   }
 
   protected formatIngreso(row: LeadBandejaVentaResponse): string {
-    return row.fechaIngresoEtapa ? this.formatDate(row.fechaIngresoEtapa) : 'Sin ingreso';
+    return row.fechaIngresoEtapa ? this.formatInstantDate(row.fechaIngresoEtapa) : 'Sin ingreso';
   }
 
   protected formatIngresoTime(row: LeadBandejaVentaResponse): string {
@@ -778,14 +780,11 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   }
 
   protected formatInstantShort(value?: string | null): string {
-    if (!value) {
+    const date = this.parseInstant(value);
+    if (!date) {
       return '';
     }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return '';
-    }
-    return `${this.formatDate(value)} ${this.formatInstantTime(value)}`;
+    return `${this.formatInstantDate(value)} ${this.formatInstantTime(value)}`;
   }
 
   protected commentText(row: LeadBandejaVentaResponse): string {
@@ -1065,6 +1064,20 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     return `${match[3]}/${match[2]}/${match[1].slice(2)}`;
   }
 
+  /** Fecha de un instante del servidor expresada en la zona operativa de Lima. */
+  private formatInstantDate(value?: string | null): string {
+    const date = this.parseInstant(value);
+    if (!date) {
+      return '';
+    }
+    return date.toLocaleDateString('en-GB', {
+      timeZone: 'America/Lima',
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit'
+    });
+  }
+
   private displayTimeOnly(value?: string | null): string {
     const match = /^(\d{2}):(\d{2})/.exec(value ?? '');
     if (!match) {
@@ -1077,16 +1090,23 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   }
 
   private formatInstantTime(value?: string | null): string {
-    if (!value) {
+    const date = this.parseInstant(value);
+    if (!date) {
       return '';
+    }
+    return date.toLocaleTimeString('en-US', {
+      timeZone: 'America/Lima',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
+
+  private parseInstant(value?: string | null): Date | null {
+    if (!value) {
+      return null;
     }
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return '';
-    }
-    const hour24 = date.getHours();
-    const suffix = hour24 < 12 ? 'AM' : 'PM';
-    const hour12 = hour24 % 12 || 12;
-    return `${String(hour12).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} ${suffix}`;
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 }

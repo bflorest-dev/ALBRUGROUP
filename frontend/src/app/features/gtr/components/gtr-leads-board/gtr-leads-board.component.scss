@@ -5,6 +5,94 @@
   box-shadow: var(--app-shadow-soft);
 }
 
+:host ::ng-deep .gtr-board--platform .gtr-table th,
+:host ::ng-deep .gtr-board--platform .gtr-table td {
+  min-width: 0;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table th.col-lead,
+:host ::ng-deep .gtr-board--platform .gtr-table td.col-lead {
+  width: 7rem;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table th.col-provider,
+:host ::ng-deep .gtr-board--platform .gtr-table td.col-provider {
+  width: 5.3rem;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table th.col-campaign,
+:host ::ng-deep .gtr-board--platform .gtr-table td.col-campaign {
+  width: 11.5rem;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table th.col-base,
+:host ::ng-deep .gtr-board--platform .gtr-table td.col-base {
+  width: 3.6rem;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table th.col-document,
+:host ::ng-deep .gtr-board--platform .gtr-table td.col-document {
+  width: 6rem;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table th.col-tipifications,
+:host ::ng-deep .gtr-board--platform .gtr-table td.col-tipifications {
+  width: 23rem;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table th.col-status,
+:host ::ng-deep .gtr-board--platform .gtr-table td.col-status {
+  width: 6.8rem;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table th.col-advisor,
+:host ::ng-deep .gtr-board--platform .gtr-table td.col-advisor {
+  width: 6.6rem;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table th.col-created-at,
+:host ::ng-deep .gtr-board--platform .gtr-table td.col-created-at,
+:host ::ng-deep .gtr-board--platform .gtr-table th.col-last-entry-at,
+:host ::ng-deep .gtr-board--platform .gtr-table td.col-last-entry-at {
+  width: 6.2rem;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table th.col-actions,
+:host ::ng-deep .gtr-board--platform .gtr-table td.col-actions {
+  width: 8.8rem;
+}
+
+.campaign-cell {
+  display: grid;
+  gap: 0.14rem;
+  min-width: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.campaign-cell__name,
+.campaign-cell__account {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campaign-cell__name {
+  color: var(--app-text);
+  font-size: 0.74rem;
+  font-weight: 750;
+  line-height: 1.15;
+}
+
+.campaign-cell__account {
+  color: var(--app-text-muted);
+  font-size: 0.66rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
 .board-toolbar {
   align-items: center;
   display: flex;
@@ -287,6 +375,58 @@
 }
 
 @media (max-width: 1599px) {
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-lead,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-lead {
+    width: 5.8rem;
+  }
+
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-provider,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-provider {
+    width: 4.4rem;
+  }
+
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-campaign,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-campaign {
+    width: 9.5rem;
+  }
+
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-base,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-base {
+    width: 3.4rem;
+  }
+
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-document,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-document {
+    width: 4.8rem;
+  }
+
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-tipifications,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-tipifications {
+    width: 14.5rem;
+  }
+
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-status,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-status {
+    width: 6.4rem;
+  }
+
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-advisor,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-advisor {
+    width: 5.4rem;
+  }
+
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-created-at,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-created-at,
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-last-entry-at,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-last-entry-at {
+    width: 5.1rem;
+  }
+
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-actions,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-actions {
+    width: 8.2rem;
+  }
+
   :host ::ng-deep .row-actions {
     gap: 0.4rem;
     grid-template-columns: repeat(2, 2.3rem);
@@ -295,6 +435,16 @@
 }
 
 @media (max-width: 1280px) {
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-campaign,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-campaign {
+    width: 8.6rem;
+  }
+
+  :host ::ng-deep .gtr-board--platform .gtr-table th.col-tipifications,
+  :host ::ng-deep .gtr-board--platform .gtr-table td.col-tipifications {
+    width: 13.25rem;
+  }
+
   .tip-view-select__control {
     min-width: 11.25rem;
   }

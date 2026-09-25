@@ -72,6 +72,7 @@ export interface LeadGtrResponse {
   lead?: string | null;
   usermeta?: string | null;
   nombreCampana?: string | null;
+  nombreCuentaPublicitaria?: string | null;
   nombreProveedorCampana?: string | null;
   idProveedorEquipo?: number | null;
   nombreProveedorEquipo?: string | null;

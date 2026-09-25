@@ -1,4 +1,4 @@
-<p-card styleClass="gtr-board">
+<p-card styleClass="gtr-board gtr-board--platform">
   <ng-template #title>
     <span class="board-title">
       Bandeja diaria
@@ -196,10 +196,11 @@
             (selectionChange)="facade.toggleSelectAllVisible($event)"
           />
         </th>
-        <th>Lead</th>
-        <th>Proveedor</th>
-        <th>Base</th>
-        <th>Documento</th>
+        <th class="col-lead">Lead</th>
+        <th class="col-provider">Proveedor</th>
+        <th class="col-campaign">Campaña</th>
+        <th class="col-base">Base</th>
+        <th class="col-document">Documento</th>
         <th class="col-sortable col-tipifications">
           <div class="tip-sort-group">
             <span class="tip-sort-group__title">Tipificacion</span>
@@ -253,8 +254,8 @@
             <i [class]="facade.platformSortIcon('estado')" aria-hidden="true"></i>
           </button>
         </th>
-        <th>Asesor</th>
-        <th class="col-sortable">
+        <th class="col-advisor">Asesor</th>
+        <th class="col-sortable col-created-at">
           <button
             type="button"
             class="sort-header"
@@ -267,7 +268,7 @@
             <i [class]="facade.platformSortIcon('createdAt')" aria-hidden="true"></i>
           </button>
         </th>
-        <th class="col-sortable">
+        <th class="col-sortable col-last-entry-at">
           <button
             type="button"
             class="sort-header"
@@ -298,7 +299,7 @@
             (selectionChange)="facade.toggleSelection(row.id, $event)"
           />
         </td>
-        <td>
+        <td class="col-lead">
           <div style="display: inline-grid; gap: 0.12rem; max-width: 9.8rem;">
             <strong class="lead-value">{{ facade.display(row.lead || row.usermeta) }}</strong>
             @if (row.lead && row.usermeta) {
@@ -321,7 +322,7 @@
             />
           }
         </td>
-        <td>
+        <td class="col-provider">
           @if (facade.providerLogo(row.nombreProveedorCampana ?? row.nombreProveedorEquipo); as logo) {
             <div class="provider-cell">
               <img [src]="logo" [alt]="facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo)" />
@@ -330,14 +331,24 @@
             {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
           }
         </td>
-        <td>
+        <td
+          class="col-campaign"
+          [attr.title]="'Campaña: ' + facade.display(row.nombreCampana) + ' · Cuenta publicitaria: ' + facade.display(row.nombreCuentaPublicitaria)"
+          [attr.aria-label]="'Campaña: ' + facade.display(row.nombreCampana) + '. Cuenta publicitaria: ' + facade.display(row.nombreCuentaPublicitaria)"
+        >
+          <div class="campaign-cell">
+            <strong class="campaign-cell__name">{{ facade.display(row.nombreCampana) }}</strong>
+            <small class="campaign-cell__account">{{ facade.display(row.nombreCuentaPublicitaria) }}</small>
+          </div>
+        </td>
+        <td class="col-base">
           @if (baseVisual(row.base); as bv) {
             <span class="base-badge" [attr.data-tone]="bv.tone" [title]="bv.label" [attr.aria-label]="'Origen: ' + bv.label">
               <i [class]="bv.icon" aria-hidden="true"></i>
             </span>
           }
         </td>
-        <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
+        <td class="col-document">{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
         <td class="col-tipifications">
           <div class="tip-view" tabindex="0">
             @if (facade.tipificacionParts(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion); as tip) {
@@ -414,16 +425,16 @@
             [value]="facade.display(row.estadoSeguimiento)"
           />
         </td>
-        <td [title]="facade.display(row.nombreAsesorAsignado)">
+        <td class="col-advisor" [title]="facade.display(row.nombreAsesorAsignado)">
           {{ facade.advisorShortName(row.nombreAsesorAsignado) | uppercase }}
         </td>
-        <td>
+        <td class="col-created-at">
           <div class="datetime-stack">
             <span>{{ row.createdAt | date: 'dd/MM' }}</span>
             <strong>{{ row.createdAt | date: 'hh:mm a' }}</strong>
           </div>
         </td>
-        <td>
+        <td class="col-last-entry-at">
           @if (row.lastEntryAt; as lastEntryAt) {
             <div class="datetime-stack">
               <span>{{ lastEntryAt | date: 'dd/MM' }}</span>
@@ -433,7 +444,7 @@
             <span class="muted-text">Sin gestion</span>
           }
         </td>
-        <td class="actions-cell">
+        <td class="actions-cell col-actions">
           <div class="actions-shell">
             <div class="row-actions">
               <button

@@ -23,6 +23,7 @@ public class LeadGtrResponse {
     private String lead;
     private String usermeta;
     private String nombreCampana;
+    private String nombreCuentaPublicitaria;
     private String nombreProveedorCampana;
     private String nombreProveedorEquipo;
     private String numeroWhatsappEmpresa;
