@@ -47,6 +47,7 @@ public class LeadBandejaVentaResponse {
     private String codigoSubtipificacionActual;
     private String codigoTipificacionBandeja;
     private String codigoSubtipificacionBandeja;
+    private Long idSubtipificacionBandeja;
     private String proveedor;
     private String plan;
     private BigDecimal precioPlan;
@@ -103,6 +104,7 @@ public class LeadBandejaVentaResponse {
             String codigoSubtipificacionActual,
             String codigoTipificacionBandeja,
             String codigoSubtipificacionBandeja,
+            Long idSubtipificacionBandeja,
             String proveedor,
             String plan,
             BigDecimal precioPlan,
@@ -154,6 +156,7 @@ public class LeadBandejaVentaResponse {
         this.codigoSubtipificacionActual = codigoSubtipificacionActual;
         this.codigoTipificacionBandeja = codigoTipificacionBandeja;
         this.codigoSubtipificacionBandeja = codigoSubtipificacionBandeja;
+        this.idSubtipificacionBandeja = idSubtipificacionBandeja;
         this.proveedor = proveedor;
         this.plan = plan;
         this.precioPlan = precioPlan;
@@ -208,6 +211,7 @@ public class LeadBandejaVentaResponse {
             String codigoSubtipificacionActual,
             String codigoTipificacionBandeja,
             String codigoSubtipificacionBandeja,
+            Long idSubtipificacionBandeja,
             String proveedor,
             String plan,
             BigDecimal precioPlan,
@@ -258,6 +262,7 @@ public class LeadBandejaVentaResponse {
         this.codigoSubtipificacionActual = codigoSubtipificacionActual;
         this.codigoTipificacionBandeja = codigoTipificacionBandeja;
         this.codigoSubtipificacionBandeja = codigoSubtipificacionBandeja;
+        this.idSubtipificacionBandeja = idSubtipificacionBandeja;
         this.proveedor = proveedor;
         this.plan = plan;
         this.precioPlan = precioPlan;

@@ -321,6 +321,7 @@ export interface LeadBandejaVentaResponse {
   codigoSubtipificacionActual?: string | null;
   codigoTipificacionBandeja?: string | null;
   codigoSubtipificacionBandeja?: string | null;
+  idSubtipificacionBandeja?: number | null;
   proveedor?: string | null;
   plan?: string | null;
   precioPlan?: number | null;

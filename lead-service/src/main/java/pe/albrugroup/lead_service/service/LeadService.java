@@ -992,11 +992,16 @@ public class LeadService {
                 : campo;
         Map<Long, Set<ComportamientoTipificacion>> comportamientosPorSubtipificacion =
                 resolverComportamientosBandejaVenta(leads.getContent());
-        leads.getContent().forEach(row -> normalizarFechaRelevanteBandejaVenta(
-                row,
-                campoPresentacion,
-                comportamientosPorSubtipificacion.get(row.getIdSubtipificacionActual())
-        ));
+        leads.getContent().forEach(row -> {
+            Long idSubtipificacionBandeja = resolverIdSubtipificacionBandeja(row);
+            normalizarFechaRelevanteBandejaVenta(
+                    row,
+                    campoPresentacion,
+                    idSubtipificacionBandeja == null
+                            ? null
+                            : comportamientosPorSubtipificacion.get(idSubtipificacionBandeja)
+            );
+        });
         return PageResponse.from(leads);
     }
 
@@ -1032,7 +1037,7 @@ public class LeadService {
             List<LeadBandejaVentaResponse> leads
     ) {
         Set<Long> ids = leads.stream()
-                .map(LeadBandejaVentaResponse::getIdSubtipificacionActual)
+                .map(this::resolverIdSubtipificacionBandeja)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         if (ids.isEmpty()) {
@@ -1045,6 +1050,12 @@ public class LeadService {
                                 ? Set.of()
                                 : new HashSet<>(subtipificacion.getComportamientos())
                 ));
+    }
+
+    private Long resolverIdSubtipificacionBandeja(LeadBandejaVentaResponse lead) {
+        return lead.getIdSubtipificacionBandeja() != null
+                ? lead.getIdSubtipificacionBandeja()
+                : lead.getIdSubtipificacionActual();
     }
 
     private void normalizarFechaRelevanteBandejaVenta(

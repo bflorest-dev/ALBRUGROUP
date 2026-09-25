@@ -1431,9 +1431,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   ELSE 'Provincia'
                 END,
                 l.base, l.idTipificacion, l.codigoTipificacion,
-                l.idSubtipificacion, l.codigoSubtipificacion,
-                r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion,
-                l.nombreProveedorSnapshot, l.nombrePlanSnapshot, l.precioPlanSnapshot,
+                 l.idSubtipificacion, l.codigoSubtipificacion,
+                 r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion,
+                 sAct.id,
+                 l.nombreProveedorSnapshot, l.nombrePlanSnapshot, l.precioPlanSnapshot,
                 l.nombrePromocionInternaSnapshot, l.precioAdicionalesSnapshot, l.precioFinal,
                 l.diaCorteFacturacion, l.mesesPermanenciaSnapshot, l.createdAt, l.lastEntryAt,
                 r.fechaIngresoEtapa, l.updatedAt, l.sec, l.sot, l.customerId,
