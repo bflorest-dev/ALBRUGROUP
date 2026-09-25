@@ -12,32 +12,32 @@
   </header>
 
   <section class="general-board__controls" aria-label="Filtros de bandeja general">
-    <form class="search-strip" role="search" aria-label="Buscar en bandeja general" [attr.aria-busy]="loading()" (ngSubmit)="buscar()">
-      <i [class]="loading() ? 'pi pi-spin pi-spinner' : 'pi pi-search'" aria-hidden="true"></i>
-      <input
-        pInputText
-        type="text"
-        inputmode="text"
-        name="buscar"
-        autocomplete="off"
-        placeholder="Lead, documento, SEC, SOT o @usermeta"
-        [ngModel]="searchInput()"
-        (ngModelChange)="onSearchInput($event)"
-      />
-      @if (searchActive()) {
-        <button
-          pButton
-          type="button"
-          icon="pi pi-times"
-          severity="secondary"
-          text
-          aria-label="Limpiar búsqueda"
-          (click)="limpiarBusqueda()"
-        ></button>
-      }
-    </form>
+    <div class="general-board__controls-left">
+      <form class="search-strip" role="search" aria-label="Buscar en bandeja general" [attr.aria-busy]="loading()" (ngSubmit)="buscar()">
+        <i [class]="loading() ? 'pi pi-spin pi-spinner' : 'pi pi-search'" aria-hidden="true"></i>
+        <input
+          pInputText
+          type="text"
+          inputmode="text"
+          name="buscar"
+          autocomplete="off"
+          placeholder="Lead, documento, SEC, SOT o @usermeta"
+          [ngModel]="searchInput()"
+          (ngModelChange)="onSearchInput($event)"
+        />
+        @if (searchActive()) {
+          <button
+            pButton
+            type="button"
+            icon="pi pi-times"
+            severity="secondary"
+            text
+            aria-label="Limpiar búsqueda"
+            (click)="limpiarBusqueda()"
+          ></button>
+        }
+      </form>
 
-    <div class="filter-strip">
       <app-tree-select
         [groups]="tipGroups()"
         [(selectedParents)]="selectedTipificaciones"
@@ -46,7 +46,9 @@
         icon="pi pi-tags"
         (selectionChange)="onTipSelectionChange($event)"
       />
+    </div>
 
+    <div class="general-board__controls-right">
       <app-period-selector
         [periodo]="periodo()"
         [dia]="dia()"
@@ -64,17 +66,6 @@
         [outlined]="isOrganizationDefault()"
         [class.filter-btn--active]="!isOrganizationDefault()"
         (click)="organize.toggle($event)"
-      ></button>
-
-      <button
-        pButton
-        type="button"
-        icon="pi pi-refresh"
-        severity="secondary"
-        text
-        aria-label="Actualizar"
-        [loading]="loading()"
-        (click)="refresh()"
       ></button>
     </div>
   </section>

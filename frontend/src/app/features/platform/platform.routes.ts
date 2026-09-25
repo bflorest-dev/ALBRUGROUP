@@ -472,7 +472,7 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'backoffice',
     pathMatch: 'full',
-    redirectTo: 'backoffice/plataforma'
+    redirectTo: 'backoffice/general'
   },
   {
     path: 'backoffice/plataforma',
@@ -494,7 +494,7 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'backoffice/gestion',
     pathMatch: 'full',
-    redirectTo: 'backoffice/plataforma'
+    redirectTo: 'backoffice/general'
   },
   {
     path: 'backoffice/programados',
@@ -615,7 +615,7 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'monitor',
     pathMatch: 'full',
-    redirectTo: 'backoffice/plataforma'
+    redirectTo: 'backoffice/general'
   },
   {
     path: 'supervisor-ventas',

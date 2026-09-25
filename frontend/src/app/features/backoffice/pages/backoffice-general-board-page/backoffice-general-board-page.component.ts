@@ -1,8 +1,10 @@
 import { LowerCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, merge } from 'rxjs';
+import { debounceTime, filter } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PaginatorModule } from 'primeng/paginator';
@@ -12,6 +14,7 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { CurrentUserProviderScopeService } from '../../../../core/services/current-user-provider-scope.service';
+import { SessionService } from '../../../../core/services/session.service';
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { TipificationPaletteByCode, TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { TreeSelectComponent, TreeSelectGroup, TreeSelectSelection } from '../../../../shared/components/tree-select/tree-select.component';
@@ -26,6 +29,7 @@ import {
   TipificacionResponse,
   UbigeoItem
 } from '../../../../shared/models/preventa/preventa.models';
+import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { BackofficeLeadService } from '../../services/backoffice-lead.service';
 
 type SortField = 'fechaIngresoEtapa' | 'fechaRelevante' | 'fechaUltimaGestion' | 'lead' | 'estado' | 'tipificacion';
@@ -61,12 +65,16 @@ type Option<T extends string = string> = { label: string; value: T };
 export class BackofficeGeneralBoardPageComponent implements OnInit {
   private readonly leadService = inject(BackofficeLeadService);
   private readonly providerScope = inject(CurrentUserProviderScopeService);
+  private readonly realtimeService = inject(LeadRealtimeService);
+  private readonly sessionService = inject(SessionService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
   private lastProviderId: number | null | undefined = undefined;
 
   private static readonly DEFAULT_SORT: SortField = 'fechaIngresoEtapa';
   private static readonly DEFAULT_DIRECTION: SortDirection = 'desc';
   private static readonly SEARCH_DEBOUNCE_MS = 320;
+  private static readonly REALTIME_RELOAD_DEBOUNCE_MS = 600;
 
   protected readonly pageSize = 15;
   protected readonly rows = signal<LeadBandejaVentaResponse[]>([]);
@@ -351,6 +359,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     await this.providerScope.load();
     await this.loadCatalogo();
     await Promise.all([this.loadRows(), this.loadDepartamentos(), this.loadFilterCatalogs()]);
+    this.startRealtime();
   }
 
   protected async refresh(): Promise<void> {
@@ -907,6 +916,34 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     } finally {
       this.catalogLoading.set(false);
     }
+  }
+
+  private startRealtime(): void {
+    const streams = [this.realtimeService.watchTopic('/topic/leads/etapa/VENTA')];
+    const empleadoId = this.sessionService.getSession()?.empleadoId;
+    if (empleadoId) {
+      streams.push(this.realtimeService.watchTopic(`/topic/leads/asesor/${empleadoId}`));
+    }
+
+    merge(...streams)
+      .pipe(
+        filter((event) => this.isRelevantRealtime(event.tipo)),
+        debounceTime(BackofficeGeneralBoardPageComponent.REALTIME_RELOAD_DEBOUNCE_MS),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => void this.loadRows());
+  }
+
+  private isRelevantRealtime(tipo: string): boolean {
+    return [
+      'ASIGNACION',
+      'CONTACTO',
+      'DATOS_PREVENTA_ACTUALIZADOS',
+      'DIRECCION_ACTUALIZADA',
+      'OFERTA_COMERCIAL_ACTUALIZADA',
+      'TIPIFICACION',
+      'ATENCION_CERRADA'
+    ].includes(tipo);
   }
 
   private async loadRows(): Promise<void> {

@@ -3,7 +3,9 @@
 }
 
 :host ::ng-deep > .p-button {
+  height: var(--board-control-height, 2.35rem);
   min-width: 9rem;
+  min-height: var(--board-control-height, 2.35rem);
 }
 
 .tree-select-btn--active {

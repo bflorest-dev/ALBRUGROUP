@@ -268,15 +268,15 @@ export class PrivateLayoutComponent implements AfterViewInit {
               icon: 'pi pi-briefcase',
               children: [
                 {
-                  label: 'Plataforma',
-                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/plataforma`,
-                  icon: 'pi pi-desktop',
+                  label: 'Gestión',
+                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/general`,
+                  icon: 'pi pi-list-check',
                   exact: true
                 },
                 {
-                  label: 'Bandeja general',
-                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/general`,
-                  icon: 'pi pi-list-check',
+                  label: 'Plataforma',
+                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/plataforma`,
+                  icon: 'pi pi-desktop',
                   exact: true
                 },
                 {
@@ -477,8 +477,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
       || activeRole === 'MONITOR'
     ) {
       return [
+        { domainId: 'workspace', label: 'Gestión', route: '/app/backoffice/general', icon: 'pi pi-list-check', exact: true },
         { domainId: 'workspace', label: 'Plataforma', route: '/app/backoffice/plataforma', icon: 'pi pi-desktop', exact: true },
-        { domainId: 'workspace', label: 'Bandeja general', route: '/app/backoffice/general', icon: 'pi pi-list-check', exact: true },
         { domainId: 'workspace', label: 'Programados', route: '/app/backoffice/programados', icon: 'pi pi-calendar-clock', exact: true },
         { domainId: 'workspace', label: 'Subsanables', route: '/app/backoffice/subsanables', icon: 'pi pi-wrench', exact: true },
         { domainId: 'workspace', label: 'Rechazados', route: '/app/backoffice/rechazados', icon: 'pi pi-exclamation-triangle', exact: true },
