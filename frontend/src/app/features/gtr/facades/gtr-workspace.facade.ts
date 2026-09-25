@@ -284,6 +284,7 @@ export class GtrWorkspaceFacade {
   readonly isLoading = signal(false);
   readonly isReconciling = signal(false);
   readonly isSaving = signal(false);
+  readonly isIntakeSubmitting = signal(false);
   readonly isSavingSnapshot = signal(false);
   readonly isLoadingAgendados = signal(false);
   readonly isLoadingMasivos = signal(false);
@@ -1395,53 +1396,57 @@ export class GtrWorkspaceFacade {
   }
 
   private async submitIntakeInternal(skipLookupConfirmation: boolean): Promise<void> {
+    if (this.isIntakeSubmitting()) {
+      return;
+    }
     if (!this.ensureCanMutate()) {
       return;
     }
-    this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
-    if (this.intakeForm.invalid || !this.isRetroactiveDateValid() || !this.isRetroactiveHourValid()) {
-      this.intakeForm.markAllAsTouched();
-      if (this.isRetroactiveIntake()) {
-        this.retroactiveDateControl.markAsTouched();
-        this.retroactiveHourControl.markAsTouched();
-      }
-      this.intakeError.set(null);
-      return;
-    }
-
-    const formValue = this.intakeForm.getRawValue();
-    const leadNumber = (formValue.lead ?? '').trim();
-    const usermeta = normalizeUsermeta(formValue.usermeta);
-    const hasPhone = !!leadNumber;
-    const request: LeadIntakeRequest = {
-      prefijo: hasPhone ? formValue.prefijo : null,
-      lead: hasPhone ? leadNumber : null,
-      usermeta: usermeta || null,
-      idCampana: formValue.idCampana || null,
-      base: formValue.base as BaseLead
-    };
-    const adminEquipoId = this.adminEquipoId();
-    if (!skipLookupConfirmation) {
-      this.clearMessages();
-      this.intakeError.set(null);
-      try {
-        const lookupValue = request.lead || request.usermeta || '';
-        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(lookupValue, adminEquipoId));
-        if (lookup.existe) {
-          this.pendingIntakeLookup.set(lookup);
-          this.activeDialog.set('intake-confirm');
-          return;
+    this.isIntakeSubmitting.set(true);
+    try {
+      this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
+      if (this.intakeForm.invalid || !this.isRetroactiveDateValid() || !this.isRetroactiveHourValid()) {
+        this.intakeForm.markAllAsTouched();
+        if (this.isRetroactiveIntake()) {
+          this.retroactiveDateControl.markAsTouched();
+          this.retroactiveHourControl.markAsTouched();
         }
-      } catch (error) {
-        this.intakeError.set(this.getErrorMessage(error, 'No se pudo validar el lead antes del registro.'));
+        this.intakeError.set(null);
         return;
       }
-    }
 
-    this.isSaving.set(true);
-    this.clearMessages();
-    this.intakeError.set(null);
-    try {
+      const formValue = this.intakeForm.getRawValue();
+      const leadNumber = (formValue.lead ?? '').trim();
+      const usermeta = normalizeUsermeta(formValue.usermeta);
+      const hasPhone = !!leadNumber;
+      const request: LeadIntakeRequest = {
+        prefijo: hasPhone ? formValue.prefijo : null,
+        lead: hasPhone ? leadNumber : null,
+        usermeta: usermeta || null,
+        idCampana: formValue.idCampana || null,
+        base: formValue.base as BaseLead
+      };
+      const adminEquipoId = this.adminEquipoId();
+      if (!skipLookupConfirmation) {
+        this.clearMessages();
+        this.intakeError.set(null);
+        try {
+          const lookupValue = request.lead || request.usermeta || '';
+          const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(lookupValue, adminEquipoId));
+          if (lookup.existe) {
+            this.pendingIntakeLookup.set(lookup);
+            this.activeDialog.set('intake-confirm');
+            return;
+          }
+        } catch (error) {
+          this.intakeError.set(this.getErrorMessage(error, 'No se pudo validar el lead antes del registro.'));
+          return;
+        }
+      }
+
+      this.isSaving.set(true);
+      this.clearMessages();
+      this.intakeError.set(null);
       const isRetroactive = this.isRetroactiveIntake();
       const retroactiveDate = this.retroactiveDateControl.value;
       const retroactiveDateLabel = this.retroactiveDateLabel();
@@ -1482,6 +1487,7 @@ export class GtrWorkspaceFacade {
       this.intakeError.set(this.getErrorMessage(error, 'No se pudo ingresar el lead.'));
     } finally {
       this.isSaving.set(false);
+      this.isIntakeSubmitting.set(false);
     }
   }
 
@@ -5319,6 +5325,7 @@ export class GtrWorkspaceFacade {
     this.isLoading.set(false);
     this.isReconciling.set(false);
     this.isSaving.set(false);
+    this.isIntakeSubmitting.set(false);
     this.isSavingSnapshot.set(false);
     this.isLoadingAgendados.set(false);
     this.isLoadingMasivos.set(false);

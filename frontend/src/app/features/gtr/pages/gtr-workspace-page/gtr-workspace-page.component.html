@@ -415,8 +415,8 @@
           pButton
           type="submit"
           label="Registrar"
-          [disabled]="!facade.canMutateOperationalData() || facade.intakeForm.invalid || !facade.isRetroactiveDateValid() || !facade.isRetroactiveHourValid()"
-          [loading]="facade.isSaving()"
+          [disabled]="facade.isIntakeSubmitting() || !facade.canMutateOperationalData() || facade.intakeForm.invalid || !facade.isRetroactiveDateValid() || !facade.isRetroactiveHourValid()"
+          [loading]="facade.isIntakeSubmitting()"
         ></button>
       </div>
     </form>
@@ -461,8 +461,8 @@
         type="button"
         label="Registrar de todos modos"
         icon="pi pi-check"
-        [disabled]="!facade.canMutateOperationalData()"
-        [loading]="facade.isSaving()"
+        [disabled]="facade.isIntakeSubmitting() || !facade.canMutateOperationalData()"
+        [loading]="facade.isIntakeSubmitting()"
         (click)="facade.confirmIntakeRegistration()"
       ></button>
     </div>
