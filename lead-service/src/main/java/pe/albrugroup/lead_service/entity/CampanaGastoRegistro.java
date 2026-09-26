@@ -21,43 +21,31 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
-@Entity
-@Getter
-@Setter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
+@Entity @Getter @Setter @Builder
+@AllArgsConstructor @NoArgsConstructor
 @Table(indexes = {
-        @Index(name = "idx_campana_gasto_campana_created", columnList = "id_campana, createdAt"),
-        @Index(name = "idx_campana_gasto_created", columnList = "createdAt")
+    @Index(name = "idx_campana_gasto_campana_created", columnList = "id_campana, createdAt"),
+    @Index(name = "idx_campana_gasto_created", columnList = "createdAt")
 })
 public class CampanaGastoRegistro {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_campana", nullable = false)
     private Campana campana;
-
     @Column(nullable = false)
     private Integer leads;
-
     @Column(nullable = false)
     private Integer leadsReales;
-
     @Column(nullable = false)
     private Integer ventasCerradas;
-
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal costoTotal;
-
     @Column(nullable = false)
     private LocalDate fechaCarga;
-
-    private Instant createdAt;
-
     @UpdateTimestamp
     private Instant updatedAt;
+    private Instant createdAt;
 }

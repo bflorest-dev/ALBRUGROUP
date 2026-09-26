@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
@@ -33,7 +32,7 @@ public class LeadResponse {
     private String nombreAsesorAsignado;
     private TipoDocumento tipoDocumento;
     private String numeroDocumentoTitularServicio;
-    private Base base;
+    private String origen;
     private Long idTipificacion;
     private String codigoTipificacion;
     private Long idSubtipificacion;

@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
-import pe.albrugroup.lead_service.entity.enums.Base;
 
 @Getter
 @Setter
@@ -18,10 +17,8 @@ public class LeadIntakeRequest {
 
     private String usermeta;
 
-    // Opcional: un lead puede ingresar sin campana (queda en la bandeja del equipo del GTR).
-    // El flujo ADMIN por equipo recibe el equipo desde la URL, no desde este request.
     private Long idCampana;
 
-    @NotNull(message = "La base es obligatoria")
-    private Base base;
+    @NotNull(message = "El origen es obligatorio")
+    private Long idOrigen;
 }

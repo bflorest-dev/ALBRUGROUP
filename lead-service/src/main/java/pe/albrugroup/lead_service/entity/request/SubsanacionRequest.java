@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
-import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.ModoSubsanacion;
 
 import java.time.LocalDate;
@@ -45,7 +44,7 @@ public class SubsanacionRequest {
     private Long idPlan;
 
     @NotNull
-    private Base base;
+    private Long idOrigen;
 
     @Valid
     @NotNull

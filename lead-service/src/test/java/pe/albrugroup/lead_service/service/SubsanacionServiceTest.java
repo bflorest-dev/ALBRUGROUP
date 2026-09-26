@@ -11,6 +11,7 @@ import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.*;
+import pe.albrugroup.lead_service.repository.OrigenRepository;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.SubsanacionRequest;
@@ -49,6 +50,7 @@ class SubsanacionServiceTest {
     @Mock SubsanacionAuditoriaRepository auditoriaRepository;
     @Mock CalendarioFacturacionPostventaService calendarioService;
     @Mock LeadService leadService;
+    @Mock OrigenRepository origenRepository;
     @Mock LeadMapper leadMapper;
     @Mock LeadRealtimeNotifier realtimeNotifier;
     @Mock CurrentUser currentUser;
@@ -64,10 +66,12 @@ class SubsanacionServiceTest {
                 equipoProveedorRepository, tipificacionRepository, subtipificacionRepository,
                 eventoRepository, resumenRepository, calendarioRepository, periodoRepository,
                 pagoRepository, encuestaRepository, entregaRepository, dispositivoRepository,
-                auditoriaRepository, calendarioService, leadService, leadMapper, realtimeNotifier,
+                auditoriaRepository, calendarioService, leadService, origenRepository, leadMapper, realtimeNotifier,
                 currentUser, objectMapper);
         request = requestValido();
         when(auditoriaRepository.findByRequestId(any())).thenReturn(Optional.empty());
+        lenient().when(origenRepository.findById(1L)).thenReturn(Optional.of(
+                Origen.builder().id(1L).codigo("WHATSAPP").nombre("WhatsApp").esOrganico(true).esCampana(true).build()));
         lenient().when(currentUser.empleadoID()).thenReturn(99L);
         lenient().when(currentUser.nombreCompleto()).thenReturn("Admin Prueba");
         lenient().when(currentUser.rolActivo()).thenReturn("ADMINISTRADOR");
@@ -277,7 +281,7 @@ class SubsanacionServiceTest {
         value.setIdEquipo(7L);
         value.setIdCampana(2L);
         value.setIdPlan(3L);
-        value.setBase(Base.WHATSAPP);
+        value.setIdOrigen(1L);
         value.setDatosPreventa(new LeadDatosPreventaRequest());
         value.setDireccion(new LeadDireccionRequest());
         value.setCodigoTipificacionPreventa("PREVENTA");

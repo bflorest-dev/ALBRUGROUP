@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pe.albrugroup.lead_service.entity.enums.Base;
 
 import java.util.List;
 
@@ -22,7 +21,7 @@ public class LeadIntakeMasivoExcelResultadoResponse {
     private boolean registrado;
     private String mensaje;
     private List<String> advertencias;
-    private Base baseUsada;
+    private String origenUsado;
     private Long idCampanaUsada;
     private String campanaUsada;
     private boolean campanaInferida;

@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.Parentesco;
@@ -36,7 +35,7 @@ public class LeadDetalleResponse {
     private String usermeta;
     private String nombreCampana;
     private String nombreProveedorCampana;
-    private Base base;
+    private String origen;
     private EstadoSeguimiento estadoSeguimiento;
     private Long idAsesorAsignado;
     private String nombreAsesorAsignado;

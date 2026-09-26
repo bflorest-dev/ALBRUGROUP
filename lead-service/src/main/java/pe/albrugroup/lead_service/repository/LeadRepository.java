@@ -197,7 +197,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                  WHERE epFallback.idEquipo = l.idEquipo
                    AND epFallback.fallbackLeadSinCampana = true),
                 c.numeroWhatsApp,
-                l.base,
+                l.origen.nombre,
                 null,
                 l.numeroDocumentoTitularServicioSnapshot,
                 l.direccionSnapshot,
@@ -347,7 +347,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                  WHERE epFallback.idEquipo = l.idEquipo
                    AND epFallback.fallbackLeadSinCampana = true),
                 c.numeroWhatsApp,
-                l.base,
+                l.origen.nombre,
                 null,
                 l.numeroDocumentoTitularServicioSnapshot,
                 l.direccionSnapshot,
@@ -893,7 +893,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                  JOIN epFallback.proveedor peFallback
                  WHERE epFallback.idEquipo = l.idEquipo
                    AND epFallback.fallbackLeadSinCampana = true),
-                l.base,
+                l.origen.nombre,
                 dp.nombreTitularServicio,
                 r.mayorRangoCodigoTipificacion,
                 r.mayorRangoCodigoSubtipificacion,
@@ -1025,7 +1025,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                  JOIN epFallback.proveedor peFallback
                  WHERE epFallback.idEquipo = l.idEquipo
                    AND epFallback.fallbackLeadSinCampana = true),
-                l.base,
+                l.origen.nombre,
                 dp.nombreTitularServicio,
                 r.mayorRangoCodigoTipificacion,
                 r.mayorRangoCodigoSubtipificacion,
@@ -1103,7 +1103,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                  JOIN epFallback.proveedor peFallback
                  WHERE epFallback.idEquipo = l.idEquipo
                    AND epFallback.fallbackLeadSinCampana = true),
-                l.base,
+                l.origen.nombre,
                 dp.nombreTitularServicio,
                 r.mayorRangoCodigoTipificacion,
                 r.mayorRangoCodigoSubtipificacion,
@@ -1181,7 +1181,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                  JOIN epFallback.proveedor peFallback
                  WHERE epFallback.idEquipo = l.idEquipo
                    AND epFallback.fallbackLeadSinCampana = true),
-                l.base,
+                l.origen.nombre,
                 dp.nombreTitularServicio,
                 r.mayorRangoCodigoTipificacion,
                 r.mayorRangoCodigoSubtipificacion,
@@ -1259,7 +1259,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                  JOIN epFallback.proveedor peFallback
                  WHERE epFallback.idEquipo = l.idEquipo
                    AND epFallback.fallbackLeadSinCampana = true),
-                l.base,
+                l.origen.nombre,
                 dp.nombreTitularServicio,
                 r.mayorRangoCodigoTipificacion,
                 r.mayorRangoCodigoSubtipificacion,
@@ -1430,7 +1430,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   WHEN SUBSTRING(dir.ubigeoDomicilio, 1, 2) IN ('07', '15') THEN 'Lima'
                   ELSE 'Provincia'
                 END,
-                l.base, l.idTipificacion, l.codigoTipificacion,
+                l.origen.nombre, l.idTipificacion, l.codigoTipificacion,
                  l.idSubtipificacion, l.codigoSubtipificacion,
                  r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion,
                  sAct.id,
@@ -1606,7 +1606,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.nombreAsesorAsignado,
                 dp.tipoDocumento,
                 COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
-                l.base,
+                l.origen.nombre,
                 l.idTipificacion,
                 l.codigoTipificacion,
                 l.idSubtipificacion,
@@ -2091,7 +2091,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.nombreAsesorAsignado,
                 dp.tipoDocumento,
                 COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
-                l.base,
+                l.origen.nombre,
                 l.idTipificacion,
                 l.codigoTipificacion,
                 l.idSubtipificacion,
@@ -2240,7 +2240,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.nombreAsesorAsignado,
                 dp.tipoDocumento,
                 COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
-                l.base,
+                l.origen.nombre,
                 l.idTipificacion,
                 e.tipificacion,
                 l.idSubtipificacion,
@@ -2647,7 +2647,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                  WHERE epFallback.idEquipo = l.idEquipo
                    AND epFallback.fallbackLeadSinCampana = true),
                 c.numeroWhatsApp,
-                l.base,
+                l.origen.nombre,
                 null,
                 l.numeroDocumentoTitularServicioSnapshot,
                 l.direccionSnapshot,

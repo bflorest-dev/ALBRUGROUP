@@ -47,6 +47,7 @@ public class FreelanceService {
     private final LeadEtapaResumenService resumenService;
     private final FreelanceVentaOrigenRepository origenRepository;
     private final FreelanceVentaReenvioRepository reenvioRepository;
+    private final OrigenRepository leadOrigenRepository;
     private final DistritoRepository distritoRepository;
     private final LeadMapper leadMapper;
     private final LeadService leadService;
@@ -125,7 +126,8 @@ public class FreelanceService {
         lead.setUsermeta(contacto.getUsermeta());
         lead.setIdEquipo(idEquipo);
         lead.setProveedorOrigen(plan.getProveedor());
-        lead.setBase(Base.REFERIDO);
+        lead.setOrigen(leadOrigenRepository.findByCodigo("REFERIDO")
+                .orElseThrow(() -> new IllegalStateException("Origen REFERIDO no encontrado")));
         lead.setCampana(null);
         lead.setCreatedAt(ahora);
         aplicarExpediente(lead, request.getDatosPreventa(), request.getDireccion(), plan);

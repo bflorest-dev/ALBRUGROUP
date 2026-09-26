@@ -52,6 +52,7 @@ public class SubsanacionService {
     private final SubsanacionAuditoriaRepository auditoriaRepository;
     private final CalendarioFacturacionPostventaService calendarioService;
     private final LeadService leadService;
+    private final OrigenRepository origenRepository;
     private final LeadMapper leadMapper;
     private final LeadRealtimeNotifier realtimeNotifier;
     private final CurrentUser currentUser;
@@ -393,7 +394,8 @@ public class SubsanacionService {
 
         lead.setIdEquipo(request.getIdEquipo());
         lead.setCampana(contexto.campana());
-        lead.setBase(request.getBase());
+        lead.setOrigen(origenRepository.findById(request.getIdOrigen())
+                .orElseThrow(() -> new BadRequestException("Origen no encontrado")));
         lead.setDatosPreventa(datos);
         lead.setDireccion(direccion);
         lead.setPlan(contexto.plan());
@@ -694,7 +696,7 @@ public class SubsanacionService {
                 "idEquipo", l.getIdEquipo(), "etapa", l.getEtapa(), "estado", l.getEstado(),
                 "idAsesorAsignado", l.getIdAsesorAsignado(), "nombreAsesorAsignado", l.getNombreAsesorAsignado(),
                 "requiereAtencionGtr", l.isRequiereAtencionGtr(),
-                "idCampana", l.getCampana() == null ? null : l.getCampana().getId(), "base", l.getBase(),
+                "idCampana", l.getCampana() == null ? null : l.getCampana().getId(), "origen", l.getOrigen() == null ? null : l.getOrigen().getNombre(),
                 "idTipificacion", l.getIdTipificacion(), "codigoTipificacion", l.getCodigoTipificacion(),
                 "idSubtipificacion", l.getIdSubtipificacion(), "codigoSubtipificacion", l.getCodigoSubtipificacion(),
                 "numeroDocumentoTitularServicioSnapshot", l.getNumeroDocumentoTitularServicioSnapshot(),

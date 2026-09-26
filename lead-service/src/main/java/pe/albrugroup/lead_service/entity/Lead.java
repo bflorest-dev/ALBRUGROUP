@@ -10,7 +10,7 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.UpdateTimestamp;
-import pe.albrugroup.lead_service.entity.enums.Base;
+
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -88,8 +88,10 @@ public class Lead {
     @JoinColumn(name = "id_campana")
     private Campana campana;
 
-    @Enumerated(EnumType.STRING)
-    private Base base;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_origen", nullable = false)
+    private Origen origen;
+
     // GENERAL
     private Long idTipificacion;
     private String codigoTipificacion;
@@ -173,7 +175,7 @@ public class Lead {
     private Instant updatedAt;
 
     @PrePersist
-    void assignCreatedAt() {
+    void onPrePersist() {
         if (createdAt == null) {
             createdAt = Instant.now();
         }

@@ -21,8 +21,8 @@ import pe.albrugroup.lead_service.entity.Plan;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Tipificacion;
+import pe.albrugroup.lead_service.entity.Origen;
 import pe.albrugroup.lead_service.entity.enums.Accion;
-import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.CampoConfigurable;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
@@ -58,6 +58,7 @@ import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
+import pe.albrugroup.lead_service.repository.OrigenRepository;
 import pe.albrugroup.lead_service.repository.ZonaReglaRepository;
 import pe.albrugroup.lead_service.service.mapper.LeadMapper;
 
@@ -109,13 +110,21 @@ class LeadServiceRetroactiveIntakeTest {
     @Mock private LeadEtapaResumenRepository leadEtapaResumenRepository;
     @Mock private ProveedorScopeService proveedorScopeService;
     @Mock private TipificacionService tipificacionService;
+    @Mock private OrigenRepository origenRepository;
 
     @InjectMocks private LeadService leadService;
+
+    private static final Origen ORIGEN_WHATSAPP = Origen.builder().id(1L).codigo("WHATSAPP").nombre("WhatsApp").esOrganico(true).esCampana(true).build();
+    private static final Origen ORIGEN_MESSENGER = Origen.builder().id(2L).codigo("MESSENGER").nombre("Messenger").esOrganico(true).esCampana(true).build();
+    private static final Origen ORIGEN_RECONTACTO = Origen.builder().id(3L).codigo("RECONTACTO").nombre("Recontacto").esOrganico(true).esCampana(false).build();
 
     @BeforeEach
     void setUp() {
         lenient().when(leadEtapaResumenRepository.findByIdLeadAndEtapa(any(), any()))
                 .thenReturn(Optional.empty());
+        lenient().when(origenRepository.findById(1L)).thenReturn(Optional.of(ORIGEN_WHATSAPP));
+        lenient().when(origenRepository.findById(2L)).thenReturn(Optional.of(ORIGEN_MESSENGER));
+        lenient().when(origenRepository.findById(3L)).thenReturn(Optional.of(ORIGEN_RECONTACTO));
     }
 
     @Test
@@ -227,7 +236,7 @@ class LeadServiceRetroactiveIntakeTest {
                 eq("+51"),
                 eq("987654321"),
                 isNull(),
-                eq(Base.WHATSAPP),
+                any(Origen.class),
                 eq(campana),
                 lastEntryCaptor.capture()
         )).thenReturn(Lead.builder()
@@ -236,7 +245,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .lead("987654321")
                 .contacto(contacto)
                 .campana(campana)
-                .base(Base.WHATSAPP)
+                .origen(ORIGEN_WHATSAPP)
                 .etapa(Etapa.PREVENTA)
                 .estado(EstadoSeguimiento.NUEVO)
                 .build());
@@ -274,7 +283,7 @@ class LeadServiceRetroactiveIntakeTest {
         when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
                 .thenReturn(Optional.empty());
         when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of());
-        when(leadMapper.toNuevoLead(eq("+51"), eq("987654321"), isNull(), eq(Base.WHATSAPP), eq(campana), any(Instant.class)))
+        when(leadMapper.toNuevoLead(eq("+51"), eq("987654321"), isNull(), any(Origen.class), eq(campana), any(Instant.class)))
                 .thenReturn(lead);
         when(leadRepository.save(lead)).thenReturn(lead);
 
@@ -296,7 +305,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .lead("987654321")
                 .contacto(contacto)
                 .campana(previousCampaign)
-                .base(Base.MESSENGER)
+                .origen(ORIGEN_MESSENGER)
                 .etapa(Etapa.VENTA)
                 .estado(EstadoSeguimiento.EN_GESTION)
                 .idAsesorAsignado(99L)
@@ -333,13 +342,13 @@ class LeadServiceRetroactiveIntakeTest {
     void registraLeadNuevoSoloConUsermeta() {
         LeadIntakeRequest request = new LeadIntakeRequest();
         request.setUsermeta("@EfrainBay");
-        request.setBase(Base.RECONTACTO);
+        request.setIdOrigen(3L);
         Contacto contacto = Contacto.builder().id(100L).usermeta("EfrainBay").build();
         Lead lead = Lead.builder()
                 .id(25202L)
                 .usermeta("EfrainBay")
                 .contacto(contacto)
-                .base(Base.RECONTACTO)
+                .origen(ORIGEN_RECONTACTO)
                 .etapa(Etapa.PREVENTA)
                 .estado(EstadoSeguimiento.NUEVO)
                 .build();
@@ -348,7 +357,7 @@ class LeadServiceRetroactiveIntakeTest {
         when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
                 .thenReturn(Optional.empty());
         when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of());
-        when(leadMapper.toNuevoLead(isNull(), isNull(), eq("EfrainBay"), eq(Base.RECONTACTO), isNull(), any(Instant.class)))
+        when(leadMapper.toNuevoLead(isNull(), isNull(), eq("EfrainBay"), any(Origen.class), isNull(), any(Instant.class)))
                 .thenReturn(lead);
         when(leadRepository.save(lead)).thenReturn(lead);
 
@@ -365,14 +374,14 @@ class LeadServiceRetroactiveIntakeTest {
         LeadIntakeRequest request = new LeadIntakeRequest();
         request.setPrefijo("+51");
         request.setLead("987654321");
-        request.setBase(Base.RECONTACTO);
+        request.setIdOrigen(3L);
         Contacto contacto = contactoTelefono();
         Lead lead = Lead.builder()
                 .id(25202L)
                 .prefijo("+51")
                 .lead("987654321")
                 .contacto(contacto)
-                .base(Base.RECONTACTO)
+                .origen(ORIGEN_RECONTACTO)
                 .etapa(Etapa.PREVENTA)
                 .estado(EstadoSeguimiento.NUEVO)
                 .build();
@@ -381,7 +390,7 @@ class LeadServiceRetroactiveIntakeTest {
         when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
                 .thenReturn(Optional.empty());
         when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of());
-        when(leadMapper.toNuevoLead(eq("+51"), eq("987654321"), isNull(), eq(Base.RECONTACTO), isNull(), any(Instant.class)))
+        when(leadMapper.toNuevoLead(eq("+51"), eq("987654321"), isNull(), any(Origen.class), isNull(), any(Instant.class)))
                 .thenReturn(lead);
         when(leadRepository.save(lead)).thenReturn(lead);
 
@@ -396,7 +405,7 @@ class LeadServiceRetroactiveIntakeTest {
         LeadIntakeRetroactivoRequest request = new LeadIntakeRetroactivoRequest();
         request.setPrefijo("+51");
         request.setLead("987654321");
-        request.setBase(Base.RECONTACTO);
+        request.setIdOrigen(3L);
         request.setHoraRegistro(LocalTime.of(20, 0));
         Contacto contacto = contactoTelefono();
         Lead lead = Lead.builder()
@@ -404,7 +413,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .prefijo("+51")
                 .lead("987654321")
                 .contacto(contacto)
-                .base(Base.RECONTACTO)
+                .origen(ORIGEN_RECONTACTO)
                 .etapa(Etapa.PREVENTA)
                 .estado(EstadoSeguimiento.NUEVO)
                 .build();
@@ -413,7 +422,7 @@ class LeadServiceRetroactiveIntakeTest {
         when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
                 .thenReturn(Optional.empty());
         when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of());
-        when(leadMapper.toNuevoLead(eq("+51"), eq("987654321"), isNull(), eq(Base.RECONTACTO), isNull(), any(Instant.class)))
+        when(leadMapper.toNuevoLead(eq("+51"), eq("987654321"), isNull(), any(Origen.class), isNull(), any(Instant.class)))
                 .thenReturn(lead);
         when(leadRepository.save(lead)).thenReturn(lead);
 
@@ -463,7 +472,7 @@ class LeadServiceRetroactiveIntakeTest {
         LeadIntakeRequest request = new LeadIntakeRequest();
         request.setPrefijo("+51");
         request.setLead("987654321");
-        request.setBase(Base.RECONTACTO);
+        request.setIdOrigen(3L);
         Contacto contacto = contactoTelefono();
         Lead existing = Lead.builder()
                 .id(25202L)
@@ -471,7 +480,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .lead("987654321")
                 .contacto(contacto)
                 .idEquipo(2L)
-                .base(Base.RECONTACTO)
+                .origen(ORIGEN_RECONTACTO)
                 .etapa(Etapa.PREVENTA)
                 .estado(EstadoSeguimiento.NUEVO)
                 .build();
@@ -492,14 +501,14 @@ class LeadServiceRetroactiveIntakeTest {
         LeadIntakeRequest request = new LeadIntakeRequest();
         request.setPrefijo("+51");
         request.setLead("987654321");
-        request.setBase(Base.RECONTACTO);
+        request.setIdOrigen(3L);
         Contacto contacto = contactoTelefono();
         Lead existing = Lead.builder()
                 .id(25202L)
                 .prefijo("+51")
                 .lead("987654321")
                 .contacto(contacto)
-                .base(Base.RECONTACTO)
+                .origen(ORIGEN_RECONTACTO)
                 .etapa(Etapa.PREVENTA)
                 .estado(EstadoSeguimiento.NUEVO)
                 .build();
@@ -519,14 +528,14 @@ class LeadServiceRetroactiveIntakeTest {
     void registraLeadRetroactivoSoloConUsermeta() {
         LeadIntakeRetroactivoRequest request = new LeadIntakeRetroactivoRequest();
         request.setUsermeta("@EfrainBay");
-        request.setBase(Base.RECONTACTO);
+        request.setIdOrigen(3L);
         request.setHoraRegistro(LocalTime.of(21, 0));
         Contacto contacto = Contacto.builder().id(100L).usermeta("EfrainBay").build();
         Lead lead = Lead.builder()
                 .id(25202L)
                 .usermeta("EfrainBay")
                 .contacto(contacto)
-                .base(Base.RECONTACTO)
+                .origen(ORIGEN_RECONTACTO)
                 .etapa(Etapa.PREVENTA)
                 .estado(EstadoSeguimiento.NUEVO)
                 .build();
@@ -535,7 +544,7 @@ class LeadServiceRetroactiveIntakeTest {
         when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
                 .thenReturn(Optional.empty());
         when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of());
-        when(leadMapper.toNuevoLead(isNull(), isNull(), eq("EfrainBay"), eq(Base.RECONTACTO), isNull(), any(Instant.class)))
+        when(leadMapper.toNuevoLead(isNull(), isNull(), eq("EfrainBay"), any(Origen.class), isNull(), any(Instant.class)))
                 .thenReturn(lead);
         when(leadRepository.save(lead)).thenReturn(lead);
 
@@ -562,7 +571,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .usermeta("EfrainBay")
                 .contacto(contacto)
                 .campana(campana)
-                .base(Base.WHATSAPP)
+                .origen(ORIGEN_WHATSAPP)
                 .etapa(Etapa.PREVENTA)
                 .estado(EstadoSeguimiento.NUEVO)
                 .build();
@@ -596,7 +605,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .lead("987654321")
                 .contacto(contacto)
                 .campana(campana)
-                .base(Base.WHATSAPP)
+                .origen(ORIGEN_WHATSAPP)
                 .etapa(Etapa.PREVENTA)
                 .estado(EstadoSeguimiento.NUEVO)
                 .build();
@@ -632,7 +641,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .usermeta("EfrainBay")
                 .contacto(contacto)
                 .campana(campana)
-                .base(Base.WHATSAPP)
+                .origen(ORIGEN_WHATSAPP)
                 .etapa(Etapa.PREVENTA)
                 .estado(EstadoSeguimiento.NUEVO)
                 .build();
@@ -1376,7 +1385,7 @@ class LeadServiceRetroactiveIntakeTest {
         request.setPrefijo("+51");
         request.setLead("987654321");
         request.setIdCampana(7L);
-        request.setBase(Base.WHATSAPP);
+        request.setIdOrigen(1L);
         return request;
     }
 
@@ -1385,7 +1394,7 @@ class LeadServiceRetroactiveIntakeTest {
         request.setPrefijo("+51");
         request.setLead("987654321");
         request.setIdCampana(7L);
-        request.setBase(Base.WHATSAPP);
+        request.setIdOrigen(1L);
         request.setHoraRegistro(hour);
         return request;
     }

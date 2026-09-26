@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 
 import java.time.Instant;
@@ -28,7 +27,7 @@ public class LeadAgendadoGtrResponse {
     private String nombreCampana;
     private String nombreProveedorCampana;
     private String nombreProveedorEquipo;
-    private Base base;
+    private String origen;
     private String nombreTitular;
     private String codigoTipificacion;
     private String codigoSubtipificacion;

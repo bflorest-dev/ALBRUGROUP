@@ -13,13 +13,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Lead;
-import pe.albrugroup.lead_service.entity.enums.Base;
+import pe.albrugroup.lead_service.entity.Origen;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.LeadIntakeMasivoExcelResponse;
 import pe.albrugroup.lead_service.entity.response.LeadIntakeMasivoExcelResultadoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.BusinessException;
+import pe.albrugroup.lead_service.repository.OrigenRepository;
 
 import java.io.IOException;
 import java.text.Normalizer;
@@ -49,6 +50,7 @@ public class LeadExcelIntakeService {
     private final LeadService leadService;
     private final TransactionTemplate transactionTemplate;
     private final LeadRealtimeNotifier leadRealtimeNotifier;
+    private final OrigenRepository origenRepository;
 
     @Value("${app.lead.intake.masivo.id-campana-base:#{null}}")
     private Long idCampanaBaseMasivo;
@@ -61,15 +63,14 @@ public class LeadExcelIntakeService {
 
         for (LeadExcelRow row : rows) {
             if (!row.valida()) {
-                resultados.add(resultadoFallido(row, row.mensajeError(), row.advertencias(), row.base()));
+                resultados.add(resultadoFallido(row, row.mensajeError(), row.advertencias()));
                 continue;
             }
             if (!leadsProcesados.add(row.lead())) {
                 resultados.add(resultadoFallido(
                         row,
                         "Lead duplicado dentro del archivo",
-                        row.advertencias(),
-                        row.base()
+                        row.advertencias()
                 ));
                 continue;
             }
@@ -77,7 +78,7 @@ public class LeadExcelIntakeService {
                 Lead savedLead = transactionTemplate.execute(status -> leadService.registrarIngresoLeadMasivo(
                         PREFIJO_DEFAULT,
                         row.lead(),
-                        row.base(),
+                        row.origen(),
                         row.documento(),
                         row.direccion(),
                         idCampanaBaseMasivo,
@@ -85,9 +86,9 @@ public class LeadExcelIntakeService {
                 ));
                 resultados.add(resultadoExitoso(row, savedLead));
             } catch (BusinessException e) {
-                resultados.add(resultadoFallido(row, e.getMessage(), row.advertencias(), row.base()));
+                resultados.add(resultadoFallido(row, e.getMessage(), row.advertencias()));
             } catch (Exception e) {
-                resultados.add(resultadoFallido(row, "Ocurrio un error inesperado", row.advertencias(), row.base()));
+                resultados.add(resultadoFallido(row, "Ocurrio un error inesperado", row.advertencias()));
             }
         }
 
@@ -183,26 +184,27 @@ public class LeadExcelIntakeService {
     private LeadExcelRow toLeadExcelRow(Row row, DataFormatter formatter) {
         int fila = row.getRowNum() + 1;
         List<String> advertencias = new ArrayList<>();
+        Origen origenMasivo = resolverOrigenMasivo();
 
         String rawLead = leerCelda(row, REQUIRED_HEADERS.get(HEADER_LEAD), formatter);
         String lead = normalizarDigitos(rawLead);
         if (lead.isBlank()) {
-            return LeadExcelRow.invalida(fila, lead, Base.MASIVO, "La fila " + fila + " no tiene Lead");
+            return LeadExcelRow.invalida(fila, lead, origenMasivo, "La fila " + fila + " no tiene Lead");
         }
         if (lead.length() != 9) {
-            return LeadExcelRow.invalida(fila, lead, Base.MASIVO, "La fila " + fila + " debe tener un Lead de 9 digitos");
+            return LeadExcelRow.invalida(fila, lead, origenMasivo, "La fila " + fila + " debe tener un Lead de 9 digitos");
         }
 
-        Base base = resolverBase(leerCelda(row, REQUIRED_HEADERS.get(HEADER_BASE), formatter), advertencias);
+        Origen origen = resolverOrigen(leerCelda(row, REQUIRED_HEADERS.get(HEADER_BASE), formatter), advertencias);
         String documento = leerCelda(row, REQUIRED_HEADERS.get(HEADER_DOCUMENTO), formatter);
         if (!documento.isBlank() && !documento.matches("^\\d+$")) {
-            return LeadExcelRow.invalida(fila, lead, base, "La fila " + fila + " tiene Documento invalido", advertencias);
+            return LeadExcelRow.invalida(fila, lead, origen, "La fila " + fila + " tiene Documento invalido", advertencias);
         }
 
         return new LeadExcelRow(
                 fila,
                 lead,
-                base,
+                origen,
                 documento.isBlank() ? null : documento,
                 trimToNull(leerCelda(row, REQUIRED_HEADERS.get(HEADER_DIRECCION), formatter)),
                 advertencias,
@@ -211,17 +213,21 @@ public class LeadExcelIntakeService {
         );
     }
 
-    private Base resolverBase(String rawBase, List<String> advertencias) {
-        String value = trimToNull(rawBase);
+    private Origen resolverOrigenMasivo() {
+        return origenRepository.findByCodigo("MASIVO")
+                .orElseThrow(() -> new IllegalStateException("Origen MASIVO no encontrado"));
+    }
+
+    private Origen resolverOrigen(String rawOrigen, List<String> advertencias) {
+        String value = trimToNull(rawOrigen);
         if (value == null) {
-            return Base.MASIVO;
+            return resolverOrigenMasivo();
         }
-        try {
-            return Base.valueOf(value.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            advertencias.add("Base invalida; se uso MASIVO");
-            return Base.MASIVO;
-        }
+        return origenRepository.findByCodigo(value.trim().toUpperCase(Locale.ROOT))
+                .orElseGet(() -> {
+                    advertencias.add("Origen invalido; se uso MASIVO");
+                    return resolverOrigenMasivo();
+                });
     }
 
     private boolean filaVacia(Row row, DataFormatter formatter) {
@@ -269,7 +275,7 @@ public class LeadExcelIntakeService {
                 .registrado(true)
                 .mensaje("Lead registrado correctamente")
                 .advertencias(row.advertencias())
-                .baseUsada(lead.getBase())
+                .origenUsado(lead.getOrigen() == null ? null : lead.getOrigen().getNombre())
                 .idCampanaUsada(lead.getCampana() == null ? null : lead.getCampana().getId())
                 .campanaUsada(lead.getCampana() == null ? null : lead.getCampana().getNombre())
                 .campanaInferida(campanaInferida)
@@ -279,8 +285,7 @@ public class LeadExcelIntakeService {
     private LeadIntakeMasivoExcelResultadoResponse resultadoFallido(
             LeadExcelRow row,
             String mensaje,
-            List<String> advertencias,
-            Base base
+            List<String> advertencias
     ) {
         return LeadIntakeMasivoExcelResultadoResponse.builder()
                 .fila(row.fila())
@@ -288,32 +293,32 @@ public class LeadExcelIntakeService {
                 .registrado(false)
                 .mensaje(mensaje)
                 .advertencias(advertencias)
-                .baseUsada(base)
+                .origenUsado(row.origen() == null ? null : row.origen().getNombre())
                 .build();
     }
 
     private record LeadExcelRow(
             int fila,
             String lead,
-            Base base,
+            Origen origen,
             String documento,
             String direccion,
             List<String> advertencias,
             boolean valida,
             String mensajeError
     ) {
-        private static LeadExcelRow invalida(int fila, String lead, Base base, String mensajeError) {
-            return invalida(fila, lead, base, mensajeError, new ArrayList<>());
+        private static LeadExcelRow invalida(int fila, String lead, Origen origen, String mensajeError) {
+            return invalida(fila, lead, origen, mensajeError, new ArrayList<>());
         }
 
         private static LeadExcelRow invalida(
                 int fila,
                 String lead,
-                Base base,
+                Origen origen,
                 String mensajeError,
                 List<String> advertencias
         ) {
-            return new LeadExcelRow(fila, lead, base, null, null, advertencias, false, mensajeError);
+            return new LeadExcelRow(fila, lead, origen, null, null, advertencias, false, mensajeError);
         }
     }
 }

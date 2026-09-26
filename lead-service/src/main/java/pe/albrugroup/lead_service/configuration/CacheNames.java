@@ -11,6 +11,7 @@ public final class CacheNames {
     public static final String ADICIONALES = "catalogo:adicionales";
     public static final String PROVEEDORES = "catalogo:proveedores";
     public static final String CUENTAS_PUBLICITARIAS = "catalogo:cuentas-publicitarias";
+    public static final String ORIGENES = "catalogo:origenes";
     public static final String ZONAS = "catalogo:zonas";
     public static final String UBIGEO_DEPARTAMENTOS = "catalogo:ubigeo:departamentos";
     public static final String UBIGEO_PROVINCIAS = "catalogo:ubigeo:provincias";

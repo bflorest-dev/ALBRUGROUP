@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
@@ -27,7 +26,7 @@ public class LeadGtrResponse {
     private String nombreProveedorCampana;
     private String nombreProveedorEquipo;
     private String numeroWhatsappEmpresa;
-    private Base base;
+    private String origen;
     private String nombreTitular;
     private String numeroDocumentoTitularServicio;
     private String direccionSnapshot;

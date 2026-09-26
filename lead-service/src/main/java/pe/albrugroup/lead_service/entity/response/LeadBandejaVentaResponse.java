@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -40,7 +39,7 @@ public class LeadBandejaVentaResponse {
     private String numeroDocumento;
     private String nombreCliente;
     private String departamentoGrupo;
-    private Base base;
+    private String origen;
     private Long idTipificacionActual;
     private String codigoTipificacionActual;
     private Long idSubtipificacionActual;
@@ -97,7 +96,7 @@ public class LeadBandejaVentaResponse {
             String numeroDocumento,
             String nombreCliente,
             String departamentoGrupo,
-            Base base,
+            String origen,
             Long idTipificacionActual,
             String codigoTipificacionActual,
             Long idSubtipificacionActual,
@@ -149,7 +148,7 @@ public class LeadBandejaVentaResponse {
         this.numeroDocumento = numeroDocumento;
         this.nombreCliente = nombreCliente;
         this.departamentoGrupo = departamentoGrupo;
-        this.base = base;
+        this.origen = origen;
         this.idTipificacionActual = idTipificacionActual;
         this.codigoTipificacionActual = codigoTipificacionActual;
         this.idSubtipificacionActual = idSubtipificacionActual;
@@ -204,7 +203,7 @@ public class LeadBandejaVentaResponse {
             String numeroDocumento,
             String nombreCliente,
             String departamentoGrupo,
-            Base base,
+            String origen,
             Long idTipificacionActual,
             String codigoTipificacionActual,
             Long idSubtipificacionActual,
@@ -255,7 +254,7 @@ public class LeadBandejaVentaResponse {
         this.numeroDocumento = numeroDocumento;
         this.nombreCliente = nombreCliente;
         this.departamentoGrupo = departamentoGrupo;
-        this.base = base;
+        this.origen = origen;
         this.idTipificacionActual = idTipificacionActual;
         this.codigoTipificacionActual = codigoTipificacionActual;
         this.idSubtipificacionActual = idSubtipificacionActual;

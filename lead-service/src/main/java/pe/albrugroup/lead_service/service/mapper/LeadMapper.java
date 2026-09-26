@@ -8,7 +8,7 @@ import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.DatosPreventa;
 import pe.albrugroup.lead_service.entity.Direccion;
 import pe.albrugroup.lead_service.entity.Lead;
-import pe.albrugroup.lead_service.entity.enums.Base;
+import pe.albrugroup.lead_service.entity.Origen;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 
@@ -22,7 +22,7 @@ public interface LeadMapper {
     @Mapping(target = "lead", source = "lead")
     @Mapping(target = "numeroParaLlamar", ignore = true)
     @Mapping(target = "usermeta", source = "usermeta")
-    @Mapping(target = "base", source = "base")
+    @Mapping(target = "origen", source = "origen")
     @Mapping(target = "campana", source = "campana")
     @Mapping(target = "lastEntryAt", source = "lastEntryAt")
     @Mapping(target = "etapa", constant = "PREVENTA")
@@ -51,7 +51,7 @@ public interface LeadMapper {
     @Mapping(target = "estadoClientePostventa", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    Lead toNuevoLead(String prefijo, String lead, String usermeta, Base base, Campana campana, Instant lastEntryAt);
+    Lead toNuevoLead(String prefijo, String lead, String usermeta, Origen origen, Campana campana, Instant lastEntryAt);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "tipoDocumento", source = "tipoDocumento")

@@ -13,7 +13,6 @@ import pe.albrugroup.lead_service.entity.enums.CampoConfigurable;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.ModoConteo;
 import pe.albrugroup.lead_service.entity.enums.OrdenRankingAsesor;
-import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.CampoFechaListadoVenta;
 import pe.albrugroup.lead_service.entity.enums.CriterioZona;
@@ -118,6 +117,7 @@ import pe.albrugroup.lead_service.repository.ContactoRepository;
 import pe.albrugroup.lead_service.repository.EntregaCredencialDispositivoRepository;
 import pe.albrugroup.lead_service.repository.EntregaCredencialPlataformaRepository;
 import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
+import pe.albrugroup.lead_service.repository.OrigenRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
@@ -207,6 +207,7 @@ public class LeadService {
     private final FreelanceVentaOrigenRepository freelanceVentaOrigenRepository;
     private final FreelanceVentaReenvioRepository freelanceVentaReenvioRepository;
     private final ProveedorRepository proveedorRepository;
+    private final OrigenRepository origenRepository;
     private final LeadSeguimientoService leadSeguimientoService;
 
     // La bandeja de Agendados GTR ya no cuelga de una tipi: el concepto vive en el comportamiento, que
@@ -240,14 +241,6 @@ public class LeadService {
     private static final Pattern LEAD_PATTERN = Pattern.compile("^\\d{6,15}$");
     private static final Pattern USERMETA_PATTERN = Pattern.compile("^[A-Za-z0-9._-]{1,255}$");
     private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
-    private static final Set<Base> ORIGENES_CON_CAMPANA = Set.of(Base.WHATSAPP, Base.MESSENGER);
-    private static final Set<Base> ORIGENES_SIN_CAMPANA = Set.of(
-            Base.RECONTACTO,
-            Base.PREDICTIVO,
-            Base.REFERIDO,
-            Base.MASIVO,
-            Base.SIN_IDENTIFICAR
-    );
     private static final Set<String> LEAD_GTR_SORT_FIELDS = Set.of(
             "lastEntryAt",
             "createdAt",
@@ -3469,7 +3462,7 @@ public class LeadService {
         String usermeta = normalizarUsermeta(request.getUsermeta());
         validarIdentidadIntake(prefijo, numeroLead, usermeta);
         Campana campana = request.getIdCampana() == null ? null : obtenerCampanaActiva(request.getIdCampana());
-        validarOrigenIntake(request.getBase(), campana != null);
+        Origen origen = resolverOrigenIntake(request.getIdOrigen(), campana != null);
         validarCampanaCompatibleConEquipoContextual(idEquipoContextual, campana);
         LeadIdentidad identidad = resolverIdentidadContacto(prefijo, numeroLead, usermeta);
 
@@ -3479,28 +3472,41 @@ public class LeadService {
         Optional<Lead> leadPreventa = leadRepository
                 .findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(identidad.contacto().getId(), Etapa.PREVENTA);
         if (leadPreventa.isPresent()) {
-            registrarIngresoLeadExistente(leadPreventa.get(), identidad, request, campana, registroAt, idEquipoContextual);
+            registrarIngresoLeadExistente(leadPreventa.get(), identidad, request, origen, campana, registroAt, idEquipoContextual);
             return;
         }
         List<Lead> oportunidadesContacto =
                 leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(identidad.contacto().getId());
         if (!oportunidadesContacto.isEmpty()) {
-            registrarAtencionGtrLeadOtraEtapa(oportunidadesContacto.get(0), identidad, request, campana, registroAt, idEquipoContextual);
+            registrarAtencionGtrLeadOtraEtapa(oportunidadesContacto.get(0), identidad, request, origen, campana, registroAt, idEquipoContextual);
             return;
         }
-        registrarLeadNuevo(identidad, request, campana, registroAt, idEquipoContextual);
+        registrarLeadNuevo(identidad, request, origen, campana, registroAt, idEquipoContextual);
     }
 
-    private void validarOrigenIntake(Base origen, boolean tieneCampana) {
-        if (origen == null) {
+    Origen resolverOrigen(String codigo) {
+        return origenRepository.findByCodigo(codigo)
+                .orElseThrow(() -> new BadRequestException("Origen no encontrado: " + codigo));
+    }
+
+    Origen resolverOrigen(Long id) {
+        return origenRepository.findById(id)
+                .filter(Origen::isActivo)
+                .orElseThrow(() -> new BadRequestException("Origen no encontrado o inactivo"));
+    }
+
+    private Origen resolverOrigenIntake(Long idOrigen, boolean tieneCampana) {
+        if (idOrigen == null) {
             throw new BadRequestException("Selecciona un origen para registrar el lead");
         }
-        if (tieneCampana && !ORIGENES_CON_CAMPANA.contains(origen)) {
-            throw new BadRequestException("Cuando eliges una campana, el origen debe ser WhatsApp o Messenger");
+        Origen origen = resolverOrigen(idOrigen);
+        if (tieneCampana && !origen.isEsCampana()) {
+            throw new BadRequestException("Cuando eliges una campaña, el origen debe ser uno asociado a campaña");
         }
-        if (!tieneCampana && !ORIGENES_SIN_CAMPANA.contains(origen)) {
-            throw new BadRequestException("Cuando no eliges campana, selecciona un origen sin campana");
+        if (!tieneCampana && origen.isEsCampana()) {
+            throw new BadRequestException("Cuando no eliges campaña, selecciona un origen sin campaña");
         }
+        return origen;
     }
 
     private void validarHoraRegistroRetroactivo(LocalTime horaRegistro) {
@@ -3515,7 +3521,7 @@ public class LeadService {
     public Lead registrarIngresoLeadMasivo(
             String prefijo,
             String lead,
-            Base base,
+            Origen origen,
             String documentoSnapshot,
             String direccionSnapshot,
             Long idCampanaBaseMasivo,
@@ -3528,7 +3534,7 @@ public class LeadService {
                         existingLead,
                         prefijoNormalizado,
                         numeroLead,
-                        base,
+                        origen,
                         documentoSnapshot,
                         direccionSnapshot,
                         idCampanaBaseMasivo,
@@ -3538,7 +3544,7 @@ public class LeadService {
                 .orElseGet(() -> registrarLeadMasivoNuevo(
                         prefijoNormalizado,
                         numeroLead,
-                        base,
+                        origen,
                         documentoSnapshot,
                         direccionSnapshot,
                         idCampanaBaseMasivo,
@@ -4310,12 +4316,13 @@ public class LeadService {
     private void registrarLeadNuevo(
             LeadIdentidad identidad,
             LeadIntakeRequest request,
+            Origen origen,
             Campana campana,
             Instant registroAt,
             Long idEquipoContextual
     ) {
         Lead lead = leadMapper.toNuevoLead(
-                identidad.prefijo(), identidad.lead(), identidad.usermeta(), request.getBase(), campana, OperationalDateTime.now());
+                identidad.prefijo(), identidad.lead(), identidad.usermeta(), origen, campana, OperationalDateTime.now());
         lead.setContacto(identidad.contacto());
         lead.setIdEquipo(resolverIdEquipoIntake(campana, idEquipoContextual));
         lead.setProveedorOrigen(resolverProveedorOrigen(campana, lead.getIdEquipo()));
@@ -4333,7 +4340,7 @@ public class LeadService {
     private Lead registrarLeadMasivoNuevo(
             String prefijo,
             String numeroLead,
-            Base base,
+            Origen origen,
             String documentoSnapshot,
             String direccionSnapshot,
             Long idCampanaBaseMasivo,
@@ -4341,7 +4348,7 @@ public class LeadService {
             boolean notificarRealtime
     ) {
         Campana campana = obtenerCampanaBaseMasivo(idCampanaBaseMasivo, advertencias);
-        Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, null, base, campana, OperationalDateTime.now());
+        Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, null, origen, campana, OperationalDateTime.now());
         aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
         lead.setContacto(resolverContacto(prefijo, numeroLead));
         lead.setIdEquipo(derivarIdEquipo(campana));
@@ -4363,6 +4370,7 @@ public class LeadService {
             Lead lead,
             LeadIdentidad identidad,
             LeadIntakeRequest request,
+            Origen origen,
             Campana campana,
             Instant registroAt,
             Long idEquipoContextual
@@ -4371,11 +4379,10 @@ public class LeadService {
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         validarEquipoContextualLead(lead, idEquipoContextual);
         sincronizarIdentidadLead(lead, identidad);
-        // Si el re-registro no indica campana, se conserva la que ya tenia el lead (no se borra).
         if (campana != null) {
             lead.setCampana(campana);
         }
-        lead.setBase(request.getBase());
+        lead.setOrigen(origen);
         lead.setLastEntryAt(OperationalDateTime.now());
         if (lead.getIdEquipo() == null) {
             lead.setIdEquipo(resolverIdEquipoIntake(campana, idEquipoContextual));
@@ -4410,6 +4417,7 @@ public class LeadService {
             Lead lead,
             LeadIdentidad identidad,
             LeadIntakeRequest request,
+            Origen origen,
             Campana campana,
             Instant registroAt,
             Long idEquipoContextual
@@ -4449,7 +4457,7 @@ public class LeadService {
             Lead lead,
             String prefijo,
             String numeroLead,
-            Base base,
+            Origen origen,
             String documentoSnapshot,
             String direccionSnapshot,
             Long idCampanaBaseMasivo,
@@ -4467,7 +4475,7 @@ public class LeadService {
         lead.setLead(numeroLead);
         completarNumeroParaLlamarSiFalta(lead);
         lead.setCampana(campana);
-        lead.setBase(base);
+        lead.setOrigen(origen);
         lead.setLastEntryAt(OperationalDateTime.now());
         aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
         if (lead.getContacto() == null) {
@@ -5477,7 +5485,7 @@ public class LeadService {
                 lead.getUsermeta(),
                 lead.getCampana() == null ? null : lead.getCampana().getNombre(),
                 lead.getCampana() == null || lead.getCampana().getProveedor() == null ? null : lead.getCampana().getProveedor().getNombre(),
-                lead.getBase(),
+                lead.getOrigen() == null ? null : lead.getOrigen().getNombre(),
                 lead.getEstado(),
                 lead.getIdAsesorAsignado(),
                 lead.getNombreAsesorAsignado(),
@@ -5825,7 +5833,7 @@ public class LeadService {
         Lead original = obtenerLeadAsignadoDelAsesor(idLead);
 
         Lead nueva = leadMapper.toNuevoLead(
-                original.getPrefijo(), original.getLead(), original.getUsermeta(), original.getBase(),
+                original.getPrefijo(), original.getLead(), original.getUsermeta(), original.getOrigen(),
                 original.getCampana(), OperationalDateTime.now());
         nueva.setContacto(original.getContacto());
         nueva.setIdEquipo(original.getIdEquipo());

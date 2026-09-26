@@ -448,7 +448,7 @@
 <!-- Detail drawer (VentaDrawerV2) -->
 <app-venta-drawer-v2
   [visible]="drawerOpen()"
-  mode="consulta"
+  [mode]="drawerMode()"
   [detail]="detail()"
   [datosForm]="datosForm"
   [direccionForm]="direccionForm"

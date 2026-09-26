@@ -18,7 +18,7 @@ import { SessionService } from '../../../../core/services/session.service';
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { TipificationPaletteByCode, TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { TreeSelectComponent, TreeSelectGroup, TreeSelectSelection } from '../../../../shared/components/tree-select/tree-select.component';
-import { VentaDrawerV2Component } from '../../../../shared/components/venta-drawer-v2/venta-drawer-v2.component';
+import { VentaDrawerMode, VentaDrawerV2Component } from '../../../../shared/components/venta-drawer-v2/venta-drawer-v2.component';
 import { MetricsRango } from '../../../../shared/utils/metrics-period';
 import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
 import {
@@ -123,6 +123,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
 
   // --- Detail drawer (VentaDrawerV2) ---
   protected readonly drawerOpen = signal(false);
+  protected readonly drawerMode = signal<VentaDrawerMode>('consulta');
   protected readonly detail = signal<LeadDetalleResponse | null>(null);
   protected readonly eventos = signal<EventoResponse[]>([]);
   protected readonly historialLoading = signal(false);
@@ -402,11 +403,17 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   // --- Detail drawer (VentaDrawerV2) ---
 
   protected async onRowClick(row: LeadBandejaVentaResponse): Promise<void> {
+    const consulta = this.isConsulta(row);
+    this.drawerMode.set(consulta ? 'consulta' : 'gestion');
     this.selectedLeadId.set(row.idLead);
     this.eventos.set([]);
     this.historialError.set(null);
     try {
-      const detalle = await firstValueFrom(this.leadService.obtenerDetalleConsulta(row.idLead));
+      const detalle = await firstValueFrom(
+        consulta
+          ? this.leadService.obtenerDetalleConsulta(row.idLead)
+          : this.leadService.obtenerDetalle(row.idLead)
+      );
       if (this.selectedLeadId() !== row.idLead) return;
       this.detail.set(detalle);
       this.patchForms(detalle);
@@ -419,6 +426,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
 
   protected closeDrawer(): void {
     this.drawerOpen.set(false);
+    this.drawerMode.set('consulta');
     this.detail.set(null);
     this.selectedLeadId.set(null);
   }
@@ -794,7 +802,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   }
 
   protected isConsulta(row: LeadBandejaVentaResponse): boolean {
-    return row.origenFila === 'EVENTO_TIPIFICACION';
+    return String(row.etapaActual ?? '').trim().toUpperCase() !== 'VENTA';
   }
 
   protected consultaLabel(row: LeadBandejaVentaResponse): string {
