@@ -15,7 +15,8 @@
 
 .venta-v2__summary { width: 17rem; padding: 4.75rem 0 1.5rem; overflow: hidden; transition: opacity 160ms ease; }
 .venta-v2__summary--closed { width: 0; opacity: 0; pointer-events: none; }
-.venta-v2__summary-sheet { width: 17rem; height: 100%; padding: 1.15rem 1.2rem; color: #eaf1f8; background: #17314f; border: 1px solid rgba(255,255,255,.08); border-right: 0; border-radius: .5rem 0 0 .5rem; overflow: auto; }
+.venta-v2__summary-sheet { width: 17rem; height: 100%; padding: 1.15rem 1.2rem; color: #eaf1f8; background: #17314f; border: 1px solid rgba(255,255,255,.08); border-right: 0; border-radius: .5rem 0 0 .5rem; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; }
+.venta-v2__summary-sheet::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .venta-v2__summary-kicker { display: flex; justify-content: space-between; padding-bottom: 1rem; color: #a9bdd1; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,.14); }
 .venta-v2__summary dl { margin: 0; }
 .venta-v2__summary dl div { padding: .82rem 0; border-bottom: 1px solid rgba(255,255,255,.1); }

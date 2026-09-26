@@ -215,6 +215,7 @@ public class DataLoader {
         savePermiso("READ_EQUIPO_PROVEEDORES", "Puede consultar proveedores asignados a equipos", "EQUIPO_PROVEEDOR", "READ");
         savePermiso("ASSIGN_EQUIPO_PROVEEDORES", "Puede asignar proveedores a equipos", "EQUIPO_PROVEEDOR", "ASSIGN");
         savePermiso("DELETE_EQUIPO_PROVEEDORES", "Puede eliminar datos de proveedores de equipos", "EQUIPO_PROVEEDOR", "DELETE");
+        savePermiso("EXPORT_BASE_LEADS", "Puede exportar base de leads como archivos encriptados ALB", "LEAD", "EXPORT");
         savePermiso("RUN_LEAD_ETAPA_BACKFILL", "Puede ejecutar el backfill de etapas de leads", "LEAD_ETAPA_BACKFILL", "RUN");
         savePermiso("AJUSTAR_JORNADA_COMPENSABLE", "Puede registrar corrimientos compensables", "JORNADA", "ADJUST_COMPENSABLE");
         savePermiso("AJUSTAR_JORNADA_SIN_LIMITE", "Puede registrar corrimientos sin limite de minutos", "JORNADA", "ADJUST_UNLIMITED");

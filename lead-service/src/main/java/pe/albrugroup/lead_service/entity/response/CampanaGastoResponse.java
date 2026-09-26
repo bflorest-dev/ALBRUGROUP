@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -19,11 +20,12 @@ public class CampanaGastoResponse {
     private Long id;
     private Long idCampana;
     private String nombreCampana;
-    private Integer leads;
+    private Integer leadsReportados;
     private Integer leadsReales;
-    private Integer ventasCerradas;
+    private Integer cantidadPreventas;
+    private Integer cantidadVentas;
     private BigDecimal costoTotal;
-    private Boolean cierreRetroactivo;
+    private LocalDateTime reportedAt;
     private Instant createdAt;
     private Instant updatedAt;
 }

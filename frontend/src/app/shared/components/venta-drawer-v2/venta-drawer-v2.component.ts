@@ -438,19 +438,42 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
     ) ?? null;
   }
 
-  protected operationalDate(): { label: string; value: string } | null {
-    const candidates = this.eventos
-      .flatMap((event) => [
-        event.fechaInstalacion ? { label: 'Instalación', value: event.fechaInstalacion, at: event.createdAt ?? '' } : null,
-        event.fechaRechazo ? { label: 'Rechazo', value: event.fechaRechazo, at: event.createdAt ?? '' } : null,
-        event.fechaProgramacion ? { label: 'Programación', value: event.fechaProgramacion, at: event.createdAt ?? '' } : null
-      ])
-      .filter((item): item is { label: string; value: string; at: string } => !!item)
-      .sort((a, b) => b.at.localeCompare(a.at));
-    if (candidates.length) return candidates[0];
-    if (this.detail?.fechaRechazo) return { label: 'Rechazo', value: this.detail.fechaRechazo };
-    if (this.detail?.fechaProgramacion) return { label: 'Programación', value: this.detail.fechaProgramacion };
-    return null;
+  protected relevantDate(): string {
+    const type = String(this.detail?.tipoFechaRelevante ?? '').toUpperCase();
+    const labels: Record<string, string> = {
+      PROGRAMACION: 'Programación',
+      RECHAZO: 'Rechazo',
+      INSTALACION: 'Instalación',
+      INGRESO_VENTA: 'Ingreso a venta',
+      GRABACION: 'Grabación',
+      TIPIFICACION: 'Tipificación',
+      INGRESO: 'Ingreso',
+      ULTIMA_GESTION: 'Última gestión'
+    };
+    const label = labels[type];
+    let formatted = 'Sin registrar';
+    if (this.detail?.fechaRelevanteAt) {
+      formatted = this.formatRelevantDate(this.detail.fechaRelevanteAt, true);
+    } else if (this.detail?.fechaRelevante) {
+      const value = this.detail.horaRelevante
+        ? `${this.detail.fechaRelevante}T${this.detail.horaRelevante}`
+        : this.detail.fechaRelevante;
+      formatted = this.formatRelevantDate(value, Boolean(this.detail.horaRelevante));
+    }
+    return formatted === 'Sin registrar' || !label ? formatted : `${formatted} · ${label}`;
+  }
+
+  private formatRelevantDate(value: string, withTime: boolean): string {
+    const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
+    if (Number.isNaN(date.getTime())) return value;
+    const datePart = new Intl.DateTimeFormat('es-PE', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    }).format(date);
+    if (!withTime) return datePart;
+    const timePart = new Intl.DateTimeFormat('es-PE', {
+      hour: '2-digit', minute: '2-digit', hour12: false
+    }).format(date);
+    return `${datePart} ${timePart}`;
   }
 
   protected formatDate(value?: string | null, withTime = false): string {

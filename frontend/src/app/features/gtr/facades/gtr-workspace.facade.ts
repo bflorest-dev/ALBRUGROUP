@@ -15,11 +15,11 @@ import { EstadoAsistencia } from '../../../shared/models/schedule/estado-asisten
 import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
 import { PresenceRealtimeService } from '../../../core/services/presence-realtime.service';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
+import { OrigenResponse } from '../../admin/services/base-leads.service';
 import { PresenceRealtimeEvent } from '../../../shared/models/gateway/presence-realtime-event';
 import {
   AdicionalResponse,
   AsesorLeadsPendientesResponse,
-  BaseLead,
   CampanaResponse,
   CampoTipificacion,
   CampoCaptura,
@@ -289,6 +289,7 @@ export class GtrWorkspaceFacade {
   readonly isLoadingAgendados = signal(false);
   readonly isLoadingMasivos = signal(false);
   readonly isUploadingMasivoExcel = signal(false);
+  readonly isUploadingMasivoAlb = signal(false);
   readonly isLoadingEvents = signal(false);
   readonly isLoadingNumerosLlamada = signal(false);
   readonly isSavingNumeroParaLlamar = signal(false);
@@ -299,6 +300,7 @@ export class GtrWorkspaceFacade {
   readonly snapshotPhoneEditorOpen = signal(false);
   private readonly selectedIntakeCampaignId = signal<number | null>(null);
   readonly masivoExcelResultsDialogOpen = signal(false);
+  readonly origenes = signal<OrigenResponse[]>([]);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
   readonly intakeError = signal<string | null>(null);
@@ -434,20 +436,12 @@ export class GtrWorkspaceFacade {
   readonly isSavingExtension = signal(false);
   /** Error propio del modal de ampliacion: se muestra dentro del dialogo, nunca detras. */
   readonly extensionError = signal<string | null>(null);
-  private readonly campaignOriginOptions: Array<SelectOption<BaseLead>> = [
-    { label: 'WhatsApp', value: 'WHATSAPP' },
-    { label: 'Messenger', value: 'MESSENGER' }
-  ];
-  private readonly noCampaignOriginOptions: Array<SelectOption<BaseLead>> = [
-    { label: 'Recontacto', value: 'RECONTACTO' },
-    { label: 'Predictivo', value: 'PREDICTIVO' },
-    { label: 'Referido', value: 'REFERIDO' },
-    { label: 'Masivo', value: 'MASIVO' },
-    { label: 'Sin identificar', value: 'SIN_IDENTIFICAR' }
-  ];
-  readonly intakeBaseOptions = computed<Array<SelectOption<BaseLead>>>(() =>
-    this.selectedIntakeCampaignId() ? this.campaignOriginOptions : this.noCampaignOriginOptions
-  );
+  readonly intakeOrigenOptions = computed<Array<SelectOption<number>>>(() => {
+    const hasCampana = !!this.selectedIntakeCampaignId();
+    return this.origenes()
+      .filter(o => o.esCampana === hasCampana)
+      .map(o => ({ label: o.nombre, value: o.id }));
+  });
   readonly advisorEventsGroupOptions: Array<{ label: string; value: AdvisorEventGroupMode }> = [
     { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
     { label: 'Lead', value: 'LEAD' },
@@ -503,7 +497,7 @@ export class GtrWorkspaceFacade {
     lead: ['', [Validators.pattern(PERU_LEAD_PATTERN)]],
     usermeta: ['', [Validators.pattern(USERMETA_PATTERN)]],
     idCampana: [null as number | null],
-    base: [null as BaseLead | null, [Validators.required]]
+    idOrigen: [null as number | null, [Validators.required]]
   }, { validators: GtrWorkspaceFacade.intakeIdentityValidator });
   readonly retroactiveDateControl = new FormControl<string | null>(null, {
     validators: [Validators.required]
@@ -1350,6 +1344,7 @@ export class GtrWorkspaceFacade {
         this.runInitialLoad('asesores', () => this.refreshAdvisors(), errors),
         this.runInitialLoad('leads pendientes', () => this.refreshPendientes(), errors),
         this.runInitialLoad('campanas', () => this.refreshCampanas(), errors),
+        this.runInitialLoad('origenes', () => this.refreshOrigenes(), errors),
         ...sectionLoads.map(([label, load]) => this.runInitialLoad(label, load, errors))
       ]);
 
@@ -1424,7 +1419,7 @@ export class GtrWorkspaceFacade {
         lead: hasPhone ? leadNumber : null,
         usermeta: usermeta || null,
         idCampana: formValue.idCampana || null,
-        base: formValue.base as BaseLead
+        idOrigen: formValue.idOrigen!
       };
       const adminEquipoId = this.adminEquipoId();
       if (!skipLookupConfirmation) {
@@ -1523,6 +1518,41 @@ export class GtrWorkspaceFacade {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo procesar el Excel.'));
     } finally {
       this.isUploadingMasivoExcel.set(false);
+    }
+  }
+
+  async uploadMasivoAlb(event: Event): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) {
+      return;
+    }
+    if (!file.name.toLowerCase().endsWith('.alb')) {
+      this.errorMessage.set('Selecciona un archivo .alb.');
+      return;
+    }
+
+    this.isUploadingMasivoAlb.set(true);
+    this.clearMessages();
+    try {
+      const response = await firstValueFrom(this.preventaService.registrarIngresoLeadsAlb(file));
+      this.masivoExcelImport.set(response);
+      this.masivoExcelResultsDialogOpen.set(true);
+      this.successMessage.set(
+        `ALB procesado: ${response.totalRegistrados} registrados y ${response.totalFallidos} fallidos.`
+      );
+      await Promise.all([
+        this.reconcile(),
+        this.masivoSearched() && this.section() !== 'historicos' ? this.refreshMasivos() : Promise.resolve()
+      ]);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo procesar el archivo ALB.'));
+    } finally {
+      this.isUploadingMasivoAlb.set(false);
     }
   }
 
@@ -4307,6 +4337,10 @@ export class GtrWorkspaceFacade {
     this.campanas.set(await firstValueFrom(this.preventaService.listarCampanasActivas()));
   }
 
+  private async refreshOrigenes(): Promise<void> {
+    this.origenes.set(await firstValueFrom(this.preventaService.listarOrigenes()));
+  }
+
   // Catálogo del modal de tipificación: del equipo del lead (lo resuelve el backend desde el lead). Se
   // re-trae por lead porque distintos leads pueden ser de equipos con matrices distintas; planes y
   // departamentos sí se cachean.
@@ -5096,7 +5130,7 @@ export class GtrWorkspaceFacade {
       nombreCampana: row.nombreCampana,
       nombreProveedorCampana: row.nombreProveedorCampana,
       nombreProveedorEquipo: row.nombreProveedorEquipo,
-      base: row.base,
+      origen: row.origen,
       nombreTitular: row.nombreTitular,
       codigoTipificacion: row.codigoTipificacion,
       codigoSubtipificacion: row.codigoSubtipificacion,
@@ -5183,7 +5217,7 @@ export class GtrWorkspaceFacade {
       lead: '',
       usermeta: '',
       idCampana: null,
-      base: null
+      idOrigen: null
     });
     this.selectedIntakeCampaignId.set(null);
     this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
@@ -5198,12 +5232,13 @@ export class GtrWorkspaceFacade {
   }
 
   private syncIntakeOriginWithCampaign(): void {
-    const allowedValues = new Set(this.intakeBaseOptions().map((option) => option.value));
-    const current = this.intakeForm.controls.base.value as BaseLead | null;
+    const allowedValues = new Set(this.intakeOrigenOptions().map((option) => option.value));
+    const current = this.intakeForm.controls.idOrigen.value;
     if (current && allowedValues.has(current)) {
       return;
     }
-    this.intakeForm.controls.base.setValue(this.selectedIntakeCampaignId() ? 'WHATSAPP' : null);
+    const first = this.intakeOrigenOptions()[0]?.value ?? null;
+    this.intakeForm.controls.idOrigen.setValue(this.selectedIntakeCampaignId() ? first : null);
   }
 
   private applySnapshotIdentityDisabledState(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): void {

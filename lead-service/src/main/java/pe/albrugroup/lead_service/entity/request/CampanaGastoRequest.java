@@ -7,16 +7,20 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 public class CampanaGastoRequest {
 
-    @NotNull(message = "leads es obligatorio")
-    @Min(value = 0, message = "leads debe ser mayor o igual a 0")
-    private Integer leads;
+    @NotNull(message = "leadsReportados es obligatorio")
+    @Min(value = 0, message = "leadsReportados debe ser mayor o igual a 0")
+    private Integer leadsReportados;
 
     @NotNull(message = "costoTotal es obligatorio")
     @DecimalMin(value = "0.00", message = "costoTotal debe ser mayor o igual a 0")
     private BigDecimal costoTotal;
+
+    @NotNull(message = "reportedAt es obligatorio")
+    private LocalDateTime reportedAt;
 }

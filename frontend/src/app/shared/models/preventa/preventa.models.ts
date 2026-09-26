@@ -77,7 +77,7 @@ export interface LeadGtrResponse {
   idProveedorEquipo?: number | null;
   nombreProveedorEquipo?: string | null;
   numeroWhatsappEmpresa?: string | null;
-  base?: BaseLead | string | null;
+  origen?: string | null;
   nombreTitular?: string | null;
   numeroDocumentoTitularServicio?: string | null;
   direccionSnapshot?: string | null;
@@ -169,7 +169,7 @@ export interface LeadAgendadoGtrResponse {
   nombreCampana?: string | null;
   nombreProveedorCampana?: string | null;
   nombreProveedorEquipo?: string | null;
-  base?: BaseLead | string | null;
+  origen?: string | null;
   nombreTitular?: string | null;
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
@@ -241,7 +241,7 @@ export interface LeadVentaResponse {
   nombreAsesorAsignado?: string | null;
   tipoDocumento?: string | null;
   numeroDocumentoTitularServicio?: string | null;
-  base?: BaseLead | string | null;
+  origen?: string | null;
   idTipificacion?: number | null;
   codigoTipificacion?: string | null;
   idSubtipificacion?: number | null;
@@ -314,7 +314,7 @@ export interface LeadBandejaVentaResponse {
   numeroDocumento?: string | null;
   nombreCliente?: string | null;
   departamentoGrupo?: string | null;
-  base?: BaseLead | string | null;
+  origen?: string | null;
   idTipificacionActual?: number | null;
   codigoTipificacionActual?: string | null;
   idSubtipificacionActual?: number | null;
@@ -482,7 +482,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   idProveedorEquipo?: number | null;
   nombreProveedorEquipo?: string | null;
   numeroParaLlamar?: string | null;
-  base?: string | null;
+  origen?: string | null;
   idAsesorAsignado?: number | null;
   nombreAsesorAsignado?: string | null;
   tipoDocumento?: string | null;
@@ -548,6 +548,10 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   fechaProgramacion?: string | null;
   fechaRechazo?: string | null;
   horaProgramada?: string | null;
+  fechaRelevante?: string | null;
+  horaRelevante?: string | null;
+  fechaRelevanteAt?: string | null;
+  tipoFechaRelevante?: TipoFechaRelevanteVenta | string | null;
   plan?: LeadPlanDetalleResponse | null;
   promocionInterna?: LeadPromocionDetalleResponse | null;
   // Config de campos de captura resuelta por el backend: por cada campo configurable, si se muestra
@@ -727,7 +731,7 @@ export interface LeadIntakeRequest {
   lead?: string | null;
   usermeta?: string | null;
   idCampana?: number | null;
-  base: string;
+  idOrigen: number;
 }
 
 export interface LeadIntakeRetroactivoRequest extends LeadIntakeRequest {

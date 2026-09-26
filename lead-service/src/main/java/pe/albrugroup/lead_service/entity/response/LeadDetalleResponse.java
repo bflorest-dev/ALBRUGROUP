@@ -12,6 +12,7 @@ import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoVia;
+import pe.albrugroup.lead_service.entity.enums.TipoFechaRelevanteVenta;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -83,6 +84,7 @@ public class LeadDetalleResponse {
     private String tipificacionActual;
     private String subtipificacionActual;
     private String nombreAsesorMeritoPreventa;
+    private String nombreAsesorMeritoVenta;
     private Long idPlan;
     private String nombrePlan;
     private String nombreProveedorPlan;
@@ -96,6 +98,10 @@ public class LeadDetalleResponse {
     private Instant fechaIngresoEtapa;
     private LocalDate fechaProgramacion;
     private LocalTime horaProgramada;
+    private LocalDate fechaRelevante;
+    private LocalTime horaRelevante;
+    private Instant fechaRelevanteAt;
+    private TipoFechaRelevanteVenta tipoFechaRelevante;
     private LeadPlanDetalleResponse plan;
     private LeadPromocionDetalleResponse promocionInterna;
     private List<LeadAdicionalDetalleResponse> adicionales;

@@ -24,14 +24,14 @@
             } @else {
               <div><dt>Documento</dt><dd>{{ documentLabel() }}</dd></div>
               <div><dt>Cliente</dt><dd>{{ display(detail?.nombreTitular) }}</dd></div>
-              <div><dt>Asesor de venta</dt><dd>{{ salesAdvisor() }}</dd></div>
               <div><dt>Número para llamar</dt><dd>{{ display(detail?.numeroParaLlamar || detail?.lead) }}</dd></div>
               @if (detail?.customerId) { <div><dt>Customer ID</dt><dd>{{ detail?.customerId }}</dd></div> }
               @if (detail?.sec) { <div><dt>SEC</dt><dd>{{ detail?.sec }}</dd></div> }
               @if (detail?.sot) { <div><dt>SOT</dt><dd>{{ detail?.sot }}</dd></div> }
-              <div><dt>Fecha de ingreso</dt><dd>{{ formatDate(detail?.fechaIngresoEtapa, true) }}</dd></div>
-              @if (operationalDate(); as date) { <div><dt>{{ date.label }}</dt><dd>{{ formatDate(date.value) }}</dd></div> }
             }
+            <div><dt>Fecha de ingreso</dt><dd>{{ formatDate(detail?.fechaIngresoEtapa, true) }}</dd></div>
+            <div><dt>Fecha relevante</dt><dd>{{ relevantDate() }}</dd></div>
+            <div><dt>Asesor de ventas</dt><dd>{{ salesAdvisor() }}</dd></div>
           </dl>
         </div>
       </aside>

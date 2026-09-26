@@ -297,6 +297,30 @@
         ],
         "createdAt": "2026-09-23T23:43:10.472Z",
         "reason": "Dynamic [src] binding with @if guard; never renders empty"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "createdAt": "2026-09-26T17:56:53.078Z",
+        "reason": "Matches Personal page type ramp (Consola de precision V2)"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "16px",
+        "createdAt": "2026-09-26T17:56:53.177Z",
+        "reason": "Matches Personal page type ramp (Consola de precision V2)"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10.5px",
+        "createdAt": "2026-09-26T17:56:53.283Z",
+        "reason": "Matches Personal page type ramp (Consola de precision V2)"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "13px",
+        "createdAt": "2026-09-26T17:56:53.374Z",
+        "reason": "Matches Personal page type ramp (Consola de precision V2)"
       }
     ]
   }

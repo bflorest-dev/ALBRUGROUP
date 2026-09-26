@@ -330,7 +330,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
         { domainId: 'overview', label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { domainId: 'operation', label: 'CorrecciÃ³n de campaÃ±a', route: '/app/admin/correccion-campana', icon: 'pi pi-sync', exact: true },
         { domainId: 'overview', label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
-        { domainId: 'operation', label: 'Operaciones', route: '/app/admin/operaciones', icon: 'pi pi-wrench', exact: true }
+        { domainId: 'operation', label: 'Operaciones', route: '/app/admin/operaciones', icon: 'pi pi-wrench', exact: true },
+        { domainId: 'operation', label: 'Base de Leads', route: '/app/admin/base-leads', icon: 'pi pi-download', exact: true }
       ];
 
       if (this.adminDeleteLeadsVisible()) {

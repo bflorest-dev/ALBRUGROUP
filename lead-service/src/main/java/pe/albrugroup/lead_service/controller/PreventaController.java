@@ -37,6 +37,7 @@ public class PreventaController {
 
     private final LeadService  leadService;
     private final LeadExcelIntakeService leadExcelIntakeService;
+    private final pe.albrugroup.lead_service.service.AlbIntakeService albIntakeService;
     private final LeadCampanaCorreccionService leadCampanaCorreccionService;
     private final LeadMeritoCorreccionService leadMeritoCorreccionService;
     private final AuthEquipoClient authEquipoClient;
@@ -137,6 +138,14 @@ public class PreventaController {
             @RequestPart("file") MultipartFile file
     ) {
         var response = leadExcelIntakeService.registrarDesdeExcel(file);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping(value = "/intake-masivo/alb", consumes = "multipart/form-data") @PreAuthorize("hasAuthority('CREATE_LEADS')")
+    public ResponseEntity<LeadIntakeMasivoExcelResponse> registrarIngresoLeadsAlb(
+            @RequestPart("file") MultipartFile file
+    ) {
+        var response = albIntakeService.registrarDesdeAlb(file);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     @PatchMapping("/{idLead}/snapshots") @PreAuthorize("hasAnyAuthority('CREATE_LEADS','UPDATE_LEADS_ASESOR')")

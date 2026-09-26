@@ -9,13 +9,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
-import pe.albrugroup.lead_service.repository.CampanaGastoRegistroRepository;
+import pe.albrugroup.lead_service.repository.GastoCampanaRepository;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +28,7 @@ import static org.mockito.Mockito.when;
 class DashboardFunnelServiceTest {
 
     @Mock private LeadEtapaResumenRepository resumenRepository;
-    @Mock private CampanaGastoRegistroRepository gastoRepository;
+    @Mock private GastoCampanaRepository gastoRepository;
     @Mock private ProveedorRepository proveedorRepository;
     @Mock private ProveedorScopeService proveedorScopeService;
     @Mock private EntityManager entityManager;
@@ -66,7 +67,7 @@ class DashboardFunnelServiceTest {
                 hasta.plusDays(1)))
                 .thenReturn(117L);
         when(gastoRepository.sumCostoTotalByProveedorAndCierreDiario(
-                2L, Instant.parse("2026-09-01T05:00:00Z"), Instant.parse("2026-10-01T05:00:00Z")))
+                2L, LocalDateTime.of(2026, 9, 1, 0, 0), LocalDateTime.of(2026, 10, 1, 0, 0)))
                 .thenReturn(BigDecimal.ZERO);
 
         var response = dashboardFunnelService.obtener(2L, desde, hasta);

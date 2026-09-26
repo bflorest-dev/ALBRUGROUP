@@ -6,7 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -16,6 +17,7 @@ import java.time.Instant;
 public class CampanaGastoRegistroEstadoResponse {
 
     private Boolean esPrimerRegistroDelDia;
-    private Boolean aplicaCierreRetroactivo;
-    private Instant fechaRegistroAplicada;
+    private LocalDate fechaMinima;
+    private LocalDate fechaMaxima;
+    private LocalDateTime ultimoReportedAt;
 }

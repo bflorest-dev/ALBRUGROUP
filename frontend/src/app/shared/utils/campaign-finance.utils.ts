@@ -24,14 +24,21 @@ export type FinanceMetricCard = {
 
 export type FinanceRow = CampanaGastoCampanaResumenResponse & {
   ultimoRegistroAt?: string | null;
+  costoPorPreventa: string;
+  costoPorVenta: string;
   costoPorLead: string;
   costoPorLeadReal: string;
-  costoPorVenta: string;
+  conversionPreventas: string;
+  conversionVentas: string;
+  conversionPreventasReales: string;
+  conversionVentasReales: string;
   conversionLeads: string;
   conversionLeadsReales: string;
 };
 
 export type SnapshotFinanceRow = FinanceRow & {
+  id?: number;
+  reportedAt?: string | null;
   deltaLeads: number | null;
   deltaLeadsReales: number | null;
 };
@@ -44,24 +51,33 @@ export function buildFinanceCards(
     | null
 ): FinanceMetricCard[] {
   return [
-    { label: 'Leads', value: String(summary?.leads ?? 0), tone: 'blue' },
+    { label: 'Leads reportados', value: String(summary?.leadsReportados ?? 0), tone: 'blue' },
     { label: 'Leads reales', value: String(summary?.leadsReales ?? 0), tone: 'green' },
-    { label: 'Ventas cerradas', value: String(summary?.ventasCerradas ?? 0), tone: 'violet' },
+    { label: 'Preventas', value: String(summary?.cantidadPreventas ?? 0), tone: 'violet' },
+    { label: 'Ventas', value: String(summary?.cantidadVentas ?? 0), tone: 'violet' },
     { label: 'Costo total', value: formatFinanceMoney(summary?.costoTotal ?? 0), tone: 'amber' },
-    { label: 'Ultimo registro', value: formatFinanceDateTime(summary?.ultimoRegistroAt), tone: 'slate' }
+    { label: 'Ultimo reporte', value: formatFinanceDateTime(summary?.ultimoReportedAt), tone: 'slate' }
   ];
 }
 
 export function toFinanceRow(row: CampanaGastoCampanaResumenResponse | CampanaGastoResponse): FinanceRow {
-  const ultimoRegistroAt = (row as CampanaGastoResponse).createdAt ?? (row as CampanaGastoCampanaResumenResponse).ultimoRegistroAt;
+  const leads = 'leadsReportados' in row ? row.leadsReportados : 0;
+  const preventas = row.cantidadPreventas;
+  const ventas = row.cantidadVentas;
+  const ultimoRegistroAt = (row as CampanaGastoResponse).reportedAt ?? (row as CampanaGastoCampanaResumenResponse).ultimoReportedAt;
   return {
     ...row,
     ultimoRegistroAt,
-    costoPorLead: formatCostPerResult(row.costoTotal, row.leads),
+    costoPorPreventa: formatCostPerResult(row.costoTotal, preventas),
+    costoPorVenta: formatCostPerResult(row.costoTotal, ventas),
+    costoPorLead: formatCostPerResult(row.costoTotal, leads),
     costoPorLeadReal: formatCostPerResult(row.costoTotal, row.leadsReales),
-    costoPorVenta: formatCostPerResult(row.costoTotal, row.ventasCerradas),
-    conversionLeads: formatPercentage(row.ventasCerradas, row.leads),
-    conversionLeadsReales: formatPercentage(row.ventasCerradas, row.leadsReales)
+    conversionPreventas: formatPercentage(preventas, leads),
+    conversionVentas: formatPercentage(ventas, leads),
+    conversionPreventasReales: formatPercentage(preventas, row.leadsReales),
+    conversionVentasReales: formatPercentage(ventas, row.leadsReales),
+    conversionLeads: formatPercentage(ventas, leads),
+    conversionLeadsReales: formatPercentage(ventas, row.leadsReales)
   };
 }
 
@@ -69,7 +85,7 @@ export function toSnapshotFinanceRows(rows: CampanaGastoResponse[]): SnapshotFin
   const mappedRows = rows.map((row) => toFinanceRow(row));
   return mappedRows.map((row, index) => ({
     ...row,
-    deltaLeads: index === 0 ? null : row.leads - (mappedRows[index - 1]?.leads ?? 0),
+    deltaLeads: index === 0 ? null : row.leadsReportados - (mappedRows[index - 1]?.leadsReportados ?? 0),
     deltaLeadsReales: index === 0 ? null : row.leadsReales - (mappedRows[index - 1]?.leadsReales ?? 0)
   }));
 }
@@ -125,6 +141,14 @@ export function financeCurrentDateValue(): string {
   const month = `${now.getMonth() + 1}`.padStart(2, '0');
   const day = `${now.getDate()}`.padStart(2, '0');
   return `${now.getFullYear()}-${month}-${day}`;
+}
+
+export function financeCurrentDateTimeValue(): string {
+  const now = new Date();
+  const date = financeCurrentDateValue();
+  const hours = `${now.getHours()}`.padStart(2, '0');
+  const minutes = `${now.getMinutes()}`.padStart(2, '0');
+  return `${date}T${hours}:${minutes}`;
 }
 
 export function financeMonthYear(value: string): number {

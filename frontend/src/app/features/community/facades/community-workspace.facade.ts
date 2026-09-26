@@ -32,6 +32,7 @@ import {
   SnapshotFinanceRow,
   buildFinanceCards,
   financeCurrentDateValue,
+  financeCurrentDateTimeValue,
   financeCurrentMonthValue,
   financeMonthMonth,
   financeMonthYear,
@@ -197,6 +198,7 @@ export class CommunityWorkspaceFacade {
   readonly selectedExpenseCampaign = signal<FinanceRow | null>(null);
   readonly expenseDialogOpen = signal(false);
   readonly expenseSnapshotsOpen = signal(false);
+  readonly expenseEditingId = signal<number | null>(null);
   readonly expenseRegistrationStatus = signal<CampanaGastoRegistroEstadoResponse | null>(null);
   readonly expenseRegistrationCheckError = signal<string | null>(null);
   readonly financeDate = signal(financeCurrentDateValue());
@@ -267,11 +269,7 @@ export class CommunityWorkspaceFacade {
   readonly monthlyFinanceCards = computed(() => buildFinanceCards(this.monthlyExpenseSummary()));
   readonly dailyFinanceRows = computed<FinanceRow[]>(() => (this.dailyExpenseSummary()?.campanas ?? []).map((campana) => toFinanceRow(campana)));
   readonly snapshotRows = computed<SnapshotFinanceRow[]>(() => toSnapshotFinanceRows(this.campaignExpenseSnapshots()));
-  readonly expenseRegistrationWarning = computed(() =>
-    this.expenseRegistrationStatus()?.aplicaCierreRetroactivo
-      ? 'Este es el primer registro de hoy. Se guardar� como cierre de ayer a las 23:59.'
-      : null
-  );
+  readonly expenseRegistrationWarning = computed(() => null);
 
   readonly providerForm = this.fb.group({
     nombre: ['', [Validators.required]],
@@ -289,7 +287,8 @@ export class CommunityWorkspaceFacade {
 
   readonly expenseForm = this.fb.group({
     idCampana: [0, [Validators.required, Validators.min(1)]],
-    leads: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
+    leadsReportados: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
+    reportedAt: [financeCurrentDateTimeValue(), [Validators.required]],
     costoTotal: ['', [Validators.required, Validators.pattern(/^\d+(?:[,.]\d+)?$/)]]
   });
 
@@ -567,7 +566,8 @@ export class CommunityWorkspaceFacade {
       this.errorMessage.set(this.operationalGateMessage());
       return;
     }
-    this.expenseForm.reset({ idCampana: 0, leads: '', costoTotal: '' });
+    this.expenseEditingId.set(null);
+    this.expenseForm.reset({ idCampana: 0, leadsReportados: '', reportedAt: financeCurrentDateTimeValue(), costoTotal: '' });
     this.clearExpenseRegistrationStatus();
     this.expenseDialogOpen.set(true);
     this.clearMessages();
@@ -575,6 +575,7 @@ export class CommunityWorkspaceFacade {
 
   closeExpenseDialog(): void {
     this.expenseDialogOpen.set(false);
+    this.expenseEditingId.set(null);
     this.clearExpenseRegistrationStatus();
   }
 
@@ -612,10 +613,10 @@ export class CommunityWorkspaceFacade {
     }
 
     const raw = this.expenseForm.getRawValue();
-    const leads = this.parseIntegerInput(raw.leads);
+    const leadsReportados = this.parseIntegerInput(raw.leadsReportados);
     const costoTotal = this.parseDecimalInput(raw.costoTotal);
 
-    if (leads === null || costoTotal === null) {
+    if (leadsReportados === null || costoTotal === null || !raw.reportedAt) {
       this.errorMessage.set('Ingresa leads y costo acumulado con un formato valido.');
       return;
     }
@@ -623,20 +624,40 @@ export class CommunityWorkspaceFacade {
     this.isSaving.set(true);
     this.clearMessages();
     try {
-      const saved = await firstValueFrom(
-        this.leadService.registrarGastoCampana(raw.idCampana, {
-          leads,
-          costoTotal
-        })
-      );
+      const saved = this.expenseEditingId()
+        ? await firstValueFrom(this.leadService.actualizarGastoCampana(raw.idCampana, this.expenseEditingId()!, {
+            leadsReportados,
+            costoTotal
+          }))
+        : await firstValueFrom(this.leadService.registrarGastoCampana(raw.idCampana, {
+            leadsReportados,
+            costoTotal,
+            reportedAt: raw.reportedAt
+          }));
       this.closeExpenseDialog();
       await this.loadFinanceDashboard();
-      this.successMessage.set(saved.cierreRetroactivo ? 'Gasto registrado como cierre del día anterior.' : 'Gasto de campaña registrado.');
+      this.successMessage.set('Gasto de campaña guardado.');
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo registrar el gasto de la campaña.'));
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  editExpense(row: SnapshotFinanceRow): void {
+    if (!row.id || !row.reportedAt) {
+      return;
+    }
+    this.expenseEditingId.set(row.id);
+    this.expenseForm.reset({
+      idCampana: row.idCampana,
+      leadsReportados: String(row.leadsReportados),
+      costoTotal: String(row.costoTotal),
+      reportedAt: row.reportedAt.slice(0, 16)
+    });
+    this.expenseSnapshotsOpen.set(false);
+    this.expenseDialogOpen.set(true);
+    this.clearMessages();
   }
 
   async openExpenseSnapshots(row: FinanceRow): Promise<void> {

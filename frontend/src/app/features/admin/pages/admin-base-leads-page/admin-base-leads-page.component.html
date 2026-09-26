@@ -1,0 +1,213 @@
+<main class="base-leads" data-theme="dark">
+  <header class="page-head">
+    <div>
+      <h1>Base de Leads</h1>
+      <p>Exporta leads filtrados como archivos encriptados .alb</p>
+    </div>
+  </header>
+
+  <!-- Filtros -->
+  <section class="control-rail" aria-label="Filtros de exportacion">
+    <label class="select-field">
+      <span class="field-label">Etapa</span>
+      <select [ngModel]="facade.etapa()" (ngModelChange)="facade.etapa.set($event); onEtapaChange()">
+        @for (opt of facade.etapaOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="date-field">
+      <span class="field-label">Desde</span>
+      <p-datepicker
+        [ngModel]="facade.desde()"
+        (ngModelChange)="facade.desde.set($event)"
+        dateFormat="dd/mm/yy"
+        [showIcon]="true"
+        appendTo="body"
+        [baseZIndex]="1400"
+        panelStyleClass="base-leads-calendar"
+        [style]="{ width: '100%' }"
+      />
+    </label>
+
+    <label class="date-field">
+      <span class="field-label">Hasta</span>
+      <p-datepicker
+        [ngModel]="facade.hasta()"
+        (ngModelChange)="facade.hasta.set($event)"
+        dateFormat="dd/mm/yy"
+        [showIcon]="true"
+        appendTo="body"
+        [baseZIndex]="1400"
+        panelStyleClass="base-leads-calendar"
+        [style]="{ width: '100%' }"
+      />
+    </label>
+
+    <label class="select-field">
+      <span class="field-label">Campo</span>
+      <select [ngModel]="facade.campoTipificacion()" (ngModelChange)="facade.campoTipificacion.set($event)">
+        @for (opt of facade.campoOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="select-field">
+      <span class="field-label">Proveedor</span>
+      <select
+        [ngModel]="facade.idProveedor()"
+        [disabled]="facade.isLoadingCatalog()"
+        (ngModelChange)="facade.idProveedor.set($event ? +$event : null); onProveedorChange()"
+      >
+        <option [ngValue]="null">Todos</option>
+        @for (pv of facade.proveedores(); track pv.id) {
+          <option [value]="pv.id">{{ pv.nombre }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="multiselect-field">
+      <span class="field-label">Tipificacion</span>
+      <p-multiselect
+        [options]="facade.tipificaciones()"
+        [ngModel]="facade.codigosTipificacion()"
+        (ngModelChange)="facade.codigosTipificacion.set($event); facade.codigosSubtipificacion.set([])"
+        [disabled]="!facade.idProveedor() || facade.isLoadingTipificaciones()"
+        [loading]="facade.isLoadingTipificaciones()"
+        optionLabel="descripcion"
+        optionValue="codigo"
+        panelStyleClass="base-leads-multiselect-panel"
+        [placeholder]="facade.isLoadingTipificaciones() ? 'Cargando…' : 'Todas'"
+        [maxSelectedLabels]="2"
+        [style]="{ width: '100%', height: '38px' }"
+      />
+    </label>
+
+    <label class="multiselect-field">
+      <span class="field-label">Subtipificacion</span>
+      <p-multiselect
+        [options]="facade.subtipificacionesDisponibles()"
+        [ngModel]="facade.codigosSubtipificacion()"
+        (ngModelChange)="facade.codigosSubtipificacion.set($event)"
+        [disabled]="!facade.idProveedor() || facade.isLoadingTipificaciones() || !facade.tipificaciones().length"
+        [loading]="facade.isLoadingTipificaciones()"
+        optionLabel="descripcion"
+        optionValue="codigo"
+        panelStyleClass="base-leads-multiselect-panel"
+        [placeholder]="facade.isLoadingTipificaciones() ? 'Cargando…' : 'Todas'"
+        [maxSelectedLabels]="2"
+        [style]="{ width: '100%', height: '38px' }"
+      />
+    </label>
+
+    <button class="btn-search" type="button" [disabled]="facade.isLoading()" (click)="facade.buscar()">
+      @if (facade.isLoading()) {
+        <span class="spinner"></span>
+      } @else {
+        <i class="pi pi-search"></i>
+      }
+      Buscar
+    </button>
+  </section>
+
+  @if (facade.catalogError()) {
+    <p class="catalog-status catalog-status--error" role="alert">
+      <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+      {{ facade.catalogError() }}
+    </p>
+  }
+
+  @if (facade.tipificacionesError()) {
+    <p class="catalog-status catalog-status--error" role="alert">
+      <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+      {{ facade.tipificacionesError() }}
+    </p>
+  }
+
+  <!-- Resumen + Export -->
+  @if (facade.hasResults()) {
+    <section class="export-rail">
+      <div class="export-info">
+        <strong class="mono">{{ facade.totalForExport().toLocaleString() }}</strong>
+        <span>leads encontrados</span>
+        <span class="export-name mono">{{ facade.suggestedName() }}</span>
+      </div>
+      <div class="export-actions">
+        <label class="select-field select-field--sm">
+          <span class="field-label">Origen</span>
+          <select [ngModel]="facade.origenCodigo()" (ngModelChange)="facade.origenCodigo.set($event)">
+            @for (o of facade.origenes(); track o.codigo) {
+              <option [value]="o.codigo">{{ o.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="input-field input-field--sm">
+          <span class="field-label">Leads/archivo</span>
+          <input type="number" [ngModel]="facade.maxLeadsPorArchivo()" (ngModelChange)="facade.maxLeadsPorArchivo.set($event)" min="100" max="5000" step="100" />
+        </label>
+        <button class="btn-export" type="button" [disabled]="facade.isExporting()" (click)="confirmarExport()">
+          @if (facade.isExporting()) {
+            <span class="spinner"></span>
+          } @else {
+            <i class="pi pi-download"></i>
+          }
+          Exportar
+        </button>
+      </div>
+    </section>
+  }
+
+  <!-- Tabla -->
+  @if (facade.rows().length || facade.isLoading()) {
+    <section class="directory">
+      <div class="table-head">
+        <span>Prefijo</span>
+        <span>Lead</span>
+        <span>Nombre</span>
+        <span>Documento</span>
+        <span>Etapa</span>
+        <span>Tipificacion</span>
+        <span>Subtipificacion</span>
+        <span>Proveedor</span>
+        <span>Fecha</span>
+      </div>
+      @if (facade.isLoading()) {
+        <div class="loading-state"><span class="spinner"></span></div>
+      } @else {
+        @for (row of facade.rows(); track $index) {
+          <div class="data-row">
+            <span class="mono">{{ row.prefijo }}</span>
+            <span class="mono">{{ row.lead }}</span>
+            <span class="cell-truncate">{{ row.nombre }}</span>
+            <span class="mono">{{ row.documento }}</span>
+            <span>{{ row.etapa }}</span>
+            <span>{{ row.codigoTipificacion }}</span>
+            <span>{{ row.codigoSubtipificacion }}</span>
+            <span>{{ row.nombreProveedor }}</span>
+            <span class="mono">{{ row.fechaTipificacion | slice:0:10 }}</span>
+          </div>
+        }
+        @if (!facade.rows().length) {
+          <div class="empty-state">Sin resultados</div>
+        }
+      }
+    </section>
+
+    <!-- Paginacion nativa -->
+    @if (facade.totalElements() > facade.pageSize()) {
+      <nav class="pagination" aria-label="Paginas">
+        <button [disabled]="facade.page() === 0" (click)="facade.changePage(facade.page() - 1)">
+          <i class="pi pi-chevron-left"></i>
+        </button>
+        <span class="mono">{{ facade.page() + 1 }} / {{ Math.ceil(facade.totalElements() / facade.pageSize()) }}</span>
+        <button [disabled]="(facade.page() + 1) * facade.pageSize() >= facade.totalElements()" (click)="facade.changePage(facade.page() + 1)">
+          <i class="pi pi-chevron-right"></i>
+        </button>
+      </nav>
+    }
+  }
+
+  <p-confirmdialog />
+</main>

@@ -32,7 +32,13 @@ export type CampanaResponse = LeadEntity & {
 };
 
 export type CampanaGastoRequest = {
-  leads: number;
+  leadsReportados: number;
+  costoTotal: number;
+  reportedAt: string;
+};
+
+export type ActualizarGastoCampanaRequest = {
+  leadsReportados: number;
   costoTotal: number;
 };
 
@@ -40,40 +46,44 @@ export type CampanaGastoResponse = {
   id: number;
   idCampana: number;
   nombreCampana: string;
-  leads: number;
+  leadsReportados: number;
   leadsReales: number;
-  ventasCerradas: number;
+  cantidadPreventas: number;
+  cantidadVentas: number | null;
   costoTotal: number;
-  cierreRetroactivo?: boolean;
+  reportedAt: string;
   createdAt?: string;
   updatedAt?: string;
 };
 
 export type CampanaGastoRegistroEstadoResponse = {
   esPrimerRegistroDelDia: boolean;
-  aplicaCierreRetroactivo: boolean;
-  fechaRegistroAplicada: string;
+  fechaMinima?: string | null;
+  fechaMaxima?: string | null;
+  ultimoReportedAt?: string | null;
 };
 
 export type CampanaGastoCampanaResumenResponse = {
   idCampana: number;
   nombreCampana: string;
-  leads: number;
+  leadsReportados: number;
   leadsReales: number;
-  ventasCerradas: number;
+  cantidadPreventas: number;
+  cantidadVentas: number | null;
   costoTotal: number;
-  ultimoRegistroAt?: string | null;
+  ultimoReportedAt?: string | null;
 };
 
 export type CampanaGastoResumenDiarioResponse = {
   idCampana?: number | null;
   nombreCampana?: string | null;
   fecha: string;
-  leads: number;
+  leadsReportados: number;
   leadsReales: number;
-  ventasCerradas: number;
+  cantidadPreventas: number;
+  cantidadVentas: number | null;
   costoTotal: number;
-  ultimoRegistroAt?: string | null;
+  ultimoReportedAt?: string | null;
   campanas?: CampanaGastoCampanaResumenResponse[] | null;
 };
 
@@ -82,22 +92,24 @@ export type CampanaGastoResumenMensualResponse = {
   nombreCampana?: string | null;
   anio: number;
   mes: number;
-  leads: number;
+  leadsReportados: number;
   leadsReales: number;
-  ventasCerradas: number;
+  cantidadPreventas: number;
+  cantidadVentas: number | null;
   costoTotal: number;
-  ultimoRegistroAt?: string | null;
+  ultimoReportedAt?: string | null;
   campanas?: CampanaGastoCampanaResumenResponse[] | null;
 };
 
 export type CampanaGastoResumenPeriodoResponse = {
   fechaDesde: string;
   fechaHasta: string;
-  leads: number;
+  leadsReportados: number;
   leadsReales: number;
-  ventasCerradas: number;
+  cantidadPreventas: number;
+  cantidadVentas: number | null;
   costoTotal: number;
-  ultimoRegistroAt?: string | null;
+  ultimoReportedAt?: string | null;
   campanas?: CampanaGastoCampanaResumenResponse[] | null;
 };
 
@@ -330,8 +342,18 @@ export class CommunityLeadService {
     return this.http.post<CampanaGastoResponse>(`${this.leadUrl}/campanas/${idCampana}/gastos`, request);
   }
 
-  obtenerEstadoRegistroGastoCampana(idCampana: number): Observable<CampanaGastoRegistroEstadoResponse> {
-    return this.http.get<CampanaGastoRegistroEstadoResponse>(`${this.leadUrl}/campanas/${idCampana}/gastos/estado-registro`);
+  actualizarGastoCampana(
+    idCampana: number,
+    idGasto: number,
+    request: ActualizarGastoCampanaRequest
+  ): Observable<CampanaGastoResponse> {
+    return this.http.put<CampanaGastoResponse>(`${this.leadUrl}/campanas/${idCampana}/gastos/${idGasto}`, request);
+  }
+
+  obtenerEstadoRegistroGastoCampana(idCampana: number, fecha?: string): Observable<CampanaGastoRegistroEstadoResponse> {
+    return this.http.get<CampanaGastoRegistroEstadoResponse>(`${this.leadUrl}/campanas/${idCampana}/gastos/estado-registro`, {
+      params: this.optionalDateParam('fecha', fecha)
+    });
   }
 
   listarGastosCampanaDia(idCampana: number, fecha?: string): Observable<CampanaGastoResponse[]> {
@@ -351,10 +373,10 @@ export class CommunityLeadService {
     });
   }
 
-  obtenerResumenGastosDiario(fecha?: string, idEquipo?: number | null): Observable<CampanaGastoResumenDiarioResponse> {
+  obtenerResumenGastosDiario(fecha?: string, idProveedor?: number | null): Observable<CampanaGastoResumenDiarioResponse> {
     let params = this.optionalDateParam('fecha', fecha);
-    if (idEquipo !== null && idEquipo !== undefined) {
-      params = params.set('idEquipo', idEquipo);
+    if (idProveedor !== null && idProveedor !== undefined) {
+      params = params.set('idProveedor', idProveedor);
     }
     return this.http.get<CampanaGastoResumenDiarioResponse>(`${this.leadUrl}/campanas/gastos/resumen-diario`, {
       params
@@ -364,14 +386,14 @@ export class CommunityLeadService {
   obtenerResumenGastosMensual(
     anio?: number,
     mes?: number,
-    idEquipo?: number | null
+    idProveedor?: number | null
   ): Observable<CampanaGastoResumenMensualResponse> {
     let params = new HttpParams();
     if (anio && mes) {
       params = params.set('anio', anio).set('mes', mes);
     }
-    if (idEquipo !== null && idEquipo !== undefined) {
-      params = params.set('idEquipo', idEquipo);
+    if (idProveedor !== null && idProveedor !== undefined) {
+      params = params.set('idProveedor', idProveedor);
     }
     return this.http.get<CampanaGastoResumenMensualResponse>(`${this.leadUrl}/campanas/gastos/resumen-mensual`, {
       params
@@ -381,11 +403,11 @@ export class CommunityLeadService {
   obtenerResumenGastosPeriodo(
     fechaDesde: string,
     fechaHasta: string,
-    idEquipo?: number | null
+    idProveedor?: number | null
   ): Observable<CampanaGastoResumenPeriodoResponse> {
     let params = new HttpParams().set('fechaDesde', fechaDesde).set('fechaHasta', fechaHasta);
-    if (idEquipo !== null && idEquipo !== undefined) {
-      params = params.set('idEquipo', idEquipo);
+    if (idProveedor !== null && idProveedor !== undefined) {
+      params = params.set('idProveedor', idProveedor);
     }
     return this.http.get<CampanaGastoResumenPeriodoResponse>(
       `${this.leadUrl}/campanas/gastos/resumen-periodo`,

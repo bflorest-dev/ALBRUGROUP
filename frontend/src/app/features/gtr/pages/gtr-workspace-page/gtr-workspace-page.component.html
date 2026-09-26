@@ -15,6 +15,13 @@
           hidden
           (change)="facade.uploadMasivoExcel($event)"
         />
+        <input
+          #masivoAlbInput
+          type="file"
+          accept=".alb"
+          hidden
+          (change)="facade.uploadMasivoAlb($event)"
+        />
         <span class="advisors-trigger">
           @if (facade.abandonadosCount() > 0) {
             <span
@@ -53,6 +60,19 @@
             title="Cargar Excel"
             aria-label="Cargar Excel"
             (click)="$any(masivoExcelInput).click()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-file"
+            severity="secondary"
+            [rounded]="true"
+            [text]="true"
+            [disabled]="!facade.canMutateOperationalData() || facade.isUploadingMasivoAlb()"
+            [loading]="facade.isUploadingMasivoAlb()"
+            title="Cargar ALB"
+            aria-label="Cargar ALB"
+            (click)="$any(masivoAlbInput).click()"
           ></button>
         }
         @if (facade.section() !== 'ranking') {
@@ -399,8 +419,8 @@
       <label class="wide">
         <span>Origen</span>
         <p-select
-          formControlName="base"
-          [options]="facade.intakeBaseOptions()"
+          formControlName="idOrigen"
+          [options]="facade.intakeOrigenOptions()"
           optionLabel="label"
           optionValue="value"
           placeholder="Selecciona un origen"

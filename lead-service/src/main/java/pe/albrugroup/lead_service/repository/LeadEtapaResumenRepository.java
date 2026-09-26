@@ -21,6 +21,43 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
 
     Optional<LeadEtapaResumen> findByIdLeadAndEtapa(Long idLead, Etapa etapa);
 
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaPreventa
+            WHERE l.campana.id = :idCampana
+              AND l.etapa <> :etapaPreventa
+              AND r.mayorRangoCodigoTipificacion = :codigoPreventa
+              AND r.mayorRangoAt >= :inicio
+              AND r.mayorRangoAt <= :fin
+            """)
+    long contarPreventasPorCampanaYRango(
+            @Param("idCampana") Long idCampana,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("codigoPreventa") String codigoPreventa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaVenta
+            WHERE l.campana.id = :idCampana
+              AND l.etapa NOT IN (:etapaPreventa, :etapaVenta)
+              AND r.mayorRangoCodigoTipificacion = :codigoInstalado
+              AND r.mayorRangoAt >= :inicio
+              AND r.mayorRangoAt <= :fin
+            """)
+    long contarVentasPorCampanaYRango(
+            @Param("idCampana") Long idCampana,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("codigoInstalado") String codigoInstalado,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
     boolean existsByIdLeadAndEtapaAndIdAsesorMerito(Long idLead, Etapa etapa, Long idAsesorMerito);
 
     List<LeadEtapaResumen> findByIdLead(Long idLead);

@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
+import { OrigenResponse } from '../../admin/services/base-leads.service';
 import { VentaDetallePage } from '../../admin/services/dashboard-venta.service';
 import {
   AdicionalResponse,
@@ -330,6 +331,15 @@ export class PreventaLeadService {
     formData.append('file', file);
     return this.http.post<LeadIntakeMasivoExcelResponse>(
       `${this.leadUrl}/preventa/intake-masivo/excel`,
+      formData
+    );
+  }
+
+  registrarIngresoLeadsAlb(file: File): Observable<LeadIntakeMasivoExcelResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<LeadIntakeMasivoExcelResponse>(
+      `${this.leadUrl}/preventa/intake-masivo/alb`,
       formData
     );
   }
@@ -684,5 +694,9 @@ export class PreventaLeadService {
     return this.http.post<void>(
       `${this.leadUrl}/preventa/asesor-ventas/mis-preventas/v2/${idLead}/contacto`, {}
     );
+  }
+
+  listarOrigenes(): Observable<OrigenResponse[]> {
+    return this.http.get<OrigenResponse[]>(`${this.leadUrl}/origenes`);
   }
 }

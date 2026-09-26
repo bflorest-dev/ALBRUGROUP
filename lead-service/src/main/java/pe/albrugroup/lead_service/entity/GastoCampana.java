@@ -15,19 +15,20 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
-@Table(indexes = {
-    @Index(name = "idx_campana_gasto_campana_created", columnList = "id_campana, createdAt"),
-    @Index(name = "idx_campana_gasto_created", columnList = "createdAt")
+@Table(name = "gasto_campana", indexes = {
+    @Index(name = "idx_gasto_campana_reported", columnList = "id_campana, reported_at, id"),
+    @Index(name = "idx_gasto_campana_reported_at", columnList = "reported_at")
 })
-public class CampanaGastoRegistro {
+public class GastoCampana {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -36,16 +37,20 @@ public class CampanaGastoRegistro {
     @JoinColumn(name = "id_campana", nullable = false)
     private Campana campana;
     @Column(nullable = false)
-    private Integer leads;
+    private Integer leadsReportados;
     @Column(nullable = false)
     private Integer leadsReales;
     @Column(nullable = false)
-    private Integer ventasCerradas;
+    private Integer cantidadPreventas;
+    @Column
+    private Integer cantidadVentas;
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal costoTotal;
-    @Column(nullable = false)
-    private LocalDate fechaCarga;
+    @Column(name = "reported_at", nullable = false)
+    private LocalDateTime reportedAt;
+    @CreationTimestamp
+    @Column(updatable = false, nullable = false)
+    private Instant createdAt;
     @UpdateTimestamp
     private Instant updatedAt;
-    private Instant createdAt;
 }

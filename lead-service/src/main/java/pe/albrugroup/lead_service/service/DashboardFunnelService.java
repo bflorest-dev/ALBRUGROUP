@@ -14,7 +14,7 @@ import pe.albrugroup.lead_service.entity.response.DashboardFunnelResponse.Funnel
 import pe.albrugroup.lead_service.entity.response.DashboardFunnelResponse.PeriodoRef;
 import pe.albrugroup.lead_service.entity.response.DashboardFunnelResponse.ProveedorRef;
 import pe.albrugroup.lead_service.exception.NotFoundException;
-import pe.albrugroup.lead_service.repository.CampanaGastoRegistroRepository;
+import pe.albrugroup.lead_service.repository.GastoCampanaRepository;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
 
@@ -32,7 +32,7 @@ public class DashboardFunnelService {
     private static final String SIN_CONTACTO = "SIN CONTACTO";
 
     private final LeadEtapaResumenRepository resumenRepository;
-    private final CampanaGastoRegistroRepository gastoRepository;
+    private final GastoCampanaRepository gastoRepository;
     private final ProveedorRepository proveedorRepository;
     private final ProveedorScopeService proveedorScopeService;
     private final EntityManager entityManager;
@@ -89,7 +89,7 @@ public class DashboardFunnelService {
                 idProveedor, inicio, fin, Etapa.VENTA, "INSTALADO", desdeR, hastaR.plusDays(1));
 
         BigDecimal inversion = gastoRepository.sumCostoTotalByProveedorAndCierreDiario(
-                idProveedor, inicio, fin);
+                idProveedor, desdeR.atStartOfDay(), hastaR.plusDays(1).atStartOfDay());
 
         return new DashboardFunnelResponse(
                 new ProveedorRef(proveedor.getId(), proveedor.getNombre()),

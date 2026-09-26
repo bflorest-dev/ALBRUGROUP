@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.request.CampanaGastoRequest;
+import pe.albrugroup.lead_service.entity.request.ActualizarGastoCampanaRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoRegistroEstadoResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenDiarioResponse;
@@ -23,6 +25,7 @@ import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenPeriodoResp
 import pe.albrugroup.lead_service.service.CampanaGastoService;
 
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.List;
 
 @RestController
@@ -43,10 +46,23 @@ public class CampanaGastoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(registro);
     }
 
+    @PutMapping("/{idCampana}/gastos/{idGasto}")
+    @PreAuthorize("hasAuthority('UPDATE_CAMPANA')")
+    public ResponseEntity<CampanaGastoResponse> actualizarGasto(
+            @PathVariable Long idCampana,
+            @PathVariable Long idGasto,
+            @Valid @RequestBody ActualizarGastoCampanaRequest request
+    ) {
+        return ResponseEntity.ok(campanaGastoService.actualizarGasto(idCampana, idGasto, request));
+    }
+
     @GetMapping("/{idCampana}/gastos/estado-registro")
     @PreAuthorize("hasAuthority('READ_CAMPANA')")
-    public ResponseEntity<CampanaGastoRegistroEstadoResponse> obtenerEstadoRegistro(@PathVariable Long idCampana) {
-        return ResponseEntity.ok(campanaGastoService.obtenerEstadoRegistro(idCampana));
+    public ResponseEntity<CampanaGastoRegistroEstadoResponse> obtenerEstadoRegistro(
+            @PathVariable Long idCampana,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        return ResponseEntity.ok(campanaGastoService.obtenerEstadoRegistro(idCampana, fecha));
     }
 
     @GetMapping("/{idCampana}/gastos")
@@ -84,9 +100,9 @@ public class CampanaGastoController {
     @PreAuthorize("hasAuthority('READ_CAMPANA')")
     public ResponseEntity<CampanaGastoResumenDiarioResponse> obtenerResumenDiarioGlobal(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
-            @RequestParam(required = false) Long idEquipo
+            @RequestParam(required = false) Long idProveedor
     ) {
-        var resumen = campanaGastoService.obtenerResumenDiarioGlobal(fecha, idEquipo);
+        var resumen = campanaGastoService.obtenerResumenDiarioGlobal(fecha, idProveedor);
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
     }
 
@@ -106,9 +122,9 @@ public class CampanaGastoController {
     public ResponseEntity<CampanaGastoResumenMensualResponse> obtenerResumenMensualGlobal(
             @RequestParam(required = false) Integer anio,
             @RequestParam(required = false) Integer mes,
-            @RequestParam(required = false) Long idEquipo
+            @RequestParam(required = false) Long idProveedor
     ) {
-        var resumen = campanaGastoService.obtenerResumenMensualGlobal(anio, mes, idEquipo);
+        var resumen = campanaGastoService.obtenerResumenMensualGlobal(anio, mes, idProveedor);
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
     }
 
@@ -117,9 +133,16 @@ public class CampanaGastoController {
     public ResponseEntity<CampanaGastoResumenPeriodoResponse> obtenerResumenPeriodoGlobal(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
-            @RequestParam(required = false) Long idEquipo
+            @RequestParam(required = false) Long idProveedor
     ) {
-        var resumen = campanaGastoService.obtenerResumenPeriodoGlobal(fechaDesde, fechaHasta, idEquipo);
+        var resumen = campanaGastoService.obtenerResumenPeriodoGlobal(fechaDesde, fechaHasta, idProveedor);
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
+    }
+
+    @PostMapping("/gastos/mantenimiento/recalcular-historicos")
+    @PreAuthorize("hasAuthority('RUN_LEAD_ETAPA_BACKFILL')")
+    public ResponseEntity<Map<String, Integer>> recalcularHistoricos() {
+        int recalculados = campanaGastoService.recalcularUltimosRegistrosHistoricos();
+        return ResponseEntity.ok(Map.of("registrosDiariosRecalculados", recalculados));
     }
 }

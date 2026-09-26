@@ -1,0 +1,532 @@
+:host { display: block; }
+
+.base-leads {
+  --ground: #0e1116;
+  --panel: #161a21;
+  --panel-2: #1b2029;
+  --panel-sunk: #11151b;
+  --ink: #e9edf3;
+  --ink-2: #9aa4b2;
+  --ink-3: #6b7482;
+  --line: #262c36;
+  --line-strong: #333b47;
+  --line-faint: #1e232b;
+  --signal: #e79a3a;
+  --signal-fill: #e79a3a;
+  --signal-wash: #2a2013;
+  --focus: #67adcb;
+  --ok: #67c08c;
+
+  min-height: 100%;
+  background: var(--ground);
+  color: var(--ink);
+  color-scheme: dark;
+  font: 14px/1.45 'Archivo', 'Segoe UI', sans-serif;
+  padding: 26px 30px 34px;
+  box-sizing: border-box;
+}
+
+.base-leads *, .base-leads *::before, .base-leads *::after { box-sizing: border-box; }
+
+.mono {
+  font-family: 'Spline Sans Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Header ── */
+.page-head {
+  margin-bottom: 18px;
+}
+
+.page-head h1 {
+  margin: 0 0 4px;
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -.025em;
+}
+
+.page-head p {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+/* ── Control rail ── */
+.control-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  margin-bottom: 14px;
+}
+
+.field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+
+.select-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  flex: 1 1 120px;
+}
+
+.select-field select {
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--ink);
+  padding: 0 10px;
+  font: 600 12.5px 'Archivo';
+  outline: none;
+}
+
+.select-field select option {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+
+.select-field--sm {
+  min-width: 100px;
+  flex: 0 1 130px;
+}
+
+.date-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  flex: 1 1 140px;
+}
+
+:host ::ng-deep .base-leads {
+  .p-datepicker {
+    width: 100%;
+  }
+
+  .p-datepicker .p-datepicker-input {
+    width: 100%;
+    height: 38px;
+    padding: 0 2.5rem 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    background: var(--panel-2);
+    box-shadow: none;
+    font: 600 12.5px 'Archivo';
+    transition: border-color .16s ease, box-shadow .16s ease;
+  }
+
+  .p-datepicker .p-datepicker-input::placeholder {
+    color: var(--ink-3);
+  }
+
+  .p-datepicker .p-datepicker-input-icon-container {
+    right: 10px;
+    color: var(--ink-2);
+  }
+
+  .p-datepicker .p-datepicker-input-icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .p-datepicker.p-focus .p-datepicker-input,
+  .p-datepicker .p-datepicker-input:focus {
+    border-color: var(--focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 16%, transparent);
+  }
+
+  .p-multiselect {
+    min-height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    background: var(--panel-2);
+    box-shadow: none;
+    transition: border-color .16s ease, box-shadow .16s ease;
+  }
+
+  .p-multiselect-label {
+    min-width: 0;
+    padding: 8px 10px;
+    color: var(--ink);
+    font: 600 12.5px/1.35 'Archivo';
+  }
+
+  .p-multiselect-label.p-placeholder {
+    color: var(--ink-3);
+  }
+
+  .p-multiselect-dropdown {
+    width: 34px;
+    color: var(--ink-2);
+  }
+
+  .p-multiselect:not(.p-disabled).p-focus {
+    border-color: var(--focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 16%, transparent);
+  }
+}
+
+::ng-deep .base-leads-calendar,
+::ng-deep .base-leads-multiselect-panel {
+  color-scheme: dark;
+  border: 1px solid #333b47;
+  border-radius: 10px;
+  background: #161a21;
+  color: #e9edf3;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .38);
+}
+
+::ng-deep .base-leads-calendar {
+  overflow: hidden;
+
+  .p-datepicker-header,
+  .p-datepicker-calendar-container {
+    background: #161a21;
+  }
+
+  .p-datepicker-header {
+    border-bottom: 1px solid #262c36;
+  }
+
+  .p-datepicker-title,
+  .p-datepicker-prev,
+  .p-datepicker-next {
+    color: #e9edf3;
+  }
+
+  .p-datepicker-weekday {
+    color: #9aa4b2;
+  }
+
+  .p-datepicker-day {
+    color: #e9edf3;
+    border-radius: 6px;
+  }
+
+  .p-datepicker-day:not(.p-datepicker-day-selected):not(.p-disabled):hover {
+    background: #1b2029;
+  }
+
+  .p-datepicker-day-selected {
+    color: #17120a;
+    background: #e79a3a;
+  }
+
+  .p-datepicker-day-today {
+    border-color: #67adcb;
+  }
+}
+
+::ng-deep .base-leads-multiselect-panel {
+  overflow: hidden;
+
+  .p-multiselect-header {
+    border-bottom: 1px solid #262c36;
+    background: #1b2029;
+  }
+
+  .p-multiselect-filter {
+    border-color: #333b47;
+    background: #11151b;
+    color: #e9edf3;
+  }
+
+  .p-multiselect-list {
+    padding: 5px;
+    background: #161a21;
+  }
+
+  .p-multiselect-option {
+    min-height: 34px;
+    border-radius: 6px;
+    color: #e9edf3;
+    font-size: 12.5px;
+  }
+
+  .p-multiselect-option:not(.p-multiselect-option-selected):not(.p-disabled):hover {
+    background: #1b2029;
+  }
+
+  .p-multiselect-option-selected {
+    background: #2a2013;
+    color: #f1c27c;
+  }
+}
+
+.multiselect-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  flex: 2 1 180px;
+}
+
+.input-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 100px;
+}
+
+.input-field--sm {
+  flex: 0 0 110px;
+}
+
+.input-field input {
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--ink);
+  padding: 0 10px;
+  font: 600 13px 'Spline Sans Mono', monospace;
+  outline: none;
+  width: 100%;
+}
+
+.input-field input:focus,
+.select-field select:focus {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 16%, transparent);
+}
+
+.btn-search,
+.btn-export {
+  height: 38px;
+  border-radius: 8px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: 600 12.5px 'Archivo';
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-search {
+  background: var(--ink);
+  color: var(--ground);
+  flex: 0 0 auto;
+  align-self: flex-end;
+}
+
+.btn-search:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.btn-export {
+  background: var(--signal);
+  color: #fff;
+}
+
+.btn-export:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.catalog-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: -4px 0 14px;
+  padding: 9px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+.catalog-status--error {
+  border-color: color-mix(in srgb, var(--signal) 55%, var(--line));
+  background: var(--signal-wash);
+  color: #f1c27c;
+}
+
+/* ── Export rail ── */
+.export-rail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  margin-bottom: 14px;
+}
+
+.export-info {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.export-info strong {
+  font-size: 16px;
+}
+
+.export-info span {
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+.export-name {
+  color: var(--ink-3) !important;
+  font-size: 11.5px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.export-actions {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: nowrap;
+}
+
+/* ── Directory (tabla) ── */
+.directory {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.table-head,
+.data-row {
+  display: grid;
+  grid-template-columns: 50px 95px minmax(120px, 1fr) 90px 80px 120px minmax(100px, 1fr) 80px 90px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+}
+
+.cell-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-head {
+  min-height: 40px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--ink-3);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.data-row {
+  min-height: 42px;
+  border-bottom: 1px solid var(--line-faint);
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.data-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-row:hover {
+  background: var(--panel-2);
+}
+
+/* ── Paginacion ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 8px 0;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+.pagination button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink-2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  opacity: .3;
+  cursor: not-allowed;
+}
+
+/* ── States ── */
+.loading-state {
+  min-height: 180px;
+  display: grid;
+  place-content: center;
+}
+
+.empty-state {
+  min-height: 120px;
+  display: grid;
+  place-content: center;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--line);
+  border-top-color: var(--signal);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+button { cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* ── Responsive ── */
+@media (max-width: 960px) {
+  .base-leads { padding: 22px 18px; }
+
+  .table-head, .data-row {
+    min-width: 900px;
+  }
+
+  .directory {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .base-leads { padding: 18px 12px; }
+
+  .control-rail { flex-direction: column; }
+  .select-field, .date-field, .multiselect-field { min-width: 100%; }
+  .export-rail { flex-direction: column; align-items: stretch; }
+  .export-actions { flex-direction: column; }
+}

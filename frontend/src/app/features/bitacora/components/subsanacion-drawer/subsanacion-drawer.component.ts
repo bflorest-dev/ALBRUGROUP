@@ -574,7 +574,7 @@ export class SubsanacionDrawerComponent implements OnInit {
     this.fechasForm.reset({ fechaGestion: gestion, fechaInstalacion: prep.fechaInstalacionActual ?? gestion }, { emitEvent: false });
     this.comercialForm.reset({
       idEquipo: prep.idEquipo ?? null, idProveedor: prep.idProveedor ?? null, idCampana: prep.idCampana ?? null,
-      idPlan: prep.idPlan ?? null, base: d.base ?? '', preventa: '', venta: '', sec: d.sec ?? '', sot: d.sot ?? '',
+      idPlan: prep.idPlan ?? null, base: d.origen ?? '', preventa: '', venta: '', sec: d.sec ?? '', sot: d.sot ?? '',
       customerId: d.customerId ?? ''
     }, { emitEvent: false });
     this.formVersion.update((value) => value + 1);

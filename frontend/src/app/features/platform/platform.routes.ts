@@ -14,6 +14,7 @@ import { DashboardPostventaStageComponent } from '../admin/components/dashboard-
 import { DashboardPreventaStageComponent } from '../admin/components/dashboard-preventa-stage/dashboard-preventa-stage.component';
 import { DashboardFunnelStageComponent } from '../admin/components/dashboard-funnel-stage/dashboard-funnel-stage.component';
 import { DashboardVentaStageComponent } from '../admin/components/dashboard-venta-stage/dashboard-venta-stage.component';
+import { AdminBaseLeadsPageComponent } from '../admin/pages/admin-base-leads-page/admin-base-leads-page.component';
 import { AdminDataOpsPageComponent } from '../admin/pages/admin-data-ops-page/admin-data-ops-page.component';
 import {
   AdminTipificacionesPageComponent,
@@ -229,6 +230,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin/operaciones',
     component: AdminDataOpsPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'admin/base-leads',
+    component: AdminBaseLeadsPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR']

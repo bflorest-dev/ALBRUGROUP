@@ -126,7 +126,7 @@
               {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
             }
           </td>
-          <td>{{ facade.display(row.base) }}</td>
+          <td>{{ facade.display(row.origen) }}</td>
           <td>
             @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
               <div class="tip-stack">

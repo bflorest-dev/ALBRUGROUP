@@ -34,6 +34,8 @@ app:
       codigo-subtipificacion: "PREVENTA DESAPROBADA"
       dias-sin-cambio: 3
       dias-contacto-reciente: 3
+  alb:
+    encryption-key: ${ALB_ENCRYPTION_KEY:}
   docs:
     gateway-url: ${LEAD_DOCS_GATEWAY_URL:http://localhost:8080/leads}
     public-url: ${LEAD_DOCS_PUBLIC_URL:https://api.albrugroup.com/leads}

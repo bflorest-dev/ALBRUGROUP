@@ -127,6 +127,7 @@ import pe.albrugroup.lead_service.repository.FreelanceVentaOrigenRepository;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.LeadMeritoCorreccionRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
+import pe.albrugroup.lead_service.repository.LeadSeguimientoRepository;
 import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
 import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
 import pe.albrugroup.lead_service.repository.PlanRepository;
@@ -168,6 +169,7 @@ public class LeadService {
             List.of(Accion.REGISTRO, Accion.NUEVA_OPORTUNIDAD);
 
     private final LeadRepository leadRepository;
+    private final LeadSeguimientoRepository leadSeguimientoRepository;
     private final ContactoRepository contactoRepository;
     private final EquipoProveedorRepository equipoProveedorRepository;
     private final EquipoCampoService equipoCampoService;
@@ -5440,6 +5442,8 @@ public class LeadService {
         LeadPromocionDetalleResponse promocionInterna = toLeadPromocionDetalleResponse(lead.getPromocionInterna());
         LeadEtapaResumen resumenVenta = leadEtapaResumenRepository.findByIdLeadAndEtapa(lead.getId(), Etapa.VENTA).orElse(null);
         LeadEtapaResumen resumenPreventa = leadEtapaResumenRepository.findByIdLeadAndEtapa(lead.getId(), Etapa.PREVENTA).orElse(null);
+        LeadSeguimiento seguimiento = leadSeguimientoRepository.findByIdLead(lead.getId()).orElse(null);
+        FechaRelevanteVenta fechaRelevante = resolverFechaRelevanteVenta(lead, resumenVenta, seguimiento);
         Proveedor proveedorFallback = lead.getProveedorOrigen();
         List<ProveedorResponse> proveedoresEquipo = listarProveedoresEquipoDetalle(lead.getIdEquipo());
         Evento ultimaProgramacionVenta = eventoRepository
@@ -5533,6 +5537,7 @@ public class LeadService {
                 resumenVenta == null ? null : resumenVenta.getUltimaCodigoTipificacion(),
                 resumenVenta == null ? null : resumenVenta.getUltimaCodigoSubtipificacion(),
                 resumenPreventa == null ? null : resumenPreventa.getNombreAsesorMerito(),
+                resumenVenta == null ? null : resumenVenta.getNombreAsesorMerito(),
                 lead.getPlan() == null ? null : lead.getPlan().getId(),
                 lead.getNombrePlanSnapshot(),
                 lead.getNombreProveedorSnapshot(),
@@ -5546,6 +5551,10 @@ public class LeadService {
                 resumenVenta == null ? null : resumenVenta.getFechaIngresoEtapa(),
                 ultimaProgramacionVenta == null ? null : ultimaProgramacionVenta.getFechaProgramacion(),
                 ultimaProgramacionVenta == null ? null : ultimaProgramacionVenta.getHoraProgramada(),
+                fechaRelevante.fecha(),
+                fechaRelevante.hora(),
+                fechaRelevante.at(),
+                fechaRelevante.tipo(),
                 plan,
                 promocionInterna,
                 adicionales,
@@ -5563,6 +5572,77 @@ public class LeadService {
                 lead.isEsJalaCobertura(),
                 lead.isEsZonaPintada()
         );
+    }
+
+    private FechaRelevanteVenta resolverFechaRelevanteVenta(
+            Lead lead,
+            LeadEtapaResumen resumenVenta,
+            LeadSeguimiento seguimiento
+    ) {
+        if (resumenVenta == null) {
+            return FechaRelevanteVenta.vacia();
+        }
+
+        Set<ComportamientoTipificacion> comportamientos = resolverComportamientosVenta(lead, resumenVenta);
+        if (comportamientos.contains(ComportamientoTipificacion.REGISTRA_INGRESO_VENTA)
+                && seguimiento != null && seguimiento.getFechaIngresoVenta() != null) {
+            return new FechaRelevanteVenta(null, null, seguimiento.getFechaIngresoVenta(), TipoFechaRelevanteVenta.INGRESO_VENTA);
+        }
+        if (comportamientos.contains(ComportamientoTipificacion.ES_GRABACION)
+                && seguimiento != null && seguimiento.getFechaGrabacion() != null) {
+            return new FechaRelevanteVenta(null, null, seguimiento.getFechaGrabacion(), TipoFechaRelevanteVenta.GRABACION);
+        }
+        if (comportamientos.contains(ComportamientoTipificacion.REQUIERE_FECHA_PROGRAMACION)
+                && seguimiento != null && seguimiento.getFechaProgramacion() != null) {
+            return new FechaRelevanteVenta(
+                    seguimiento.getFechaProgramacion().atZone(OperationalDateTime.ZONE).toLocalDate(),
+                    seguimiento.getFechaProgramacion().atZone(OperationalDateTime.ZONE).toLocalTime(),
+                    null,
+                    TipoFechaRelevanteVenta.PROGRAMACION
+            );
+        }
+        if (comportamientos.contains(ComportamientoTipificacion.REQUIERE_FECHA_RECHAZO)
+                && seguimiento != null && seguimiento.getFechaRechazo() != null) {
+            return new FechaRelevanteVenta(seguimiento.getFechaRechazo(), null, null, TipoFechaRelevanteVenta.RECHAZO);
+        }
+        if (comportamientos.contains(ComportamientoTipificacion.REQUIERE_FECHA_INSTALACION)
+                && seguimiento != null && seguimiento.getFechaInstalacion() != null) {
+            return new FechaRelevanteVenta(seguimiento.getFechaInstalacion(), null, null, TipoFechaRelevanteVenta.INSTALACION);
+        }
+        return new FechaRelevanteVenta(null, null, resumenVenta.getUltimaTipificacionAt(), TipoFechaRelevanteVenta.TIPIFICACION);
+    }
+
+    private Set<ComportamientoTipificacion> resolverComportamientosVenta(
+            Lead lead,
+            LeadEtapaResumen resumenVenta
+    ) {
+        if (lead.getProveedor() == null || resumenVenta.getUltimaCodigoTipificacion() == null
+                || resumenVenta.getUltimaCodigoSubtipificacion() == null) {
+            return Set.of();
+        }
+        return tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndActivoTrue(
+                        Etapa.VENTA,
+                        lead.getProveedor().getId(),
+                        resumenVenta.getUltimaCodigoTipificacion()
+                )
+                .flatMap(tipificacion -> subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
+                        tipificacion.getId(),
+                        resumenVenta.getUltimaCodigoSubtipificacion()
+                ))
+                .map(Subtipificacion::getComportamientos)
+                .map(comportamientos -> comportamientos == null ? Set.<ComportamientoTipificacion>of() : comportamientos)
+                .orElseGet(Set::of);
+    }
+
+    private record FechaRelevanteVenta(
+            LocalDate fecha,
+            LocalTime hora,
+            Instant at,
+            TipoFechaRelevanteVenta tipo
+    ) {
+        private static FechaRelevanteVenta vacia() {
+            return new FechaRelevanteVenta(null, null, null, null);
+        }
     }
 
     private List<CampoConfigResponse> resolverConfigCamposCaptura(Lead lead) {

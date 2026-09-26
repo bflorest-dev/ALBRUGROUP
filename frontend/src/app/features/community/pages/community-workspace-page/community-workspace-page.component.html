@@ -1,4 +1,5 @@
 <section class="community-page">
+  @if (pageMode() !== 'finanzas') {
   <p-card styleClass="community-hero">
     <div class="community-hero__content">
       <div>
@@ -49,6 +50,7 @@
       </div>
     </p-card>
   </section>
+  }
 
 
   @if (pageMode() !== 'mantenimiento' && facade.successMessage()) {
@@ -67,38 +69,7 @@
   @if (pageMode() === 'mantenimiento' && facade.canDisplayOperationalData()) {
     <app-catalog-maintenance-panel />
   } @else if (pageMode() === 'finanzas' && facade.canUseFinanceExpenses()) {
-    <app-campaign-finance-dashboard-panel
-      panelTitle="Finanzas de campanas"
-      [subtitle]="display(facade.dailyExpenseSummary()?.fecha)"
-      [financeDate]="facade.financeDate()"
-      [financeMonth]="facade.financeMonth()"
-      [isLoading]="facade.isLoadingFinance()"
-      [isLoadingSnapshots]="facade.isLoadingFinanceSnapshots()"
-      [dailyCards]="facade.dailyFinanceCards()"
-      [monthlyCards]="facade.monthlyFinanceCards()"
-      [dailyRows]="facade.dailyFinanceRows()"
-      [snapshotRows]="facade.snapshotRows()"
-      [selectedCampaign]="facade.selectedExpenseCampaign()"
-      [snapshotsVisible]="facade.expenseSnapshotsOpen()"
-      [allowExpenseRegistration]="true"
-      [expenseRegistrationEnabled]="facade.canUseFinanceExpenses()"
-      [expenseDialogVisible]="facade.expenseDialogOpen()"
-      [expenseForm]="facade.expenseForm"
-      [expenseErrorMessage]="facade.errorMessage()"
-      [expenseRegistrationWarning]="facade.expenseRegistrationWarning()"
-      [expenseRegistrationCheckError]="facade.expenseRegistrationCheckError()"
-      [campaignOptions]="facade.campanasActivas()"
-      [isSavingExpense]="facade.isSaving()"
-      (financeDateChanged)="facade.onFinanceDateChanged($event)"
-      (financeMonthChanged)="facade.onFinanceMonthChanged($event)"
-      (reload)="facade.loadFinanceDashboard()"
-      (openExpenseDialog)="facade.openExpenseDialog()"
-      (closeExpenseDialog)="facade.closeExpenseDialog()"
-      (submitExpense)="facade.submitExpense()"
-      (expenseCampaignChanged)="facade.onExpenseCampaignChanged($event)"
-      (openSnapshots)="facade.openExpenseSnapshots($event)"
-      (closeSnapshots)="facade.closeExpenseSnapshots()"
-    />
+    <app-finance-workspace eyebrow="Community" />
   } @else if (facade.canDisplayOperationalData()) {
     <section class="metrics-empty">
       <p-card styleClass="community-info-card">

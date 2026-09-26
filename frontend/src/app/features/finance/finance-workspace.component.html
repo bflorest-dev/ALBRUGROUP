@@ -1,0 +1,254 @@
+<main class="finance-workspace">
+  <app-page-header
+    class="finance-page-header"
+    title="Finanzas de campañas"
+    description="Controla inversión, reportes y resultados reales por proveedor y periodo."
+    [variant]="'plain'"
+  >
+    <div class="finance-command-group" aria-label="Controles de Finanzas">
+      <div class="finance-command-control finance-command-control--provider">
+        <span class="finance-control-label">Proveedor</span>
+        <p-selectButton
+          [options]="facade.providerOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="facade.selectedProviderId()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onProviderChange($event.value)"
+        />
+      </div>
+
+      <div class="finance-command-control finance-command-control--period">
+        <span class="finance-control-label">Periodo</span>
+        <app-period-selector
+          [periodo]="facade.period()"
+          [dia]="facade.day()"
+          [hasta]="facade.until()"
+          (periodoChange)="onPeriodChange($event)"
+          (rangoChange)="onRangeChange($event)"
+        />
+      </div>
+
+    </div>
+
+    @if (allowExpenseRegistration()) {
+      <button class="finance-primary-action" type="button" (click)="facade.openExpenseDialog()">
+        <i class="pi pi-plus" aria-hidden="true"></i>
+        Agregar gasto
+      </button>
+    }
+  </app-page-header>
+
+  @if (facade.errorMessage()) {
+    <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
+  }
+  @if (facade.successMessage()) {
+    <p-message severity="success" [text]="facade.successMessage() ?? ''" />
+  }
+
+  @let period = facade.periodSummary();
+  @let monthly = facade.monthlySummary();
+  <section class="finance-overview" aria-label="Resúmenes financieros">
+    <app-section-header title="Lectura financiera" description="Cierres del periodo consultado frente al acumulado del mes actual." />
+    <div class="finance-metric-ledger">
+      <div class="finance-ledger-row">
+        <div class="finance-ledger-label"><span>Periodo</span><strong>{{ periodTitle(period) }}</strong></div>
+        <div class="finance-metric finance-metric--reported"><span>Leads reportados</span><strong>{{ count(period?.leadsReportados) }}</strong></div>
+        <div class="finance-metric finance-metric--real"><span>Leads ingresados</span><strong>{{ count(period?.leadsReales) }}</strong></div>
+        <div class="finance-metric"><span>Preventas</span><strong>{{ count(period?.cantidadPreventas) }}</strong><small>Costo {{ moneyPer(period?.costoTotal, period?.cantidadPreventas) }}</small></div>
+        <div class="finance-metric"><span>Ventas</span><strong>{{ count(period?.cantidadVentas) }}</strong><small>Costo {{ moneyPer(period?.costoTotal, period?.cantidadVentas) }}</small></div>
+        <div class="finance-metric"><span>Costo total</span><strong>{{ facade.money(period?.costoTotal ?? 0) }}</strong></div>
+        <div class="finance-metric finance-metric--conversion"><span>Conversión reportada</span><strong>{{ percent(period?.cantidadPreventas, period?.leadsReportados) }} / {{ percent(period?.cantidadVentas, period?.leadsReportados) }}</strong><small>Preventa / venta</small></div>
+        <div class="finance-metric finance-metric--conversion"><span>Conversión ingresada</span><strong>{{ percent(period?.cantidadPreventas, period?.leadsReales) }} / {{ percent(period?.cantidadVentas, period?.leadsReales) }}</strong><small>Preventa / venta</small></div>
+        <div class="finance-metric finance-metric--last"><span>Último reporte</span><strong>{{ facade.dateTime(period?.ultimoReportedAt) }}</strong><small>reportedAt</small></div>
+      </div>
+      <div class="finance-ledger-row finance-ledger-row--monthly">
+        <div class="finance-ledger-label"><span>Mes actual</span><strong>{{ monthlyTitle(monthly) }}</strong></div>
+        <div class="finance-metric finance-metric--reported"><span>Leads reportados</span><strong>{{ count(monthly?.leadsReportados) }}</strong></div>
+        <div class="finance-metric finance-metric--real"><span>Leads ingresados</span><strong>{{ count(monthly?.leadsReales) }}</strong></div>
+        <div class="finance-metric"><span>Preventas</span><strong>{{ count(monthly?.cantidadPreventas) }}</strong><small>Costo {{ moneyPer(monthly?.costoTotal, monthly?.cantidadPreventas) }}</small></div>
+        <div class="finance-metric"><span>Ventas</span><strong>{{ count(monthly?.cantidadVentas) }}</strong><small>Costo {{ moneyPer(monthly?.costoTotal, monthly?.cantidadVentas) }}</small></div>
+        <div class="finance-metric"><span>Costo total</span><strong>{{ facade.money(monthly?.costoTotal ?? 0) }}</strong></div>
+        <div class="finance-metric finance-metric--conversion"><span>Conversión reportada</span><strong>{{ percent(monthly?.cantidadPreventas, monthly?.leadsReportados) }} / {{ percent(monthly?.cantidadVentas, monthly?.leadsReportados) }}</strong><small>Preventa / venta</small></div>
+        <div class="finance-metric finance-metric--conversion"><span>Conversión ingresada</span><strong>{{ percent(monthly?.cantidadPreventas, monthly?.leadsReales) }} / {{ percent(monthly?.cantidadVentas, monthly?.leadsReales) }}</strong><small>Preventa / venta</small></div>
+        <div class="finance-metric finance-metric--last"><span>Último reporte</span><strong>{{ facade.dateTime(monthly?.ultimoReportedAt) }}</strong><small>reportedAt</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="finance-table-section" aria-label="Detalle de campañas">
+    <app-section-header
+      [title]="facade.periodSummary() ? 'Campañas del periodo' : 'Campañas'"
+      [count]="facade.rows().length"
+      description="Cada fila representa el cierre consolidado de una campaña en el rango seleccionado."
+    />
+
+    <div class="finance-table-scroll">
+      <p-table
+        [value]="facade.rows()"
+        [loading]="facade.isLoading()"
+        [scrollable]="true"
+        [rowHover]="true"
+        styleClass="finance-table"
+        [tableStyle]="{ 'min-width': '1480px' }"
+      >
+        <ng-template #header>
+          <tr class="finance-table__group-row">
+            <th rowspan="2" class="finance-sticky-column">Campaña</th>
+            <th rowspan="2">Gasto total</th>
+            <th rowspan="2">Costo por preventa</th>
+            <th rowspan="2">Costo por venta</th>
+            <th colspan="4" class="finance-band finance-band--reported">Reporte del empleado</th>
+            <th colspan="4" class="finance-band finance-band--real">Resultado real</th>
+            <th rowspan="2">Preventas</th>
+            <th rowspan="2">Ventas</th>
+            <th rowspan="2">Último reporte</th>
+            <th rowspan="2">Acciones</th>
+          </tr>
+          <tr>
+            <th class="finance-band--reported">Leads</th>
+            <th class="finance-band--reported">Costo / lead</th>
+            <th class="finance-band--reported">Conv. preventa</th>
+            <th class="finance-band--reported">Conv. venta</th>
+            <th class="finance-band--real">Leads</th>
+            <th class="finance-band--real">Costo / lead</th>
+            <th class="finance-band--real">Conv. preventa</th>
+            <th class="finance-band--real">Conv. venta</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr>
+            <td class="finance-sticky-column finance-campaign"><strong>{{ row.nombreCampana }}</strong></td>
+            <td class="finance-data">{{ facade.money(row.costoTotal) }}</td>
+            <td class="finance-data">{{ row.costoPorPreventa }}</td>
+            <td class="finance-data">{{ row.costoPorVenta }}</td>
+            <td class="finance-band--reported finance-data">{{ count(row.leadsReportados) }}</td>
+            <td class="finance-band--reported finance-data">{{ row.costoPorLead }}</td>
+            <td class="finance-band--reported finance-data">{{ reportConversion(row, 'preventa') }}</td>
+            <td class="finance-band--reported finance-data">{{ reportConversion(row, 'venta') }}</td>
+            <td class="finance-band--real finance-data">{{ count(row.leadsReales) }}</td>
+            <td class="finance-band--real finance-data">{{ row.costoPorLeadReal }}</td>
+            <td class="finance-band--real finance-data">{{ realConversion(row, 'preventa') }}</td>
+            <td class="finance-band--real finance-data">{{ realConversion(row, 'venta') }}</td>
+            <td class="finance-data">{{ count(row.cantidadPreventas) }}</td>
+            <td class="finance-data">{{ count(row.cantidadVentas) }}</td>
+            <td class="finance-data">{{ facade.dateTime(row.ultimoRegistroAt) }}</td>
+            <td class="finance-actions-cell">
+              <button class="finance-history-button" type="button" (click)="facade.openSnapshots(row)">
+                <i class="pi pi-list" aria-hidden="true"></i>
+                Histórico
+              </button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr><td colspan="16" class="finance-empty">No hay registros financieros para este periodo.</td></tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </section>
+</main>
+
+@if (allowExpenseRegistration()) {
+  <p-dialog
+    [visible]="facade.dialogVisible()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(34rem, 94vw)' }"
+    [header]="facade.editingId() ? 'Editar último reporte' : 'Agregar gasto de campaña'"
+    (onHide)="facade.closeExpenseDialog()"
+  >
+    <form class="finance-form" [formGroup]="facade.expenseForm" (ngSubmit)="facade.submitExpense()">
+      <label class="finance-field finance-field--wide">
+        <span>Campaña</span>
+        <p-select
+          formControlName="idCampana"
+          [options]="facade.activeCampaigns()"
+          optionLabel="nombre"
+          optionValue="id"
+          placeholder="Seleccionar campaña"
+          [disabled]="facade.editingId() !== null"
+          appendTo="body"
+        >
+          <ng-template #item let-campaign>
+            <div class="finance-campaign-option">
+              <strong>{{ campaign.nombre }}</strong>
+              <small>{{ campaign.nombreProveedor || 'Proveedor no indicado' }}</small>
+            </div>
+          </ng-template>
+        </p-select>
+      </label>
+
+      <label class="finance-field">
+        <span>Leads reportados</span>
+        <input pInputText type="text" inputmode="numeric" formControlName="leadsReportados" placeholder="Ej. 120" (keydown)="allowIntegerInput($event)" (input)="facade.sanitizeInteger()" />
+      </label>
+      <label class="finance-field">
+        <span>Costo total</span>
+        <div class="finance-money-input"><span>S/</span><input pInputText type="text" inputmode="decimal" formControlName="costoTotal" placeholder="Ej. 784.50" (keydown)="allowDecimalInput($event)" (input)="facade.sanitizeDecimal()" /></div>
+      </label>
+      <label class="finance-field finance-field--wide">
+        <span>Fecha y hora del reporte</span>
+        <input pInputText type="datetime-local" formControlName="reportedAt" [readonly]="facade.editingId() !== null" />
+        <small>{{ facade.editingId() ? 'reportedAt no puede modificarse en una edición.' : 'Indica el momento operativo al que corresponde el gasto.' }}</small>
+      </label>
+
+      @if (facade.errorMessage()) {
+        <p-message class="finance-field--wide" severity="error" [text]="facade.errorMessage() ?? ''" />
+      }
+      <div class="finance-form-actions finance-field--wide">
+        <button class="finance-secondary-button" type="button" (click)="facade.closeExpenseDialog()">Cancelar</button>
+        <button class="finance-primary-action" type="submit" [disabled]="facade.isSaving()">
+          <i class="pi pi-save" aria-hidden="true"></i>
+          {{ facade.editingId() ? 'Guardar cambios' : 'Guardar gasto' }}
+        </button>
+      </div>
+    </form>
+  </p-dialog>
+}
+
+<p-drawer
+  [visible]="facade.snapshotsVisible()"
+  position="right"
+  [style]="{ width: 'min(78rem, 96vw)' }"
+  (visibleChange)="!$event && facade.closeSnapshots()"
+>
+  <ng-template #header>
+    <div class="finance-drawer-header">
+      <strong>{{ facade.selectedCampaign()?.nombreCampana || 'Histórico' }}</strong>
+      <span>{{ facade.rangeLabel() }}</span>
+    </div>
+  </ng-template>
+  <div class="finance-history-scroll">
+    <p-table [value]="facade.snapshotRows()" [loading]="facade.isLoadingSnapshots()" [scrollable]="true" styleClass="finance-table finance-table--history" [tableStyle]="{ 'min-width': '1200px' }">
+      <ng-template #header>
+        <tr>
+          <th>reportedAt</th><th>Gasto total</th><th>Costo / preventa</th><th>Costo / venta</th><th>Leads reportados</th><th>Leads ingresados</th><th>Preventas</th><th>Ventas</th><th>createdAt</th><th>Acción</th>
+        </tr>
+      </ng-template>
+       <ng-template #body let-row let-rowIndex="rowIndex">
+        <tr>
+          <td class="finance-data">{{ facade.dateTime(row.reportedAt || row.ultimoRegistroAt) }}</td>
+          <td class="finance-data">{{ facade.money(row.costoTotal) }}</td>
+          <td class="finance-data">{{ row.costoPorPreventa }}</td>
+          <td class="finance-data">{{ row.costoPorVenta }}</td>
+          <td class="finance-data">{{ count(row.leadsReportados) }}</td>
+          <td class="finance-data">{{ count(row.leadsReales) }}</td>
+          <td class="finance-data">{{ count(row.cantidadPreventas) }}</td>
+          <td class="finance-data">{{ count(row.cantidadVentas) }}</td>
+          <td class="finance-data">{{ facade.dateTime(row.createdAt) }}</td>
+          <td>
+            @if (isEditableSnapshot(row, rowIndex === facade.snapshotRows().length - 1)) {
+              <button class="finance-history-button" type="button" (click)="facade.editSnapshot(row)"><i class="pi pi-pencil" aria-hidden="true"></i>Editar</button>
+            } @else {
+              <span class="finance-readonly">Solo lectura</span>
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage><tr><td colspan="10" class="finance-empty">No hay históricos para esta campaña.</td></tr></ng-template>
+    </p-table>
+  </div>
+</p-drawer>

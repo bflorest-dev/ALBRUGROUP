@@ -6,7 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { TagModule } from 'primeng/tag';
-import { CampaignFinanceDashboardPanelComponent } from '../../../../shared/components/campaign-finance-dashboard-panel/campaign-finance-dashboard-panel.component';
+import { FinanceWorkspaceComponent } from '../../../finance/finance-workspace.component';
 import {
   CATALOG_MAINTENANCE_SECTIONS,
   CatalogMaintenancePanelComponent
@@ -20,7 +20,7 @@ import { CommunityPageMode, CommunitySection, CommunityWorkspaceFacade } from '.
     CardModule,
     MessageModule,
     TagModule,
-    CampaignFinanceDashboardPanelComponent,
+    FinanceWorkspaceComponent,
     CatalogMaintenancePanelComponent
   ],
   providers: [CommunityWorkspaceFacade],
@@ -64,12 +64,6 @@ export class CommunityWorkspacePageComponent implements OnInit {
         }
         void this.facade.loadAll();
       }
-      if (mode === 'finanzas' && !this.facade.dailyExpenseSummary() && !this.facade.isLoadingFinance()) {
-        if (!this.facade.canUseFinanceExpenses()) {
-          return;
-        }
-        void this.facade.initialize('finanzas');
-      }
     });
   }
 
@@ -79,7 +73,9 @@ export class CommunityWorkspacePageComponent implements OnInit {
         data['section'] === 'finanzas' ? 'finanzas' : data['section'] === 'metricas' ? 'metricas' : 'mantenimiento';
       this.pageMode.set(mode);
       this.facade.setAccessMode('community');
-      void this.facade.initialize(mode);
+      if (mode !== 'finanzas') {
+        void this.facade.initialize(mode);
+      }
     });
   }
 

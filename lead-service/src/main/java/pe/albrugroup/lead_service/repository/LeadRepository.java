@@ -14,6 +14,7 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.response.BaseLeadPreviewResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadBandejaVentaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
@@ -238,6 +239,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE (l.etapa = :etapa OR l.requiereAtencionGtr = true)
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND l.origen.esOrganico = true
               AND (l.lead LIKE :leadPattern OR LOWER(l.usermeta) LIKE LOWER(:leadPattern))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY
@@ -388,6 +390,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND l.origen.esOrganico = true
               AND (l.lead LIKE :leadPattern OR LOWER(l.usermeta) LIKE LOWER(:leadPattern))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (
@@ -563,6 +566,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.idAsesorAsignado, l.nombreAsesorAsignado
             """)
@@ -585,6 +589,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY c.id, c.nombre
             """)
@@ -606,6 +611,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.estado
             """)
@@ -628,6 +634,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion
             """)
@@ -650,6 +657,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion
             """)
@@ -750,6 +758,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
             """)
@@ -791,6 +800,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND l.estado = :estado
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarMetricasGtrPorEstado(
@@ -3518,5 +3528,124 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa,
             @Param("filtrarProveedores") boolean filtrarProveedores,
             @Param("proveedorIds") Collection<Long> proveedorIds
+    );
+
+    // ── Base de Leads: export queries (una por CampoTipificacion) ──
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.BaseLeadPreviewResponse(
+                l.prefijo, l.lead, l.usermeta,
+                dp.numeroDocumentoTitularServicio,
+                l.direccionSnapshot,
+                dp.nombreTitularServicio,
+                CAST(l.etapa AS string),
+                r.primeraCodigoTipificacion,
+                r.primeraCodigoSubtipificacion,
+                COALESCE(po.nombre, p.nombre),
+                r.primeraTipificacionAt
+            )
+            FROM Lead l
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.proveedor p
+            LEFT JOIN l.proveedorOrigen po
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            WHERE l.etapa = :etapa
+              AND (:filtrarProveedorOrigen = false OR po.id = :idProveedorOrigen)
+              AND (:filtrarProveedor = false OR p.id = :idProveedor)
+              AND (:filtrarTipificaciones = false OR r.primeraCodigoTipificacion IN :codigosTipificacion)
+              AND (:filtrarSubtipificaciones = false OR r.primeraCodigoSubtipificacion IN :codigosSubtipificacion)
+              AND r.primeraTipificacionAt >= :desde AND r.primeraTipificacionAt < :hasta
+            """)
+    Page<BaseLeadPreviewResponse> buscarBaseLeadsPrimera(
+            @Param("etapa") Etapa etapa,
+            @Param("filtrarProveedorOrigen") boolean filtrarProveedorOrigen,
+            @Param("idProveedorOrigen") Long idProveedorOrigen,
+            @Param("filtrarProveedor") boolean filtrarProveedor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("codigosTipificacion") Collection<String> codigosTipificacion,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.BaseLeadPreviewResponse(
+                l.prefijo, l.lead, l.usermeta,
+                dp.numeroDocumentoTitularServicio,
+                l.direccionSnapshot,
+                dp.nombreTitularServicio,
+                CAST(l.etapa AS string),
+                r.ultimaCodigoTipificacion,
+                r.ultimaCodigoSubtipificacion,
+                COALESCE(po.nombre, p.nombre),
+                r.ultimaTipificacionAt
+            )
+            FROM Lead l
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.proveedor p
+            LEFT JOIN l.proveedorOrigen po
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            WHERE l.etapa = :etapa
+              AND (:filtrarProveedorOrigen = false OR po.id = :idProveedorOrigen)
+              AND (:filtrarProveedor = false OR p.id = :idProveedor)
+              AND (:filtrarTipificaciones = false OR r.ultimaCodigoTipificacion IN :codigosTipificacion)
+              AND (:filtrarSubtipificaciones = false OR r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion)
+              AND r.ultimaTipificacionAt >= :desde AND r.ultimaTipificacionAt < :hasta
+            """)
+    Page<BaseLeadPreviewResponse> buscarBaseLeadsUltima(
+            @Param("etapa") Etapa etapa,
+            @Param("filtrarProveedorOrigen") boolean filtrarProveedorOrigen,
+            @Param("idProveedorOrigen") Long idProveedorOrigen,
+            @Param("filtrarProveedor") boolean filtrarProveedor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("codigosTipificacion") Collection<String> codigosTipificacion,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.BaseLeadPreviewResponse(
+                l.prefijo, l.lead, l.usermeta,
+                dp.numeroDocumentoTitularServicio,
+                l.direccionSnapshot,
+                dp.nombreTitularServicio,
+                CAST(l.etapa AS string),
+                r.mayorRangoCodigoTipificacion,
+                r.mayorRangoCodigoSubtipificacion,
+                COALESCE(po.nombre, p.nombre),
+                r.mayorRangoAt
+            )
+            FROM Lead l
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.proveedor p
+            LEFT JOIN l.proveedorOrigen po
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            WHERE l.etapa = :etapa
+              AND (:filtrarProveedorOrigen = false OR po.id = :idProveedorOrigen)
+              AND (:filtrarProveedor = false OR p.id = :idProveedor)
+              AND (:filtrarTipificaciones = false OR r.mayorRangoCodigoTipificacion IN :codigosTipificacion)
+              AND (:filtrarSubtipificaciones = false OR r.mayorRangoCodigoSubtipificacion IN :codigosSubtipificacion)
+              AND r.mayorRangoAt >= :desde AND r.mayorRangoAt < :hasta
+            """)
+    Page<BaseLeadPreviewResponse> buscarBaseLeadsMayor(
+            @Param("etapa") Etapa etapa,
+            @Param("filtrarProveedorOrigen") boolean filtrarProveedorOrigen,
+            @Param("idProveedorOrigen") Long idProveedorOrigen,
+            @Param("filtrarProveedor") boolean filtrarProveedor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("codigosTipificacion") Collection<String> codigosTipificacion,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta,
+            Pageable pageable
     );
 }

@@ -1687,7 +1687,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       nombreAsesorAsignado: detail?.nombreAsesorAsignado ?? lookup.nombreAsesorAsignado ?? null,
       tipoDocumento: detail?.tipoDocumento ?? null,
       numeroDocumentoTitularServicio: detail?.numeroDocumentoTitularServicio ?? detail?.numeroDocumento ?? null,
-      base: detail?.base ?? null,
+      origen: detail?.origen ?? null,
       idTipificacion: null,
       codigoTipificacion: latestEvent?.tipificacion ?? null,
       idSubtipificacion: null,
