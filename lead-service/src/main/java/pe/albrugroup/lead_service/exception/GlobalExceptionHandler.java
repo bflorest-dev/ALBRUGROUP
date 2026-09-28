@@ -28,6 +28,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Map<String, Object>> handleBusinessException(BusinessException e) {
+        log.warn("BusinessException {}: {}", e.getStatus().value(), e.getMessage());
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", e.getStatus().value());
         body.put("error", e.getStatus().getReasonPhrase());
