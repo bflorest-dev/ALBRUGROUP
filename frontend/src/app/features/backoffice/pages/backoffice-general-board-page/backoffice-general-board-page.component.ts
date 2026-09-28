@@ -129,6 +129,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected readonly historialLoading = signal(false);
   protected readonly historialError = signal<string | null>(null);
   private selectedLeadId = signal<number | null>(null);
+  private failedDetailRow = signal<LeadBandejaVentaResponse | null>(null);
 
   protected readonly datosForm = this.fb.group({
     tipoDocumento: ['DNI'],
@@ -406,22 +407,35 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     const consulta = this.isConsulta(row);
     this.drawerMode.set(consulta ? 'consulta' : 'gestion');
     this.selectedLeadId.set(row.idLead);
+    this.failedDetailRow.set(null);
+    this.error.set(null);
+    this.detail.set(null);
     this.eventos.set([]);
     this.historialError.set(null);
     try {
-      const detalle = await firstValueFrom(
-        consulta
-          ? this.leadService.obtenerDetalleConsulta(row.idLead)
-          : this.leadService.obtenerDetalle(row.idLead)
-      );
+      // Esta bandeja incluye leads asignados a distintos gestores y etapas. El endpoint
+      // de asesor filtra por el empleado conectado y devuelve 404 para leads visibles
+      // en la bandeja pero asignados a otra persona. La etapa solo decide el modo drawer.
+      const detalle = await firstValueFrom(this.leadService.obtenerDetalleConsulta(row.idLead));
       if (this.selectedLeadId() !== row.idLead) return;
       this.detail.set(detalle);
       this.patchForms(detalle);
       this.drawerOpen.set(true);
       void this.loadHistorial(row.idLead);
     } catch (error) {
-      this.error.set(this.resolveLoadError(error));
+      if (this.selectedLeadId() !== row.idLead) return;
+      this.failedDetailRow.set(row);
+      this.error.set(this.resolveDetailLoadError(error));
     }
+  }
+
+  protected async retryError(): Promise<void> {
+    const row = this.failedDetailRow();
+    if (row) {
+      await this.onRowClick(row);
+      return;
+    }
+    await this.refresh();
   }
 
   protected closeDrawer(): void {
@@ -959,6 +973,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     const requestToken = ++this.loadRequestToken;
     this.loading.set(true);
     this.error.set(null);
+    this.failedDetailRow.set(null);
     try {
       const SIN = BackofficeGeneralBoardPageComponent.SIN_TIP_KEY;
       const allTips = this.selectedTipificaciones();
@@ -1056,6 +1071,19 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
         : '';
     const detail = backendMessage || error.message;
     return `No se pudo cargar la bandeja general. HTTP ${error.status}${detail ? `: ${detail}` : ''}`;
+  }
+
+  private resolveDetailLoadError(error: unknown): string {
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'No se pudo cargar el detalle del lead.';
+    }
+    const backendMessage = typeof error.error?.message === 'string'
+      ? error.error.message
+      : typeof error.error?.error === 'string'
+        ? error.error.error
+        : '';
+    const detail = backendMessage || error.message;
+    return `No se pudo cargar el detalle del lead. HTTP ${error.status}${detail ? `: ${detail}` : ''}`;
   }
 
   private defaultSortDirection(field: SortField): SortDirection {

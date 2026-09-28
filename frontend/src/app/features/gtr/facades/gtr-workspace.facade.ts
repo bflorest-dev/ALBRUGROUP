@@ -288,7 +288,6 @@ export class GtrWorkspaceFacade {
   readonly isSavingSnapshot = signal(false);
   readonly isLoadingAgendados = signal(false);
   readonly isLoadingMasivos = signal(false);
-  readonly isUploadingMasivoExcel = signal(false);
   readonly isUploadingMasivoAlb = signal(false);
   readonly isLoadingEvents = signal(false);
   readonly isLoadingNumerosLlamada = signal(false);
@@ -1483,41 +1482,6 @@ export class GtrWorkspaceFacade {
     } finally {
       this.isSaving.set(false);
       this.isIntakeSubmitting.set(false);
-    }
-  }
-
-  async uploadMasivoExcel(event: Event): Promise<void> {
-    if (!this.ensureCanMutate()) {
-      return;
-    }
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
-    if (!file) {
-      return;
-    }
-    if (!file.name.toLowerCase().endsWith('.xlsx')) {
-      this.errorMessage.set('Selecciona un archivo .xlsx.');
-      return;
-    }
-
-    this.isUploadingMasivoExcel.set(true);
-    this.clearMessages();
-    try {
-      const response = await firstValueFrom(this.preventaService.registrarIngresoLeadsExcel(file));
-      this.masivoExcelImport.set(response);
-      this.masivoExcelResultsDialogOpen.set(true);
-      this.successMessage.set(
-        `Excel procesado: ${response.totalRegistrados} registrados y ${response.totalFallidos} fallidos.`
-      );
-      await Promise.all([
-        this.reconcile(),
-        this.masivoSearched() && this.section() !== 'historicos' ? this.refreshMasivos() : Promise.resolve()
-      ]);
-    } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo procesar el Excel.'));
-    } finally {
-      this.isUploadingMasivoExcel.set(false);
     }
   }
 

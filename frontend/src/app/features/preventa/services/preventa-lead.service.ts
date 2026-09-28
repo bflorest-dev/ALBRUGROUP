@@ -326,15 +326,6 @@ export class PreventaLeadService {
     return this.http.post<void>(`${this.leadUrl}/preventa/admin/equipos/${idEquipo}/gtr/intake/retroactivo`, request);
   }
 
-  registrarIngresoLeadsExcel(file: File): Observable<LeadIntakeMasivoExcelResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post<LeadIntakeMasivoExcelResponse>(
-      `${this.leadUrl}/preventa/intake-masivo/excel`,
-      formData
-    );
-  }
-
   registrarIngresoLeadsAlb(file: File): Observable<LeadIntakeMasivoExcelResponse> {
     const formData = new FormData();
     formData.append('file', file);

@@ -9,13 +9,6 @@
 
       <div class="gtr-hero__actions">
         <input
-          #masivoExcelInput
-          type="file"
-          accept=".xlsx"
-          hidden
-          (change)="facade.uploadMasivoExcel($event)"
-        />
-        <input
           #masivoAlbInput
           type="file"
           accept=".alb"
@@ -55,23 +48,10 @@
             severity="secondary"
             [rounded]="true"
             [text]="true"
-            [disabled]="!facade.canMutateOperationalData() || facade.isUploadingMasivoExcel()"
-            [loading]="facade.isUploadingMasivoExcel()"
-            title="Cargar Excel"
-            aria-label="Cargar Excel"
-            (click)="$any(masivoExcelInput).click()"
-          ></button>
-          <button
-            pButton
-            type="button"
-            icon="pi pi-file"
-            severity="secondary"
-            [rounded]="true"
-            [text]="true"
             [disabled]="!facade.canMutateOperationalData() || facade.isUploadingMasivoAlb()"
             [loading]="facade.isUploadingMasivoAlb()"
-            title="Cargar ALB"
-            aria-label="Cargar ALB"
+            title="Cargar base"
+            aria-label="Cargar base"
             (click)="$any(masivoAlbInput).click()"
           ></button>
         }
@@ -270,7 +250,7 @@
             </ng-template>
           </p-table>
         } @else {
-          <p-message severity="success" text="Todos los leads del Excel fueron procesados correctamente." />
+          <p-message severity="success" text="Todos los leads de la base fueron procesados correctamente." />
         }
 
         @if (facade.masivoExcelResults().length) {
