@@ -18,7 +18,7 @@ public class BaseLeadsExportRequest {
     @NotBlank
     private String origenCodigo;
 
-    @Min(100)
+    @Min(50)
     @Max(5000)
     private int maxLeadsPorArchivo = 1000;
 }

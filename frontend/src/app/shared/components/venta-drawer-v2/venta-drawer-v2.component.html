@@ -10,7 +10,20 @@
             <span class="venta-v2__summary-id">#{{ detail?.id }}</span>
           </div>
           <dl>
-            @if (hasProviderSpecificSummary()) {
+            @if (isClaro()) {
+              <div><dt>Asesor de ventas</dt><dd>{{ salesAdvisor() }}</dd></div>
+              <div><dt>Nombre del cliente</dt><dd>{{ display(detail?.nombreTitular) }}</dd></div>
+              <div><dt>Documento</dt><dd>{{ documentLabel() }}</dd></div>
+              <div><dt>Fecha y lugar de nacimiento</dt><dd>{{ summaryBirth() }}</dd></div>
+              <div><dt>Dirección</dt><dd>{{ display(detail?.direccion) }}</dd></div>
+              <div><dt>Ubigeo</dt><dd>{{ summaryDomicileUbigeo() }}</dd></div>
+              <div><dt>Correo</dt><dd>{{ display(detail?.correo) }}</dd></div>
+              <div><dt>Número de registro</dt><dd>{{ display(detail?.celularRegistro) }}</dd></div>
+              <div><dt>Full Claro</dt><dd>{{ providerSummaryFeatureValue() }}</dd></div>
+              <div><dt>Tecnología</dt><dd>{{ display(detail?.tecnologia) }}</dd></div>
+              <div><dt>Fecha de ingreso</dt><dd>{{ formatDate(detail?.fechaIngresoEtapa, true) }}</dd></div>
+              <div><dt>Fecha relevante</dt><dd>{{ relevantDate() }}</dd></div>
+            } @else if (hasProviderSpecificSummary()) {
               <div><dt>Nombre cliente</dt><dd>{{ display(detail?.nombreTitular) }}</dd></div>
               <div><dt>Documento</dt><dd>{{ documentLabel() }}</dd></div>
               <div><dt>Fecha y lugar de nacimiento</dt><dd>{{ summaryBirth() }}</dd></div>
@@ -29,9 +42,11 @@
               @if (detail?.sec) { <div><dt>SEC</dt><dd>{{ detail?.sec }}</dd></div> }
               @if (detail?.sot) { <div><dt>SOT</dt><dd>{{ detail?.sot }}</dd></div> }
             }
-            <div><dt>Fecha de ingreso</dt><dd>{{ formatDate(detail?.fechaIngresoEtapa, true) }}</dd></div>
-            <div><dt>Fecha relevante</dt><dd>{{ relevantDate() }}</dd></div>
-            <div><dt>Asesor de ventas</dt><dd>{{ salesAdvisor() }}</dd></div>
+            @if (!isClaro()) {
+              <div><dt>Fecha de ingreso</dt><dd>{{ formatDate(detail?.fechaIngresoEtapa, true) }}</dd></div>
+              <div><dt>Fecha relevante</dt><dd>{{ relevantDate() }}</dd></div>
+              <div><dt>Asesor de ventas</dt><dd>{{ salesAdvisor() }}</dd></div>
+            }
           </dl>
         </div>
       </aside>

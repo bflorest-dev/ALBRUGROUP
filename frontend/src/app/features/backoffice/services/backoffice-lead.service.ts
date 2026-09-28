@@ -10,6 +10,8 @@ import {
   CampoFechaListadoVenta,
   LeadContextoLookupResponse,
   LeadBandejaVentaResponse,
+  LeadAperturaVentaRequest,
+  LeadAperturaVentaResponse,
   LeadDatosPreventaRequest,
   LeadDetalleResponse,
   LeadInstalacionCorreccionCandidatoResponse,
@@ -292,6 +294,10 @@ export class BackofficeLeadService {
 
   tomarLead(idLead: number, request: LeadTomaVentaRequest = {}): Observable<void> {
     return this.http.patch<void>(`${this.leadUrl}/venta/${idLead}/asignacion`, request);
+  }
+
+  abrirLead(idLead: number, request: LeadAperturaVentaRequest = {}): Observable<LeadAperturaVentaResponse> {
+    return this.http.post<LeadAperturaVentaResponse>(`${this.leadUrl}/venta/${idLead}/apertura`, request);
   }
 
   liberarAsignacion(idLead: number): Observable<void> {

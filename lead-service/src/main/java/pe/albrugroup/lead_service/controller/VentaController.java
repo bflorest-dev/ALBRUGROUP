@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,6 +22,7 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
+import pe.albrugroup.lead_service.entity.request.LeadAperturaVentaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadInstalacionCorreccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
@@ -29,6 +31,7 @@ import pe.albrugroup.lead_service.entity.request.LeadTomaVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadBandejaVentaResponse;
+import pe.albrugroup.lead_service.entity.response.LeadAperturaVentaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse;
@@ -226,6 +229,14 @@ public class VentaController {
 
     // 3. Asignarse el lead, ahora la diferencia seria que el mismo backoffice se asigna lead si mismo
     // Una vez un backoffice se haga responsable de un lead, otro no podra hacerlo durante esa etapa.
+    @PostMapping("/{idLead}/apertura") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<LeadAperturaVentaResponse> abrirLeadVenta(
+            @PathVariable Long idLead,
+            @RequestBody(required = false) LeadAperturaVentaRequest request
+    ) {
+        return ResponseEntity.ok(leadService.abrirLeadVenta(idLead, request));
+    }
+
     @PatchMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")
     public ResponseEntity<Void> tomarLeadVenta(
             @PathVariable Long idLead,

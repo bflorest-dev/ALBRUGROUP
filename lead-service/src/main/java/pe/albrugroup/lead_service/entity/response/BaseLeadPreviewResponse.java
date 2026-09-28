@@ -13,5 +13,7 @@ public record BaseLeadPreviewResponse(
         String codigoTipificacion,
         String codigoSubtipificacion,
         String nombreProveedor,
+        String nombreProveedorOrigen,
+        Instant fechaIngresoEtapa,
         Instant fechaTipificacion
 ) {}

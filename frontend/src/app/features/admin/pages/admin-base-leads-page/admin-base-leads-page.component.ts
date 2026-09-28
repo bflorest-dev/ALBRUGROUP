@@ -28,12 +28,20 @@ export class AdminBaseLeadsPageComponent implements OnInit {
     this.facade.codigosTipificacion.set([]);
     this.facade.codigosSubtipificacion.set([]);
     this.facade.tipificaciones.set([]);
-    if (this.facade.idProveedor() != null) {
+    if (this.facade.idProveedor() != null || this.facade.idProveedorOrigen() != null) {
       this.facade.loadTipificaciones();
     }
   }
 
   onProveedorChange(): void {
+    this.resetAndLoadTipificaciones();
+  }
+
+  onProveedorOrigenChange(): void {
+    this.resetAndLoadTipificaciones();
+  }
+
+  private resetAndLoadTipificaciones(): void {
     this.facade.codigosTipificacion.set([]);
     this.facade.codigosSubtipificacion.set([]);
     this.facade.loadTipificaciones();

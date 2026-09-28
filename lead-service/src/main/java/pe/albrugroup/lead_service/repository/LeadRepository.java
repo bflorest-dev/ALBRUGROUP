@@ -40,6 +40,10 @@ import java.util.Optional;
 @Repository
 public interface LeadRepository extends JpaRepository<Lead, Long> {
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT l FROM Lead l WHERE l.id = :id")
+    Optional<Lead> buscarPorIdConBloqueo(@Param("id") Long id);
+
     Optional<Lead> findByPrefijoAndLead(String prefijo, String lead);
     // Dedup del intake tolerante a multi-titular: con varias oportunidades por teléfono+equipo
     // (hermanas), trabaja sobre la activa (lastEntryAt más reciente). El @Filter lo acota al equipo.
@@ -3539,7 +3543,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 CAST(l.etapa AS string),
                 r.primeraCodigoTipificacion,
                 r.primeraCodigoSubtipificacion,
-                COALESCE(po.nombre, p.nombre),
+                p.nombre,
+                po.nombre,
+                r.fechaIngresoEtapa,
                 r.primeraTipificacionAt
             )
             FROM Lead l
@@ -3552,7 +3558,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarTipificaciones = false OR r.primeraCodigoTipificacion IN :codigosTipificacion)
               AND (:filtrarSubtipificaciones = false OR r.primeraCodigoSubtipificacion IN :codigosSubtipificacion)
-              AND r.primeraTipificacionAt >= :desde AND r.primeraTipificacionAt < :hasta
+              AND ((:fechaPorIngresoEtapa = true AND r.fechaIngresoEtapa >= :desde AND r.fechaIngresoEtapa < :hasta)
+                   OR (:fechaPorIngresoEtapa = false AND r.primeraTipificacionAt >= :desde AND r.primeraTipificacionAt < :hasta))
             """)
     Page<BaseLeadPreviewResponse> buscarBaseLeadsPrimera(
             @Param("etapa") Etapa etapa,
@@ -3564,6 +3571,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("codigosTipificacion") Collection<String> codigosTipificacion,
             @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
             @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
+            @Param("fechaPorIngresoEtapa") boolean fechaPorIngresoEtapa,
             @Param("desde") Instant desde,
             @Param("hasta") Instant hasta,
             Pageable pageable
@@ -3578,7 +3586,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 CAST(l.etapa AS string),
                 r.ultimaCodigoTipificacion,
                 r.ultimaCodigoSubtipificacion,
-                COALESCE(po.nombre, p.nombre),
+                p.nombre,
+                po.nombre,
+                r.fechaIngresoEtapa,
                 r.ultimaTipificacionAt
             )
             FROM Lead l
@@ -3591,7 +3601,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarTipificaciones = false OR r.ultimaCodigoTipificacion IN :codigosTipificacion)
               AND (:filtrarSubtipificaciones = false OR r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion)
-              AND r.ultimaTipificacionAt >= :desde AND r.ultimaTipificacionAt < :hasta
+              AND ((:fechaPorIngresoEtapa = true AND r.fechaIngresoEtapa >= :desde AND r.fechaIngresoEtapa < :hasta)
+                   OR (:fechaPorIngresoEtapa = false AND r.ultimaTipificacionAt >= :desde AND r.ultimaTipificacionAt < :hasta))
             """)
     Page<BaseLeadPreviewResponse> buscarBaseLeadsUltima(
             @Param("etapa") Etapa etapa,
@@ -3603,6 +3614,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("codigosTipificacion") Collection<String> codigosTipificacion,
             @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
             @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
+            @Param("fechaPorIngresoEtapa") boolean fechaPorIngresoEtapa,
             @Param("desde") Instant desde,
             @Param("hasta") Instant hasta,
             Pageable pageable
@@ -3617,7 +3629,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 CAST(l.etapa AS string),
                 r.mayorRangoCodigoTipificacion,
                 r.mayorRangoCodigoSubtipificacion,
-                COALESCE(po.nombre, p.nombre),
+                p.nombre,
+                po.nombre,
+                r.fechaIngresoEtapa,
                 r.mayorRangoAt
             )
             FROM Lead l
@@ -3630,7 +3644,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarTipificaciones = false OR r.mayorRangoCodigoTipificacion IN :codigosTipificacion)
               AND (:filtrarSubtipificaciones = false OR r.mayorRangoCodigoSubtipificacion IN :codigosSubtipificacion)
-              AND r.mayorRangoAt >= :desde AND r.mayorRangoAt < :hasta
+              AND ((:fechaPorIngresoEtapa = true AND r.fechaIngresoEtapa >= :desde AND r.fechaIngresoEtapa < :hasta)
+                   OR (:fechaPorIngresoEtapa = false AND r.mayorRangoAt >= :desde AND r.mayorRangoAt < :hasta))
             """)
     Page<BaseLeadPreviewResponse> buscarBaseLeadsMayor(
             @Param("etapa") Etapa etapa,
@@ -3642,6 +3657,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("codigosTipificacion") Collection<String> codigosTipificacion,
             @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
             @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
+            @Param("fechaPorIngresoEtapa") boolean fechaPorIngresoEtapa,
             @Param("desde") Instant desde,
             @Param("hasta") Instant hasta,
             Pageable pageable

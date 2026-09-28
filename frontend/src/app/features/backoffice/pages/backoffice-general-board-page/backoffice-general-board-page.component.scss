@@ -16,6 +16,150 @@
   overflow: hidden;
 }
 
+.assignment-conflict-backdrop {
+  align-items: center;
+  background: rgb(16 24 40 / 48%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 1300;
+}
+
+.assignment-conflict {
+  background: #fff;
+  border: 1px solid #e4e7ec;
+  border-radius: 1.1rem;
+  box-shadow: 0 24px 80px rgb(16 24 40 / 24%);
+  color: #17212f;
+  max-width: 31rem;
+  padding: 1.5rem;
+  width: 100%;
+}
+
+.assignment-conflict__icon {
+  align-items: center;
+  background: #fff5e8;
+  border-radius: 0.8rem;
+  color: #a95705;
+  display: flex;
+  font-size: 1.2rem;
+  height: 2.7rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+  width: 2.7rem;
+}
+
+.assignment-conflict__eyebrow {
+  color: #91500d;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.assignment-conflict h2 {
+  font-size: 1.28rem;
+  margin: 0.35rem 0 0.45rem;
+}
+
+.assignment-conflict p {
+  color: #586575;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.assignment-conflict__consult {
+  align-items: flex-start;
+  background: #f7f8fa;
+  border: 1px solid #e3e7ed;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.85rem;
+}
+
+.assignment-conflict__consult input {
+  accent-color: #9f5d12;
+  height: 1rem;
+  margin: 0.12rem 0 0;
+  width: 1rem;
+}
+
+.assignment-conflict__consult span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.assignment-conflict__consult small {
+  color: #687586;
+  line-height: 1.35;
+}
+
+.assignment-conflict__actions {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: flex-end;
+  margin-top: 1.2rem;
+}
+
+.assignment-conflict__actions button,
+.general-board__release-error button {
+  border: 0;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.9rem;
+}
+
+.assignment-conflict__cancel {
+  background: #f0f2f5;
+  color: #374252;
+}
+
+.assignment-conflict__continue {
+  background: #8f500d;
+  color: #fff;
+}
+
+.general-board__drawer-message,
+.general-board__release-error {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d6dee8;
+  border-radius: 0.7rem;
+  box-shadow: 0 10px 30px rgb(20 30 45 / 15%);
+  color: #263549;
+  display: flex;
+  gap: 0.8rem;
+  max-width: min(42rem, calc(100vw - 2rem));
+  padding: 0.8rem 1rem;
+  position: fixed;
+  right: 1rem;
+  top: 1rem;
+  z-index: 1250;
+}
+
+.general-board__release-error {
+  border-color: #e5a7a1;
+  color: #842a21;
+  top: 1rem;
+}
+
+.general-board__release-error button {
+  background: #982e24;
+  color: #fff;
+  flex: 0 0 auto;
+}
+
+.general-board__release-error button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 // Los overlays se montan en `body`; no deben consumir una fila del layout de la bandeja.
 .general-board > p-popover {
   display: contents;

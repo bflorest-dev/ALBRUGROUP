@@ -1,8 +1,9 @@
 import { LowerCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { CanDeactivateFn } from '@angular/router';
 import { firstValueFrom, merge } from 'rxjs';
 import { debounceTime, filter } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
@@ -13,6 +14,8 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CurrentUserProviderScopeService } from '../../../../core/services/current-user-provider-scope.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
@@ -23,12 +26,22 @@ import { MetricsRango } from '../../../../shared/utils/metrics-period';
 import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
 import {
   CampoFechaListadoVenta,
+  AdicionalResponse,
+  CatalogoResponse,
   EventoResponse,
+  LeadAperturaVentaRequest,
   LeadBandejaVentaResponse,
+  LeadDatosPreventaRequest,
+  LeadDireccionRequest,
   LeadDetalleResponse,
+  LeadOfertaComercialRequest,
+  LeadTipificacionVentaRequest,
   TipificacionResponse,
-  UbigeoItem
+  UbigeoItem,
+  PlanResponse,
+  PromocionComercialResponse
 } from '../../../../shared/models/preventa/preventa.models';
+import { buildWhatsAppUrl } from '../../../../shared/utils/phone-link';
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { BackofficeLeadService } from '../../services/backoffice-lead.service';
 
@@ -53,11 +66,13 @@ type Option<T extends string = string> = { label: string; value: T };
     TableModule,
     TagModule,
     TooltipModule,
+    ConfirmDialogModule,
     PeriodSelectorComponent,
     TipificationStackComponent,
     TreeSelectComponent,
     VentaDrawerV2Component
   ],
+  providers: [ConfirmationService],
   templateUrl: './backoffice-general-board-page.component.html',
   styleUrl: './backoffice-general-board-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -69,7 +84,11 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   private readonly sessionService = inject(SessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
+  private readonly confirmationService = inject(ConfirmationService);
   private lastProviderId: number | null | undefined = undefined;
+  private openingRequest: Promise<void> = Promise.resolve();
+  private assignmentHeld = false;
+  private loadedComment = '';
 
   private static readonly DEFAULT_SORT: SortField = 'fechaIngresoEtapa';
   private static readonly DEFAULT_DIRECTION: SortDirection = 'desc';
@@ -128,8 +147,105 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected readonly eventos = signal<EventoResponse[]>([]);
   protected readonly historialLoading = signal(false);
   protected readonly historialError = signal<string | null>(null);
+  protected readonly catalogo = signal<CatalogoResponse | null>(null);
+  protected readonly ofertaPlanes = signal<PlanResponse[]>([]);
+  protected readonly promociones = signal<PromocionComercialResponse[]>([]);
+  protected readonly adicionales = signal<AdicionalResponse[]>([]);
+  protected readonly adicionalesSeleccionados = signal<Array<{ idAdicional: number; cantidad: number }>>([]);
+  protected readonly selectedOfertaProviderId = signal<number | null>(null);
+  protected readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
+  protected readonly distritosDomicilio = signal<UbigeoItem[]>([]);
+  protected readonly isSaving = signal(false);
+  protected readonly closePending = signal(false);
+  protected readonly releaseError = signal<string | null>(null);
+  protected readonly actionMessage = signal<string | null>(null);
+  protected readonly openingLead = signal(false);
+  protected readonly assignmentConflict = signal<{
+    row: LeadBandejaVentaResponse;
+    idAsesor: number | null;
+    nombreAsesor: string;
+  } | null>(null);
+  protected readonly consultaFromConflict = signal(false);
   private selectedLeadId = signal<number | null>(null);
   private failedDetailRow = signal<LeadBandejaVentaResponse | null>(null);
+
+  protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
+  protected readonly tipoDomicilioOptions = ['HOGAR', 'MULTIFAMILIAR', 'CONDOMINIO_EDIFICIO', 'CONDOMINIO_EDIFICIO_NO_HABILITADO'];
+  protected readonly tipoViaOptions = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
+  protected readonly camposVisibles = computed<ReadonlySet<string>>(
+    () => new Set((this.detail()?.camposConfig ?? []).filter((campo) => campo.visible).map((campo) => campo.campo))
+  );
+  protected readonly tipificaciones = computed(() => [...(this.catalogo()?.tipificaciones ?? [])].sort((a, b) => a.orden - b.orden));
+  protected readonly subtipificaciones = computed(() => {
+    const code = this.selectedTipificacionCode();
+    return [...(this.catalogo()?.tipificaciones.find((tipificacion) => tipificacion.codigo === code)?.subtipificaciones ?? [])]
+      .sort((a, b) => a.orden - b.orden);
+  });
+  protected readonly selectedSubtipificacion = computed(() =>
+    this.subtipificaciones().find((item) => item.codigo === this.selectedSubtipificacionCode())
+  );
+  protected readonly requiresInstallDate = computed(
+    () => this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_FECHA_INSTALACION') ?? false
+  );
+  protected readonly requiresProgramming = computed(
+    () => this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_FECHA_PROGRAMACION') ?? false
+  );
+  protected readonly requiresRejectionDate = computed(
+    () => this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_FECHA_RECHAZO') ?? false
+  );
+  protected readonly requiresSecSot = computed(() => {
+    const code = this.selectedTipificacionCode().trim().toUpperCase();
+    const subtipificationRequires = this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_SEC_SOT') ?? false;
+    return (subtipificationRequires || code === 'SUBIDO' || code === 'INGRESADO')
+      && this.detail()?.requiereSecSotVenta === true;
+  });
+  protected readonly requiresCustomerId = computed(
+    () => (this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_CUSTOMER_ID') ?? false)
+      && (this.detail()?.nombreProveedorPlan ?? '').trim().toUpperCase() === 'CLARO'
+  );
+  protected readonly providerOptions = computed(() => {
+    const byId = new Map<number, { id: number; nombre: string }>();
+    for (const plan of this.ofertaPlanes()) {
+      if (plan.idProveedor) byId.set(plan.idProveedor, { id: plan.idProveedor, nombre: plan.nombreProveedor ?? `Proveedor ${plan.idProveedor}` });
+    }
+    return [...byId.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  });
+  protected readonly drawerPlanOptions = computed(() => {
+    const providerId = this.selectedOfertaProviderId();
+    const plans = providerId ? this.ofertaPlanes().filter((plan) => plan.idProveedor === providerId) : [];
+    return [{ id: 0, nombre: 'Sin plan' }, ...plans];
+  });
+  protected readonly promocionOptions = computed(() => [{ id: 0, reglaComercial: 'Sin promocion' }, ...this.promociones()]);
+  protected readonly selectedAdditionals = computed(() => {
+    const available = this.adicionales();
+    return this.adicionalesSeleccionados().map((selected) => {
+      const detailItem = this.detail()?.adicionales?.find((item) => item.idAdicional === selected.idAdicional);
+      const catalogItem = available.find((item) => item.id === selected.idAdicional);
+      return {
+        idAdicional: selected.idAdicional,
+        nombre: catalogItem?.nombre ?? detailItem?.nombreAdicional ?? `Adicional ${selected.idAdicional}`,
+        precioUnitario: catalogItem?.precioUnitario ?? detailItem?.precioUnitario ?? 0,
+        cantidad: selected.cantidad
+      };
+    });
+  });
+  protected readonly additionalsTotal = computed(
+    () => this.selectedAdditionals().reduce((total, item) => total + (item.precioUnitario ?? 0) * item.cantidad, 0)
+  );
+  protected readonly offerAlreadyRegistered = computed(() => {
+    if (this.detail()?.etapa === 'VENTA' && !this.detail()?.idPlan) return false;
+    return this.eventos().some((event) => event.etapa === 'VENTA' && event.accion === 'ACTUALIZACION_OFERTA_COMERCIAL');
+  });
+  protected readonly offerLocked = computed(
+    () => this.detail()?.ofertaComercialActualizadaVenta === true || this.offerAlreadyRegistered()
+  );
+  protected readonly offerNoticeText = computed(() => this.offerLocked()
+    ? 'El plan ofrecido ya fue registrado en esta venta.'
+    : 'Solo puedes registrar el plan una vez. Revisa el plan, la promoción y los adicionales antes de guardar.');
+  protected readonly saveDrawerChanges = async (): Promise<boolean> => this.saveChanges();
+  protected readonly canMutateDrawer = computed(
+    () => this.drawerMode() === 'gestion' && !this.closePending() && !this.isSaving()
+  );
 
   protected readonly datosForm = this.fb.group({
     tipoDocumento: ['DNI'],
@@ -147,6 +263,8 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     numeroDocumentoTitularCelularRegistro: [''],
     nombreTitularCelularRegistro: ['']
   });
+  protected readonly selectedTipificacionCode = signal('');
+  protected readonly selectedSubtipificacionCode = signal('');
 
   protected readonly direccionForm = this.fb.group({
     idDepartamentoDomicilio: [0],
@@ -404,29 +522,83 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   // --- Detail drawer (VentaDrawerV2) ---
 
   protected async onRowClick(row: LeadBandejaVentaResponse): Promise<void> {
-    const consulta = this.isConsulta(row);
-    this.drawerMode.set(consulta ? 'consulta' : 'gestion');
-    this.selectedLeadId.set(row.idLead);
+    if (this.openingLead()) await this.openingRequest;
+    if (this.drawerOpen() && !(await this.requestCloseDrawer())) return;
+    await this.openLead(row, {});
+  }
+
+  private async openLead(row: LeadBandejaVentaResponse, request: LeadAperturaVentaRequest): Promise<void> {
+    const operation = this.loadLeadForDrawer(row, request);
+    this.openingRequest = operation;
+    try {
+      await operation;
+    } finally {
+      if (this.openingRequest === operation) this.openingRequest = Promise.resolve();
+    }
+  }
+
+  private async loadLeadForDrawer(row: LeadBandejaVentaResponse, request: LeadAperturaVentaRequest): Promise<void> {
+    this.openingLead.set(true);
+    this.assignmentConflict.set(null);
     this.failedDetailRow.set(null);
     this.error.set(null);
+    this.actionMessage.set(null);
+    this.releaseError.set(null);
+    this.selectedLeadId.set(row.idLead);
     this.detail.set(null);
+    this.drawerMode.set('consulta');
     this.eventos.set([]);
     this.historialError.set(null);
+    this.catalogo.set(null);
     try {
-      // Esta bandeja incluye leads asignados a distintos gestores y etapas. El endpoint
-      // de asesor filtra por el empleado conectado y devuelve 404 para leads visibles
-      // en la bandeja pero asignados a otra persona. La etapa solo decide el modo drawer.
-      const detalle = await firstValueFrom(this.leadService.obtenerDetalleConsulta(row.idLead));
+      const response = await firstValueFrom(this.leadService.abrirLead(row.idLead, request));
       if (this.selectedLeadId() !== row.idLead) return;
-      this.detail.set(detalle);
-      this.patchForms(detalle);
+      const mode: VentaDrawerMode = response.modo === 'GESTION' ? 'gestion' : 'consulta';
+      this.drawerMode.set(mode);
+      this.assignmentHeld = mode === 'gestion';
+      this.detail.set(response.detalle);
+      this.patchForms(response.detalle);
       this.drawerOpen.set(true);
       void this.loadHistorial(row.idLead);
+      if (mode === 'gestion') void this.loadGestionCatalogs(row.idLead, response.detalle);
+      else this.actionMessage.set('Modo Consulta: puedes revisar el detalle sin cambiar datos ni asignaciones.');
     } catch (error) {
       if (this.selectedLeadId() !== row.idLead) return;
+      if (this.captureAssignmentConflict(error, row)) return;
       this.failedDetailRow.set(row);
       this.error.set(this.resolveDetailLoadError(error));
+    } finally {
+      this.openingLead.set(false);
     }
+  }
+
+  private captureAssignmentConflict(error: unknown, row: LeadBandejaVentaResponse): boolean {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 409) return false;
+    const body = error.error as { details?: Record<string, unknown> } | null;
+    const details = body?.details;
+    if (!details || typeof details !== 'object' || !('idAsesorActual' in details)) return false;
+    const rawId = Number(details['idAsesorActual']);
+    this.consultaFromConflict.set(false);
+    this.assignmentConflict.set({
+      row,
+      idAsesor: Number.isFinite(rawId) ? rawId : null,
+      nombreAsesor: String(details['nombreAsesorActual'] ?? 'otro empleado')
+    });
+    return true;
+  }
+
+  protected continueFromConflict(): void {
+    const conflict = this.assignmentConflict();
+    if (!conflict) return;
+    const request: LeadAperturaVentaRequest = this.consultaFromConflict()
+      ? { modoConsulta: true }
+      : { confirmarReasignacion: true, idAsesorConfirmado: conflict.idAsesor ?? undefined };
+    void this.openLead(conflict.row, request);
+  }
+
+  protected cancelConflict(): void {
+    this.assignmentConflict.set(null);
+    this.selectedLeadId.set(null);
   }
 
   protected async retryError(): Promise<void> {
@@ -438,11 +610,104 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     await this.refresh();
   }
 
-  protected closeDrawer(): void {
+  protected async closeDrawer(): Promise<void> {
+    await this.requestCloseDrawer();
+  }
+
+  async canDeactivate(): Promise<boolean> {
+    await this.openingRequest;
+    if (!this.drawerOpen()) {
+      this.assignmentConflict.set(null);
+      return true;
+    }
+    return this.requestCloseDrawer();
+  }
+
+  @HostListener('window:pagehide')
+  protected releaseOnPageHide(): void {
+    const idLead = this.selectedLeadId();
+    if (this.assignmentHeld && idLead) {
+      void firstValueFrom(this.leadService.liberarAsignacion(idLead)).catch(() => undefined);
+    }
+  }
+
+  private async requestCloseDrawer(): Promise<boolean> {
+    if (!this.drawerOpen()) return true;
+    if (this.isSaving() || this.closePending()) return false;
+    if (this.hasUnsavedChanges()) {
+      if (!(await this.confirmDiscardChanges())) return false;
+      const currentDetail = this.detail();
+      if (currentDetail) {
+        this.patchForms(currentDetail);
+        if (this.drawerMode() === 'gestion') {
+          void this.loadGestionCatalogs(currentDetail.id, currentDetail);
+        }
+      }
+    }
+
+    const idLead = this.selectedLeadId();
+    if (this.drawerMode() === 'gestion' && this.assignmentHeld && idLead) {
+      this.closePending.set(true);
+      this.releaseError.set(null);
+      try {
+        await firstValueFrom(this.leadService.liberarAsignacion(idLead));
+        this.assignmentHeld = false;
+      } catch (error) {
+        this.releaseError.set(`No se pudo liberar la asignación. ${this.resolveDetailLoadError(error)}`);
+        return false;
+      } finally {
+        this.closePending.set(false);
+      }
+    }
+
+    this.resetDrawer();
+    void this.loadRows();
+    return true;
+  }
+
+  private resetDrawer(): void {
     this.drawerOpen.set(false);
     this.drawerMode.set('consulta');
     this.detail.set(null);
     this.selectedLeadId.set(null);
+    this.assignmentHeld = false;
+    this.releaseError.set(null);
+    this.actionMessage.set(null);
+    this.catalogo.set(null);
+    this.eventos.set([]);
+    this.historialError.set(null);
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
+    this.ofertaPlanes.set([]);
+    this.promociones.set([]);
+    this.adicionales.set([]);
+    this.adicionalesSeleccionados.set([]);
+  }
+
+  private hasUnsavedChanges(): boolean {
+    return this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty || this.tipificacionForm.dirty;
+  }
+
+  private confirmDiscardChanges(): Promise<boolean> {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (value: boolean) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      this.confirmationService.confirm({
+        header: 'Cerrar gestión',
+        message: 'Hay cambios sin guardar. Si cierras ahora, esos cambios se descartarán.',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Cerrar sin guardar',
+        rejectLabel: 'Seguir editando',
+        acceptButtonStyleClass: 'p-button-warning',
+        rejectButtonStyleClass: 'p-button-text',
+        accept: () => finish(true),
+        reject: () => finish(false)
+      });
+    });
   }
 
   protected async retryHistorial(): Promise<void> {
@@ -468,6 +733,442 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     } finally {
       if (this.selectedLeadId() === idLead) this.historialLoading.set(false);
     }
+  }
+
+  private async loadGestionCatalogs(idLead: number, lead: LeadDetalleResponse): Promise<void> {
+    const [catalogResult, plansResult] = await Promise.allSettled([
+      firstValueFrom(this.leadService.getCatalogoTipificaciones(idLead)),
+      firstValueFrom(this.leadService.listarPlanesOferta(idLead))
+    ]);
+    if (this.selectedLeadId() !== idLead || !this.drawerOpen()) return;
+    if (catalogResult.status === 'fulfilled') {
+      this.catalogo.set(catalogResult.value);
+    } else {
+      this.actionMessage.set('No se pudo cargar el catálogo de tipificaciones. Puedes reintentar desde la bandeja.');
+    }
+    if (plansResult.status === 'fulfilled') {
+      this.ofertaPlanes.set(plansResult.value ?? []);
+      const currentPlan = plansResult.value.find((plan) => plan.id === (lead.idPlan ?? 0));
+      const providerId = currentPlan?.idProveedor ?? null;
+      this.selectedOfertaProviderId.set(providerId);
+      this.ofertaForm.controls.idProveedor.setValue(providerId ?? 0, { emitEvent: false });
+      this.adicionalesSeleccionados.set((lead.adicionales ?? [])
+        .filter((item) => (item.idAdicional ?? 0) > 0 && (item.cantidad ?? 0) > 0)
+        .map((item) => ({ idAdicional: item.idAdicional!, cantidad: item.cantidad! })));
+      try {
+        const [promotions, additionals] = await Promise.all([
+          firstValueFrom(this.leadService.listarPromociones(lead.idPlan ? { idPlan: lead.idPlan } : {})),
+          providerId ? firstValueFrom(this.leadService.listarAdicionales(providerId)) : Promise.resolve([])
+        ]);
+        if (this.selectedLeadId() !== idLead) return;
+        this.promociones.set(promotions);
+        this.adicionales.set(additionals);
+      } catch {
+        this.actionMessage.set('El drawer abrió, pero no se pudieron cargar todos los planes y promociones.');
+      }
+    } else {
+      this.actionMessage.set('El drawer abrió, pero no se pudo cargar el catálogo de planes.');
+    }
+  }
+
+  protected async onTipoDocumentoChanged(): Promise<void> {
+    if (!this.canMutateDrawer()) return;
+    const control = this.datosForm.controls.numeroDocumentoTitularServicio;
+    const tipo = this.datosForm.controls.tipoDocumento.value;
+    const maxLength = tipo === 'DNI' ? 8 : tipo === 'RUC' ? 11 : 12;
+    const normalized = String(control.value ?? '').replace(/[^0-9]/g, '').slice(0, maxLength);
+    if (normalized !== control.value) control.setValue(normalized);
+  }
+
+  protected async onDepartamentoDomicilioChanged(): Promise<void> {
+    if (!this.canMutateDrawer()) return;
+    const id = this.direccionForm.controls.idDepartamentoDomicilio.value;
+    this.direccionForm.patchValue({ idProvinciaDomicilio: 0, idDistritoDomicilio: 0, ubigeoDomicilio: '' });
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
+    if (id && id > 0) {
+      try {
+        this.provinciasDomicilio.set(await firstValueFrom(this.leadService.listarProvincias(id)));
+      } catch (error) {
+        this.actionMessage.set(this.resolveDetailLoadError(error));
+      }
+    }
+  }
+
+  protected async onProvinciaDomicilioChanged(): Promise<void> {
+    if (!this.canMutateDrawer()) return;
+    const id = this.direccionForm.controls.idProvinciaDomicilio.value;
+    this.direccionForm.patchValue({ idDistritoDomicilio: 0, ubigeoDomicilio: '' });
+    try {
+      this.distritosDomicilio.set(id && id > 0 ? await firstValueFrom(this.leadService.listarDistritos(id)) : []);
+    } catch (error) {
+      this.actionMessage.set(this.resolveDetailLoadError(error));
+    }
+  }
+
+  protected onDistritoDomicilioChanged(): void {
+    if (!this.canMutateDrawer()) return;
+    const id = this.direccionForm.controls.idDistritoDomicilio.value;
+    const distrito = this.distritosDomicilio().find((item) => item.id === id);
+    this.direccionForm.controls.ubigeoDomicilio.setValue(distrito?.codigo ?? '');
+    this.direccionForm.controls.ubigeoDomicilio.markAsDirty();
+  }
+
+  protected async onOfertaProviderChanged(idProveedor: number): Promise<void> {
+    if (!this.canMutateDrawer() || this.offerLocked()) return;
+    this.selectedOfertaProviderId.set(idProveedor || null);
+    this.ofertaForm.patchValue({ idProveedor: idProveedor || 0, idPlan: 0, idPromocionInterna: 0 });
+    this.adicionalesSeleccionados.set([]);
+    this.promociones.set([]);
+    this.adicionales.set(idProveedor ? await firstValueFrom(this.leadService.listarAdicionales(idProveedor)) : []);
+    this.ofertaForm.markAsDirty();
+  }
+
+  protected async onPlanChanged(): Promise<void> {
+    if (!this.canMutateDrawer() || this.offerLocked()) return;
+    const idPlan = this.ofertaForm.controls.idPlan.value;
+    this.ofertaForm.controls.idPromocionInterna.setValue(0);
+    const idProveedor = this.selectedOfertaProviderId() ?? undefined;
+    this.promociones.set(await firstValueFrom(this.leadService.listarPromociones({
+      ...(idProveedor ? { idProveedor } : {}),
+      ...(idPlan ? { idPlan } : {})
+    })));
+  }
+
+  protected incrementarAdicional(adicional: AdicionalResponse): void {
+    if (!this.canMutateDrawer() || this.offerLocked()) return;
+    const selected = this.adicionalesSeleccionados();
+    const found = selected.find((item) => item.idAdicional === adicional.id);
+    this.adicionalesSeleccionados.set(found
+      ? selected.map((item) => item.idAdicional === adicional.id ? { ...item, cantidad: item.cantidad + 1 } : item)
+      : [...selected, { idAdicional: adicional.id, cantidad: 1 }]);
+    this.ofertaForm.markAsDirty();
+  }
+
+  protected disminuirAdicional(adicional: AdicionalResponse): void {
+    if (!this.canMutateDrawer() || this.offerLocked()) return;
+    this.adicionalesSeleccionados.set(this.adicionalesSeleccionados()
+      .map((item) => item.idAdicional === adicional.id ? { ...item, cantidad: item.cantidad - 1 } : item)
+      .filter((item) => item.cantidad > 0));
+    this.ofertaForm.markAsDirty();
+  }
+
+  protected onTipificacionSelected(code: string | null): void {
+    if (!this.canMutateDrawer()) return;
+    this.selectedTipificacionCode.set(code ?? '');
+    this.selectedSubtipificacionCode.set('');
+    this.tipificacionForm.patchValue({ codigoTipificacion: code ?? '', codigoSubtipificacion: '', fechaInstalacion: '', fechaProgramacion: '', horaProgramada: '' });
+  }
+
+  protected onSubtipificacionSelected(code: string | null): void {
+    if (!this.canMutateDrawer()) return;
+    this.selectedSubtipificacionCode.set(code ?? '');
+    const raw = this.tipificacionForm.getRawValue();
+    this.tipificacionForm.patchValue({
+      codigoSubtipificacion: code ?? '',
+      fechaInstalacion: '',
+      fechaProgramacion: this.requiresProgramming() ? raw.fechaProgramacion || this.detail()?.fechaProgramacion || '' : '',
+      fechaRechazo: this.requiresRejectionDate() ? raw.fechaRechazo || this.detail()?.fechaRechazo || '' : '',
+      horaProgramada: this.requiresProgramming() ? raw.horaProgramada || this.detail()?.horaProgramada || this.defaultProgrammingTime() : ''
+    });
+  }
+
+  protected async guardarCambios(): Promise<boolean> {
+    return this.saveChanges();
+  }
+
+  private async saveChanges(): Promise<boolean> {
+    const detail = this.detail();
+    if (!detail || !this.canMutateDrawer()) return false;
+    const saveOffer = this.ofertaForm.dirty;
+    if (saveOffer && this.offerLocked()) {
+      this.actionMessage.set('La oferta comercial ya fue registrada y no se puede cambiar.');
+      return false;
+    }
+    if (saveOffer && !this.ofertaForm.controls.idPlan.value) {
+      this.actionMessage.set('Selecciona un plan antes de guardar la oferta comercial.');
+      return false;
+    }
+    if (saveOffer && !this.offerAlreadyRegistered() && !(await this.confirmOfferRegistration())) return false;
+
+    const tasks: Array<{ label: string; action: () => Promise<void>; done: () => void }> = [];
+    if (this.datosForm.dirty) {
+      const raw = this.datosForm.getRawValue();
+      if (!raw.tipoDocumento || !raw.numeroDocumentoTitularServicio?.trim()) {
+        this.actionMessage.set('Tipo y número de documento son obligatorios.');
+        return false;
+      }
+      const request: LeadDatosPreventaRequest = {
+        tipoDocumento: raw.tipoDocumento,
+        numeroDocumentoTitularServicio: raw.numeroDocumentoTitularServicio.trim(),
+        ubigeoNacimiento: raw.ubigeoNacimiento || null,
+        nombreTitularServicio: raw.nombreTitularServicio?.trim() || null,
+        celularRegistro: raw.celularRegistro?.trim() || null,
+        celularReferencia: raw.celularReferencia?.trim() || null,
+        celularGrabacion: raw.celularGrabacion?.trim() || null,
+        correo: raw.correo?.trim() || null,
+        fechaNacimiento: raw.fechaNacimiento || null,
+        parentesco: raw.parentesco || null,
+        nombreMadre: raw.nombreMadre?.trim() || null,
+        nombrePadre: raw.nombrePadre?.trim() || null,
+        numeroDocumentoTitularCelularRegistro: raw.numeroDocumentoTitularCelularRegistro?.trim() || null,
+        nombreTitularCelularRegistro: raw.nombreTitularCelularRegistro?.trim() || null
+      };
+      tasks.push({ label: 'Datos del lead', action: async () => { await firstValueFrom(this.leadService.actualizarDatosPreventa(detail.id, request)); }, done: () => this.datosForm.markAsPristine() });
+    }
+    if (this.direccionForm.dirty) {
+      const raw = this.direccionForm.getRawValue();
+      if (!raw.ubigeoDomicilio?.trim() || !raw.direccion?.trim() || !String(raw.latitud ?? '').trim() || !String(raw.longitud ?? '').trim()) {
+        this.actionMessage.set('Completa ubigeo, dirección, latitud y longitud.');
+        return false;
+      }
+      const request: LeadDireccionRequest = {
+        ubigeoDomicilio: raw.ubigeoDomicilio,
+        tipoDomicilio: raw.tipoDomicilio || null,
+        tipoVia: raw.tipoVia || null,
+        via: raw.via?.trim() || null,
+        direccion: raw.direccion.trim(),
+        referencia: raw.referencia?.trim() || null,
+        latitud: String(raw.latitud),
+        longitud: String(raw.longitud),
+        urbanizacion: raw.urbanizacion?.trim() || null,
+        numero: raw.numero?.trim() || null,
+        manzana: raw.manzana?.trim() || null,
+        lote: raw.lote?.trim() || null,
+        nombreEdificio: raw.nombreEdificio?.trim() || null,
+        nombreCondominio: raw.nombreCondominio?.trim() || null,
+        plano: raw.plano?.trim() || null,
+        piso: raw.piso?.trim() || null,
+        interior: raw.interior?.trim() || null,
+        tecnologia: raw.tecnologia || null,
+        esFullClaro: raw.esFullClaro,
+        esJalaCobertura: raw.esJalaCobertura,
+        esZonaPintada: raw.esZonaPintada
+      };
+      tasks.push({ label: 'Dirección', action: async () => { await firstValueFrom(this.leadService.actualizarDireccion(detail.id, request)); }, done: () => this.direccionForm.markAsPristine() });
+    }
+    if (saveOffer) {
+      const raw = this.ofertaForm.getRawValue();
+      const request: LeadOfertaComercialRequest = {
+        idPlan: raw.idPlan || null,
+        idPromocionInterna: raw.idPromocionInterna || null,
+        adicionales: this.adicionalesSeleccionados().map((item) => ({ ...item }))
+      };
+      tasks.push({ label: 'Oferta comercial', action: async () => { await firstValueFrom(this.leadService.actualizarOfertaComercial(detail.id, request)); }, done: () => this.ofertaForm.markAsPristine() });
+    }
+    if (!tasks.length) {
+      this.actionMessage.set('No hay cambios pendientes por guardar.');
+      return true;
+    }
+
+    this.isSaving.set(true);
+    this.actionMessage.set(null);
+    const failures: string[] = [];
+    try {
+      for (const task of tasks) {
+        try {
+          await task.action();
+          task.done();
+        } catch (error) {
+          failures.push(`${task.label}: ${this.resolveDetailLoadError(error)}`);
+          break;
+        }
+      }
+      if (failures.length) {
+        this.actionMessage.set(failures.join(' '));
+        return false;
+      }
+      await this.refreshDrawerDetail(detail.id);
+      this.actionMessage.set('Cambios guardados.');
+      return true;
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
+  private async confirmOfferRegistration(): Promise<boolean> {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (value: boolean) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      this.confirmationService.confirm({
+        header: 'Registrar plan ofrecido',
+        message: 'Solo se permite registrar el plan ofrecido una vez en esta venta. ¿Deseas continuar?',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, registrar',
+        rejectLabel: 'Revisar',
+        accept: () => finish(true),
+        reject: () => finish(false)
+      });
+    });
+  }
+
+  protected async tipificar(): Promise<void> {
+    const detail = this.detail();
+    if (!detail || !this.canMutateDrawer()) return;
+    if (!this.catalogo()) {
+      this.actionMessage.set('No se pudo cargar el catálogo de tipificaciones de VENTA.');
+      return;
+    }
+    const raw = this.tipificacionForm.getRawValue();
+    if (!raw.codigoTipificacion || !raw.codigoSubtipificacion) {
+      this.actionMessage.set('Selecciona tipificación y subtipificación.');
+      return;
+    }
+    if ((this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty) && !(await this.saveChanges())) return;
+    if (this.requiresInstallDate() && !raw.fechaInstalacion) {
+      this.actionMessage.set('La fecha de instalación es obligatoria para pasar a POSTVENTA.');
+      return;
+    }
+    if (this.requiresInstallDate() && raw.fechaInstalacion && raw.fechaInstalacion > this.today()) {
+      this.actionMessage.set('La fecha de instalación no puede ser futura.');
+      return;
+    }
+    if (this.requiresProgramming() && (!raw.fechaProgramacion || !raw.horaProgramada)) {
+      this.actionMessage.set('Ingresa fecha y hora de programación.');
+      return;
+    }
+    if (this.requiresProgramming()) {
+      raw.horaProgramada = this.roundToQuarterHour(raw.horaProgramada);
+      this.tipificacionForm.controls.horaProgramada.setValue(raw.horaProgramada, { emitEvent: false });
+    }
+    if (this.requiresRejectionDate() && !raw.fechaRechazo) {
+      this.actionMessage.set('Ingresa la fecha de rechazo.');
+      return;
+    }
+    const sec = String(raw.sec ?? '').replace(/\D/g, '');
+    const sot = String(raw.sot ?? '').replace(/\D/g, '');
+    const customerId = String(raw.customerId ?? '').replace(/\D/g, '');
+    if (this.requiresSecSot() && (this.requiresCustomerId() ? sot.length !== 8 : sec.length !== 9 || sot.length !== 8)) {
+      this.actionMessage.set(this.requiresCustomerId() ? 'Ingresa SOT de 8 dígitos.' : 'Ingresa SEC de 9 dígitos y SOT de 8 dígitos.');
+      return;
+    }
+    if (this.requiresCustomerId() && customerId.length !== 8) {
+      this.actionMessage.set('Ingresa Customer ID de 8 dígitos.');
+      return;
+    }
+    const request: LeadTipificacionVentaRequest = {
+      codigoTipificacion: raw.codigoTipificacion,
+      codigoSubtipificacion: raw.codigoSubtipificacion,
+      comentario: (raw.comentario ?? '').trim() !== this.loadedComment ? (raw.comentario?.trim() || null) : null,
+      fechaInstalacion: this.requiresInstallDate() ? raw.fechaInstalacion || null : null,
+      fechaProgramacion: this.requiresProgramming() ? raw.fechaProgramacion || null : null,
+      fechaRechazo: this.requiresRejectionDate() ? raw.fechaRechazo || null : null,
+      horaProgramada: this.requiresProgramming() ? raw.horaProgramada || null : null,
+      sec: this.requiresSecSot() && !this.requiresCustomerId() ? sec : null,
+      sot: this.requiresSecSot() ? sot : null,
+      customerId: this.requiresCustomerId() ? customerId : null
+    };
+    this.isSaving.set(true);
+    this.actionMessage.set(null);
+    try {
+      await firstValueFrom(this.leadService.tipificarLead(detail.id, request));
+      this.tipificacionForm.markAsPristine();
+      await this.loadRows();
+      this.isSaving.set(false);
+      await this.requestCloseDrawer();
+    } catch (error) {
+      this.actionMessage.set(this.resolveDetailLoadError(error));
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
+  protected async registrarContacto(): Promise<void> {
+    const detail = this.detail();
+    if (!detail || !this.canMutateDrawer()) return;
+    await this.runLeadAction('Contacto registrado.', () => this.leadService.registrarContacto(detail.id));
+  }
+
+  protected async registrarChat(): Promise<void> {
+    const detail = this.detail();
+    if (!detail || !this.canMutateDrawer()) return;
+    const url = buildWhatsAppUrl(detail.prefijo, detail.lead, detail.usermeta);
+    if (!url) {
+      this.actionMessage.set('El lead no tiene teléfono ni usermeta para abrir WhatsApp.');
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+    await this.runLeadAction('Chat registrado.', () => this.leadService.registrarContacto(detail.id));
+  }
+
+  protected async registrarLlamadaOperativa(): Promise<void> {
+    await this.registrarContacto();
+  }
+
+  protected showCallError(message: string): void {
+    this.actionMessage.set(message);
+  }
+
+  private async runLeadAction(success: string, action: () => import('rxjs').Observable<void>): Promise<void> {
+    this.actionMessage.set(null);
+    try {
+      await firstValueFrom(action());
+      this.actionMessage.set(success);
+    } catch (error) {
+      this.actionMessage.set(this.resolveDetailLoadError(error));
+    }
+  }
+
+  private async refreshDrawerDetail(idLead: number): Promise<void> {
+    try {
+      const detail = await firstValueFrom(this.leadService.obtenerDetalleConsulta(idLead));
+      if (this.selectedLeadId() !== idLead) return;
+      this.detail.set(detail);
+      this.patchForms(detail);
+      void this.loadHistorial(idLead);
+      if (this.drawerMode() === 'gestion') void this.loadGestionCatalogs(idLead, detail);
+    } catch {
+      this.actionMessage.set('Los cambios se guardaron, pero no se pudo actualizar el detalle.');
+    }
+  }
+
+  private async resolveDomicilioSelection(ubigeo: string | null): Promise<void> {
+    if (!ubigeo || ubigeo.length < 6) return;
+    try {
+      const departments = this.departamentos().length
+        ? this.departamentos()
+        : await firstValueFrom(this.leadService.listarDepartamentos());
+      const department = departments.find((item) => item.codigo && ubigeo.startsWith(item.codigo));
+      if (!department || this.selectedLeadId() !== this.detail()?.id) return;
+      this.departamentos.set(departments);
+      const provinces = await firstValueFrom(this.leadService.listarProvincias(department.id));
+      const province = provinces.find((item) => item.codigo && ubigeo.startsWith(item.codigo));
+      this.direccionForm.controls.idDepartamentoDomicilio.setValue(department.id, { emitEvent: false });
+      this.provinciasDomicilio.set(provinces);
+      if (!province || this.selectedLeadId() !== this.detail()?.id) return;
+      const districts = await firstValueFrom(this.leadService.listarDistritos(province.id));
+      const district = districts.find((item) => item.codigo === ubigeo);
+      this.direccionForm.controls.idProvinciaDomicilio.setValue(province.id, { emitEvent: false });
+      this.provinciasDomicilio.set(provinces);
+      this.distritosDomicilio.set(districts);
+      this.direccionForm.controls.idDistritoDomicilio.setValue(district?.id ?? 0, { emitEvent: false });
+    } catch {
+      this.actionMessage.set('No se pudo cargar la ubicación actual del lead.');
+    }
+  }
+
+  private defaultProgrammingTime(): string {
+    const now = new Date();
+    const rounded = Math.ceil(now.getMinutes() / 15) * 15;
+    const hour = rounded === 60 ? (now.getHours() + 1) % 24 : now.getHours();
+    return `${String(hour).padStart(2, '0')}:${String(rounded === 60 ? 0 : rounded).padStart(2, '0')}`;
+  }
+
+  private roundToQuarterHour(value: string | null): string {
+    if (!value) return '';
+    const match = /^(\d{1,2}):(\d{1,2})/.exec(value.trim());
+    if (!match) return value;
+    let hour = Math.min(23, Math.max(0, Number(match[1])));
+    let minute = Math.round(Math.min(59, Math.max(0, Number(match[2])) / 15)) * 15;
+    if (minute === 60) {
+      hour = (hour + 1) % 24;
+      minute = 0;
+    }
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
   }
 
   private patchForms(d: LeadDetalleResponse): void {
@@ -518,9 +1219,12 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
       idPlan: d.idPlan ?? 0,
       idPromocionInterna: d.idPromocionInterna ?? 0
     });
+    this.selectedTipificacionCode.set(d.tipificacionActual ?? '');
+    this.selectedSubtipificacionCode.set(d.subtipificacionActual ?? '');
+    this.loadedComment = (d.comentario ?? '').trim();
     this.tipificacionForm.reset({
-      codigoTipificacion: '',
-      codigoSubtipificacion: '',
+      codigoTipificacion: d.tipificacionActual ?? '',
+      codigoSubtipificacion: d.subtipificacionActual ?? '',
       comentario: d.comentario ?? '',
       fechaInstalacion: '',
       fechaProgramacion: d.fechaProgramacion ?? '',
@@ -530,6 +1234,17 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
       sot: d.sot ?? '',
       customerId: d.customerId ?? ''
     }, { emitEvent: false });
+    this.adicionalesSeleccionados.set((d.adicionales ?? [])
+      .filter((item) => (item.idAdicional ?? 0) > 0 && (item.cantidad ?? 0) > 0)
+      .map((item) => ({ idAdicional: item.idAdicional!, cantidad: item.cantidad! })));
+    this.datosForm.markAsPristine();
+    this.direccionForm.markAsPristine();
+    this.ofertaForm.markAsPristine();
+    this.tipificacionForm.markAsPristine();
+    this.selectedOfertaProviderId.set(null);
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
+    void this.resolveDomicilioSelection(d.ubigeoDomicilio ?? null);
   }
 
   protected onTipSelectionChange(_sel: TreeSelectSelection): void {
@@ -1148,3 +1863,6 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     return Number.isNaN(date.getTime()) ? null : date;
   }
 }
+
+export const canDeactivateBackofficeGeneralBoard: CanDeactivateFn<BackofficeGeneralBoardPageComponent> =
+  (component) => component?.canDeactivate?.() ?? true;

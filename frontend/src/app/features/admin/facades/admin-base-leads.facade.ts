@@ -5,6 +5,7 @@ import { AdminEquipoService, ProveedorLite } from '../services/admin-equipo.serv
 import { AdminTipificacionService } from '../services/admin-tipificacion.service';
 import {
   BaseLeadPreviewResponse,
+  AnclaFechaBaseLeads,
   BaseLeadsExportFilter,
   BaseLeadsService,
   OrigenResponse
@@ -20,6 +21,7 @@ export class AdminBaseLeadsFacade {
   readonly desde = signal<Date>(this.defaultDesde());
   readonly hasta = signal<Date>(new Date());
   readonly campoTipificacion = signal<CampoTipificacion>('ULTIMA');
+  readonly anclaFecha = signal<AnclaFechaBaseLeads>('TIPIFICACION');
   readonly idProveedorOrigen = signal<number | null>(null);
   readonly idProveedor = signal<number | null>(null);
   readonly codigosTipificacion = signal<string[]>([]);
@@ -38,6 +40,7 @@ export class AdminBaseLeadsFacade {
   readonly maxLeadsPorArchivo = signal(1000);
 
   readonly proveedores = signal<ProveedorLite[]>([]);
+  readonly proveedoresOrigen = signal<ProveedorLite[]>([]);
   readonly tipificaciones = signal<TipificacionResponse[]>([]);
   readonly origenes = signal<OrigenResponse[]>([]);
   readonly catalogLoaded = signal(false);
@@ -61,6 +64,11 @@ export class AdminBaseLeadsFacade {
     { label: 'Mayor', value: 'MAYOR' }
   ];
 
+  readonly anclaFechaOptions: { label: string; value: AnclaFechaBaseLeads }[] = [
+    { label: 'Fecha de tipificación', value: 'TIPIFICACION' },
+    { label: 'Ingreso a etapa', value: 'INGRESO_ETAPA' }
+  ];
+
   readonly subtipificacionesDisponibles = computed<SubtipificacionResponse[]>(() => {
     const tipis = this.tipificaciones();
     const seleccionadas = this.codigosTipificacion();
@@ -72,15 +80,23 @@ export class AdminBaseLeadsFacade {
       .flatMap(t => t.subtipificaciones ?? []);
   });
 
+  readonly maxLeadsValido = computed(() => {
+    const v = this.maxLeadsPorArchivo();
+    return Number.isFinite(v) && v >= 50 && v <= 5000;
+  });
+
   readonly hasResults = computed(() => this.totalForExport() > 0);
-  readonly archivosEstimados = computed(() => Math.ceil(this.totalForExport() / this.maxLeadsPorArchivo()));
+  readonly archivosEstimados = computed(() =>
+    Math.ceil(this.totalForExport() / this.clampMaxLeads())
+  );
 
   async init(): Promise<void> {
     this.isLoadingCatalog.set(true);
     this.catalogError.set(null);
 
-    const [proveedoresResult, origenesResult] = await Promise.allSettled([
+    const [proveedoresResult, proveedoresOrigenResult, origenesResult] = await Promise.allSettled([
       firstValueFrom(this.equipoService.listarProveedores()),
+      firstValueFrom(this.equipoService.listarProveedoresIncluyendoInactivos()),
       firstValueFrom(this.service.listarOrigenes())
     ]);
 
@@ -91,6 +107,13 @@ export class AdminBaseLeadsFacade {
     } else {
       this.proveedores.set([]);
       errors.push('proveedores');
+    }
+
+    if (proveedoresOrigenResult.status === 'fulfilled') {
+      this.proveedoresOrigen.set(proveedoresOrigenResult.value);
+    } else {
+      this.proveedoresOrigen.set([]);
+      errors.push('proveedores de origen');
     }
 
     if (origenesResult.status === 'fulfilled') {
@@ -113,7 +136,7 @@ export class AdminBaseLeadsFacade {
 
   async loadTipificaciones(): Promise<void> {
     const etapa = this.etapa();
-    const idProveedor = this.idProveedor();
+    const idProveedor = this.idProveedor() ?? this.idProveedorOrigen();
     const requestId = ++this.tipificacionesRequestId;
 
     this.tipificacionesError.set(null);
@@ -183,13 +206,17 @@ export class AdminBaseLeadsFacade {
   }
 
   async exportar(): Promise<void> {
+    const maxLeads = this.clampMaxLeads();
+    if (maxLeads !== this.maxLeadsPorArchivo()) {
+      this.maxLeadsPorArchivo.set(maxLeads);
+    }
     this.isExporting.set(true);
     try {
       const blob = await firstValueFrom(
         this.service.exportZip({
           filter: this.buildFilter(),
           origenCodigo: this.origenCodigo(),
-          maxLeadsPorArchivo: this.maxLeadsPorArchivo()
+          maxLeadsPorArchivo: maxLeads
         })
       );
       this.downloadBlob(blob, this.suggestedName() + '.zip');
@@ -198,12 +225,19 @@ export class AdminBaseLeadsFacade {
     }
   }
 
+  private clampMaxLeads(): number {
+    const v = this.maxLeadsPorArchivo();
+    if (!Number.isFinite(v)) return 1000;
+    return Math.min(5000, Math.max(50, Math.round(v)));
+  }
+
   private buildFilter(): BaseLeadsExportFilter {
     const filter: BaseLeadsExportFilter = {
       etapa: this.etapa(),
       desde: this.formatDate(this.desde()),
       hasta: this.formatDate(this.hasta()),
-      campoTipificacion: this.campoTipificacion()
+      campoTipificacion: this.campoTipificacion(),
+      anclaFecha: this.anclaFecha()
     };
     const pvOrigen = this.idProveedorOrigen();
     if (pvOrigen != null) filter.idProveedorOrigen = pvOrigen;

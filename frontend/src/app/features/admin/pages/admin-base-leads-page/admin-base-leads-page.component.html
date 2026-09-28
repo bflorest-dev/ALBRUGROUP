@@ -55,6 +55,15 @@
     </label>
 
     <label class="select-field">
+      <span class="field-label">Periodo según</span>
+      <select [ngModel]="facade.anclaFecha()" (ngModelChange)="facade.anclaFecha.set($event)">
+        @for (opt of facade.anclaFechaOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="select-field">
       <span class="field-label">Proveedor</span>
       <select
         [ngModel]="facade.idProveedor()"
@@ -68,13 +77,27 @@
       </select>
     </label>
 
+    <label class="select-field">
+      <span class="field-label">Proveedor de origen</span>
+      <select
+        [ngModel]="facade.idProveedorOrigen()"
+        [disabled]="facade.isLoadingCatalog()"
+        (ngModelChange)="facade.idProveedorOrigen.set($event ? +$event : null); onProveedorOrigenChange()"
+      >
+        <option [ngValue]="null">Todos</option>
+        @for (pv of facade.proveedoresOrigen(); track pv.id) {
+          <option [value]="pv.id">{{ pv.nombre }}</option>
+        }
+      </select>
+    </label>
+
     <label class="multiselect-field">
       <span class="field-label">Tipificacion</span>
       <p-multiselect
         [options]="facade.tipificaciones()"
         [ngModel]="facade.codigosTipificacion()"
         (ngModelChange)="facade.codigosTipificacion.set($event); facade.codigosSubtipificacion.set([])"
-        [disabled]="!facade.idProveedor() || facade.isLoadingTipificaciones()"
+        [disabled]="(!facade.idProveedor() && !facade.idProveedorOrigen()) || facade.isLoadingTipificaciones()"
         [loading]="facade.isLoadingTipificaciones()"
         optionLabel="descripcion"
         optionValue="codigo"
@@ -91,7 +114,7 @@
         [options]="facade.subtipificacionesDisponibles()"
         [ngModel]="facade.codigosSubtipificacion()"
         (ngModelChange)="facade.codigosSubtipificacion.set($event)"
-        [disabled]="!facade.idProveedor() || facade.isLoadingTipificaciones() || !facade.tipificaciones().length"
+        [disabled]="(!facade.idProveedor() && !facade.idProveedorOrigen()) || facade.isLoadingTipificaciones() || !facade.tipificaciones().length"
         [loading]="facade.isLoadingTipificaciones()"
         optionLabel="descripcion"
         optionValue="codigo"
@@ -145,9 +168,12 @@
         </label>
         <label class="input-field input-field--sm">
           <span class="field-label">Leads/archivo</span>
-          <input type="number" [ngModel]="facade.maxLeadsPorArchivo()" (ngModelChange)="facade.maxLeadsPorArchivo.set($event)" min="100" max="5000" step="100" />
+          <input type="number" [ngModel]="facade.maxLeadsPorArchivo()" (ngModelChange)="facade.maxLeadsPorArchivo.set($event)" min="50" max="5000" step="50" [class.input-invalid]="!facade.maxLeadsValido()" />
+          @if (!facade.maxLeadsValido()) {
+            <span class="field-hint field-hint--error">Debe ser entre 50 y 5000</span>
+          }
         </label>
-        <button class="btn-export" type="button" [disabled]="facade.isExporting()" (click)="confirmarExport()">
+        <button class="btn-export" type="button" [disabled]="facade.isExporting() || !facade.maxLeadsValido()" (click)="confirmarExport()">
           @if (facade.isExporting()) {
             <span class="spinner"></span>
           } @else {
@@ -171,7 +197,8 @@
         <span>Tipificacion</span>
         <span>Subtipificacion</span>
         <span>Proveedor</span>
-        <span>Fecha</span>
+        <span>Proveedor origen</span>
+        <span>{{ facade.anclaFecha() === 'INGRESO_ETAPA' ? 'Ingreso a etapa' : 'Fecha tipificación' }}</span>
       </div>
       @if (facade.isLoading()) {
         <div class="loading-state"><span class="spinner"></span></div>
@@ -185,8 +212,9 @@
             <span>{{ row.etapa }}</span>
             <span>{{ row.codigoTipificacion }}</span>
             <span>{{ row.codigoSubtipificacion }}</span>
-            <span>{{ row.nombreProveedor }}</span>
-            <span class="mono">{{ row.fechaTipificacion | slice:0:10 }}</span>
+            <span>{{ row.nombreProveedor || '—' }}</span>
+            <span>{{ row.nombreProveedorOrigen || '—' }}</span>
+            <span class="mono">{{ (facade.anclaFecha() === 'INGRESO_ETAPA' ? row.fechaIngresoEtapa : row.fechaTipificacion) | slice:0:10 }}</span>
           </div>
         }
         @if (!facade.rows().length) {

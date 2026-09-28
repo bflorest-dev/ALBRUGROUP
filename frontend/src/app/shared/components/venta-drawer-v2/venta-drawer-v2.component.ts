@@ -322,6 +322,15 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
       || '';
   }
 
+  protected summaryDomicileUbigeo(): string {
+    return [
+      this.detail?.departamentoDomicilio,
+      this.detail?.provinciaDomicilio,
+      this.detail?.distritoDomicilio
+    ].filter((value): value is string => !!value && value.trim() !== '').join(' · ')
+      || 'Sin registrar';
+  }
+
   protected summaryPlan(): string {
     const plan = this.selectedPlan()?.nombre || this.detail?.plan?.nombre || this.detail?.nombrePlan;
     const promotion = this.selectedPromotion()?.reglaComercial

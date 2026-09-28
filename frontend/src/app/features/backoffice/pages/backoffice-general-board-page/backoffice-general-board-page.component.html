@@ -445,6 +445,29 @@
   </div>
 </section>
 
+<p-confirmDialog appendTo="body" [baseZIndex]="1400" />
+
+@if (assignmentConflict(); as conflict) {
+  <div class="assignment-conflict-backdrop" (click)="cancelConflict()">
+    <section class="assignment-conflict" role="dialog" aria-modal="true" aria-labelledby="assignment-conflict-title" (click)="$event.stopPropagation()">
+      <div class="assignment-conflict__icon"><i class="pi pi-user-edit"></i></div>
+      <span class="assignment-conflict__eyebrow">LEAD EN GESTIÓN</span>
+      <h2 id="assignment-conflict-title">Este lead tiene responsable</h2>
+      <p><strong>{{ conflict.nombreAsesor }}</strong> lo tiene asignado en este momento. Elige cómo quieres abrirlo.</p>
+      <label class="assignment-conflict__consult">
+        <input type="checkbox" [checked]="consultaFromConflict()" (change)="consultaFromConflict.set($any($event.target).checked)" />
+        <span><strong>Modo Consulta</strong><small>Ver el detalle sin asignarlo ni habilitar acciones de gestión.</small></span>
+      </label>
+      <div class="assignment-conflict__actions">
+        <button type="button" class="assignment-conflict__cancel" (click)="cancelConflict()">Cancelar</button>
+        <button type="button" class="assignment-conflict__continue" (click)="continueFromConflict()">
+          {{ consultaFromConflict() ? 'Abrir en consulta' : 'Asignármelo y gestionar' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
 <!-- Detail drawer (VentaDrawerV2) -->
 <app-venta-drawer-v2
   [visible]="drawerOpen()"
@@ -454,22 +477,58 @@
   [direccionForm]="direccionForm"
   [ofertaForm]="ofertaForm"
   [tipificacionForm]="tipificacionForm"
+  [camposVisibles]="camposVisibles()"
+  [tipoDocumentoOptions]="tipoDocumentoOptions"
+  [tipoDomicilioOptions]="tipoDomicilioOptions"
+  [tipoViaOptions]="tipoViaOptions"
   [departamentos]="departamentos()"
-  [provinciasDomicilio]="[]"
-  [distritosDomicilio]="[]"
-  [providerOptions]="[]"
-  [planOptions]="[]"
-  [promocionOptions]="[]"
-  [adicionales]="[]"
-  [selectedAdditionals]="[]"
-  [tipificaciones]="[]"
-  [subtipificaciones]="[]"
-  [canMutate]="false"
-  [saving]="false"
+  [provinciasDomicilio]="provinciasDomicilio()"
+  [distritosDomicilio]="distritosDomicilio()"
+  [providerOptions]="providerOptions()"
+  [planOptions]="drawerPlanOptions()"
+  [promocionOptions]="promocionOptions()"
+  [adicionales]="adicionales()"
+  [selectedAdditionals]="selectedAdditionals()"
+  [additionalsTotal]="additionalsTotal()"
+  [offerLocked]="offerLocked()"
+  [offerNoticeText]="offerNoticeText()"
+  [tipificaciones]="tipificaciones()"
+  [subtipificaciones]="subtipificaciones()"
+  [requiresProgramming]="requiresProgramming()"
+  [requiresInstallDate]="requiresInstallDate()"
+  [requiresRejectionDate]="requiresRejectionDate()"
+  [requiresSecSot]="requiresSecSot()"
+  [requiresCustomerId]="requiresCustomerId()"
+  [canMutate]="canMutateDrawer()"
+  [saving]="isSaving() || closePending()"
   [eventos]="eventos()"
   [historyLoading]="historialLoading()"
   [historyError]="historialError()"
-  [saveChanges]="null"
+  [saveChanges]="drawerMode() === 'gestion' ? saveDrawerChanges : null"
   (closeRequested)="closeDrawer()"
+  (callStarted)="registrarLlamadaOperativa()"
+  (callError)="showCallError($event)"
+  (chatRequested)="registrarChat()"
+  (tipoDocumentoChange)="onTipoDocumentoChanged()"
+  (departamentoDomicilioChange)="onDepartamentoDomicilioChanged()"
+  (provinciaDomicilioChange)="onProvinciaDomicilioChanged()"
+  (distritoDomicilioChange)="onDistritoDomicilioChanged()"
+  (ofertaProviderChange)="onOfertaProviderChanged($event)"
+  (planChange)="onPlanChanged()"
+  (incrementarAdicional)="incrementarAdicional($event)"
+  (disminuirAdicional)="disminuirAdicional($event)"
+  (tipificacionSelected)="onTipificacionSelected($event)"
+  (subtipificacionSelected)="onSubtipificacionSelected($event)"
+  (tipifyRequested)="tipificar()"
   (retryHistory)="retryHistorial()"
 />
+
+@if (actionMessage(); as message) {
+  <div class="general-board__drawer-message" role="status">{{ message }}</div>
+}
+@if (releaseError(); as message) {
+  <div class="general-board__release-error" role="alert">
+    <span>{{ message }}</span>
+    <button type="button" [disabled]="closePending()" (click)="closeDrawer()">Reintentar liberación</button>
+  </div>
+}

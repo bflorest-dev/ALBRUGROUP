@@ -768,6 +768,17 @@ export interface LeadTomaVentaRequest {
   confirmarReasignacion?: boolean;
 }
 
+export interface LeadAperturaVentaRequest {
+  modoConsulta?: boolean;
+  confirmarReasignacion?: boolean;
+  idAsesorConfirmado?: number;
+}
+
+export interface LeadAperturaVentaResponse {
+  modo: 'GESTION' | 'CONSULTA';
+  detalle: LeadDetalleResponse;
+}
+
 export interface LeadAsignacionMasivaRequest {
   idsLead: number[];
   idAsesorAsignado: number;

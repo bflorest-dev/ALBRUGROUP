@@ -1,6 +1,7 @@
 package pe.albrugroup.lead_service.entity.request;
 
 import jakarta.validation.constraints.NotNull;
+import pe.albrugroup.lead_service.entity.enums.AnclaFechaBaseLeads;
 import lombok.Getter;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
@@ -22,6 +23,8 @@ public class BaseLeadsExportFilter {
     private LocalDate hasta;
 
     private CampoTipificacion campoTipificacion = CampoTipificacion.ULTIMA;
+
+    private AnclaFechaBaseLeads anclaFecha = AnclaFechaBaseLeads.TIPIFICACION;
 
     private Long idProveedorOrigen;
 

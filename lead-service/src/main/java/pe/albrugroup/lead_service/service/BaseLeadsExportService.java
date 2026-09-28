@@ -9,6 +9,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Origen;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
+import pe.albrugroup.lead_service.entity.enums.AnclaFechaBaseLeads;
 import pe.albrugroup.lead_service.entity.request.BaseLeadsExportFilter;
 import pe.albrugroup.lead_service.entity.request.BaseLeadsExportRequest;
 import pe.albrugroup.lead_service.entity.response.AlbLeadRow;
@@ -111,22 +112,26 @@ public class BaseLeadsExportService {
 
         CampoTipificacion campo = filter.getCampoTipificacion();
         if (campo == null) campo = CampoTipificacion.ULTIMA;
+        boolean fechaPorIngresoEtapa = filter.getAnclaFecha() == AnclaFechaBaseLeads.INGRESO_ETAPA;
 
         return switch (campo) {
             case PRIMERA -> leadRepository.buscarBaseLeadsPrimera(
                     filter.getEtapa(), filtrarProveedorOrigen, idProveedorOrigen,
                     filtrarProveedor, idProveedor, filtrarTipificaciones, codigos,
                     filtrarSubtipificaciones, subCodigos,
+                    fechaPorIngresoEtapa,
                     desde, hasta, pageable);
             case ULTIMA -> leadRepository.buscarBaseLeadsUltima(
                     filter.getEtapa(), filtrarProveedorOrigen, idProveedorOrigen,
                     filtrarProveedor, idProveedor, filtrarTipificaciones, codigos,
                     filtrarSubtipificaciones, subCodigos,
+                    fechaPorIngresoEtapa,
                     desde, hasta, pageable);
             case MAYOR -> leadRepository.buscarBaseLeadsMayor(
                     filter.getEtapa(), filtrarProveedorOrigen, idProveedorOrigen,
                     filtrarProveedor, idProveedor, filtrarTipificaciones, codigos,
                     filtrarSubtipificaciones, subCodigos,
+                    fechaPorIngresoEtapa,
                     desde, hasta, pageable);
         };
     }

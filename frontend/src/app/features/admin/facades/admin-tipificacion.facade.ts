@@ -210,34 +210,32 @@ export class AdminTipificacionFacade {
     return origenId === null ? [] : this.destinosPermitidos(origenId);
   });
 
-  // Opciones para "Resultado: el lead..." segun la etapa seleccionada.
+  // Cada subtipificación puede apuntar a cualquier etapa; la etiqueta indica la dirección relativa.
   readonly etapaCambioOptions = computed(() => {
     const actual = this.selectedEtapa();
     const currentIndex = this.etapaOptions.findIndex((option) => option.value === actual);
-    return this.etapaOptions
-      .filter((_, index) => Math.abs(index - currentIndex) <= 1)
-      .map((option) => {
-        const targetIndex = this.etapaOptions.findIndex((item) => item.value === option.value);
-        const direction: 'BACK' | 'STAY' | 'FORWARD' = targetIndex < currentIndex
-          ? 'BACK'
-          : targetIndex > currentIndex
-            ? 'FORWARD'
-            : 'STAY';
-        return {
-          value: option.value,
-          label: direction === 'STAY'
-            ? `Se mantiene en ${option.label}`
-            : direction === 'BACK'
-              ? `Regresa a ${option.label}`
-              : `Pasa a ${option.label}`,
-          direction,
-          icon: direction === 'STAY'
-            ? 'pi pi-replay'
-            : direction === 'BACK'
-              ? 'pi pi-arrow-left'
-              : 'pi pi-arrow-right'
-        };
-      });
+    return this.etapaOptions.map((option) => {
+      const targetIndex = this.etapaOptions.findIndex((item) => item.value === option.value);
+      const direction: 'BACK' | 'STAY' | 'FORWARD' = targetIndex < currentIndex
+        ? 'BACK'
+        : targetIndex > currentIndex
+          ? 'FORWARD'
+          : 'STAY';
+      return {
+        value: option.value,
+        label: direction === 'STAY'
+          ? `Se mantiene en ${option.label}`
+          : direction === 'BACK'
+            ? `Regresa a ${option.label}`
+            : `Pasa a ${option.label}`,
+        direction,
+        icon: direction === 'STAY'
+          ? 'pi pi-replay'
+          : direction === 'BACK'
+            ? 'pi pi-arrow-left'
+            : 'pi pi-arrow-right'
+      };
+    });
   });
 
   etapaLabel(value?: string | null): string {

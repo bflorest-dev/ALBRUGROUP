@@ -89,6 +89,7 @@ const ROLE_MODE_ICON: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PrivateLayoutComponent implements AfterViewInit {
+  @ViewChild(RouterOutlet) private primaryOutlet?: RouterOutlet;
   @ViewChild('mobileAttendancePicker') private mobileAttendancePicker?: SidebarAttendancePickerComponent;
   @ViewChild(AdminSidebarV2Component) private sidebarV2?: AdminSidebarV2Component;
   @ViewChild(LeadMeritoCorreccionDrawerComponent) private meritoDrawer?: LeadMeritoCorreccionDrawerComponent;
@@ -805,9 +806,28 @@ export class PrivateLayoutComponent implements AfterViewInit {
   }
 
   private async performLogout(): Promise<void> {
+    if (!(await this.canDeactivateCurrentRoute())) {
+      return;
+    }
+
     this.logoutGuidanceActive.set(false);
     this.providerScope.clear();
     await this.authSessionService.logout();
+  }
+
+  private async canDeactivateCurrentRoute(): Promise<boolean> {
+    const component = this.primaryOutlet?.component as {
+      canDeactivate?: () => boolean | Promise<boolean>;
+    } | null;
+    if (!component || typeof component.canDeactivate !== 'function') {
+      return true;
+    }
+
+    try {
+      return (await component.canDeactivate()) !== false;
+    } catch {
+      return false;
+    }
   }
 
   private readAdminDeleteLeadsVisible(): boolean {

@@ -2,6 +2,8 @@ package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -26,6 +28,7 @@ import pe.albrugroup.lead_service.entity.enums.TipoNumeroLlamada;
 import pe.albrugroup.lead_service.entity.enums.TipoFechaRelevanteVenta;
 import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionMasivaRequest;
+import pe.albrugroup.lead_service.entity.request.LeadAperturaVentaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.Contacto;
@@ -49,6 +52,7 @@ import pe.albrugroup.lead_service.entity.response.CampoConfigResponse;
 import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import pe.albrugroup.lead_service.entity.response.AsesorSinLeadsResponse;
 import pe.albrugroup.lead_service.entity.response.LeadBandejaVentaResponse;
+import pe.albrugroup.lead_service.entity.response.LeadAperturaVentaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPendienteResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionMasivaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionResultadoResponse;
@@ -3643,7 +3647,8 @@ public class LeadService {
 
     @Transactional
     public void tomarLeadDisponible(Long idLead, Etapa etapa) {
-        Lead lead = leadRepository.findByIdAndEtapa(idLead, etapa)
+        Lead lead = leadRepository.buscarPorIdConBloqueo(idLead)
+                .filter(item -> item.getEtapa() == etapa)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
@@ -3668,7 +3673,8 @@ public class LeadService {
 
     @Transactional
     public void tomarLeadVenta(Long idLead, boolean confirmarReasignacion) {
-        Lead lead = leadRepository.findByIdAndEtapa(idLead, Etapa.VENTA)
+        Lead lead = leadRepository.buscarPorIdConBloqueo(idLead)
+                .filter(item -> item.getEtapa() == Etapa.VENTA)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         Long idAsesorActual = currentUser.empleadoID();
@@ -3698,14 +3704,14 @@ public class LeadService {
 
     @Transactional
     public void liberarAsignacionVenta(Long idLead) {
-        Lead lead = leadRepository.findByIdAndEtapa(idLead, Etapa.VENTA)
+        Lead lead = leadRepository.buscarPorIdConBloqueo(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
-        Long idAsesorAnterior = lead.getIdAsesorAsignado();
-        if (idAsesorAnterior == null) {
+        if (lead.getEtapa() != Etapa.VENTA) {
             return;
         }
-        if (!idAsesorAnterior.equals(currentUser.empleadoID())) {
-            throw new BadRequestException("Solo quien tiene el lead en gestion puede liberarlo.");
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        if (idAsesorAnterior == null || !idAsesorAnterior.equals(currentUser.empleadoID())) {
+            return;
         }
 
         lead.setIdAsesorAsignado(null);
@@ -3716,13 +3722,86 @@ public class LeadService {
         notificarCambioLead("ASIGNACION_LIBERADA", savedLead, null, idAsesorAnterior);
     }
 
+    @Transactional
+    public LeadAperturaVentaResponse abrirLeadVenta(Long idLead, LeadAperturaVentaRequest request) {
+        Lead lead = leadRepository.buscarPorIdConBloqueo(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        validarLeadVisibleEnScopeActual(lead);
+
+        if (lead.getEtapa() != Etapa.VENTA || (request != null && Boolean.TRUE.equals(request.getModoConsulta()))) {
+            return respuestaApertura("CONSULTA", lead);
+        }
+
+        validarPermisoAsignacionVenta();
+        Long idAsesorActual = currentUser.empleadoID();
+        Long idAsesorResponsable = lead.getIdAsesorAsignado();
+        boolean yaEsResponsable = idAsesorActual != null && idAsesorActual.equals(idAsesorResponsable);
+        boolean confirmarReasignacion = request != null && Boolean.TRUE.equals(request.getConfirmarReasignacion());
+        Long idAsesorConfirmado = request == null ? null : request.getIdAsesorConfirmado();
+
+        if (idAsesorResponsable != null && !yaEsResponsable
+                && (!confirmarReasignacion || !idAsesorResponsable.equals(idAsesorConfirmado))) {
+            throw conflictoAperturaVenta(lead);
+        }
+
+        if (!yaEsResponsable) {
+            Long idAsesorAnterior = idAsesorResponsable;
+            String nombreAsesor = currentUser.nombreCompleto().trim();
+            lead.setIdAsesorAsignado(idAsesorActual);
+            lead.setNombreAsesorAsignado(nombreAsesor);
+            lead.setEstado(EstadoSeguimiento.EN_GESTION);
+            lead.setLastEntryAt(OperationalDateTime.now());
+            Lead savedLead = leadRepository.save(lead);
+            Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+            registrarEventoAsignacion(savedLead.getId(), idCampana, Etapa.VENTA, idAsesorActual, nombreAsesor);
+            leadEtapaResumenService.registrarAsignacion(savedLead.getId(), Etapa.VENTA, OperationalDateTime.now());
+            notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior);
+            lead = savedLead;
+        }
+
+        return respuestaApertura("GESTION", lead);
+    }
+
+    private void validarPermisoAsignacionVenta() {
+        boolean puedeAsignar = SecurityContextHolder.getContext().getAuthentication() != null
+                && SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(authority -> "ASSIGN_LEADS".equals(authority.getAuthority()));
+        if (!puedeAsignar) {
+            throw new AccessDeniedException("No tienes permiso para gestionar leads de VENTA");
+        }
+    }
+
+    private ConflictException conflictoAperturaVenta(Lead lead) {
+        return new ConflictException(
+                "Este lead esta siendo gestionado por otro Backoffice",
+                lead.getId(),
+                detalleConflictoAsignacion(
+                        "CONFIRMACION_ASIGNACION_REQUERIDA",
+                        lead.getIdAsesorAsignado(),
+                        lead.getNombreAsesorAsignado()
+                )
+        );
+    }
+
+    LeadAperturaVentaResponse respuestaApertura(String modo, Lead lead) {
+        Instant fechaAsignacion = eventoRepository
+                .findTopByIdLeadAndAccionOrderByCreatedAtDesc(lead.getId(), Accion.ASIGNACION)
+                .map(Evento::getCreatedAt)
+                .orElse(null);
+        return new LeadAperturaVentaResponse(
+                modo,
+                toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()))
+        );
+    }
+
     // Toma de gestion de POSTVENTA con relevo. A diferencia de tomarLeadDisponible (que solo toma
     // leads nuevos sin tipificacion), aqui el lead ya suele tener historial: cualquier asesor de
     // Postventa puede gestionarlo. Mientras lo gestiona queda asignado a el; si otro lo tiene en
     // gestion, el 409 pide confirmar el relevo. Mismo mecanismo que tomarLeadVenta.
     @Transactional
     public void tomarLeadPostventaGestion(Long idLead, boolean confirmarReasignacion) {
-        Lead lead = leadRepository.findByIdAndEtapa(idLead, Etapa.POSTVENTA)
+        Lead lead = leadRepository.buscarPorIdConBloqueo(idLead)
+                .filter(item -> item.getEtapa() == Etapa.POSTVENTA)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(lead);
         Long idAsesorAnterior = lead.getIdAsesorAsignado();

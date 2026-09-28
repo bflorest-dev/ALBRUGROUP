@@ -92,6 +92,10 @@ export class AdminEquipoService {
     return this.http.get<ProveedorLite[]>(this.proveedoresUrl, { params });
   }
 
+  listarProveedoresIncluyendoInactivos(): Observable<ProveedorLite[]> {
+    return this.http.get<ProveedorLite[]>(this.proveedoresUrl);
+  }
+
   listarProveedoresDeEquipo(idEquipo: number): Observable<ProveedorLite[]> {
     return this.http.get<ProveedorLite[]>(`${this.leadEquiposUrl}/${idEquipo}/proveedores`);
   }

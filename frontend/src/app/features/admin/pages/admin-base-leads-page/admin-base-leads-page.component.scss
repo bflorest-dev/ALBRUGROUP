@@ -281,6 +281,20 @@
 
 .input-field--sm {
   flex: 0 0 110px;
+  position: relative;
+}
+
+.input-field input.input-invalid {
+  border-color: color-mix(in srgb, var(--signal) 65%, var(--line));
+}
+
+.field-hint--error {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  white-space: nowrap;
+  font: 600 10.5px 'Archivo';
+  color: #f1c27c;
 }
 
 .input-field input {
@@ -412,7 +426,7 @@
 .table-head,
 .data-row {
   display: grid;
-  grid-template-columns: 50px 95px minmax(120px, 1fr) 90px 80px 120px minmax(100px, 1fr) 80px 90px;
+  grid-template-columns: 50px 95px minmax(120px, 1fr) 90px 80px 120px minmax(100px, 1fr) 80px 130px 90px;
   align-items: center;
   gap: 8px;
   padding: 0 14px;
@@ -510,11 +524,11 @@ button { cursor: pointer; }
 button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 /* ── Responsive ── */
-@media (max-width: 960px) {
+@media (max-width: 1100px) {
   .base-leads { padding: 22px 18px; }
 
   .table-head, .data-row {
-    min-width: 900px;
+    min-width: 1100px;
   }
 
   .directory {

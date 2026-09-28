@@ -9,11 +9,14 @@ export interface BaseLeadsExportFilter {
   desde: string;
   hasta: string;
   campoTipificacion?: CampoTipificacion;
+  anclaFecha?: AnclaFechaBaseLeads;
   idProveedorOrigen?: number | null;
   idProveedor?: number | null;
   codigosTipificacion?: string[];
   codigosSubtipificacion?: string[];
 }
+
+export type AnclaFechaBaseLeads = 'TIPIFICACION' | 'INGRESO_ETAPA';
 
 export interface BaseLeadPreviewResponse {
   prefijo: string;
@@ -25,8 +28,10 @@ export interface BaseLeadPreviewResponse {
   etapa: string;
   codigoTipificacion: string;
   codigoSubtipificacion: string;
-  nombreProveedor: string;
-  fechaTipificacion: string;
+  nombreProveedor: string | null;
+  nombreProveedorOrigen: string | null;
+  fechaIngresoEtapa: string | null;
+  fechaTipificacion: string | null;
 }
 
 export interface BaseLeadsCountResponse {
@@ -82,6 +87,9 @@ export class BaseLeadsService {
 
     if (filter.campoTipificacion) {
       params = params.set('campoTipificacion', filter.campoTipificacion);
+    }
+    if (filter.anclaFecha) {
+      params = params.set('anclaFecha', filter.anclaFecha);
     }
     if (filter.idProveedorOrigen != null) {
       params = params.set('idProveedorOrigen', filter.idProveedorOrigen);
