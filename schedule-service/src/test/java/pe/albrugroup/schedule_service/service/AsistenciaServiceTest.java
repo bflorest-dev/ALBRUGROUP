@@ -22,6 +22,7 @@ import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
 import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.request.asistencia.ConsultaCumplimientoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.MovimientoAsistenciaRequest;
+import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoDetalleDiaResponse;
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarAmpliacionRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoDetalleResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoResumenResponse;
@@ -127,6 +128,121 @@ class AsistenciaServiceTest {
         assertThat(detalle.getEmpleados().getFirst().getDias().get(0).getMinutosBalance()).isEqualTo(-6);
         assertThat(detalle.getEmpleados().getFirst().getDias().get(0).getSalidaForzada()).isFalse();
         assertThat(detalle.getEmpleados().getFirst().getDias().get(1).getSalidaForzada()).isTrue();
+    }
+
+    @Test
+    void mantieneElTramoActualEnUnaJornadaNormalSinTramosArchivados() {
+        LocalDate fecha = LocalDate.of(2026, 9, 15);
+        Asistencia asistencia = asistenciaActual(
+                fecha,
+                LocalTime.of(7, 0),
+                LocalTime.of(11, 0),
+                fecha.atTime(7, 0),
+                fecha.atTime(11, 0),
+                OrigenTramo.BASE
+        );
+
+        CumplimientoDetalleDiaResponse dia = consultarDia(asistencia, List.of());
+
+        assertThat(dia.getHoraEntradaEstablecida()).isEqualTo(LocalTime.of(7, 0));
+        assertThat(dia.getHoraSalidaEstablecida()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(dia.getHoraEntradaAsistencia()).isEqualTo(LocalTime.of(7, 0));
+        assertThat(dia.getHoraSalidaAsistencia()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(dia.getTramos()).isEmpty();
+    }
+
+    @Test
+    void priorizaElTramoBaseCuandoElExtraPosteriorEsElTramoActual() {
+        LocalDate fecha = LocalDate.of(2026, 9, 15);
+        Asistencia asistencia = asistenciaActual(
+                fecha,
+                LocalTime.of(18, 0),
+                LocalTime.of(21, 0),
+                fecha.atTime(18, 1),
+                fecha.atTime(20, 5),
+                OrigenTramo.AMPLIACION
+        );
+        AsistenciaTramo base = tramoArchivado(
+                OrigenTramo.BASE,
+                LocalTime.of(7, 0),
+                LocalTime.of(11, 0),
+                fecha.atTime(7, 0),
+                fecha.atTime(11, 0)
+        );
+
+        CumplimientoDetalleDiaResponse dia = consultarDia(asistencia, List.of(base));
+
+        assertThat(dia.getHoraEntradaEstablecida()).isEqualTo(LocalTime.of(7, 0));
+        assertThat(dia.getHoraSalidaEstablecida()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(dia.getHoraEntradaAsistencia()).isEqualTo(LocalTime.of(7, 0));
+        assertThat(dia.getHoraSalidaAsistencia()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(dia.getTardanza()).isFalse();
+        assertThat(dia.getMinutosExtra()).isEqualTo(120);
+        assertThat(dia.getTramos()).hasSize(2);
+    }
+
+    @Test
+    void priorizaElTramoBasePorOrigenAunqueEsteDespuesDeUnExtraAnterior() {
+        LocalDate fecha = LocalDate.of(2026, 9, 15);
+        Asistencia asistencia = asistenciaActual(
+                fecha,
+                LocalTime.of(18, 0),
+                LocalTime.of(21, 0),
+                fecha.atTime(18, 1),
+                null,
+                OrigenTramo.AMPLIACION
+        );
+        AsistenciaTramo extraAnterior = tramoArchivado(
+                OrigenTramo.TRAMO_ADICIONAL,
+                LocalTime.of(5, 0),
+                LocalTime.of(6, 0),
+                fecha.atTime(5, 0),
+                fecha.atTime(6, 0)
+        );
+        AsistenciaTramo baseReemplazada = tramoArchivado(
+                OrigenTramo.REEMPLAZO_BASE,
+                LocalTime.of(7, 0),
+                LocalTime.of(11, 0),
+                fecha.atTime(7, 0),
+                fecha.atTime(11, 0)
+        );
+
+        CumplimientoDetalleDiaResponse dia = consultarDia(asistencia, List.of(extraAnterior, baseReemplazada));
+
+        assertThat(dia.getHoraEntradaEstablecida()).isEqualTo(LocalTime.of(7, 0));
+        assertThat(dia.getHoraSalidaEstablecida()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(dia.getHoraEntradaAsistencia()).isEqualTo(LocalTime.of(7, 0));
+        assertThat(dia.getHoraSalidaAsistencia()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(dia.getJornadaCerrada()).isFalse();
+        assertThat(dia.getTramos()).hasSize(3);
+    }
+
+    @Test
+    void usaElTramoActualComoBaseCuandoElBaseEstaActivoYHayUnExtraArchivado() {
+        LocalDate fecha = LocalDate.of(2026, 9, 15);
+        Asistencia asistencia = asistenciaActual(
+                fecha,
+                LocalTime.of(7, 0),
+                LocalTime.of(11, 0),
+                fecha.atTime(7, 0),
+                fecha.atTime(11, 0),
+                OrigenTramo.BASE
+        );
+        AsistenciaTramo extraAnterior = tramoArchivado(
+                OrigenTramo.TRAMO_ADICIONAL,
+                LocalTime.of(5, 0),
+                LocalTime.of(6, 0),
+                fecha.atTime(5, 0),
+                fecha.atTime(6, 0)
+        );
+
+        CumplimientoDetalleDiaResponse dia = consultarDia(asistencia, List.of(extraAnterior));
+
+        assertThat(dia.getHoraEntradaEstablecida()).isEqualTo(LocalTime.of(7, 0));
+        assertThat(dia.getHoraSalidaEstablecida()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(dia.getHoraEntradaAsistencia()).isEqualTo(LocalTime.of(7, 0));
+        assertThat(dia.getHoraSalidaAsistencia()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(dia.getTramos()).hasSize(2);
     }
 
     @Test
@@ -402,6 +518,79 @@ class AsistenciaServiceTest {
                 domingo,
                 null
         );
+    }
+
+    private CumplimientoDetalleDiaResponse consultarDia(Asistencia asistencia, List<AsistenciaTramo> tramos) {
+        LocalDate fecha = asistencia.getFecha();
+        List<Long> empleados = List.of(asistencia.getIdEmpleado());
+        tramos.forEach(tramo -> tramo.setAsistencia(asistencia));
+        when(asistenciaRepository.findByIdEmpleadoInAndFechaBetweenOrderByIdEmpleadoAscFechaAsc(
+                empleados,
+                fecha,
+                fecha
+        )).thenReturn(List.of(asistencia));
+        when(asistenciaTramoRepository.findByAsistenciaIdInOrderByAsistenciaIdAscIdAsc(List.of(asistencia.getId())))
+                .thenReturn(tramos);
+
+        CumplimientoDetalleResponse detalle = service.getCumplimientoDetalle(
+                ConsultaCumplimientoRequest.builder()
+                        .empleadoIds(empleados)
+                        .desde(fecha)
+                        .hasta(fecha)
+                        .build()
+        );
+        return detalle.getEmpleados().getFirst().getDias().getFirst();
+    }
+
+    private Asistencia asistenciaActual(
+            LocalDate fecha,
+            LocalTime entradaProgramada,
+            LocalTime salidaProgramada,
+            LocalDateTime ingreso,
+            LocalDateTime salida,
+            OrigenTramo origen
+    ) {
+        return Asistencia.builder()
+                .id(1L)
+                .idEmpleado(32L)
+                .idHorario(7L)
+                .fecha(fecha)
+                .estadoActual(salida == null ? EstadoAsistencia.ONLINE : EstadoAsistencia.OFFLINE)
+                .entradaProgramada(entradaProgramada)
+                .salidaProgramada(salidaProgramada)
+                .fechaHoraIngreso(ingreso)
+                .fechaHoraSalida(salida)
+                .minutosExtra(120)
+                .minutosCompensados(0)
+                .minutosObjetivoDia(420)
+                .minutosTrabajados(420)
+                .minutosBalance(0)
+                .minutosAlmuerzoTomados(0)
+                .minutosServiciosPermitidos(20)
+                .minutosServiciosAcumulados(0)
+                .excedioServicios(false)
+                .origenTramoActual(origen)
+                .build();
+    }
+
+    private AsistenciaTramo tramoArchivado(
+            OrigenTramo origen,
+            LocalTime entradaProgramada,
+            LocalTime salidaProgramada,
+            LocalDateTime ingreso,
+            LocalDateTime salida
+    ) {
+        return AsistenciaTramo.builder()
+                .origen(origen)
+                .entradaProgramada(entradaProgramada)
+                .salidaProgramada(salidaProgramada)
+                .fechaHoraIngreso(ingreso)
+                .fechaHoraSalida(salida)
+                .minutosObjetivo(60)
+                .minutosTrabajados(60)
+                .minutosAlmuerzoTomados(0)
+                .minutosServiciosAcumulados(0)
+                .build();
     }
 
     private Asistencia cerrarJornadaParaCalculo(LocalDate fecha, LocalDateTime ingreso, LocalDateTime salidaReal) {

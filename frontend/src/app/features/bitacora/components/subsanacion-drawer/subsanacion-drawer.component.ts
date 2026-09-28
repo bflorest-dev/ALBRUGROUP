@@ -15,6 +15,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { finalize, firstValueFrom } from 'rxjs';
 import { EquiposNavService } from '../../../../core/services/equipos-nav.service';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { OrigenResponse } from '../../../admin/services/base-leads.service';
 import { CampoConfigItem, UbigeoItem } from '../../../../shared/models/preventa/preventa.models';
 import {
   SubsanacionModo,
@@ -76,7 +77,7 @@ const LABELS: Record<string, string> = {
   idProveedor: 'Proveedor',
   idCampana: 'Campaña',
   idPlan: 'Plan',
-  base: 'Base'
+  idOrigen: 'Origen'
 };
 
 @Component({
@@ -144,7 +145,7 @@ export class SubsanacionDrawerComponent implements OnInit {
   readonly parentescos = ['TITULAR', 'MADRE', 'PADRE', 'HERMANO_A', 'TIO_A', 'CONOCIDO'];
   readonly tiposDomicilio = ['HOGAR', 'MULTIFAMILIAR', 'CONDOMINIO_EDIFICIO', 'CONDOMINIO_EDIFICIO_NO_HABILITADO'];
   readonly tiposVia = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
-  readonly bases = ['WHATSAPP', 'MESSENGER', 'RECONTACTO', 'PREDICTIVO', 'REFERIDO', 'MASIVO', 'SIN_IDENTIFICAR'];
+  readonly origenes = signal<OrigenResponse[]>([]);
 
   readonly fechaGestionMin = this.isoLocal(this.hoyMovidoMeses(-6));
   readonly fechaGestionMax = this.isoLocal(this.hoyMovidoDias(-1));
@@ -209,7 +210,7 @@ export class SubsanacionDrawerComponent implements OnInit {
     idProveedor: [null as number | null, Validators.required],
     idCampana: [null as number | null, Validators.required],
     idPlan: [null as number | null, Validators.required],
-    base: ['', Validators.required],
+    idOrigen: [null as number | null, Validators.required],
     preventa: ['', Validators.required],
     venta: ['', Validators.required],
     sec: [''],
@@ -255,8 +256,8 @@ export class SubsanacionDrawerComponent implements OnInit {
       .filter((key) => (this.original[key] ?? '') !== (actual[key] ?? ''))
       .map((key) => ({
         label: LABELS[key],
-        antes: this.original[key] || '—',
-        despues: actual[key] || '—'
+        antes: this.mostrarCambio(key, this.original[key]),
+        despues: this.mostrarCambio(key, actual[key])
       }));
   });
 
@@ -289,12 +290,38 @@ export class SubsanacionDrawerComponent implements OnInit {
         this.error.set('No se recibió el lead que se desea subsanar.');
         return;
       }
-      this.cargarPreparacion(id);
+      // El catálogo de orígenes debe estar cargado antes del prefill: el detalle del lead trae el
+      // código del origen y aquí se resuelve al id que espera el formulario.
+      void this.cargarOrigenes().finally(() => this.cargarPreparacion(id));
     } else {
+      void this.cargarOrigenes();
       const telefono = this.telefonoInicial().replace(/\D/g, '');
       if (telefono.length >= 6) this.identidadForm.controls.lead.setValue(telefono);
       this.original = this.valoresComparables();
     }
+  }
+
+  private async cargarOrigenes(): Promise<void> {
+    try {
+      this.origenes.set(await firstValueFrom(this.api.listarOrigenes()));
+    } catch {
+      this.origenes.set([]);
+    }
+  }
+
+  private idOrigenPorCodigo(codigo?: string | null): number | null {
+    if (!codigo) return null;
+    return this.origenes().find((item) => item.codigo === codigo)?.id ?? null;
+  }
+
+  // El diff de "Revisión" compara valores crudos del formulario; para el origen se guarda el id, así
+  // que aquí se traduce al nombre legible del catálogo.
+  private mostrarCambio(key: string, value?: string): string {
+    if (key === 'idOrigen' && value) {
+      const id = Number(value);
+      return this.origenes().find((item) => item.id === id)?.nombre ?? value;
+    }
+    return value || '—';
   }
 
   cambiarEquipo(): void {
@@ -574,7 +601,7 @@ export class SubsanacionDrawerComponent implements OnInit {
     this.fechasForm.reset({ fechaGestion: gestion, fechaInstalacion: prep.fechaInstalacionActual ?? gestion }, { emitEvent: false });
     this.comercialForm.reset({
       idEquipo: prep.idEquipo ?? null, idProveedor: prep.idProveedor ?? null, idCampana: prep.idCampana ?? null,
-      idPlan: prep.idPlan ?? null, base: d.origen ?? '', preventa: '', venta: '', sec: d.sec ?? '', sot: d.sot ?? '',
+      idPlan: prep.idPlan ?? null, idOrigen: this.idOrigenPorCodigo(d.origen), preventa: '', venta: '', sec: d.sec ?? '', sot: d.sot ?? '',
       customerId: d.customerId ?? ''
     }, { emitEvent: false });
     this.formVersion.update((value) => value + 1);
@@ -1019,7 +1046,7 @@ export class SubsanacionDrawerComponent implements OnInit {
       idProveedor: 'Proveedor',
       idCampana: 'Campaña',
       idPlan: 'Plan',
-      base: 'Base',
+      idOrigen: 'Origen',
       preventa: 'Tipificación PREVENTA',
       venta: 'Tipificación VENTA',
       sec: 'SEC',
@@ -1071,7 +1098,7 @@ export class SubsanacionDrawerComponent implements OnInit {
     const comercial = this.comercialForm.getRawValue();
     const preventa = this.separarMatriz(comercial.preventa ?? '');
     const venta = this.separarMatriz(comercial.venta ?? '');
-    if (!preventa || !venta || !comercial.idEquipo || !comercial.idCampana || !comercial.idPlan || !fechas.fechaGestion || !fechas.fechaInstalacion) {
+    if (!preventa || !venta || !comercial.idEquipo || !comercial.idCampana || !comercial.idPlan || !comercial.idOrigen || !fechas.fechaGestion || !fechas.fechaInstalacion) {
       this.error.set('No se pudo construir el flujo. Revisa las selecciones comerciales.');
       return null;
     }
@@ -1081,7 +1108,7 @@ export class SubsanacionDrawerComponent implements OnInit {
       idLead: this.modo() === 'EXISTENTE' ? this.idLead() : null,
       prefijo: this.prefijoApi(identidad.prefijo), lead: identidad.lead ?? '', usermeta: this.nulo(identidad.usermeta),
       idEquipo: comercial.idEquipo, idCampana: comercial.idCampana, idPlan: comercial.idPlan,
-      base: comercial.base ?? '',
+      idOrigen: comercial.idOrigen,
       datosPreventa: {
         tipoDocumento: datos.tipoDocumento ?? '', numeroDocumentoTitularServicio: datos.numeroDocumentoTitularServicio ?? '',
         ubigeoNacimiento: this.nulo(datos.ubigeoNacimiento), nombreTitularServicio: this.nulo(datos.nombreTitularServicio),

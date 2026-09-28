@@ -1,5 +1,4 @@
 import {
-  BaseLead,
   LeadDatosPreventaRequest,
   LeadDetalleResponse,
   LeadDireccionRequest
@@ -111,7 +110,7 @@ export interface SubsanacionRequest {
   idEquipo: number;
   idCampana: number;
   idPlan: number;
-  base: BaseLead | string;
+  idOrigen: number;
   datosPreventa: LeadDatosPreventaRequest;
   direccion: LeadDireccionRequest;
   codigoTipificacionPreventa: string;

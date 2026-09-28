@@ -9,3 +9,6 @@
 .scope-status.error { color:var(--signal); }
 @media(max-width:960px){.control-rail{grid-template-columns:1fr 1fr}}
 @media(max-width:640px){.control-rail{grid-template-columns:1fr}}
+
+/* Align employee content with the deepest visible scope level. */
+.employee-row { padding-left: 55px; }

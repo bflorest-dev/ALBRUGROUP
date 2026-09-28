@@ -64,15 +64,44 @@ export class PersonalWorkspacePageComponent {
   }
 
   protected isCategoryExpanded(category: string): boolean {
-    return this.expandedCategories().has(category);
+    if (this.expandedCategories().has(category)) {
+      return true;
+    }
+
+    if (!this.hasActiveSearch()) {
+      return false;
+    }
+
+    if (category === 'SIN_CATEGORIA') {
+      return this.facade.unclassifiedRows().length > 0;
+    }
+    if (category === 'ESTRUCTURAL') {
+      return this.facade.structuralRows().length > 0;
+    }
+    if (category === 'OPERATIVO') {
+      return this.facade.operationalGroups().length > 0;
+    }
+    return false;
   }
 
   protected isRoleExpanded(role: string): boolean {
-    return this.expandedRoles().has(role);
+    return this.expandedRoles().has(role)
+      || (this.hasActiveSearch() && this.facade.operationalGroups().some((group) => group.role === role));
   }
 
   protected isTeamExpanded(role: string, team: string): boolean {
-    return this.expandedTeams().has(this.teamKey(role, team));
+    if (this.expandedTeams().has(this.teamKey(role, team))) {
+      return true;
+    }
+
+    if (!this.hasActiveSearch()) {
+      return false;
+    }
+
+    return this.facade.operationalGroups().some((group) =>
+      group.role === role
+      && (group.teams.some((item) => item.key === team) || group.providers.some((item) => item.key === team))
+    );
   }
 
   protected label(value: string | null | undefined): string {
@@ -137,6 +166,10 @@ export class PersonalWorkspacePageComponent {
 
   private teamKey(role: string, team: string): string {
     return `${role}:${team}`;
+  }
+
+  private hasActiveSearch(): boolean {
+    return this.facade.search().trim().length > 0;
   }
 
   private readTheme(): 'light' | 'dark' {

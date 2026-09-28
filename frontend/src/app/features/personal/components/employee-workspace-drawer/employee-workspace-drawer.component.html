@@ -355,7 +355,7 @@
           <div class="schedule-overview__heading">
             <div>
               <h3>Horario base</h3>
-              <p class="schedule-overview__description">Consulta la jornada configurada y sus pausas por día.</p>
+              <p class="schedule-overview__description">Consulta y gestiona el horario vigente para el empleado.</p>
             </div>
             @if (schedule()) { <span class="schedule-state">{{ schedule()?.modalidad ? label(schedule()?.modalidad) : 'Horario vigente' }}</span> }
           </div>
@@ -386,13 +386,13 @@
 
         <details class="schedule-adjustments-disclosure">
           <summary>
-            <span>Ajustes del día</span>
-            <span class="schedule-history-disclosure__meta">Selecciona una fecha <i class="ti ti-chevron-down" aria-hidden="true"></i></span>
+            <span class="schedule-disclosure__label"><i class="ti ti-calendar-event" aria-hidden="true"></i><span>Ajustes del día</span></span>
+            <span class="schedule-disclosure__meta"><i class="ti ti-chevron-down" aria-hidden="true"></i></span>
           </summary>
           <div class="schedule-adjustments-block">
             <div class="adjustment-date-row">
-              <label class="form-field"><span>Fecha de trabajo</span><input type="date" [value]="adjustmentDate()" [disabled]="!scheduleFacade.canMutateOperationalData()" (change)="onAdjustmentDateChange($any($event.target).value)" /></label>
-              <span class="adjustment-date-row__hint">Las acciones se aplican solo al día seleccionado.</span>
+              <div class="adjustment-date-row__copy"><strong>Fecha de trabajo</strong><span class="adjustment-date-row__hint">Las acciones se aplican solo al día seleccionado.</span></div>
+              <input class="adjustment-date-field" type="date" aria-label="Fecha de trabajo" [value]="adjustmentDate()" [disabled]="!scheduleFacade.canMutateOperationalData()" (change)="onAdjustmentDateChange($any($event.target).value)" />
             </div>
             @if (isLoadingAdjustment()) { <p class="muted">Consultando jornada del día…</p> }
             @if (adjustmentError()) { <p class="feedback error" role="alert">{{ adjustmentError() }}</p> }
@@ -410,8 +410,8 @@
 
         <details class="schedule-history-disclosure">
           <summary>
-            <span>Historial de horarios</span>
-            <span class="schedule-history-disclosure__meta">
+            <span class="schedule-disclosure__label"><i class="ti ti-history" aria-hidden="true"></i><span>Historial de horarios</span></span>
+            <span class="schedule-disclosure__meta">
               {{ scheduleFacade.historyItems().length }} versiones
               <i class="ti ti-chevron-down" aria-hidden="true"></i>
             </span>

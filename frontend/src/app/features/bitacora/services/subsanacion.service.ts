@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { CampoConfigItem, UbigeoItem } from '../../../shared/models/preventa/preventa.models';
+import { OrigenResponse } from '../../admin/services/base-leads.service';
 import {
   SubsanacionActaResumen,
   SubsanacionImpacto,
@@ -33,6 +34,10 @@ export class SubsanacionService {
     if (idProveedor) params = params.set('idProveedor', idProveedor);
     if (fechaGestion) params = params.set('fechaGestion', fechaGestion);
     return this.http.get<SubsanacionOpciones>(`${this.baseUrl}/opciones`, { params });
+  }
+
+  listarOrigenes(): Observable<OrigenResponse[]> {
+    return this.http.get<OrigenResponse[]>(`${this.leadUrl}/origenes`);
   }
 
   camposCaptura(idProveedor: number): Observable<CampoConfigItem[]> {

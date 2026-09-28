@@ -203,13 +203,25 @@ dd { margin: 4px 0 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere
 .schedule-facts dd { font-size: 12px; }
 
 .schedule-history-disclosure { margin-top: 26px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.schedule-history-disclosure summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 2px; color: var(--ink-2); cursor: pointer; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; list-style: none; }
-.schedule-history-disclosure summary::-webkit-details-marker { display: none; }
-.schedule-history-disclosure summary::after { content: ''; height: 1px; flex: 1; background: var(--line); order: 1; }
-.schedule-history-disclosure summary > span:first-child { order: 0; }
-.schedule-history-disclosure__meta { display: inline-flex; align-items: center; gap: 8px; order: 2; color: var(--ink-3); font-size: 10px; letter-spacing: .02em; text-transform: none; }
-.schedule-history-disclosure[open] summary i { transform: rotate(180deg); }
-.schedule-history-disclosure summary i { transition: transform .18s ease; }
+.schedule-history-disclosure summary,
+.schedule-adjustments-disclosure summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 10px; color: var(--ink-2); cursor: pointer; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; list-style: none; border-radius: 8px; transition: background-color .18s ease, color .18s ease; }
+.schedule-history-disclosure summary::-webkit-details-marker,
+.schedule-adjustments-disclosure summary::-webkit-details-marker { display: none; }
+.schedule-history-disclosure summary::after,
+.schedule-adjustments-disclosure summary::after { content: ''; height: 1px; flex: 1; background: var(--line); order: 1; }
+.schedule-disclosure__label { display: inline-flex; align-items: center; gap: 8px; order: 0; color: var(--ink); }
+.schedule-disclosure__label > i { color: var(--ink-3); font-size: 16px; }
+.schedule-disclosure__meta { display: inline-flex; align-items: center; gap: 8px; order: 2; color: var(--ink-3); font-size: 10px; letter-spacing: .02em; text-transform: none; }
+.schedule-history-disclosure summary:hover,
+.schedule-adjustments-disclosure summary:hover,
+.schedule-history-disclosure[open] summary,
+.schedule-adjustments-disclosure[open] summary { background: var(--panel-2); color: var(--ink); }
+.schedule-history-disclosure[open] summary .schedule-disclosure__meta i,
+.schedule-adjustments-disclosure[open] summary .schedule-disclosure__meta i { transform: rotate(180deg); }
+.schedule-history-disclosure summary .schedule-disclosure__meta i,
+.schedule-adjustments-disclosure summary .schedule-disclosure__meta i { transition: transform .18s ease; }
+.schedule-history-disclosure summary:focus-visible,
+.schedule-adjustments-disclosure summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .schedule-history-block { min-width: 0; padding: 0 2px 14px; }
 .schedule-history-list { border-top: 1px solid var(--line); }
 .schedule-history-item { width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 2px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; }
@@ -225,13 +237,13 @@ dd { margin: 4px 0 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere
 .schedule-history-hint { margin: 10px 0 0; color: var(--ink-3); font-size: 11.5px; }
 
 .schedule-adjustments-disclosure { margin-top: 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.schedule-adjustments-disclosure summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 2px; color: var(--ink-2); cursor: pointer; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; list-style: none; }
-.schedule-adjustments-disclosure summary::-webkit-details-marker { display: none; }
-.schedule-adjustments-disclosure[open] summary i { transform: rotate(180deg); }
-.schedule-adjustments-disclosure summary i { transition: transform .18s ease; }
 .schedule-adjustments-block { padding: 0 2px 14px; }
-.adjustment-date-row { display: grid; grid-template-columns: minmax(170px, 220px) 1fr; gap: 14px; align-items: end; padding: 3px 0 14px; }
-.adjustment-date-row__hint { padding-bottom: 11px; color: var(--ink-3); font-size: 11.5px; }
+.adjustment-date-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(170px, 220px); gap: 18px; align-items: center; padding: 3px 0 14px; }
+.adjustment-date-row__copy { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.adjustment-date-row__copy strong { color: var(--ink-2); font-size: 12px; }
+.adjustment-date-row__hint { color: var(--ink-3); font-size: 11.5px; }
+.adjustment-date-field { width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--ink); padding: 0 11px; font: 13.5px 'Archivo'; }
+.adjustment-date-field:focus { outline: 0; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 16%, transparent); }
 .adjustment-actions-list { border-top: 1px solid var(--line); }
 .adjustment-action-row { width: 100%; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 11px 2px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; }
 .adjustment-action-row:hover:not(:disabled) { background: var(--panel-2); }
@@ -404,8 +416,10 @@ select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .schedule-facts > div + div { padding-inline-start: 0; border-inline-start: 0; }
   .schedule-history-item { grid-template-columns: auto 1fr; }
   .schedule-history-item > i { grid-column: 2; grid-row: 1; justify-self: end; }
-  .adjustment-date-row, .adjustment-context { grid-template-columns: 1fr; }
-  .adjustment-date-row__hint, .adjustment-context__hint { padding-bottom: 0; }
+  .adjustment-date-row { grid-template-columns: 1fr; gap: 10px; }
+  .adjustment-date-field { max-width: 220px; }
+  .adjustment-context { grid-template-columns: 1fr; }
+  .adjustment-context__hint { padding-bottom: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

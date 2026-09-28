@@ -939,10 +939,22 @@ public class AsistenciaService implements IAsistencia {
     private CumplimientoDetalleDiaResponse construirDetalleCumplimientoDia(Long idEmpleado, LocalDate fecha, Asistencia asistencia,
                                                                           List<AsistenciaTramo> tramosArchivados) {
         ProgramacionDiaria programacion = resolverProgramacionMensual(idEmpleado, fecha, asistencia);
-        LocalTime horaEntradaEstablecida = asistencia != null ? asistencia.getEntradaProgramada() : programacion.horaEntrada();
-        LocalTime horaSalidaEstablecida = asistencia != null ? asistencia.getSalidaProgramada() : programacion.horaSalida();
-        LocalTime horaEntradaAsistencia = asistencia != null && asistencia.getFechaHoraIngreso() != null ? asistencia.getFechaHoraIngreso().toLocalTime() : null;
-        LocalTime horaSalidaAsistencia = asistencia != null && asistencia.getFechaHoraSalida() != null ? asistencia.getFechaHoraSalida().toLocalTime() : null;
+        TramoResumen tramoBase = resolverTramoBase(asistencia, tramosArchivados);
+        LocalTime horaEntradaEstablecida = tramoBase != null
+                ? tramoBase.horaEntradaEstablecida()
+                : asistencia != null ? asistencia.getEntradaProgramada() : programacion.horaEntrada();
+        LocalTime horaSalidaEstablecida = tramoBase != null
+                ? tramoBase.horaSalidaEstablecida()
+                : asistencia != null ? asistencia.getSalidaProgramada() : programacion.horaSalida();
+        LocalDateTime fechaHoraIngreso = tramoBase != null
+                ? tramoBase.fechaHoraIngreso()
+                : asistencia != null ? asistencia.getFechaHoraIngreso() : null;
+        LocalDateTime fechaHoraSalida = tramoBase != null
+                ? tramoBase.fechaHoraSalida()
+                : asistencia != null ? asistencia.getFechaHoraSalida() : null;
+        LocalTime horaEntradaAsistencia = fechaHoraIngreso != null ? fechaHoraIngreso.toLocalTime() : null;
+        LocalTime horaSalidaAsistencia = fechaHoraSalida != null ? fechaHoraSalida.toLocalTime() : null;
+        List<TramoAsistenciaResponse> tramos = construirTramos(asistencia, tramosArchivados);
 
         return CumplimientoDetalleDiaResponse.builder()
                 .fecha(fecha)
@@ -958,15 +970,55 @@ public class AsistenciaService implements IAsistencia {
                 .minutosBalance(asistencia != null ? asistencia.getMinutosBalance() : 0)
                 .minutosServiciosAcumulados(asistencia != null ? asistencia.getMinutosServiciosAcumulados() : 0)
                 .excedioServicios(asistencia != null && Boolean.TRUE.equals(asistencia.getExcedioServicios()))
-                .tardanza(esTardanza(asistencia != null ? asistencia.getFechaHoraIngreso() : null, horaEntradaEstablecida))
+                .tardanza(esTardanza(fechaHoraIngreso, horaEntradaEstablecida))
                 .inicioAlmuerzoProgramado(programacion.inicioAlmuerzo())
                 .finAlmuerzoProgramado(programacion.finAlmuerzo())
                 .almuerzoRealInicio(asistencia != null && asistencia.getAlmuerzoRealInicio() != null ? asistencia.getAlmuerzoRealInicio().toLocalTime() : null)
                 .almuerzoRealFin(asistencia != null && asistencia.getAlmuerzoRealFin() != null ? asistencia.getAlmuerzoRealFin().toLocalTime() : null)
                 .minutosExtra(asistencia != null ? asistencia.getMinutosExtra() : 0)
                 .minutosCompensados(asistencia != null ? asistencia.getMinutosCompensados() : 0)
-                .tramos(construirTramos(asistencia, tramosArchivados))
+                .tramos(tramos)
                 .build();
+    }
+
+    private TramoResumen resolverTramoBase(Asistencia asistencia, List<AsistenciaTramo> tramosArchivados) {
+        if (tramosArchivados != null) {
+            TramoResumen tramoBaseArchivado = tramosArchivados.stream()
+                    .filter(tramo -> esOrigenTramoBase(tramo.getOrigen()))
+                    .findFirst()
+                    .map(this::toTramoResumen)
+                    .orElse(null);
+            if (tramoBaseArchivado != null) {
+                return tramoBaseArchivado;
+            }
+        }
+
+        if (asistencia != null && esOrigenTramoBase(asistencia.getOrigenTramoActual())) {
+            return toTramoResumen(asistencia);
+        }
+        return null;
+    }
+
+    private TramoResumen toTramoResumen(AsistenciaTramo tramo) {
+        return new TramoResumen(
+                tramo.getEntradaProgramada(),
+                tramo.getSalidaProgramada(),
+                tramo.getFechaHoraIngreso(),
+                tramo.getFechaHoraSalida()
+        );
+    }
+
+    private TramoResumen toTramoResumen(Asistencia asistencia) {
+        return new TramoResumen(
+                asistencia.getEntradaProgramada(),
+                asistencia.getSalidaProgramada(),
+                asistencia.getFechaHoraIngreso(),
+                asistencia.getFechaHoraSalida()
+        );
+    }
+
+    private boolean esOrigenTramoBase(OrigenTramo origen) {
+        return origen == OrigenTramo.BASE || origen == OrigenTramo.REEMPLAZO_BASE;
     }
 
     private ProgramacionDiaria resolverProgramacionMensual(Long idEmpleado, LocalDate fecha, Asistencia asistencia) {
@@ -1685,6 +1737,13 @@ public class AsistenciaService implements IAsistencia {
             List<Long> empleadoIds,
             LocalDate desde,
             LocalDate hasta
+    ) {}
+
+    private record TramoResumen(
+            LocalTime horaEntradaEstablecida,
+            LocalTime horaSalidaEstablecida,
+            LocalDateTime fechaHoraIngreso,
+            LocalDateTime fechaHoraSalida
     ) {}
 
     @Builder
