@@ -40,9 +40,9 @@ export class GtrLeadsBoardComponent {
   protected visibleTipificationColumn: 'primera' | 'mayor' | 'ultima' = 'ultima';
   private organizeCloseTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Origen del lead: cada base se muestra como un icono con el texto en tooltip.
+  // Origen del lead: cada código de origen se muestra como un icono con el texto en tooltip.
   // Referencias estables (cacheadas) para no romper el OnPush / PrimeNG.
-  private readonly baseVisualMap: Record<string, { icon: string; label: string; tone: string }> = {
+  private readonly origenVisualMap: Record<string, { icon: string; label: string; tone: string }> = {
     WHATSAPP: { icon: 'pi pi-whatsapp', label: 'WhatsApp', tone: 'whatsapp' },
     MESSENGER: { icon: 'pi pi-facebook', label: 'Messenger', tone: 'messenger' },
     RECONTACTO: { icon: 'pi pi-replay', label: 'Recontacto', tone: 'recontacto' },
@@ -51,13 +51,13 @@ export class GtrLeadsBoardComponent {
     MASIVO: { icon: 'pi pi-megaphone', label: 'Masivo', tone: 'masivo' },
     SIN_IDENTIFICAR: { icon: 'pi pi-question-circle', label: 'Sin identificar', tone: 'desconocido' }
   };
-  private readonly baseVisualFallback = { icon: 'pi pi-question-circle', label: 'Sin identificar', tone: 'desconocido' };
+  private readonly origenVisualFallback = { icon: 'pi pi-question-circle', label: 'Sin identificar', tone: 'desconocido' };
 
-  protected baseVisual(base?: string | null): { icon: string; label: string; tone: string } {
-    if (!base) {
-      return this.baseVisualFallback;
+  protected origenVisual(origenCodigo?: string | null): { icon: string; label: string; tone: string } {
+    if (!origenCodigo) {
+      return this.origenVisualFallback;
     }
-    return this.baseVisualMap[base] ?? this.baseVisualFallback;
+    return this.origenVisualMap[origenCodigo] ?? this.origenVisualFallback;
   }
 
   protected onOrganizeEnter(): void {

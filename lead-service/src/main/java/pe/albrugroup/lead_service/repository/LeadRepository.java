@@ -199,6 +199,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    AND epFallback.fallbackLeadSinCampana = true),
                 c.numeroWhatsApp,
                 l.origen.nombre,
+                l.origen.codigo,
                 null,
                 l.numeroDocumentoTitularServicioSnapshot,
                 l.direccionSnapshot,
@@ -239,7 +240,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE (l.etapa = :etapa OR l.requiereAtencionGtr = true)
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
-              AND l.origen.esOrganico = true
               AND (l.lead LIKE :leadPattern OR LOWER(l.usermeta) LIKE LOWER(:leadPattern))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY
@@ -350,6 +350,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    AND epFallback.fallbackLeadSinCampana = true),
                 c.numeroWhatsApp,
                 l.origen.nombre,
+                l.origen.codigo,
                 null,
                 l.numeroDocumentoTitularServicioSnapshot,
                 l.direccionSnapshot,
@@ -390,7 +391,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
-              AND l.origen.esOrganico = true
               AND (l.lead LIKE :leadPattern OR LOWER(l.usermeta) LIKE LOWER(:leadPattern))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (
@@ -566,7 +566,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
-              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.idAsesorAsignado, l.nombreAsesorAsignado
             """)
@@ -589,7 +588,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
-              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY c.id, c.nombre
             """)
@@ -611,7 +609,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
-              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.estado
             """)
@@ -634,7 +631,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
-              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion
             """)
@@ -657,7 +653,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
-              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion
             """)
@@ -758,7 +753,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
-              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
             """)
@@ -2658,6 +2652,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    AND epFallback.fallbackLeadSinCampana = true),
                 c.numeroWhatsApp,
                 l.origen.nombre,
+                l.origen.codigo,
                 null,
                 l.numeroDocumentoTitularServicioSnapshot,
                 l.direccionSnapshot,
@@ -3033,6 +3028,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                                 AND reg.accion IN :accionesIngreso
                                 AND reg.createdAt >= :fechaDesde
                                 AND reg.createdAt < :fechaHasta))
+              AND (:soloIngresados = false OR l.origen.esOrganico = true)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
@@ -3103,6 +3099,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                                 AND ing.accion IN :accionesIngreso
                                 AND ing.createdAt >= :fechaDesde
                                 AND ing.createdAt < :fechaHasta))
+              AND (:soloIngresados = false OR l.origen.esOrganico = true)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
@@ -3176,7 +3173,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
             WHERE r.primeraCodigoTipificacion IS NOT NULL AND TRIM(r.primeraCodigoTipificacion) <> ''
               AND ((:ingresados = false AND r.primeraTipificacionAt >= :fechaDesde AND r.primeraTipificacionAt < :fechaHasta)
-                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                   OR (:ingresados = true AND l.origen.esOrganico = true AND EXISTS (SELECT 1 FROM Evento e
                               WHERE e.idLead = l.id AND e.accion IN :accionesIngreso
                                 AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -3197,7 +3194,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
             WHERE r.ultimaCodigoTipificacion IS NOT NULL AND TRIM(r.ultimaCodigoTipificacion) <> ''
               AND ((:ingresados = false AND r.ultimaTipificacionAt >= :fechaDesde AND r.ultimaTipificacionAt < :fechaHasta)
-                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                   OR (:ingresados = true AND l.origen.esOrganico = true AND EXISTS (SELECT 1 FROM Evento e
                               WHERE e.idLead = l.id AND e.accion IN :accionesIngreso
                                 AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -3218,7 +3215,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
             WHERE r.mayorRangoCodigoTipificacion IS NOT NULL AND TRIM(r.mayorRangoCodigoTipificacion) <> ''
               AND ((:ingresados = false AND r.mayorRangoAt >= :fechaDesde AND r.mayorRangoAt < :fechaHasta)
-                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                   OR (:ingresados = true AND l.origen.esOrganico = true AND EXISTS (SELECT 1 FROM Evento e
                               WHERE e.idLead = l.id AND e.accion IN :accionesIngreso
                                 AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -3259,7 +3256,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             )
             WHERE TRIM(r.primeraCodigoTipificacion) = :codigoTipificacion
               AND ((:ingresados = false AND r.primeraTipificacionAt >= :fechaDesde AND r.primeraTipificacionAt < :fechaHasta)
-                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento ing
+                   OR (:ingresados = true AND l.origen.esOrganico = true AND EXISTS (SELECT 1 FROM Evento ing
                               WHERE ing.idLead = l.id AND ing.accion IN :accionesIngreso
                                 AND ing.createdAt >= :fechaDesde AND ing.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -3303,7 +3300,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             )
             WHERE TRIM(r.ultimaCodigoTipificacion) = :codigoTipificacion
               AND ((:ingresados = false AND r.ultimaTipificacionAt >= :fechaDesde AND r.ultimaTipificacionAt < :fechaHasta)
-                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento ing
+                   OR (:ingresados = true AND l.origen.esOrganico = true AND EXISTS (SELECT 1 FROM Evento ing
                               WHERE ing.idLead = l.id AND ing.accion IN :accionesIngreso
                                 AND ing.createdAt >= :fechaDesde AND ing.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -3347,7 +3344,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             )
             WHERE TRIM(r.mayorRangoCodigoTipificacion) = :codigoTipificacion
               AND ((:ingresados = false AND r.mayorRangoAt >= :fechaDesde AND r.mayorRangoAt < :fechaHasta)
-                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento ing
+                   OR (:ingresados = true AND l.origen.esOrganico = true AND EXISTS (SELECT 1 FROM Evento ing
                               WHERE ing.idLead = l.id AND ing.accion IN :accionesIngreso
                                 AND ing.createdAt >= :fechaDesde AND ing.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -3395,6 +3392,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE ((:usarPrimera = true AND (r.id IS NULL OR r.primeraCodigoTipificacion IS NULL OR TRIM(r.primeraCodigoTipificacion) = ''))
                 OR (:usarUltima = true AND (r.id IS NULL OR r.ultimaCodigoTipificacion IS NULL OR TRIM(r.ultimaCodigoTipificacion) = ''))
                 OR (:usarMayor = true AND (r.id IS NULL OR r.mayorRangoCodigoTipificacion IS NULL OR TRIM(r.mayorRangoCodigoTipificacion) = '')))
+              AND l.origen.esOrganico = true
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.id, l.lead, l.usermeta, c.nombre, mayor.nombreActor, r.mayorRangoAt,
                      r.nombreAsesorUltimaGestion, r.fechaUltimaGestion
@@ -3418,7 +3416,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
             WHERE TRIM(r.primeraCodigoTipificacion) = :tipificacion
               AND ((:ingresados = false AND r.primeraTipificacionAt >= :fechaDesde AND r.primeraTipificacionAt < :fechaHasta)
-                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                   OR (:ingresados = true AND l.origen.esOrganico = true AND EXISTS (SELECT 1 FROM Evento e
                               WHERE e.idLead = l.id AND e.accion = :accion
                                 AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -3441,7 +3439,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
             WHERE TRIM(r.ultimaCodigoTipificacion) = :tipificacion
               AND ((:ingresados = false AND r.ultimaTipificacionAt >= :fechaDesde AND r.ultimaTipificacionAt < :fechaHasta)
-                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                   OR (:ingresados = true AND l.origen.esOrganico = true AND EXISTS (SELECT 1 FROM Evento e
                               WHERE e.idLead = l.id AND e.accion = :accion
                                 AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -3464,7 +3462,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
             WHERE TRIM(r.mayorRangoCodigoTipificacion) = :tipificacion
               AND ((:ingresados = false AND r.mayorRangoAt >= :fechaDesde AND r.mayorRangoAt < :fechaHasta)
-                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                   OR (:ingresados = true AND l.origen.esOrganico = true AND EXISTS (SELECT 1 FROM Evento e
                               WHERE e.idLead = l.id AND e.accion = :accion
                                 AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)

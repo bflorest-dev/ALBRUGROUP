@@ -27,6 +27,7 @@ public class LeadGtrResponse {
     private String nombreProveedorEquipo;
     private String numeroWhatsappEmpresa;
     private String origen;
+    private String origenCodigo;
     private String nombreTitular;
     private String numeroDocumentoTitularServicio;
     private String direccionSnapshot;

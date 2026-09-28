@@ -214,6 +214,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY l.idEquipo, c.id, c.nombre, r.primeraCodigoTipificacion
@@ -232,6 +233,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY l.idEquipo, c.id, c.nombre, r.ultimaCodigoTipificacion
@@ -250,6 +252,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY l.idEquipo, c.id, c.nombre, r.mayorRangoCodigoTipificacion
@@ -329,6 +332,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.primeraCodigoTipificacion IS NOT NULL
@@ -349,6 +353,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion IS NOT NULL
@@ -369,6 +374,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             LEFT JOIN l.campana c
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion IS NOT NULL
@@ -398,6 +404,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.campana c
             WHERE re.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND re.createdAt >= :inicio
               AND re.createdAt < :fin
               AND r.primeraCodigoTipificacion = :codigoTipificacion
@@ -428,6 +435,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.campana c
             WHERE re.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND re.createdAt >= :inicio
               AND re.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
@@ -458,6 +466,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.campana c
             WHERE re.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND re.createdAt >= :inicio
               AND re.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion = :codigoTipificacion

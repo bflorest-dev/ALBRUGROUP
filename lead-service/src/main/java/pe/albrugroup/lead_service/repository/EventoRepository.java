@@ -976,6 +976,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
@@ -1089,6 +1090,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY l.idEquipo
@@ -1105,6 +1107,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY l.idEquipo, e.idLead
@@ -1125,6 +1128,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion IS NOT NULL
@@ -1143,6 +1147,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.primeraCodigoTipificacion IS NOT NULL
@@ -1161,6 +1166,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion IS NOT NULL
@@ -1180,6 +1186,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaTipificacionOrden IS NOT NULL
@@ -1198,6 +1205,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.primeraTipificacionOrden IS NOT NULL
@@ -1216,6 +1224,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.mayorRangoOrden IS NOT NULL
@@ -1235,6 +1244,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
@@ -1256,6 +1266,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.primeraCodigoTipificacion = :codigoTipificacion
@@ -1277,6 +1288,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
             WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion = :codigoTipificacion

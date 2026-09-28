@@ -342,7 +342,7 @@
           </div>
         </td>
         <td class="col-base">
-          @if (baseVisual(row.origen); as bv) {
+          @if (origenVisual(row.origenCodigo); as bv) {
             <span class="base-badge" [attr.data-tone]="bv.tone" [title]="bv.label" [attr.aria-label]="'Origen: ' + bv.label">
               <i [class]="bv.icon" aria-hidden="true"></i>
             </span>

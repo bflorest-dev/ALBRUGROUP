@@ -78,6 +78,7 @@ export interface LeadGtrResponse {
   nombreProveedorEquipo?: string | null;
   numeroWhatsappEmpresa?: string | null;
   origen?: string | null;
+  origenCodigo?: string | null;
   nombreTitular?: string | null;
   numeroDocumentoTitularServicio?: string | null;
   direccionSnapshot?: string | null;
