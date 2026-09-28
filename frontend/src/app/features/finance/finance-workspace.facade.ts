@@ -12,15 +12,16 @@ import {
 import {
   FinanceRow,
   SnapshotFinanceRow,
-  financeCurrentDateTimeValue,
   financeCurrentDateValue,
   financeCurrentMonthValue,
   financeMonthMonth,
   financeMonthYear,
-  formatFinanceDateTime,
+  formatFinanceOperationalDate,
+  formatFinanceOperationalTime,
   formatFinanceMoney,
   toFinanceRow,
-  toSnapshotFinanceRows
+  toSnapshotFinanceRows,
+  toFinanceLocalDateTimeValue
 } from '../../shared/utils/campaign-finance.utils';
 import { MetricsPeriodo } from '../../shared/components/period-selector/period-selector.component';
 import { MetricsRango, resolveMetricsRange } from '../../shared/utils/metrics-period';
@@ -54,7 +55,7 @@ export class FinanceWorkspaceFacade {
     idCampana: [0, [Validators.required, Validators.min(1)]],
     leadsReportados: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
     costoTotal: ['', [Validators.required, Validators.pattern(/^\d+(?:[,.]\d+)?$/)]],
-    reportedAt: [financeCurrentDateTimeValue(), [Validators.required]]
+    reportedAt: [new Date(), [Validators.required]]
   });
 
   readonly providerOptions = computed(() => [
@@ -99,7 +100,8 @@ export class FinanceWorkspaceFacade {
   });
 
   readonly money = formatFinanceMoney;
-  readonly dateTime = formatFinanceDateTime;
+  readonly reportDate = formatFinanceOperationalDate;
+  readonly reportTime = formatFinanceOperationalTime;
 
   async initialize(): Promise<void> {
     this.isLoading.set(true);
@@ -173,7 +175,7 @@ export class FinanceWorkspaceFacade {
       idCampana: 0,
       leadsReportados: '',
       costoTotal: '',
-      reportedAt: financeCurrentDateTimeValue()
+      reportedAt: new Date()
     });
     this.errorMessage.set(null);
     this.successMessage.set(null);
@@ -183,6 +185,11 @@ export class FinanceWorkspaceFacade {
   closeExpenseDialog(): void {
     this.dialogVisible.set(false);
     this.editingId.set(null);
+  }
+
+  setExpenseTimeToNow(): void {
+    if (this.editingId() !== null) return;
+    this.expenseForm.controls.reportedAt.setValue(new Date());
   }
 
   async submitExpense(): Promise<void> {
@@ -195,7 +202,10 @@ export class FinanceWorkspaceFacade {
     const raw = this.expenseForm.getRawValue();
     const leads = this.parseInteger(String(raw.leadsReportados ?? ''));
     const cost = this.parseDecimal(String(raw.costoTotal ?? ''));
-    if (!raw.idCampana || leads === null || cost === null || !raw.reportedAt) {
+    const reportedAt = raw.reportedAt instanceof Date && !Number.isNaN(raw.reportedAt.getTime())
+      ? toFinanceLocalDateTimeValue(raw.reportedAt)
+      : null;
+    if (!raw.idCampana || leads === null || cost === null || !reportedAt) {
       this.errorMessage.set('Revisa los valores ingresados antes de guardar.');
       return;
     }
@@ -212,7 +222,7 @@ export class FinanceWorkspaceFacade {
         await firstValueFrom(this.leadService.registrarGastoCampana(raw.idCampana, {
           leadsReportados: leads,
           costoTotal: cost,
-          reportedAt: raw.reportedAt
+          reportedAt
         }));
       }
       this.closeExpenseDialog();
@@ -258,7 +268,7 @@ export class FinanceWorkspaceFacade {
       idCampana: row.idCampana,
       leadsReportados: String(row.leadsReportados),
       costoTotal: String(row.costoTotal),
-      reportedAt: row.reportedAt.slice(0, 16)
+      reportedAt: new Date(row.reportedAt)
     });
     this.closeSnapshots();
     this.errorMessage.set(null);

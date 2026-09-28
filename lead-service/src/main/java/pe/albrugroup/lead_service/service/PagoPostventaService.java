@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
+
+import java.time.Instant;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.PagoPostventa;
 import pe.albrugroup.lead_service.entity.PeriodoFacturacionPostventa;
@@ -42,6 +44,7 @@ public class PagoPostventaService {
     private final PagoPostventaMapper mapper;
     private final PaginationService paginationService;
     private final PostventaAsesorProveedorService postventaAsesorProveedorService;
+    private final LeadSeguimientoService leadSeguimientoService;
 
     private static final Set<Etapa> ETAPAS_GESTION_POSTVENTA = Set.of(Etapa.POSTVENTA);
     private static final Set<String> PAGO_SORT_FIELDS = Set.of(
@@ -228,13 +231,15 @@ public class PagoPostventaService {
         if (lead == null) {
             return;
         }
+        // La suspensión por pago (empresa/comprometido) también sella fecha_suspension vía el helper central.
+        Instant ahora = OperationalDateTime.now();
         if (pago.getEstado() == EstadoPagoPostventa.PAGADO_EMPRESA
                 || pago.getEstado() == EstadoPagoPostventa.COMPROMETIDO) {
-            lead.setEstadoClientePostventa(EstadoClientePostventa.SUSPENDIDO);
+            leadSeguimientoService.marcarEstadoClientePostventa(lead, EstadoClientePostventa.SUSPENDIDO, ahora);
             return;
         }
         if (pago.getEstado() == EstadoPagoPostventa.PAGADO_CLIENTE) {
-            lead.setEstadoClientePostventa(EstadoClientePostventa.ACTIVO);
+            leadSeguimientoService.marcarEstadoClientePostventa(lead, EstadoClientePostventa.ACTIVO, ahora);
         }
     }
 

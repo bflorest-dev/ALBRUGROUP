@@ -33,7 +33,7 @@ public class AlbCryptoService {
     private final ObjectMapper objectMapper;
 
     public byte[] encrypt(List<AlbLeadRow> leads, String origenCodigo) {
-        requireConfigured();
+        ensureConfigured();
         try {
             byte[] payload = objectMapper.writeValueAsBytes(leads);
             byte[] origenBytes = origenCodigo.getBytes(StandardCharsets.UTF_8);
@@ -67,7 +67,7 @@ public class AlbCryptoService {
     }
 
     public AlbFileContent decrypt(byte[] fileBytes) {
-        requireConfigured();
+        ensureConfigured();
         try {
             ByteBuffer buf = ByteBuffer.wrap(fileBytes);
 
@@ -119,7 +119,7 @@ public class AlbCryptoService {
         return new SecretKeySpec(keyBytes, "AES");
     }
 
-    private void requireConfigured() {
+    public void ensureConfigured() {
         if (!albProperties.isConfigured()) {
             throw new BadRequestException("La encriptacion ALB no esta configurada (falta app.alb.encryption-key)");
         }

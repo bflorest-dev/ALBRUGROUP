@@ -1,9 +1,4 @@
 :host {
-  display: block;
-  min-width: 0;
-}
-
-.finance-workspace {
   --finance-ground: var(--app-bg, #eef0f3);
   --finance-panel: var(--app-surface, #ffffff);
   --finance-panel-soft: var(--app-surface-soft, #f6f7f9);
@@ -17,6 +12,11 @@
   --finance-reported-wash: #eaf3f8;
   --finance-real: #a85d18;
   --finance-real-wash: #fbf0e3;
+  display: block;
+  min-width: 0;
+}
+
+.finance-workspace {
   display: grid;
   gap: 1.45rem;
   min-width: 0;
@@ -26,7 +26,7 @@
   font-family: 'Archivo', 'Segoe UI', sans-serif;
 }
 
-:host-context([data-theme='dark']) .finance-workspace {
+:host-context([data-theme='dark']) {
   --finance-ground: #0e1116;
   --finance-panel: #161a21;
   --finance-panel-soft: #1b2029;
@@ -94,7 +94,8 @@
 }
 
 .finance-control-label,
-.finance-field > span {
+.finance-field > span,
+.finance-field-label {
   color: var(--finance-muted);
   font: 800 0.66rem/1 Archivo, 'Segoe UI', sans-serif;
   letter-spacing: 0.1em;
@@ -283,6 +284,29 @@
   font-size: 0.72rem;
 }
 
+.finance-date-stack {
+  display: grid;
+  gap: 0.12rem;
+  justify-items: center;
+  white-space: nowrap;
+}
+
+.finance-metric .finance-date-stack {
+  justify-items: start;
+}
+
+.finance-date-stack > span:first-child {
+  color: var(--finance-ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.finance-date-stack > span:last-child {
+  color: var(--finance-muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
 .finance-table-section {
   overflow: hidden;
 }
@@ -386,6 +410,7 @@
 .finance-form {
   display: grid;
   gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   padding-top: 0.25rem;
 }
 
@@ -409,6 +434,21 @@
 .finance-readonly {
   color: var(--finance-muted);
   font-size: 0.72rem;
+}
+
+.finance-date-control {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.finance-date-control ::ng-deep .p-datepicker,
+.finance-date-control ::ng-deep .p-datepicker-input {
+  width: 100%;
+}
+
+.finance-now-button {
+  white-space: nowrap;
 }
 
 .finance-money-input {
@@ -499,6 +539,12 @@
 
   .finance-workspace ::ng-deep .finance-page-header .finance-primary-action {
     align-self: flex-start;
+  }
+}
+
+@media (max-width: 420px) {
+  .finance-form {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

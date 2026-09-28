@@ -52,6 +52,7 @@ public class FacturacionPostventaService {
     private final PagoPostventaRepository pagoRepository;
     private final CalculadoraFacturacionPostventaResolver calculadoraResolver;
     private final PostventaAsesorProveedorService postventaAsesorProveedorService;
+    private final LeadSeguimientoService leadSeguimientoService;
 
     public List<PeriodoFacturacionPostventaResponse> listarPeriodosPorLead(Long idLead) {
         return periodoRepository.findByLeadIdOrderByNumeroPeriodoAsc(idLead).stream()
@@ -335,21 +336,27 @@ public class FacturacionPostventaService {
     }
 
     private void aplicarEstadoClientePorCierre(PeriodoFacturacionPostventa periodo) {
+        // Sella la fecha real de cierre en cuanto el periodo pasa a un estado CERRADO_*. Idempotente:
+        // no se re-sella si ya la tiene. Se hace antes del check de lead null (la fecha vive en el periodo).
+        if (periodo.getEstado() != EstadoPeriodoFacturacionPostventa.ABIERTO
+                && periodo.getFechaCierre() == null) {
+            periodo.setFechaCierre(OperationalDateTime.now());
+        }
         Lead lead = periodo.getLead();
         if (lead == null) {
             return;
         }
-        if (periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_EMPRESA) {
-            lead.setEstadoClientePostventa(EstadoClientePostventa.SUSPENDIDO);
-            return;
-        }
-        if (periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_BAJA
-                || periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_BAJA_ADEUDO) {
-            lead.setEstadoClientePostventa(EstadoClientePostventa.BAJA);
-            return;
-        }
-        if (periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_CLIENTE) {
-            lead.setEstadoClientePostventa(EstadoClientePostventa.ACTIVO);
+        // La transición de estado pasa por el helper central, que además sella fecha_suspension/fecha_baja
+        // en LeadSeguimiento usando la fecha de cierre del periodo.
+        Instant cuando = periodo.getFechaCierre();
+        switch (periodo.getEstado()) {
+            case CERRADO_PAGO_EMPRESA ->
+                    leadSeguimientoService.marcarEstadoClientePostventa(lead, EstadoClientePostventa.SUSPENDIDO, cuando);
+            case CERRADO_BAJA, CERRADO_BAJA_ADEUDO ->
+                    leadSeguimientoService.marcarEstadoClientePostventa(lead, EstadoClientePostventa.BAJA, cuando);
+            case CERRADO_PAGO_CLIENTE ->
+                    leadSeguimientoService.marcarEstadoClientePostventa(lead, EstadoClientePostventa.ACTIVO, cuando);
+            default -> { }
         }
     }
 

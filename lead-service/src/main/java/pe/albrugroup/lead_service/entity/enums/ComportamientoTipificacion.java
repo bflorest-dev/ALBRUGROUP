@@ -15,8 +15,8 @@ public enum ComportamientoTipificacion {
     REQUIERE_FECHA_RECHAZO,
     /** El modal exige fecha de instalación (antes: subtip que pasa a POSTVENTA). */
     REQUIERE_FECHA_INSTALACION,
-    /** Marca el hito de negocio INGRESADO/REGISTRADO en VENTA. */
-    REGISTRA_INGRESO_VENTA,
+    /** Marca el hito de registro en el CRM (tipificación INGRESADO del negocio) en VENTA. */
+    REGISTRA_CRM,
     /** El modal muestra los campos SEC/SOT (antes: tipi SUBIDO), sujeto a que el proveedor lo requiera. */
     REQUIERE_SEC_SOT,
     /** El modal exige Customer ID para instalaciones Claro. */

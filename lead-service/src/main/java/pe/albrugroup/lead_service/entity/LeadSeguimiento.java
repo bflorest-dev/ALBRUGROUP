@@ -30,16 +30,18 @@ public class LeadSeguimiento {
     private Instant fechaAgendamientoPreventa;
 
     // VENTA
-    private Instant fechaIngresoVenta;
+    // Momento en que se usó la tipificación INGRESADO de la matriz (registro en el CRM). NO es el
+    // ingreso a la etapa VENTA (eso vive en LeadEtapaResumen(VENTA).fechaIngresoEtapa).
+    private Instant fechaRegistroCrm;
     private Instant fechaGrabacion;
     private Instant fechaProgramacion;
     private LocalDate fechaRechazo;
     private LocalDate fechaInstalacion;
 
-    // POSTVENTA
-    private Instant fechaIngresoPostventa;
-    private LocalDate fechaSuspension;
-    private LocalDate fechaBaja;
+    // POSTVENTA — fechas automáticas: se sellan (Instant) cuando el cliente pasa a SUSPENDIDO/BAJA
+    // desde el flujo de facturación/pagos (no desde la matriz de tipificaciones).
+    private Instant fechaSuspension;
+    private Instant fechaBaja;
 
     @UpdateTimestamp
     private Instant updatedAt;

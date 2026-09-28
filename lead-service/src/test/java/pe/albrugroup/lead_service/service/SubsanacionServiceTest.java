@@ -50,6 +50,7 @@ class SubsanacionServiceTest {
     @Mock SubsanacionAuditoriaRepository auditoriaRepository;
     @Mock CalendarioFacturacionPostventaService calendarioService;
     @Mock LeadService leadService;
+    @Mock LeadSeguimientoService leadSeguimientoService;
     @Mock OrigenRepository origenRepository;
     @Mock LeadMapper leadMapper;
     @Mock LeadRealtimeNotifier realtimeNotifier;
@@ -66,7 +67,7 @@ class SubsanacionServiceTest {
                 equipoProveedorRepository, tipificacionRepository, subtipificacionRepository,
                 eventoRepository, resumenRepository, calendarioRepository, periodoRepository,
                 pagoRepository, encuestaRepository, entregaRepository, dispositivoRepository,
-                auditoriaRepository, calendarioService, leadService, origenRepository, leadMapper, realtimeNotifier,
+                auditoriaRepository, calendarioService, leadService, leadSeguimientoService, origenRepository, leadMapper, realtimeNotifier,
                 currentUser, objectMapper);
         request = requestValido();
         when(auditoriaRepository.findByRequestId(any())).thenReturn(Optional.empty());

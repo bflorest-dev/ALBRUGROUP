@@ -64,6 +64,10 @@ public class PeriodoFacturacionPostventa {
     @Enumerated(EnumType.STRING)
     private EstadoPeriodoFacturacionPostventa estado;
 
+    // Instante real en que el periodo pasó a un estado CERRADO_*. Fuente confiable de la fecha de
+    // cierre (suspensión/baja/pago), a diferencia de updatedAt que se pisa con cualquier update posterior.
+    private Instant fechaCierre;
+
     private String observacion;
 
     @Column(updatable = false)

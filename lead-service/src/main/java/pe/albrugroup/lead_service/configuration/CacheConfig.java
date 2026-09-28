@@ -26,6 +26,7 @@ import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import pe.albrugroup.lead_service.entity.response.CuentaPublicitariaResponse;
 import pe.albrugroup.lead_service.entity.response.DepartamentoResponse;
 import pe.albrugroup.lead_service.entity.response.DistritoResponse;
+import pe.albrugroup.lead_service.entity.response.OrigenResponse;
 import pe.albrugroup.lead_service.entity.response.PlanResponse;
 import pe.albrugroup.lead_service.entity.response.PromocionComercialResponse;
 import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
@@ -112,6 +113,11 @@ public class CacheConfig {
                         listSerializer(redisMapper, ZonaResponse.class)
                 )
         );
+        RedisCacheConfiguration origenesConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, OrigenResponse.class)
+                )
+        );
         RedisCacheConfiguration departamentosConfig = defaultConfig.serializeValuesWith(
                 RedisSerializationContext.SerializationPair.fromSerializer(
                         listSerializer(redisMapper, DepartamentoResponse.class)
@@ -139,6 +145,7 @@ public class CacheConfig {
                 Map.entry(CacheNames.PROVEEDORES, proveedoresConfig),
                 Map.entry(CacheNames.CUENTAS_PUBLICITARIAS, cuentasPublicitariasConfig),
                 Map.entry(CacheNames.ZONAS, zonasConfig),
+                Map.entry(CacheNames.ORIGENES, origenesConfig),
                 Map.entry(CacheNames.UBIGEO_DEPARTAMENTOS, departamentosConfig),
                 Map.entry(CacheNames.UBIGEO_PROVINCIAS, provinciasConfig),
                 Map.entry(CacheNames.UBIGEO_DISTRITOS, distritosConfig)

@@ -53,6 +53,11 @@ public class BaseLeadsExportService {
         Origen origen = origenRepository.findByCodigo(request.getOrigenCodigo())
                 .orElseThrow(() -> new BadRequestException("Origen no encontrado: " + request.getOrigenCodigo()));
 
+        // Validar la config de encriptacion ANTES de abrir el stream: si falla dentro del
+        // StreamingResponseBody la respuesta ya esta comprometida (200 + headers enviados) y el
+        // cliente recibe un ZIP valido pero vacio en vez de un error.
+        albCryptoService.ensureConfigured();
+
         List<BaseLeadPreviewResponse> allLeads = ejecutarQuery(filter, Pageable.unpaged()).getContent();
         if (allLeads.isEmpty()) {
             throw new BadRequestException("No hay leads que coincidan con los filtros");

@@ -1075,7 +1075,7 @@ public class LeadService {
             }
             case RECHAZO -> lead.setFechaRelevante(lead.getFechaRechazo());
             case INSTALACION -> lead.setFechaRelevante(lead.getFechaInstalacion());
-            case INGRESO_VENTA -> lead.setFechaRelevanteAt(lead.getFechaIngresoVenta());
+            case REGISTRO_CRM -> lead.setFechaRelevanteAt(lead.getFechaRegistroCrm());
             case GRABACION -> lead.setFechaRelevanteAt(lead.getFechaGrabacion());
             case TIPIFICACION -> lead.setFechaRelevanteAt(lead.getFechaTipificacion());
             case INGRESO -> lead.setFechaRelevanteAt(lead.getFechaIngresoEtapa() == null ? lead.getLastEntryAt() : lead.getFechaIngresoEtapa());
@@ -1088,9 +1088,9 @@ public class LeadService {
             Set<ComportamientoTipificacion> comportamientos
     ) {
         Set<ComportamientoTipificacion> efectivos = comportamientos == null ? Set.of() : comportamientos;
-        if (efectivos.contains(ComportamientoTipificacion.REGISTRA_INGRESO_VENTA)
-                && lead.getFechaIngresoVenta() != null) {
-            return TipoFechaRelevanteVenta.INGRESO_VENTA;
+        if (efectivos.contains(ComportamientoTipificacion.REGISTRA_CRM)
+                && lead.getFechaRegistroCrm() != null) {
+            return TipoFechaRelevanteVenta.REGISTRO_CRM;
         }
         if (efectivos.contains(ComportamientoTipificacion.ES_GRABACION)
                 && lead.getFechaGrabacion() != null) {
@@ -2680,7 +2680,7 @@ public class LeadService {
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, resultado, idAsesorAnterior, nombreAsesorAnterior,
                 subtipificacion.getComportamientos());
         leadSeguimientoService.actualizarPorTipificacion(
-                savedLead.getId(), etapaActual, etapaDestino,
+                savedLead.getId(), etapaActual,
                 combinarComportamientos(subtipificacion, resultado.subtipificacion()),
                 null, null, null, null);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
@@ -2857,7 +2857,7 @@ public class LeadService {
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, resultado, idAsesorAnterior, nombreAsesorAnterior,
                 subtipificacion.getComportamientos());
         leadSeguimientoService.actualizarPorTipificacion(
-                savedLead.getId(), etapaActual, etapaDestino,
+                savedLead.getId(), etapaActual,
                 combinarComportamientos(subtipificacion, resultado.subtipificacion()),
                 requiereProgramacion ? request.getFechaProgramacion() : null,
                 requiereProgramacion ? request.getHoraProgramada() : null,
@@ -5584,9 +5584,9 @@ public class LeadService {
         }
 
         Set<ComportamientoTipificacion> comportamientos = resolverComportamientosVenta(lead, resumenVenta);
-        if (comportamientos.contains(ComportamientoTipificacion.REGISTRA_INGRESO_VENTA)
-                && seguimiento != null && seguimiento.getFechaIngresoVenta() != null) {
-            return new FechaRelevanteVenta(null, null, seguimiento.getFechaIngresoVenta(), TipoFechaRelevanteVenta.INGRESO_VENTA);
+        if (comportamientos.contains(ComportamientoTipificacion.REGISTRA_CRM)
+                && seguimiento != null && seguimiento.getFechaRegistroCrm() != null) {
+            return new FechaRelevanteVenta(null, null, seguimiento.getFechaRegistroCrm(), TipoFechaRelevanteVenta.REGISTRO_CRM);
         }
         if (comportamientos.contains(ComportamientoTipificacion.ES_GRABACION)
                 && seguimiento != null && seguimiento.getFechaGrabacion() != null) {

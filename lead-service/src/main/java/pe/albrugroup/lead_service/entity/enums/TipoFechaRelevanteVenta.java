@@ -4,7 +4,7 @@ public enum TipoFechaRelevanteVenta {
     PROGRAMACION,
     RECHAZO,
     INSTALACION,
-    INGRESO_VENTA,
+    REGISTRO_CRM,
     GRABACION,
     TIPIFICACION,
     INGRESO,

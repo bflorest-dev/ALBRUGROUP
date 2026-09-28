@@ -82,7 +82,9 @@ export function toFinanceRow(row: CampanaGastoCampanaResumenResponse | CampanaGa
 }
 
 export function toSnapshotFinanceRows(rows: CampanaGastoResponse[]): SnapshotFinanceRow[] {
-  const mappedRows = rows.map((row) => toFinanceRow(row));
+  const mappedRows = [...rows]
+    .sort((a, b) => a.reportedAt.localeCompare(b.reportedAt) || a.id - b.id)
+    .map((row) => toFinanceRow(row));
   return mappedRows.map((row, index) => ({
     ...row,
     deltaLeads: index === 0 ? null : row.leadsReportados - (mappedRows[index - 1]?.leadsReportados ?? 0),
@@ -112,6 +114,21 @@ export function formatFinanceDateTime(value: string | null | undefined): string 
     dateStyle: 'short',
     timeStyle: 'short'
   }).format(new Date(value));
+}
+
+export function formatFinanceOperationalDate(value: string | null | undefined): string {
+  const parts = value?.match(/^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}/);
+  return parts ? `${parts[3]}/${parts[2]}/${parts[1]}` : '—';
+}
+
+export function formatFinanceOperationalTime(value: string | null | undefined): string {
+  const parts = value?.match(/^\d{4}-\d{2}-\d{2}T(\d{2}):(\d{2})/);
+  return parts ? `${parts[1]}:${parts[2]}` : '';
+}
+
+export function toFinanceLocalDateTimeValue(value: Date): string {
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
 }
 
 export function formatFinanceDisplay(value: unknown): string {

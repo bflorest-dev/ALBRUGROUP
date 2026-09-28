@@ -52,6 +52,7 @@ public class SubsanacionService {
     private final SubsanacionAuditoriaRepository auditoriaRepository;
     private final CalendarioFacturacionPostventaService calendarioService;
     private final LeadService leadService;
+    private final LeadSeguimientoService leadSeguimientoService;
     private final OrigenRepository origenRepository;
     private final LeadMapper leadMapper;
     private final LeadRealtimeNotifier realtimeNotifier;
@@ -235,6 +236,10 @@ public class SubsanacionService {
         crearEventos(lead, request, contexto, auditoria.getId(),
                 subsanacionAt, registroAt, asignacionAt, preventaAt, ventaAt);
         crearResumenes(lead, contexto, registroAt, preventaAt, ventaAt);
+
+        // El lead subsanado no pasa por el flujo normal de tipificación, así que su LeadSeguimiento se
+        // crea aquí: registroCrm = grabación = instalación = la fecha de instalación indicada por el admin.
+        leadSeguimientoService.registrarSubsanacion(lead.getId(), request.getFechaInstalacion());
 
         calendarioService.inicializarGestionPostventa(lead, request.getFechaInstalacion(), ventaAt);
         CalendarioFacturacionPostventa calendarioCreado = calendarioRepository.findByLeadId(lead.getId())

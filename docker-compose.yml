@@ -211,6 +211,7 @@ services:
       INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:?INTERNAL_SHARED_SECRET is required}
       LEAD_DOCS_GATEWAY_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/leads
       LEAD_DOCS_PUBLIC_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/leads
+      ALB_ENCRYPTION_KEY: ${ALB_ENCRYPTION_KEY:?ALB_ENCRYPTION_KEY is required}
     depends_on:
       postgres-lead:
         condition: service_healthy

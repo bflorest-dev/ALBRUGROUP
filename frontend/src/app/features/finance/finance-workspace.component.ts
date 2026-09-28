@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, input } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
 import { DrawerModule } from 'primeng/drawer';
 import { InputTextModule } from 'primeng/inputtext';
@@ -26,6 +27,7 @@ import { FinanceRow, SnapshotFinanceRow, formatFinanceDisplay } from '../../shar
     FormsModule,
     ReactiveFormsModule,
     ButtonModule,
+    DatePickerModule,
     DialogModule,
     DrawerModule,
     InputTextModule,

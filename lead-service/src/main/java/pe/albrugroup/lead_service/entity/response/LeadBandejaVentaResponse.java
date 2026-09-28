@@ -66,7 +66,7 @@ public class LeadBandejaVentaResponse {
     private String nombreAsesorMeritoPreventa;
     private String nombreAsesorUltimaGestion;
     private Instant fechaUltimaGestion;
-    private Instant fechaIngresoVenta;
+    private Instant fechaRegistroCrm;
     private Instant fechaGrabacion;
     private Long idAsesorEvento;
     private String nombreAsesorEvento;
@@ -123,7 +123,7 @@ public class LeadBandejaVentaResponse {
             String nombreAsesorMeritoPreventa,
             String nombreAsesorUltimaGestion,
             Instant fechaUltimaGestion,
-            Instant fechaIngresoVenta,
+            Instant fechaRegistroCrm,
             Instant fechaGrabacion,
             Long idAsesorEvento,
             String nombreAsesorEvento,
@@ -175,7 +175,7 @@ public class LeadBandejaVentaResponse {
         this.nombreAsesorMeritoPreventa = nombreAsesorMeritoPreventa;
         this.nombreAsesorUltimaGestion = nombreAsesorUltimaGestion;
         this.fechaUltimaGestion = fechaUltimaGestion;
-        this.fechaIngresoVenta = fechaIngresoVenta;
+        this.fechaRegistroCrm = fechaRegistroCrm;
         this.fechaGrabacion = fechaGrabacion;
         this.idAsesorEvento = idAsesorEvento;
         this.nombreAsesorEvento = nombreAsesorEvento;
@@ -230,7 +230,7 @@ public class LeadBandejaVentaResponse {
             String nombreAsesorMeritoPreventa,
             String nombreAsesorUltimaGestion,
             Instant fechaUltimaGestion,
-            Instant fechaIngresoVenta,
+            Instant fechaRegistroCrm,
             Instant fechaGrabacion,
             Long idAsesorEvento,
             String nombreAsesorEvento,
@@ -281,7 +281,7 @@ public class LeadBandejaVentaResponse {
         this.nombreAsesorMeritoPreventa = nombreAsesorMeritoPreventa;
         this.nombreAsesorUltimaGestion = nombreAsesorUltimaGestion;
         this.fechaUltimaGestion = fechaUltimaGestion;
-        this.fechaIngresoVenta = fechaIngresoVenta;
+        this.fechaRegistroCrm = fechaRegistroCrm;
         this.fechaGrabacion = fechaGrabacion;
         this.idAsesorEvento = idAsesorEvento;
         this.nombreAsesorEvento = nombreAsesorEvento;

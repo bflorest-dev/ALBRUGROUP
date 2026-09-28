@@ -444,7 +444,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
       PROGRAMACION: 'Programación',
       RECHAZO: 'Rechazo',
       INSTALACION: 'Instalación',
-      INGRESO_VENTA: 'Ingreso a venta',
+      REGISTRO_CRM: 'Ingreso a venta',
       GRABACION: 'Grabación',
       TIPIFICACION: 'Tipificación',
       INGRESO: 'Ingreso',
