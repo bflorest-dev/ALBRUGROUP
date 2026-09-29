@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.entity.response;
 import java.time.Instant;
 
 public record BaseLeadPreviewResponse(
+        Long id,
         String prefijo,
         String lead,
         String usermeta,

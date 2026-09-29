@@ -75,6 +75,10 @@ export class BaseLeadsService {
     return this.http.post(`${this.url}/export`, request, { responseType: 'blob' });
   }
 
+  exportExcel(filter: BaseLeadsExportFilter): Observable<Blob> {
+    return this.http.post(`${this.url}/export-excel`, { filter }, { responseType: 'blob' });
+  }
+
   listarOrigenes(): Observable<OrigenResponse[]> {
     return this.http.get<OrigenResponse[]>(this.origenesUrl);
   }

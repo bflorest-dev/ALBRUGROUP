@@ -11,6 +11,8 @@ import {
   OrigenResponse
 } from '../services/base-leads.service';
 
+export type ModoExport = 'ALB' | 'EXCEL';
+
 @Injectable({ providedIn: 'root' })
 export class AdminBaseLeadsFacade {
   private readonly service = inject(BaseLeadsService);
@@ -36,6 +38,7 @@ export class AdminBaseLeadsFacade {
   readonly totalForExport = signal(0);
   readonly suggestedName = signal('');
   readonly isExporting = signal(false);
+  readonly modoExport = signal<ModoExport>('ALB');
   readonly origenCodigo = signal('PREDICTIVO');
   readonly maxLeadsPorArchivo = signal(1000);
 
@@ -220,6 +223,16 @@ export class AdminBaseLeadsFacade {
         })
       );
       this.downloadBlob(blob, this.suggestedName() + '.zip');
+    } finally {
+      this.isExporting.set(false);
+    }
+  }
+
+  async exportarExcel(): Promise<void> {
+    this.isExporting.set(true);
+    try {
+      const blob = await firstValueFrom(this.service.exportExcel(this.buildFilter()));
+      this.downloadBlob(blob, this.suggestedName() + '.xlsx');
     } finally {
       this.isExporting.set(false);
     }

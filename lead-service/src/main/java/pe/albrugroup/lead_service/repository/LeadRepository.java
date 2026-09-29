@@ -14,6 +14,7 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.response.BaseLeadExcelRow;
 import pe.albrugroup.lead_service.entity.response.BaseLeadPreviewResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadBandejaVentaResponse;
@@ -3536,6 +3537,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
 
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.BaseLeadPreviewResponse(
+                l.id,
                 l.prefijo, l.lead, l.usermeta,
                 dp.numeroDocumentoTitularServicio,
                 l.direccionSnapshot,
@@ -3579,6 +3581,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
 
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.BaseLeadPreviewResponse(
+                l.id,
                 l.prefijo, l.lead, l.usermeta,
                 dp.numeroDocumentoTitularServicio,
                 l.direccionSnapshot,
@@ -3622,6 +3625,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
 
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.BaseLeadPreviewResponse(
+                l.id,
                 l.prefijo, l.lead, l.usermeta,
                 dp.numeroDocumentoTitularServicio,
                 l.direccionSnapshot,
@@ -3661,5 +3665,35 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("desde") Instant desde,
             @Param("hasta") Instant hasta,
             Pageable pageable
+    );
+
+    // Datos ricos para el export Excel de Base de Leads: se resuelve por los ids ya filtrados
+    // (misma seleccion que el .alb). El asesor "que consiguio la preventa" sale del resumen de la
+    // etapa PREVENTA sin importar la etapa exportada; plan/velocidad/precio son del plan vivo.
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.BaseLeadExcelRow(
+                l.id,
+                dp.numeroDocumentoTitularServicio,
+                dp.nombreTitularServicio,
+                COALESCE(pl.nombre, l.nombrePlanSnapshot),
+                net.velocidad,
+                net.unidad,
+                pl.precio,
+                seg.fechaInstalacion,
+                dir.ubigeoDomicilio,
+                rp.nombreAsesorMerito
+            )
+            FROM Lead l
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.direccion dir
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.internet net
+            LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
+            LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            WHERE l.id IN :ids
+            """)
+    List<BaseLeadExcelRow> buscarDatosExcel(
+            @Param("ids") Collection<Long> ids,
+            @Param("etapaPreventa") Etapa etapaPreventa
     );
 }

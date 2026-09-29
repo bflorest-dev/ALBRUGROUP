@@ -8,131 +8,151 @@
 
   <!-- Filtros -->
   <section class="control-rail" aria-label="Filtros de exportacion">
-    <label class="select-field">
-      <span class="field-label">Etapa</span>
-      <select [ngModel]="facade.etapa()" (ngModelChange)="facade.etapa.set($event); onEtapaChange()">
-        @for (opt of facade.etapaOptions; track opt.value) {
-          <option [value]="opt.value">{{ opt.label }}</option>
+    <div class="filter-row">
+      <label class="select-field">
+        <span class="field-label">Etapa</span>
+        <p-select
+          [options]="facade.etapaOptions"
+          [ngModel]="facade.etapa()"
+          (ngModelChange)="facade.etapa.set($event); onEtapaChange()"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          panelStyleClass="base-leads-select-panel"
+        />
+      </label>
+
+      <label class="select-field">
+        <span class="field-label">Proveedor origen</span>
+        <p-select
+          [options]="facade.proveedoresOrigen()"
+          [ngModel]="facade.idProveedorOrigen()"
+          (ngModelChange)="facade.idProveedorOrigen.set($event ?? null); onProveedorOrigenChange()"
+          [disabled]="facade.isLoadingCatalog()"
+          [loading]="facade.isLoadingCatalog()"
+          optionLabel="nombre"
+          optionValue="id"
+          placeholder="Todos"
+          [showClear]="true"
+          appendTo="body"
+          panelStyleClass="base-leads-select-panel"
+        />
+      </label>
+
+      <label class="select-field">
+        <span class="field-label">Proveedor final</span>
+        <p-select
+          [options]="facade.proveedores()"
+          [ngModel]="facade.idProveedor()"
+          (ngModelChange)="facade.idProveedor.set($event ?? null); onProveedorChange()"
+          [disabled]="facade.isLoadingCatalog()"
+          [loading]="facade.isLoadingCatalog()"
+          optionLabel="nombre"
+          optionValue="id"
+          placeholder="Todos"
+          [showClear]="true"
+          appendTo="body"
+          panelStyleClass="base-leads-select-panel"
+        />
+      </label>
+
+      <label class="select-field">
+        <span class="field-label">Periodo</span>
+        <p-select
+          [options]="facade.anclaFechaOptions"
+          [ngModel]="facade.anclaFecha()"
+          (ngModelChange)="facade.anclaFecha.set($event)"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          panelStyleClass="base-leads-select-panel"
+        />
+      </label>
+
+      <label class="select-field">
+        <span class="field-label">Campo</span>
+        <p-select
+          [options]="facade.campoOptions"
+          [ngModel]="facade.campoTipificacion()"
+          (ngModelChange)="facade.campoTipificacion.set($event)"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          panelStyleClass="base-leads-select-panel"
+        />
+      </label>
+    </div>
+
+    <div class="filter-row">
+      <label class="date-field">
+        <span class="field-label">Desde</span>
+        <p-datepicker
+          [ngModel]="facade.desde()"
+          (ngModelChange)="facade.desde.set($event)"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          appendTo="body"
+          [baseZIndex]="1400"
+          panelStyleClass="base-leads-calendar"
+        />
+      </label>
+
+      <label class="date-field">
+        <span class="field-label">Hasta</span>
+        <p-datepicker
+          [ngModel]="facade.hasta()"
+          (ngModelChange)="facade.hasta.set($event)"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          appendTo="body"
+          [baseZIndex]="1400"
+          panelStyleClass="base-leads-calendar"
+        />
+      </label>
+
+      <label class="multiselect-field">
+        <span class="field-label">Tipificacion</span>
+        <p-multiselect
+          [options]="facade.tipificaciones()"
+          [ngModel]="facade.codigosTipificacion()"
+          (ngModelChange)="facade.codigosTipificacion.set($event); facade.codigosSubtipificacion.set([])"
+          [disabled]="(!facade.idProveedor() && !facade.idProveedorOrigen()) || facade.isLoadingTipificaciones()"
+          [loading]="facade.isLoadingTipificaciones()"
+          optionLabel="codigo"
+          optionValue="codigo"
+          appendTo="body"
+          panelStyleClass="base-leads-multiselect-panel"
+          [placeholder]="facade.isLoadingTipificaciones() ? 'Cargando…' : 'Todas'"
+          [maxSelectedLabels]="2"
+        />
+      </label>
+
+      <label class="multiselect-field">
+        <span class="field-label">Subtipificacion</span>
+        <p-multiselect
+          [options]="facade.subtipificacionesDisponibles()"
+          [ngModel]="facade.codigosSubtipificacion()"
+          (ngModelChange)="facade.codigosSubtipificacion.set($event)"
+          [disabled]="(!facade.idProveedor() && !facade.idProveedorOrigen()) || facade.isLoadingTipificaciones() || !facade.tipificaciones().length"
+          [loading]="facade.isLoadingTipificaciones()"
+          optionLabel="codigo"
+          optionValue="codigo"
+          appendTo="body"
+          panelStyleClass="base-leads-multiselect-panel"
+          [placeholder]="facade.isLoadingTipificaciones() ? 'Cargando…' : 'Todas'"
+          [maxSelectedLabels]="2"
+        />
+      </label>
+
+      <button class="btn-search" type="button" [disabled]="facade.isLoading()" (click)="facade.buscar()">
+        @if (facade.isLoading()) {
+          <span class="spinner"></span>
+        } @else {
+          <i class="pi pi-search"></i>
         }
-      </select>
-    </label>
-
-    <label class="date-field">
-      <span class="field-label">Desde</span>
-      <p-datepicker
-        [ngModel]="facade.desde()"
-        (ngModelChange)="facade.desde.set($event)"
-        dateFormat="dd/mm/yy"
-        [showIcon]="true"
-        appendTo="body"
-        [baseZIndex]="1400"
-        panelStyleClass="base-leads-calendar"
-        [style]="{ width: '100%' }"
-      />
-    </label>
-
-    <label class="date-field">
-      <span class="field-label">Hasta</span>
-      <p-datepicker
-        [ngModel]="facade.hasta()"
-        (ngModelChange)="facade.hasta.set($event)"
-        dateFormat="dd/mm/yy"
-        [showIcon]="true"
-        appendTo="body"
-        [baseZIndex]="1400"
-        panelStyleClass="base-leads-calendar"
-        [style]="{ width: '100%' }"
-      />
-    </label>
-
-    <label class="select-field">
-      <span class="field-label">Campo</span>
-      <select [ngModel]="facade.campoTipificacion()" (ngModelChange)="facade.campoTipificacion.set($event)">
-        @for (opt of facade.campoOptions; track opt.value) {
-          <option [value]="opt.value">{{ opt.label }}</option>
-        }
-      </select>
-    </label>
-
-    <label class="select-field">
-      <span class="field-label">Periodo según</span>
-      <select [ngModel]="facade.anclaFecha()" (ngModelChange)="facade.anclaFecha.set($event)">
-        @for (opt of facade.anclaFechaOptions; track opt.value) {
-          <option [value]="opt.value">{{ opt.label }}</option>
-        }
-      </select>
-    </label>
-
-    <label class="select-field">
-      <span class="field-label">Proveedor</span>
-      <select
-        [ngModel]="facade.idProveedor()"
-        [disabled]="facade.isLoadingCatalog()"
-        (ngModelChange)="facade.idProveedor.set($event ? +$event : null); onProveedorChange()"
-      >
-        <option [ngValue]="null">Todos</option>
-        @for (pv of facade.proveedores(); track pv.id) {
-          <option [value]="pv.id">{{ pv.nombre }}</option>
-        }
-      </select>
-    </label>
-
-    <label class="select-field">
-      <span class="field-label">Proveedor de origen</span>
-      <select
-        [ngModel]="facade.idProveedorOrigen()"
-        [disabled]="facade.isLoadingCatalog()"
-        (ngModelChange)="facade.idProveedorOrigen.set($event ? +$event : null); onProveedorOrigenChange()"
-      >
-        <option [ngValue]="null">Todos</option>
-        @for (pv of facade.proveedoresOrigen(); track pv.id) {
-          <option [value]="pv.id">{{ pv.nombre }}</option>
-        }
-      </select>
-    </label>
-
-    <label class="multiselect-field">
-      <span class="field-label">Tipificacion</span>
-      <p-multiselect
-        [options]="facade.tipificaciones()"
-        [ngModel]="facade.codigosTipificacion()"
-        (ngModelChange)="facade.codigosTipificacion.set($event); facade.codigosSubtipificacion.set([])"
-        [disabled]="(!facade.idProveedor() && !facade.idProveedorOrigen()) || facade.isLoadingTipificaciones()"
-        [loading]="facade.isLoadingTipificaciones()"
-        optionLabel="descripcion"
-        optionValue="codigo"
-        panelStyleClass="base-leads-multiselect-panel"
-        [placeholder]="facade.isLoadingTipificaciones() ? 'Cargando…' : 'Todas'"
-        [maxSelectedLabels]="2"
-        [style]="{ width: '100%', height: '38px' }"
-      />
-    </label>
-
-    <label class="multiselect-field">
-      <span class="field-label">Subtipificacion</span>
-      <p-multiselect
-        [options]="facade.subtipificacionesDisponibles()"
-        [ngModel]="facade.codigosSubtipificacion()"
-        (ngModelChange)="facade.codigosSubtipificacion.set($event)"
-        [disabled]="(!facade.idProveedor() && !facade.idProveedorOrigen()) || facade.isLoadingTipificaciones() || !facade.tipificaciones().length"
-        [loading]="facade.isLoadingTipificaciones()"
-        optionLabel="descripcion"
-        optionValue="codigo"
-        panelStyleClass="base-leads-multiselect-panel"
-        [placeholder]="facade.isLoadingTipificaciones() ? 'Cargando…' : 'Todas'"
-        [maxSelectedLabels]="2"
-        [style]="{ width: '100%', height: '38px' }"
-      />
-    </label>
-
-    <button class="btn-search" type="button" [disabled]="facade.isLoading()" (click)="facade.buscar()">
-      @if (facade.isLoading()) {
-        <span class="spinner"></span>
-      } @else {
-        <i class="pi pi-search"></i>
-      }
-      Buscar
-    </button>
+        Buscar
+      </button>
+    </div>
   </section>
 
   @if (facade.catalogError()) {
@@ -158,29 +178,59 @@
         <span class="export-name mono">{{ facade.suggestedName() }}</span>
       </div>
       <div class="export-actions">
-        <label class="select-field select-field--sm">
-          <span class="field-label">Origen</span>
-          <select [ngModel]="facade.origenCodigo()" (ngModelChange)="facade.origenCodigo.set($event)">
-            @for (o of facade.origenes(); track o.codigo) {
-              <option [value]="o.codigo">{{ o.nombre }}</option>
+        <label class="select-field select-field--sm select-field--format">
+          <span class="field-label">Formato</span>
+          <p-select
+            [options]="modoExportOptions"
+            [ngModel]="facade.modoExport()"
+            (ngModelChange)="facade.modoExport.set($event)"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            panelStyleClass="base-leads-select-panel"
+            ariaLabel="Formato"
+          />
+        </label>
+
+        @if (facade.modoExport() === 'ALB') {
+          <label class="select-field select-field--sm">
+            <span class="field-label">Origen</span>
+            <p-select
+              [options]="facade.origenes()"
+              [ngModel]="facade.origenCodigo()"
+              (ngModelChange)="facade.origenCodigo.set($event)"
+              optionLabel="nombre"
+              optionValue="codigo"
+              appendTo="body"
+              panelStyleClass="base-leads-select-panel"
+              ariaLabel="Origen"
+            />
+          </label>
+          <label class="input-field input-field--sm">
+            <span class="field-label">Leads/archivo</span>
+            <input type="number" [ngModel]="facade.maxLeadsPorArchivo()" (ngModelChange)="facade.maxLeadsPorArchivo.set($event)" min="50" max="5000" step="50" [class.input-invalid]="!facade.maxLeadsValido()" />
+            @if (!facade.maxLeadsValido()) {
+              <span class="field-hint field-hint--error">Debe ser entre 50 y 5000</span>
             }
-          </select>
-        </label>
-        <label class="input-field input-field--sm">
-          <span class="field-label">Leads/archivo</span>
-          <input type="number" [ngModel]="facade.maxLeadsPorArchivo()" (ngModelChange)="facade.maxLeadsPorArchivo.set($event)" min="50" max="5000" step="50" [class.input-invalid]="!facade.maxLeadsValido()" />
-          @if (!facade.maxLeadsValido()) {
-            <span class="field-hint field-hint--error">Debe ser entre 50 y 5000</span>
-          }
-        </label>
-        <button class="btn-export" type="button" [disabled]="facade.isExporting() || !facade.maxLeadsValido()" (click)="confirmarExport()">
-          @if (facade.isExporting()) {
-            <span class="spinner"></span>
-          } @else {
-            <i class="pi pi-download"></i>
-          }
-          Exportar
-        </button>
+          </label>
+          <button class="btn-export" type="button" [disabled]="facade.isExporting() || !facade.maxLeadsValido()" (click)="confirmarExport()">
+            @if (facade.isExporting()) {
+              <span class="spinner"></span>
+            } @else {
+              <i class="pi pi-download"></i>
+            }
+            Exportar
+          </button>
+        } @else {
+          <button class="btn-export" type="button" [disabled]="facade.isExporting()" (click)="facade.exportarExcel()">
+            @if (facade.isExporting()) {
+              <span class="spinner"></span>
+            } @else {
+              <i class="pi pi-file-excel"></i>
+            }
+            Descargar Excel
+          </button>
+        }
       </div>
     </section>
   }

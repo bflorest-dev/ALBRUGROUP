@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import pe.albrugroup.lead_service.entity.request.BaseLeadsExcelExportRequest;
 import pe.albrugroup.lead_service.entity.request.BaseLeadsExportFilter;
 import pe.albrugroup.lead_service.entity.request.BaseLeadsExportRequest;
 import pe.albrugroup.lead_service.entity.response.BaseLeadPreviewResponse;
@@ -48,6 +49,18 @@ public class BaseLeadsController {
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + suggestedName + "\"")
+                .body(body);
+    }
+
+    @PostMapping("/export-excel")
+    @PreAuthorize("hasAuthority('EXPORT_BASE_LEADS')")
+    public ResponseEntity<byte[]> exportExcel(@Valid @RequestBody BaseLeadsExcelExportRequest request) {
+        byte[] body = exportService.exportExcel(request.getFilter());
+        String suggestedName = exportService.generarNombreSugerido(request.getFilter()) + ".xlsx";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + suggestedName + "\"")
                 .body(body);
     }

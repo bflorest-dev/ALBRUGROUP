@@ -1,6 +1,7 @@
 import { SlicePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -9,7 +10,7 @@ import { AdminBaseLeadsFacade } from '../../facades/admin-base-leads.facade';
 
 @Component({
   selector: 'app-admin-base-leads-page',
-  imports: [SlicePipe, FormsModule, DatePickerModule, MultiSelectModule, ConfirmDialogModule],
+  imports: [SlicePipe, FormsModule, SelectModule, DatePickerModule, MultiSelectModule, ConfirmDialogModule],
   providers: [ConfirmationService],
   templateUrl: './admin-base-leads-page.component.html',
   styleUrl: './admin-base-leads-page.component.scss',
@@ -19,6 +20,10 @@ export class AdminBaseLeadsPageComponent implements OnInit {
   readonly facade = inject(AdminBaseLeadsFacade);
   private readonly confirmationService = inject(ConfirmationService);
   protected readonly Math = Math;
+  protected readonly modoExportOptions = [
+    { label: 'Encriptado (.alb)', value: 'ALB' },
+    { label: 'Excel (.xlsx)', value: 'EXCEL' }
+  ];
 
   ngOnInit(): void {
     this.facade.init();

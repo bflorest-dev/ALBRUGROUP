@@ -53,15 +53,21 @@
 
 /* ── Control rail ── */
 .control-rail {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: flex-end;
+  display: grid;
+  gap: 12px;
   padding: 12px 14px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 11px;
   margin-bottom: 14px;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+  min-width: 0;
 }
 
 .field-label {
@@ -77,24 +83,7 @@
 .select-field {
   display: flex;
   flex-direction: column;
-  min-width: 120px;
-  flex: 1 1 120px;
-}
-
-.select-field select {
-  height: 38px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel-2);
-  color: var(--ink);
-  padding: 0 10px;
-  font: 600 12.5px 'Archivo';
-  outline: none;
-}
-
-.select-field select option {
-  background: var(--panel-2);
-  color: var(--ink);
+  min-width: 0;
 }
 
 .select-field--sm {
@@ -102,24 +91,72 @@
   flex: 0 1 130px;
 }
 
+.select-field--format {
+  min-width: 160px;
+  flex: 0 0 160px;
+}
+
 .date-field {
   display: flex;
   flex-direction: column;
-  min-width: 140px;
-  flex: 1 1 140px;
+  min-width: 0;
 }
 
 :host ::ng-deep .base-leads {
+  .p-select,
   .p-datepicker {
     width: 100%;
+  }
+
+  .p-datepicker {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .p-select {
+    height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    background: var(--panel-2);
+    box-shadow: none;
+    transition: border-color .16s ease, box-shadow .16s ease;
+  }
+
+  .p-select-label {
+    min-width: 0;
+    padding: 8px 10px;
+    color: var(--ink);
+    font: 600 12.5px/1.35 'Archivo';
+  }
+
+  .p-select-label.p-placeholder {
+    color: var(--ink-3);
+  }
+
+  .p-select-dropdown {
+    width: 34px;
+    color: var(--ink-2);
+  }
+
+  .p-select:not(.p-disabled):hover {
+    border-color: var(--line-strong);
+    background: var(--panel-2);
+  }
+
+  .p-select:not(.p-disabled).p-focus {
+    border-color: var(--focus);
+    background: var(--panel-2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 16%, transparent);
   }
 
   .p-datepicker .p-datepicker-input {
     width: 100%;
     height: 38px;
-    padding: 0 2.5rem 0 10px;
+    padding: 0 10px;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: 8px 0 0 8px;
+    border-right: 0;
     color: var(--ink);
     background: var(--panel-2);
     box-shadow: none;
@@ -127,8 +164,44 @@
     transition: border-color .16s ease, box-shadow .16s ease;
   }
 
+  .p-datepicker .p-datepicker-dropdown {
+    flex: 0 0 38px;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 0 8px 8px 0;
+    background: var(--panel-2);
+    color: var(--ink-2);
+    box-shadow: none;
+    transition: border-color .16s ease, background-color .16s ease, color .16s ease;
+  }
+
+  .p-datepicker .p-datepicker-dropdown:hover:not(:disabled) {
+    border-color: var(--line-strong);
+    background: var(--panel-2);
+    color: var(--ink);
+  }
+
+  .p-datepicker .p-datepicker-dropdown:active:not(:disabled) {
+    background: var(--panel-sunk);
+  }
+
+  .p-datepicker .p-datepicker-dropdown:disabled {
+    background: var(--panel-2);
+    color: var(--ink-3);
+    opacity: .6;
+  }
+
   .p-datepicker .p-datepicker-input::placeholder {
     color: var(--ink-3);
+  }
+
+  .p-datepicker .p-datepicker-input:hover:not(:disabled) {
+    border-color: var(--line-strong);
+    background: var(--panel-2);
+    color: var(--ink);
   }
 
   .p-datepicker .p-datepicker-input-icon-container {
@@ -147,7 +220,15 @@
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 16%, transparent);
   }
 
+  .p-datepicker.p-focus .p-datepicker-dropdown,
+  .p-datepicker .p-datepicker-dropdown:focus-visible {
+    border-color: var(--focus);
+    background: var(--panel-2);
+    color: var(--ink);
+  }
+
   .p-multiselect {
+    width: 100%;
     min-height: 38px;
     border: 1px solid var(--line);
     border-radius: 8px;
@@ -175,18 +256,60 @@
 
   .p-multiselect:not(.p-disabled).p-focus {
     border-color: var(--focus);
+    background: var(--panel-2);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 16%, transparent);
+  }
+
+  .p-multiselect:not(.p-disabled):hover {
+    border-color: var(--line-strong);
+    background: var(--panel-2);
   }
 }
 
 ::ng-deep .base-leads-calendar,
-::ng-deep .base-leads-multiselect-panel {
+::ng-deep .base-leads-multiselect-panel,
+::ng-deep .base-leads-select-panel {
+  z-index: 1400 !important;
   color-scheme: dark;
   border: 1px solid #333b47;
   border-radius: 10px;
   background: #161a21;
   color: #e9edf3;
   box-shadow: 0 18px 42px rgba(0, 0, 0, .38);
+}
+
+::ng-deep .base-leads-calendar.p-datepicker-panel.p-component {
+  --p-datepicker-panel-background: #161a21;
+  --p-datepicker-panel-color: #e9edf3;
+  --p-datepicker-panel-border-color: #333b47;
+  background: #161a21 !important;
+  background-color: #161a21 !important;
+  border: 1px solid #333b47 !important;
+}
+
+::ng-deep .base-leads-select-panel {
+  overflow: hidden;
+
+  .p-select-list {
+    padding: 5px;
+    background: #161a21;
+  }
+
+  .p-select-option {
+    min-height: 34px;
+    border-radius: 6px;
+    color: #e9edf3;
+    font-size: 12.5px;
+  }
+
+  .p-select-option:not(.p-select-option-selected):not(.p-disabled):hover {
+    background: #1b2029;
+  }
+
+  .p-select-option-selected {
+    background: #2a2013;
+    color: #f1c27c;
+  }
 }
 
 ::ng-deep .base-leads-calendar {
@@ -269,8 +392,7 @@
 .multiselect-field {
   display: flex;
   flex-direction: column;
-  min-width: 180px;
-  flex: 2 1 180px;
+  min-width: 0;
 }
 
 .input-field {
@@ -332,8 +454,7 @@
 .btn-search {
   background: var(--ink);
   color: var(--ground);
-  flex: 0 0 auto;
-  align-self: flex-end;
+  width: 100%;
 }
 
 .btn-search:disabled {
@@ -527,6 +648,10 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 @media (max-width: 1100px) {
   .base-leads { padding: 22px 18px; }
 
+  .filter-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .table-head, .data-row {
     min-width: 1100px;
   }
@@ -539,8 +664,21 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 @media (max-width: 640px) {
   .base-leads { padding: 18px 12px; }
 
-  .control-rail { flex-direction: column; }
-  .select-field, .date-field, .multiselect-field { min-width: 100%; }
+  .filter-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .export-rail { flex-direction: column; align-items: stretch; }
-  .export-actions { flex-direction: column; }
+  .export-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .export-actions > .select-field,
+  .export-actions > .input-field,
+  .export-actions > .btn-export {
+    width: 100%;
+  }
+
+  .export-actions > .select-field--format {
+    min-width: 0;
+    flex-basis: auto;
+  }
 }

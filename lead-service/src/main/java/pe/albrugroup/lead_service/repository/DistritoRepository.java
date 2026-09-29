@@ -32,4 +32,13 @@ public interface DistritoRepository extends JpaRepository<Distrito, Long> {
             WHERE d.codigo IN :codigos
             """)
     List<Distrito> findByCodigoInWithDepartamento(@Param("codigos") Collection<String> codigos);
+
+    @Query("""
+            SELECT d
+            FROM Distrito d
+            JOIN FETCH d.provincia
+            JOIN FETCH d.departamento
+            WHERE d.codigo IN :codigos
+            """)
+    List<Distrito> findByCodigoInConUbicacion(@Param("codigos") Collection<String> codigos);
 }
