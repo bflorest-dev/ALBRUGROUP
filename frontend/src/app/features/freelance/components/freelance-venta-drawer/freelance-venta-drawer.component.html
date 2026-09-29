@@ -70,11 +70,11 @@
             <h4>Titular y contacto</h4>
             <div class="fields two-columns">
               <label><span>Tipo de documento</span><select formControlName="tipoDocumento"><option>DNI</option><option>CE</option><option>RUC</option></select></label>
-              <label><span>N.º documento</span><input formControlName="numeroDocumentoTitularServicio" inputmode="numeric" maxlength="12" [class.invalid]="invalid('numeroDocumentoTitularServicio')"></label>
+              <label><span>N.º documento</span><input formControlName="numeroDocumentoTitularServicio" inputmode="numeric" [attr.maxlength]="maxDocumentoTitular()" [class.invalid]="invalid('numeroDocumentoTitularServicio')"></label>
               <label class="full"><span>Nombre del titular</span><input formControlName="nombreTitularServicio" [class.invalid]="invalid('nombreTitularServicio')"></label>
-              <label><span>Celular de registro</span><input formControlName="celularRegistro" inputmode="numeric" maxlength="12" [class.invalid]="invalid('celularRegistro')"></label>
-              <label><span>Celular de referencia <small>opcional</small></span><input formControlName="celularReferencia" inputmode="numeric" maxlength="12" [class.invalid]="invalid('celularReferencia')"></label>
-              <label><span>Celular de grabación</span><input formControlName="celularGrabacion" inputmode="numeric" maxlength="12" [class.invalid]="invalid('celularGrabacion')"></label>
+              <label><span>Celular de registro</span><input formControlName="celularRegistro" inputmode="numeric" [attr.maxlength]="maxCelularLength()" [class.invalid]="invalid('celularRegistro')"></label>
+              <label><span>Celular de referencia <small>opcional</small></span><input formControlName="celularReferencia" inputmode="numeric" [attr.maxlength]="maxCelularLength()" [class.invalid]="invalid('celularReferencia')"></label>
+              <label><span>Celular de grabación</span><input formControlName="celularGrabacion" inputmode="numeric" [attr.maxlength]="maxCelularLength()" [class.invalid]="invalid('celularGrabacion')"></label>
               <label><span>Correo</span><input formControlName="correo" type="email" placeholder="cliente@correo.com" [class.invalid]="invalid('correo')"></label>
               <div class="date-field-slot">
                 <app-date-field class="freelance-date-field" [class.field-invalid]="invalid('fechaNacimiento')" formControlName="fechaNacimiento" label="Fecha de nacimiento" inputId="freelance-fecha-nacimiento" placeholder="dd/mm/aaaa" panelStyleClass="freelance-date-panel" [max]="todayIso" [openOnHover]="true" [baseZIndex]="1400" />

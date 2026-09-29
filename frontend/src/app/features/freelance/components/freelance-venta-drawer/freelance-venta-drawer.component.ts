@@ -52,6 +52,8 @@ export class FreelanceVentaDrawerComponent {
   readonly saving = signal(false);
   readonly checkingIdentity = signal(false);
   readonly error = signal<string | null>(null);
+  readonly maxDocumentoTitular = signal(8);
+  readonly maxCelularLength = signal(9);
   readonly opciones = signal<FreelanceOpciones | null>(null);
   readonly preparacion = signal<FreelanceVentaPreparacion | null>(null);
   readonly selectedProvider = signal<number | null>(null);
@@ -406,21 +408,26 @@ export class FreelanceVentaDrawerComponent {
       Validators.required,
       documentoValidator(() => this.form.controls.tipoDocumento.value)
     ]);
-    this.form.controls.celularRegistro.setValidators([Validators.required, Validators.pattern(/^\d{1,12}$/)]);
-    this.form.controls.celularReferencia.setValidators([Validators.pattern(/^\d{0,12}$/)]);
-    this.form.controls.celularGrabacion.setValidators([Validators.required, Validators.pattern(/^\d{1,12}$/)]);
-    this.form.controls.tipoDocumento.valueChanges.subscribe(() =>
-      this.form.controls.numeroDocumentoTitularServicio.updateValueAndValidity({ emitEvent: false }));
-    this.form.controls.prefijo.valueChanges.subscribe(() => {
-      this.form.controls.lead.updateValueAndValidity({ emitEvent: false });
+    this.form.controls.celularRegistro.setValidators([Validators.required, telefonoValidator(prefix)]);
+    this.form.controls.celularReferencia.setValidators([telefonoValidator(prefix)]);
+    this.form.controls.celularGrabacion.setValidators([Validators.required, telefonoValidator(prefix)]);
+    this.form.controls.tipoDocumento.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((tipo) => {
+      const normalizedType = String(tipo ?? '').toUpperCase();
+      this.maxDocumentoTitular.set(normalizedType === 'DNI' ? 8 : normalizedType === 'RUC' ? 11 : 12);
+      this.form.controls.numeroDocumentoTitularServicio.updateValueAndValidity({ emitEvent: false });
     });
   }
 
   private configureNormalizers(): void {
     this.normalizeControl(this.form.controls.prefijo, limpiarPrefijo, () => {
-      const lead = this.form.controls.lead;
-      lead.setValue(limpiarTelefonoPorPrefijo(lead.value, this.form.controls.prefijo.value), { emitEvent: false });
-      lead.updateValueAndValidity({ emitEvent: false });
+      const prefix = this.form.controls.prefijo.value;
+      const prefixDigits = String(prefix ?? '').replace(/\D/g, '');
+      this.maxCelularLength.set(prefixDigits === '51' ? 9 : 12);
+      for (const name of ['lead', 'celularRegistro', 'celularReferencia', 'celularGrabacion'] as const) {
+        const control = this.form.controls[name];
+        control.setValue(limpiarTelefonoPorPrefijo(control.value, prefix), { emitEvent: false });
+        control.updateValueAndValidity({ emitEvent: false });
+      }
     });
     this.normalizeControl(this.form.controls.lead,
       (value) => limpiarTelefonoPorPrefijo(value, this.form.controls.prefijo.value));
@@ -428,7 +435,8 @@ export class FreelanceVentaDrawerComponent {
     this.normalizeControl(this.form.controls.numeroDocumentoTitularServicio, limpiarDocumento);
     this.normalizeControl(this.form.controls.numeroDocumentoTitularCelularRegistro, (value) => soloDigitos(value, 12));
     for (const name of ['celularRegistro', 'celularReferencia', 'celularGrabacion'] as const) {
-      this.normalizeControl(this.form.controls[name], (value) => soloDigitos(value, 12));
+      this.normalizeControl(this.form.controls[name],
+        (value) => limpiarTelefonoPorPrefijo(value, this.form.controls.prefijo.value));
     }
     for (const name of ['nombreTitularServicio', 'nombreTitularCelularRegistro', 'nombreMadre', 'nombrePadre'] as const) {
       this.normalizeControl(this.form.controls[name], limpiarNombrePersona);
