@@ -6290,9 +6290,7 @@ public class LeadService {
         if (datosPreventa.getFechaNacimiento() == null) {
             throw new BadRequestException("Falta fechaNacimiento");
         }
-        if (datosPreventa.getParentesco() == null) {
-            throw new BadRequestException("Falta parentesco");
-        }
+        // Parentesco es informativo: algunos proveedores no lo requieren y el modelo admite null.
         validarCamposConfigurablesObligatorios(lead, datosPreventa, direccion);
 
         validarTextoObligatorio(direccion.getUbigeoDomicilio(), "Falta ubigeoDomicilio");

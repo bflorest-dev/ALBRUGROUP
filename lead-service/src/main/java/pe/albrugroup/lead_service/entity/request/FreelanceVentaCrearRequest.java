@@ -19,7 +19,7 @@ public class FreelanceVentaCrearRequest {
     private String prefijo;
 
     @NotBlank
-    @Pattern(regexp = "^\\d{6,15}$", message = "El lead debe contener solo digitos")
+    @Pattern(regexp = "^\\d{1,12}$", message = "El lead debe contener solo digitos y no superar 12 caracteres")
     private String lead;
 
     private String usermeta;

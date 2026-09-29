@@ -20,9 +20,28 @@ public record FreelanceOpcionesResponse(
             Long id,
             String nombre,
             BigDecimal precio,
+            BigDecimal precioPromocional,
+            Integer mesesPromocionPrecio,
             Long idProveedor,
             String proveedor,
+            Integer velocidadRegular,
+            String unidadVelocidad,
+            Integer velocidadPromocional,
+            Integer mesesPromocionVelocidad,
+            String television,
+            Integer cantidadCanales,
+            String telefonia,
+            Integer minutosTelefonia,
+            List<AdicionalOpcion> adicionales,
             LocalDate vigenciaDesde,
             LocalDate vigenciaHasta
+    ) { }
+
+    public record AdicionalOpcion(
+            String nombre,
+            BigDecimal precioUnitario,
+            Integer cantidadIncluida,
+            boolean permiteCompraAdicional,
+            Integer cantidadMaximaAdicional
     ) { }
 }

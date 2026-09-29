@@ -133,6 +133,7 @@ INSERT INTO contrato (
     id,
     empleado_id,
     puesto_trabajo,
+    categoria_personal,
     regimen,
     modalidad,
     seguro_salud,
@@ -148,6 +149,11 @@ SELECT
     su.contrato_id,
     su.empleado_id,
     su.puesto_trabajo,
+    CASE
+        WHEN su.puesto_trabajo IN ('ADMINISTRADOR', 'RRHH', 'RECLUTADOR', 'CAPACITADOR', 'DESARROLLADOR', 'CONTADOR')
+            THEN 'ESTRUCTURAL'
+        ELSE 'OPERATIVO'
+    END,
     'PLANILLA',
     'FULL_TIME',
     'ESSALUD',
@@ -161,6 +167,7 @@ FROM seed_users su
 ON CONFLICT (id) DO UPDATE
 SET empleado_id = EXCLUDED.empleado_id,
     puesto_trabajo = EXCLUDED.puesto_trabajo,
+    categoria_personal = EXCLUDED.categoria_personal,
     regimen = EXCLUDED.regimen,
     modalidad = EXCLUDED.modalidad,
     seguro_salud = EXCLUDED.seguro_salud,

@@ -16,10 +16,29 @@ export interface FreelancePlanOpcion {
   id: number;
   nombre: string;
   precio?: number | null;
+  precioPromocional?: number | null;
+  mesesPromocionPrecio?: number | null;
   idProveedor: number;
   proveedor: string;
+  velocidadRegular?: number | null;
+  unidadVelocidad?: string | null;
+  velocidadPromocional?: number | null;
+  mesesPromocionVelocidad?: number | null;
+  television?: string | null;
+  cantidadCanales?: number | null;
+  telefonia?: string | null;
+  minutosTelefonia?: number | null;
+  adicionales: FreelancePlanAdicionalOpcion[];
   vigenciaDesde?: string | null;
   vigenciaHasta?: string | null;
+}
+
+export interface FreelancePlanAdicionalOpcion {
+  nombre: string;
+  precioUnitario?: number | null;
+  cantidadIncluida?: number | null;
+  permiteCompraAdicional: boolean;
+  cantidadMaximaAdicional?: number | null;
 }
 
 export interface FreelanceOpciones {

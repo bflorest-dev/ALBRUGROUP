@@ -2,7 +2,6 @@ package pe.albrugroup.lead_service.entity.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
@@ -22,11 +21,9 @@ public class LeadDireccionRequest {
     private String direccion;
     private String referencia;
 
-    @Size(max = 64, message = "latitud no debe superar 64 caracteres")
     @Pattern(regexp = "-?\\d{1,3}([\\.,]\\d+)?", message = "latitud no tiene un formato valido")
     private String latitud;
 
-    @Size(max = 64, message = "longitud no debe superar 64 caracteres")
     @Pattern(regexp = "-?\\d{1,3}([\\.,]\\d+)?", message = "longitud no tiene un formato valido")
     private String longitud;
     private String urbanizacion;

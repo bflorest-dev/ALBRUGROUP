@@ -32,6 +32,16 @@
     box-shadow 0.2s ease;
 }
 
+/* PrimeNG aplica fondos claros propios cuando el input filled recibe foco. */
+:host ::ng-deep .p-datepicker .p-datepicker-input.p-variant-filled,
+:host ::ng-deep .p-datepicker .p-datepicker-input.p-variant-filled:enabled:hover,
+:host ::ng-deep .p-datepicker .p-datepicker-input.p-variant-filled:enabled:focus {
+  color: var(--date-field-text);
+  background: var(--app-surface);
+  -webkit-text-fill-color: var(--date-field-text);
+  caret-color: var(--date-field-text);
+}
+
 :host ::ng-deep .p-datepicker .p-datepicker-input::placeholder {
   color: var(--date-field-placeholder);
   opacity: 1;

@@ -51,6 +51,7 @@ public class FreelanceService {
     private final DistritoRepository distritoRepository;
     private final LeadMapper leadMapper;
     private final LeadService leadService;
+    private final LeadSeguimientoService leadSeguimientoService;
     private final LeadRealtimeNotifier realtimeNotifier;
     private final EntityManager entityManager;
 
@@ -81,8 +82,17 @@ public class FreelanceService {
                 .filter(p -> Boolean.TRUE.equals(p.getActivo()))
                 .filter(p -> vigente(p, hoy))
                 .map(p -> new FreelanceOpcionesResponse.PlanOpcion(
-                        p.getId(), p.getNombre(), p.getPrecio(), p.getProveedor().getId(),
-                        p.getProveedor().getNombre(), p.getVigenciaDesde(), p.getVigenciaHasta()))
+                        p.getId(), p.getNombre(), p.getPrecio(), p.getPrecioPromocional(),
+                        p.getMesesPromocionPrecio(), p.getProveedor().getId(), p.getProveedor().getNombre(),
+                        p.getInternet() == null ? null : p.getInternet().getVelocidad(),
+                        p.getInternet() == null || p.getInternet().getUnidad() == null
+                                ? null : p.getInternet().getUnidad().name(),
+                        p.getVelocidadPromocional(), p.getMesesPromocionVelocidad(),
+                        p.getTelevision() == null ? null : p.getTelevision().getNombre(),
+                        p.getTelevision() == null ? null : p.getTelevision().getCantidadCanales(),
+                        p.getTelefono() == null ? null : p.getTelefono().getDescripcion(),
+                        p.getTelefono() == null ? null : p.getTelefono().getMinutos(),
+                        mapearAdicionales(p), p.getVigenciaDesde(), p.getVigenciaHasta()))
                 .toList();
         return new FreelanceOpcionesResponse(idEquipo, proveedores, planes);
     }
@@ -107,6 +117,8 @@ public class FreelanceService {
         Long idEquipo = equipoActualObligatorio();
         Plan plan = validarPlan(request.getIdPlan(), idEquipo);
         MatrizCierre cierre = resolverCierre(plan.getProveedor().getId());
+        validarContacto(request.getPrefijo(), request.getLead());
+        validarExpediente(request.getDatosPreventa(), request.getDireccion());
         validarIdentidadDisponible(request.getPrefijo(), request.getLead(), request.getUsermeta());
 
         Instant ahora = OperationalDateTime.now();
@@ -136,6 +148,7 @@ public class FreelanceService {
         lead.setLastEntryAt(ahora);
         leadService.validarPreventaCompletaParaSubsanacion(lead);
         lead = leadRepository.saveAndFlush(lead);
+        leadSeguimientoService.registrarAlta(lead.getId());
 
         FreelanceVentaOrigen origen = origenRepository.saveAndFlush(FreelanceVentaOrigen.builder()
                 .requestId(request.getRequestId())
@@ -183,8 +196,13 @@ public class FreelanceService {
         if (!puedeCorregir(lead, origen)) {
             throw new ConflictException("La venta ya no esta disponible para correccion");
         }
-        Plan plan = validarPlan(request.getIdPlan(), lead.getIdEquipo());
+        Long idEquipo = equipoActualObligatorio();
+        if (!Objects.equals(idEquipo, origen.getIdEquipoOrigen())) {
+            throw new ForbiddenException("La venta pertenece a otro equipo");
+        }
+        Plan plan = validarPlan(request.getIdPlan(), idEquipo);
         MatrizCierre cierre = resolverCierre(plan.getProveedor().getId());
+        validarExpediente(request.getDatosPreventa(), request.getDireccion());
         aplicarExpediente(lead, request.getDatosPreventa(), request.getDireccion(), plan);
         leadService.validarPreventaCompletaParaSubsanacion(lead);
         leadRepository.saveAndFlush(lead);
@@ -395,9 +413,123 @@ public class FreelanceService {
     }
 
     private boolean puedeCorregir(Lead lead, FreelanceVentaOrigen origen) {
+        List<Long> equipos = currentUser.equipos();
         return lead.getEtapa() == Etapa.PREVENTA
                 && Objects.equals(lead.getIdAsesorAsignado(), origen.getIdFreelance())
-                && currentUser.equipos().contains(lead.getIdEquipo());
+                && equipos != null
+                && equipos.contains(origen.getIdEquipoOrigen());
+    }
+
+    private List<FreelanceOpcionesResponse.AdicionalOpcion> mapearAdicionales(Plan plan) {
+        if (plan.getAdicionales() == null) {
+            return List.of();
+        }
+        return plan.getAdicionales().stream()
+                .filter(pa -> Boolean.TRUE.equals(pa.getActivo()) && pa.getAdicional() != null
+                        && Boolean.TRUE.equals(pa.getAdicional().getActivo()))
+                .sorted(Comparator.comparing(pa -> pa.getAdicional().getNombre(),
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .map(pa -> new FreelanceOpcionesResponse.AdicionalOpcion(
+                        pa.getAdicional().getNombre(), pa.getAdicional().getPrecioUnitario(),
+                        pa.getCantidadIncluida(), Boolean.TRUE.equals(pa.getPermiteCompraAdicional()),
+                        pa.getCantidadMaximaAdicional()))
+                .toList();
+    }
+
+    private void validarContacto(String prefijo, String telefono) {
+        String codigo = prefijo == null ? "" : prefijo.trim();
+        String numero = telefono == null ? "" : telefono.trim();
+        if (!codigo.matches("^\\+\\d{1,3}$")) {
+            throw new BadRequestException("El prefijo debe contener entre 1 y 3 digitos");
+        }
+        if (!numero.matches("^\\d+$")) {
+            throw new BadRequestException("El telefono debe contener solo numeros");
+        }
+        if ("+51".equals(codigo) && !numero.matches("^9\\d{8}$")) {
+            throw new BadRequestException("Para el prefijo +51, el telefono debe empezar en 9 y tener 9 digitos");
+        }
+        if (!"+51".equals(codigo) && numero.length() > 12) {
+            throw new BadRequestException("El telefono no debe superar 12 digitos");
+        }
+    }
+
+    private void validarExpediente(
+            pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest datos,
+            pe.albrugroup.lead_service.entity.request.LeadDireccionRequest direccion) {
+        if (datos == null || direccion == null) {
+            throw new BadRequestException("Falta completar el expediente");
+        }
+        if (datos.getTipoDocumento() == null) {
+            throw new BadRequestException("Falta tipoDocumento");
+        }
+        validarSoloDigitos(datos.getNumeroDocumentoTitularServicio(), "numeroDocumentoTitularServicio", true);
+        switch (datos.getTipoDocumento()) {
+            case DNI -> validarLongitud(datos.getNumeroDocumentoTitularServicio(), 8, 8, "El DNI debe tener 8 digitos");
+            case RUC -> validarLongitud(datos.getNumeroDocumentoTitularServicio(), 11, 11, "El RUC debe tener 11 digitos");
+            case CE -> validarLongitud(datos.getNumeroDocumentoTitularServicio(), 6, 12, "El CE debe tener entre 6 y 12 digitos");
+        }
+        validarNombre(datos.getNombreTitularServicio(), "nombreTitularServicio", true);
+        validarNombre(datos.getNombreMadre(), "nombreMadre", false);
+        validarNombre(datos.getNombrePadre(), "nombrePadre", false);
+        validarNombre(datos.getNombreTitularCelularRegistro(), "nombreTitularCelularRegistro", false);
+        validarSoloDigitos(datos.getNumeroDocumentoTitularCelularRegistro(),
+                "numeroDocumentoTitularCelularRegistro", false);
+        validarContactoTelefono(datos.getCelularRegistro(), "celularRegistro", true);
+        validarContactoTelefono(datos.getCelularReferencia(), "celularReferencia", false);
+        validarContactoTelefono(datos.getCelularGrabacion(), "celularGrabacion", true);
+        if (datos.getCorreo() == null || !datos.getCorreo().trim().matches(
+                "^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+$")) {
+            throw new BadRequestException("El correo no tiene un formato valido");
+        }
+        validarCoordenada(direccion.getLatitud(), true, "latitud");
+        validarCoordenada(direccion.getLongitud(), false, "longitud");
+    }
+
+    private void validarContactoTelefono(String value, String campo, boolean requerido) {
+        if ((value == null || value.isBlank()) && !requerido) return;
+        validarSoloDigitos(value, campo, requerido);
+        if (value != null && value.length() > 12) {
+            throw new BadRequestException(campo + " no debe superar 12 digitos");
+        }
+    }
+
+    private void validarSoloDigitos(String value, String campo, boolean requerido) {
+        if (value == null || value.isBlank()) {
+            if (requerido) throw new BadRequestException("Falta " + campo);
+            return;
+        }
+        if (!value.matches("^\\d+$")) {
+            throw new BadRequestException(campo + " debe contener solo numeros");
+        }
+    }
+
+    private void validarLongitud(String value, int minimo, int maximo, String mensaje) {
+        if (value == null || value.length() < minimo || value.length() > maximo) {
+            throw new BadRequestException(mensaje);
+        }
+    }
+
+    private void validarNombre(String value, String campo, boolean requerido) {
+        if (value == null || value.isBlank()) {
+            if (requerido) throw new BadRequestException("Falta " + campo);
+            return;
+        }
+        if (!value.matches("^[\\p{L}' -]+$")) {
+            throw new BadRequestException(campo + " solo permite letras y espacios");
+        }
+    }
+
+    private void validarCoordenada(String value, boolean latitud, String campo) {
+        if (value == null || value.isBlank()) return;
+        String normalizada = value.replace(',', '.');
+        if (!normalizada.matches("^-?\\d{1,3}(?:\\.\\d+)?$")) {
+            throw new BadRequestException(campo + " no tiene un formato valido");
+        }
+        BigDecimal numero = new BigDecimal(normalizada);
+        BigDecimal limite = BigDecimal.valueOf(latitud ? 90 : 180);
+        if (numero.abs().compareTo(limite) > 0) {
+            throw new BadRequestException(campo + " esta fuera del rango permitido");
+        }
     }
 
     private Optional<Evento> ultimoEventoVenta(Long idLead) {

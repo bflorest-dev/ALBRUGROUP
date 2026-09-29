@@ -111,6 +111,7 @@ class LeadServiceRetroactiveIntakeTest {
     @Mock private ProveedorScopeService proveedorScopeService;
     @Mock private TipificacionService tipificacionService;
     @Mock private OrigenRepository origenRepository;
+    @Mock private LeadSeguimientoService leadSeguimientoService;
 
     @InjectMocks private LeadService leadService;
 
@@ -784,7 +785,7 @@ class LeadServiceRetroactiveIntakeTest {
     }
 
     @Test
-    void tipificarPreventaCompletaRechazaLeadSinParentesco() {
+    void tipificarPreventaCompletaAceptaLeadSinParentesco() {
         Lead lead = leadCompletoParaCierrePreventa();
         lead.getDatosPreventa().setParentesco(null);
         LeadTipificacionRequest request = cierrePreventaRequest();
@@ -802,12 +803,13 @@ class LeadServiceRetroactiveIntakeTest {
                 80L,
                 "VENTA_CERRADA"
         )).thenReturn(Optional.of(subtipificacion));
+        when(equipoCampoService.resolverConfigPorProveedor(1L)).thenReturn(List.of());
+        when(leadRepository.save(lead)).thenReturn(lead);
 
-        assertThatThrownBy(() -> leadService.tipificarLead(25202L, request))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Falta parentesco");
+        leadService.tipificarLead(25202L, request);
 
-        verify(leadRepository, never()).save(any());
+        assertThat(lead.getEtapa()).isEqualTo(Etapa.VENTA);
+        verify(leadRepository).save(lead);
     }
 
     @Test
@@ -844,6 +846,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .id(5L)
                 .proveedor(Proveedor.builder().id(2L).nombre("CLARO").build())
                 .build());
+        lead.setProveedorOrigen(lead.getPlan().getProveedor());
 
         when(currentUser.empleadoID()).thenReturn(7L);
         when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
@@ -863,6 +866,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .id(5L)
                 .proveedor(Proveedor.builder().id(2L).nombre("CLARO").build())
                 .build());
+        lead.setProveedorOrigen(lead.getPlan().getProveedor());
         LeadTipificacionRequest request = cierrePreventaRequest();
         request.setTecnologia(Tecnologia.FTTH);
 
@@ -885,6 +889,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .id(5L)
                 .proveedor(Proveedor.builder().id(2L).nombre("CLARO").build())
                 .build());
+        lead.setProveedorOrigen(lead.getPlan().getProveedor());
         LeadTipificacionRequest request = cierrePreventaRequest();
         request.setTecnologia(Tecnologia.HFC);
         request.setEsFullClaro(true);
@@ -1129,6 +1134,7 @@ class LeadServiceRetroactiveIntakeTest {
     }
 
     private Lead leadCompletoParaCierrePreventa() {
+        Proveedor proveedor = Proveedor.builder().id(1L).nombre("Proveedor").build();
         return Lead.builder()
                 .id(25202L)
                 .prefijo("+51")
@@ -1138,6 +1144,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .estado(EstadoSeguimiento.EN_GESTION)
                 .idAsesorAsignado(7L)
                 .nombreAsesorAsignado("Asesor Venta")
+                .proveedorOrigen(proveedor)
                 .datosPreventa(DatosPreventa.builder()
                         .tipoDocumento(TipoDocumento.DNI)
                         .numeroDocumentoTitularServicio("12345678")
@@ -1156,7 +1163,7 @@ class LeadServiceRetroactiveIntakeTest {
                         .build())
                 .plan(Plan.builder()
                         .id(5L)
-                        .proveedor(Proveedor.builder().id(1L).nombre("Proveedor").build())
+                        .proveedor(proveedor)
                         .build())
                 .build();
     }

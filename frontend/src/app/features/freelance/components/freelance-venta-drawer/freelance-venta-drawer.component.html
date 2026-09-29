@@ -46,8 +46,8 @@
               <p>El teléfono identifica la oportunidad y no podrá cambiar después del registro.</p>
             </div>
             <div class="fields identity-grid">
-              <label><span>Prefijo</span><input formControlName="prefijo" placeholder="+51" [class.invalid]="invalid('prefijo')"></label>
-              <label class="wide"><span>Teléfono</span><input formControlName="lead" inputmode="numeric" placeholder="999 888 777" [class.invalid]="invalid('lead')"></label>
+              <label><span>Prefijo</span><span class="prefix-input"><b aria-hidden="true">+</b><input formControlName="prefijo" inputmode="numeric" maxlength="3" placeholder="51" [class.invalid]="invalid('prefijo')"></span></label>
+              <label class="wide"><span>Teléfono</span><input formControlName="lead" inputmode="numeric" maxlength="12" placeholder="999888777" [class.invalid]="invalid('lead')"></label>
               <label class="full"><span>Usermeta <small>opcional, sin @</small></span><input formControlName="usermeta" placeholder="usuario.meta" [class.invalid]="invalid('usermeta')"></label>
             </div>
           </section>
@@ -62,32 +62,42 @@
             <div class="fields two-columns provider-first">
               <label><span>Proveedor</span>
                 <select formControlName="idProveedor" (change)="selectProvider($any($event.target).value)" [class.invalid]="invalid('idProveedor')">
-                  <option [ngValue]="null">Selecciona</option>
-                  @for (provider of providers(); track provider.id) { <option [ngValue]="provider.id">{{ provider.nombre }}</option> }
+                  <option value="">Selecciona</option>
+                  @for (provider of providers(); track provider.id) { <option [value]="provider.id">{{ provider.nombre }}</option> }
                 </select>
               </label>
             </div>
             <h4>Titular y contacto</h4>
             <div class="fields two-columns">
               <label><span>Tipo de documento</span><select formControlName="tipoDocumento"><option>DNI</option><option>CE</option><option>RUC</option></select></label>
-              <label><span>N.º documento</span><input formControlName="numeroDocumentoTitularServicio" inputmode="numeric" [class.invalid]="invalid('numeroDocumentoTitularServicio')"></label>
+              <label><span>N.º documento</span><input formControlName="numeroDocumentoTitularServicio" inputmode="numeric" maxlength="12" [class.invalid]="invalid('numeroDocumentoTitularServicio')"></label>
               <label class="full"><span>Nombre del titular</span><input formControlName="nombreTitularServicio" [class.invalid]="invalid('nombreTitularServicio')"></label>
-              <label><span>Celular de registro</span><input formControlName="celularRegistro" inputmode="numeric" [class.invalid]="invalid('celularRegistro')"></label>
-              <label><span>Celular de referencia <small>opcional</small></span><input formControlName="celularReferencia" inputmode="numeric" [class.invalid]="invalid('celularReferencia')"></label>
-              <label><span>Celular de grabación</span><input formControlName="celularGrabacion" inputmode="numeric" [class.invalid]="invalid('celularGrabacion')"></label>
+              <label><span>Celular de registro</span><input formControlName="celularRegistro" inputmode="numeric" maxlength="12" [class.invalid]="invalid('celularRegistro')"></label>
+              <label><span>Celular de referencia <small>opcional</small></span><input formControlName="celularReferencia" inputmode="numeric" maxlength="12" [class.invalid]="invalid('celularReferencia')"></label>
+              <label><span>Celular de grabación</span><input formControlName="celularGrabacion" inputmode="numeric" maxlength="12" [class.invalid]="invalid('celularGrabacion')"></label>
               <label><span>Correo</span><input formControlName="correo" type="email" placeholder="cliente@correo.com" [class.invalid]="invalid('correo')"></label>
-              <label><span>Fecha de nacimiento</span><input formControlName="fechaNacimiento" type="date" [class.invalid]="invalid('fechaNacimiento')"></label>
-              <label><span>Parentesco</span><select formControlName="parentesco"><option>TITULAR</option><option>MADRE</option><option>PADRE</option><option>HERMANO_A</option><option>TIO_A</option><option>CONOCIDO</option></select></label>
+              <div class="date-field-slot">
+                <app-date-field class="freelance-date-field" [class.field-invalid]="invalid('fechaNacimiento')" formControlName="fechaNacimiento" label="Fecha de nacimiento" inputId="freelance-fecha-nacimiento" placeholder="dd/mm/aaaa" panelStyleClass="freelance-date-panel" [max]="todayIso" [openOnHover]="true" [baseZIndex]="1400" />
+                @if (invalid('fechaNacimiento')) { <small class="field-error">Ingresa una fecha válida en formato dd/mm/aaaa.</small> }
+              </div>
               <fieldset class="full location-fields">
                 <legend>Ubicación de nacimiento <small>opcional</small></legend>
                 <label><span>Departamento</span><select formControlName="idDepartamentoNacimiento" (change)="selectDepartment('nacimiento', $any($event.target).value)"><option [ngValue]="null">Selecciona</option>@for (item of departamentos(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
                 <label><span>Provincia</span><select formControlName="idProvinciaNacimiento" (change)="selectProvince('nacimiento', $any($event.target).value)"><option [ngValue]="null">Selecciona</option>@for (item of provinciasNacimiento(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
                 <label><span>Distrito</span><select formControlName="idDistritoNacimiento" (change)="selectDistrict('nacimiento', $any($event.target).value)"><option [ngValue]="null">Selecciona</option>@for (item of distritosNacimiento(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
               </fieldset>
-              @if (fieldVisible('NOMBRE_MADRE')) { <label><span>Nombre de la madre @if (!fieldRequired('NOMBRE_MADRE')) { <small>opcional</small> }</span><input formControlName="nombreMadre" [class.invalid]="invalid('nombreMadre')"></label> }
-              @if (fieldVisible('NOMBRE_PADRE')) { <label><span>Nombre del padre @if (!fieldRequired('NOMBRE_PADRE')) { <small>opcional</small> }</span><input formControlName="nombrePadre" [class.invalid]="invalid('nombrePadre')"></label> }
-              @if (fieldVisible('DOC_TITULAR_CELULAR')) { <label><span>Doc. titular del celular @if (!fieldRequired('DOC_TITULAR_CELULAR')) { <small>opcional</small> }</span><input formControlName="numeroDocumentoTitularCelularRegistro" inputmode="numeric" [class.invalid]="invalid('numeroDocumentoTitularCelularRegistro')"></label> }
-              @if (fieldVisible('NOMBRE_TITULAR_CELULAR')) { <label><span>Nombre titular del celular @if (!fieldRequired('NOMBRE_TITULAR_CELULAR')) { <small>opcional</small> }</span><input formControlName="nombreTitularCelularRegistro" [class.invalid]="invalid('nombreTitularCelularRegistro')"></label> }
+              @if (isWin() || (isClaro() && (fieldVisible('NOMBRE_MADRE') || fieldVisible('NOMBRE_PADRE')))) {
+                <div class="provider-fields full">
+                  @if (isWin()) {
+                    <label><span>Parentesco <small>opcional</small></span><select formControlName="parentesco"><option value="">No requiere</option><option>TITULAR</option><option>MADRE</option><option>PADRE</option><option>HERMANO_A</option><option>TIO_A</option><option>CONOCIDO</option></select></label>
+                    @if (fieldVisible('DOC_TITULAR_CELULAR')) { <label><span>Documento del titular del celular @if (!fieldRequired('DOC_TITULAR_CELULAR')) { <small>opcional</small> }</span><input formControlName="numeroDocumentoTitularCelularRegistro" inputmode="numeric" maxlength="12" [class.invalid]="invalid('numeroDocumentoTitularCelularRegistro')"></label> }
+                    @if (fieldVisible('NOMBRE_TITULAR_CELULAR')) { <label><span>Nombre del titular del celular @if (!fieldRequired('NOMBRE_TITULAR_CELULAR')) { <small>opcional</small> }</span><input formControlName="nombreTitularCelularRegistro" [class.invalid]="invalid('nombreTitularCelularRegistro')"></label> }
+                  } @else if (isClaro()) {
+                    @if (fieldVisible('NOMBRE_MADRE')) { <label><span>Nombre de la madre @if (!fieldRequired('NOMBRE_MADRE')) { <small>opcional</small> }</span><input formControlName="nombreMadre" [class.invalid]="invalid('nombreMadre')"></label> }
+                    @if (fieldVisible('NOMBRE_PADRE')) { <label><span>Nombre del padre @if (!fieldRequired('NOMBRE_PADRE')) { <small>opcional</small> }</span><input formControlName="nombrePadre" [class.invalid]="invalid('nombrePadre')"></label> }
+                  }
+                </div>
+              }
             </div>
 
             <h4>Dirección de instalación</h4>
@@ -103,8 +113,8 @@
               <label><span>Nombre de vía</span><input formControlName="via"></label>
               <label class="full"><span>Dirección</span><input formControlName="direccion" placeholder="Av. Principal 123" [class.invalid]="invalid('direccion')"></label>
               <label class="full"><span>Referencia</span><input formControlName="referencia" placeholder="Frente al parque" [class.invalid]="invalid('referencia')"></label>
-              <label><span>Latitud</span><input formControlName="latitud" placeholder="-12.0464" [class.invalid]="invalid('latitud')"></label>
-              <label><span>Longitud</span><input formControlName="longitud" placeholder="-77.0428" [class.invalid]="invalid('longitud')"></label>
+              <label><span>Latitud</span><input formControlName="latitud" inputmode="decimal" placeholder="-12.011912014367258" [class.invalid]="invalid('latitud')"></label>
+              <label><span>Longitud</span><input formControlName="longitud" inputmode="decimal" placeholder="-77.12235645202007" [class.invalid]="invalid('longitud')"></label>
               @for (field of [
                 ['urbanizacion','Urbanización'], ['numero','Número'], ['manzana','Manzana'], ['lote','Lote'],
                 ['nombreEdificio','Edificio'], ['nombreCondominio','Condominio'], ['piso','Piso'], ['interior','Interior']
@@ -122,17 +132,34 @@
               <h3>Oferta comercial</h3>
               <p>Selecciona un plan vigente del proveedor elegido para este expediente.</p>
             </div>
-            <div class="fields two-columns">
-              <label><span>Plan</span>
-                <select formControlName="idPlan" [class.invalid]="invalid('idPlan')">
-                  <option [ngValue]="null">Selecciona</option>
-                  @for (plan of plans(); track plan.id) { <option [ngValue]="plan.id">{{ plan.nombre }} · S/ {{ plan.precio | number:'1.2-2' }}</option> }
-                </select>
-              </label>
+            <div class="plan-options" role="radiogroup" aria-label="Planes disponibles" [class.invalid]="invalid('idPlan')">
+              @for (plan of plans(); track plan.id) {
+                <button type="button" class="plan-option" role="radio" [attr.aria-checked]="form.controls.idPlan.value === plan.id"
+                  [class.selected]="form.controls.idPlan.value === plan.id" (click)="selectPlan(plan.id)">
+                  <span class="plan-option-head"><strong>{{ plan.nombre }}</strong><span class="plan-price">
+                    @if (plan.precioPromocional != null) { <b>S/ {{ plan.precioPromocional | number:'1.2-2' }}</b><small>{{ plan.mesesPromocionPrecio ? 'por ' + plan.mesesPromocionPrecio + ' meses' : 'promocional' }}</small> }
+                    <span [class.regular-crossed]="plan.precioPromocional != null">S/ {{ plan.precio | number:'1.2-2' }} regular</span>
+                  </span></span>
+                  <span class="plan-facts">
+                    <span><i class="ti ti-wifi"></i><b>{{ plan.velocidadRegular ? plan.velocidadRegular + ' ' + speedUnit(plan.unidadVelocidad) : 'Sin internet' }}</b><small>velocidad regular</small></span>
+                    @if (plan.velocidadPromocional) { <span><i class="ti ti-rocket"></i><b>{{ plan.velocidadPromocional }} {{ speedUnit(plan.unidadVelocidad) }}</b><small>promocional{{ plan.mesesPromocionVelocidad ? ' · ' + plan.mesesPromocionVelocidad + ' meses' : '' }}</small></span> }
+                    @if (plan.television) { <span><i class="ti ti-device-tv"></i><b>{{ plan.television }}</b><small>{{ plan.cantidadCanales ? plan.cantidadCanales + ' canales' : 'televisión incluida' }}</small></span> }
+                    @if (plan.telefonia || plan.minutosTelefonia) { <span><i class="ti ti-phone"></i><b>{{ plan.telefonia || 'Telefonía' }}</b><small>{{ plan.minutosTelefonia ? plan.minutosTelefonia + ' minutos' : 'servicio incluido' }}</small></span> }
+                  </span>
+                  <span class="plan-additionals">
+                    <b>Servicios adicionales</b>
+                    @if (plan.adicionales.length) {
+                      @for (additional of plan.adicionales; track additional.nombre) {
+                        <span>{{ additional.nombre }}@if (additional.cantidadIncluida) { · {{ additional.cantidadIncluida }} incluido(s) }@if (additional.precioUnitario != null) { · S/ {{ additional.precioUnitario | number:'1.2-2' }} }</span>
+                      }
+                    } @else { <span>Sin servicios adicionales</span> }
+                  </span>
+                  <span class="plan-choice"><i class="ti" [class.ti-circle-check-filled]="form.controls.idPlan.value === plan.id" [class.ti-circle]="form.controls.idPlan.value !== plan.id"></i>{{ form.controls.idPlan.value === plan.id ? 'Plan seleccionado' : 'Elegir este plan' }}</span>
+                </button>
+              } @empty {
+                <div class="empty-plans">No hay planes vigentes para el proveedor seleccionado.</div>
+              }
             </div>
-            @if (form.controls.idPlan.value) {
-              <div class="plan-summary"><i class="ti ti-router"></i><div><strong>{{ planName() }}</strong><span>Plan listo para enviar a Venta</span></div></div>
-            }
           </section>
         }
 

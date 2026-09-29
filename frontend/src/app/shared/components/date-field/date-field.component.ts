@@ -75,13 +75,23 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
   }
 
   protected onDateSelected(value: Date | string | null): void {
-    if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      this.commitDate(value);
+      this.onTouched();
+      return;
+    }
+
+    const manualValue = typeof value === 'string' ? value : (this.dateInput?.value ?? '');
+    if (!manualValue.trim()) {
+      this.selectedDate = null;
       this.onChange('');
       return;
     }
-    this.selectedDate = value;
-    this.onChange(value ? this.toIsoDate(value) : '');
-    this.onTouched();
+
+    // PrimeNG puede emitir `null` antes de terminar de resolver una fecha escrita.
+    // Conservamos el texto y sincronizamos el FormControl desde el input nativo.
+    const parsed = this.parseDisplayDate(manualValue);
+    if (parsed) this.commitDate(parsed);
   }
 
   protected onMouseEnter(): void {
@@ -90,6 +100,20 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
   }
 
   protected onInputBlur(): void {
+    const manualValue = this.dateInput?.value.trim() ?? '';
+    if (!manualValue) {
+      this.selectedDate = null;
+      this.onChange('');
+    } else {
+      const parsed = this.parseDisplayDate(manualValue);
+      if (!parsed || !this.isWithinBounds(parsed)) {
+        this.selectedDate = null;
+        this.onChange('');
+        if (!this.keepInvalid && this.dateInput) this.dateInput.value = '';
+      } else {
+        this.commitDate(parsed);
+      }
+    }
     this.onTouched();
   }
 
@@ -132,6 +156,41 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
     return `${year}-${month}-${day}`;
   }
 
+  private parseDisplayDate(value: string): Date | null {
+    const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!match) return null;
+
+    const [, dayText, monthText, yearText] = match;
+    const day = Number(dayText);
+    const month = Number(monthText);
+    const year = Number(yearText);
+    const date = new Date(year, month - 1, day);
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      return null;
+    }
+    return date;
+  }
+
+  private isWithinBounds(date: Date): boolean {
+    const min = this.parsedMinDate;
+    const max = this.parsedMaxDate;
+    return (!min || date >= min) && (!max || date <= max);
+  }
+
+  private commitDate(date: Date): boolean {
+    if (!this.isWithinBounds(date)) {
+      this.onChange('');
+      return false;
+    }
+    this.selectedDate = date;
+    this.onChange(this.toIsoDate(date));
+    return true;
+  }
+
   private formatDisplayDate(date: Date): string {
     return new Intl.DateTimeFormat('es-PE', {
       day: '2-digit',
@@ -170,6 +229,19 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
     const caretDigits = digits.length > caretBefore ? digits.length : Math.min(caretBefore, digits.length);
     const caret = this.positionAfterDigits(input.value, caretDigits);
     input.setSelectionRange(caret, caret);
+
+    if (!input.value) {
+      this.selectedDate = null;
+      this.onChange('');
+      return;
+    }
+
+    const parsed = this.parseDisplayDate(input.value);
+    if (parsed) {
+      this.commitDate(parsed);
+    } else {
+      this.onChange('');
+    }
   };
 
   private sanitizeDigits(value: string): string {

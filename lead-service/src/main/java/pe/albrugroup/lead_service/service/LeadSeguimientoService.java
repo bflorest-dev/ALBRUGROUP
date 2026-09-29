@@ -103,6 +103,17 @@ public class LeadSeguimientoService {
         leadSeguimientoRepository.save(seg);
     }
 
+    /**
+     * Garantiza la fila de seguimiento desde el alta. Las fechas de negocio permanecen nulas hasta que
+     * ocurra la tipificacion que realmente las representa (REGISTRA_CRM, grabacion, programacion, etc.).
+     */
+    public void registrarAlta(Long idLead) {
+        if (idLead == null) {
+            return;
+        }
+        leadSeguimientoRepository.save(obtenerOCrear(idLead));
+    }
+
     private LeadSeguimiento obtenerOCrear(Long idLead) {
         return leadSeguimientoRepository.findByIdLead(idLead)
                 .orElseGet(() -> LeadSeguimiento.builder().idLead(idLead).build());

@@ -10,7 +10,7 @@ export function limpiarPrefijo(value: unknown): string {
 }
 
 export function limpiarTelefono(value: unknown): string {
-  return soloDigitos(value, 15);
+  return soloDigitos(value, 12);
 }
 
 export function limpiarTelefonoPorPrefijo(value: unknown, prefijo: unknown): string {
@@ -49,8 +49,7 @@ export function limpiarTextoDireccion(value: unknown, maxLength = 160): string {
 export function limpiarCoordenada(value: unknown): string {
   return String(value ?? '')
     .replace(/[^\d.,-]/g, '')
-    .replace(/(?!^)-/g, '')
-    .slice(0, 24);
+    .replace(/(?!^)-/g, '');
 }
 
 export function extraerParCoordenadas(value: unknown): [string, string] | null {
@@ -75,7 +74,7 @@ export function telefonoValidator(prefijo: () => string | null | undefined): Val
     if (String(prefijo() ?? '').replace(/\D/g, '') === '51') {
       return /^9\d{8}$/.test(value) ? null : { telefonoPeru: true };
     }
-    return value.length >= 6 && value.length <= 15 ? null : { telefonoInternacional: true };
+    return value.length >= 1 && value.length <= 12 ? null : { telefonoInternacional: true };
   };
 }
 

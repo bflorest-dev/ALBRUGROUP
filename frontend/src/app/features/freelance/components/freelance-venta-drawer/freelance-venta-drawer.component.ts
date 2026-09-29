@@ -1,11 +1,21 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize, firstValueFrom } from 'rxjs';
+import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { CampoCaptura, UbigeoItem } from '../../../../shared/models/preventa/preventa.models';
 import {
   coordenadaValidator,
   documentoValidator,
+  limpiarCoordenada,
+  limpiarDocumento,
+  limpiarNombrePersona,
+  limpiarPrefijo,
+  limpiarTelefonoPorPrefijo,
+  limpiarUsermeta,
+  prefijoValidator,
+  soloDigitos,
   telefonoValidator
 } from '../../../bitacora/utils/bitacora-input.rules';
 import {
@@ -22,7 +32,7 @@ type DrawerMode = 'crear' | 'corregir';
 @Component({
   selector: 'app-freelance-venta-drawer',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, DateFieldComponent],
   templateUrl: './freelance-venta-drawer.component.html',
   styleUrl: './freelance-venta-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -36,6 +46,7 @@ export class FreelanceVentaDrawerComponent {
 
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(FreelanceService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly step = signal(0);
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -51,8 +62,8 @@ export class FreelanceVentaDrawerComponent {
   readonly distritosDomicilio = signal<UbigeoItem[]>([]);
 
   readonly form = this.fb.group({
-    prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{1,3}$/)]],
-    lead: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]],
+    prefijo: ['51', [Validators.required, prefijoValidator()]],
+    lead: ['', Validators.required],
     usermeta: ['', [Validators.maxLength(80), Validators.pattern(/^[A-Za-z0-9._-]*$/)]],
     tipoDocumento: ['DNI', Validators.required],
     numeroDocumentoTitularServicio: ['', Validators.required],
@@ -62,7 +73,7 @@ export class FreelanceVentaDrawerComponent {
     celularGrabacion: ['', Validators.required],
     correo: ['', [Validators.required, Validators.email, Validators.maxLength(160)]],
     fechaNacimiento: ['', Validators.required],
-    parentesco: ['TITULAR', Validators.required],
+    parentesco: [''],
     ubigeoNacimiento: ['', Validators.pattern(/^\d{6}$/)],
     idDepartamentoNacimiento: [null as number | null],
     idProvinciaNacimiento: [null as number | null],
@@ -96,6 +107,11 @@ export class FreelanceVentaDrawerComponent {
   });
 
   readonly providers = computed(() => this.opciones()?.proveedores ?? []);
+  readonly selectedProviderName = computed(() =>
+    this.providers().find((provider) => provider.id === this.selectedProvider())?.nombre.trim().toUpperCase() ?? ''
+  );
+  readonly isWin = computed(() => this.selectedProviderName() === 'WIN');
+  readonly isClaro = computed(() => this.selectedProviderName().includes('CLARO'));
   readonly configuredFields = computed(() =>
     this.providers().find((provider) => provider.id === this.selectedProvider())?.camposCaptura ?? []
   );
@@ -104,12 +120,14 @@ export class FreelanceVentaDrawerComponent {
     return (this.opciones()?.planes ?? []).filter((plan) => !provider || plan.idProveedor === provider);
   });
   readonly title = computed(() => this.mode() === 'corregir' ? 'Corregir venta retornada' : 'Agregar venta');
+  readonly todayIso = new Date().toISOString().slice(0, 10);
 
   private lastLoadKey = '';
   private departamentosPromise: Promise<UbigeoItem[]> | null = null;
 
   constructor() {
     this.configureCoreValidators();
+    this.configureNormalizers();
     effect(() => {
       const key = this.visible() ? `${this.mode()}-${this.idLead() ?? 'new'}` : '';
       if (!key || key === this.lastLoadKey) return;
@@ -141,9 +159,15 @@ export class FreelanceVentaDrawerComponent {
     const id = value ? Number(value) : null;
     this.selectedProvider.set(id);
     this.form.controls.idProveedor.setValue(id);
+    if (!this.isWin()) this.form.controls.parentesco.setValue('', { emitEvent: false });
     const plan = this.opciones()?.planes.find((item) => item.id === this.form.controls.idPlan.value);
     if (plan && plan.idProveedor !== id) this.form.controls.idPlan.setValue(null);
     this.applyConfiguredValidators();
+  }
+
+  selectPlan(id: number): void {
+    this.form.controls.idPlan.setValue(id);
+    this.form.controls.idPlan.markAsTouched();
   }
 
   fieldVisible(field: CampoCaptura): boolean {
@@ -210,7 +234,7 @@ export class FreelanceVentaDrawerComponent {
         celularGrabacion: this.nullIfBlank(v.celularGrabacion),
         correo: v.correo,
         fechaNacimiento: v.fechaNacimiento,
-        parentesco: v.parentesco,
+        parentesco: this.nullIfBlank(v.parentesco),
         ubigeoNacimiento: this.nullIfBlank(v.ubigeoNacimiento),
         nombreMadre: this.nullIfBlank(v.nombreMadre),
         nombrePadre: this.nullIfBlank(v.nombrePadre),
@@ -224,8 +248,8 @@ export class FreelanceVentaDrawerComponent {
         via: this.nullIfBlank(v.via),
         direccion: v.direccion!,
         referencia: this.nullIfBlank(v.referencia),
-        latitud: this.nullIfBlank(v.latitud) ?? '',
-        longitud: this.nullIfBlank(v.longitud) ?? '',
+        latitud: this.normalizarCoordenadaPayload(v.latitud),
+        longitud: this.normalizarCoordenadaPayload(v.longitud),
         urbanizacion: this.nullIfBlank(v.urbanizacion),
         numero: this.nullIfBlank(v.numero),
         manzana: this.nullIfBlank(v.manzana),
@@ -243,7 +267,7 @@ export class FreelanceVentaDrawerComponent {
       ? this.service.reenviar(this.idLead()!, common as FreelanceVentaReenvioRequest)
       : this.service.crear({
           ...common,
-          prefijo: v.prefijo!,
+          prefijo: `+${v.prefijo!}`,
           lead: v.lead!,
           usermeta: this.nullIfBlank(v.usermeta)
         } as FreelanceVentaCrearRequest);
@@ -262,6 +286,11 @@ export class FreelanceVentaDrawerComponent {
     return this.opciones()?.planes.find((plan) => plan.id === this.form.controls.idPlan.value)?.nombre ?? '—';
   }
 
+  speedUnit(unit: string | null | undefined): string {
+    if (unit === 'GBPS') return 'Gbps';
+    return 'Mbps';
+  }
+
   private load(): void {
     this.step.set(0);
     this.error.set(null);
@@ -271,12 +300,16 @@ export class FreelanceVentaDrawerComponent {
     this.form.controls.prefijo.enable({ emitEvent: false });
     this.form.controls.lead.enable({ emitEvent: false });
     this.form.controls.usermeta.enable({ emitEvent: false });
-    this.form.reset({ prefijo: '+51', tipoDocumento: 'DNI', parentesco: 'TITULAR', tipoDomicilio: 'HOGAR', tipoVia: 'CALLE' });
+    this.form.reset({ prefijo: '51', tipoDocumento: 'DNI', parentesco: '', tipoDomicilio: 'HOGAR', tipoVia: 'CALLE' });
     void this.ensureDepartments();
     this.service.opciones().pipe(finalize(() => this.loading.set(false))).subscribe({
       next: (options) => {
         this.opciones.set(options);
-        if (this.mode() === 'corregir' && this.idLead()) this.loadCorrection(this.idLead()!);
+        if (this.mode() === 'corregir' && this.idLead()) {
+          this.loadCorrection(this.idLead()!);
+        } else if (options.proveedores.length === 1) {
+          this.selectProvider(String(options.proveedores[0].id));
+        }
       },
       error: (error) => this.error.set(error?.error?.message ?? 'No se pudieron cargar las opciones del equipo.')
     });
@@ -291,13 +324,12 @@ export class FreelanceVentaDrawerComponent {
         const plan = this.opciones()?.planes.find((item) => item.id === d.idPlan);
         this.selectedProvider.set(plan?.idProveedor ?? null);
         this.form.controls.idProveedor.setValue(plan?.idProveedor ?? null);
-        this.applyConfiguredValidators();
         this.form.patchValue({
-          prefijo: d.prefijo ?? '+51', lead: d.lead ?? '', usermeta: d.usermeta ?? '',
+          prefijo: limpiarPrefijo(d.prefijo ?? '51'), lead: d.lead ?? '', usermeta: d.usermeta ?? '',
           tipoDocumento: d.tipoDocumento ?? 'DNI', numeroDocumentoTitularServicio: d.numeroDocumentoTitularServicio ?? '',
           nombreTitularServicio: d.nombreTitular ?? '', celularRegistro: d.celularRegistro ?? '',
           celularReferencia: d.celularReferencia ?? '', celularGrabacion: d.celularGrabacion ?? '', correo: d.correo ?? '',
-          fechaNacimiento: d.fechaNacimiento ?? '', parentesco: d.parentesco ?? 'TITULAR', ubigeoNacimiento: d.ubigeoNacimiento ?? '',
+          fechaNacimiento: d.fechaNacimiento ?? '', parentesco: this.isWin() ? d.parentesco ?? '' : '', ubigeoNacimiento: d.ubigeoNacimiento ?? '',
           nombreMadre: d.nombreMadre ?? '', nombrePadre: d.nombrePadre ?? '',
           numeroDocumentoTitularCelularRegistro: d.numeroDocumentoTitularCelularRegistro ?? '',
           nombreTitularCelularRegistro: d.nombreTitularCelularRegistro ?? '', ubigeoDomicilio: d.ubigeoDomicilio ?? '',
@@ -307,6 +339,7 @@ export class FreelanceVentaDrawerComponent {
           nombreEdificio: d.nombreEdificio ?? '', nombreCondominio: d.nombreCondominio ?? '', plano: d.plano ?? '',
           piso: d.piso ?? '', interior: d.interior ?? '', idPlan: d.idPlan ?? null
         });
+        this.applyConfiguredValidators();
         this.form.controls.prefijo.disable();
         this.form.controls.lead.disable();
         this.form.controls.usermeta.disable();
@@ -319,10 +352,21 @@ export class FreelanceVentaDrawerComponent {
 
   private stepControls(step: number): string[] {
     if (step === 0) return ['prefijo', 'lead', 'usermeta'];
-    if (step === 1) return ['idProveedor', 'tipoDocumento', 'numeroDocumentoTitularServicio', 'nombreTitularServicio',
-      'celularRegistro', 'celularReferencia', 'celularGrabacion', 'correo', 'fechaNacimiento', 'parentesco',
-      'celularGrabacion', 'idDepartamentoDomicilio', 'idProvinciaDomicilio', 'idDistritoDomicilio',
-      'tipoDomicilio', 'direccion', 'referencia', 'latitud', 'longitud'];
+    if (step === 1) {
+      const controls = ['idProveedor', 'tipoDocumento', 'numeroDocumentoTitularServicio', 'nombreTitularServicio',
+        'celularRegistro', 'celularReferencia', 'celularGrabacion', 'correo', 'fechaNacimiento',
+        'idDepartamentoDomicilio', 'idProvinciaDomicilio', 'idDistritoDomicilio',
+        'tipoDomicilio', 'direccion', 'referencia', 'latitud', 'longitud'];
+      const configured: Record<CampoCaptura, string> = {
+        NOMBRE_MADRE: 'nombreMadre', NOMBRE_PADRE: 'nombrePadre',
+        DOC_TITULAR_CELULAR: 'numeroDocumentoTitularCelularRegistro',
+        NOMBRE_TITULAR_CELULAR: 'nombreTitularCelularRegistro', PLANO: 'plano'
+      };
+      for (const item of this.configuredFields()) {
+        if (item.visible && item.requerido) controls.push(configured[item.campo]);
+      }
+      return controls;
+    }
     if (step === 2) return ['idPlan'];
     return [];
   }
@@ -356,20 +400,57 @@ export class FreelanceVentaDrawerComponent {
 
   private configureCoreValidators(): void {
     const prefix = () => this.form.controls.prefijo.value;
+    this.form.controls.prefijo.setValidators([Validators.required, prefijoValidator()]);
+    this.form.controls.lead.setValidators([Validators.required, telefonoValidator(prefix)]);
     this.form.controls.numeroDocumentoTitularServicio.setValidators([
       Validators.required,
       documentoValidator(() => this.form.controls.tipoDocumento.value)
     ]);
-    this.form.controls.celularRegistro.setValidators([Validators.required, telefonoValidator(prefix)]);
-    this.form.controls.celularReferencia.setValidators([telefonoValidator(prefix)]);
-    this.form.controls.celularGrabacion.setValidators([Validators.required, telefonoValidator(prefix)]);
+    this.form.controls.celularRegistro.setValidators([Validators.required, Validators.pattern(/^\d{1,12}$/)]);
+    this.form.controls.celularReferencia.setValidators([Validators.pattern(/^\d{0,12}$/)]);
+    this.form.controls.celularGrabacion.setValidators([Validators.required, Validators.pattern(/^\d{1,12}$/)]);
     this.form.controls.tipoDocumento.valueChanges.subscribe(() =>
       this.form.controls.numeroDocumentoTitularServicio.updateValueAndValidity({ emitEvent: false }));
     this.form.controls.prefijo.valueChanges.subscribe(() => {
-      this.form.controls.celularRegistro.updateValueAndValidity({ emitEvent: false });
-      this.form.controls.celularReferencia.updateValueAndValidity({ emitEvent: false });
-      this.form.controls.celularGrabacion.updateValueAndValidity({ emitEvent: false });
+      this.form.controls.lead.updateValueAndValidity({ emitEvent: false });
     });
+  }
+
+  private configureNormalizers(): void {
+    this.normalizeControl(this.form.controls.prefijo, limpiarPrefijo, () => {
+      const lead = this.form.controls.lead;
+      lead.setValue(limpiarTelefonoPorPrefijo(lead.value, this.form.controls.prefijo.value), { emitEvent: false });
+      lead.updateValueAndValidity({ emitEvent: false });
+    });
+    this.normalizeControl(this.form.controls.lead,
+      (value) => limpiarTelefonoPorPrefijo(value, this.form.controls.prefijo.value));
+    this.normalizeControl(this.form.controls.usermeta, limpiarUsermeta);
+    this.normalizeControl(this.form.controls.numeroDocumentoTitularServicio, limpiarDocumento);
+    this.normalizeControl(this.form.controls.numeroDocumentoTitularCelularRegistro, (value) => soloDigitos(value, 12));
+    for (const name of ['celularRegistro', 'celularReferencia', 'celularGrabacion'] as const) {
+      this.normalizeControl(this.form.controls[name], (value) => soloDigitos(value, 12));
+    }
+    for (const name of ['nombreTitularServicio', 'nombreTitularCelularRegistro', 'nombreMadre', 'nombrePadre'] as const) {
+      this.normalizeControl(this.form.controls[name], limpiarNombrePersona);
+    }
+    this.normalizeControl(this.form.controls.latitud, limpiarCoordenada);
+    this.normalizeControl(this.form.controls.longitud, limpiarCoordenada);
+  }
+
+  private normalizeControl(
+    control: { value: unknown; valueChanges: import('rxjs').Observable<unknown>; setValue: (value: string, options: { emitEvent: boolean }) => void },
+    normalize: (value: unknown) => string,
+    after?: () => void
+  ): void {
+    control.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
+      const normalized = normalize(value);
+      if (value !== normalized) control.setValue(normalized, { emitEvent: false });
+      after?.();
+    });
+  }
+
+  private normalizarCoordenadaPayload(value: string | null | undefined): string {
+    return (this.nullIfBlank(value) ?? '').replace(',', '.');
   }
 
   private async resolveStoredUbigeo(type: 'nacimiento' | 'domicilio', code: string): Promise<void> {
@@ -410,7 +491,7 @@ export class FreelanceVentaDrawerComponent {
     const value = this.form.getRawValue();
     this.checkingIdentity.set(true);
     this.error.set(null);
-    this.service.validarIdentidad(value.prefijo!, value.lead!, this.nullIfBlank(value.usermeta))
+    this.service.validarIdentidad(`+${value.prefijo!}`, value.lead!, this.nullIfBlank(value.usermeta))
       .pipe(finalize(() => this.checkingIdentity.set(false)))
       .subscribe({
         next: (availability) => {
