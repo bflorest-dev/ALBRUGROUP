@@ -14,6 +14,7 @@ public interface EmpleadoMapper {
 
     Empleado toEntity(RegistrarEmpleadoRequest request);
 
+    @Mapping(target = "idEmpresaContratista", source = "empresaContratista.id")
     @Mapping(target = "empresaContratista", source = "empresaContratista.nombre")
     EmpleadoResponse toResponse(Empleado entity);
 

@@ -299,6 +299,17 @@ dd { margin: 4px 0 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere
 .subview-heading p, .danger-view p { margin: 0; line-height: 1.55; }
 .back-button { width: fit-content; border: 0; background: transparent; color: var(--focus); padding: 0; display: inline-flex; align-items: center; gap: 6px; font: 700 12px 'Archivo'; }
 
+.employee-data-overview { display: grid; gap: 24px; }
+.data-section { min-width: 0; }
+.data-section__heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 10px; }
+.data-section__heading h4 { margin: 0; color: var(--ink-3); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.section-edit-button { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--focus); font: 700 11px 'Archivo'; }
+.section-edit-button:hover { border-color: var(--focus); background: var(--panel-2); }
+.section-edit-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.read-only-tag { flex: 0 0 auto; color: var(--ink-3); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.employee-data-grid dd { line-height: 1.4; }
+.employee-data-grid .state-chip { margin-top: -2px; }
+
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 14px; }
 .form-field { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .form-field > span, .role-checks legend { color: var(--ink-2); font-size: 11px; font-weight: 700; }

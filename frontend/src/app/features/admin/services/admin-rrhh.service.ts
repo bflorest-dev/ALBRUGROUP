@@ -9,6 +9,9 @@ import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-re
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { ActualizarDatosPersonalesRequest } from '../../../shared/models/rrhh/actualizar-datos-personales-request';
+import { DatosContactoCorporativoRequest } from '../../../shared/models/rrhh/datos-contacto-corporativo-request';
+import { DatosContactoUbicacionRequest } from '../../../shared/models/rrhh/datos-contacto-ubicacion-request';
+import { DatosFinancierosRequest } from '../../../shared/models/rrhh/datos-financieros-request';
 import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimiento-response';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
 import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
@@ -44,6 +47,30 @@ export class AdminRrhhService {
     request: ActualizarDatosPersonalesRequest
   ): Observable<EmpleadoResponse> {
     return this.http.patch<EmpleadoResponse>(`${this.empleadosUrl}/${empleadoId}/datos-personales`, request);
+  }
+
+  actualizarDatosContactoUbicacion(
+    empleadoId: number,
+    request: DatosContactoUbicacionRequest
+  ): Observable<EmpleadoResponse> {
+    return this.http.patch<EmpleadoResponse>(
+      `${this.empleadosUrl}/${empleadoId}/datos-contacto-ubicacion`,
+      request
+    );
+  }
+
+  actualizarDatosFinancieros(
+    empleadoId: number,
+    request: DatosFinancierosRequest
+  ): Observable<EmpleadoResponse> {
+    return this.http.patch<EmpleadoResponse>(`${this.empleadosUrl}/${empleadoId}/datos-financieros`, request);
+  }
+
+  actualizarDatosCorporativos(
+    empleadoId: number,
+    request: DatosContactoCorporativoRequest
+  ): Observable<EmpleadoResponse> {
+    return this.http.patch<EmpleadoResponse>(`${this.empleadosUrl}/${empleadoId}/datos-corporativos`, request);
   }
 
   registrarContrato(

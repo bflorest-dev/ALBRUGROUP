@@ -4,7 +4,11 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, ou
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ContratoResponse } from '../../../../shared/models/rrhh/contrato-response';
+import { DatosContactoCorporativoRequest } from '../../../../shared/models/rrhh/datos-contacto-corporativo-request';
+import { DatosContactoUbicacionRequest } from '../../../../shared/models/rrhh/datos-contacto-ubicacion-request';
+import { DatosFinancierosRequest } from '../../../../shared/models/rrhh/datos-financieros-request';
 import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-response';
+import { EmpresaContratistaResponse } from '../../../../shared/models/rrhh/empresa-contratista-response';
 import { HorarioResponse } from '../../../../shared/models/schedule/horario-response';
 import { AjusteJornadaRequest, RegistrarAjusteV2Request, RazonAjuste } from '../../../../shared/models/schedule/jornada-efectiva-response';
 import { TipoDiaNoLaborable } from '../../../../shared/models/schedule/dia-no-laborable-request';
@@ -30,8 +34,9 @@ import {
 } from '../../services/personal-access.service';
 
 type DrawerSection = 'resumen' | 'contrato' | 'roles' | 'horario' | 'asistencia';
-type DrawerSubview = 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
-type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario'>;
+type DrawerSubview = 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
+type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario'>;
+type EditDataSection = 'personal' | 'contacto-ubicacion' | 'corporativo' | 'financiero';
 
 export interface DrawerScopeCapabilities {
   team: boolean;
@@ -84,16 +89,31 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly modalidadOptions = ['PART_TIME', 'FULL_TIME', 'SEMI_FULL', 'SUPER_FULL'];
   protected readonly seguroSaludOptions = ['SIS', 'ESSALUD'];
   protected readonly sistemaPensionesOptions = ['ONP', 'AFP_INTEGRA', 'AFP_PROFUTURO', 'AFP_HABITAT', 'PRIMA_AFP'];
+  protected readonly bancoOptions = ['BCP', 'BBVA', 'INTERBANK', 'SCOTIABANK', 'BANCO_DE_LA_NACION'];
+  protected readonly parentescoOptions = ['PADRE', 'MADRE', 'TIO', 'ESPOSO', 'HERMANO', 'ABUELO', 'PAREJA', 'OTRO'];
+  protected readonly distritoOptions = [
+    'ANCON', 'ATE', 'BARRANCO', 'BELLAVISTA', 'BREÑA', 'CALLAO', 'CARABAYLLO', 'CARMEN_DE_LA_LEGUA',
+    'CERCADO_DE_LIMA', 'CHACLACAYO', 'CHORRILLOS', 'CIENEGUILLA', 'COMAS', 'EL_AGUSTINO', 'INDEPENDENCIA',
+    'JESUS_MARIA', 'LA_MOLINA', 'LA_PUNTA', 'LA_PERLA', 'LA_VICTORIA', 'LINCE', 'LOS_OLIVOS', 'LURIN',
+    'LURIGANCHO', 'MAGDALENA_DEL_MAR', 'MIRAFLORES', 'MI_PERU', 'PACHACAMAC', 'PUCUSANA', 'PUEBLO_LIBRE',
+    'PUENTE_PIEDRA', 'PUNTA_HERMOSA', 'PUNTA_NEGRA', 'RIMAC', 'SAN_BARTOLO', 'SAN_BORJA', 'SAN_ISIDRO',
+    'SAN_JUAN_DE_LURIGANCHO', 'SAN_JUAN_DE_MIRAFLORES', 'SAN_LUIS', 'SAN_MARTIN_DE_PORRES', 'SAN_MIGUEL',
+    'SANTA_ANITA', 'SANTA_MARIA_DEL_MAR', 'SANTA_ROSA', 'SANTIAGO_DE_SURCO', 'SURQUILLO', 'VENTANILLA',
+    'VILLA_EL_SALVADOR', 'VILLA_MARIA_DEL_TRIUNFO'
+  ];
 
   protected readonly section = signal<DrawerSection>('resumen');
   protected readonly subview = signal<DrawerSubview>('none');
+  protected readonly editDataSection = signal<EditDataSection | null>(null);
   protected readonly employeeDetails = signal<EmpleadoResponse | null>(null);
+  protected readonly contractorOptions = signal<EmpresaContratistaResponse[]>([]);
   protected readonly contract = signal<ContratoResponse | null>(null);
   protected readonly contractHistory = signal<ContratoResponse[]>([]);
   protected readonly schedule = this.scheduleFacade.schedule;
   protected readonly isLoadingEmployment = signal(false);
   protected readonly isLoadingEmployee = signal(false);
   protected readonly isSavingPersonal = signal(false);
+  protected readonly isSavingEmployeeData = signal(false);
   protected readonly isDismissing = signal(false);
   protected readonly isSavingContract = signal(false);
   protected readonly isClosingContract = signal(false);
@@ -156,6 +176,28 @@ export class EmployeeWorkspaceDrawerComponent {
     tieneHijos: [false, [Validators.required]]
   });
 
+  protected readonly contactLocationForm = this.formBuilder.nonNullable.group({
+    celularPersonal: ['', [Validators.required]],
+    correoPersonal: ['', [Validators.required, Validators.email]],
+    distrito: ['CALLAO', [Validators.required]],
+    direccion: ['', [Validators.required]]
+  });
+
+  protected readonly corporateForm = this.formBuilder.nonNullable.group({
+    celularCorporativo: ['', [Validators.required]],
+    correoCorporativo: ['', [Validators.required, Validators.email]]
+  });
+
+  protected readonly financialForm = this.formBuilder.nonNullable.group({
+    banco: ['BCP', [Validators.required]],
+    cuentaBancaria: ['', [Validators.required]],
+    cuentaInterbancaria: ['', [Validators.required]],
+    cuentaPropia: [true, [Validators.required]],
+    parentesco: [''],
+    celularTransferencia: [''],
+    idEmpresaContratista: [0]
+  });
+
   protected readonly contractForm = this.formBuilder.nonNullable.group({
     categoriaPersonal: ['ESTRUCTURAL', [Validators.required]],
     regimen: ['PLANILLA', [Validators.required]],
@@ -184,7 +226,9 @@ export class EmployeeWorkspaceDrawerComponent {
       this.activeEmployeeId = row.employee.idEmpleado;
       this.section.set('resumen');
       this.subview.set('none');
+      this.editDataSection.set(null);
       this.employeeDetails.set(null);
+      this.contractorOptions.set([]);
       this.scheduleFacade.reset();
       this.rolePrincipal.set(row.access?.rolPrincipal ?? '');
       this.secondaryRoles.set([...(row.access?.rolesSecundarios ?? [])].sort());
@@ -198,6 +242,7 @@ export class EmployeeWorkspaceDrawerComponent {
       this.providerError.set('');
       void Promise.all([
         this.loadEmployeeDetails(row),
+        this.loadContractors(),
         this.loadEmployment(row.employee.idEmpleado),
         this.loadContractHistory(row.employee.idEmpleado)
       ]);
@@ -220,7 +265,7 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected isBusy(): boolean {
-    return this.isSavingPersonal() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingProviders() || this.isSavingRoles() || this.scheduleFacade.isSaving() || this.scheduleFacade.isApplyingCorrection() || this.isSavingAdjustment();
+    return this.isSavingPersonal() || this.isSavingEmployeeData() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingProviders() || this.isSavingRoles() || this.scheduleFacade.isSaving() || this.scheduleFacade.isApplyingCorrection() || this.isSavingAdjustment();
   }
 
   protected canManageTeam(row?: PersonalDirectoryRow | null): boolean {
@@ -279,24 +324,84 @@ export class EmployeeWorkspaceDrawerComponent {
     return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(value);
   }
 
-  protected openPersonalEdit(): void {
+  protected canEditEmployeeData(): boolean {
+    const roles = this.session.session()?.roles ?? [];
+    return roles.includes('ADMINISTRADOR') || roles.includes('RRHH');
+  }
+
+  protected displayValue(value: string | number | boolean | null | undefined): string {
+    if (value === null || value === undefined || value === '') return 'No registrado';
+    if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+    return String(value);
+  }
+
+  protected maskedValue(value: string | null | undefined): string {
+    const normalized = value?.trim();
+    if (!normalized) return 'No registrado';
+    if (normalized.length <= 4) return '••••';
+    return `•••• ${normalized.slice(-4)}`;
+  }
+
+  protected openEmployeeDetails(): void {
+    if (!this.employeeDetails()) {
+      this.actionError.set('Aún no se pudieron cargar los datos completos del empleado. Vuelve a intentarlo.');
+      return;
+    }
+    this.editDataSection.set(null);
+    this.clearActionFeedback();
+    this.subview.set('mostrar-datos');
+  }
+
+  protected openDataEditor(section: EditDataSection): void {
     const employee = this.employeeDetails();
     if (!employee) {
       this.actionError.set('Aún no se pudieron cargar los datos completos del empleado. Vuelve a intentarlo.');
       return;
     }
-    this.personalForm.reset({
-      nombres: employee.nombres,
-      apellidos: employee.apellidos,
-      tipoDocumento: employee.tipoDocumento,
-      numeroDocumento: employee.numeroDocumento,
-      nacionalidad: employee.nacionalidad,
-      fechaNacimiento: employee.fechaNacimiento,
-      estadoCivil: employee.estadoCivil,
-      tieneHijos: employee.tieneHijos
-    });
+    if (!this.canEditEmployeeData()) return;
+    if (section === 'personal') {
+      this.personalForm.reset({
+        nombres: employee.nombres,
+        apellidos: employee.apellidos,
+        tipoDocumento: employee.tipoDocumento,
+        numeroDocumento: employee.numeroDocumento,
+        nacionalidad: employee.nacionalidad,
+        fechaNacimiento: employee.fechaNacimiento,
+        estadoCivil: employee.estadoCivil,
+        tieneHijos: employee.tieneHijos
+      });
+    } else if (section === 'contacto-ubicacion') {
+      this.contactLocationForm.reset({
+        celularPersonal: employee.celularPersonal ?? '',
+        correoPersonal: employee.correoPersonal ?? '',
+        distrito: employee.distrito ?? 'CALLAO',
+        direccion: employee.direccion ?? ''
+      });
+    } else if (section === 'corporativo') {
+      this.corporateForm.reset({
+        celularCorporativo: employee.celularCorporativo ?? '',
+        correoCorporativo: employee.correoCorporativo ?? ''
+      });
+    } else {
+      this.financialForm.reset({
+        banco: employee.banco ?? 'BCP',
+        cuentaBancaria: employee.cuentaBancaria ?? '',
+        cuentaInterbancaria: employee.cuentaInterbancaria ?? '',
+        cuentaPropia: employee.cuentaPropia ?? true,
+        parentesco: employee.parentesco ?? '',
+        celularTransferencia: employee.celularTransferencia ?? '',
+        idEmpresaContratista: employee.idEmpresaContratista ?? 0
+      });
+    }
+    this.editDataSection.set(section);
     this.clearActionFeedback();
     this.subview.set('editar-datos');
+  }
+
+  protected closeDataEditor(): void {
+    this.editDataSection.set(null);
+    this.clearActionFeedback();
+    this.subview.set('mostrar-datos');
   }
 
   protected normalizeDocument(value: string): void {
@@ -329,13 +434,115 @@ export class EmployeeWorkspaceDrawerComponent {
         tieneHijos: raw.tieneHijos
       }));
       this.employeeDetails.set(updated);
-      this.subview.set('none');
+      this.editDataSection.set(null);
+      this.subview.set('mostrar-datos');
       this.actionSuccess.set('Datos personales actualizados.');
       this.employeeChanged.emit();
     } catch (error) {
       this.actionError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudieron actualizar los datos personales.'));
     } finally {
       this.isSavingPersonal.set(false);
+    }
+  }
+
+  protected submitDataEdit(): void {
+    switch (this.editDataSection()) {
+      case 'personal': void this.submitPersonalEdit(); break;
+      case 'contacto-ubicacion': void this.submitContactLocationEdit(); break;
+      case 'corporativo': void this.submitCorporateEdit(); break;
+      case 'financiero': void this.submitFinancialEdit(); break;
+    }
+  }
+
+  private async submitContactLocationEdit(): Promise<void> {
+    const row = this.row();
+    if (!row) return;
+    if (this.contactLocationForm.invalid) {
+      this.contactLocationForm.markAllAsTouched();
+      this.actionError.set('Completa los campos obligatorios antes de guardar.');
+      return;
+    }
+    const raw = this.contactLocationForm.getRawValue();
+    this.isSavingEmployeeData.set(true);
+    this.clearActionFeedback();
+    try {
+      const updated = await firstValueFrom(this.rrhh.actualizarDatosContactoUbicacion(row.employee.idEmpleado, {
+        celularPersonal: raw.celularPersonal.trim(),
+        correoPersonal: raw.correoPersonal.trim(),
+        distrito: raw.distrito,
+        direccion: raw.direccion.trim()
+      } satisfies DatosContactoUbicacionRequest));
+      this.employeeDetails.set(updated);
+      this.editDataSection.set(null);
+      this.subview.set('mostrar-datos');
+      this.actionSuccess.set('Contacto y domicilio actualizados.');
+      this.employeeChanged.emit();
+    } catch (error) {
+      this.actionError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudieron actualizar el contacto y domicilio.'));
+    } finally {
+      this.isSavingEmployeeData.set(false);
+    }
+  }
+
+  private async submitCorporateEdit(): Promise<void> {
+    const row = this.row();
+    if (!row) return;
+    if (this.corporateForm.invalid) {
+      this.corporateForm.markAllAsTouched();
+      this.actionError.set('Completa los campos obligatorios antes de guardar.');
+      return;
+    }
+    const raw = this.corporateForm.getRawValue();
+    this.isSavingEmployeeData.set(true);
+    this.clearActionFeedback();
+    try {
+      const updated = await firstValueFrom(this.rrhh.actualizarDatosCorporativos(row.employee.idEmpleado, {
+        celularCorporativo: raw.celularCorporativo.trim(),
+        correoCorporativo: raw.correoCorporativo.trim()
+      } satisfies DatosContactoCorporativoRequest));
+      this.employeeDetails.set(updated);
+      this.editDataSection.set(null);
+      this.subview.set('mostrar-datos');
+      this.actionSuccess.set('Contacto corporativo actualizado.');
+      this.employeeChanged.emit();
+    } catch (error) {
+      this.actionError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo actualizar el contacto corporativo.'));
+    } finally {
+      this.isSavingEmployeeData.set(false);
+    }
+  }
+
+  private async submitFinancialEdit(): Promise<void> {
+    const row = this.row();
+    if (!row) return;
+    if (this.financialForm.invalid) {
+      this.financialForm.markAllAsTouched();
+      this.actionError.set('Completa los campos obligatorios antes de guardar.');
+      return;
+    }
+    const raw = this.financialForm.getRawValue();
+    const request: DatosFinancierosRequest = {
+      banco: raw.banco,
+      cuentaBancaria: raw.cuentaBancaria.trim(),
+      cuentaInterbancaria: raw.cuentaInterbancaria.trim(),
+      cuentaPropia: raw.cuentaPropia,
+      parentesco: raw.parentesco.trim() || null,
+      celularTransferencia: raw.celularTransferencia.trim() || null,
+      idEmpresaContratista: raw.idEmpresaContratista > 0 ? raw.idEmpresaContratista : null
+    };
+    this.isSavingEmployeeData.set(true);
+    this.clearActionFeedback();
+    try {
+      const updated = await firstValueFrom(this.rrhh.actualizarDatosFinancieros(row.employee.idEmpleado, request));
+      this.employeeDetails.set(updated);
+      this.editDataSection.set(null);
+      this.subview.set('mostrar-datos');
+      this.actionSuccess.set('Información financiera actualizada.');
+      this.employeeChanged.emit();
+    } catch (error) {
+      this.actionError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo actualizar la información financiera.'));
+    } finally {
+      this.isSavingEmployeeData.set(false);
     }
   }
 
@@ -789,6 +996,14 @@ export class EmployeeWorkspaceDrawerComponent {
       this.employeeDetails.set(null);
     } finally {
       this.isLoadingEmployee.set(false);
+    }
+  }
+
+  private async loadContractors(): Promise<void> {
+    try {
+      this.contractorOptions.set(await firstValueFrom(this.rrhh.listarEmpresasContratistas(false)));
+    } catch {
+      this.contractorOptions.set([]);
     }
   }
 

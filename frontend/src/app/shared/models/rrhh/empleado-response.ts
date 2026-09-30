@@ -21,6 +21,7 @@ export interface EmpleadoResponse {
   cuentaPropia: boolean;
   parentesco?: string | null;
   celularTransferencia?: string | null;
+  idEmpresaContratista?: number | null;
   empresaContratista?: string | null;
   estadoOperativo: string;
   compania?: string | null;
