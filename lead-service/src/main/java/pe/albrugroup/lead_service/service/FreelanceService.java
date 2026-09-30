@@ -357,8 +357,17 @@ public class FreelanceService {
                                    Plan plan) {
         DatosPreventa datos = lead.getDatosPreventa() == null ? new DatosPreventa() : lead.getDatosPreventa();
         Direccion direccion = lead.getDireccion() == null ? new Direccion() : lead.getDireccion();
+        String proveedor = plan.getProveedor().getNombre() == null
+                ? ""
+                : plan.getProveedor().getNombre().trim().toUpperCase(Locale.ROOT);
+        boolean esClaro = proveedor.contains("CLARO");
+        boolean esWin = proveedor.equals("WIN");
         leadMapper.updateDatosPreventa(datosRequest, datos);
         leadMapper.updateDireccion(direccionRequest, direccion);
+        lead.setTecnologia(esClaro ? direccionRequest.getTecnologia() : null);
+        lead.setEsFullClaro(esClaro && Boolean.TRUE.equals(direccionRequest.getEsFullClaro()));
+        lead.setEsJalaCobertura(esWin && Boolean.TRUE.equals(direccionRequest.getEsJalaCobertura()));
+        lead.setEsZonaPintada(esWin && Boolean.TRUE.equals(direccionRequest.getEsZonaPintada()));
         lead.setDatosPreventa(datos);
         lead.setDireccion(direccion);
         lead.setPlan(plan);

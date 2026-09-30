@@ -18,6 +18,9 @@
 .section-copy { border-bottom: 1px solid #303b46; padding-bottom: 20px; margin-bottom: 26px; }
 .section-copy h3 { margin: 0 0 6px; font-size: 21px; letter-spacing: -.018em; }
 .section-copy p { margin: 0; color: #aeb8c2; }
+.offer-section-copy { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.offer-section-copy > div { min-width: 0; }
+.technology-offer { flex: 0 0 240px; }
 h4 { margin: 30px 0 14px; color: #f5ac50; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
 .fields { display: grid; gap: 16px; }
 .location-fields { border: 1px solid #35404a; display: grid; gap: 12px; grid-template-columns: repeat(3,minmax(0,1fr)); margin: 2px 0; padding: 14px; }
@@ -26,6 +29,8 @@ h4 { margin: 30px 0 14px; color: #f5ac50; font-size: 12px; letter-spacing: .1em;
 .identity-grid { grid-template-columns: 190px 1fr; }
 .two-columns { grid-template-columns: repeat(2,minmax(0,1fr)); }
 .provider-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; min-width: 0; }
+.provider-check { min-height: 44px; display: flex; align-items: center; gap: 10px; border: 1px solid #42505d; border-radius: 8px; background: #171e26; padding: 0 12px; cursor: pointer; }
+.provider-check input[type='checkbox'] { width: 17px; height: 17px; min-height: 0; margin: 0; accent-color: #f5ac50; }
 label { display: grid; gap: 7px; color: #e7ebef; font-size: 13px; font-weight: 650; }
 label span small { color: #8793a0; font-weight: 450; }
 .wide { min-width: 0; }.full { grid-column: 1 / -1; }
@@ -90,6 +95,16 @@ input.invalid, select.invalid { border-color: #e17767; }
 .drawer-foot div { display:flex;gap:10px; }
 .primary,.secondary { min-height:44px;border-radius:8px;padding:0 20px;font:700 13px Archivo,sans-serif;cursor:pointer; }
 .primary { border:1px solid #f5ac50;background:#f5ac50;color:#15120d; }.secondary { border:1px solid #43505d;background:transparent;color:#f2f4f6; }
+.discard-guard { position:fixed;inset:0;z-index:1300;display:grid;place-items:center;padding:20px;background:rgba(8,12,17,.76); }
+.discard-dialog { width:min(460px,100%);display:grid;grid-template-columns:auto 1fr;gap:14px 16px;padding:24px;border:1px solid #46525e;border-radius:14px;background:#1a2129;color:#f7f8fa;box-shadow:0 22px 58px rgba(0,0,0,.48);font-family:Archivo,'Segoe UI',sans-serif; }
+.discard-dialog>i { color:#f5ac50;font-size:24px;line-height:1.2; }
+.discard-copy { min-width:0; }
+.discard-copy h3 { margin:0 0 7px;font-size:19px;letter-spacing:-.018em; }
+.discard-copy p { margin:0;color:#b5bec7;line-height:1.5;overflow-wrap:anywhere; }
+.discard-actions { grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px;margin-top:8px; }
+.secondary.danger { border-color:#805149;color:#ffb8ad; }
+.secondary.danger:hover { border-color:#bc6a5d;background:#2b1d1b; }
 button:focus-visible { outline:2px solid #70badc;outline-offset:2px; } button:disabled { opacity:.55;cursor:not-allowed; }
-@media (max-width:700px){.drawer{width:100vw}.drawer-head,.drawer-body{padding-left:18px;padding-right:18px}.steps button{font-size:0}.steps button span{margin:0;font-size:12px}.two-columns,.identity-grid,.review dl,.location-fields,.provider-fields{grid-template-columns:1fr}.full{grid-column:auto}.drawer-foot{padding:10px 16px}.drawer-foot>span{display:none}.plan-option-head{gap:12px;padding:16px}.plan-facts{grid-template-columns:1fr 1fr}.plan-additionals{padding:13px 16px}}
+@media (max-width:700px){.drawer{width:100vw}.drawer-head,.drawer-body{padding-left:18px;padding-right:18px}.steps button{font-size:0}.steps button span{margin:0;font-size:12px}.two-columns,.identity-grid,.review dl,.location-fields,.provider-fields{grid-template-columns:1fr}.full{grid-column:auto}.drawer-foot{padding:10px 16px}.drawer-foot>span{display:none}.plan-option-head{gap:12px;padding:16px}.plan-facts{grid-template-columns:1fr 1fr}.plan-additionals{padding:13px 16px}.discard-dialog{padding:20px}.discard-actions{display:grid}.discard-actions button{width:100%;font-size:14px}}
+@media (max-width:700px){.offer-section-copy{align-items:stretch;flex-direction:column;gap:14px}.technology-offer{flex:0 0 auto;width:100%;max-width:320px}}
 @media (prefers-reduced-motion:reduce){.loading-state span{animation:none}}

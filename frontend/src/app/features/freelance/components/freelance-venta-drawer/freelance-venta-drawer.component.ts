@@ -4,7 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize, firstValueFrom } from 'rxjs';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
-import { CampoCaptura, UbigeoItem } from '../../../../shared/models/preventa/preventa.models';
+import { CampoCaptura, Tecnologia, UbigeoItem } from '../../../../shared/models/preventa/preventa.models';
 import {
   coordenadaValidator,
   documentoValidator,
@@ -52,6 +52,7 @@ export class FreelanceVentaDrawerComponent {
   readonly saving = signal(false);
   readonly checkingIdentity = signal(false);
   readonly error = signal<string | null>(null);
+  readonly discardConfirmationOpen = signal(false);
   readonly maxDocumentoTitular = signal(8);
   readonly maxCelularLength = signal(9);
   readonly opciones = signal<FreelanceOpciones | null>(null);
@@ -76,6 +77,10 @@ export class FreelanceVentaDrawerComponent {
     correo: ['', [Validators.required, Validators.email, Validators.maxLength(160)]],
     fechaNacimiento: ['', Validators.required],
     parentesco: [''],
+    tecnologia: ['' as Tecnologia | ''],
+    esFullClaro: [false],
+    esJalaCobertura: [false],
+    esZonaPintada: [false],
     ubigeoNacimiento: ['', Validators.pattern(/^\d{6}$/)],
     idDepartamentoNacimiento: [null as number | null],
     idProvinciaNacimiento: [null as number | null],
@@ -131,8 +136,12 @@ export class FreelanceVentaDrawerComponent {
     this.configureCoreValidators();
     this.configureNormalizers();
     effect(() => {
-      const key = this.visible() ? `${this.mode()}-${this.idLead() ?? 'new'}` : '';
-      if (!key || key === this.lastLoadKey) return;
+      if (!this.visible()) {
+        this.lastLoadKey = '';
+        return;
+      }
+      const key = `${this.mode()}-${this.idLead() ?? 'new'}`;
+      if (key === this.lastLoadKey) return;
       this.lastLoadKey = key;
       this.load();
     });
@@ -159,8 +168,12 @@ export class FreelanceVentaDrawerComponent {
 
   selectProvider(value: string): void {
     const id = value ? Number(value) : null;
+    const providerChanged = this.selectedProvider() !== id;
     this.selectedProvider.set(id);
     this.form.controls.idProveedor.setValue(id);
+    if (providerChanged) {
+      this.form.patchValue({ tecnologia: '', esFullClaro: false, esJalaCobertura: false, esZonaPintada: false }, { emitEvent: false });
+    }
     if (!this.isWin()) this.form.controls.parentesco.setValue('', { emitEvent: false });
     const plan = this.opciones()?.planes.find((item) => item.id === this.form.controls.idPlan.value);
     if (plan && plan.idProveedor !== id) this.form.controls.idPlan.setValue(null);
@@ -213,8 +226,23 @@ export class FreelanceVentaDrawerComponent {
     else this.form.patchValue({ idDistritoDomicilio: id, ubigeoDomicilio: code });
   }
 
-  dismiss(): void {
-    if (!this.saving()) this.close.emit();
+  requestDismiss(): void {
+    if (this.saving()) return;
+    if (this.form.dirty) {
+      this.discardConfirmationOpen.set(true);
+      return;
+    }
+    this.close.emit();
+  }
+
+  continueEditing(): void {
+    this.discardConfirmationOpen.set(false);
+  }
+
+  discardAndClose(): void {
+    if (this.saving()) return;
+    this.discardConfirmationOpen.set(false);
+    this.close.emit();
   }
 
   submit(): void {
@@ -260,7 +288,11 @@ export class FreelanceVentaDrawerComponent {
         nombreCondominio: this.nullIfBlank(v.nombreCondominio),
         plano: this.nullIfBlank(v.plano),
         piso: this.nullIfBlank(v.piso),
-        interior: this.nullIfBlank(v.interior)
+        interior: this.nullIfBlank(v.interior),
+        tecnologia: this.isClaro() ? v.tecnologia || null : null,
+        esFullClaro: this.isClaro() && v.esFullClaro,
+        esJalaCobertura: this.isWin() && v.esJalaCobertura,
+        esZonaPintada: this.isWin() && v.esZonaPintada
       }
     };
     this.saving.set(true);
@@ -274,7 +306,11 @@ export class FreelanceVentaDrawerComponent {
           usermeta: this.nullIfBlank(v.usermeta)
         } as FreelanceVentaCrearRequest);
     request$.pipe(finalize(() => this.saving.set(false))).subscribe({
-      next: (response) => this.saved.emit(response),
+      next: (response) => {
+        this.resetFormState();
+        this.lastLoadKey = '';
+        this.saved.emit(response);
+      },
       error: (error) => this.error.set(error?.error?.message ?? 'No se pudo guardar la venta. Inténtalo nuevamente.')
     });
   }
@@ -294,15 +330,8 @@ export class FreelanceVentaDrawerComponent {
   }
 
   private load(): void {
-    this.step.set(0);
-    this.error.set(null);
-    this.preparacion.set(null);
-    this.selectedProvider.set(null);
+    this.resetFormState();
     this.loading.set(true);
-    this.form.controls.prefijo.enable({ emitEvent: false });
-    this.form.controls.lead.enable({ emitEvent: false });
-    this.form.controls.usermeta.enable({ emitEvent: false });
-    this.form.reset({ prefijo: '51', tipoDocumento: 'DNI', parentesco: '', tipoDomicilio: 'HOGAR', tipoVia: 'CALLE' });
     void this.ensureDepartments();
     this.service.opciones().pipe(finalize(() => this.loading.set(false))).subscribe({
       next: (options) => {
@@ -314,6 +343,26 @@ export class FreelanceVentaDrawerComponent {
         }
       },
       error: (error) => this.error.set(error?.error?.message ?? 'No se pudieron cargar las opciones del equipo.')
+    });
+  }
+
+  private resetFormState(): void {
+    this.step.set(0);
+    this.error.set(null);
+    this.discardConfirmationOpen.set(false);
+    this.preparacion.set(null);
+    this.selectedProvider.set(null);
+    this.provinciasNacimiento.set([]);
+    this.distritosNacimiento.set([]);
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
+    this.form.controls.prefijo.enable({ emitEvent: false });
+    this.form.controls.lead.enable({ emitEvent: false });
+    this.form.controls.usermeta.enable({ emitEvent: false });
+    this.form.reset({
+      prefijo: '51', tipoDocumento: 'DNI', parentesco: '', tecnologia: '',
+      esFullClaro: false, esJalaCobertura: false, esZonaPintada: false,
+      tipoDomicilio: 'HOGAR', tipoVia: 'CALLE'
     });
   }
 
@@ -335,6 +384,10 @@ export class FreelanceVentaDrawerComponent {
           nombreMadre: d.nombreMadre ?? '', nombrePadre: d.nombrePadre ?? '',
           numeroDocumentoTitularCelularRegistro: d.numeroDocumentoTitularCelularRegistro ?? '',
           nombreTitularCelularRegistro: d.nombreTitularCelularRegistro ?? '', ubigeoDomicilio: d.ubigeoDomicilio ?? '',
+          tecnologia: this.isClaro() ? this.normalizeTecnologia(d.tecnologia) : '',
+          esFullClaro: this.isClaro() && Boolean(d.esFullClaro),
+          esJalaCobertura: this.isWin() && Boolean(d.esJalaCobertura),
+          esZonaPintada: this.isWin() && Boolean(d.esZonaPintada),
           tipoDomicilio: d.tipoDomicilio ?? 'HOGAR', tipoVia: d.tipoVia ?? 'CALLE', via: d.via ?? '',
           direccion: d.direccion ?? '', referencia: d.referencia ?? '', latitud: d.latitud ?? '', longitud: d.longitud ?? '',
           urbanizacion: d.urbanizacion ?? '', numero: d.numero ?? '', manzana: d.manzana ?? '', lote: d.lote ?? '',
@@ -376,6 +429,10 @@ export class FreelanceVentaDrawerComponent {
   private nullIfBlank(value: string | null | undefined): string | null {
     const normalized = value?.trim();
     return normalized ? normalized : null;
+  }
+
+  private normalizeTecnologia(value: string | null | undefined): Tecnologia | '' {
+    return value === 'HFC' || value === 'FTTH' || value === 'HIBRIDA' ? value : '';
   }
 
   private applyConfiguredValidators(): void {

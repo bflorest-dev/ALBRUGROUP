@@ -1,5 +1,5 @@
 @if (visible()) {
-  <div class="drawer-scrim" (click)="dismiss()" aria-hidden="true"></div>
+  <div class="drawer-scrim" (click)="requestDismiss()" aria-hidden="true"></div>
   <aside class="drawer" role="dialog" aria-modal="true" [attr.aria-label]="title()">
     <header class="drawer-head">
       <div>
@@ -7,7 +7,7 @@
         <h2>{{ title() }}</h2>
         <p>{{ mode() === 'corregir' ? 'Corrige el expediente observado y vuelve a enviarlo a Venta.' : 'Completa el expediente; la preventa se cerrará automáticamente.' }}</p>
       </div>
-      <button type="button" class="icon-button" (click)="dismiss()" aria-label="Cerrar drawer">
+      <button type="button" class="icon-button" (click)="requestDismiss()" aria-label="Cerrar drawer">
         <i class="ti ti-x" aria-hidden="true"></i>
       </button>
     </header>
@@ -86,15 +86,18 @@
                 <label><span>Provincia</span><select formControlName="idProvinciaNacimiento" (change)="selectProvince('nacimiento', $any($event.target).value)"><option [ngValue]="null">Selecciona</option>@for (item of provinciasNacimiento(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
                 <label><span>Distrito</span><select formControlName="idDistritoNacimiento" (change)="selectDistrict('nacimiento', $any($event.target).value)"><option [ngValue]="null">Selecciona</option>@for (item of distritosNacimiento(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
               </fieldset>
-              @if (isWin() || (isClaro() && (fieldVisible('NOMBRE_MADRE') || fieldVisible('NOMBRE_PADRE')))) {
+              @if (isWin() || isClaro()) {
                 <div class="provider-fields full">
                   @if (isWin()) {
                     <label><span>Parentesco <small>opcional</small></span><select formControlName="parentesco"><option value="">No requiere</option><option>TITULAR</option><option>MADRE</option><option>PADRE</option><option>HERMANO_A</option><option>TIO_A</option><option>CONOCIDO</option></select></label>
                     @if (fieldVisible('DOC_TITULAR_CELULAR')) { <label><span>Documento del titular del celular @if (!fieldRequired('DOC_TITULAR_CELULAR')) { <small>opcional</small> }</span><input formControlName="numeroDocumentoTitularCelularRegistro" inputmode="numeric" maxlength="12" [class.invalid]="invalid('numeroDocumentoTitularCelularRegistro')"></label> }
                     @if (fieldVisible('NOMBRE_TITULAR_CELULAR')) { <label><span>Nombre del titular del celular @if (!fieldRequired('NOMBRE_TITULAR_CELULAR')) { <small>opcional</small> }</span><input formControlName="nombreTitularCelularRegistro" [class.invalid]="invalid('nombreTitularCelularRegistro')"></label> }
+                    <label class="provider-check"><input type="checkbox" formControlName="esJalaCobertura"><span>Jala cobertura <small>opcional</small></span></label>
+                    <label class="provider-check"><input type="checkbox" formControlName="esZonaPintada"><span>Zona pintada <small>opcional</small></span></label>
                   } @else if (isClaro()) {
                     @if (fieldVisible('NOMBRE_MADRE')) { <label><span>Nombre de la madre @if (!fieldRequired('NOMBRE_MADRE')) { <small>opcional</small> }</span><input formControlName="nombreMadre" [class.invalid]="invalid('nombreMadre')"></label> }
                     @if (fieldVisible('NOMBRE_PADRE')) { <label><span>Nombre del padre @if (!fieldRequired('NOMBRE_PADRE')) { <small>opcional</small> }</span><input formControlName="nombrePadre" [class.invalid]="invalid('nombrePadre')"></label> }
+                    <label class="provider-check"><input type="checkbox" formControlName="esFullClaro"><span>Full Claro <small>opcional</small></span></label>
                   }
                 </div>
               }
@@ -128,9 +131,14 @@
 
         @if (step() === 2) {
           <section class="form-section">
-            <div class="section-copy">
-              <h3>Oferta comercial</h3>
-              <p>Selecciona un plan vigente del proveedor elegido para este expediente.</p>
+            <div class="section-copy offer-section-copy">
+              <div>
+                <h3>Oferta comercial</h3>
+                <p>Selecciona un plan vigente del proveedor elegido para este expediente.</p>
+              </div>
+              @if (isClaro()) {
+                <label class="technology-offer"><span>Tecnología <small>opcional</small></span><select formControlName="tecnologia"><option value="">Selecciona</option><option value="HFC">HFC</option><option value="FTTH">FTTH</option><option value="HIBRIDA">Híbrida</option></select></label>
+              }
             </div>
             <div class="plan-options" role="radiogroup" aria-label="Planes disponibles" [class.invalid]="invalid('idPlan')">
               @for (plan of plans(); track plan.id) {
@@ -196,4 +204,20 @@
       </div>
     </footer>
   </aside>
+
+  @if (discardConfirmationOpen()) {
+    <div class="discard-guard">
+      <section class="discard-dialog" role="alertdialog" aria-modal="true" aria-labelledby="discard-title" aria-describedby="discard-description">
+        <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+        <div class="discard-copy">
+          <h3 id="discard-title">¿Descartar los datos ingresados?</h3>
+          <p id="discard-description">La información de esta venta todavía no se ha guardado. Si sales ahora, tendrás que ingresarla nuevamente.</p>
+        </div>
+        <div class="discard-actions">
+          <button type="button" class="secondary danger" (click)="discardAndClose()">Descartar y salir</button>
+          <button type="button" class="primary" (click)="continueEditing()" autofocus>Seguir editando</button>
+        </div>
+      </section>
+    </div>
+  }
 }
