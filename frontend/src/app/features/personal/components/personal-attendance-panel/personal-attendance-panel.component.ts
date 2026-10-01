@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, untracked } from '@angular/core';
 import { CumplimientoDetalleDiaResponse } from '../../../../shared/models/schedule/cumplimiento-response';
 import { AttendanceDayReportComponent } from '../../../rrhh/asistencia/components/attendance-day-report/attendance-day-report.component';
 import { PersonalAttendanceFacade } from '../../facades/personal-attendance.facade';
@@ -51,8 +51,10 @@ export class PersonalAttendancePanelComponent {
     effect(() => {
       const employeeId = this.employeeId();
       this.attendance.canDisplayOperationalData();
-      if (employeeId) this.attendance.initialize(employeeId);
-      else this.attendance.reset();
+      untracked(() => {
+        if (employeeId) this.attendance.initialize(employeeId);
+        else this.attendance.reset();
+      });
     });
   }
 
