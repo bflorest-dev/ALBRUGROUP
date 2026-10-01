@@ -7,6 +7,7 @@ import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.PageRequest;
+import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
@@ -29,7 +30,7 @@ public interface IEmpleado {
     EmpleadoResponse actualizarDatosFinancieros(Long idEmpleado, DatosFinancierosRequest datosFinancieros);
     EmpleadoResponse actualizarContactoCorporativo(Long idEmpleado, DatosContactoCorporativoRequest datosCorporativos);
     EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId);
-    EmpleadoResponse darDeBajaEmpleado(Long idEmpleado, String authHeader);
+    EmpleadoResponse darDeBajaEmpleado(Long idEmpleado, CerrarContratoRequest request, String authHeader);
     List<EmpleadoRolResponse> listarEmpleadosLight(List<CategoriaPersonal> categoriasPersonal,
                                                    List<PuestoTrabajo> puestosTrabajo,
                                                    List<Long> empleadoIds);

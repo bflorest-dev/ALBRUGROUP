@@ -20,6 +20,7 @@ import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.PageRequest;
+import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoCorporativoRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoUbicacionRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosFinancierosRequest;
@@ -56,8 +57,9 @@ public class EmpleadoController {
     @Operation(summary = "Dar de baja a empleado", description = "Cierra contrato vigente, desactiva perfil, deshabilita acceso y notifica cierre de sesion activa.")
     public ResponseEntity<EmpleadoResponse> darDeBaja(
             @PathVariable @Positive Long id,
+            @Valid @RequestBody CerrarContratoRequest request,
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        var empleado = empleadoService.darDeBajaEmpleado(id, authHeader);
+        var empleado = empleadoService.darDeBajaEmpleado(id, request, authHeader);
         return ResponseEntity.ok(empleado);
     }
 

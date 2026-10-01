@@ -96,6 +96,11 @@ export class PersonalAttendanceFacade {
     await this.loadMonth();
   }
 
+  async refresh(): Promise<void> {
+    if (!this.employeeId) return;
+    await this.loadMonth();
+  }
+
   async toggleDay(date: string): Promise<void> {
     if (this.expandedDay() === date) {
       this.expandedDay.set(null);

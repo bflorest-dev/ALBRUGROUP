@@ -34,6 +34,7 @@ public record PlanillaEmpleadoResponse(
         BigDecimal bonoProductividad,
         BigDecimal bonoPuntualidad,
         BigDecimal bonoCapacitacion,
+        BigDecimal bonoAdicional,
         Integer minutosExtras,
         BigDecimal pagoExtras,
         BigDecimal totalBonificaciones,

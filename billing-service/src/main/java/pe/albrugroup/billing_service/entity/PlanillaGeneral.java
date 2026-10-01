@@ -61,6 +61,10 @@ public class PlanillaGeneral {
     @Column(nullable = false)
     private Integer cantidadEmpleados;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_matriz_calculo", nullable = false)
+    private MatrizCalculoPlanilla matrizCalculo;
+
     @Builder.Default
     @OneToMany(mappedBy = "planillaGeneral", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlanillaEmpleado> empleados = new ArrayList<>();

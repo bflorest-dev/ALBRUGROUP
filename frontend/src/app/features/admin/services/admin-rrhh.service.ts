@@ -189,7 +189,7 @@ export class AdminRrhhService {
     return this.http.get<EmpresaContratistaResponse[]>(this.empresasContratistasUrl, { params });
   }
 
-  darDeBaja(empleadoId: number): Observable<EmpleadoResponse> {
-    return this.http.post<EmpleadoResponse>(`${this.empleadosUrl}/${empleadoId}/baja`, {});
+  darDeBaja(empleadoId: number, request: CerrarContratoRequest): Observable<EmpleadoResponse> {
+    return this.http.post<EmpleadoResponse>(`${this.empleadosUrl}/${empleadoId}/baja`, request);
   }
 }

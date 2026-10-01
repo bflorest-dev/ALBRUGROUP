@@ -11,6 +11,7 @@ export type BillingConcepto =
   | 'BONO_PRODUCTIVIDAD'
   | 'BONO_PUNTUALIDAD'
   | 'BONO_CAPACITACION'
+  | 'BONO_ADICIONAL'
   | 'HORAS_EXTRA'
   | 'DESCUENTO_TARDANZAS'
   | 'DESCUENTO_FALTAS'
@@ -81,6 +82,7 @@ export type PlanillaEmpleadoResponse = {
   bonoProductividad: number;
   bonoPuntualidad: number;
   bonoCapacitacion: number;
+  bonoAdicional: number;
   minutosExtras: number;
   pagoExtras: number;
   totalBonificaciones: number;
@@ -103,7 +105,83 @@ export type PlanillaGeneralResponse = {
   cantidadEmpleados: number;
   approvedAt: string | null;
   approvedBy: string | null;
+  matrizCalculo: MatrizPlanillaResponse;
   empleados: PlanillaEmpleadoResponse[];
+};
+
+export type MatrizModalidadResponse = {
+  id: number;
+  modalidad: BillingModalidad;
+  horasDia: number;
+  bonoPuntualidad: number;
+  ventasMinimasProductividad: number;
+  bonoProductividad: number;
+};
+
+export type MatrizTardanzaResponse = {
+  id: number;
+  minutosDesde: number;
+  minutosHasta: number;
+  montoDescuento: number;
+};
+
+export type MatrizPlanillaResponse = {
+  id: number;
+  version: number;
+  activa: boolean;
+  bonoCapacitacion: number;
+  comentario: string | null;
+  creadoPor: string | null;
+  creadoAt: string | null;
+  modalidades: MatrizModalidadResponse[];
+  tardanzas: MatrizTardanzaResponse[];
+};
+
+export type MatrizPlanillaRequest = {
+  bonoCapacitacion: number;
+  comentario: string | null;
+  modalidades: Array<{
+    modalidad: BillingModalidad;
+    horasDia: number;
+    bonoPuntualidad: number;
+    ventasMinimasProductividad: number;
+    bonoProductividad: number;
+  }>;
+  tardanzas: Array<{
+    minutosDesde: number;
+    minutosHasta: number;
+    montoDescuento: number;
+  }>;
+};
+
+export type AdelantoSueldoResponse = {
+  id: number;
+  idEmpleado: number;
+  anio: number;
+  mes: number;
+  monto: number;
+  descripcion: string;
+  registradoPor: string | null;
+  registradoAt: string | null;
+};
+
+export type BonoAdicionalResponse = {
+  id: number;
+  idEmpleado: number;
+  anio: number;
+  mes: number;
+  monto: number;
+  comentario: string;
+  registradoPor: string | null;
+  registradoAt: string | null;
+};
+
+export type PlanillaAjustesResponse = {
+  idPlanilla: number;
+  anio: number;
+  mes: number;
+  adelantos: AdelantoSueldoResponse[];
+  bonosAdicionales: BonoAdicionalResponse[];
 };
 
 @Injectable({ providedIn: 'root' })
@@ -125,6 +203,26 @@ export class BillingService {
 
   aprobarPlanilla(id: number): Observable<PlanillaGeneralResponse> {
     return this.http.post<PlanillaGeneralResponse>(`${this.billingUrl}/planillas/${id}/aprobar`, {});
+  }
+
+  obtenerMatrizActiva(): Observable<MatrizPlanillaResponse> {
+    return this.http.get<MatrizPlanillaResponse>(`${this.billingUrl}/matriz-planilla/activa`);
+  }
+
+  guardarMatriz(request: MatrizPlanillaRequest): Observable<MatrizPlanillaResponse> {
+    return this.http.post<MatrizPlanillaResponse>(`${this.billingUrl}/matriz-planilla`, request);
+  }
+
+  obtenerAjustes(idPlanilla: number): Observable<PlanillaAjustesResponse> {
+    return this.http.get<PlanillaAjustesResponse>(`${this.billingUrl}/planillas/${idPlanilla}/ajustes`);
+  }
+
+  registrarAdelanto(request: { idEmpleado: number; anio: number; mes: number; monto: number; descripcion: string }): Observable<AdelantoSueldoResponse> {
+    return this.http.post<AdelantoSueldoResponse>(`${this.billingUrl}/adelantos`, request);
+  }
+
+  registrarBonoAdicional(request: { idEmpleado: number; anio: number; mes: number; monto: number; comentario: string }): Observable<BonoAdicionalResponse> {
+    return this.http.post<BonoAdicionalResponse>(`${this.billingUrl}/bonos-adicionales`, request);
   }
 
   private periodParams(anio: number, mes: number): HttpParams {

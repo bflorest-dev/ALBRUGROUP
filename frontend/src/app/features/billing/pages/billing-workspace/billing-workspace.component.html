@@ -20,6 +20,10 @@
         <i class="pi pi-search" aria-hidden="true"></i>
         Consultar
       </button>
+      <button class="billing-secondary-button" type="button" (click)="facade.openMatrix()" [disabled]="facade.isLoading()">
+        <i class="pi pi-sliders-h" aria-hidden="true"></i>
+        Matriz de cálculo
+      </button>
       <button
         class="billing-primary-action"
         type="button"
@@ -101,7 +105,7 @@
             <th colspan="4" class="billing-band billing-band--discount">Descuentos</th>
             <th colspan="6" class="billing-band billing-band--bonus">Bonos</th>
             <th rowspan="2">Remuneracion neta</th>
-            <th rowspan="2">Detalle</th>
+            <th rowspan="2">Acciones</th>
           </tr>
           <tr>
             <th class="billing-band--identity">Tipo</th>
@@ -160,9 +164,12 @@
             <td class="billing-band--bonus billing-data">{{ facade.money(row.pagoExtras) }}</td>
             <td class="billing-band--bonus billing-data">{{ facade.money(row.totalBonificaciones) }}</td>
             <td class="billing-net billing-data">{{ facade.money(row.remuneracionNeta) }}</td>
-            <td>
+            <td class="billing-actions-cell">
               <button class="billing-icon-button" type="button" (click)="facade.openDetail(row)" pTooltip="Ver tramos y lineas">
                 <i class="pi pi-list" aria-hidden="true"></i>
+              </button>
+              <button class="billing-icon-button" type="button" (click)="facade.openAdjustments(row)" pTooltip="Ajustes manuales">
+                <i class="pi pi-wallet" aria-hidden="true"></i>
               </button>
             </td>
           </tr>
@@ -174,6 +181,156 @@
     </div>
   </section>
 </main>
+
+<p-drawer
+  [visible]="facade.matrixVisible()"
+  position="right"
+  [style]="{ width: 'min(58rem, 96vw)' }"
+  (visibleChange)="!$event && facade.closeMatrix()"
+>
+  <ng-template #header>
+    <div class="billing-drawer-header">
+      <strong>Matriz de cálculo</strong>
+      <span>Versión activa {{ facade.activeMatrix()?.version ?? '' }}</span>
+    </div>
+  </ng-template>
+
+  @let matrix = facade.matrixForm();
+  @if (matrix) {
+    <section class="billing-detail-section">
+      <app-section-header title="Bonos por modalidad" [count]="matrix.modalidades.length" />
+      <div class="billing-form-row billing-form-row--inline">
+        <label class="billing-field">
+          <span>Bono capacitación</span>
+          <input type="number" min="0" step="0.01" [ngModel]="matrix.bonoCapacitacion" (ngModelChange)="facade.updateMatrixCapacitacion($event)" />
+        </label>
+        <label class="billing-field billing-field--wide">
+          <span>Comentario</span>
+          <input type="text" [ngModel]="matrix.comentario" (ngModelChange)="facade.updateMatrixComment($event)" />
+        </label>
+      </div>
+
+      <div class="billing-edit-table">
+        <div class="billing-edit-head">
+          <span>Modalidad</span><span>Horas día</span><span>Puntualidad</span><span>Ventas mínimas</span><span>Productividad</span>
+        </div>
+        @for (item of matrix.modalidades; track item.modalidad; let i = $index) {
+          <div class="billing-edit-row">
+            <strong>{{ facade.modalityLabel(item.modalidad) }}</strong>
+            <input type="number" min="1" [ngModel]="item.horasDia" (ngModelChange)="facade.updateMatrixModalidad(i, 'horasDia', $event)" />
+            <input type="number" min="0" step="0.01" [ngModel]="item.bonoPuntualidad" (ngModelChange)="facade.updateMatrixModalidad(i, 'bonoPuntualidad', $event)" />
+            <input type="number" min="0" [ngModel]="item.ventasMinimasProductividad" (ngModelChange)="facade.updateMatrixModalidad(i, 'ventasMinimasProductividad', $event)" />
+            <input type="number" min="0" step="0.01" [ngModel]="item.bonoProductividad" (ngModelChange)="facade.updateMatrixModalidad(i, 'bonoProductividad', $event)" />
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="billing-detail-section">
+      <app-section-header title="Descuento por tardanza" [count]="matrix.tardanzas.length">
+        <button class="billing-secondary-button" type="button" (click)="facade.addTardanzaRule()">
+          <i class="pi pi-plus" aria-hidden="true"></i>
+          Rango
+        </button>
+      </app-section-header>
+      <div class="billing-edit-table billing-edit-table--tardiness">
+        <div class="billing-edit-head">
+          <span>Desde min.</span><span>Hasta min.</span><span>Descuento</span><span></span>
+        </div>
+        @for (item of matrix.tardanzas; track $index; let i = $index) {
+          <div class="billing-edit-row">
+            <input type="number" min="0" [ngModel]="item.minutosDesde" (ngModelChange)="facade.updateMatrixTardanza(i, 'minutosDesde', $event)" />
+            <input type="number" min="0" [ngModel]="item.minutosHasta" (ngModelChange)="facade.updateMatrixTardanza(i, 'minutosHasta', $event)" />
+            <input type="number" min="0" step="0.01" [ngModel]="item.montoDescuento" (ngModelChange)="facade.updateMatrixTardanza(i, 'montoDescuento', $event)" />
+            <button class="billing-icon-button" type="button" (click)="facade.removeTardanzaRule(i)" pTooltip="Quitar rango">
+              <i class="pi pi-trash" aria-hidden="true"></i>
+            </button>
+          </div>
+        }
+      </div>
+      <div class="billing-drawer-actions">
+        <button class="billing-primary-action" type="button" (click)="facade.saveMatrix()" [disabled]="facade.isSavingMatrix()">
+          <i class="pi pi-save" aria-hidden="true"></i>
+          Guardar nueva versión
+        </button>
+      </div>
+    </section>
+  }
+</p-drawer>
+
+<p-drawer
+  [visible]="facade.adjustmentVisible()"
+  position="right"
+  [style]="{ width: 'min(48rem, 96vw)' }"
+  (visibleChange)="!$event && facade.closeAdjustments()"
+>
+  <ng-template #header>
+    <div class="billing-drawer-header">
+      <strong>{{ facade.adjustmentEmployee() ? fullName(facade.adjustmentEmployee()!) : 'Ajustes' }}</strong>
+      <span>{{ facade.periodLabel() }}</span>
+    </div>
+  </ng-template>
+
+  @if (facade.adjustmentEmployee()) {
+    <section class="billing-detail-section">
+      <app-section-header title="Adelantos de sueldo" [count]="facade.employeeAdelantos().length" />
+      <div class="billing-form-row">
+        <label class="billing-field">
+          <span>Monto</span>
+          <input type="number" min="0" step="0.01" [ngModel]="facade.adelantoMonto()" (ngModelChange)="facade.adelantoMonto.set($event)" />
+        </label>
+        <label class="billing-field billing-field--wide">
+          <span>Comentario</span>
+          <input type="text" [ngModel]="facade.adelantoDescripcion()" (ngModelChange)="facade.adelantoDescripcion.set($event)" />
+        </label>
+        <button class="billing-primary-action" type="button" (click)="facade.saveAdelanto()" [disabled]="facade.isSavingAdjustment()">
+          <i class="pi pi-save" aria-hidden="true"></i>
+          Guardar adelanto
+        </button>
+      </div>
+      <div class="billing-adjustment-history">
+        @for (item of facade.employeeAdelantos(); track item.id) {
+          <div>
+            <strong>{{ facade.money(item.monto) }}</strong>
+            <span>{{ item.descripcion }}</span>
+            <small>{{ facade.ajusteDate(item.registradoAt) }}</small>
+          </div>
+        } @empty {
+          <p>No hay adelantos registrados para este colaborador.</p>
+        }
+      </div>
+    </section>
+
+    <section class="billing-detail-section">
+      <app-section-header title="Bono adicional" [count]="facade.employeeBonosAdicionales().length" />
+      <div class="billing-form-row">
+        <label class="billing-field">
+          <span>Monto</span>
+          <input type="number" min="0" step="0.01" [ngModel]="facade.bonoAdicionalMonto()" (ngModelChange)="facade.bonoAdicionalMonto.set($event)" />
+        </label>
+        <label class="billing-field billing-field--wide">
+          <span>Comentario</span>
+          <input type="text" [ngModel]="facade.bonoAdicionalComentario()" (ngModelChange)="facade.bonoAdicionalComentario.set($event)" />
+        </label>
+        <button class="billing-primary-action" type="button" (click)="facade.saveBonoAdicional()" [disabled]="facade.isSavingAdjustment()">
+          <i class="pi pi-save" aria-hidden="true"></i>
+          Guardar bono
+        </button>
+      </div>
+      <div class="billing-adjustment-history">
+        @for (item of facade.employeeBonosAdicionales(); track item.id) {
+          <div>
+            <strong>{{ facade.money(item.monto) }}</strong>
+            <span>{{ item.comentario }}</span>
+            <small>{{ facade.ajusteDate(item.registradoAt) }}</small>
+          </div>
+        } @empty {
+          <p>No hay bonos adicionales registrados para este colaborador.</p>
+        }
+      </div>
+    </section>
+  }
+</p-drawer>
 
 <p-drawer
   [visible]="facade.detailVisible()"

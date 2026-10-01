@@ -1,7 +1,11 @@
 package pe.albrugroup.billing_service.service;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import pe.albrugroup.billing_service.entity.MatrizCalculoPlanilla;
+import pe.albrugroup.billing_service.entity.MatrizModalidadPlanilla;
 import pe.albrugroup.billing_service.entity.enums.ModalidadTrabajo;
+import pe.albrugroup.billing_service.exception.BillingException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -11,9 +15,6 @@ import java.time.YearMonth;
 
 @Service
 public class PlanillaPolicyService {
-
-    private static final BigDecimal PRODUCTIVIDAD = money("100.00");
-    private static final BigDecimal CAPACITACION = money("50.00");
 
     public int diasHabiles(YearMonth periodo) {
         int count = 0;
@@ -45,55 +46,52 @@ public class PlanillaPolicyService {
         return money(pagoDiaHabil.multiply(BigDecimal.valueOf(diasValidos)));
     }
 
-    public BigDecimal descuentoTardanza(int minutosTarde) {
-        if (minutosTarde >= 5 && minutosTarde <= 9) {
-            return money("5.00");
-        }
-        if (minutosTarde >= 10 && minutosTarde <= 20) {
-            return money("10.00");
+    public BigDecimal descuentoTardanza(MatrizCalculoPlanilla matriz, int minutosTarde) {
+        BigDecimal monto = matriz.getTardanzas().stream()
+                .filter(regla -> minutosTarde >= regla.getMinutosDesde() && minutosTarde <= regla.getMinutosHasta())
+                .map(regla -> money(regla.getMontoDescuento()))
+                .findFirst()
+                .orElse(null);
+        if (monto != null) {
+            return monto;
         }
         return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     }
 
-    public BigDecimal pagoExtras(BigDecimal pagoDiaHabil, ModalidadTrabajo modalidad, int minutosExtra) {
+    public BigDecimal pagoExtras(MatrizCalculoPlanilla matriz, BigDecimal pagoDiaHabil, ModalidadTrabajo modalidad, int minutosExtra) {
         int horasCompletas = Math.floorDiv(Math.max(minutosExtra, 0), 60);
         if (horasCompletas == 0) {
             return money(BigDecimal.ZERO);
         }
-        BigDecimal pagoHora = pagoDiaHabil.divide(BigDecimal.valueOf(horasDia(modalidad)), 2, RoundingMode.HALF_UP);
+        BigDecimal pagoHora = pagoDiaHabil.divide(BigDecimal.valueOf(horasDia(matriz, modalidad)), 2, RoundingMode.HALF_UP);
         return money(pagoHora.multiply(BigDecimal.valueOf(horasCompletas)));
     }
 
-    public int horasDia(ModalidadTrabajo modalidad) {
-        return switch (modalidad) {
-            case PARTTIME -> 4;
-            case SEMIFULLTIME -> 6;
-            case FULLTIME -> 8;
-            case SUPERFULLTIME -> 10;
-        };
+    public int horasDia(MatrizCalculoPlanilla matriz, ModalidadTrabajo modalidad) {
+        return modalidadConfig(matriz, modalidad).getHorasDia();
     }
 
-    public BigDecimal bonoPuntualidad(ModalidadTrabajo modalidad, int tardanzas) {
+    public BigDecimal bonoPuntualidad(MatrizCalculoPlanilla matriz, ModalidadTrabajo modalidad, int tardanzas) {
         if (tardanzas > 0) {
             return money(BigDecimal.ZERO);
         }
-        return modalidad == ModalidadTrabajo.PARTTIME ? money("50.00") : money("100.00");
+        return money(modalidadConfig(matriz, modalidad).getBonoPuntualidad());
     }
 
-    public BigDecimal bonoProductividad(ModalidadTrabajo modalidad, int ventasValidas) {
-        return ventasValidas >= ventasMinimas(modalidad) ? PRODUCTIVIDAD : money(BigDecimal.ZERO);
+    public BigDecimal bonoProductividad(MatrizCalculoPlanilla matriz, ModalidadTrabajo modalidad, int ventasValidas) {
+        MatrizModalidadPlanilla config = modalidadConfig(matriz, modalidad);
+        return ventasValidas >= config.getVentasMinimasProductividad() ? money(config.getBonoProductividad()) : money(BigDecimal.ZERO);
     }
 
-    public BigDecimal bonoCapacitacion(boolean primerContratoEnMes) {
-        return primerContratoEnMes ? CAPACITACION : money(BigDecimal.ZERO);
+    public BigDecimal bonoCapacitacion(MatrizCalculoPlanilla matriz, boolean primerContratoEnMes) {
+        return primerContratoEnMes ? money(matriz.getBonoCapacitacion()) : money(BigDecimal.ZERO);
     }
 
-    public int ventasMinimas(ModalidadTrabajo modalidad) {
-        return switch (modalidad) {
-            case PARTTIME -> 30;
-            case SEMIFULLTIME -> 40;
-            case FULLTIME, SUPERFULLTIME -> 60;
-        };
+    private MatrizModalidadPlanilla modalidadConfig(MatrizCalculoPlanilla matriz, ModalidadTrabajo modalidad) {
+        return matriz.getModalidades().stream()
+                .filter(config -> config.getModalidad() == modalidad)
+                .findFirst()
+                .orElseThrow(() -> new BillingException(HttpStatus.UNPROCESSABLE_ENTITY, "Matriz sin configuracion para modalidad: " + modalidad));
     }
 
     public static BigDecimal money(String value) {

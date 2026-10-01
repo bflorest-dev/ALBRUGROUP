@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, effect, input, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
@@ -12,7 +12,15 @@ import { EstadoMonitorResponse } from '../../../../shared/models/schedule/cumpli
 import { HorarioResponse } from '../../../../shared/models/schedule/horario-response';
 import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-response';
 import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
+import { CerrarContratoRequest } from '../../../../shared/models/rrhh/cerrar-contrato-request';
 import { formatLabel } from '../../../../shared/utils/display-label';
+
+function currentDateValue(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
 
 export type ActiveEmployeeGroup = {
   role: string;
@@ -42,6 +50,8 @@ export class EmployeeAccessPanelComponent {
   @Input({ required: true }) isLoading = false;
   @Input({ required: true }) errorMessage = '';
   @Input({ required: true }) contractUpdateSuccessMessage = '';
+  readonly bajaErrorMessage = input('');
+  readonly bajaSuccessMessage = input('');
   @Input({ required: true }) accessByEmployeeId: Record<number, UsuarioResponse | null> = {};
   @Input({ required: true }) accessErrorByEmployeeId: Record<number, string> = {};
   @Input({ required: true }) accessLoadingByEmployeeId: Record<number, boolean> = {};
@@ -66,7 +76,10 @@ export class EmployeeAccessPanelComponent {
   @Output() readonly changeTeam = new EventEmitter<EmpleadoRolResponse>();
   @Output() readonly editEmployee = new EventEmitter<EmpleadoRolResponse>();
   @Output() readonly refreshStates = new EventEmitter<void>();
-  @Output() readonly darDeBaja = new EventEmitter<EmpleadoRolResponse>();
+  @Output() readonly darDeBaja = new EventEmitter<{
+    employee: EmpleadoRolResponse;
+    request: CerrarContratoRequest;
+  }>();
 
   private readonly teamAssignableRoles = new Set([
     'ASESOR_GTR',
@@ -84,7 +97,28 @@ export class EmployeeAccessPanelComponent {
   protected readonly selectedRole = signal('');
   protected readonly bajaTarget = signal<EmpleadoRolResponse | null>(null);
   protected readonly bajaStep = signal<0 | 1 | 2>(0);
+  protected readonly bajaFechaFin = signal(currentDateValue());
+  protected readonly today = currentDateValue();
   protected readonly detailTarget = signal<EmployeeRow | null>(null);
+  private lastBajaSuccessMessage = '';
+
+  constructor() {
+    effect(() => {
+      const successMessage = this.bajaSuccessMessage();
+      if (!successMessage) {
+        this.lastBajaSuccessMessage = '';
+        return;
+      }
+      if (this.bajaStep() !== 2) {
+        this.lastBajaSuccessMessage = successMessage;
+        return;
+      }
+      if (successMessage !== this.lastBajaSuccessMessage) {
+        this.lastBajaSuccessMessage = successMessage;
+        this.cerrarBajaDialog();
+      }
+    });
+  }
 
   /**
    * Filas planas de empleados filtradas por el rol seleccionado. Es un computed
@@ -137,6 +171,7 @@ export class EmployeeAccessPanelComponent {
 
   protected openBajaDialog(employee: EmpleadoRolResponse): void {
     this.bajaTarget.set(employee);
+    this.bajaFechaFin.set(this.today);
     this.bajaStep.set(1);
   }
 
@@ -151,10 +186,9 @@ export class EmployeeAccessPanelComponent {
 
   protected confirmarBaja(): void {
     const employee = this.bajaTarget();
-    if (!employee) return;
-    this.bajaStep.set(0);
-    this.bajaTarget.set(null);
-    this.darDeBaja.emit(employee);
+    const fechaFin = this.bajaFechaFin();
+    if (!employee || !fechaFin) return;
+    this.darDeBaja.emit({ employee, request: { fechaFin } });
   }
 
   protected isDismissing(empleadoId: number): boolean {

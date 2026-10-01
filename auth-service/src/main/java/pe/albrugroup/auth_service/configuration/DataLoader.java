@@ -222,6 +222,11 @@ public class DataLoader {
         savePermiso("AJUSTAR_JORNADA_SIN_LIMITE", "Puede registrar corrimientos sin limite de minutos", "JORNADA", "ADJUST_UNLIMITED");
         savePermiso("AJUSTAR_JORNADA_JUSTIFICADA", "Puede registrar tardanzas justificadas", "JORNADA", "ADJUST_JUSTIFIED");
         savePermiso("PROGRAMAR_COMPENSACION", "Puede programar horas de compensacion", "JORNADA", "SCHEDULE_COMPENSATION");
+        savePermiso("READ_PLANILLAS", "Puede consultar planillas, matriz activa y ajustes de planilla", "PLANILLA", "READ");
+        savePermiso("CALCULATE_PLANILLAS", "Puede generar o recalcular planillas mensuales en revision", "PLANILLA", "CALCULATE");
+        savePermiso("APPROVE_PLANILLAS", "Puede aprobar planillas mensuales", "PLANILLA", "APPROVE");
+        savePermiso("MANAGE_PLANILLA_MATRIX", "Puede crear nuevas versiones de la matriz de calculo de planilla", "PLANILLA_MATRIZ", "MANAGE");
+        savePermiso("MANAGE_PLANILLA_ADJUSTMENTS", "Puede registrar adelantos y bonos adicionales de planilla", "PLANILLA_AJUSTE", "MANAGE");
 
         log.info("Permisos Creados");
     }

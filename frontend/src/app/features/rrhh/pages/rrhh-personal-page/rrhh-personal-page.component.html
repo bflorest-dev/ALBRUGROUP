@@ -51,6 +51,8 @@
             [isLoading]="facade.isLoadingActiveEmployees()"
             [errorMessage]="facade.activeEmployeeListErrorMessage()"
             [contractUpdateSuccessMessage]="facade.contractRenewalSuccessMessage() || facade.teamChangeSuccessMessage()"
+            [bajaErrorMessage]="facade.bajaErrorMessage()"
+            [bajaSuccessMessage]="facade.bajaSuccessMessage()"
             [accessByEmployeeId]="facade.accessByEmployeeId()"
             [accessErrorByEmployeeId]="facade.accessErrorByEmployeeId()"
             [accessLoadingByEmployeeId]="facade.accessLoadingByEmployeeId()"

@@ -478,6 +478,14 @@
       Esta operación no se puede deshacer.
       ¿Confirmas que quieres dar de baja a <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>?
     </p>
+    <label class="baja-dialog__date-field">
+      <span>Último día de contrato</span>
+      <input type="date" [value]="bajaFechaFin()" [max]="today" (change)="bajaFechaFin.set($any($event.target).value)" />
+      <small>La fecha debe ser hoy o anterior. El backend verificará también el inicio del contrato.</small>
+    </label>
+    @if (bajaErrorMessage()) {
+      <p-message severity="error" [text]="bajaErrorMessage()" />
+    }
     <div class="baja-dialog__actions">
       <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="cerrarBajaDialog()"></button>
       <button pButton type="button" icon="pi pi-user-minus" label="Confirmar baja" styleClass="baja-action-button" [loading]="isDismissing(bajaTarget()?.idEmpleado ?? 0)" (click)="confirmarBaja()"></button>

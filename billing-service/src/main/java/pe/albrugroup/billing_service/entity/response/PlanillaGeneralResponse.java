@@ -21,6 +21,7 @@ public record PlanillaGeneralResponse(
         Integer cantidadEmpleados,
         Instant approvedAt,
         String approvedBy,
+        MatrizPlanillaResponse matrizCalculo,
         List<PlanillaEmpleadoResponse> empleados
 ) {
 }

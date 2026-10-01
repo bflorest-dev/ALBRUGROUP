@@ -10,6 +10,7 @@ import { PresenceRealtimeEvent } from '../../../shared/models/gateway/presence-r
 import { ContratoResponse } from '../../../shared/models/rrhh/contrato-response';
 import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
+import { CerrarContratoRequest } from '../../../shared/models/rrhh/cerrar-contrato-request';
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
@@ -1776,14 +1777,15 @@ export class AdminPersonalFacade implements OnDestroy {
     });
   }
 
-  async darDeBajaEmpleado(employee: EmpleadoRolResponse): Promise<void> {
+  async darDeBajaEmpleado(payload: { employee: EmpleadoRolResponse; request: CerrarContratoRequest }): Promise<void> {
+    const { employee, request } = payload;
     this.isDismissingEmployeeId.set(employee.idEmpleado);
     this.bajaErrorMessage.set('');
     this.bajaSuccessMessage.set('');
 
     try {
       await firstValueFrom(
-        this.adminRrhhService.darDeBaja(employee.idEmpleado).pipe(timeout(this.requestTimeoutMs))
+        this.adminRrhhService.darDeBaja(employee.idEmpleado, request).pipe(timeout(this.requestTimeoutMs))
       );
       this.bajaSuccessMessage.set(`${employee.nombres} ${employee.apellidos} ha sido dado de baja correctamente.`);
       this.loadEmployees(0, true);

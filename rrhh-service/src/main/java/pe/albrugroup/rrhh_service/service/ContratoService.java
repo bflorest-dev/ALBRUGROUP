@@ -237,9 +237,11 @@ public class ContratoService implements IContrato {
     @Override
     public ContratoResponse finalizarContrato(Long idEmpleado, CerrarContratoRequest contratoCerrado, String authHeader) {
         validarAuthorizationRequerida(authHeader);
+        LocalDate hoy = LocalDate.now();
         LocalDate fechaFin = contratoCerrado.getFechaFin();
-        Contrato contrato = contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, fechaFin)
+        Contrato contrato = contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, hoy)
                 .orElseThrow(() -> new NotFoundException(Contrato.class, idEmpleado));
+        ContratoFechaValidator.validarFechaCierre(contrato.getFechaInicio(), fechaFin, hoy);
         mapper.updateFechaFinContrato(contratoCerrado, contrato);
 
         Empleado empleado = contrato.getEmpleado();

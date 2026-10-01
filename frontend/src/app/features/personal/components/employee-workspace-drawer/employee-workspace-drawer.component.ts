@@ -4,6 +4,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, ou
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ContratoResponse } from '../../../../shared/models/rrhh/contrato-response';
+import { CerrarContratoRequest } from '../../../../shared/models/rrhh/cerrar-contrato-request';
 import { ActualizarContratoVigenteRequest } from '../../../../shared/models/rrhh/actualizar-contrato-vigente-request';
 import { DatosContactoCorporativoRequest } from '../../../../shared/models/rrhh/datos-contacto-corporativo-request';
 import { DatosContactoUbicacionRequest } from '../../../../shared/models/rrhh/datos-contacto-ubicacion-request';
@@ -69,6 +70,7 @@ export class EmployeeWorkspaceDrawerComponent {
   private readonly accessService = inject(PersonalAccessService);
   private readonly session = inject(SessionService);
   protected readonly scheduleFacade = inject(PersonalScheduleFacade);
+  protected readonly attendanceFacade = inject(PersonalAttendanceFacade);
   private readonly formBuilder = inject(FormBuilder);
   private activeEmployeeId: number | null = null;
 
@@ -217,6 +219,10 @@ export class EmployeeWorkspaceDrawerComponent {
   });
 
   protected readonly closeContractForm = this.formBuilder.nonNullable.group({
+    fechaFin: [this.today(), [Validators.required]]
+  });
+
+  protected readonly dismissForm = this.formBuilder.nonNullable.group({
     fechaFin: [this.today(), [Validators.required]]
   });
 
@@ -558,17 +564,19 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected openDismissConfirmation(): void {
+    this.dismissForm.reset({ fechaFin: this.today() });
     this.clearActionFeedback();
     this.subview.set('confirmar-baja');
   }
 
   protected async confirmDismiss(): Promise<void> {
     const row = this.row();
-    if (!row || !this.canManageRoles()) return;
+    if (!row || !this.canManageRoles() || this.dismissForm.invalid) return;
     this.isDismissing.set(true);
     this.clearActionFeedback();
     try {
-      await firstValueFrom(this.rrhh.darDeBaja(row.employee.idEmpleado));
+      const request: CerrarContratoRequest = this.dismissForm.getRawValue();
+      await firstValueFrom(this.rrhh.darDeBaja(row.employee.idEmpleado, request));
       this.employeeChanged.emit();
       this.closed.emit();
     } catch (error) {
@@ -899,7 +907,7 @@ export class EmployeeWorkspaceDrawerComponent {
         this.adjustmentExtraMotivo().trim() || (razon === 'COMPENSACION' ? 'Compensación de falta' : 'Jornada extraordinaria'),
         razon
       );
-      if (saved) this.finishDayAdjustment();
+      if (saved) await this.finishDayAdjustment();
     } else if (view === 'ajuste-dia-libre') {
       const saved = await this.scheduleFacade.submitDiaLibre(
         this.adjustmentDayOffDate(),
@@ -907,29 +915,30 @@ export class EmployeeWorkspaceDrawerComponent {
         this.adjustmentDayOffReason().trim() || 'Día libre declarado',
         this.adjustmentDayOffGlobal()
       );
-      if (saved) this.finishDayAdjustment();
+      if (saved) await this.finishDayAdjustment();
     }
   }
 
   protected async onSaveDayExtension(requests: AjusteJornadaRequest[]): Promise<void> {
     const reason: RazonAjuste = this.subview() === 'ajuste-compensacion' ? 'COMPENSACION' : 'AMPLIACION_OPERATIVA';
     const saved = await this.scheduleFacade.submitDayExtension(requests, reason);
-    if (saved) this.finishDayAdjustment();
+    if (saved) await this.finishDayAdjustment();
   }
 
   protected async onSaveDayShift(request: RegistrarAjusteV2Request): Promise<void> {
     const saved = await this.scheduleFacade.submitCorrimiento(request);
-    if (saved) this.finishDayAdjustment();
+    if (saved) await this.finishDayAdjustment();
   }
 
   protected async onSaveDayLunch(value: { inicio: string | null; fin: string | null }): Promise<void> {
     const saved = await this.scheduleFacade.submitLunchAdjustment(value.inicio, value.fin);
-    if (saved) this.finishDayAdjustment();
+    if (saved) await this.finishDayAdjustment();
   }
 
-  private finishDayAdjustment(): void {
+  private async finishDayAdjustment(): Promise<void> {
     this.subview.set('none');
     this.actionSuccess.set(this.scheduleFacade.adjustmentSuccess());
+    await this.attendanceFacade.refresh();
     this.employeeChanged.emit();
   }
 
@@ -1089,7 +1098,7 @@ export class EmployeeWorkspaceDrawerComponent {
     this.actionSuccess.set('');
   }
 
-  private today(): string {
+  protected today(): string {
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');

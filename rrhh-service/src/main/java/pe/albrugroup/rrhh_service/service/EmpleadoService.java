@@ -14,6 +14,7 @@ import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.PageRequest;
+import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
@@ -64,15 +65,19 @@ public class EmpleadoService implements IEmpleado {
     );
 
     @Override
-    public EmpleadoResponse darDeBajaEmpleado(Long idEmpleado, String authHeader) {
+    public EmpleadoResponse darDeBajaEmpleado(Long idEmpleado, CerrarContratoRequest request, String authHeader) {
         Empleado empleado = repository.findById(idEmpleado)
                 .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         if (empleado.getEstadoOperativo() == EstadoOperativo.INACTIVO) {
             throw new EmpleadoInactivoException(idEmpleado);
         }
         LocalDate hoy = LocalDate.now();
+        ContratoFechaValidator.validarFechaCierre(null, request.getFechaFin(), hoy);
         contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, hoy)
-                .ifPresent(contrato -> contrato.setFechaFin(hoy));
+                .ifPresent(contrato -> {
+                    ContratoFechaValidator.validarFechaCierre(contrato.getFechaInicio(), request.getFechaFin(), hoy);
+                    contrato.setFechaFin(request.getFechaFin());
+                });
         empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
         programarBajaPostCommit(authHeader, idEmpleado);
         return mapper.toResponse(empleado);

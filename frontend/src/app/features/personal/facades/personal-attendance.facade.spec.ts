@@ -101,4 +101,21 @@ describe('PersonalAttendanceFacade', () => {
     expect(facade.error()).toBe('');
     expect(facade.days()).toHaveLength(1);
   });
+
+  it('actualiza el mes seleccionado sin reinicializar al empleado', async () => {
+    const getCumplimientoDetalle = vi.fn(() => of({ empleados: [{ idEmpleado: 42, dias: [day({})] }] }));
+    const facade = setup({ getCumplimientoDetalle }, { getReporteDia: vi.fn() });
+
+    await facade.initialize(42);
+    facade.setMonth('2026-09');
+    await facade.refresh();
+
+    expect(facade.selectedMonth()).toBe('2026-09');
+    expect(getCumplimientoDetalle).toHaveBeenLastCalledWith({
+      empleadoIds: [42],
+      desde: '2026-09-01',
+      hasta: '2026-09-30'
+    });
+    expect(facade.days()).toHaveLength(1);
+  });
 });

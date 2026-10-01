@@ -186,6 +186,18 @@
             <div><dt>Documento</dt><dd class="mono">{{ current.employee.numeroDocumento }}</dd></div>
             <div><dt>Estado resultante</dt><dd>Inactivo</dd></div>
           </dl>
+          <form class="confirmation-date-form" [formGroup]="dismissForm">
+            <label class="form-field">
+              <span>Último día de contrato</span>
+              <input
+                type="date"
+                formControlName="fechaFin"
+                [attr.min]="contract()?.fechaInicio ?? null"
+                [max]="today()"
+              />
+            </label>
+            <small class="adjustment-date-row__hint">La fecha debe estar entre el inicio del contrato y hoy.</small>
+          </form>
           <p class="danger-note"><strong>Confirma únicamente si la relación laboral debe cerrarse ahora.</strong></p>
         </section>
       } @else if (subview() === 'contrato-form') {

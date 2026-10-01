@@ -125,6 +125,9 @@ public class PlanillaEmpleado {
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal bonoCapacitacion;
 
+    @Column(nullable = false, precision = 14, scale = 2)
+    private BigDecimal bonoAdicional;
+
     @Column(nullable = false)
     private Integer minutosExtras;
 

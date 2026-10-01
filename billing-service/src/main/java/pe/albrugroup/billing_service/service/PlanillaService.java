@@ -6,7 +6,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.billing_service.entity.AdelantoSueldo;
+import pe.albrugroup.billing_service.entity.BonoAdicionalEmpleado;
 import pe.albrugroup.billing_service.entity.DetallePlanilla;
+import pe.albrugroup.billing_service.entity.MatrizCalculoPlanilla;
 import pe.albrugroup.billing_service.entity.PlanillaEmpleado;
 import pe.albrugroup.billing_service.entity.PlanillaGeneral;
 import pe.albrugroup.billing_service.entity.TramoPlanillaEmpleado;
@@ -17,8 +19,11 @@ import pe.albrugroup.billing_service.entity.enums.TipoDocumento;
 import pe.albrugroup.billing_service.entity.enums.TipoMovimiento;
 import pe.albrugroup.billing_service.entity.enums.TipoPlanilla;
 import pe.albrugroup.billing_service.entity.request.AdelantoSueldoRequest;
+import pe.albrugroup.billing_service.entity.request.BonoAdicionalRequest;
 import pe.albrugroup.billing_service.entity.response.AdelantoSueldoResponse;
+import pe.albrugroup.billing_service.entity.response.BonoAdicionalResponse;
 import pe.albrugroup.billing_service.entity.response.DetallePlanillaResponse;
+import pe.albrugroup.billing_service.entity.response.PlanillaAjustesResponse;
 import pe.albrugroup.billing_service.entity.response.PlanillaEmpleadoResponse;
 import pe.albrugroup.billing_service.entity.response.PlanillaGeneralResponse;
 import pe.albrugroup.billing_service.entity.response.TramoPlanillaEmpleadoResponse;
@@ -27,6 +32,7 @@ import pe.albrugroup.billing_service.integration.LeadPlanillaClient;
 import pe.albrugroup.billing_service.integration.RrhhPlanillaClient;
 import pe.albrugroup.billing_service.integration.SchedulePlanillaClient;
 import pe.albrugroup.billing_service.repository.AdelantoSueldoRepository;
+import pe.albrugroup.billing_service.repository.BonoAdicionalEmpleadoRepository;
 import pe.albrugroup.billing_service.repository.PlanillaGeneralRepository;
 
 import java.math.BigDecimal;
@@ -46,10 +52,12 @@ public class PlanillaService {
 
     private final PlanillaGeneralRepository planillaGeneralRepository;
     private final AdelantoSueldoRepository adelantoSueldoRepository;
+    private final BonoAdicionalEmpleadoRepository bonoAdicionalEmpleadoRepository;
     private final RrhhPlanillaClient rrhhClient;
     private final SchedulePlanillaClient scheduleClient;
     private final LeadPlanillaClient leadClient;
     private final PlanillaPolicyService policy;
+    private final MatrizPlanillaService matrizPlanillaService;
     private final Clock clock = Clock.systemUTC();
 
     @Value("${billing.timezone:America/Lima}")
@@ -58,6 +66,7 @@ public class PlanillaService {
     @Transactional
     public PlanillaGeneralResponse calcular(Integer anio, Integer mes) {
         YearMonth periodo = validarPeriodoCerrado(anio, mes);
+        MatrizCalculoPlanilla matriz = matrizPlanillaService.obtenerActiva();
         planillaGeneralRepository.findByAnioAndMesAndTipoPlanilla(anio, mes, TipoPlanilla.REGULAR)
                 .ifPresent(planilla -> {
                     if (planilla.getEstado() != Estado.REVISION) {
@@ -90,6 +99,11 @@ public class PlanillaService {
                         AdelantoSueldo::getIdEmpleado,
                         Collectors.reducing(BigDecimal.ZERO, AdelantoSueldo::getMonto, BigDecimal::add)
                 ));
+        Map<Long, BigDecimal> bonosAdicionales = bonoAdicionalEmpleadoRepository.findByAnioAndMes(anio, mes).stream()
+                .collect(Collectors.groupingBy(
+                        BonoAdicionalEmpleado::getIdEmpleado,
+                        Collectors.reducing(BigDecimal.ZERO, BonoAdicionalEmpleado::getMonto, BigDecimal::add)
+                ));
 
         PlanillaGeneral planilla = PlanillaGeneral.builder()
                 .anio(anio)
@@ -98,6 +112,7 @@ public class PlanillaService {
                 .estado(Estado.REVISION)
                 .moneda("PEN")
                 .versionCalculo(1)
+                .matrizCalculo(matriz)
                 .totalGastoPlanilla(PlanillaPolicyService.money(BigDecimal.ZERO))
                 .totalDescuentos(PlanillaPolicyService.money(BigDecimal.ZERO))
                 .totalBonificaciones(PlanillaPolicyService.money(BigDecimal.ZERO))
@@ -111,7 +126,9 @@ public class PlanillaService {
                         empleado,
                         incidencias.getOrDefault(empleado.idEmpleado(), List.of()),
                         ventas.getOrDefault(empleado.idEmpleado(), 0),
-                        adelantos.getOrDefault(empleado.idEmpleado(), BigDecimal.ZERO)
+                        adelantos.getOrDefault(empleado.idEmpleado(), BigDecimal.ZERO),
+                        bonosAdicionales.getOrDefault(empleado.idEmpleado(), BigDecimal.ZERO),
+                        matriz
                 ))
                 .toList();
 
@@ -143,11 +160,7 @@ public class PlanillaService {
 
     @Transactional
     public AdelantoSueldoResponse registrarAdelanto(AdelantoSueldoRequest request) {
-        planillaGeneralRepository.findByAnioAndMesAndTipoPlanilla(request.anio(), request.mes(), TipoPlanilla.REGULAR)
-                .filter(planilla -> planilla.getEstado() != Estado.REVISION)
-                .ifPresent(planilla -> {
-                    throw new BillingException(HttpStatus.CONFLICT, "No se puede registrar adelanto en una planilla aprobada o pagada");
-                });
+        validarPlanillaEditableParaAjuste(request.anio(), request.mes(), "No se puede registrar adelanto en una planilla aprobada o pagada");
         AdelantoSueldo adelanto = AdelantoSueldo.builder()
                 .idEmpleado(request.idEmpleado())
                 .anio(request.anio())
@@ -159,16 +172,48 @@ public class PlanillaService {
         return toResponse(adelantoSueldoRepository.save(adelanto));
     }
 
+    @Transactional
+    public BonoAdicionalResponse registrarBonoAdicional(BonoAdicionalRequest request) {
+        validarPlanillaEditableParaAjuste(request.anio(), request.mes(), "No se puede registrar bono adicional en una planilla aprobada o pagada");
+        BonoAdicionalEmpleado bono = BonoAdicionalEmpleado.builder()
+                .idEmpleado(request.idEmpleado())
+                .anio(request.anio())
+                .mes(request.mes())
+                .monto(PlanillaPolicyService.money(request.monto()))
+                .comentario(request.comentario())
+                .registradoPor("SYSTEM")
+                .build();
+        return toResponse(bonoAdicionalEmpleadoRepository.save(bono));
+    }
+
+    @Transactional(readOnly = true)
+    public PlanillaAjustesResponse obtenerAjustes(Long idPlanilla) {
+        PlanillaGeneral planilla = planillaGeneralRepository.findById(idPlanilla)
+                .orElseThrow(() -> new BillingException(HttpStatus.NOT_FOUND, "Planilla no encontrada"));
+        List<Long> idsEmpleados = planilla.getEmpleados().stream().map(PlanillaEmpleado::getIdEmpleado).toList();
+        List<AdelantoSueldoResponse> adelantos = adelantoSueldoRepository.findByAnioAndMes(planilla.getAnio(), planilla.getMes()).stream()
+                .filter(item -> idsEmpleados.contains(item.getIdEmpleado()))
+                .map(this::toResponse)
+                .toList();
+        List<BonoAdicionalResponse> bonos = bonoAdicionalEmpleadoRepository.findByAnioAndMes(planilla.getAnio(), planilla.getMes()).stream()
+                .filter(item -> idsEmpleados.contains(item.getIdEmpleado()))
+                .map(this::toResponse)
+                .toList();
+        return new PlanillaAjustesResponse(planilla.getId(), planilla.getAnio(), planilla.getMes(), adelantos, bonos);
+    }
+
     private PlanillaEmpleado calcularEmpleado(
             PlanillaGeneral planilla,
             YearMonth periodo,
             RrhhPlanillaClient.EmpleadoPlanillaDto empleado,
             List<SchedulePlanillaClient.IncidenciaDiaDto> incidencias,
             int ventasValidas,
-            BigDecimal adelanto
+            BigDecimal adelanto,
+            BigDecimal bonoAdicional,
+            MatrizCalculoPlanilla matriz
     ) {
         List<TramoTemporal> tramos = empleado.contratos().stream()
-                .map(contrato -> crearTramoTemporal(periodo, contrato, incidencias))
+                .map(contrato -> crearTramoTemporal(periodo, contrato, incidencias, matriz))
                 .sorted(Comparator.comparing(TramoTemporal::fechaDesdeTramo))
                 .toList();
         if (tramos.isEmpty()) {
@@ -186,12 +231,12 @@ public class PlanillaService {
         BigDecimal descuentoTardanzas = sum(tramos, TramoTemporal::descuentoTardanzas);
         BigDecimal descuentoFaltas = sum(tramos, TramoTemporal::descuentoFaltas);
         BigDecimal pagoExtras = sum(tramos, TramoTemporal::pagoExtras);
-        BigDecimal bonoProductividad = policy.bonoProductividad(dominante.modalidad(), ventasValidas);
-        BigDecimal bonoPuntualidad = policy.bonoPuntualidad(dominante.modalidad(), tardanzas);
-        BigDecimal bonoCapacitacion = policy.bonoCapacitacion(empleado.primerContratoInicio() != null
+        BigDecimal bonoProductividad = policy.bonoProductividad(matriz, dominante.modalidad(), ventasValidas);
+        BigDecimal bonoPuntualidad = policy.bonoPuntualidad(matriz, dominante.modalidad(), tardanzas);
+        BigDecimal bonoCapacitacion = policy.bonoCapacitacion(matriz, empleado.primerContratoInicio() != null
                 && YearMonth.from(empleado.primerContratoInicio()).equals(periodo));
         BigDecimal totalDescuento = PlanillaPolicyService.money(descuentoTardanzas.add(descuentoFaltas).add(adelanto));
-        BigDecimal totalBonificaciones = PlanillaPolicyService.money(bonoProductividad.add(bonoPuntualidad).add(bonoCapacitacion).add(pagoExtras));
+        BigDecimal totalBonificaciones = PlanillaPolicyService.money(bonoProductividad.add(bonoPuntualidad).add(bonoCapacitacion).add(bonoAdicional).add(pagoExtras));
         BigDecimal remuneracionNeta = PlanillaPolicyService.money(sueldoAfecto.subtract(totalDescuento).add(totalBonificaciones));
 
         PlanillaEmpleado fila = PlanillaEmpleado.builder()
@@ -221,6 +266,7 @@ public class PlanillaService {
                 .bonoProductividad(bonoProductividad)
                 .bonoPuntualidad(bonoPuntualidad)
                 .bonoCapacitacion(bonoCapacitacion)
+                .bonoAdicional(PlanillaPolicyService.money(bonoAdicional))
                 .minutosExtras(minutosExtra)
                 .pagoExtras(pagoExtras)
                 .totalBonificaciones(totalBonificaciones)
@@ -238,6 +284,7 @@ public class PlanillaService {
         fila.getDetalles().add(detalle(fila, null, Concepto.BONO_PRODUCTIVIDAD, TipoMovimiento.INGRESO, "Bono de productividad", null, BigDecimal.valueOf(ventasValidas), null, bonoProductividad, "LEAD"));
         fila.getDetalles().add(detalle(fila, null, Concepto.BONO_PUNTUALIDAD, TipoMovimiento.INGRESO, "Bono de puntualidad", null, BigDecimal.valueOf(tardanzas), null, bonoPuntualidad, "SCHEDULE"));
         fila.getDetalles().add(detalle(fila, null, Concepto.BONO_CAPACITACION, TipoMovimiento.INGRESO, "Bono de capacitacion", null, BigDecimal.ONE, null, bonoCapacitacion, "RRHH"));
+        fila.getDetalles().add(detalle(fila, null, Concepto.BONO_ADICIONAL, TipoMovimiento.INGRESO, "Bonos adicionales manuales", null, BigDecimal.ONE, null, bonoAdicional, "BILLING"));
         fila.getDetalles().add(detalle(fila, null, Concepto.HORAS_EXTRA, TipoMovimiento.INGRESO, "Pago por horas extra completas", null, BigDecimal.valueOf(Math.floorDiv(minutosExtra, 60)), null, pagoExtras, "SCHEDULE"));
         return fila;
     }
@@ -245,7 +292,8 @@ public class PlanillaService {
     private TramoTemporal crearTramoTemporal(
             YearMonth periodo,
             RrhhPlanillaClient.ContratoPlanillaDto contrato,
-            List<SchedulePlanillaClient.IncidenciaDiaDto> incidencias
+            List<SchedulePlanillaClient.IncidenciaDiaDto> incidencias,
+            MatrizCalculoPlanilla matriz
     ) {
         LocalDate inicioMes = periodo.atDay(1);
         LocalDate finMes = periodo.atEndOfMonth();
@@ -263,11 +311,11 @@ public class PlanillaService {
         int minutosExtra = delTramo.stream().mapToInt(i -> nvl(i.minutosExtra())).sum();
         BigDecimal descuentoTardanzas = delTramo.stream()
                 .filter(SchedulePlanillaClient.IncidenciaDiaDto::tardanza)
-                .map(i -> policy.descuentoTardanza(nvl(i.minutosTarde())))
+                .map(i -> policy.descuentoTardanza(matriz, nvl(i.minutosTarde())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal descuentoFaltas = PlanillaPolicyService.money(pagoDiaHabil.multiply(BigDecimal.valueOf(faltas)));
         BigDecimal sueldoAfecto = policy.sueldoAfecto(pagoDiaHabil, diasValidos);
-        BigDecimal pagoExtras = policy.pagoExtras(pagoDiaHabil, modalidad, minutosExtra);
+        BigDecimal pagoExtras = policy.pagoExtras(matriz, pagoDiaHabil, modalidad, minutosExtra);
         return new TramoTemporal(
                 contrato.idContrato(),
                 contrato.fechaInicio(),
@@ -276,7 +324,7 @@ public class PlanillaService {
                 hasta,
                 modalidad,
                 PlanillaPolicyService.money(contrato.sueldoBasico()),
-                policy.horasDia(modalidad),
+                policy.horasDia(matriz, modalidad),
                 diasValidos,
                 pagoDiaHabil,
                 sueldoAfecto,
@@ -303,6 +351,14 @@ public class PlanillaService {
             throw new BillingException(HttpStatus.BAD_REQUEST, "Solo se puede calcular un mes ya cerrado");
         }
         return periodo;
+    }
+
+    private void validarPlanillaEditableParaAjuste(Integer anio, Integer mes, String mensajeCerrada) {
+        PlanillaGeneral planilla = planillaGeneralRepository.findByAnioAndMesAndTipoPlanilla(anio, mes, TipoPlanilla.REGULAR)
+                .orElseThrow(() -> new BillingException(HttpStatus.NOT_FOUND, "Primero calcula la planilla del periodo para registrar ajustes"));
+        if (planilla.getEstado() != Estado.REVISION) {
+            throw new BillingException(HttpStatus.CONFLICT, mensajeCerrada);
+        }
     }
 
     private LocalDate calcularFechaBaja(List<TramoTemporal> tramos, YearMonth periodo) {
@@ -347,6 +403,7 @@ public class PlanillaService {
                 planilla.getCantidadEmpleados(),
                 planilla.getApprovedAt(),
                 planilla.getApprovedBy(),
+                matrizPlanillaService.toResponse(planilla.getMatrizCalculo()),
                 planilla.getEmpleados().stream().map(this::toResponse).toList()
         );
     }
@@ -379,6 +436,7 @@ public class PlanillaService {
                 empleado.getBonoProductividad(),
                 empleado.getBonoPuntualidad(),
                 empleado.getBonoCapacitacion(),
+                empleado.getBonoAdicional(),
                 empleado.getMinutosExtras(),
                 empleado.getPagoExtras(),
                 empleado.getTotalBonificaciones(),
@@ -436,6 +494,19 @@ public class PlanillaService {
                 adelanto.getDescripcion(),
                 adelanto.getRegistradoPor(),
                 adelanto.getRegistradoAt()
+        );
+    }
+
+    private BonoAdicionalResponse toResponse(BonoAdicionalEmpleado bono) {
+        return new BonoAdicionalResponse(
+                bono.getId(),
+                bono.getIdEmpleado(),
+                bono.getAnio(),
+                bono.getMes(),
+                bono.getMonto(),
+                bono.getComentario(),
+                bono.getRegistradoPor(),
+                bono.getRegistradoAt()
         );
     }
 
