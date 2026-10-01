@@ -20,6 +20,10 @@ services:
   schedule:
     base-url: ${SCHEDULE_SERVICE_URL:http://schedule-service:8085}
 
+billing:
+  planilla:
+    empleados-excluidos: ${BILLING_PLANILLA_EMPLEADOS_EXCLUIDOS:}
+
 app:
   docs:
     gateway-url: ${RRHH_DOCS_GATEWAY_URL:http://localhost:8080/rrhh}

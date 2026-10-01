@@ -1,5 +1,6 @@
 package pe.albrugroup.schedule_service.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,7 +11,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.schedule_service.entity.request.asistencia.PresenciaEventoRequest;
+import pe.albrugroup.schedule_service.entity.request.asistencia.BillingIncidenciasRequest;
+import pe.albrugroup.schedule_service.entity.response.asistencia.BillingEmpleadoIncidenciasResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleAsistenciaResponse;
+import pe.albrugroup.schedule_service.service.BillingIncidenciasService;
 import pe.albrugroup.schedule_service.service.PresenciaTramoService;
 import pe.albrugroup.schedule_service.usecase.IAsistencia;
 
@@ -28,6 +32,7 @@ public class AsistenciaInternalController {
 
     private final IAsistencia asistenciaService;
     private final PresenciaTramoService presenciaTramoService;
+    private final BillingIncidenciasService billingIncidenciasService;
 
     @GetMapping("/jornadas-abiertas-vencidas")
     @PreAuthorize("hasAuthority('SERVICE_INTERNAL')")
@@ -46,5 +51,15 @@ public class AsistenciaInternalController {
     public ResponseEntity<Void> registrarPresenciaEvento(@RequestBody PresenciaEventoRequest request) {
         presenciaTramoService.procesarEvento(request);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/billing/incidencias-mensuales")
+    @PreAuthorize("hasAuthority('SERVICE_INTERNAL')")
+    public ResponseEntity<List<BillingEmpleadoIncidenciasResponse>> obtenerIncidenciasBilling(
+            @Valid @RequestBody BillingIncidenciasRequest request
+    ) {
+        return ResponseEntity.ok(
+                billingIncidenciasService.obtenerIncidencias(request.anio(), request.mes(), request.empleados())
+        );
     }
 }

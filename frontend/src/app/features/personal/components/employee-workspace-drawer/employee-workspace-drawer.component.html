@@ -192,7 +192,7 @@
         <section class="drawer-subview">
           <div class="subview-heading">
             <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left"></i>Volver</button>
-            <div><h3>{{ contract() ? 'Registrar nuevo contrato' : 'Registrar contrato' }}</h3><p>El contrato se guarda de forma independiente. El horario se asigna después desde su propia sección.</p></div>
+            <div><h3>{{ isEditingContract() ? 'Editar contrato vigente' : contract() ? 'Registrar nuevo contrato' : 'Registrar contrato' }}</h3><p>{{ isEditingContract() ? 'Actualiza las condiciones del contrato vigente sin crear una nueva versión histórica.' : 'El contrato se guarda de forma independiente. El horario se asigna después desde su propia sección.' }}</p></div>
           </div>
           <form class="form-grid" [formGroup]="contractForm">
             <label class="form-field"><span>Categoría de personal</span><select formControlName="categoriaPersonal">@for (option of categoriaPersonalOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
@@ -593,7 +593,7 @@
         <button type="button" class="danger-button push-right" [disabled]="isDismissing()" (click)="confirmDismiss()">{{ isDismissing() ? 'Procesando…' : 'Confirmar baja' }}</button>
       } @else if (subview() === 'contrato-form') {
         <button type="button" class="ghost-button" [disabled]="isSavingContract()" (click)="closeSubview()">Cancelar</button>
-        <button type="button" class="primary-button push-right" [disabled]="isSavingContract()" (click)="submitContract()">{{ isSavingContract() ? 'Registrando…' : 'Registrar contrato' }}</button>
+        <button type="button" class="primary-button push-right" [disabled]="isSavingContract()" (click)="submitContract()">{{ isSavingContract() ? (isEditingContract() ? 'Guardando…' : 'Registrando…') : (isEditingContract() ? 'Guardar cambios' : 'Registrar contrato') }}</button>
       } @else if (subview() === 'cerrar-contrato') {
         <button type="button" class="ghost-button" [disabled]="isClosingContract()" (click)="closeSubview()">Cancelar</button>
         <button type="button" class="danger-button push-right" [disabled]="isClosingContract()" (click)="confirmCloseContract()">{{ isClosingContract() ? 'Finalizando…' : 'Finalizar contrato' }}</button>
@@ -631,6 +631,7 @@
         }
       } @else if (section() === 'contrato') {
         <button type="button" class="primary-button" (click)="openContractForm()">{{ contract() ? 'Nuevo contrato' : 'Registrar contrato' }}</button>
+        @if (contract() && canEditContract()) { <button type="button" class="ghost-button" (click)="openEditContract()"><i class="ti ti-pencil" aria-hidden="true"></i>Editar contrato</button> }
         @if (contract()) { <button type="button" class="danger-ghost-button push-right" (click)="openCloseContract()">Finalizar contrato</button> }
       } @else if (section() === 'horario') {
         <button type="button" class="primary-button push-right" [disabled]="!contract() || !scheduleFacade.canMutateOperationalData()" (click)="openScheduleEditor()">{{ schedule() ? 'Editar horario base' : 'Asignar horario base' }}</button>

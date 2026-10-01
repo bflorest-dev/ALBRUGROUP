@@ -173,6 +173,8 @@ services:
       SCHEDULE_SERVICE_URL: http://schedule-service:8085
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
       JWT_ISSUER: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
+      INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:?INTERNAL_SHARED_SECRET is required}
+      BILLING_PLANILLA_EMPLEADOS_EXCLUIDOS: ${BILLING_PLANILLA_EMPLEADOS_EXCLUIDOS:-900001,900002,900003,900004,900005,900006,900007,900008,900009,900010,900011,900012,900013,900014,900015,900016,900017,900018,900019,900020,900021,900022,900023,900024,900025,900026,900027,900028,900029,900030,900031,900032,900033,900034,900035,900036,900037,900038,900039,900040,950001,950007}
       RRHH_DOCS_GATEWAY_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/rrhh
       RRHH_DOCS_PUBLIC_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/rrhh
     depends_on:
@@ -288,6 +290,44 @@ services:
     networks:
       - albru-network
 
+  billing-service:
+    profiles: ["business"]
+    build:
+      context: ./billing-service
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
+      BILLING_DB_URL: jdbc:postgresql://postgres-core:5432/billing_db
+      BILLING_DB_USERNAME: postgres
+      BILLING_DB_PASSWORD: postgres
+      BILLING_DB_DRIVER: org.postgresql.Driver
+      RRHH_SERVICE_URL: http://rrhh-service:8082
+      SCHEDULE_SERVICE_URL: http://schedule-service:8085
+      LEAD_SERVICE_URL: http://lead-service:8083
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SHARED_SECRET:?INTERNAL_SHARED_SECRET is required}
+      JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
+      JWT_ISSUER: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
+      BILLING_DOCS_GATEWAY_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/billing
+      BILLING_DOCS_PUBLIC_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/billing
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+      rrhh-service:
+        condition: service_healthy
+      schedule-service:
+        condition: service_healthy
+      lead-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8087/actuator/health/readiness | grep '\"status\":\"UP\"' >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - albru-network
+
   call-service:
     profiles: ["cellphone"]
     build:
@@ -355,6 +395,7 @@ services:
       LEAD_SERVICE_URI: http://lead-service:8083
       RECRUITMENT_SERVICE_URI: http://recruitment-service:8084
       SCHEDULE_SERVICE_URI: http://schedule-service:8085
+      BILLING_SERVICE_URI: http://billing-service:8087
       CALL_SERVICE_URI: http://call-service:8086
       AUTH_SERVICE_URL: http://auth-service:8081
       SCHEDULE_SERVICE_URL: http://schedule-service:8085
@@ -375,6 +416,8 @@ services:
       recruitment-service:
         condition: service_healthy
       schedule-service:
+        condition: service_healthy
+      billing-service:
         condition: service_healthy
     ports:
       - "${GATEWAY_HOST_PORT:-8080}:8080"

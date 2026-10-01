@@ -6,6 +6,7 @@ import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employabil
 import { AdminEquiposPageComponent } from '../admin/pages/admin-equipos-page/admin-equipos-page.component';
 import { AdminProveedoresPageComponent } from '../admin/pages/admin-proveedores-page/admin-proveedores-page.component';
 import { AdminFinancePageComponent } from '../admin/pages/admin-finance-page/admin-finance-page.component';
+import { AdminBillingPageComponent } from '../admin/pages/admin-billing-page/admin-billing-page.component';
 import { AdminMaintenancePageComponent } from '../admin/pages/admin-maintenance-page/admin-maintenance-page.component';
 import { AdminMetricsPageComponent } from '../admin/pages/admin-metrics-page/admin-metrics-page.component';
 import { AdminDashboardPostventaPageComponent } from '../admin/pages/admin-dashboard-postventa-page/admin-dashboard-postventa-page.component';
@@ -168,6 +169,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin/finanzas',
     component: AdminFinancePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'admin/planillas',
+    component: AdminBillingPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR']
@@ -356,6 +365,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'rrhh/personal',
     component: RrhhPersonalPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['RRHH']
+    }
+  },
+  {
+    path: 'rrhh/planillas',
+    component: AdminBillingPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['RRHH']

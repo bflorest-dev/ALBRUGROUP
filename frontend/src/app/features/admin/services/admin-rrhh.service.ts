@@ -21,6 +21,7 @@ import { CorregirHorarioRequest } from '../../../shared/models/schedule/corregir
 import { RegistrarExcepcionHorarioRequest } from '../../../shared/models/schedule/registrar-excepcion-horario-request';
 import { ExcepcionHorarioResponse } from '../../../shared/models/schedule/excepcion-horario-response';
 import { CerrarContratoRequest } from '../../../shared/models/rrhh/cerrar-contrato-request';
+import { ActualizarContratoVigenteRequest } from '../../../shared/models/rrhh/actualizar-contrato-vigente-request';
 
 @Injectable({
   providedIn: 'root'
@@ -82,6 +83,13 @@ export class AdminRrhhService {
 
   getContratoVigente(empleadoId: number): Observable<ContratoResponse> {
     return this.http.get<ContratoResponse>(`${this.contratosUrl}/${empleadoId}/vigente`);
+  }
+
+  actualizarContratoVigente(
+    empleadoId: number,
+    request: ActualizarContratoVigenteRequest
+  ): Observable<ContratoResponse> {
+    return this.http.put<ContratoResponse>(`${this.contratosUrl}/${empleadoId}/vigente`, request);
   }
 
   listarContratos(empleadoId: number, pageNumber = 0, pageSize = 20): Observable<PageResponse<ContratoResponse>> {

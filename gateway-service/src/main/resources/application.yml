@@ -59,6 +59,12 @@ spring:
                 - Path=/schedule/**
               filters:
                 - StripPrefix=1
+            - id: billing-service
+              uri: ${BILLING_SERVICE_URI:http://billing-service:8087}
+              predicates:
+                - Path=/billing/**
+              filters:
+                - StripPrefix=1
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
 
@@ -87,6 +93,8 @@ springdoc:
         url: /recruitment/v3/api-docs
       - name: schedule-service
         url: /schedule/v3/api-docs
+      - name: billing-service
+        url: /billing/v3/api-docs
 
 presence:
   ttl: ${PRESENCE_TTL:90s}

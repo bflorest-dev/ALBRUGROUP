@@ -1,0 +1,239 @@
+<main class="billing-workspace">
+  <app-page-header
+    class="billing-page-header"
+    title="Planilla mensual"
+    description="Cierre mensual calculado desde snapshots de RRHH, asistencia, ventas y adelantos."
+    [variant]="'plain'"
+  >
+    <div class="billing-command-group" aria-label="Controles de planilla">
+      <label class="billing-command-control">
+        <span>Periodo</span>
+        <input
+          class="billing-month-input"
+          type="month"
+          [ngModel]="facade.selectedMonth()"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="onMonthChange($event)"
+        />
+      </label>
+      <button class="billing-secondary-button" type="button" (click)="facade.loadPlanilla()" [disabled]="facade.isLoading()">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        Consultar
+      </button>
+      <button
+        class="billing-primary-action"
+        type="button"
+        (click)="calculate()"
+        [disabled]="!facade.isClosedMonth() || facade.isCalculating()"
+        pTooltip="Disponible solo para meses cerrados"
+      >
+        <i class="pi pi-calculator" aria-hidden="true"></i>
+        Calcular planilla
+      </button>
+      @if (facade.planilla()?.estado === 'REVISION') {
+        <button class="billing-approve-button" type="button" (click)="approve()" [disabled]="facade.isApproving()">
+          <i class="pi pi-lock" aria-hidden="true"></i>
+          Aprobar
+        </button>
+      }
+    </div>
+  </app-page-header>
+
+  <div class="billing-messages">
+    @if (!facade.isClosedMonth()) {
+      <p-message severity="warn" text="El mes seleccionado sigue en curso. El calculo se habilita recien cuando el periodo cierra." />
+    }
+    @if (facade.errorMessage()) {
+      <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
+    }
+    @if (facade.successMessage()) {
+      <p-message severity="success" [text]="facade.successMessage() ?? ''" />
+    }
+  </div>
+
+  @let planilla = facade.planilla();
+  <section class="billing-overview" aria-label="Totales de planilla">
+    <app-section-header title="Totales del periodo" [count]="planilla?.cantidadEmpleados ?? 0" description="Resumen acumulado de la planilla mensual calculada por Billing." />
+    <div class="billing-metric-ledger">
+      <div class="billing-ledger-row">
+        <div class="billing-ledger-label">
+          <span>{{ facade.periodLabel() }}</span>
+          <strong>
+            @if (planilla) {
+              <p-tag [value]="planilla.estado" [severity]="statusSeverity(planilla.estado)" />
+            } @else {
+              Sin calculo
+            }
+          </strong>
+        </div>
+        <div class="billing-metric"><span>Gasto total</span><strong>{{ facade.money(planilla?.totalGastoPlanilla) }}</strong></div>
+        <div class="billing-metric billing-metric--discount"><span>Descuentos</span><strong>{{ facade.money(planilla?.totalDescuentos) }}</strong></div>
+        <div class="billing-metric billing-metric--bonus"><span>Bonificaciones</span><strong>{{ facade.money(planilla?.totalBonificaciones) }}</strong></div>
+        <div class="billing-metric"><span>Empleados</span><strong>{{ facade.number(planilla?.cantidadEmpleados) }}</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="billing-table-section" aria-label="Detalle consolidado por empleado">
+    <app-section-header
+      title="Colaboradores calculados"
+      [count]="facade.rows().length"
+      description="Una fila consolidada por empleado; los cambios de contrato se revisan en el detalle."
+    />
+
+    <div class="billing-table-scroll">
+      <p-table
+        [value]="facade.rows()"
+        [loading]="facade.isLoading() || facade.isCalculating()"
+        [scrollable]="true"
+        scrollHeight="flex"
+        [rowHover]="true"
+        styleClass="billing-table"
+        [tableStyle]="{ 'min-width': '2600px' }"
+      >
+        <ng-template #header>
+          <tr class="billing-table__group-row">
+            <th rowspan="2" class="billing-sticky-column">Nombres</th>
+            <th rowspan="2">Apellidos</th>
+            <th colspan="2" class="billing-band billing-band--identity">Documento</th>
+            <th colspan="8" class="billing-band billing-band--contract">Contrato</th>
+            <th colspan="3" class="billing-band billing-band--attendance">Asistencia</th>
+            <th colspan="4" class="billing-band billing-band--discount">Descuentos</th>
+            <th colspan="6" class="billing-band billing-band--bonus">Bonos</th>
+            <th rowspan="2">Remuneracion neta</th>
+            <th rowspan="2">Detalle</th>
+          </tr>
+          <tr>
+            <th class="billing-band--identity">Tipo</th>
+            <th class="billing-band--identity">Numero</th>
+            <th class="billing-band--contract">Modalidad</th>
+            <th class="billing-band--contract">Sueldo basico</th>
+            <th class="billing-band--contract">Dias mes</th>
+            <th class="billing-band--contract">Dias habiles</th>
+            <th class="billing-band--contract">Pago x dia habil</th>
+            <th class="billing-band--contract">Fecha ingreso</th>
+            <th class="billing-band--contract">Fecha baja</th>
+            <th class="billing-band--contract">Dias validos</th>
+            <th class="billing-band--attendance">Sueldo afecto</th>
+            <th class="billing-band--attendance">Tardanzas</th>
+            <th class="billing-band--attendance">Faltas injustificadas</th>
+            <th class="billing-band--discount">Dscto tardanzas</th>
+            <th class="billing-band--discount">Dscto faltas</th>
+            <th class="billing-band--discount">Adelanto sueldo</th>
+            <th class="billing-band--discount">Total descuento</th>
+            <th class="billing-band--bonus">Productividad</th>
+            <th class="billing-band--bonus">Puntualidad</th>
+            <th class="billing-band--bonus">Capacitacion</th>
+            <th class="billing-band--bonus">Horas extras</th>
+            <th class="billing-band--bonus">Pago extras</th>
+            <th class="billing-band--bonus">Total bonificaciones</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr>
+            <td class="billing-sticky-column billing-person"><strong>{{ row.nombres }}</strong></td>
+            <td>{{ row.apellidos }}</td>
+            <td class="billing-band--identity">{{ row.tipoDocumento }}</td>
+            <td class="billing-band--identity billing-data">{{ row.numeroDocumento }}</td>
+            <td class="billing-band--contract">
+              <span class="billing-mode">{{ row.modalidad }}</span>
+              @if (row.multipleTramos) { <span class="billing-mix">tramos</span> }
+            </td>
+            <td class="billing-band--contract billing-data">{{ facade.money(row.sueldoBasico) }}</td>
+            <td class="billing-band--contract billing-data">{{ row.diasMes }}</td>
+            <td class="billing-band--contract billing-data">{{ row.diasHabiles }}</td>
+            <td class="billing-band--contract billing-data">{{ facade.money(row.pagoDiaHabil) }}</td>
+            <td class="billing-band--contract billing-data">{{ facade.date(row.fechaIngreso) }}</td>
+            <td class="billing-band--contract billing-data">{{ facade.date(row.fechaBaja) }}</td>
+            <td class="billing-band--contract billing-data">{{ row.diasValidos }}</td>
+            <td class="billing-band--attendance billing-data">{{ facade.money(row.sueldoAfecto) }}</td>
+            <td class="billing-band--attendance billing-data">{{ row.tardanzas }}</td>
+            <td class="billing-band--attendance billing-data">{{ row.faltasInjustificadas }}</td>
+            <td class="billing-band--discount billing-data">{{ facade.money(row.descuentoTardanzas) }}</td>
+            <td class="billing-band--discount billing-data">{{ facade.money(row.descuentoFaltas) }}</td>
+            <td class="billing-band--discount billing-data">{{ facade.money(row.adelantoSueldo) }}</td>
+            <td class="billing-band--discount billing-data">{{ facade.money(row.totalDescuento) }}</td>
+            <td class="billing-band--bonus billing-data">{{ facade.money(row.bonoProductividad) }}</td>
+            <td class="billing-band--bonus billing-data">{{ facade.money(row.bonoPuntualidad) }}</td>
+            <td class="billing-band--bonus billing-data">{{ facade.money(row.bonoCapacitacion) }}</td>
+            <td class="billing-band--bonus billing-data">{{ facade.hoursFromMinutes(row.minutosExtras) }}</td>
+            <td class="billing-band--bonus billing-data">{{ facade.money(row.pagoExtras) }}</td>
+            <td class="billing-band--bonus billing-data">{{ facade.money(row.totalBonificaciones) }}</td>
+            <td class="billing-net billing-data">{{ facade.money(row.remuneracionNeta) }}</td>
+            <td>
+              <button class="billing-icon-button" type="button" (click)="facade.openDetail(row)" pTooltip="Ver tramos y lineas">
+                <i class="pi pi-list" aria-hidden="true"></i>
+              </button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr><td colspan="28" class="billing-empty">No hay planilla calculada para este periodo.</td></tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </section>
+</main>
+
+<p-drawer
+  [visible]="facade.detailVisible()"
+  position="right"
+  [style]="{ width: 'min(78rem, 96vw)' }"
+  (visibleChange)="!$event && facade.closeDetail()"
+>
+  <ng-template #header>
+    <div class="billing-drawer-header">
+      <strong>{{ facade.selectedEmployee() ? fullName(facade.selectedEmployee()!) : 'Detalle' }}</strong>
+      <span>{{ facade.periodLabel() }}</span>
+    </div>
+  </ng-template>
+
+  @let employee = facade.selectedEmployee();
+  @if (employee) {
+    <section class="billing-detail-section">
+      <app-section-header title="Tramos contractuales" [count]="employee.tramos.length" />
+      <p-table [value]="employee.tramos" [scrollable]="true" styleClass="billing-table billing-table--drawer" [tableStyle]="{ 'min-width': '1050px' }">
+        <ng-template #header>
+          <tr>
+            <th>Contrato</th><th>Desde</th><th>Hasta</th><th>Modalidad</th><th>Sueldo</th><th>Horas dia</th><th>Dias validos</th><th>Sueldo afecto</th><th>Tardanzas</th><th>Faltas</th><th>Extras</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-tramo>
+          <tr>
+            <td class="billing-data">{{ tramo.idContrato }}</td>
+            <td class="billing-data">{{ facade.date(tramo.fechaDesdeTramo) }}</td>
+            <td class="billing-data">{{ facade.date(tramo.fechaHastaTramo) }}</td>
+            <td>{{ tramo.modalidadTrabajo }}</td>
+            <td class="billing-data">{{ facade.money(tramo.sueldoBasico) }}</td>
+            <td class="billing-data">{{ tramo.horasDia }}</td>
+            <td class="billing-data">{{ tramo.diasValidos }}</td>
+            <td class="billing-data">{{ facade.money(tramo.sueldoAfecto) }}</td>
+            <td class="billing-data">{{ tramo.tardanzas }}</td>
+            <td class="billing-data">{{ tramo.faltasInjustificadas }}</td>
+            <td class="billing-data">{{ facade.hoursFromMinutes(tramo.minutosExtras) }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </section>
+
+    <section class="billing-detail-section">
+      <app-section-header title="Lineas de calculo" [count]="employee.detalles.length" />
+      <p-table [value]="employee.detalles" [scrollable]="true" styleClass="billing-table billing-table--drawer" [tableStyle]="{ 'min-width': '980px' }">
+        <ng-template #header>
+          <tr><th>Concepto</th><th>Tipo</th><th>Descripcion</th><th>Cantidad</th><th>Tarifa</th><th>Monto</th><th>Fuente</th></tr>
+        </ng-template>
+        <ng-template #body let-detail>
+          <tr>
+            <td>{{ detail.concepto }}</td>
+            <td>{{ detail.tipoMovimiento }}</td>
+            <td>{{ detail.descripcion }}</td>
+            <td class="billing-data">{{ detail.cantidad ?? '' }}</td>
+            <td class="billing-data">{{ detail.tarifa === null ? '' : facade.money(detail.tarifa) }}</td>
+            <td class="billing-data">{{ facade.money(detail.monto) }}</td>
+            <td>{{ detail.fuente }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </section>
+  }
+</p-drawer>

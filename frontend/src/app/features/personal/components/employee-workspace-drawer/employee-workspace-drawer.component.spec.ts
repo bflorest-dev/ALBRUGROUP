@@ -1,5 +1,6 @@
+import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
-import { scopeCapabilitiesForRoles } from './employee-workspace-drawer.component';
+import { canEditVigenteContract, scopeCapabilitiesForRoles } from './employee-workspace-drawer.component';
 
 describe('capacidades de ámbito del drawer de PERSONAL', () => {
   it('muestra únicamente equipos para roles de equipo', () => {
@@ -13,5 +14,11 @@ describe('capacidades de ámbito del drawer de PERSONAL', () => {
   it('muestra ambos controles para roles mixtos y uno por cada scope', () => {
     expect(scopeCapabilitiesForRoles(['ASESOR_VENTAS', 'ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA']))
       .toEqual({ team: true, provider: true });
+  });
+
+  it('permite editar el contrato vigente únicamente al administrador', () => {
+    expect(canEditVigenteContract(['ADMINISTRADOR'], true)).toBe(true);
+    expect(canEditVigenteContract(['RRHH'], true)).toBe(false);
+    expect(canEditVigenteContract(['ADMINISTRADOR'], false)).toBe(false);
   });
 });

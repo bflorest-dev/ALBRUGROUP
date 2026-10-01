@@ -4,6 +4,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, ou
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ContratoResponse } from '../../../../shared/models/rrhh/contrato-response';
+import { ActualizarContratoVigenteRequest } from '../../../../shared/models/rrhh/actualizar-contrato-vigente-request';
 import { DatosContactoCorporativoRequest } from '../../../../shared/models/rrhh/datos-contacto-corporativo-request';
 import { DatosContactoUbicacionRequest } from '../../../../shared/models/rrhh/datos-contacto-ubicacion-request';
 import { DatosFinancierosRequest } from '../../../../shared/models/rrhh/datos-financieros-request';
@@ -48,6 +49,10 @@ export function scopeCapabilitiesForRoles(roles: string[]): DrawerScopeCapabilit
     team: roles.some((role) => esRolDeEquipo(role)),
     provider: roles.some((role) => Boolean(PROVIDER_SCOPED_ROLES[role]))
   };
+}
+
+export function canEditVigenteContract(roles: string[], hasContract: boolean): boolean {
+  return hasContract && roles.includes('ADMINISTRADOR');
 }
 
 @Component({
@@ -116,6 +121,7 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly isSavingEmployeeData = signal(false);
   protected readonly isDismissing = signal(false);
   protected readonly isSavingContract = signal(false);
+  protected readonly isEditingContract = signal(false);
   protected readonly isClosingContract = signal(false);
   protected readonly isSavingTeam = signal(false);
   protected readonly isSavingProviders = signal(false);
@@ -226,6 +232,7 @@ export class EmployeeWorkspaceDrawerComponent {
       this.activeEmployeeId = row.employee.idEmpleado;
       this.section.set('resumen');
       this.subview.set('none');
+      this.isEditingContract.set(false);
       this.editDataSection.set(null);
       this.employeeDetails.set(null);
       this.contractorOptions.set([]);
@@ -327,6 +334,10 @@ export class EmployeeWorkspaceDrawerComponent {
   protected canEditEmployeeData(): boolean {
     const roles = this.session.session()?.roles ?? [];
     return roles.includes('ADMINISTRADOR') || roles.includes('RRHH');
+  }
+
+  protected canEditContract(): boolean {
+    return canEditVigenteContract(this.session.session()?.roles ?? [], !!this.contract());
   }
 
   protected displayValue(value: string | number | boolean | null | undefined): string {
@@ -569,6 +580,7 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected openContractForm(): void {
     const current = this.contract();
+    this.isEditingContract.set(false);
     this.contractForm.reset({
       categoriaPersonal: current?.categoriaPersonal ?? 'ESTRUCTURAL',
       regimen: current?.regimen ?? 'PLANILLA',
@@ -579,6 +591,26 @@ export class EmployeeWorkspaceDrawerComponent {
       fechaInicio: this.today(),
       fechaFinHabilitada: false,
       fechaFin: ''
+    });
+    this.clearActionFeedback();
+    this.subview.set('contrato-form');
+  }
+
+  protected openEditContract(): void {
+    const current = this.contract();
+    if (!current || !this.canEditContract()) return;
+
+    this.isEditingContract.set(true);
+    this.contractForm.reset({
+      categoriaPersonal: current.categoriaPersonal ?? 'ESTRUCTURAL',
+      regimen: current.regimen ?? 'PLANILLA',
+      modalidad: current.modalidad ?? 'FULL_TIME',
+      seguroSalud: current.seguroSalud ?? 'ESSALUD',
+      sistemaPensiones: current.sistemaPensiones ?? 'ONP',
+      sueldoBase: current.sueldoBase ?? 1130,
+      fechaInicio: current.fechaInicio,
+      fechaFinHabilitada: !!current.fechaFin,
+      fechaFin: current.fechaFin ?? ''
     });
     this.clearActionFeedback();
     this.subview.set('contrato-form');
@@ -656,26 +688,36 @@ export class EmployeeWorkspaceDrawerComponent {
       return;
     }
     const raw = this.contractForm.getRawValue();
+    const editing = this.isEditingContract();
+    const request: ActualizarContratoVigenteRequest = {
+      categoriaPersonal: raw.categoriaPersonal as 'ESTRUCTURAL' | 'OPERATIVO',
+      regimen: raw.regimen,
+      modalidad: raw.modalidad,
+      seguroSalud: raw.regimen === 'PLANILLA' ? raw.seguroSalud || null : null,
+      sistemaPensiones: raw.regimen === 'PLANILLA' ? raw.sistemaPensiones || null : null,
+      sueldoBase: Number(raw.sueldoBase),
+      fechaInicio: raw.fechaInicio,
+      fechaFin: raw.fechaFinHabilitada && raw.fechaFin ? raw.fechaFin : null
+    };
     this.isSavingContract.set(true);
     this.clearActionFeedback();
     try {
-      const created = await firstValueFrom(this.rrhh.registrarContrato(row.employee.idEmpleado, {
-        categoriaPersonal: raw.categoriaPersonal as 'ESTRUCTURAL' | 'OPERATIVO',
-        regimen: raw.regimen,
-        modalidad: raw.modalidad,
-        seguroSalud: raw.regimen === 'PLANILLA' ? raw.seguroSalud || null : null,
-        sistemaPensiones: raw.regimen === 'PLANILLA' ? raw.sistemaPensiones || null : null,
-        sueldoBase: Number(raw.sueldoBase),
-        fechaInicio: raw.fechaInicio,
-        fechaFin: raw.fechaFinHabilitada && raw.fechaFin ? raw.fechaFin : null
-      }));
-      this.contract.set(created);
+      const saved = editing
+        ? await firstValueFrom(this.rrhh.actualizarContratoVigente(row.employee.idEmpleado, request))
+        : await firstValueFrom(this.rrhh.registrarContrato(row.employee.idEmpleado, request));
+      this.contract.set(saved);
       await this.loadContractHistory(row.employee.idEmpleado);
       this.subview.set('none');
-      this.actionSuccess.set('Contrato registrado. El horario continúa siendo una gestión independiente.');
+      this.isEditingContract.set(false);
+      this.actionSuccess.set(editing
+        ? 'Contrato vigente actualizado. El horario continúa siendo una gestión independiente.'
+        : 'Contrato registrado. El horario continúa siendo una gestión independiente.');
       this.employeeChanged.emit();
     } catch (error) {
-      this.actionError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo registrar el contrato.'));
+      this.actionError.set(formatApiErrorMessage(
+        error as HttpErrorResponse,
+        editing ? 'No se pudo actualizar el contrato vigente.' : 'No se pudo registrar el contrato.'
+      ));
     } finally {
       this.isSavingContract.set(false);
     }
@@ -706,6 +748,7 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected closeSubview(): void {
     this.subview.set('none');
+    this.isEditingContract.set(false);
     this.clearActionFeedback();
   }
 

@@ -323,6 +323,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
         { domainId: 'operation', key: 'Plataformas', label: 'Plataformas', icon: 'pi pi-th-large', children: plataformasChildren },
         { domainId: 'people', label: 'Personal', route: '/app/personal', icon: 'pi pi-users', exact: true },
         { domainId: 'people', label: 'Asistencia', route: '/app/admin/asistencia', icon: 'pi pi-clock', exact: true },
+        { domainId: 'people', label: 'Planillas', route: '/app/admin/planillas', icon: 'pi pi-receipt', exact: true },
         { domainId: 'people', label: 'Empleabilidad', route: '/app/admin/empleabilidad', icon: 'pi pi-briefcase' },
         { domainId: 'system', label: 'Tipificaciones', route: '/app/admin/tipificaciones', icon: 'pi pi-sitemap', exact: true },
         { domainId: 'system', label: 'Equipos', route: '/app/admin/equipos', icon: 'pi pi-th-large', exact: true },
@@ -346,7 +347,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
     if (activeRole === 'RRHH') {
       return [
         { label: 'Asistencia', route: '/app/rrhh/asistencia', icon: 'pi pi-clock', exact: true },
-        { label: 'Personal', route: '/app/personal', icon: 'pi pi-users', exact: true }
+        { label: 'Personal', route: '/app/personal', icon: 'pi pi-users', exact: true },
+        { label: 'Planillas', route: '/app/rrhh/planillas', icon: 'pi pi-receipt', exact: true }
       ];
     }
 
@@ -522,6 +524,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ['Plataformas', 3.5],
       ['/app/personal', 4],
       ['/app/admin/asistencia', 4.5],
+      ['/app/admin/planillas', 4.75],
       ['/app/admin/correccion-campana', 6],
       ['/app/admin/mantenimiento', 8],
       ['/app/admin/tipificaciones', 9],

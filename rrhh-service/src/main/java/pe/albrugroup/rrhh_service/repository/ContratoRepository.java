@@ -20,6 +20,21 @@ import java.util.Optional;
 public interface ContratoRepository extends JpaRepository<Contrato, Long> {
 
     Page<Contrato> findByEmpleadoId(Long empleadoId, Pageable pageable);
+
+    @Query("""
+            SELECT c
+            FROM Contrato c
+            JOIN FETCH c.empleado e
+            WHERE c.fechaInicio <= :hasta
+              AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
+            ORDER BY e.id ASC, c.fechaInicio ASC
+            """)
+    List<Contrato> findContratosSolapadosConPeriodo(@Param("desde") LocalDate desde,
+                                                    @Param("hasta") LocalDate hasta);
+
+    @Query("SELECT MIN(c.fechaInicio) FROM Contrato c WHERE c.empleado.id = :empleadoId")
+    Optional<LocalDate> findPrimerInicioContratoByEmpleadoId(@Param("empleadoId") Long empleadoId);
+
     @Query("SELECT c FROM Contrato c WHERE c.empleado.id = :empleadoId AND c.fechaInicio <= :fechaActual " +
             "AND (c.fechaFin IS NULL OR c.fechaFin >= :fechaActual)")
     Optional<Contrato> findContratoVigenteByEmpleadoId(@Param("empleadoId") Long empleadoId,
@@ -42,6 +57,19 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
     boolean existeSolapamientoContratos(@Param("empleadoId") Long empleadoId,
                                         @Param("inicio") LocalDate inicio,
                                         @Param("fin") LocalDate fin);
+
+    @Query("""
+            SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END
+            FROM Contrato c
+            WHERE c.empleado.id = :empleadoId
+              AND c.id <> :contratoId
+              AND (:hasta IS NULL OR c.fechaInicio <= :hasta)
+              AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
+            """)
+    boolean existeSolapamientoContratosExceptoId(@Param("empleadoId") Long empleadoId,
+                                                  @Param("contratoId") Long contratoId,
+                                                  @Param("desde") LocalDate desde,
+                                                  @Param("hasta") LocalDate hasta);
 
     @Query("""
             SELECT

@@ -13,14 +13,17 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.request.PageRequest;
+import pe.albrugroup.rrhh_service.entity.request.contrato.ActualizarContratoVigenteRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoPlanillaResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
 import pe.albrugroup.rrhh_service.security.UserSession;
 import pe.albrugroup.rrhh_service.usecase.IContrato;
 
 import java.util.List;
+import java.time.YearMonth;
 
 @RestController @Validated
 @RequiredArgsConstructor
@@ -48,6 +51,25 @@ public class ContratoController {
             @Parameter(description = "ID del empleado", example = "10")
             @PathVariable @Positive Long id) {
         return ResponseEntity.ok(contratoService.getContratoVigente(id));
+    }
+
+    @Operation(summary = "Editar contrato vigente",
+            description = "Actualiza el contrato vigente del empleado sin crear un nuevo registro historico.")
+    @PutMapping("/{id}/vigente") @PreAuthorize("hasAuthority('UPDATE_CONTRATO_VIGENTE_ADMIN')")
+    public ResponseEntity<ContratoResponse> actualizarContratoVigente(
+            @Valid @RequestBody ActualizarContratoVigenteRequest request,
+            @Parameter(description = "ID del empleado", example = "10")
+            @PathVariable @Positive Long id) {
+        return ResponseEntity.ok(contratoService.actualizarContratoVigente(id, request));
+    }
+
+    @GetMapping("/internal/billing/periodo")
+    @PreAuthorize("hasAuthority('SERVICE_INTERNAL')")
+    public ResponseEntity<List<EmpleadoPlanillaResponse>> listarEmpleadosPlanilla(
+            @RequestParam Integer anio,
+            @RequestParam Integer mes
+    ) {
+        return ResponseEntity.ok(contratoService.listarEmpleadosPlanilla(YearMonth.of(anio, mes)));
     }
     @Operation(summary = "Registrar contrato",
             description = "Registra un nuevo contrato para el empleado. Si existe un contrato vigente, se ajusta su fecha fin " +

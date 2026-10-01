@@ -105,6 +105,7 @@ public class DataLoader {
         // CONTRATOS
         savePermiso("CREATE_CONTRATOS", "Puede registrar contratos", "CONTRATO", "CREATE");
         savePermiso("UPDATE_CONTRATOS", "Puede editar contratos", "CONTRATO", "UPDATE");
+        savePermiso("UPDATE_CONTRATO_VIGENTE_ADMIN", "Puede editar el contrato vigente de un empleado desde Administracion", "CONTRATO", "UPDATE_VIGENTE");
         savePermiso("READ_CONTRATOS", "Puede listar y ver contratos", "CONTRATO", "READ");
         savePermiso("CANCEL_CONTRATOS", "Puede dar de baja contratos", "CONTRATO", "CANCEL");
         // PAGOS
