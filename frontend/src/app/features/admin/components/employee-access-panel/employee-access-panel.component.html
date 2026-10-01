@@ -478,11 +478,18 @@
       Esta operación no se puede deshacer.
       ¿Confirmas que quieres dar de baja a <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>?
     </p>
-    <label class="baja-dialog__date-field">
-      <span>Último día de contrato</span>
-      <input type="date" [value]="bajaFechaFin()" [max]="today" (change)="bajaFechaFin.set($any($event.target).value)" />
-      <small>La fecha debe ser hoy o anterior. El backend verificará también el inicio del contrato.</small>
-    </label>
+    <app-date-field
+      class="baja-dialog__date-field"
+      label="Último día de contrato"
+      inputId="panel-baja-fecha-fin"
+      placeholder="dd/mm/aaaa"
+      [ngModel]="bajaFechaFin()"
+      (ngModelChange)="bajaFechaFin.set($event)"
+      [max]="today"
+      panelStyleClass="panel-baja-date-panel"
+      [baseZIndex]="1400"
+    />
+    <small class="baja-dialog__date-hint">La fecha debe ser hoy o anterior. El backend verificará también el inicio del contrato.</small>
     @if (bajaErrorMessage()) {
       <p-message severity="error" [text]="bajaErrorMessage()" />
     }

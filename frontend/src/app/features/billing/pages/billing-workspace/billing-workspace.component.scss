@@ -264,6 +264,10 @@
   white-space: nowrap;
 }
 
+.billing-table ::ng-deep .p-datatable-thead {
+  z-index: 5;
+}
+
 .billing-table ::ng-deep .p-datatable-tbody > tr > td {
   border-color: var(--billing-line);
   color: var(--billing-ink);

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, effect, input, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
@@ -14,6 +15,7 @@ import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-respon
 import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
 import { CerrarContratoRequest } from '../../../../shared/models/rrhh/cerrar-contrato-request';
 import { formatLabel } from '../../../../shared/utils/display-label';
+import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 
 function currentDateValue(): string {
   const now = new Date();
@@ -37,7 +39,7 @@ type EmployeeTeamGroup = {
 
 @Component({
   selector: 'app-employee-access-panel',
-  imports: [ButtonModule, DialogModule, MessageModule, ProgressSpinnerModule, SkeletonModule, TableModule, TagModule],
+  imports: [FormsModule, ButtonModule, DateFieldComponent, DialogModule, MessageModule, ProgressSpinnerModule, SkeletonModule, TableModule, TagModule],
   templateUrl: './employee-access-panel.component.html',
   styleUrl: './employee-access-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

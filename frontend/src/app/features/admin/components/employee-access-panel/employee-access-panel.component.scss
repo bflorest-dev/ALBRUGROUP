@@ -499,36 +499,16 @@
 }
 
 .baja-dialog__date-field {
-  display: grid;
-  gap: 0.35rem;
+  display: block;
   margin-top: 1rem;
+  width: 100%;
+}
 
-  > span {
-    color: var(--app-text);
-    font-size: 0.8rem;
-    font-weight: 700;
-  }
-
-  input {
-    background: var(--app-surface);
-    border: 1px solid var(--app-border);
-    border-radius: 0.45rem;
-    color: var(--app-text);
-    font: inherit;
-    min-height: 2.65rem;
-    padding: 0.55rem 0.7rem;
-
-    &:focus-visible {
-      border-color: var(--app-focus);
-      outline: 2px solid color-mix(in srgb, var(--app-focus) 30%, transparent);
-      outline-offset: 1px;
-    }
-  }
-
-  small {
-    color: var(--app-text-muted);
-    line-height: 1.4;
-  }
+.baja-dialog__date-hint {
+  color: var(--app-text-muted);
+  display: block;
+  line-height: 1.4;
+  margin-top: 0.45rem;
 }
 
 .baja-dialog__actions {

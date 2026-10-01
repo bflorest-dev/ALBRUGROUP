@@ -28,6 +28,7 @@ import { LunchDayEditorComponent } from '../../../../shared/components/lunch-day
 import { SessionService } from '../../../../core/services/session.service';
 import { PersonalAttendancePanelComponent } from '../personal-attendance-panel/personal-attendance-panel.component';
 import { PersonalAttendanceFacade } from '../../facades/personal-attendance.facade';
+import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import {
   PersonalAccessService,
   RoleAuditEntry,
@@ -58,7 +59,7 @@ export function canEditVigenteContract(roles: string[], hasContract: boolean): b
 
 @Component({
   selector: 'app-employee-workspace-drawer',
-  imports: [DatePipe, FormsModule, ReactiveFormsModule, ScheduleWeekEditorComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent, PersonalAttendancePanelComponent],
+  imports: [DatePipe, FormsModule, ReactiveFormsModule, DateFieldComponent, ScheduleWeekEditorComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent, PersonalAttendancePanelComponent],
   providers: [PersonalScheduleFacade, PersonalAttendanceFacade],
   templateUrl: './employee-workspace-drawer.component.html',
   styleUrl: './employee-workspace-drawer.component.scss',
