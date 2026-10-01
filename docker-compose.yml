@@ -1,6 +1,8 @@
 services:
   postgres-core:
     image: postgres:17-alpine
+    mem_limit: ${POSTGRES_CORE_MEM_LIMIT:-768m}
+    mem_reservation: ${POSTGRES_CORE_MEM_RESERVATION:-256m}
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -22,6 +24,8 @@ services:
 
   postgres-lead:
     image: postgres:17-alpine
+    mem_limit: ${POSTGRES_LEAD_MEM_LIMIT:-768m}
+    mem_reservation: ${POSTGRES_LEAD_MEM_RESERVATION:-256m}
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -44,6 +48,8 @@ services:
   postgres-call:
     profiles: ["cellphone"]
     image: postgres:17-alpine
+    mem_limit: ${POSTGRES_CALL_MEM_LIMIT:-512m}
+    mem_reservation: ${POSTGRES_CALL_MEM_RESERVATION:-128m}
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -64,6 +70,8 @@ services:
   minio:
     profiles: ["cellphone"]
     image: minio/minio:latest
+    mem_limit: ${MINIO_MEM_LIMIT:-512m}
+    mem_reservation: ${MINIO_MEM_RESERVATION:-128m}
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
@@ -89,6 +97,8 @@ services:
       args:
         ASTERISK_VERSION: 22.10.0
     image: albrugroup/asterisk:22.10.0
+    mem_limit: ${ASTERISK_MEM_LIMIT:-512m}
+    mem_reservation: ${ASTERISK_MEM_RESERVATION:-128m}
     hostname: asterisk
     volumes:
       - ./docker/asterisk/etc:/etc/asterisk:ro
@@ -111,7 +121,9 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--save", "", "--appendonly", "no", "--notify-keyspace-events", "Ex"]
+    mem_limit: ${REDIS_MEM_LIMIT:-256m}
+    mem_reservation: ${REDIS_MEM_RESERVATION:-64m}
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--notify-keyspace-events", "Ex", "--maxmemory", "${REDIS_MAXMEMORY:-192mb}", "--maxmemory-policy", "allkeys-lru"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -126,6 +138,8 @@ services:
     profiles: ["business"]
     build:
       context: ./auth-service
+    mem_limit: ${AUTH_SERVICE_MEM_LIMIT:-512m}
+    mem_reservation: ${AUTH_SERVICE_MEM_RESERVATION:-256m}
     environment:
       SPRING_PROFILES_ACTIVE: prod
       JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
@@ -162,6 +176,8 @@ services:
     profiles: ["business"]
     build:
       context: ./rrhh-service
+    mem_limit: ${RRHH_SERVICE_MEM_LIMIT:-512m}
+    mem_reservation: ${RRHH_SERVICE_MEM_RESERVATION:-256m}
     environment:
       SPRING_PROFILES_ACTIVE: prod
       JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
@@ -200,6 +216,8 @@ services:
     profiles: ["business"]
     build:
       context: ./lead-service
+    mem_limit: ${LEAD_SERVICE_MEM_LIMIT:-768m}
+    mem_reservation: ${LEAD_SERVICE_MEM_RESERVATION:-384m}
     environment:
       SPRING_PROFILES_ACTIVE: prod
       JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m
@@ -233,6 +251,8 @@ services:
     profiles: ["business"]
     build:
       context: ./recruitment-service
+    mem_limit: ${RECRUITMENT_SERVICE_MEM_LIMIT:-512m}
+    mem_reservation: ${RECRUITMENT_SERVICE_MEM_RESERVATION:-256m}
     environment:
       SPRING_PROFILES_ACTIVE: prod
       JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
@@ -264,6 +284,8 @@ services:
     profiles: ["business"]
     build:
       context: ./schedule-service
+    mem_limit: ${SCHEDULE_SERVICE_MEM_LIMIT:-512m}
+    mem_reservation: ${SCHEDULE_SERVICE_MEM_RESERVATION:-256m}
     environment:
       SPRING_PROFILES_ACTIVE: prod
       JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
@@ -294,6 +316,8 @@ services:
     profiles: ["business"]
     build:
       context: ./billing-service
+    mem_limit: ${BILLING_SERVICE_MEM_LIMIT:-512m}
+    mem_reservation: ${BILLING_SERVICE_MEM_RESERVATION:-256m}
     environment:
       SPRING_PROFILES_ACTIVE: prod
       JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
@@ -332,6 +356,8 @@ services:
     profiles: ["cellphone"]
     build:
       context: ./call-service
+    mem_limit: ${CALL_SERVICE_MEM_LIMIT:-768m}
+    mem_reservation: ${CALL_SERVICE_MEM_RESERVATION:-384m}
     environment:
       SPRING_PROFILES_ACTIVE: prod
       JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m
@@ -385,6 +411,8 @@ services:
     profiles: ["business"]
     build:
       context: ./gateway-service
+    mem_limit: ${GATEWAY_SERVICE_MEM_LIMIT:-512m}
+    mem_reservation: ${GATEWAY_SERVICE_MEM_RESERVATION:-256m}
     environment:
       SPRING_PROFILES_ACTIVE: prod
       JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
@@ -437,6 +465,8 @@ services:
       context: ./frontend
       args:
         GATEWAY_BASE_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}
+    mem_limit: ${FRONTEND_MEM_LIMIT:-128m}
+    mem_reservation: ${FRONTEND_MEM_RESERVATION:-32m}
     depends_on:
       gateway-service:
         condition: service_healthy
