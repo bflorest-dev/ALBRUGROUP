@@ -1,0 +1,15 @@
+package pe.albrugroup.billing_service.entity.enums;
+
+public enum Concepto {
+    SUELDO_AFECTO,
+    BONO_PRODUCTIVIDAD,
+    BONO_PUNTUALIDAD,
+    BONO_CAPACITACION,
+    HORAS_EXTRA,
+    DESCUENTO_TARDANZAS,
+    DESCUENTO_FALTAS,
+    ADELANTO_SUELDO,
+    VENTAS_VALIDAS,
+    TARDANZA_REGISTRADA,
+    FALTA_REGISTRADA
+}
