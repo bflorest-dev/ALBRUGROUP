@@ -118,6 +118,6 @@ export class PreventaInstalacionService {
   }
 
   obtenerDetalle(idLead: number): Observable<LeadDetalleResponse> {
-    return this.http.get<LeadDetalleResponse>(`${API_CONSTANTS.gatewayBaseUrl}/leads/venta/${idLead}/detalle-consulta`);
+    return this.http.get<LeadDetalleResponse>(`${API_CONSTANTS.gatewayBaseUrl}/leads/venta/preventa-instalacion/${idLead}/detalle`);
   }
 }

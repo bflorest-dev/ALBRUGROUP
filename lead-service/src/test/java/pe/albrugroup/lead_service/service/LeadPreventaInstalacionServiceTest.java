@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoReglaFacturacion;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
@@ -24,6 +25,8 @@ import static org.mockito.Mockito.when;
 class LeadPreventaInstalacionServiceTest {
 
     @Mock private LeadRepository leadRepository;
+    @Mock private CurrentUser currentUser;
+    @Mock private EquipoProveedorService equipoProveedorService;
     @Mock private LeadPreventaInstalacionProjection win;
     @Mock private LeadPreventaInstalacionProjection claro;
     @Mock private LeadPreventaInstalacionProjection pendiente;
@@ -33,7 +36,8 @@ class LeadPreventaInstalacionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new LeadPreventaInstalacionService(leadRepository);
+        when(currentUser.roles()).thenReturn(List.of("ADMINISTRADOR"));
+        service = new LeadPreventaInstalacionService(leadRepository, currentUser, equipoProveedorService);
     }
 
     @Test

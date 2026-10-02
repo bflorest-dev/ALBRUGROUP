@@ -222,7 +222,7 @@ public class VentaController {
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
-    @GetMapping("/preventa-instalacion") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    @GetMapping("/preventa-instalacion") @PreAuthorize("hasAuthority('READ_DASHBOARD_VENTA')")
     public ResponseEntity<LeadPreventaInstalacionReporteResponse> listarLeadsPreventaInstalacion(
             @RequestParam LocalDate fechaPreventaDesde,
             @RequestParam LocalDate fechaPreventaHasta,
@@ -250,6 +250,11 @@ public class VentaController {
                 pageRequest
         );
         return ResponseEntity.ok(reporte);
+    }
+
+    @GetMapping("/preventa-instalacion/{idLead}/detalle") @PreAuthorize("hasAuthority('READ_DASHBOARD_VENTA')")
+    public ResponseEntity<LeadDetalleResponse> obtenerDetalleLeadPreventaInstalacion(@PathVariable Long idLead) {
+        return ResponseEntity.ok(leadService.obtenerDetalleLeadVentaConsulta(idLead));
     }
 
     @GetMapping("/correcciones/instalacion") @PreAuthorize("hasAuthority('CORREGIR_INSTALACION_LEAD')")

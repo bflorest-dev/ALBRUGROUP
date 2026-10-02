@@ -9,6 +9,7 @@ import { AdminFinancePageComponent } from '../admin/pages/admin-finance-page/adm
 import { AdminBillingPageComponent } from '../admin/pages/admin-billing-page/admin-billing-page.component';
 import { AdminMaintenancePageComponent } from '../admin/pages/admin-maintenance-page/admin-maintenance-page.component';
 import { AdminMetricsPageComponent } from '../admin/pages/admin-metrics-page/admin-metrics-page.component';
+import { RevisionSemanalPageComponent } from '../admin/pages/revision-semanal-page/revision-semanal-page.component';
 import { AdminDashboardPostventaPageComponent } from '../admin/pages/admin-dashboard-postventa-page/admin-dashboard-postventa-page.component';
 import { DashboardCobranzaStageComponent } from '../admin/components/dashboard-cobranza-stage/dashboard-cobranza-stage.component';
 import { DashboardPostventaStageComponent } from '../admin/components/dashboard-postventa-stage/dashboard-postventa-stage.component';
@@ -82,6 +83,12 @@ export const PLATFORM_ROUTES: Routes = [
     data: {
       roles: ['ADMINISTRADOR']
     }
+  },
+  {
+    path: 'admin/revision-semanal',
+    component: RevisionSemanalPageComponent,
+    canActivate: [roleGuard],
+    data: { roles: ['ADMINISTRADOR'] }
   },
   {
     path: 'admin/dashboard/postventa',
@@ -668,6 +675,12 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'supervisor-ventas/dashboard',
     component: DashboardVentaStageComponent,
+    canActivate: [roleGuard],
+    data: { roles: ['SUPERVISOR_VENTAS'] }
+  },
+  {
+    path: 'supervisor-ventas/revision-semanal',
+    component: RevisionSemanalPageComponent,
     canActivate: [roleGuard],
     data: { roles: ['SUPERVISOR_VENTAS'] }
   }

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
+import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoCumplimientoSemana;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -15,6 +16,7 @@ import pe.albrugroup.lead_service.entity.response.LeadPreventaInstalacionRespons
 import pe.albrugroup.lead_service.entity.response.LeadPreventaInstalacionTotalesResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.exception.ForbiddenException;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.projection.LeadPreventaInstalacionProjection;
 
@@ -28,12 +30,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class LeadPreventaInstalacionService {
 
     private final LeadRepository leadRepository;
+    private final CurrentUser currentUser;
+    private final EquipoProveedorService equipoProveedorService;
 
     @Transactional(readOnly = true)
     public LeadPreventaInstalacionReporteResponse listar(
@@ -54,13 +59,14 @@ public class LeadPreventaInstalacionService {
 
         Instant preventaDesde = OperationalDateTime.startOfDay(fechaPreventaDesde);
         Instant preventaHasta = OperationalDateTime.endExclusiveOfDay(fechaPreventaHasta);
+        Long proveedorResuelto = resolverProveedor(idProveedor);
         List<LeadPreventaInstalacionResponse> filas = leadRepository.listarLeadsPreventaInstalacion(
                         Etapa.PREVENTA,
                         preventaDesde,
                         preventaHasta,
                         fechaInstalacionDesde,
                         fechaInstalacionHasta,
-                        idProveedor,
+                        proveedorResuelto,
                         idAsesorPreventa,
                         estadoPostventa,
                         sinEstadoPostventa
@@ -79,6 +85,31 @@ public class LeadPreventaInstalacionService {
                 .porAsesor(resumirPorAsesor(filas))
                 .totales(resumirTotales(filas))
                 .build();
+    }
+
+    private Long resolverProveedor(Long idProveedor) {
+        List<String> roles = currentUser.roles();
+        boolean supervisorAcotado = roles != null
+                && roles.contains("SUPERVISOR_VENTAS")
+                && !currentUser.tieneVisibilidadGlobalEquipos();
+        if (!supervisorAcotado) {
+            return idProveedor;
+        }
+
+        Set<Long> visibles = equipoProveedorService.proveedorIdsVisibles();
+        if (visibles == null) {
+            return idProveedor;
+        }
+        if (idProveedor != null && !visibles.contains(idProveedor)) {
+            throw new ForbiddenException("No tienes acceso al proveedor seleccionado", idProveedor);
+        }
+        if (idProveedor != null) {
+            return idProveedor;
+        }
+        if (visibles.size() != 1) {
+            throw new BadRequestException("No se pudo resolver el proveedor del equipo");
+        }
+        return visibles.iterator().next();
     }
 
     private LeadPreventaInstalacionResponse mapear(LeadPreventaInstalacionProjection row) {

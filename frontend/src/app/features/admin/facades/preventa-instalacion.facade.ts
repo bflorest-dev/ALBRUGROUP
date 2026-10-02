@@ -1,36 +1,26 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { catchError, of } from 'rxjs';
 import { LeadDetalleResponse } from '../../../shared/models/preventa/preventa.models';
+import { MetricsPeriodo } from '../../../shared/components/period-selector/period-selector.component';
+import { MetricsRango, localToday } from '../../../shared/utils/metrics-period';
+import { SessionService } from '../../../core/services/session.service';
 import { DashboardVentaService, ProveedorRef } from '../services/dashboard-venta.service';
 import {
-  EstadoCumplimientoSemana,
-  EstadoPostventa,
   LeadPreventaInstalacionReport,
   PreventaInstalacionService
 } from '../services/preventa-instalacion.service';
-
-const hoy = (): string => {
-  const fecha = new Date();
-  const mes = `${fecha.getMonth() + 1}`.padStart(2, '0');
-  const dia = `${fecha.getDate()}`.padStart(2, '0');
-  return `${fecha.getFullYear()}-${mes}-${dia}`;
-};
 
 @Injectable()
 export class PreventaInstalacionFacade {
   private readonly service = inject(PreventaInstalacionService);
   private readonly dashboardVentaService = inject(DashboardVentaService);
+  private readonly sessionService = inject(SessionService);
 
-  readonly fechaPreventaDesde = signal(hoy());
-  readonly fechaPreventaHasta = signal(hoy());
-  readonly fechaInstalacionDesde = signal(hoy());
-  readonly fechaInstalacionHasta = signal(hoy());
+  readonly periodo = signal<MetricsPeriodo>('dia');
+  readonly dia = signal(localToday());
+  readonly hasta = signal<string | null>(localToday());
   readonly idProveedor = signal<number | null>(null);
   readonly idAsesorPreventa = signal<number | null>(null);
-  readonly estadoPostventa = signal<EstadoPostventa | null>(null);
-  readonly sinEstadoPostventa = signal(false);
-  readonly cumpleMismaSemana = signal<boolean | null>(null);
-  readonly estadoCumplimientoSemana = signal<EstadoCumplimientoSemana | null>(null);
   readonly pageNumber = signal(0);
   readonly pageSize = signal(25);
   readonly isLoading = signal(false);
@@ -40,6 +30,13 @@ export class PreventaInstalacionFacade {
   readonly detalle = signal<LeadDetalleResponse | null>(null);
   readonly detalleLoading = signal(false);
   readonly detalleError = signal('');
+  readonly esAdmin = computed(() => this.sessionService.getActiveRole() === 'ADMINISTRADOR');
+  readonly proveedorOptions = computed(() =>
+    [{ label: 'Todos', value: null }, ...this.proveedores().map(proveedor => ({ label: proveedor.nombre, value: proveedor.id }))]
+  );
+  readonly proveedorActual = computed(() =>
+    this.proveedores().find(proveedor => proveedor.id === this.idProveedor())?.nombre ?? ''
+  );
 
   readonly rows = computed(() => this.report()?.detalle.content ?? []);
   readonly totales = computed(() => this.report()?.totales ?? {
@@ -56,23 +53,30 @@ export class PreventaInstalacionFacade {
   constructor() {
     this.dashboardVentaService.obtenerProveedores()
       .pipe(catchError(() => of([] as ProveedorRef[])))
-      .subscribe(proveedores => this.proveedores.set(proveedores));
+      .subscribe(proveedores => {
+        this.proveedores.set(proveedores);
+        if (!this.esAdmin() && this.idProveedor() === null) {
+          this.idProveedor.set(proveedores[0]?.id ?? null);
+        }
+      });
   }
 
   cargar(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
+    const fechaDesde = this.dia();
+    const fechaHasta = this.hasta() || fechaDesde;
     this.service.listar({
-      fechaPreventaDesde: this.fechaPreventaDesde(),
-      fechaPreventaHasta: this.fechaPreventaHasta(),
-      fechaInstalacionDesde: this.fechaInstalacionDesde(),
-      fechaInstalacionHasta: this.fechaInstalacionHasta(),
+      fechaPreventaDesde: fechaDesde,
+      fechaPreventaHasta: fechaHasta,
+      fechaInstalacionDesde: fechaDesde,
+      fechaInstalacionHasta: fechaHasta,
       idProveedor: this.idProveedor(),
       idAsesorPreventa: this.idAsesorPreventa(),
-      estadoPostventa: this.estadoPostventa(),
-      sinEstadoPostventa: this.sinEstadoPostventa(),
-      cumpleMismaSemana: this.cumpleMismaSemana(),
-      estadoCumplimientoSemana: this.estadoCumplimientoSemana(),
+      estadoPostventa: null,
+      sinEstadoPostventa: false,
+      cumpleMismaSemana: true,
+      estadoCumplimientoSemana: null,
       pageNumber: this.pageNumber(),
       pageSize: this.pageSize(),
       sortBy: 'fechaPreventa',
@@ -83,10 +87,27 @@ export class PreventaInstalacionFacade {
         this.isLoading.set(false);
       },
       error: () => {
-        this.errorMessage.set('No se pudo cargar el informe de Preventa → Instalación.');
+        this.errorMessage.set('No se pudo cargar RevisionSemanal.');
         this.isLoading.set(false);
       }
     });
+  }
+
+  onRangoChange(rango: MetricsRango): void {
+    this.dia.set(rango.desde);
+    this.hasta.set(rango.hasta);
+    this.aplicarFiltros();
+  }
+
+  seleccionarProveedor(idProveedor: number | null): void {
+    if (!this.esAdmin()) return;
+    this.idProveedor.set(idProveedor);
+    this.aplicarFiltros();
+  }
+
+  seleccionarAsesor(idAsesor: number | null): void {
+    this.idAsesorPreventa.set(idAsesor);
+    this.aplicarFiltros();
   }
 
   aplicarFiltros(): void {
@@ -123,26 +144,13 @@ export class PreventaInstalacionFacade {
   }
 
   resetear(): void {
-    const actual = hoy();
-    this.fechaPreventaDesde.set(actual);
-    this.fechaPreventaHasta.set(actual);
-    this.fechaInstalacionDesde.set(actual);
-    this.fechaInstalacionHasta.set(actual);
-    this.idProveedor.set(null);
+    const actual = localToday();
+    this.periodo.set('dia');
+    this.dia.set(actual);
+    this.hasta.set(actual);
+    this.idProveedor.set(this.esAdmin() ? null : (this.proveedores()[0]?.id ?? null));
     this.idAsesorPreventa.set(null);
-    this.estadoPostventa.set(null);
-    this.sinEstadoPostventa.set(false);
-    this.cumpleMismaSemana.set(null);
-    this.estadoCumplimientoSemana.set(null);
     this.aplicarFiltros();
   }
 
-  estadoLabel(estado: EstadoCumplimientoSemana): string {
-    switch (estado) {
-      case 'CUMPLE': return 'Misma semana';
-      case 'NO_CUMPLE': return 'Semana diferente';
-      case 'PENDIENTE_INSTALACION': return 'Pendiente de instalación';
-      default: return 'No evaluable';
-    }
-  }
 }

@@ -1,0 +1,11 @@
+:host { display: block; }
+
+.revision-semanal-page {
+  min-height: 100%;
+  padding: 24px;
+  background: var(--app-ground, #eef0f3);
+}
+
+@media (max-width: 600px) {
+  .revision-semanal-page { padding: 12px; }
+}

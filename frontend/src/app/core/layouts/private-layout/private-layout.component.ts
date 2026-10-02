@@ -226,6 +226,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     if (activeRole === 'ADMINISTRADOR') {
       const dashboardChildren: SidebarItem[] = [
         { label: 'Preventa', route: '/app/admin/dashboard/preventa', icon: 'pi pi-users', exact: true },
+        { label: 'RevisionSemanal', route: '/app/admin/revision-semanal', icon: 'pi pi-calendar-clock', exact: true },
         { label: 'Venta', route: '/app/admin/dashboard/venta', icon: 'pi pi-shopping-cart', exact: true },
         { label: 'Postventa', route: '/app/admin/dashboard/postventa', icon: 'pi pi-briefcase', exact: true },
         { label: 'Cobranza', route: '/app/admin/dashboard/cobranza', icon: 'pi pi-wallet', exact: true },
@@ -452,7 +453,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
           icon: 'pi pi-desktop',
           exact: true
         },
-        { domainId: 'insights', label: 'Dashboard', route: '/app/supervisor-ventas/dashboard', icon: 'pi pi-chart-pie', exact: true }
+        { domainId: 'insights', label: 'Dashboard', route: '/app/supervisor-ventas/dashboard', icon: 'pi pi-chart-pie', exact: true },
+        { domainId: 'insights', label: 'RevisionSemanal', route: '/app/supervisor-ventas/revision-semanal', icon: 'pi pi-calendar-clock', exact: true }
       ];
     }
 
