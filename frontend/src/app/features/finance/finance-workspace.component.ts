@@ -114,6 +114,14 @@ export class FinanceWorkspaceComponent implements OnInit {
     void this.facade.onProviderChange(value);
   }
 
+  protected onRechargePeriodChange(value: MetricsPeriodo): void {
+    void this.facade.onRechargePeriodChange(value);
+  }
+
+  protected onRechargeRangeChange(value: MetricsRango): void {
+    void this.facade.onRechargeRangeChange(value);
+  }
+
   protected isEditableSnapshot(row: SnapshotFinanceRow, last: boolean): boolean {
     return row.id !== null && row.id !== undefined && (last || this.facade.historyRowsAreDailyClosures());
   }

@@ -331,32 +331,63 @@
 >
   <ng-template #header>
     <div class="finance-drawer-header">
-      <strong>Recargas del periodo</strong>
-      <span>{{ facade.rangeLabel() }} · Total: {{ facade.money(facade.rechargeTotal()) }}</span>
+      <strong>Recargas</strong>
+      <span>{{ facade.rechargeRangeLabel() }} · Total: {{ facade.money(facade.rechargeTotal()) }}</span>
     </div>
   </ng-template>
+  <div class="finance-recharge-period">
+    <app-period-selector
+      [periodo]="facade.rechargePeriod()"
+      [dia]="facade.rechargeDay()"
+      [hasta]="facade.rechargeUntil()"
+      (periodoChange)="onRechargePeriodChange($event)"
+      (rangoChange)="onRechargeRangeChange($event)"
+    />
+  </div>
   <div class="finance-history-scroll">
-    <p-table [value]="facade.recharges()" [loading]="facade.isLoadingRecharges()" [scrollable]="true" styleClass="finance-table finance-table--history" [tableStyle]="{ 'min-width': '640px' }">
-      <ng-template #header>
-        <tr>
-          <th>Fecha y hora</th>
-          <th>Cuenta</th>
-          <th>Monto</th>
-          <th>Observación</th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-row>
-        <tr>
-          <td class="finance-data"><span class="finance-date-stack"><span>{{ facade.reportDate(row.fecha) }}</span><span>{{ facade.reportTime(row.fecha) }}</span></span></td>
-          <td class="finance-data">{{ row.nombreCuenta }}</td>
-          <td class="finance-data">{{ facade.money(row.monto) }}</td>
-          <td class="finance-data">{{ row.observacion || '—' }}</td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr><td colspan="4" class="finance-empty">No hay recargas en este periodo.</td></tr>
-      </ng-template>
-    </p-table>
+    @if (facade.rechargeIsRange()) {
+      <p-table [value]="facade.rechargeDailyRows()" [loading]="facade.isLoadingRecharges()" [scrollable]="true" styleClass="finance-table finance-table--history" [tableStyle]="{ 'min-width': '480px' }">
+        <ng-template #header>
+          <tr>
+            <th>Fecha</th>
+            <th>Cantidad</th>
+            <th>Monto acumulado</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr>
+            <td class="finance-data">{{ row.fecha.slice(8, 10) }}/{{ row.fecha.slice(5, 7) }}/{{ row.fecha.slice(0, 4) }}</td>
+            <td class="finance-data">{{ row.cantidad }}</td>
+            <td class="finance-data">{{ facade.money(row.total) }}</td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr><td colspan="3" class="finance-empty">No hay recargas en este rango.</td></tr>
+        </ng-template>
+      </p-table>
+    } @else {
+      <p-table [value]="facade.recharges()" [loading]="facade.isLoadingRecharges()" [scrollable]="true" styleClass="finance-table finance-table--history" [tableStyle]="{ 'min-width': '640px' }">
+        <ng-template #header>
+          <tr>
+            <th>Fecha y hora</th>
+            <th>Cuenta</th>
+            <th>Monto</th>
+            <th>Observación</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr>
+            <td class="finance-data"><span class="finance-date-stack"><span>{{ facade.reportDate(row.fecha) }}</span><span>{{ facade.reportTime(row.fecha) }}</span></span></td>
+            <td class="finance-data">{{ row.nombreCuenta }}</td>
+            <td class="finance-data">{{ facade.money(row.monto) }}</td>
+            <td class="finance-data">{{ row.observacion || '—' }}</td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr><td colspan="4" class="finance-empty">No hay recargas en este periodo.</td></tr>
+        </ng-template>
+      </p-table>
+    }
   </div>
 </p-drawer>
 

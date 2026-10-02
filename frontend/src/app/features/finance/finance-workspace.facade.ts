@@ -59,6 +59,9 @@ export class FinanceWorkspaceFacade {
   readonly isSavingRecharge = signal(false);
   readonly recharges = signal<RecargaCuentaPublicitariaResponse[]>([]);
   readonly accounts = signal<CuentaPublicitariaResponse[]>([]);
+  readonly rechargePeriod = signal<MetricsPeriodo>('dia');
+  readonly rechargeDay = signal(financeCurrentDateValue());
+  readonly rechargeUntil = signal<string | null>(null);
 
   readonly activeAccounts = computed(() => {
     const providerId = this.selectedProviderId();
@@ -96,6 +99,33 @@ export class FinanceWorkspaceFacade {
   readonly historyRowsAreDailyClosures = computed(() => {
     const range = this.periodRange();
     return range.desde !== range.hasta;
+  });
+
+  readonly rechargeRange = computed(() =>
+    resolveMetricsRange('dia', this.rechargeDay(), this.rechargeUntil()) as Required<MetricsRango>
+  );
+  readonly rechargeIsRange = computed(() => {
+    const range = this.rechargeRange();
+    return range.desde !== range.hasta;
+  });
+  readonly rechargeRangeLabel = computed(() => {
+    const range = this.rechargeRange();
+    const fmt = (v: string) => { const [y, m, d] = v.split('-'); return `${d}/${m}/${y}`; };
+    return range.desde === range.hasta ? fmt(range.desde) : `${fmt(range.desde)} – ${fmt(range.hasta)}`;
+  });
+  readonly rechargeDailyRows = computed<{ fecha: string; total: number; cantidad: number }[]>(() => {
+    if (!this.rechargeIsRange()) return [];
+    const byDay = new Map<string, { total: number; cantidad: number }>();
+    for (const r of this.recharges()) {
+      const day = String(r.fecha ?? '').slice(0, 10);
+      const entry = byDay.get(day) ?? { total: 0, cantidad: 0 };
+      entry.total += r.monto ?? 0;
+      entry.cantidad += 1;
+      byDay.set(day, entry);
+    }
+    return Array.from(byDay.entries())
+      .map(([fecha, v]) => ({ fecha, ...v }))
+      .sort((a, b) => b.fecha.localeCompare(a.fecha));
   });
 
   readonly activeCampaigns = computed(() => {
@@ -367,10 +397,22 @@ export class FinanceWorkspaceFacade {
     this.recharges.set([]);
   }
 
+  async onRechargePeriodChange(periodo: MetricsPeriodo): Promise<void> {
+    this.rechargePeriod.set(periodo);
+    await this.loadRecharges();
+  }
+
+  async onRechargeRangeChange(range: MetricsRango): Promise<void> {
+    this.rechargePeriod.set('dia');
+    this.rechargeDay.set(range.desde);
+    this.rechargeUntil.set(range.hasta === range.desde ? null : range.hasta);
+    await this.loadRecharges();
+  }
+
   async loadRecharges(): Promise<void> {
     this.isLoadingRecharges.set(true);
     try {
-      const range = this.periodRange();
+      const range = this.rechargeRange();
       const recharges = await firstValueFrom(
         this.leadService.listarRecargas(range.desde, range.hasta, this.selectedProviderId())
       );
