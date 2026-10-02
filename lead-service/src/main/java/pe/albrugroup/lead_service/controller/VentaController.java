@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.CampoFechaListadoVenta;
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoCumplimientoSemana;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
@@ -37,6 +39,7 @@ import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
+import pe.albrugroup.lead_service.entity.response.LeadPreventaInstalacionReporteResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadVentaAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
@@ -44,6 +47,7 @@ import pe.albrugroup.lead_service.entity.response.PlanResponse;
 import pe.albrugroup.lead_service.entity.response.VentaResumenDiarioResponse;
 import pe.albrugroup.lead_service.service.EventoService;
 import pe.albrugroup.lead_service.service.LeadInstalacionCorreccionService;
+import pe.albrugroup.lead_service.service.LeadPreventaInstalacionService;
 import pe.albrugroup.lead_service.service.LeadService;
 import pe.albrugroup.lead_service.service.VentaResumenDiarioService;
 
@@ -58,6 +62,7 @@ public class VentaController {
     private final LeadService leadService;
     private final EventoService eventoService;
     private final LeadInstalacionCorreccionService leadInstalacionCorreccionService;
+    private final LeadPreventaInstalacionService leadPreventaInstalacionService;
     private final VentaResumenDiarioService ventaResumenDiarioService;
 
     // BackOffice
@@ -215,6 +220,36 @@ public class VentaController {
     ) {
         var leads = leadService.listarLeadsVentaInstalados(fechaDesde, fechaHasta, pageRequest, idEquipo, campoFecha, groupBy);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+
+    @GetMapping("/preventa-instalacion") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<LeadPreventaInstalacionReporteResponse> listarLeadsPreventaInstalacion(
+            @RequestParam LocalDate fechaPreventaDesde,
+            @RequestParam LocalDate fechaPreventaHasta,
+            @RequestParam LocalDate fechaInstalacionDesde,
+            @RequestParam LocalDate fechaInstalacionHasta,
+            @RequestParam(required = false) Long idProveedor,
+            @RequestParam(required = false) Long idAsesorPreventa,
+            @RequestParam(required = false) EstadoClientePostventa estadoPostventa,
+            @RequestParam(required = false, defaultValue = "false") boolean sinEstadoPostventa,
+            @RequestParam(required = false) Boolean cumpleMismaSemana,
+            @RequestParam(required = false) EstadoCumplimientoSemana estadoCumplimientoSemana,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var reporte = leadPreventaInstalacionService.listar(
+                fechaPreventaDesde,
+                fechaPreventaHasta,
+                fechaInstalacionDesde,
+                fechaInstalacionHasta,
+                idProveedor,
+                idAsesorPreventa,
+                estadoPostventa,
+                sinEstadoPostventa,
+                cumpleMismaSemana,
+                estadoCumplimientoSemana,
+                pageRequest
+        );
+        return ResponseEntity.ok(reporte);
     }
 
     @GetMapping("/correcciones/instalacion") @PreAuthorize("hasAuthority('CORREGIR_INSTALACION_LEAD')")

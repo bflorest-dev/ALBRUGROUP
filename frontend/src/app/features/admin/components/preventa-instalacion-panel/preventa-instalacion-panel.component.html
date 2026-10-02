@@ -1,0 +1,162 @@
+<p-card styleClass="preventa-instalacion-card">
+  <section class="report-head">
+    <div>
+      <span class="eyebrow">Conversión por cohorte</span>
+      <h2>Preventa → Instalación</h2>
+      <p>Preventas conseguidas y su cumplimiento de instalación dentro de la semana operativa del proveedor.</p>
+    </div>
+    <button class="secondary-button" type="button" (click)="facade.resetear()">Limpiar filtros</button>
+  </section>
+
+  <div class="filters">
+    <label>
+      <span>Preventa desde</span>
+      <input type="date" [ngModel]="facade.fechaPreventaDesde()" (ngModelChange)="facade.fechaPreventaDesde.set($event)" />
+    </label>
+    <label>
+      <span>Preventa hasta</span>
+      <input type="date" [ngModel]="facade.fechaPreventaHasta()" (ngModelChange)="facade.fechaPreventaHasta.set($event)" />
+    </label>
+    <label>
+      <span>Instalación desde</span>
+      <input type="date" [ngModel]="facade.fechaInstalacionDesde()" (ngModelChange)="facade.fechaInstalacionDesde.set($event)" />
+    </label>
+    <label>
+      <span>Instalación hasta</span>
+      <input type="date" [ngModel]="facade.fechaInstalacionHasta()" (ngModelChange)="facade.fechaInstalacionHasta.set($event)" />
+    </label>
+    <label>
+      <span>Proveedor</span>
+      <select [ngModel]="facade.idProveedor()" (ngModelChange)="facade.idProveedor.set($event ? +$event : null)">
+        <option [ngValue]="null">Todos los proveedores</option>
+        @for (proveedor of facade.proveedores(); track proveedor.id) {
+          <option [ngValue]="proveedor.id">{{ proveedor.nombre }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      <span>Asesor Preventa</span>
+      <select [ngModel]="facade.idAsesorPreventa()" (ngModelChange)="facade.idAsesorPreventa.set($event ? +$event : null)">
+        <option [ngValue]="null">Todos los asesores</option>
+        @for (asesor of facade.asesores(); track asesor.idAsesor ?? asesor.nombreAsesor) {
+          <option [ngValue]="asesor.idAsesor">{{ texto(asesor.nombreAsesor) }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      <span>Estado Postventa</span>
+      <select [ngModel]="facade.sinEstadoPostventa() ? 'SIN_ESTADO' : (facade.estadoPostventa() ?? '')" (ngModelChange)="onEstadoChange($event)">
+        @for (estado of estadoOptions; track estado.value) {
+          <option [value]="estado.value">{{ estado.label }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      <span>Cumplimiento</span>
+      <select [ngModel]="cumplimientoValue()" (ngModelChange)="onCumplimientoChange($event)">
+        @for (estado of cumplimientoOptions; track estado.value) {
+          <option [value]="estado.value">{{ estado.label }}</option>
+        }
+      </select>
+    </label>
+    <button class="primary-button" type="button" [disabled]="facade.isLoading()" (click)="facade.aplicarFiltros()">Aplicar</button>
+  </div>
+
+  @if (facade.errorMessage()) {
+    <p-message severity="error" [text]="facade.errorMessage()" styleClass="report-message" />
+  }
+
+  <div class="summary-grid">
+    <article class="summary-card"><strong>{{ facade.totales().totalPreventas }}</strong><span>Preventas</span></article>
+    <article class="summary-card is-green"><strong>{{ facade.totales().cumplenMismaSemana }}</strong><span>Misma semana</span></article>
+    <article class="summary-card is-yellow"><strong>{{ facade.totales().noCumplenMismaSemana }}</strong><span>Semana diferente</span></article>
+    <article class="summary-card is-muted"><strong>{{ facade.totales().pendientesInstalacion }}</strong><span>Pendientes</span></article>
+  </div>
+
+  <section class="advisor-summary">
+    <div class="section-title"><h3>Resumen por asesor de Preventa</h3><span>{{ facade.totales().instalados }} instalados</span></div>
+    <div class="advisor-grid">
+      @for (asesor of facade.asesores(); track asesor.idAsesor ?? asesor.nombreAsesor) {
+        <article class="advisor-card">
+          <strong>{{ texto(asesor.nombreAsesor) }}</strong>
+          <span>{{ asesor.totalPreventas }} preventas · {{ asesor.cumplenMismaSemana }} cumplen</span>
+          <small>{{ asesor.noCumplenMismaSemana }} diferentes · {{ asesor.pendientesInstalacion }} pendientes</small>
+        </article>
+      } @empty {
+        <div class="empty">No hay asesores para los filtros seleccionados.</div>
+      }
+    </div>
+  </section>
+
+  @if (facade.isLoading()) {
+    <div class="loading">Cargando informe...</div>
+  } @else {
+    <section class="detail-section">
+      <div class="section-title"><h3>Detalle de leads</h3><span>Página {{ facade.currentPage() }} de {{ facade.totalPages() || 1 }}</span></div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Lead</th><th>Cliente</th><th>Documento</th><th>Proveedor</th><th>Asesor Preventa</th>
+              <th>Departamento</th><th>Preventa</th><th>Instalación</th><th>Postventa</th><th>Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (fila of facade.rows(); track fila.idLead) {
+              <tr>
+                <td class="mono">
+                  <button class="lead-link" type="button" (click)="facade.abrirDetalle(fila.idLead)">
+                    {{ texto(fila.lead) }}
+                  </button>
+                  <small>#{{ fila.idLead }}</small>
+                </td>
+                <td class="client">{{ texto(fila.nombreCliente) }}</td>
+                <td>{{ texto(fila.numeroDocumento) }}</td>
+                <td>{{ texto(fila.proveedor) }}</td>
+                <td>{{ texto(fila.nombreAsesorPreventa) }}</td>
+                <td>{{ texto(fila.departamento) }}</td>
+                <td class="mono">{{ fecha(fila.fechaPreventa) }}</td>
+                <td class="mono">{{ fecha(fila.fechaInstalacion) }}</td>
+                <td>{{ fila.estadoPostventa || 'Sin estado' }}</td>
+                <td><span class="status" [class]="estadoClass(fila.estadoCumplimientoSemana)">{{ estadoLabel(fila.estadoCumplimientoSemana) }}</span></td>
+              </tr>
+            } @empty {
+              <tr><td class="empty" colspan="10">No hay leads para los filtros seleccionados.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button class="secondary-button" type="button" [disabled]="facade.currentPage() <= 1 || facade.isLoading()" (click)="facade.cambiarPagina(-1)">Anterior</button>
+        <button class="secondary-button" type="button" [disabled]="facade.currentPage() >= facade.totalPages() || facade.isLoading()" (click)="facade.cambiarPagina(1)">Siguiente</button>
+      </div>
+    </section>
+  }
+</p-card>
+
+<p-dialog
+  header="Detalle del lead"
+  [visible]="facade.detalle() !== null || facade.detalleLoading() || !!facade.detalleError()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: 'min(640px, 94vw)' }"
+  (visibleChange)="!$event && facade.cerrarDetalle()"
+>
+  @if (facade.detalleLoading()) {
+    <div class="loading">Cargando detalle...</div>
+  } @else if (facade.detalleError()) {
+    <p-message severity="error" [text]="facade.detalleError()" />
+  } @else if (facade.detalle(); as detalle) {
+    <div class="lead-detail-grid">
+      <div><span>Lead</span><strong>{{ texto(detalle.lead ?? null) }}</strong></div>
+      <div><span>ID</span><strong>{{ detalle.id }}</strong></div>
+      <div><span>Documento</span><strong>{{ texto(detalle.numeroDocumentoTitularServicio ?? null) }}</strong></div>
+      <div><span>Cliente</span><strong>{{ texto(detalle.nombreTitular ?? null) }}</strong></div>
+      <div><span>Proveedor</span><strong>{{ texto(detalle.nombreProveedorEquipo ?? detalle.nombreProveedorPlan ?? null) }}</strong></div>
+      <div><span>Etapa</span><strong>{{ texto(detalle.etapa ?? null) }}</strong></div>
+      <div><span>Asesor Preventa</span><strong>{{ texto(detalle.nombreAsesorMeritoPreventa ?? null) }}</strong></div>
+      <div><span>Estado</span><strong>{{ texto(detalle.estadoSeguimiento ?? null) }}</strong></div>
+    </div>
+  }
+</p-dialog>

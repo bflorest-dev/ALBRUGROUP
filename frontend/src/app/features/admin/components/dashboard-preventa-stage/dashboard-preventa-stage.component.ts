@@ -19,6 +19,7 @@ import { AfluenciaHoraPanelComponent } from '../afluencia-hora-panel/afluencia-h
 import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
 import { ResumenDiarioPanelComponent } from '../resumen-diario-panel/resumen-diario-panel.component';
 import { VentaSeguimientoPanelComponent } from '../venta-seguimiento-panel/venta-seguimiento-panel.component';
+import { PreventaInstalacionPanelComponent } from '../preventa-instalacion-panel/preventa-instalacion-panel.component';
 import { AdvisorManagementSummaryPanelComponent } from '../advisor-management-summary-panel/advisor-management-summary-panel.component';
 import { DashboardVentaService, ProveedorRef } from '../../services/dashboard-venta.service';
 import { TeamMetricGaugesComponent } from '../../components/team-metric-gauges/team-metric-gauges.component';
@@ -31,7 +32,7 @@ import {
 import { AdminEquipoService } from '../../services/admin-equipo.service';
 
 const SIN_EQUIPO = 'Sin equipo';
-type PreventaDashboardView = 'resumen' | 'seguimiento' | 'rendimiento' | 'asesores' | 'campanas' | 'afluencia';
+type PreventaDashboardView = 'resumen' | 'seguimiento' | 'preventa-instalacion' | 'rendimiento' | 'asesores' | 'campanas' | 'afluencia';
 
 interface DashboardMetricRow {
   idEquipo: number | null;
@@ -68,6 +69,7 @@ interface DashboardMetricRow {
     GestionCampanaPanelComponent,
     ResumenDiarioPanelComponent,
     VentaSeguimientoPanelComponent,
+    PreventaInstalacionPanelComponent,
     TeamMetricGaugesComponent
   ],
   templateUrl: './dashboard-preventa-stage.component.html',
@@ -137,6 +139,7 @@ export class DashboardPreventaStageComponent implements OnInit {
   protected readonly dashboardViewOptions: Array<{ label: string; value: PreventaDashboardView }> = [
     { label: 'Resumen', value: 'resumen' },
     { label: 'Seguimiento', value: 'seguimiento' },
+    { label: 'Preventa → Instalación', value: 'preventa-instalacion' },
     { label: 'Rendimiento', value: 'rendimiento' },
     { label: 'Asesores', value: 'asesores' },
     { label: 'Campañas', value: 'campanas' },

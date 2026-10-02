@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.BaseLeadExcelRow;
@@ -31,6 +32,7 @@ import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProject
 import pe.albrugroup.lead_service.repository.projection.HoraProgramadaCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.TipificacionCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.SubtipificacionCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.LeadPreventaInstalacionProjection;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -3695,5 +3697,56 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<BaseLeadExcelRow> buscarDatosExcel(
             @Param("ids") Collection<Long> ids,
             @Param("etapaPreventa") Etapa etapaPreventa
+    );
+
+    @Query("""
+            SELECT
+                l.id AS idLead,
+                l.prefijo AS prefijo,
+                l.lead AS lead,
+                dp.tipoDocumento AS tipoDocumento,
+                COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) AS numeroDocumento,
+                dp.nombreTitularServicio AS nombreCliente,
+                dept.nombre AS departamento,
+                rp.idAsesorMerito AS idAsesorPreventa,
+                rp.nombreAsesorMerito AS nombreAsesorPreventa,
+                p.id AS idProveedor,
+                p.nombre AS proveedor,
+                p.tipoReglaFacturacion AS reglaSemanaProveedor,
+                rp.fechaMerito AS fechaPreventa,
+                seg.fechaInstalacion AS fechaInstalacion,
+                l.estadoClientePostventa AS estadoPostventa,
+                l.etapa AS etapaActual
+            FROM Lead l
+            JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
+            JOIN l.proveedor p
+            LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.direccion dir
+            LEFT JOIN Distrito dist ON dist.codigo = dir.ubigeoDomicilio
+            LEFT JOIN dist.departamento dept
+            WHERE rp.fechaMerito >= :fechaPreventaDesde
+              AND rp.fechaMerito < :fechaPreventaHasta
+              AND (
+                    seg.fechaInstalacion IS NULL
+                    OR seg.fechaInstalacion BETWEEN :fechaInstalacionDesde AND :fechaInstalacionHasta
+              )
+              AND (:idProveedor IS NULL OR p.id = :idProveedor)
+              AND (:idAsesorPreventa IS NULL OR rp.idAsesorMerito = :idAsesorPreventa)
+              AND (
+                    (:sinEstadoPostventa = true AND l.estadoClientePostventa IS NULL)
+                    OR (:sinEstadoPostventa = false AND (:estadoPostventa IS NULL OR l.estadoClientePostventa = :estadoPostventa))
+              )
+            """)
+    List<LeadPreventaInstalacionProjection> listarLeadsPreventaInstalacion(
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("fechaPreventaDesde") Instant fechaPreventaDesde,
+            @Param("fechaPreventaHasta") Instant fechaPreventaHasta,
+            @Param("fechaInstalacionDesde") LocalDate fechaInstalacionDesde,
+            @Param("fechaInstalacionHasta") LocalDate fechaInstalacionHasta,
+            @Param("idProveedor") Long idProveedor,
+            @Param("idAsesorPreventa") Long idAsesorPreventa,
+            @Param("estadoPostventa") EstadoClientePostventa estadoPostventa,
+            @Param("sinEstadoPostventa") boolean sinEstadoPostventa
     );
 }
