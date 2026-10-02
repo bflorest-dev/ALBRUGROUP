@@ -101,6 +101,17 @@
               <ng-template #title>Registrar cuenta publicitaria</ng-template>
               <form class="form-grid" [formGroup]="facade.accountForm" (ngSubmit)="facade.submitAccount()">
                 <label>
+                  <span>Proveedor</span>
+                  <p-select
+                    formControlName="idProveedor"
+                    [options]="facade.proveedoresActivos()"
+                    optionLabel="nombre"
+                    optionValue="id"
+                    placeholder="Seleccionar proveedor"
+                    appendTo="body"
+                  />
+                </label>
+                <label>
                   <span>Numero cuenta</span>
                   <input pInputText type="text" formControlName="numeroCuenta" />
                 </label>
@@ -118,6 +129,7 @@
                 <ng-template #header>
                   <tr>
                     <th>Cuenta</th>
+                    <th>Proveedor</th>
                     <th>Numero</th>
                     <th>Estado</th>
                     <th>Acciones</th>
@@ -126,6 +138,7 @@
                 <ng-template #body let-cuenta>
                   <tr>
                     <td><strong>{{ cuenta.nombreCuenta }}</strong></td>
+                    <td>{{ cuenta.nombreProveedor }}</td>
                     <td>{{ cuenta.numeroCuenta }}</td>
                     <td><p-tag [severity]="statusSeverity(cuenta.activo)" [value]="statusLabel(cuenta.activo)" /></td>
                     <td>
@@ -154,7 +167,7 @@
                   </tr>
                 </ng-template>
                 <ng-template #emptymessage>
-                  <tr><td colspan="4">No hay cuentas registradas.</td></tr>
+                  <tr><td colspan="5">No hay cuentas registradas.</td></tr>
                 </ng-template>
               </p-table>
             </p-card>

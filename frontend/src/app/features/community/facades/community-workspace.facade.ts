@@ -282,7 +282,8 @@ export class CommunityWorkspaceFacade {
 
   readonly accountForm = this.fb.group({
     numeroCuenta: ['', [Validators.required]],
-    nombreCuenta: ['', [Validators.required]]
+    nombreCuenta: ['', [Validators.required]],
+    idProveedor: [0 as number, [Validators.required, Validators.min(1)]]
   });
 
   readonly expenseForm = this.fb.group({
