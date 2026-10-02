@@ -7,11 +7,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.entity.CuentaPublicitaria;
+import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.request.ActualizarNombreCuentaRequest;
 import pe.albrugroup.lead_service.entity.request.CuentaPublicitariaRequest;
 import pe.albrugroup.lead_service.entity.response.CuentaPublicitariaResponse;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.CuentaPublicitariaRepository;
+import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.service.mapper.CuentaPublicitariaMapper;
 
 import java.util.List;
@@ -22,10 +24,14 @@ public class CuentaPublicitariaService {
 
     private final CuentaPublicitariaMapper mapper;
     private final CuentaPublicitariaRepository repository;
+    private final ProveedorRepository proveedorRepository;
 
     @CacheEvict(value = CacheNames.CUENTAS_PUBLICITARIAS, allEntries = true)
     public CuentaPublicitariaResponse registrarCuentaPublicitaria(CuentaPublicitariaRequest request) {
+        Proveedor proveedor = proveedorRepository.findByIdAndActivoTrue(request.getIdProveedor())
+                .orElseThrow(() -> new NotFoundException(Proveedor.class, request.getIdProveedor()));
         CuentaPublicitaria cuentaPublicitaria = mapper.toEntity(request);
+        cuentaPublicitaria.setProveedor(proveedor);
         cuentaPublicitaria.setActivo(Boolean.TRUE);
         return mapper.toResponse(repository.save(cuentaPublicitaria));
     }

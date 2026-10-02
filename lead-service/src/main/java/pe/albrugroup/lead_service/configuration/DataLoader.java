@@ -230,10 +230,10 @@ public class DataLoader {
         Proveedor mifibra = saveProveedor("MIFIBRA",  Set.of(1, 2, 15, 25), 3);
         Proveedor perufibra = saveProveedor("PERUFIBRA", Set.of(1, 2, 15, 25), 3);
 
-        CuentaPublicitaria runa = saveCuentaPublicitaria("1822236612034217", "Runa Contact Center");
-        CuentaPublicitaria fibra = saveCuentaPublicitaria("1030035362376438", "Internet Fibra Optica");
-        CuentaPublicitaria distribuidor = saveCuentaPublicitaria("708788522032129", "DISTRIBUIDOR AUTORIZADO");
-        CuentaPublicitaria albru = saveCuentaPublicitaria("1587625665850135", "ALBRU 2");
+        CuentaPublicitaria runa = saveCuentaPublicitaria("1822236612034217", "Runa Contact Center", win);
+        CuentaPublicitaria fibra = saveCuentaPublicitaria("1030035362376438", "Internet Fibra Optica", win);
+        CuentaPublicitaria distribuidor = saveCuentaPublicitaria("708788522032129", "DISTRIBUIDOR AUTORIZADO", win);
+        CuentaPublicitaria albru = saveCuentaPublicitaria("1587625665850135", "ALBRU 2", claro);
 
         saveCampana("BASE", "+51", "905749473", runa, win, Boolean.TRUE);
         saveCampana("Win4 - 100% Fibra Optica", "+51", "905749473", runa, win, Boolean.TRUE);
@@ -281,13 +281,14 @@ public class DataLoader {
                         .build()));
     }
 
-    private CuentaPublicitaria saveCuentaPublicitaria(String numeroCuenta, String nombreCuenta) {
+    private CuentaPublicitaria saveCuentaPublicitaria(String numeroCuenta, String nombreCuenta, Proveedor proveedor) {
         return cuentaPublicitariaRepository.listarPorActivo(Boolean.TRUE).stream()
                 .filter(cuenta -> numeroCuenta.equalsIgnoreCase(cuenta.getNumeroCuenta()))
                 .findFirst()
                 .orElseGet(() -> cuentaPublicitariaRepository.save(CuentaPublicitaria.builder()
                         .numeroCuenta(numeroCuenta)
                         .nombreCuenta(nombreCuenta)
+                        .proveedor(proveedor)
                         .activo(Boolean.TRUE)
                         .build()));
     }

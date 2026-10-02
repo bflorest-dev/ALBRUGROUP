@@ -9,5 +9,7 @@ public class CuentaPublicitariaResponse {
     private Long id;
     private String numeroCuenta;
     private String nombreCuenta;
+    private Long idProveedor;
+    private String nombreProveedor;
     private Boolean activo;
 }

@@ -18,6 +18,25 @@ export type ProveedorResponse = LeadEntity & {
 export type CuentaPublicitariaResponse = LeadEntity & {
   numeroCuenta?: string;
   nombreCuenta?: string;
+  idProveedor?: number;
+  nombreProveedor?: string;
+};
+
+export type RecargaCuentaPublicitariaRequest = {
+  idCuentaPublicitaria: number;
+  monto: number;
+  fecha: string;
+  observacion?: string | null;
+};
+
+export type RecargaCuentaPublicitariaResponse = {
+  id: number;
+  idCuentaPublicitaria: number;
+  nombreCuenta: string;
+  monto: number;
+  fecha: string;
+  observacion?: string | null;
+  createdAt?: string;
 };
 
 export type CampanaResponse = LeadEntity & {
@@ -299,6 +318,16 @@ export class CommunityLeadService {
 
   alternarCuenta(idCuenta: number): Observable<CuentaPublicitariaResponse> {
     return this.http.patch<CuentaPublicitariaResponse>(`${this.leadUrl}/cuentas-publicitarias/${idCuenta}/estado`, {});
+  }
+
+  registrarRecarga(request: RecargaCuentaPublicitariaRequest): Observable<RecargaCuentaPublicitariaResponse> {
+    return this.http.post<RecargaCuentaPublicitariaResponse>(`${this.leadUrl}/cuentas-publicitarias/recargas`, request);
+  }
+
+  listarRecargas(desde: string, hasta: string, idProveedor?: number | null): Observable<RecargaCuentaPublicitariaResponse[]> {
+    let params = new HttpParams().set('desde', desde).set('hasta', hasta);
+    if (idProveedor != null) params = params.set('idProveedor', idProveedor);
+    return this.http.get<RecargaCuentaPublicitariaResponse[]>(`${this.leadUrl}/cuentas-publicitarias/recargas`, { params });
   }
 
   registrarCampana(request: unknown): Observable<CampanaResponse> {

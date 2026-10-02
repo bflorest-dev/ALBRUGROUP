@@ -15,6 +15,10 @@ public class CuentaPublicitaria {
     private String numeroCuenta;
     private String nombreCuenta;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_proveedor", nullable = false)
+    private Proveedor proveedor;
+
     private Boolean activo;
 
     @CreationTimestamp

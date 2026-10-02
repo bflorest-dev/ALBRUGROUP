@@ -138,6 +138,8 @@ public class DataLoader {
         savePermiso("CREATE_CUENTA_PUBLICITARIA", "Puede registrar cuentas publicitarias", "CUENTA_PUBLICITARIA", "CREATE");
         savePermiso("READ_CUENTAS_PUBLICITARIAS", "Puede listar y ver cuentas publicitarias", "CUENTA_PUBLICITARIA", "READ");
         savePermiso("UPDATE_CUENTA_PUBLICITARIA", "Puede actualizar cuentas publicitarias", "CUENTA_PUBLICITARIA", "UPDATE");
+        savePermiso("REGISTRAR_RECARGA_CUENTA", "Puede registrar recargas de cuentas publicitarias", "CUENTA_PUBLICITARIA", "CREATE");
+        savePermiso("READ_RECARGAS_CUENTA", "Puede listar recargas de cuentas publicitarias", "CUENTA_PUBLICITARIA", "READ");
 
         savePermiso("CREATE_CAMPANA", "Puede registrar campanas", "CAMPANA", "CREATE");
         savePermiso("READ_CAMPANA", "Puede listar y ver campanas", "CAMPANA", "READ");
@@ -364,6 +366,8 @@ public class DataLoader {
                 getPermiso("CREATE_CUENTA_PUBLICITARIA"),
                 getPermiso("READ_CUENTAS_PUBLICITARIAS"),
                 getPermiso("UPDATE_CUENTA_PUBLICITARIA"),
+                getPermiso("REGISTRAR_RECARGA_CUENTA"),
+                getPermiso("READ_RECARGAS_CUENTA"),
 
                 getPermiso("CREATE_CAMPANA"),
                 getPermiso("READ_CAMPANA"),

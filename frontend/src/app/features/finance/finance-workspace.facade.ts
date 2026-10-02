@@ -7,7 +7,9 @@ import {
   CampanaGastoResumenPeriodoResponse,
   CampanaResponse,
   CommunityLeadService,
-  ProveedorResponse
+  CuentaPublicitariaResponse,
+  ProveedorResponse,
+  RecargaCuentaPublicitariaResponse
 } from '../community/services/community-lead.service';
 import {
   FinanceRow,
@@ -50,6 +52,28 @@ export class FinanceWorkspaceFacade {
   readonly snapshotsVisible = signal(false);
   readonly dialogVisible = signal(false);
   readonly editingId = signal<number | null>(null);
+
+  readonly rechargeDialogVisible = signal(false);
+  readonly rechargeDrawerVisible = signal(false);
+  readonly isLoadingRecharges = signal(false);
+  readonly isSavingRecharge = signal(false);
+  readonly recharges = signal<RecargaCuentaPublicitariaResponse[]>([]);
+  readonly accounts = signal<CuentaPublicitariaResponse[]>([]);
+
+  readonly activeAccounts = computed(() => {
+    const providerId = this.selectedProviderId();
+    return this.accounts()
+      .filter(a => a.activo !== false)
+      .filter(a => providerId === null || a.idProveedor === providerId)
+      .sort((a, b) => String(a.nombreCuenta ?? '').localeCompare(String(b.nombreCuenta ?? '')));
+  });
+
+  readonly rechargeForm = this.formBuilder.group({
+    idCuentaPublicitaria: [0, [Validators.required, Validators.min(1)]],
+    monto: ['', [Validators.required, Validators.pattern(/^\d+(?:[,.]\d+)?$/)]],
+    fecha: [new Date(), [Validators.required]],
+    observacion: ['']
+  });
 
   readonly expenseForm = this.formBuilder.group({
     idCampana: [0, [Validators.required, Validators.min(1)]],
@@ -107,12 +131,14 @@ export class FinanceWorkspaceFacade {
     this.isLoading.set(true);
     this.errorMessage.set(null);
     try {
-      const [providers, campaigns] = await Promise.all([
+      const [providers, campaigns, accounts] = await Promise.all([
         firstValueFrom(this.leadService.listarProveedores(true)),
-        firstValueFrom(this.leadService.listarCampanas(true))
+        firstValueFrom(this.leadService.listarCampanas(true)),
+        firstValueFrom(this.leadService.listarCuentasActivas())
       ]);
       this.providers.set(providers ?? []);
       this.campaigns.set(campaigns ?? []);
+      this.accounts.set(accounts ?? []);
       await this.loadDashboard();
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar Finanzas.'));
@@ -273,6 +299,101 @@ export class FinanceWorkspaceFacade {
     this.closeSnapshots();
     this.errorMessage.set(null);
     this.dialogVisible.set(true);
+  }
+
+  openRechargeDialog(): void {
+    this.rechargeForm.reset({
+      idCuentaPublicitaria: 0,
+      monto: '',
+      fecha: new Date(),
+      observacion: ''
+    });
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.rechargeDialogVisible.set(true);
+  }
+
+  closeRechargeDialog(): void {
+    this.rechargeDialogVisible.set(false);
+  }
+
+  setRechargeTimeToNow(): void {
+    this.rechargeForm.controls.fecha.setValue(new Date());
+  }
+
+  async submitRecharge(): Promise<void> {
+    if (this.rechargeForm.invalid) {
+      this.rechargeForm.markAllAsTouched();
+      this.errorMessage.set('Selecciona una cuenta e indica monto y fecha.');
+      return;
+    }
+
+    const raw = this.rechargeForm.getRawValue();
+    const monto = this.parseDecimal(String(raw.monto ?? ''));
+    const fecha = raw.fecha instanceof Date && !Number.isNaN(raw.fecha.getTime())
+      ? toFinanceLocalDateTimeValue(raw.fecha)
+      : null;
+    if (!raw.idCuentaPublicitaria || monto === null || !fecha) {
+      this.errorMessage.set('Revisa los valores ingresados.');
+      return;
+    }
+
+    this.isSavingRecharge.set(true);
+    this.errorMessage.set(null);
+    try {
+      await firstValueFrom(this.leadService.registrarRecarga({
+        idCuentaPublicitaria: raw.idCuentaPublicitaria,
+        monto,
+        fecha,
+        observacion: raw.observacion || null
+      }));
+      this.closeRechargeDialog();
+      this.successMessage.set('Recarga registrada.');
+      await this.loadRecharges();
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo registrar la recarga.'));
+    } finally {
+      this.isSavingRecharge.set(false);
+    }
+  }
+
+  async openRechargeDrawer(): Promise<void> {
+    this.rechargeDrawerVisible.set(true);
+    await this.loadRecharges();
+  }
+
+  closeRechargeDrawer(): void {
+    this.rechargeDrawerVisible.set(false);
+    this.recharges.set([]);
+  }
+
+  async loadRecharges(): Promise<void> {
+    this.isLoadingRecharges.set(true);
+    try {
+      const range = this.periodRange();
+      const recharges = await firstValueFrom(
+        this.leadService.listarRecargas(range.desde, range.hasta, this.selectedProviderId())
+      );
+      this.recharges.set(recharges ?? []);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar las recargas.'));
+    } finally {
+      this.isLoadingRecharges.set(false);
+    }
+  }
+
+  sanitizeRechargeDecimal(): void {
+    const control = this.rechargeForm.controls.monto;
+    const cleaned = String(control.value ?? '').replace(/[^\d,.]/g, '');
+    const separator = cleaned.search(/[,.]/);
+    const next = separator < 0
+      ? cleaned
+      : `${cleaned.slice(0, separator).replace(/[,.]/g, '') || '0'}${cleaned[separator]}${cleaned.slice(separator + 1).replace(/[,.]/g, '')}`;
+    if (next !== control.value) control.setValue(next);
+  }
+
+  rechargeTotal(): number {
+    return this.recharges().reduce((sum, r) => sum + (r.monto ?? 0), 0);
   }
 
   sanitizeInteger(): void {

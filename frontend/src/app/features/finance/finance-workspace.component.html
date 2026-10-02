@@ -33,10 +33,16 @@
     </div>
 
     @if (allowExpenseRegistration()) {
-      <button class="finance-primary-action" type="button" (click)="facade.openExpenseDialog()">
-        <i class="pi pi-plus" aria-hidden="true"></i>
-        Agregar gasto
-      </button>
+      <div class="finance-action-group">
+        <button class="finance-secondary-action" type="button" (click)="facade.openRechargeDialog()">
+          <i class="pi pi-plus" aria-hidden="true"></i>
+          Agregar recarga
+        </button>
+        <button class="finance-primary-action" type="button" (click)="facade.openExpenseDialog()">
+          <i class="pi pi-plus" aria-hidden="true"></i>
+          Agregar gasto
+        </button>
+      </div>
     }
   </app-page-header>
 
@@ -50,7 +56,14 @@
   @let period = facade.periodSummary();
   @let monthly = facade.monthlySummary();
   <section class="finance-overview" aria-label="Resúmenes financieros">
-    <app-section-header title="Lectura financiera" description="Cierres del periodo consultado frente al acumulado del mes actual." />
+    <app-section-header title="Lectura financiera" description="Cierres del periodo consultado frente al acumulado del mes actual.">
+      @if (allowExpenseRegistration()) {
+        <button class="finance-recharge-link" type="button" (click)="facade.openRechargeDrawer()">
+          <i class="pi pi-wallet" aria-hidden="true"></i>
+          Ver recargas
+        </button>
+      }
+    </app-section-header>
     <div class="finance-metric-ledger">
       <div class="finance-ledger-row">
         <div class="finance-ledger-label"><span>Periodo</span><strong>{{ periodTitle(period) }}</strong></div>
@@ -233,6 +246,119 @@
     </form>
   </p-dialog>
 }
+
+@if (allowExpenseRegistration()) {
+  <p-dialog
+    [visible]="facade.rechargeDialogVisible()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(34rem, 94vw)' }"
+    header="Agregar recarga de cuenta"
+    (onHide)="facade.closeRechargeDialog()"
+  >
+    <form class="finance-form" [formGroup]="facade.rechargeForm" (ngSubmit)="facade.submitRecharge()">
+      <label class="finance-field finance-field--wide">
+        <span>Cuenta publicitaria</span>
+        <p-select
+          formControlName="idCuentaPublicitaria"
+          [options]="facade.activeAccounts()"
+          optionLabel="nombreCuenta"
+          optionValue="id"
+          placeholder="Seleccionar cuenta"
+          appendTo="body"
+        >
+          <ng-template #item let-account>
+            <div class="finance-campaign-option">
+              <strong>{{ account.nombreCuenta }}</strong>
+              <small>{{ account.nombreProveedor || 'Proveedor no indicado' }}</small>
+            </div>
+          </ng-template>
+        </p-select>
+      </label>
+
+      <label class="finance-field">
+        <span>Monto de recarga</span>
+        <div class="finance-money-input"><span>S/</span><input pInputText type="text" inputmode="decimal" formControlName="monto" placeholder="Ej. 500.00" (keydown)="allowDecimalInput($event)" (input)="facade.sanitizeRechargeDecimal()" /></div>
+      </label>
+
+      <div class="finance-field finance-field--wide">
+        <label class="finance-field-label" for="recharge-fecha">Fecha y hora de la recarga</label>
+        <div class="finance-date-control">
+          <p-datepicker
+            inputId="recharge-fecha"
+            formControlName="fecha"
+            dateFormat="dd/mm/yy"
+            [showTime]="true"
+            hourFormat="24"
+            [stepMinute]="1"
+            [showIcon]="true"
+            iconDisplay="input"
+            appendTo="body"
+            [baseZIndex]="1400"
+          />
+          <button class="finance-secondary-button finance-now-button" type="button" (click)="facade.setRechargeTimeToNow()" aria-label="Usar la fecha y hora actuales">
+            <i class="pi pi-clock" aria-hidden="true"></i>Ahora
+          </button>
+        </div>
+        <small>Indica cuándo se realizó la recarga. No se permiten fechas futuras.</small>
+      </div>
+
+      <label class="finance-field finance-field--wide">
+        <span>Observación (opcional)</span>
+        <input pInputText type="text" formControlName="observacion" placeholder="Ej. Recarga mensual septiembre" />
+      </label>
+
+      @if (facade.errorMessage()) {
+        <p-message class="finance-field--wide" severity="error" [text]="facade.errorMessage() ?? ''" />
+      }
+      <div class="finance-form-actions finance-field--wide">
+        <button class="finance-secondary-button" type="button" (click)="facade.closeRechargeDialog()">Cancelar</button>
+        <button class="finance-primary-action" type="submit" [disabled]="facade.isSavingRecharge()">
+          <i class="pi pi-save" aria-hidden="true"></i>
+          Guardar recarga
+        </button>
+      </div>
+    </form>
+  </p-dialog>
+}
+
+<p-drawer
+  [visible]="facade.rechargeDrawerVisible()"
+  position="right"
+  [style]="{ width: 'min(56rem, 96vw)' }"
+  (visibleChange)="!$event && facade.closeRechargeDrawer()"
+>
+  <ng-template #header>
+    <div class="finance-drawer-header">
+      <strong>Recargas del periodo</strong>
+      <span>{{ facade.rangeLabel() }} · Total: {{ facade.money(facade.rechargeTotal()) }}</span>
+    </div>
+  </ng-template>
+  <div class="finance-history-scroll">
+    <p-table [value]="facade.recharges()" [loading]="facade.isLoadingRecharges()" [scrollable]="true" styleClass="finance-table finance-table--history" [tableStyle]="{ 'min-width': '640px' }">
+      <ng-template #header>
+        <tr>
+          <th>Fecha y hora</th>
+          <th>Cuenta</th>
+          <th>Monto</th>
+          <th>Observación</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-row>
+        <tr>
+          <td class="finance-data"><span class="finance-date-stack"><span>{{ facade.reportDate(row.fecha) }}</span><span>{{ facade.reportTime(row.fecha) }}</span></span></td>
+          <td class="finance-data">{{ row.nombreCuenta }}</td>
+          <td class="finance-data">{{ facade.money(row.monto) }}</td>
+          <td class="finance-data">{{ row.observacion || '—' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="4" class="finance-empty">No hay recargas en este periodo.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</p-drawer>
 
 <p-drawer
   [visible]="facade.snapshotsVisible()"
