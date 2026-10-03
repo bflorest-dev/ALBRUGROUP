@@ -1,0 +1,123 @@
+<section class="fin-dash">
+  <div class="fd-controls">
+    @if (proveedorOptions().length > 1) {
+      <div class="fd-control">
+        <span class="fd-control__label">Proveedor</span>
+        <p-selectButton
+          [options]="proveedorOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="proveedorId()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onProveedorChange($event.value)"
+        />
+      </div>
+    }
+    <div class="fd-control">
+      <span class="fd-control__label">Período</span>
+      <app-period-selector
+        [periodo]="periodo()"
+        [dia]="dia()"
+        [hasta]="hasta()"
+        [periodos]="periodos"
+        (periodoChange)="onPeriodoChange($event)"
+        (rangoChange)="onRangoChange($event)"
+      />
+    </div>
+    <button
+      pButton type="button" icon="pi pi-refresh" severity="secondary"
+      [rounded]="true" [outlined]="true" [loading]="isLoading()"
+      (click)="cargar()" pTooltip="Consultar" tooltipPosition="top"
+      class="fd-refresh"
+    ></button>
+    <button
+      pButton type="button" icon="pi pi-sync" severity="warn"
+      [rounded]="true" [outlined]="true" [loading]="isRecalculating()"
+      (click)="recalcular()" pTooltip="Recalcular desde fuentes" tooltipPosition="top"
+      class="fd-refresh"
+    ></button>
+  </div>
+
+  @if (errorMessage()) {
+    <p-message severity="error" [text]="errorMessage()" styleClass="fd-message" />
+  }
+  @if (!hayDatos() && !errorMessage()) {
+    <div class="fd-empty">{{ isLoading() ? 'Cargando datos…' : 'Sin datos. Presiona recalcular para generar el resumen.' }}</div>
+  }
+
+  @if (hayDatos()) {
+    <article class="poster" [style.--team-accent]="providerAccent()">
+      <header class="poster-head">
+        <div class="poster-head__left">
+          <p class="eyebrow">Dashboard · Financiero</p>
+          <h2 class="poster-title">Resumen Diario</h2>
+        </div>
+        <div class="poster-head__right">
+          <span class="ph-chip"><span class="ph-dot"></span>{{ proveedorNombre() }}</span>
+          <span class="ph-sep"></span>
+          <span class="ph-chip">{{ periodoLabel() }}</span>
+        </div>
+      </header>
+
+      <!-- KPIs mensuales -->
+      <div class="fin-kpis">
+        <div class="fin-kpi">
+          <span class="fin-kpi__label">Factor Conversión</span>
+          <span class="fin-kpi__value">{{ factorConversion() | percent:'1.2-2' }}</span>
+        </div>
+        <div class="fin-kpi">
+          <span class="fin-kpi__label">ROI</span>
+          <span class="fin-kpi__value">{{ roiMensual() | percent:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Tabla spreadsheet -->
+      <div class="fin-table-wrap">
+        <table class="fin-table">
+          <thead>
+            <tr class="fin-day-row">
+              <th class="fin-th-label fin-sticky"></th>
+              <th class="fin-th-total fin-sticky-total"></th>
+              @for (h of dayHeaders(); track h.label) {
+                <th class="fin-th-day" [class.is-weekend]="h.isWeekend">
+                  <span class="fin-day-name">{{ h.dayName }}</span>
+                  <span class="fin-day-date">{{ h.label }}</span>
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of tableRows(); track row.label) {
+              @if (row.isSection) {
+                <tr class="fin-section-row">
+                  <td class="fin-sticky fin-section-label" [attr.colspan]="2 + dayHeaders().length">{{ row.label }}</td>
+                </tr>
+              } @else {
+                <tr [class.is-total]="row.isTotal">
+                  <td class="fin-td-label fin-sticky">{{ row.label }}</td>
+                  <td class="fin-td-total fin-sticky-total">
+                    @switch (row.format) {
+                      @case ('integer') { {{ row.monthTotal | number:'1.0-0' }} }
+                      @case ('currency') { S/.{{ row.monthTotal | number:'1.2-2' }} }
+                      @case ('percentage') { {{ row.monthTotal | percent:'1.2-2' }} }
+                    }
+                  </td>
+                  @for (v of row.values; track $index) {
+                    <td class="fin-td-val" [class.is-weekend]="dayHeaders()[$index]?.isWeekend" [class.is-zero]="v === 0 && row.format !== 'percentage'">
+                      @switch (row.format) {
+                        @case ('integer') { {{ v }} }
+                        @case ('currency') { S/.{{ v | number:'1.2-2' }} }
+                        @case ('percentage') { {{ v | percent:'1.2-2' }} }
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </article>
+  }
+</section>

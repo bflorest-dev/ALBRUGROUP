@@ -12,6 +12,7 @@ import { AdminMetricsPageComponent } from '../admin/pages/admin-metrics-page/adm
 import { RevisionSemanalPageComponent } from '../admin/pages/revision-semanal-page/revision-semanal-page.component';
 import { AdminDashboardPostventaPageComponent } from '../admin/pages/admin-dashboard-postventa-page/admin-dashboard-postventa-page.component';
 import { DashboardCobranzaStageComponent } from '../admin/components/dashboard-cobranza-stage/dashboard-cobranza-stage.component';
+import { DashboardFinancieroStageComponent } from '../admin/components/dashboard-financiero-stage/dashboard-financiero-stage.component';
 import { DashboardPostventaStageComponent } from '../admin/components/dashboard-postventa-stage/dashboard-postventa-stage.component';
 import { DashboardPreventaStageComponent } from '../admin/components/dashboard-preventa-stage/dashboard-preventa-stage.component';
 import { DashboardFunnelStageComponent } from '../admin/components/dashboard-funnel-stage/dashboard-funnel-stage.component';
@@ -109,6 +110,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin/dashboard/cobranza',
     component: DashboardCobranzaStageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+    }
+  },
+  {
+    path: 'admin/dashboard/financiero',
+    component: DashboardFinancieroStageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],

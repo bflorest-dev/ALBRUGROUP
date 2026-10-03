@@ -230,7 +230,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
         { label: 'Venta', route: '/app/admin/dashboard/venta', icon: 'pi pi-shopping-cart', exact: true },
         { label: 'Postventa', route: '/app/admin/dashboard/postventa', icon: 'pi pi-briefcase', exact: true },
         { label: 'Cobranza', route: '/app/admin/dashboard/cobranza', icon: 'pi pi-wallet', exact: true },
-        { label: 'Funnel', route: '/app/admin/dashboard/funnel', icon: 'pi pi-filter', exact: true }
+        { label: 'Funnel', route: '/app/admin/dashboard/funnel', icon: 'pi pi-filter', exact: true },
+        { label: 'Financiero', route: '/app/admin/dashboard/financiero', icon: 'pi pi-chart-line', exact: true }
       ];
 
       const plataformasChildren: SidebarItem[] = [
