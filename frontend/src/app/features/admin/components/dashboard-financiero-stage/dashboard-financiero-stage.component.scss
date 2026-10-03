@@ -254,15 +254,17 @@
 @mixin block-tint($name, $color) {
   tr[data-block="#{$name}"] {
     td { background: rgba($color, 0.06); }
-    .fin-sticky, .fin-sticky-total { background: rgba($color, 0.06); }
+    .fin-sticky, .fin-sticky-total { background: color-mix(in srgb, $color 6%, #161b2b); }
     .fin-td-label { border-left-color: rgba($color, 0.5); }
   }
   tr[data-block="#{$name}"].is-total {
     td { background: rgba($color, 0.12); }
-    .fin-sticky, .fin-sticky-total { background: rgba($color, 0.12); }
+    .fin-sticky, .fin-sticky-total { background: color-mix(in srgb, $color 12%, #161b2b); }
   }
-  .fin-section-row[data-block="#{$name}"] .fin-section-label {
-    color: $color;
+  .fin-section-row[data-block="#{$name}"] {
+    td { background: transparent; }
+    .fin-sticky { background: var(--card); }
+    .fin-section-label { color: $color; }
   }
 }
 
