@@ -321,7 +321,9 @@
                 <ng-template #header>
                   <tr>
                     <th>Zona</th>
+                    <th>Proveedor</th>
                     <th>Reglas</th>
+                    <th>Geográfica</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
@@ -329,7 +331,9 @@
                 <ng-template #body let-zona>
                   <tr>
                     <td><strong>{{ zona.nombre }}</strong></td>
+                    <td>{{ zona.nombreProveedor }}</td>
                     <td>{{ listCount(zona.reglas) }}</td>
+                    <td><p-tag [severity]="zona.esGeografica ? 'success' : 'secondary'" [value]="zona.esGeografica ? 'Sí' : 'No'" /></td>
                     <td><p-tag [severity]="statusSeverity(zona.activo)" [value]="statusLabel(zona.activo)" /></td>
                     <td>
                       <div class="inline-action">
@@ -1328,6 +1332,21 @@
           <label class="wide">
             <span>Nombre</span>
             <input pInputText type="text" formControlName="nombre" />
+          </label>
+          <label class="wide">
+            <span>Proveedor</span>
+            <p-select
+              formControlName="idProveedor"
+              [options]="facade.proveedoresActivos()"
+              optionLabel="nombre"
+              optionValue="id"
+              placeholder="Seleccionar proveedor"
+              appendTo="body"
+            />
+          </label>
+          <label class="wide zone-geo-toggle">
+            <p-checkbox formControlName="esGeografica" [binary]="true" inputId="esGeografica" />
+            <span>Zona geográfica (auto-match con ubigeo del lead)</span>
           </label>
         </form>
 

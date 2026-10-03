@@ -3,6 +3,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { CheckboxModule } from 'primeng/checkbox';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -35,6 +36,7 @@ export const CATALOG_MAINTENANCE_SECTIONS: { id: CommunitySection; label: string
     ReactiveFormsModule,
     ButtonModule,
     CardModule,
+    CheckboxModule,
     ConfirmDialogModule,
     DialogModule,
     InputTextModule,

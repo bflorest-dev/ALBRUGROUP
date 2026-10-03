@@ -236,6 +236,9 @@ export type ZonaReglaResponse = {
 };
 
 export type ZonaResponse = LeadEntity & {
+  idProveedor: number;
+  nombreProveedor?: string;
+  esGeografica: boolean;
   reglas?: ZonaReglaResponse[];
 };
 

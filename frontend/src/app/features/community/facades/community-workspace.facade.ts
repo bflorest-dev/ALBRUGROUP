@@ -396,7 +396,9 @@ export class CommunityWorkspaceFacade {
   });
 
   readonly zoneForm = this.fb.group({
-    nombre: ['', [Validators.required]]
+    nombre: ['', [Validators.required]],
+    idProveedor: [null as number | null, [Validators.required]],
+    esGeografica: [false]
   });
 
   readonly zoneRuleForm = this.fb.group({
@@ -1323,7 +1325,7 @@ export class CommunityWorkspaceFacade {
 
     this.zoneDialogMode.set('create');
     this.activeZoneId.set(null);
-    this.zoneForm.reset({ nombre: '' });
+    this.zoneForm.reset({ nombre: '', idProveedor: null, esGeografica: false });
     this.zoneRules.set([]);
     this.resetZoneRuleForm();
     this.zoneDialogOpen.set(true);
@@ -1337,7 +1339,7 @@ export class CommunityWorkspaceFacade {
 
     this.zoneDialogMode.set('edit');
     this.activeZoneId.set(zona.id);
-    this.zoneForm.reset({ nombre: zona.nombre ?? '' });
+    this.zoneForm.reset({ nombre: zona.nombre ?? '', idProveedor: zona.idProveedor ?? null, esGeografica: !!zona.esGeografica });
     this.zoneDialogOpen.set(true);
     this.resetZoneRuleForm();
     await this.ensureUbigeoDirectoryLoaded();
@@ -1786,6 +1788,8 @@ export class CommunityWorkspaceFacade {
     const raw = this.zoneForm.getRawValue();
     return {
       nombre: raw.nombre,
+      idProveedor: raw.idProveedor,
+      esGeografica: raw.esGeografica,
       reglas: this.zoneRules().map((rule) => ({
         nivelGeografico: rule.nivelGeografico,
         geoId: rule.geoId,

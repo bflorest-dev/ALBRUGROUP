@@ -134,6 +134,13 @@ p,
   grid-template-columns: minmax(0, 1fr) minmax(260px, 0.9fr);
 }
 
+.zone-geo-toggle {
+  align-items: center;
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0.5rem;
+}
+
 .wide,
 .form-grid button[type='submit'] {
   grid-column: 1 / -1;

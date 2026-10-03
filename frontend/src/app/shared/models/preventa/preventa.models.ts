@@ -1119,6 +1119,9 @@ export interface ZonaResponse {
   id: number;
   nombre: string;
   activo?: boolean;
+  idProveedor: number;
+  nombreProveedor?: string;
+  esGeografica: boolean;
 }
 
 export interface UbigeoItem {
