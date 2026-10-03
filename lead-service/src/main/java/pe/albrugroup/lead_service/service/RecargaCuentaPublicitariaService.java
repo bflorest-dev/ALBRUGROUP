@@ -59,6 +59,21 @@ public class RecargaCuentaPublicitariaService {
         return recargas.stream().map(this::toResponse).toList();
     }
 
+    public RecargaCuentaPublicitariaResponse actualizar(Long id, RecargaCuentaPublicitariaRequest request) {
+        if (request.getFecha().isAfter(LocalDateTime.now())) {
+            throw new BadRequestException("La fecha de la recarga no puede ser futura.");
+        }
+
+        RecargaCuentaPublicitaria recarga = recargaRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(RecargaCuentaPublicitaria.class, id));
+
+        recarga.setMonto(request.getMonto());
+        recarga.setFecha(request.getFecha());
+        recarga.setObservacion(request.getObservacion());
+
+        return toResponse(recargaRepository.save(recarga));
+    }
+
     private RecargaCuentaPublicitariaResponse toResponse(RecargaCuentaPublicitaria r) {
         return RecargaCuentaPublicitariaResponse.builder()
                 .id(r.getId())

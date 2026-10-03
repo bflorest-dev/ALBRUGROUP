@@ -328,6 +328,10 @@ export class CommunityLeadService {
     return this.http.post<RecargaCuentaPublicitariaResponse>(`${this.leadUrl}/cuentas-publicitarias/recargas`, request);
   }
 
+  actualizarRecarga(id: number, request: RecargaCuentaPublicitariaRequest): Observable<RecargaCuentaPublicitariaResponse> {
+    return this.http.put<RecargaCuentaPublicitariaResponse>(`${this.leadUrl}/cuentas-publicitarias/recargas/${id}`, request);
+  }
+
   listarRecargas(desde: string, hasta: string, idProveedor?: number | null): Observable<RecargaCuentaPublicitariaResponse[]> {
     let params = new HttpParams().set('desde', desde).set('hasta', hasta);
     if (idProveedor != null) params = params.set('idProveedor', idProveedor);

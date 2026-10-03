@@ -254,7 +254,7 @@
     [draggable]="false"
     [resizable]="false"
     [style]="{ width: 'min(34rem, 94vw)' }"
-    header="Agregar recarga de cuenta"
+    [header]="facade.editingRechargeId() ? 'Editar recarga' : 'Agregar recarga de cuenta'"
     (onHide)="facade.closeRechargeDialog()"
   >
     <form class="finance-form" [formGroup]="facade.rechargeForm" (ngSubmit)="facade.submitRecharge()">
@@ -393,13 +393,14 @@
         </ng-template>
       </p-table>
     } @else {
-      <p-table [value]="facade.filteredRecharges()" [loading]="facade.isLoadingRecharges()" [scrollable]="true" styleClass="finance-table finance-table--history" [tableStyle]="{ 'min-width': '640px' }">
+      <p-table [value]="facade.filteredRecharges()" [loading]="facade.isLoadingRecharges()" [scrollable]="true" styleClass="finance-table finance-table--history" [tableStyle]="{ 'min-width': '700px' }">
         <ng-template #header>
           <tr>
             <th>Fecha y hora</th>
             <th>Cuenta</th>
             <th>Monto</th>
             <th>Observación</th>
+            <th>Acción</th>
           </tr>
         </ng-template>
         <ng-template #body let-row>
@@ -408,10 +409,11 @@
             <td class="finance-data">{{ row.nombreCuenta }}</td>
             <td class="finance-data">{{ facade.money(row.monto) }}</td>
             <td class="finance-data">{{ row.observacion || '—' }}</td>
+            <td class="finance-data"><button pButton type="button" size="small" icon="pi pi-pencil" label="Editar" severity="secondary" (click)="facade.editRecharge(row)"></button></td>
           </tr>
         </ng-template>
         <ng-template #emptymessage>
-          <tr><td colspan="4" class="finance-empty">No hay recargas en este periodo.</td></tr>
+          <tr><td colspan="5" class="finance-empty">No hay recargas en este periodo.</td></tr>
         </ng-template>
       </p-table>
     }

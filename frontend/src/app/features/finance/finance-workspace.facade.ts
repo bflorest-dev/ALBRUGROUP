@@ -57,6 +57,7 @@ export class FinanceWorkspaceFacade {
   readonly rechargeDrawerVisible = signal(false);
   readonly isLoadingRecharges = signal(false);
   readonly isSavingRecharge = signal(false);
+  readonly editingRechargeId = signal<number | null>(null);
   readonly recharges = signal<RecargaCuentaPublicitariaResponse[]>([]);
   readonly accounts = signal<CuentaPublicitariaResponse[]>([]);
   readonly rechargePeriod = signal<MetricsPeriodo>('dia');
@@ -360,6 +361,7 @@ export class FinanceWorkspaceFacade {
   }
 
   openRechargeDialog(): void {
+    this.editingRechargeId.set(null);
     this.rechargeForm.reset({
       idCuentaPublicitaria: 0,
       monto: '',
@@ -371,11 +373,26 @@ export class FinanceWorkspaceFacade {
     this.rechargeDialogVisible.set(true);
   }
 
+  editRecharge(row: RecargaCuentaPublicitariaResponse): void {
+    this.editingRechargeId.set(row.id);
+    this.rechargeForm.reset({
+      idCuentaPublicitaria: row.idCuentaPublicitaria,
+      monto: String(row.monto),
+      fecha: new Date(row.fecha),
+      observacion: row.observacion ?? ''
+    });
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.rechargeDialogVisible.set(true);
+  }
+
   closeRechargeDialog(): void {
     this.rechargeDialogVisible.set(false);
+    this.editingRechargeId.set(null);
   }
 
   setRechargeTimeToNow(): void {
+    if (this.editingRechargeId() !== null) return;
     this.rechargeForm.controls.fecha.setValue(new Date());
   }
 
@@ -398,18 +415,25 @@ export class FinanceWorkspaceFacade {
 
     this.isSavingRecharge.set(true);
     this.errorMessage.set(null);
+    const payload = {
+      idCuentaPublicitaria: raw.idCuentaPublicitaria,
+      monto,
+      fecha,
+      observacion: raw.observacion || null
+    };
     try {
-      await firstValueFrom(this.leadService.registrarRecarga({
-        idCuentaPublicitaria: raw.idCuentaPublicitaria,
-        monto,
-        fecha,
-        observacion: raw.observacion || null
-      }));
+      const editId = this.editingRechargeId();
+      if (editId) {
+        await firstValueFrom(this.leadService.actualizarRecarga(editId, payload));
+        this.successMessage.set('Recarga actualizada.');
+      } else {
+        await firstValueFrom(this.leadService.registrarRecarga(payload));
+        this.successMessage.set('Recarga registrada.');
+      }
       this.closeRechargeDialog();
-      this.successMessage.set('Recarga registrada.');
       await this.loadRecharges();
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo registrar la recarga.'));
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo guardar la recarga.'));
     } finally {
       this.isSavingRecharge.set(false);
     }

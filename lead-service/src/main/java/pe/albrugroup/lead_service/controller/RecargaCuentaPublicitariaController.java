@@ -29,6 +29,14 @@ public class RecargaCuentaPublicitariaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(recargaService.registrar(request));
     }
 
+    @PutMapping("/recargas/{id}")
+    @PreAuthorize("hasAuthority('REGISTRAR_RECARGA_CUENTA')")
+    public ResponseEntity<RecargaCuentaPublicitariaResponse> actualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody RecargaCuentaPublicitariaRequest request) {
+        return ResponseEntity.ok(recargaService.actualizar(id, request));
+    }
+
     @GetMapping("/{idCuenta}/recargas")
     @PreAuthorize("hasAuthority('READ_RECARGAS_CUENTA')")
     public ResponseEntity<List<RecargaCuentaPublicitariaResponse>> listarPorCuenta(

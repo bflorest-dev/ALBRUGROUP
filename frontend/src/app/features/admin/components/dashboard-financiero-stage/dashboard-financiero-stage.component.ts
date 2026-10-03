@@ -29,6 +29,7 @@ interface TableRow {
   format: 'integer' | 'currency' | 'percentage';
   isTotal: boolean;
   isSection: boolean;
+  block: 'ing' | 'inst' | 'redes' | 'cf' | 'roi';
 }
 
 @Component({
@@ -111,52 +112,52 @@ export class DashboardFinancieroStageComponent implements OnInit {
       dias[diaIdx]?.zonas.reduce((s, z) => s + z[field], 0) ?? 0;
     const sumRow = (values: number[]) => values.reduce((s, v) => s + v, 0);
 
-    // INGRESADAS per zone
+    // INGRESADAS
+    rows.push({ label: 'INGRESADAS', monthTotal: 0, values: [], format: 'integer', isTotal: false, isSection: true, block: 'ing' });
     for (const zona of zonas) {
       const values = dias.map((_, i) => zoneVal(i, zona.id, 'ingresadas'));
-      rows.push({ label: `INGRESADAS ${zona.nombre}`, monthTotal: sumRow(values), values, format: 'integer', isTotal: false, isSection: false });
+      rows.push({ label: `Ingresadas ${zona.nombre}`, monthTotal: sumRow(values), values, format: 'integer', isTotal: false, isSection: false, block: 'ing' });
     }
-    // TOTAL INGRESADAS
     {
       const values = dias.map((_, i) => sumZones(i, 'ingresadas'));
-      rows.push({ label: 'TOTAL INGRESADAS', monthTotal: sumRow(values), values, format: 'integer', isTotal: true, isSection: false });
+      rows.push({ label: 'Total ingresadas', monthTotal: sumRow(values), values, format: 'integer', isTotal: true, isSection: false, block: 'ing' });
     }
 
-    // INSTALADAS per zone
+    // INSTALADAS
+    rows.push({ label: 'INSTALADAS', monthTotal: 0, values: [], format: 'integer', isTotal: false, isSection: true, block: 'inst' });
     for (const zona of zonas) {
       const values = dias.map((_, i) => zoneVal(i, zona.id, 'instaladas'));
-      rows.push({ label: `INSTALADAS ${zona.nombre}`, monthTotal: sumRow(values), values, format: 'integer', isTotal: false, isSection: false });
+      rows.push({ label: `Instaladas ${zona.nombre}`, monthTotal: sumRow(values), values, format: 'integer', isTotal: false, isSection: false, block: 'inst' });
     }
-    // TOTAL INSTALADAS
     {
       const values = dias.map((_, i) => sumZones(i, 'instaladas'));
-      rows.push({ label: 'TOTAL INSTALADAS', monthTotal: sumRow(values), values, format: 'integer', isTotal: true, isSection: false });
+      rows.push({ label: 'Total instaladas', monthTotal: sumRow(values), values, format: 'integer', isTotal: true, isSection: false, block: 'inst' });
     }
 
-    // REDES section
-    rows.push({ label: 'REDES', monthTotal: 0, values: [], format: 'currency', isTotal: false, isSection: true });
+    // REDES
+    rows.push({ label: 'REDES', monthTotal: 0, values: [], format: 'currency', isTotal: false, isSection: true, block: 'redes' });
     {
       const values = dias.map(d => d.ctaBancaria);
-      rows.push({ label: 'CTA BANCARIA', monthTotal: sumRow(values), values, format: 'currency', isTotal: false, isSection: false });
+      rows.push({ label: 'CTA bancaria', monthTotal: sumRow(values), values, format: 'currency', isTotal: false, isSection: false, block: 'redes' });
     }
     {
       const values = dias.map(d => d.ctaPublicitaria);
-      rows.push({ label: 'CTA PUBLICITARIA', monthTotal: sumRow(values), values, format: 'currency', isTotal: false, isSection: false });
+      rows.push({ label: 'CTA publicitaria', monthTotal: sumRow(values), values, format: 'currency', isTotal: false, isSection: false, block: 'redes' });
     }
 
-    // CARGO FIJO section
-    rows.push({ label: 'CARGO FIJO', monthTotal: 0, values: [], format: 'currency', isTotal: false, isSection: true });
+    // CARGO FIJO
+    rows.push({ label: 'CARGO FIJO', monthTotal: 0, values: [], format: 'currency', isTotal: false, isSection: true, block: 'cf' });
     for (const zona of zonas) {
       const values = dias.map((_, i) => zoneVal(i, zona.id, 'cfInstaladas'));
-      rows.push({ label: `CF INSTALADAS ${zona.nombre}`, monthTotal: sumRow(values), values, format: 'currency', isTotal: false, isSection: false });
+      rows.push({ label: `CF instaladas ${zona.nombre}`, monthTotal: sumRow(values), values, format: 'currency', isTotal: false, isSection: false, block: 'cf' });
     }
     {
       const values = dias.map((_, i) => sumZones(i, 'cfInstaladas'));
-      rows.push({ label: 'TOTAL CF', monthTotal: sumRow(values), values, format: 'currency', isTotal: true, isSection: false });
+      rows.push({ label: 'Total CF', monthTotal: sumRow(values), values, format: 'currency', isTotal: true, isSection: false, block: 'cf' });
     }
 
-    // ROI section
-    rows.push({ label: 'ROI', monthTotal: 0, values: [], format: 'percentage', isTotal: false, isSection: true });
+    // ROI
+    rows.push({ label: 'ROI', monthTotal: 0, values: [], format: 'percentage', isTotal: false, isSection: true, block: 'roi' });
     {
       const totalCfValues = dias.map((_, i) => sumZones(i, 'cfInstaladas'));
       const ctaBancariaValues = dias.map(d => d.ctaBancaria);
@@ -167,7 +168,7 @@ export class DashboardFinancieroStageComponent implements OnInit {
       const totalCfMes = totalCfValues.reduce((s, v) => s + v, 0);
       const totalCtaMes = ctaBancariaValues.reduce((s, v) => s + v, 0);
       const monthTotal = totalCtaMes > 0 ? (totalCfMes - totalCtaMes) / totalCtaMes : 0;
-      rows.push({ label: 'ROI INSTALADAS', monthTotal, values, format: 'percentage', isTotal: true, isSection: false });
+      rows.push({ label: 'ROI instaladas', monthTotal, values, format: 'percentage', isTotal: true, isSection: false, block: 'roi' });
     }
 
     return rows;
