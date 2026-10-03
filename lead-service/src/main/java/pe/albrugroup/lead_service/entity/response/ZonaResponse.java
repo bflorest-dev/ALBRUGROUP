@@ -19,6 +19,9 @@ public class ZonaResponse {
     private Long id;
     private String nombre;
     private Boolean activo;
+    private Long idProveedor;
+    private String nombreProveedor;
+    private boolean esGeografica;
     private Instant createdAt;
     private Instant updatedAt;
     private List<ZonaReglaResponse> reglas;

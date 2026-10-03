@@ -7,10 +7,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.entity.Departamento;
+import pe.albrugroup.lead_service.entity.Direccion;
 import pe.albrugroup.lead_service.entity.Distrito;
+import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Provincia;
 import pe.albrugroup.lead_service.entity.Zona;
 import pe.albrugroup.lead_service.entity.ZonaRegla;
+import pe.albrugroup.lead_service.entity.enums.CriterioZona;
 import pe.albrugroup.lead_service.entity.enums.NivelGeografico;
 import pe.albrugroup.lead_service.entity.request.ZonaReglaRequest;
 import pe.albrugroup.lead_service.entity.request.ZonaRequest;
@@ -19,6 +22,7 @@ import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.repository.DepartamentoRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
+import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.ProvinciaRepository;
 import pe.albrugroup.lead_service.repository.ZonaReglaRepository;
 import pe.albrugroup.lead_service.repository.ZonaRepository;
@@ -38,6 +42,7 @@ public class ZonaService {
 
     private final ZonaRepository zonaRepository;
     private final ZonaReglaRepository zonaReglaRepository;
+    private final ProveedorRepository proveedorRepository;
     private final DepartamentoRepository departamentoRepository;
     private final ProvinciaRepository provinciaRepository;
     private final DistritoRepository distritoRepository;
@@ -47,8 +52,12 @@ public class ZonaService {
     public ZonaResponse registrarZona(ZonaRequest request) {
         validarReglas(request.getReglas());
 
+        Proveedor proveedor = proveedorRepository.findById(request.getIdProveedor())
+                .orElseThrow(() -> new NotFoundException(Proveedor.class, request.getIdProveedor()));
+
         Zona zona = mapper.toEntity(request);
         zona.setActivo(Boolean.TRUE);
+        zona.setProveedor(proveedor);
         Zona zonaGuardada = zonaRepository.save(zona);
 
         List<ZonaRegla> reglas = request.getReglas().stream()
@@ -60,9 +69,9 @@ public class ZonaService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = CacheNames.ZONAS, key = "#activo == null ? 'all' : #activo")
-    public List<ZonaResponse> listarZonas(Boolean activo) {
-        List<Zona> zonas = zonaRepository.listarPorActivo(activo);
+    @Cacheable(value = CacheNames.ZONAS, key = "(#idProveedor == null ? 'all' : #idProveedor) + '_' + (#activo == null ? 'all' : #activo)")
+    public List<ZonaResponse> listarZonas(Long idProveedor, Boolean activo) {
+        List<Zona> zonas = zonaRepository.listarPorProveedorYActivo(idProveedor, activo);
         if (zonas.isEmpty()) {
             return List.of();
         }
@@ -106,6 +115,50 @@ public class ZonaService {
 
         List<ZonaRegla> reglasGuardadas = zonaReglaRepository.saveAll(reglas);
         return construirRespuesta(zonaActualizada, reglasGuardadas);
+    }
+
+    @Transactional(readOnly = true)
+    public Zona resolverZonaGeografica(Proveedor proveedor, Direccion direccion) {
+        if (proveedor == null || direccion == null
+                || direccion.getUbigeoDomicilio() == null
+                || direccion.getUbigeoDomicilio().isBlank()) {
+            return null;
+        }
+        Distrito distrito = distritoRepository.findByCodigo(direccion.getUbigeoDomicilio()).orElse(null);
+        if (distrito == null) return null;
+
+        List<Zona> zonasGeo = zonaRepository
+                .findByProveedorIdAndEsGeograficaTrueAndActivoTrue(proveedor.getId());
+
+        for (Zona zona : zonasGeo) {
+            List<ZonaRegla> reglas = zonaReglaRepository.findByZonaId(zona.getId());
+            if (coincideConReglas(reglas, distrito)) {
+                return zona;
+            }
+        }
+        return null;
+    }
+
+    private boolean coincideConReglas(List<ZonaRegla> reglas, Distrito distrito) {
+        boolean tieneInclusiones = reglas.stream()
+                .anyMatch(r -> r.getCriterio() == CriterioZona.INCLUIR);
+        boolean coincideExclusion = reglas.stream()
+                .anyMatch(r -> r.getCriterio() == CriterioZona.EXCLUIR && coincideRegla(r, distrito));
+        if (coincideExclusion) return false;
+
+        if (!tieneInclusiones) return true;
+        return reglas.stream()
+                .anyMatch(r -> r.getCriterio() == CriterioZona.INCLUIR && coincideRegla(r, distrito));
+    }
+
+    private boolean coincideRegla(ZonaRegla regla, Distrito distrito) {
+        return switch (regla.getNivelGeografico()) {
+            case DEPARTAMENTO -> distrito.getDepartamento() != null
+                    && regla.getGeoId().equals(distrito.getDepartamento().getId());
+            case PROVINCIA -> distrito.getProvincia() != null
+                    && regla.getGeoId().equals(distrito.getProvincia().getId());
+            case DISTRITO -> regla.getGeoId().equals(distrito.getId());
+        };
     }
 
     private ZonaRegla crearRegla(Zona zona, ZonaReglaRequest reglaRequest) {

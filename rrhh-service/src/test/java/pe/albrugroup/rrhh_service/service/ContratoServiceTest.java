@@ -96,6 +96,28 @@ class ContratoServiceTest {
     }
 
     @Test
+    void permiteProgramarFechaFinFuturaSinDeshabilitarUsuario() {
+        Contrato contrato = contratoVigente();
+        ActualizarContratoVigenteRequest request = requestVigente();
+        request.setFechaFin(LocalDate.now().plusDays(15));
+        ContratoResponse response = new ContratoResponse();
+        when(contratoRepository.findContratoVigenteByEmpleadoId(eq(EMPLEADO_ID), any(LocalDate.class)))
+                .thenReturn(Optional.of(contrato));
+        when(contratoRepository.existeSolapamientoContratosExceptoId(
+                eq(EMPLEADO_ID), eq(contrato.getId()), any(LocalDate.class), eq(request.getFechaFin())))
+                .thenReturn(false);
+        when(contratoRepository.save(same(contrato))).thenReturn(contrato);
+        when(mapper.toResponse(same(contrato))).thenReturn(response);
+
+        ContratoResponse resultado = contratoService.actualizarContratoVigente(EMPLEADO_ID, request);
+
+        assertThat(resultado).isSameAs(response);
+        verify(mapper).updateContrato(same(request), same(contrato));
+        verify(contratoRepository).save(same(contrato));
+        verify(authServiceClient, never()).deshabilitarUsuario(any(), any());
+    }
+
+    @Test
     void rechazaUnSolapamientoConOtroContrato() {
         Contrato contrato = contratoVigente();
         when(contratoRepository.findContratoVigenteByEmpleadoId(eq(EMPLEADO_ID), any(LocalDate.class)))

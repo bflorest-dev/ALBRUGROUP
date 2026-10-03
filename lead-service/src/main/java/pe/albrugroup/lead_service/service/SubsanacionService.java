@@ -53,6 +53,7 @@ public class SubsanacionService {
     private final CalendarioFacturacionPostventaService calendarioService;
     private final LeadService leadService;
     private final LeadSeguimientoService leadSeguimientoService;
+    private final ZonaService zonaService;
     private final OrigenRepository origenRepository;
     private final LeadMapper leadMapper;
     private final LeadRealtimeNotifier realtimeNotifier;
@@ -405,6 +406,7 @@ public class SubsanacionService {
         lead.setDireccion(direccion);
         lead.setPlan(contexto.plan());
         lead.setProveedor(contexto.plan().getProveedor());
+        lead.setZona(zonaService.resolverZonaGeografica(contexto.plan().getProveedor(), direccion));
         lead.setNumeroDocumentoTitularServicioSnapshot(datos.getNumeroDocumentoTitularServicio());
         lead.setDireccionSnapshot(direccion.getDireccion());
         lead.setNombrePlanSnapshot(contexto.plan().getNombre());

@@ -62,6 +62,8 @@ export class FinanceWorkspaceFacade {
   readonly rechargePeriod = signal<MetricsPeriodo>('dia');
   readonly rechargeDay = signal(financeCurrentDateValue());
   readonly rechargeUntil = signal<string | null>(null);
+  readonly rechargeProviderId = signal<number | null>(null);
+  readonly rechargeAccountId = signal<number | null>(null);
 
   readonly activeAccounts = computed(() => {
     const providerId = this.selectedProviderId();
@@ -69,6 +71,32 @@ export class FinanceWorkspaceFacade {
       .filter(a => a.activo !== false)
       .filter(a => providerId === null || a.idProveedor === providerId)
       .sort((a, b) => String(a.nombreCuenta ?? '').localeCompare(String(b.nombreCuenta ?? '')));
+  });
+
+  readonly rechargeProviderOptions = computed(() => [
+    { label: 'Todos', value: null },
+    ...this.providers()
+      .filter(p => p.activo !== false)
+      .sort((a, b) => String(a.nombre ?? '').localeCompare(String(b.nombre ?? '')))
+      .map(p => ({ label: String(p.nombre ?? 'Sin nombre'), value: p.id }))
+  ]);
+
+  readonly rechargeAccountOptions = computed(() => {
+    const providerId = this.rechargeProviderId();
+    return [
+      { label: 'Todas', value: null },
+      ...this.accounts()
+        .filter(a => a.activo !== false)
+        .filter(a => providerId === null || a.idProveedor === providerId)
+        .sort((a, b) => String(a.nombreCuenta ?? '').localeCompare(String(b.nombreCuenta ?? '')))
+        .map(a => ({ label: String(a.nombreCuenta ?? ''), value: a.id }))
+    ];
+  });
+
+  readonly filteredRecharges = computed(() => {
+    const accountId = this.rechargeAccountId();
+    if (accountId === null) return this.recharges();
+    return this.recharges().filter(r => r.idCuentaPublicitaria === accountId);
   });
 
   readonly rechargeForm = this.formBuilder.group({
@@ -116,7 +144,7 @@ export class FinanceWorkspaceFacade {
   readonly rechargeDailyRows = computed<{ fecha: string; total: number; cantidad: number }[]>(() => {
     if (!this.rechargeIsRange()) return [];
     const byDay = new Map<string, { total: number; cantidad: number }>();
-    for (const r of this.recharges()) {
+    for (const r of this.filteredRecharges()) {
       const day = String(r.fecha ?? '').slice(0, 10);
       const entry = byDay.get(day) ?? { total: 0, cantidad: 0 };
       entry.total += r.monto ?? 0;
@@ -409,12 +437,22 @@ export class FinanceWorkspaceFacade {
     await this.loadRecharges();
   }
 
+  async onRechargeProviderChange(idProveedor: number | null): Promise<void> {
+    this.rechargeProviderId.set(idProveedor);
+    this.rechargeAccountId.set(null);
+    await this.loadRecharges();
+  }
+
+  onRechargeAccountChange(idCuenta: number | null): void {
+    this.rechargeAccountId.set(idCuenta);
+  }
+
   async loadRecharges(): Promise<void> {
     this.isLoadingRecharges.set(true);
     try {
       const range = this.rechargeRange();
       const recharges = await firstValueFrom(
-        this.leadService.listarRecargas(range.desde, range.hasta, this.selectedProviderId())
+        this.leadService.listarRecargas(range.desde, range.hasta, this.rechargeProviderId())
       );
       this.recharges.set(recharges ?? []);
     } catch (error) {
@@ -435,7 +473,7 @@ export class FinanceWorkspaceFacade {
   }
 
   rechargeTotal(): number {
-    return this.recharges().reduce((sum, r) => sum + (r.monto ?? 0), 0);
+    return this.filteredRecharges().reduce((sum, r) => sum + (r.monto ?? 0), 0);
   }
 
   sanitizeInteger(): void {

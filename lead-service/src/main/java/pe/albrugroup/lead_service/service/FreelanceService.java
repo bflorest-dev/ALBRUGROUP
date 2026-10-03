@@ -52,6 +52,7 @@ public class FreelanceService {
     private final LeadMapper leadMapper;
     private final LeadService leadService;
     private final LeadSeguimientoService leadSeguimientoService;
+    private final ZonaService zonaService;
     private final LeadRealtimeNotifier realtimeNotifier;
     private final EntityManager entityManager;
 
@@ -372,6 +373,7 @@ public class FreelanceService {
         lead.setDireccion(direccion);
         lead.setPlan(plan);
         lead.setProveedor(plan.getProveedor());
+        lead.setZona(zonaService.resolverZonaGeografica(plan.getProveedor(), direccion));
         lead.setNumeroDocumentoTitularServicioSnapshot(datos.getNumeroDocumentoTitularServicio());
         lead.setDireccionSnapshot(direccion.getDireccion());
         lead.setNombrePlanSnapshot(plan.getNombre());

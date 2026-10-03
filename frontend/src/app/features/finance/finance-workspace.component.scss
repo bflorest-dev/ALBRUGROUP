@@ -554,8 +554,18 @@
   font: 0.75rem/1.3 'Spline Sans Mono', ui-monospace, monospace;
 }
 
-.finance-recharge-period {
+.finance-recharge-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
   padding: 0 0 0.75rem;
+}
+
+.finance-recharge-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 @media (max-width: 1050px) {

@@ -16,10 +16,12 @@ import java.util.List;
 public interface ZonaMapper {
 
     @Mapping(target = "activo", ignore = true)
+    @Mapping(target = "proveedor", ignore = true)
     Zona toEntity(ZonaRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "activo", ignore = true)
+    @Mapping(target = "proveedor", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateDatosZona(ZonaRequest request, @MappingTarget Zona entity);
@@ -30,5 +32,7 @@ public interface ZonaMapper {
     ZonaReglaResponse toResponse(ZonaRegla entity);
 
     @Mapping(target = "reglas", source = "reglas")
+    @Mapping(target = "idProveedor", source = "zona.proveedor.id")
+    @Mapping(target = "nombreProveedor", source = "zona.proveedor.nombre")
     ZonaResponse toResponse(Zona zona, List<ZonaReglaResponse> reglas);
 }

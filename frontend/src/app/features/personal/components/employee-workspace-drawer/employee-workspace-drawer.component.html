@@ -217,8 +217,8 @@
               <label class="form-field"><span>Seguro de salud</span><select formControlName="seguroSalud">@for (option of seguroSaludOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
               <label class="form-field"><span>Sistema de pensiones</span><select formControlName="sistemaPensiones">@for (option of sistemaPensionesOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
             }
-            <label class="check-field form-field--wide"><input type="checkbox" [checked]="hasContractEndDate()" (change)="toggleContractEndDate($any($event.target).checked)" /><span>Este contrato tiene fecha de finalización definida</span></label>
-            @if (hasContractEndDate()) { <label class="form-field form-field--wide"><span>Fecha de finalización</span><input type="date" formControlName="fechaFin" /></label> }
+            <label class="check-field form-field--wide"><input type="checkbox" [checked]="hasContractEndDate()" (change)="toggleContractEndDate($any($event.target).checked)" /><span>{{ isEditingContract() ? 'Programar fecha de finalización del contrato' : 'Este contrato tiene fecha de finalización definida' }}</span></label>
+            @if (hasContractEndDate()) { <label class="form-field form-field--wide"><span>Fecha de finalización</span><input type="date" formControlName="fechaFin" [min]="isEditingContract() ? today() : contractForm.controls.fechaInicio.value" /></label> }
           </form>
         </section>
       } @else if (subview() === 'cerrar-contrato') {

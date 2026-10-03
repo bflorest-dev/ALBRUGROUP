@@ -122,6 +122,14 @@ export class FinanceWorkspaceComponent implements OnInit {
     void this.facade.onRechargeRangeChange(value);
   }
 
+  protected onRechargeProviderChange(value: number | null): void {
+    void this.facade.onRechargeProviderChange(value);
+  }
+
+  protected onRechargeAccountChange(value: number | null): void {
+    this.facade.onRechargeAccountChange(value);
+  }
+
   protected isEditableSnapshot(row: SnapshotFinanceRow, last: boolean): boolean {
     return row.id !== null && row.id !== undefined && (last || this.facade.historyRowsAreDailyClosures());
   }

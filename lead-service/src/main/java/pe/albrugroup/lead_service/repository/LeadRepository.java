@@ -2561,6 +2561,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN FETCH c.proveedor
             LEFT JOIN FETCH l.datosPreventa
             LEFT JOIN FETCH l.direccion
+            LEFT JOIN FETCH l.zona
             LEFT JOIN FETCH l.plan
             LEFT JOIN FETCH l.plan.proveedor
             LEFT JOIN FETCH l.plan.internet
@@ -2593,6 +2594,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN FETCH c.proveedor
             LEFT JOIN FETCH l.datosPreventa
             LEFT JOIN FETCH l.direccion
+            LEFT JOIN FETCH l.zona
             LEFT JOIN FETCH l.plan
             LEFT JOIN FETCH l.plan.proveedor
             LEFT JOIN FETCH l.plan.internet
@@ -2623,6 +2625,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN FETCH c.proveedor
             LEFT JOIN FETCH l.datosPreventa
             LEFT JOIN FETCH l.direccion
+            LEFT JOIN FETCH l.zona
             LEFT JOIN FETCH l.plan
             LEFT JOIN FETCH l.plan.proveedor
             LEFT JOIN FETCH l.plan.internet

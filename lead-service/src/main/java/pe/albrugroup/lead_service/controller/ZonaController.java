@@ -35,8 +35,9 @@ public class ZonaController {
     }
 
     @GetMapping @PreAuthorize("hasAuthority('READ_ZONAS')")
-    public ResponseEntity<List<ZonaResponse>> listarZonas(@RequestParam(required = false) Boolean activo) {
-        return ResponseEntity.ok(zonaService.listarZonas(activo));
+    public ResponseEntity<List<ZonaResponse>> listarZonas(@RequestParam(required = false) Long idProveedor,
+                                                          @RequestParam(required = false) Boolean activo) {
+        return ResponseEntity.ok(zonaService.listarZonas(idProveedor, activo));
     }
 
     @PatchMapping("/{idZona}/estado") @PreAuthorize("hasAuthority('UPDATE_ZONAS')")

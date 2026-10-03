@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.entity.request;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,6 +22,12 @@ public class ZonaRequest {
 
     @NotBlank
     private String nombre;
+
+    @NotNull
+    private Long idProveedor;
+
+    @Builder.Default
+    private boolean esGeografica = false;
 
     @NotEmpty @Valid @Builder.Default
     private List<ZonaReglaRequest> reglas = new ArrayList<>();

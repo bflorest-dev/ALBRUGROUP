@@ -137,6 +137,10 @@ public class Lead {
     // Solo en caso de Preventa Valida
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_zona")
+    private Zona zona;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_plan")
     private Plan plan;
 

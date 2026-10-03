@@ -335,14 +335,41 @@
       <span>{{ facade.rechargeRangeLabel() }} · Total: {{ facade.money(facade.rechargeTotal()) }}</span>
     </div>
   </ng-template>
-  <div class="finance-recharge-period">
-    <app-period-selector
-      [periodo]="facade.rechargePeriod()"
-      [dia]="facade.rechargeDay()"
-      [hasta]="facade.rechargeUntil()"
-      (periodoChange)="onRechargePeriodChange($event)"
-      (rangoChange)="onRechargeRangeChange($event)"
-    />
+  <div class="finance-recharge-filters">
+    <div class="finance-recharge-filter">
+      <span class="finance-control-label">Proveedor</span>
+      <p-selectButton
+        [options]="facade.rechargeProviderOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+        [ngModel]="facade.rechargeProviderId()"
+        [ngModelOptions]="{ standalone: true }"
+        (onChange)="onRechargeProviderChange($event.value)"
+      />
+    </div>
+    <div class="finance-recharge-filter">
+      <span class="finance-control-label">Cuenta</span>
+      <p-select
+        [options]="facade.rechargeAccountOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="facade.rechargeAccountId()"
+        [ngModelOptions]="{ standalone: true }"
+        (onChange)="onRechargeAccountChange($event.value)"
+        appendTo="body"
+      />
+    </div>
+    <div class="finance-recharge-filter">
+      <span class="finance-control-label">Periodo</span>
+      <app-period-selector
+        [periodo]="facade.rechargePeriod()"
+        [dia]="facade.rechargeDay()"
+        [hasta]="facade.rechargeUntil()"
+        (periodoChange)="onRechargePeriodChange($event)"
+        (rangoChange)="onRechargeRangeChange($event)"
+      />
+    </div>
   </div>
   <div class="finance-history-scroll">
     @if (facade.rechargeIsRange()) {
@@ -366,7 +393,7 @@
         </ng-template>
       </p-table>
     } @else {
-      <p-table [value]="facade.recharges()" [loading]="facade.isLoadingRecharges()" [scrollable]="true" styleClass="finance-table finance-table--history" [tableStyle]="{ 'min-width': '640px' }">
+      <p-table [value]="facade.filteredRecharges()" [loading]="facade.isLoadingRecharges()" [scrollable]="true" styleClass="finance-table finance-table--history" [tableStyle]="{ 'min-width': '640px' }">
         <ng-template #header>
           <tr>
             <th>Fecha y hora</th>

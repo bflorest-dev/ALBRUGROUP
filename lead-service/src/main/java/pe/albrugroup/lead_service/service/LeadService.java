@@ -215,6 +215,7 @@ public class LeadService {
     private final ProveedorRepository proveedorRepository;
     private final OrigenRepository origenRepository;
     private final LeadSeguimientoService leadSeguimientoService;
+    private final ZonaService zonaService;
 
     // La bandeja de Agendados GTR ya no cuelga de una tipi: el concepto vive en el comportamiento, que
     // cada equipo marca en las subtipis que correspondan (hoy, varias de NO DESEA).
@@ -2534,6 +2535,9 @@ public class LeadService {
 
         lead.setDireccionSnapshot(direccion.getDireccion());
         lead.setDireccion(direccion);
+        if (lead.getProveedor() != null) {
+            lead.setZona(zonaService.resolverZonaGeografica(lead.getProveedor(), direccion));
+        }
         moverAEnGestionSiAplica(lead);
         return leadRepository.save(lead);
     }
@@ -2557,6 +2561,7 @@ public class LeadService {
         lead.setPrecioPlanSnapshot(plan == null ? null : plan.getPrecio());
         if (plan != null && plan.getProveedor() != null) {
             lead.setProveedor(plan.getProveedor());
+            lead.setZona(zonaService.resolverZonaGeografica(plan.getProveedor(), lead.getDireccion()));
         }
 
         lead.setPromocionInterna(promocionInterna);
@@ -5617,6 +5622,8 @@ public class LeadService {
                 resumenVenta == null ? null : resumenVenta.getUltimaCodigoSubtipificacion(),
                 resumenPreventa == null ? null : resumenPreventa.getNombreAsesorMerito(),
                 resumenVenta == null ? null : resumenVenta.getNombreAsesorMerito(),
+                lead.getZona() == null ? null : lead.getZona().getId(),
+                lead.getZona() == null ? null : lead.getZona().getNombre(),
                 lead.getPlan() == null ? null : lead.getPlan().getId(),
                 lead.getNombrePlanSnapshot(),
                 lead.getNombreProveedorSnapshot(),

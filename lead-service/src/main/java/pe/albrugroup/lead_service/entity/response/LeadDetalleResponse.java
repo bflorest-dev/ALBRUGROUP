@@ -85,6 +85,8 @@ public class LeadDetalleResponse {
     private String subtipificacionActual;
     private String nombreAsesorMeritoPreventa;
     private String nombreAsesorMeritoVenta;
+    private Long idZona;
+    private String nombreZona;
     private Long idPlan;
     private String nombrePlan;
     private String nombreProveedorPlan;

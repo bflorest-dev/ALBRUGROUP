@@ -14,6 +14,14 @@ public interface ZonaRepository extends JpaRepository<Zona, Long> {
 
     Optional<Zona> findByIdAndActivoTrue(Long id);
 
-    @Query("SELECT z FROM Zona z WHERE (:activo IS NULL OR z.activo = :activo) ORDER BY z.nombre ASC")
-    List<Zona> listarPorActivo(@Param("activo") Boolean activo);
+    @Query("""
+        SELECT z FROM Zona z
+        WHERE (:idProveedor IS NULL OR z.proveedor.id = :idProveedor)
+          AND (:activo IS NULL OR z.activo = :activo)
+        ORDER BY z.nombre ASC
+        """)
+    List<Zona> listarPorProveedorYActivo(@Param("idProveedor") Long idProveedor,
+                                         @Param("activo") Boolean activo);
+
+    List<Zona> findByProveedorIdAndEsGeograficaTrueAndActivoTrue(Long proveedorId);
 }
