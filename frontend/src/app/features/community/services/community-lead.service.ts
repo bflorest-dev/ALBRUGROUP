@@ -232,6 +232,7 @@ export type ZonaReglaResponse = {
   id?: number;
   nivelGeografico: NivelGeografico;
   geoId: number;
+  geoNombre?: string;
   criterio: CriterioZona;
 };
 

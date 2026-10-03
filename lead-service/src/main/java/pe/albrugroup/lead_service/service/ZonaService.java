@@ -17,6 +17,7 @@ import pe.albrugroup.lead_service.entity.enums.CriterioZona;
 import pe.albrugroup.lead_service.entity.enums.NivelGeografico;
 import pe.albrugroup.lead_service.entity.request.ZonaReglaRequest;
 import pe.albrugroup.lead_service.entity.request.ZonaRequest;
+import pe.albrugroup.lead_service.entity.response.ZonaReglaResponse;
 import pe.albrugroup.lead_service.entity.response.ZonaResponse;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.exception.BadRequestException;
@@ -102,8 +103,11 @@ public class ZonaService {
 
         Zona zona = zonaRepository.findById(idZona)
                 .orElseThrow(() -> new NotFoundException(Zona.class, idZona));
+        Proveedor proveedor = proveedorRepository.findById(request.getIdProveedor())
+                .orElseThrow(() -> new NotFoundException(Proveedor.class, request.getIdProveedor()));
 
         mapper.updateDatosZona(request, zona);
+        zona.setProveedor(proveedor);
         Zona zonaActualizada = zonaRepository.save(zona);
 
         zonaReglaRepository.deleteAllByZonaId(zonaActualizada.getId());
@@ -204,6 +208,38 @@ public class ZonaService {
     }
 
     private ZonaResponse construirRespuesta(Zona zona, List<ZonaRegla> reglas) {
-        return mapper.toResponse(zona, reglas.stream().map(mapper::toResponse).toList());
+        Map<String, String> labels = construirLabelsUbigeo(reglas);
+        return mapper.toResponse(zona, reglas.stream().map(regla -> {
+            ZonaReglaResponse response = mapper.toResponse(regla);
+            response.setGeoNombre(labels.get(ubigeoKey(regla.getNivelGeografico(), regla.getGeoId())));
+            return response;
+        }).toList());
+    }
+
+    private Map<String, String> construirLabelsUbigeo(List<ZonaRegla> reglas) {
+        Set<Long> departamentoIds = new HashSet<>();
+        Set<Long> provinciaIds = new HashSet<>();
+        Set<Long> distritoIds = new HashSet<>();
+
+        for (ZonaRegla regla : reglas) {
+            switch (regla.getNivelGeografico()) {
+                case DEPARTAMENTO -> departamentoIds.add(regla.getGeoId());
+                case PROVINCIA -> provinciaIds.add(regla.getGeoId());
+                case DISTRITO -> distritoIds.add(regla.getGeoId());
+            }
+        }
+
+        Map<String, String> labels = new HashMap<>();
+        departamentoRepository.findAllById(departamentoIds)
+                .forEach(item -> labels.put(ubigeoKey(NivelGeografico.DEPARTAMENTO, item.getId()), item.getNombre()));
+        provinciaRepository.findAllById(provinciaIds)
+                .forEach(item -> labels.put(ubigeoKey(NivelGeografico.PROVINCIA, item.getId()), item.getNombre()));
+        distritoRepository.findAllById(distritoIds)
+                .forEach(item -> labels.put(ubigeoKey(NivelGeografico.DISTRITO, item.getId()), item.getNombre()));
+        return labels;
+    }
+
+    private String ubigeoKey(NivelGeografico nivel, Long geoId) {
+        return nivel + ":" + geoId;
     }
 }

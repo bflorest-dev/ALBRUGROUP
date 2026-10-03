@@ -18,5 +18,6 @@ public class ZonaReglaResponse {
     private Long id;
     private NivelGeografico nivelGeografico;
     private Long geoId;
+    private String geoNombre;
     private CriterioZona criterio;
 }

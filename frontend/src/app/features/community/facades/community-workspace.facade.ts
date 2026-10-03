@@ -1323,13 +1323,14 @@ export class CommunityWorkspaceFacade {
       return;
     }
 
+    this.clearMessages();
     this.zoneDialogMode.set('create');
     this.activeZoneId.set(null);
     this.zoneForm.reset({ nombre: '', idProveedor: null, esGeografica: false });
     this.zoneRules.set([]);
     this.resetZoneRuleForm();
     this.zoneDialogOpen.set(true);
-    await this.ensureDepartamentosLoaded();
+    void this.ensureDepartamentosLoaded();
   }
 
   async openEditZone(zona: ZonaResponse): Promise<void> {
@@ -1337,13 +1338,14 @@ export class CommunityWorkspaceFacade {
       return;
     }
 
+    this.clearMessages();
     this.zoneDialogMode.set('edit');
     this.activeZoneId.set(zona.id);
     this.zoneForm.reset({ nombre: zona.nombre ?? '', idProveedor: zona.idProveedor ?? null, esGeografica: !!zona.esGeografica });
+    this.zoneRules.set((zona.reglas ?? []).map((regla) => ({ ...regla, label: this.zoneRuleLabel(regla) })));
     this.zoneDialogOpen.set(true);
     this.resetZoneRuleForm();
-    await this.ensureUbigeoDirectoryLoaded();
-    this.zoneRules.set((zona.reglas ?? []).map((regla) => ({ ...regla, label: this.zoneRuleLabel(regla) })));
+    void this.ensureDepartamentosLoaded();
   }
 
   closeZoneDialog(): void {
@@ -1609,6 +1611,9 @@ export class CommunityWorkspaceFacade {
   }
 
   private zoneRuleLabel(rule: Pick<ZonaReglaResponse, 'nivelGeografico' | 'geoId'>): string {
+    if ('geoNombre' in rule && typeof rule.geoNombre === 'string' && rule.geoNombre.trim()) {
+      return rule.geoNombre;
+    }
     return this.ubigeoLabels.get(`${rule.nivelGeografico}:${rule.geoId}`) ?? `${rule.nivelGeografico} #${rule.geoId}`;
   }
 
