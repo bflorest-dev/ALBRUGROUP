@@ -18,6 +18,7 @@ import { DateFieldComponent } from '../../../../shared/components/date-field/dat
 import { OrigenResponse } from '../../../admin/services/base-leads.service';
 import { CampoConfigItem, UbigeoItem } from '../../../../shared/models/preventa/preventa.models';
 import {
+  SubsanacionImpacto,
   SubsanacionModo,
   SubsanacionOpciones,
   SubsanacionPreparacion,
@@ -128,7 +129,7 @@ export class SubsanacionDrawerComponent implements OnInit {
   readonly cargandoUbigeoDomicilio = signal(false);
   readonly errorUbigeoNacimiento = signal<string | null>(null);
   readonly errorUbigeoDomicilio = signal<string | null>(null);
-  readonly duplicado = signal<{ idLead: number; titular?: string | null } | null>(null);
+  readonly duplicados = signal<SubsanacionImpacto[]>([]);
   readonly confirmacionAbierta = signal(false);
   readonly confirmarContacto = signal(false);
   readonly confirmarPostventa = signal(false);
@@ -140,7 +141,7 @@ export class SubsanacionDrawerComponent implements OnInit {
   private domicilioResolveSeq = 0;
   private departamentosPromise: Promise<UbigeoItem[]> | null = null;
 
-  readonly pasos = ['Identidad', 'Fechas', 'Expediente', 'Flujo ideal', 'Revisión'];
+  readonly pasos = ['Identidad', 'Contexto', 'Expediente', 'Flujo ideal', 'Revisión'];
   readonly tiposDocumento = ['DNI', 'CE', 'RUC'];
   readonly parentescos = ['TITULAR', 'MADRE', 'PADRE', 'HERMANO_A', 'TIO_A', 'CONOCIDO'];
   readonly tiposDomicilio = ['HOGAR', 'MULTIFAMILIAR', 'CONDOMINIO_EDIFICIO', 'CONDOMINIO_EDIFICIO_NO_HABILITADO'];
@@ -456,17 +457,16 @@ export class SubsanacionDrawerComponent implements OnInit {
       .subscribe({
         next: (leads) => {
           const prefijoActual = limpiarPrefijo(raw.prefijo);
-          const exacto = leads.find((item) => item.lead === raw.lead && limpiarPrefijo(item.prefijo) === prefijoActual);
-          this.duplicado.set(exacto ? { idLead: exacto.idLead, titular: exacto.titular } : null);
-          if (!exacto && avanzar) this.paso.set(1);
+          const encontrados = leads.filter((item) => item.lead === raw.lead && limpiarPrefijo(item.prefijo) === prefijoActual);
+          this.duplicados.set(encontrados);
+          if (!encontrados.length && avanzar) this.paso.set(1);
         },
         error: () => this.error.set('No se pudo verificar el teléfono. Inténtalo nuevamente.')
       });
   }
 
-  usarLeadExistente(): void {
-    const duplicado = this.duplicado();
-    if (duplicado) this.cambiarAExistente.emit(duplicado.idLead);
+  usarLeadExistente(idLead: number): void {
+    this.cambiarAExistente.emit(idLead);
   }
 
   cambiarTipificacionVenta(): void {
@@ -911,7 +911,21 @@ export class SubsanacionDrawerComponent implements OnInit {
     if (this.paso() === 0) return this.validarGrupo(this.identidadForm, 'Completa una identidad válida.', this.labelsIdentidad());
     if (this.paso() === 1) {
       this.validarFechasCliente();
-      return this.validarGrupo(this.fechasForm, 'Revisa el rango de las fechas históricas.', this.labelsFechas());
+      const equipo = this.comercialForm.controls.idEquipo;
+      const proveedor = this.comercialForm.controls.idProveedor;
+      equipo.markAsTouched();
+      proveedor.markAsTouched();
+      this.fechasForm.markAllAsTouched();
+      const detalles = [
+        ...this.camposInvalidos(this.fechasForm, this.labelsFechas(), 'Fechas'),
+        ...(!equipo.value ? ['Contexto: Equipo — obligatorio'] : []),
+        ...(!proveedor.value ? ['Contexto: Proveedor — obligatorio'] : [])
+      ];
+      if (detalles.length) {
+        this.registrarValidacion('Selecciona equipo, proveedor y revisa las fechas.', detalles);
+        return false;
+      }
+      return true;
     }
     if (this.paso() === 2) {
       const ubicacionNacimiento = this.validarUbigeoNacimientoCompleto();
@@ -1053,6 +1067,12 @@ export class SubsanacionDrawerComponent implements OnInit {
       sot: 'SOT',
       customerId: 'Customer ID'
     };
+  }
+
+  campoConfigVisible(campo: string): boolean {
+    const config = this.camposConfig();
+    if (!config.length) return true;
+    return config.some((item) => item.campo === campo && item.visible);
   }
 
   private tieneProcesoEnCurso(): boolean {

@@ -17,6 +17,8 @@ public interface LeadSeguimientoRepository extends JpaRepository<LeadSeguimiento
 
     Optional<LeadSeguimiento> findByIdLead(Long idLead);
 
+    void deleteByIdLead(Long idLead);
+
     @Query("""
             SELECT r.idAsesorMerito, COUNT(DISTINCT l.id)
             FROM LeadSeguimiento s

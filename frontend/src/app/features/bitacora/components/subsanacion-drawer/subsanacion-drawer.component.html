@@ -69,11 +69,25 @@
           @if (verificandoTelefono()) {
             <div class="inline-status"><span class="spinner"></span>Verificando que el teléfono no esté registrado…</div>
           }
-          @if (duplicado(); as existente) {
-            <div class="warning-block">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
-              <div><b>Este teléfono ya tiene un expediente.</b><span>{{ existente.titular || 'Titular no registrado' }}</span></div>
-              <button type="button" (click)="usarLeadExistente()">Usar este expediente y continuar</button>
+          @if (duplicados().length) {
+            <div class="warning-block duplicados-block">
+              <div class="duplicados-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+                <b>{{ duplicados().length === 1 ? 'Este teléfono ya tiene un expediente registrado.' : 'Este teléfono tiene ' + duplicados().length + ' expedientes registrados. Elige cuál subsanar.' }}</b>
+              </div>
+              @for (dup of duplicados(); track dup.idLead) {
+                <div class="duplicado-item">
+                  <div class="duplicado-info">
+                    <span class="duplicado-titular">{{ dup.titular || 'Sin nombre' }}</span>
+                    <span class="duplicado-meta">
+                      <b>{{ dup.proveedor || '—' }}</b>
+                      @if (dup.campana) { · {{ dup.campana }} }
+                      · Etapa: {{ dup.etapa || '—' }}
+                    </span>
+                  </div>
+                  <button type="button" (click)="usarLeadExistente(dup.idLead)">Usar este expediente</button>
+                </div>
+              }
             </div>
           }
 
@@ -90,12 +104,22 @@
       }
 
       @if (paso() === 1) {
-        <section class="flow-section" [formGroup]="fechasForm">
+        <section class="flow-section">
           <div class="section-heading">
-            <h3>Fechas históricas</h3>
-            <p>Estas fechas determinan las métricas. La ejecución real quedará separada en el acta.</p>
+            <h3>Contexto comercial y fechas históricas</h3>
+            <p>El proveedor determina los campos del expediente. Las fechas fijan las métricas históricas.</p>
           </div>
-          <div class="field-grid two">
+          <div class="subsection" [formGroup]="comercialForm">
+            <h4>Equipo y proveedor</h4>
+            <div class="field-grid two">
+              <label class="field"><span>Equipo</span><select formControlName="idEquipo" (change)="cambiarEquipo()"><option [ngValue]="null">Selecciona</option>@for (item of equipos(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+              <label class="field"><span>Proveedor</span><select formControlName="idProveedor" [attr.disabled]="!opciones()?.proveedores?.length ? true : null" (change)="cambiarProveedor()"><option [ngValue]="null">{{ opciones() ? 'Selecciona' : 'Selecciona equipo primero' }}</option>@for (item of opciones()?.proveedores ?? []; track item.id) { <option [ngValue]="item.id">{{ item.nombre }}{{ item.activo ? '' : ' · histórico' }}</option> }</select></label>
+            </div>
+            @if (cargandoOpciones()) { <div class="inline-status"><span class="spinner"></span>Cargando proveedores…</div> }
+          </div>
+          <div class="subsection" [formGroup]="fechasForm">
+            <h4>Fechas históricas</h4>
+            <div class="field-grid two">
             <div class="historical-date-field">
               <app-date-field
                 class="subsanacion-date-field"
@@ -137,6 +161,7 @@
             <div><time class="mono">09:02</time><span>Asignación</span><small>Administrador responsable</small></div>
             <div><time class="mono">09:03</time><span>Preventa completa</span><small>Salida a VENTA</small></div>
             <div><time class="mono">09:04</time><span>Venta instalada</span><small>Ingreso a POSTVENTA</small></div>
+          </div>
           </div>
         </section>
       }
@@ -183,10 +208,18 @@
                   </div>
                 }
               </div>
-              <label class="field"><span>Nombre de la madre</span><input formControlName="nombreMadre" maxlength="120" /></label>
-              <label class="field"><span>Nombre del padre</span><input formControlName="nombrePadre" maxlength="120" /></label>
-              <label class="field"><span>Doc. titular del celular</span><input class="mono" formControlName="numeroDocumentoTitularCelularRegistro" inputmode="numeric" maxlength="12" /></label>
-              <label class="field"><span>Nombre titular del celular</span><input formControlName="nombreTitularCelularRegistro" maxlength="120" /></label>
+              @if (campoConfigVisible('NOMBRE_MADRE')) {
+                <label class="field"><span>Nombre de la madre</span><input formControlName="nombreMadre" maxlength="120" /></label>
+              }
+              @if (campoConfigVisible('NOMBRE_PADRE')) {
+                <label class="field"><span>Nombre del padre</span><input formControlName="nombrePadre" maxlength="120" /></label>
+              }
+              @if (campoConfigVisible('DOC_TITULAR_CELULAR')) {
+                <label class="field"><span>Doc. titular del celular</span><input class="mono" formControlName="numeroDocumentoTitularCelularRegistro" inputmode="numeric" maxlength="12" /></label>
+              }
+              @if (campoConfigVisible('NOMBRE_TITULAR_CELULAR')) {
+                <label class="field"><span>Nombre titular del celular</span><input formControlName="nombreTitularCelularRegistro" maxlength="120" /></label>
+              }
             </div>
           </div>
           <div class="subsection" [formGroup]="direccionForm">
@@ -219,7 +252,9 @@
               <label class="field"><span>Lote</span><input formControlName="lote" /></label>
               <label class="field"><span>Edificio</span><input formControlName="nombreEdificio" /></label>
               <label class="field"><span>Condominio</span><input formControlName="nombreCondominio" /></label>
-              <label class="field"><span>Plano</span><input formControlName="plano" /></label>
+              @if (campoConfigVisible('PLANO')) {
+                <label class="field"><span>Plano</span><input formControlName="plano" /></label>
+              }
               <label class="field"><span>Piso / interior</span><span class="field-pair"><input formControlName="piso" placeholder="Piso" /><input formControlName="interior" placeholder="Interior" /></span></label>
             </div>
           </div>
@@ -233,9 +268,7 @@
             <p>Las opciones históricas aparecen identificadas. Los planes fuera de vigencia permanecen deshabilitados.</p>
           </div>
           <div class="field-grid two">
-            <label class="field"><span>Equipo</span><select formControlName="idEquipo" (change)="cambiarEquipo()"><option [ngValue]="null">Selecciona</option>@for (item of equipos(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
             <label class="field"><span>Origen</span><select formControlName="idOrigen"><option [ngValue]="null">Selecciona</option>@for (item of origenes(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
-            <label class="field"><span>Proveedor</span><select formControlName="idProveedor" (change)="cambiarProveedor()"><option [ngValue]="null">Selecciona</option>@for (item of opciones()?.proveedores ?? []; track item.id) { <option [ngValue]="item.id">{{ item.nombre }}{{ item.activo ? '' : ' · histórico' }}</option> }</select></label>
             <label class="field"><span>Campaña</span><select formControlName="idCampana"><option [ngValue]="null">Selecciona</option>@for (item of opciones()?.campanas ?? []; track item.id) { <option [ngValue]="item.id">{{ item.nombre }}{{ item.activo ? '' : ' · histórica' }}</option> }</select></label>
             <label class="field span2"><span>Plan</span><select formControlName="idPlan" (change)="validarPlanSeleccionado()"><option [ngValue]="null">Selecciona</option>@for (item of opciones()?.planes ?? []; track item.id) { <option [ngValue]="item.id" [disabled]="!item.compatibleHistoricamente">{{ item.nombre }} · S/ {{ item.precio ?? 0 }}{{ item.activo ? '' : ' · histórico' }}{{ item.compatibleHistoricamente ? '' : ' · fuera de vigencia' }}</option> }</select></label>
             <label class="field span2"><span>Tipificación PREVENTA</span><select formControlName="preventa"><option value="">Selecciona la matriz de cierre</option>@for (item of opciones()?.preventa ?? []; track item.idSubtipificacion) { <option [value]="matrizKey(item)">{{ opcionMatriz(item) }}</option> }</select></label>

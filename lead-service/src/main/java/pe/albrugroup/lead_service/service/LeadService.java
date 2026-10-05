@@ -2444,6 +2444,7 @@ public class LeadService {
         eventoRepository.deleteByIdLead(idLead);
         leadEtapaResumenRepository.deleteByIdLead(idLead);
         leadMeritoCorreccionRepository.deleteByIdLead(idLead);
+        leadSeguimientoRepository.deleteByIdLead(idLead);
         leadRepository.delete(lead);
         leadRepository.flush();
 

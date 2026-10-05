@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, Input, OnDestroy, forwardRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
@@ -36,8 +37,10 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
   protected isDisabled = false;
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly document = inject(DOCUMENT);
   private dateInput: HTMLInputElement | null = null;
   private readonly removeListeners: Array<() => void> = [];
+  private skipNextBlurSync = false;
   private onChange: (value: string) => void = () => {};
   private onTouched: () => void = () => {};
 
@@ -48,9 +51,11 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
     this.dateInput.maxLength = 10;
     this.dateInput.addEventListener('keydown', this.onDateKeydown, true);
     this.dateInput.addEventListener('input', this.onDateInput, true);
+    this.document.addEventListener('pointerdown', this.onDocumentPointerDown, true);
     this.removeListeners.push(
       () => this.dateInput?.removeEventListener('keydown', this.onDateKeydown, true),
-      () => this.dateInput?.removeEventListener('input', this.onDateInput, true)
+      () => this.dateInput?.removeEventListener('input', this.onDateInput, true),
+      () => this.document.removeEventListener('pointerdown', this.onDocumentPointerDown, true)
     );
   }
 
@@ -100,6 +105,11 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
   }
 
   protected onInputBlur(): void {
+    if (this.skipNextBlurSync) {
+      this.onTouched();
+      return;
+    }
+
     const manualValue = this.dateInput?.value.trim() ?? '';
     if (!manualValue) {
       this.selectedDate = null;
@@ -241,6 +251,27 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
       this.commitDate(parsed);
     } else {
       this.onChange('');
+    }
+  };
+
+  private readonly onDocumentPointerDown = (event: PointerEvent): void => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      this.skipNextBlurSync = false;
+      return;
+    }
+
+    const panelClass = this.panelStyleClass
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((className) => `.${CSS.escape(className)}`)
+      .join('');
+    const isCalendarPanelClick = !!panelClass && !!target.closest(panelClass);
+    this.skipNextBlurSync = isCalendarPanelClick;
+    if (isCalendarPanelClick) {
+      window.setTimeout(() => {
+        this.skipNextBlurSync = false;
+      });
     }
   };
 

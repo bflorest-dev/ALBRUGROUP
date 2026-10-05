@@ -384,6 +384,51 @@
 
 .flow-error { margin: 0 28px 22px; }
 
+.duplicados-block {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+}
+.duplicados-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 14px;
+  svg { width: 18px; height: 18px; flex: 0 0 auto; }
+  b { font-size: 12px; line-height: 1.4; }
+}
+.duplicado-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--sub-danger) 22%, var(--sub-line));
+
+  button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+.duplicado-info {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.duplicado-titular {
+  font-size: 12.5px !important;
+  font-weight: 700;
+  color: var(--sub-ink) !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.duplicado-meta {
+  font-size: 11px !important;
+  color: var(--sub-muted) !important;
+}
+
 .impact-strip,
 .review-ledger,
 .result-ledger {
