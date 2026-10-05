@@ -428,7 +428,7 @@ export class RrhhAsistenciaFacade {
 
   // ── Form del horario (mismo shape que admin)
   readonly horarioForm = this.fb.nonNullable.group({
-    fechaInicio: [this.getTomorrow(), [Validators.required]],
+    fechaInicio: ['', [Validators.required]],
     compensable: ['true', [Validators.required]],
     horaEntrada: ['09:00', [Validators.required]],
     horaSalida: ['18:00', [Validators.required]],
@@ -654,6 +654,9 @@ export class RrhhAsistenciaFacade {
 
   /** Precarga una versión del historial en el editor de horario (el guardado crea una nueva vigencia). */
   loadHorarioIntoForm(horario: HorarioResponse): void {
+    this.drawerHorario.set(horario);
+    this.scheduleChangeErrorMessage.set('');
+    this.scheduleChangeSuccessMessage.set('');
     this.populateScheduleForm(horario, this.drawerContrato()?.modalidad ?? 'FULL_TIME');
   }
 
@@ -744,7 +747,7 @@ export class RrhhAsistenciaFacade {
     }
 
     const formFechaInicio = this.horarioForm.controls.fechaInicio.getRawValue();
-    if (formFechaInicio < this.getToday()) {
+    if (formFechaInicio < this.getToday() && formFechaInicio !== horario.fechaInicio) {
       this.scheduleChangeErrorMessage.set(
         'La nueva fecha de inicio no puede ser anterior a hoy.'
       );
@@ -754,26 +757,22 @@ export class RrhhAsistenciaFacade {
     this.scheduleChangeErrorMessage.set('');
     this.scheduleChangeSuccessMessage.set('');
     this.isSubmittingHorario.set(true);
+    const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
 
     try {
-      const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
-
       if (horario.fechaInicio > this.getToday() && formFechaInicio !== horario.fechaInicio) {
-        await this.runCorregir(empleado.idEmpleado, horario.id, baseRequest);
+        await this.runCorregir(empleado.idEmpleado, horario.id, baseRequest, true);
         return;
       }
 
-      const horarioEnFecha = await firstValueFrom(
-        this.service
-          .getHorarioVigente(empleado.idEmpleado, formFechaInicio)
-          .pipe(timeout(REQUEST_TIMEOUT_MS))
+      await this.runCorregir(
+        empleado.idEmpleado,
+        horario.id,
+        baseRequest,
+        formFechaInicio !== horario.fechaInicio
       );
-
-      if (horarioEnFecha.fechaInicio === formFechaInicio) {
-        await this.runCorregir(empleado.idEmpleado, horarioEnFecha.id, baseRequest);
-      } else {
-        await this.runReemplazar(empleado.idEmpleado, horarioEnFecha.id, baseRequest);
-      }
+    } catch (error) {
+      this.scheduleChangeErrorMessage.set(this.extractErrorMessage(error, 'No se pudo guardar el horario.'));
     } finally {
       this.isSubmittingHorario.set(false);
     }
@@ -985,14 +984,17 @@ export class RrhhAsistenciaFacade {
   private async runCorregir(
     idEmpleado: number,
     idHorario: number,
-    baseRequest: { modalidad: string; fechaInicio: string; compensable: boolean; detalles: any[] }
+    baseRequest: { modalidad: string; fechaInicio: string; compensable: boolean; detalles: any[] },
+    moverFechaInicio = false
   ): Promise<void> {
     const patchRequest: CorregirHorarioRequest = {
       modalidad: baseRequest.modalidad,
-      fechaInicio: baseRequest.fechaInicio,
       compensable: baseRequest.compensable,
       detalles: baseRequest.detalles
     };
+    if (moverFechaInicio) {
+      patchRequest.fechaInicio = baseRequest.fechaInicio;
+    }
     try {
       const horario = await firstValueFrom(
         this.service.corregirHorario(idHorario, patchRequest).pipe(timeout(REQUEST_TIMEOUT_MS))
@@ -1252,7 +1254,7 @@ export class RrhhAsistenciaFacade {
     const first = laborables[0] ?? horario.detalles[0];
 
     this.horarioForm.reset({
-      fechaInicio: this.getTomorrow(),
+      fechaInicio: horario.fechaInicio,
       compensable: String(horario.compensable ?? true),
       horaEntrada: first?.horaEntrada ?? '09:00',
       horaSalida: first?.horaSalida ?? '18:00',
@@ -1416,7 +1418,10 @@ export class RrhhAsistenciaFacade {
 
   private extractErrorMessage(error: unknown, fallback: string): string {
     const http = error as HttpErrorResponse;
-    const apiMessage = (http?.error as { message?: string } | undefined)?.message;
+    const apiError = this.parseApiErrorBody(http?.error);
+    const apiMessage = typeof apiError?.message === 'string' && apiError.message.trim()
+      ? apiError.message.trim()
+      : null;
 
     if (http?.status === 401) {
       return 'Tu sesion vencio. Vuelve a ingresar para revisar la asistencia.';
@@ -1427,6 +1432,19 @@ export class RrhhAsistenciaFacade {
     }
 
     return apiMessage || fallback;
+  }
+
+  private parseApiErrorBody(errorBody: unknown): { message?: string } | null {
+    if (typeof errorBody === 'string') {
+      try {
+        const parsed = JSON.parse(errorBody);
+        return typeof parsed === 'object' && parsed !== null ? parsed as { message?: string } : null;
+      } catch {
+        return null;
+      }
+    }
+
+    return typeof errorBody === 'object' && errorBody !== null ? errorBody as { message?: string } : null;
   }
 
   private ensureCanMutate(): boolean {

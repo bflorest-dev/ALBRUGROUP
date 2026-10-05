@@ -97,17 +97,11 @@ public class HorarioService implements IHorario {
                 .filter(horario -> horario.getFechaInicio().isEqual(request.getFechaInicio()))
                 .toList();
 
-        if (mismaFechaInicio.size() > 1) {
+        if (!mismaFechaInicio.isEmpty()) {
             throw new ConflictException(
-                    "Existen varios horarios iniciados en la misma fecha. Requiere correccion administrativa",
+                    "Ya existe un horario que empieza en la fecha indicada",
                     request.getFechaInicio()
             );
-        }
-
-        if (mismaFechaInicio.size() == 1) {
-            Horario horarioBase = mismaFechaInicio.get(0);
-            cerrarHorariosAnterioresSolapados(solapados, horarioBase.getId(), request.getFechaInicio());
-            return corregirHorarioBaseMismaFecha(horarioBase, request);
         }
 
         cerrarHorariosAnterioresSolapados(solapados, null, request.getFechaInicio());

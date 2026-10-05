@@ -168,15 +168,8 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     this.refresh();
     this.selected.set(null);
     this.resetBufferToPattern();
-    // Fecha: nunca antes del mínimo (hoy por defecto). Si el horario vigente arrancó en el pasado, el
-    // prefill se "adelanta" al mínimo para que "dejar la fecha como está" signifique aplicar desde hoy.
     const iso = toIsoDate(String(this.horarioForm.get('fechaInicio')?.value ?? ''));
-    const min = this.minAttr();
-    const clamped = min && iso && iso < min ? min : iso;
-    this.dateValue.set(clamped);
-    if (clamped && clamped !== iso) {
-      this.horarioForm.get('fechaInicio')?.setValue(clamped);
-    }
+    this.dateValue.set(iso);
     this.compensable.set(this.horarioForm.get('compensable')?.value === 'true');
   }
 

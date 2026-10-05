@@ -464,7 +464,7 @@ export class AdminPersonalFacade implements OnDestroy {
   });
 
   readonly horarioForm = this.formBuilder.nonNullable.group({
-      fechaInicio: [this.getToday(), [Validators.required]],
+      fechaInicio: ['', [Validators.required]],
       compensable: ['true', [Validators.required]],
       horaEntrada: ['09:00', [Validators.required]],
       horaSalida: ['18:00', [Validators.required]],
@@ -849,9 +849,6 @@ export class AdminPersonalFacade implements OnDestroy {
       return;
     }
 
-    if (!this.horarioForm.controls.fechaInicio.getRawValue()) {
-      this.horarioForm.controls.fechaInicio.setValue(this.getToday());
-    }
     this.syncLunchBreakControls();
     this.currentStep.set(3);
   }
@@ -1062,7 +1059,7 @@ export class AdminPersonalFacade implements OnDestroy {
       fechaFinHabilitada: 'false'
     });
     this.horarioForm.reset({
-      fechaInicio: this.getToday(),
+      fechaInicio: '',
       compensable: 'true',
       horaEntrada: '09:00',
       horaSalida: '18:00',
@@ -1856,10 +1853,12 @@ export class AdminPersonalFacade implements OnDestroy {
     this.isLoadingScheduleChange.set(true);
 
     try {
-      const [horario, contrato] = await Promise.all([
-        firstValueFrom(this.adminRrhhService.getHorarioVigente(employee.idEmpleado, this.getToday()).pipe(timeout(this.requestTimeoutMs))),
-        firstValueFrom(this.adminRrhhService.getContratoVigente(employee.idEmpleado).pipe(timeout(this.requestTimeoutMs)))
-      ]);
+      const contrato = await firstValueFrom(
+        this.adminRrhhService.getContratoVigente(employee.idEmpleado).pipe(timeout(this.requestTimeoutMs))
+      );
+      const horario = await firstValueFrom(
+        this.adminRrhhService.getHorarioVigente(employee.idEmpleado, this.getToday()).pipe(timeout(this.requestTimeoutMs))
+      );
 
       this.currentScheduleForChange.set(horario);
       this.currentContractForScheduleChange.set(contrato);
@@ -2097,7 +2096,7 @@ export class AdminPersonalFacade implements OnDestroy {
     }
 
     const formFechaInicio = this.horarioForm.controls.fechaInicio.getRawValue();
-    if (formFechaInicio < this.getToday()) {
+    if (formFechaInicio < this.getToday() && formFechaInicio !== horario.fechaInicio) {
       this.scheduleChangeErrorMessage.set(
         'La nueva fecha de inicio no puede ser anterior a hoy.'
       );
@@ -2107,28 +2106,24 @@ export class AdminPersonalFacade implements OnDestroy {
     this.scheduleChangeErrorMessage.set('');
     this.scheduleChangeSuccessMessage.set('');
     this.isSubmittingScheduleChange.set(true);
+    const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
 
     try {
-      const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
-
       if (horario.fechaInicio > this.getToday() && formFechaInicio !== horario.fechaInicio) {
-        await this.runCorregirHorario(employee.idEmpleado, horario.id, baseRequest);
+        await this.runCorregirHorario(employee.idEmpleado, horario.id, baseRequest, true);
         return;
       }
 
-      const horarioEnFecha = await firstValueFrom(
-        this.adminRrhhService
-          .getHorarioVigente(employee.idEmpleado, formFechaInicio)
-          .pipe(timeout(this.requestTimeoutMs))
+      await this.runCorregirHorario(
+        employee.idEmpleado,
+        horario.id,
+        baseRequest,
+        formFechaInicio !== horario.fechaInicio
       );
-
-      if (horarioEnFecha.fechaInicio === formFechaInicio) {
-        // Misma vigencia → corregir in-situ (PATCH).
-        await this.runCorregirHorario(employee.idEmpleado, horarioEnFecha.id, baseRequest);
-      } else {
-        // Fecha futura → reemplazar (PUT). Comportamiento original.
-        await this.runReemplazarHorario(employee.idEmpleado, horarioEnFecha.id, baseRequest);
-      }
+    } catch (error) {
+      this.scheduleChangeErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo guardar el horario.')
+      );
     } finally {
       this.isSubmittingScheduleChange.set(false);
     }
@@ -2137,14 +2132,17 @@ export class AdminPersonalFacade implements OnDestroy {
   private async runCorregirHorario(
     empleadoId: number,
     idHorario: number,
-    baseRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>
+    baseRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>,
+    moverFechaInicio = false
   ): Promise<void> {
     const patchRequest: CorregirHorarioRequest = {
       modalidad: baseRequest.modalidad,
-      fechaInicio: baseRequest.fechaInicio,
       compensable: baseRequest.compensable,
       detalles: baseRequest.detalles
     };
+    if (moverFechaInicio) {
+      patchRequest.fechaInicio = baseRequest.fechaInicio;
+    }
 
     try {
       const horario = await firstValueFrom(
@@ -2828,13 +2826,12 @@ export class AdminPersonalFacade implements OnDestroy {
   }
 
   private populateScheduleChangeForm(horario: HorarioResponse, modalidad: string): void {
-    const tomorrow = this.addDays(this.getToday(), 1);
     const laborables = horario.detalles.filter((detalle) => detalle.laborable);
     const descanso = horario.detalles.find((detalle) => !detalle.laborable)?.dia ?? 'DOMINGO';
     const firstLaborable = laborables[0] ?? horario.detalles[0];
 
     this.horarioForm.reset({
-      fechaInicio: tomorrow,
+      fechaInicio: horario.fechaInicio,
       compensable: String(horario.compensable ?? true),
       horaEntrada: firstLaborable?.horaEntrada?.slice(0, 5) ?? '09:00',
       horaSalida: firstLaborable?.horaSalida?.slice(0, 5) ?? '18:00',

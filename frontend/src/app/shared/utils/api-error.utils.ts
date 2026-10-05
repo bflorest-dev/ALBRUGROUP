@@ -1,6 +1,15 @@
 export function formatApiErrorMessage(errorBody: unknown, fallbackMessage: string): string {
+  if (typeof errorBody === 'string') {
+    const parsed = parseJsonObject(errorBody);
+    return parsed ? formatApiErrorMessage(parsed, fallbackMessage) : fallbackMessage;
+  }
+
   if (!isRecord(errorBody)) {
     return fallbackMessage;
+  }
+
+  if (!hasReadableMessage(errorBody) && 'error' in errorBody) {
+    return formatApiErrorMessage(errorBody['error'], fallbackMessage);
   }
 
   const message = typeof errorBody['message'] === 'string' && errorBody['message'].trim()
@@ -51,4 +60,17 @@ function toReadableKey(key: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+function hasReadableMessage(value: Record<string, unknown>): boolean {
+  return typeof value['message'] === 'string' && value['message'].trim().length > 0;
+}
+
+function parseJsonObject(value: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(value);
+    return isRecord(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
 }

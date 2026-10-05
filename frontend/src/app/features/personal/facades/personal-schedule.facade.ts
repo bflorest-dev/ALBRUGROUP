@@ -46,6 +46,7 @@ export class PersonalScheduleFacade {
 
   private employeeId = 0;
   private contract: ContratoResponse | null = null;
+  private editingSchedule: HorarioResponse | null = null;
   private pendingCorrection: {
     schedule: HorarioResponse;
     request: ReemplazarHorarioRequest;
@@ -120,6 +121,7 @@ export class PersonalScheduleFacade {
     this.employeeId = employeeId;
     this.contract = contract;
     this.schedule.set(schedule);
+    this.editingSchedule = schedule;
     this.clearMessages();
     this.closeCorrection();
     this.resetAdjustmentState();
@@ -131,6 +133,7 @@ export class PersonalScheduleFacade {
   reset(): void {
     this.employeeId = 0;
     this.contract = null;
+    this.editingSchedule = null;
     this.schedule.set(null);
     this.history.set([]);
     this.historyError.set('');
@@ -143,6 +146,7 @@ export class PersonalScheduleFacade {
   }
 
   openEditor(schedule: HorarioResponse | null = this.schedule()): void {
+    this.editingSchedule = schedule;
     this.resetForm(schedule);
     this.clearMessages();
     this.closeCorrection();
@@ -151,6 +155,7 @@ export class PersonalScheduleFacade {
   closeEditor(): void {
     this.clearMessages();
     this.closeCorrection();
+    this.editingSchedule = this.schedule();
     this.resetForm(this.schedule());
   }
 
@@ -200,9 +205,9 @@ export class PersonalScheduleFacade {
 
     const raw = this.form.getRawValue();
     const fechaInicio = raw.fechaInicio;
-    const current = this.schedule();
-    if (current && fechaInicio < current.fechaInicio) {
-      this.error.set('La nueva fecha de inicio no puede ser anterior al horario actual.');
+    const current = this.editingSchedule ?? this.schedule();
+    if (current && fechaInicio < this.today() && fechaInicio !== current.fechaInicio) {
+      this.error.set('La nueva fecha de inicio no puede ser anterior a hoy.');
       return false;
     }
 
@@ -223,20 +228,10 @@ export class PersonalScheduleFacade {
         return true;
       }
 
-      const scheduleAtDate = await firstValueFrom(
-        this.service.getHorarioVigente(this.employeeId, fechaInicio).pipe(timeout(REQUEST_TIMEOUT_MS))
-      );
-      if (scheduleAtDate.fechaInicio === fechaInicio) {
-        await this.correct(scheduleAtDate, request);
-      } else {
-        const replaced = await firstValueFrom(
-          this.service.reemplazarHorario(scheduleAtDate.id, {
-            fechaInicio,
-            ...request
-          } satisfies ReemplazarHorarioRequest).pipe(timeout(REQUEST_TIMEOUT_MS))
-        );
-        await this.finishMutation(replaced, 'Horario actualizado. La nueva vigencia iniciará en la fecha seleccionada.');
-      }
+      await this.correct(current, {
+        ...request,
+        ...(fechaInicio !== current.fechaInicio ? { fechaInicio } : {})
+      });
       return !this.correctionVisible();
     } catch (error) {
       this.error.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo guardar el horario.'));
@@ -537,7 +532,7 @@ export class PersonalScheduleFacade {
     const firstWorking = details.find((detail) => detail.laborable) ?? details[0];
     const restDay = details.find((detail) => !detail.laborable)?.dia ?? 'DOMINGO';
     this.form.reset({
-      fechaInicio: this.tomorrow(),
+      fechaInicio: schedule?.fechaInicio ?? '',
       compensable: String(schedule?.compensable ?? true),
       horaEntrada: firstWorking?.horaEntrada?.slice(0, 5) ?? '09:00',
       horaSalida: firstWorking?.horaSalida?.slice(0, 5) ?? '18:00',
