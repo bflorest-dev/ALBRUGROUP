@@ -5,9 +5,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.LeadEtapaResumen;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
+import pe.albrugroup.lead_service.repository.LeadRepository;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -15,6 +18,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
@@ -24,6 +29,7 @@ import static org.mockito.Mockito.when;
 class LeadEtapaResumenServiceTest {
 
     @Mock private LeadEtapaResumenRepository repository;
+    @Mock private LeadRepository leadRepository;
     @InjectMocks private LeadEtapaResumenService service;
 
     @Test
@@ -34,6 +40,7 @@ class LeadEtapaResumenServiceTest {
                 .etapa(Etapa.VENTA)
                 .fechaMerito(fechaExistente)
                 .build();
+        when(leadRepository.findById(10L)).thenReturn(Optional.of(lead(Etapa.VENTA)));
         when(repository.findByIdLeadAndEtapa(10L, Etapa.VENTA)).thenReturn(Optional.of(resumen));
 
         service.asignarAsesorMerito(10L, Etapa.VENTA, 99L, "Asesor Merito", Instant.parse("2026-08-26T10:00:00Z"));
@@ -53,6 +60,7 @@ class LeadEtapaResumenServiceTest {
                 .idAsesorMerito(88L)
                 .nombreAsesorMerito("Asesor Existente")
                 .build();
+        when(leadRepository.findById(10L)).thenReturn(Optional.of(lead(Etapa.VENTA)));
         when(repository.findByIdLeadAndEtapa(10L, Etapa.VENTA)).thenReturn(Optional.of(resumen));
 
         service.asignarFechaMerito(10L, Etapa.VENTA, nuevaFecha);
@@ -60,6 +68,33 @@ class LeadEtapaResumenServiceTest {
         assertEquals(88L, resumen.getIdAsesorMerito());
         assertEquals("Asesor Existente", resumen.getNombreAsesorMerito());
         assertSame(nuevaFecha, resumen.getFechaMerito());
+        verify(repository).save(resumen);
+    }
+
+    @Test
+    void asignarMeritoRechazaEtapaDistintaALaActualDelLead() {
+        when(leadRepository.findById(10L)).thenReturn(Optional.of(lead(Etapa.VENTA)));
+
+        assertThrows(BadRequestException.class,
+                () -> service.asignarFechaMerito(10L, Etapa.PREVENTA, Instant.parse("2026-08-26T10:00:00Z")));
+
+        verify(repository, never()).findByIdLeadAndEtapa(10L, Etapa.PREVENTA);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void asignarMeritoHistoricoPermiteReconstruirEtapaAnterior() {
+        Instant fechaHistorica = Instant.parse("2026-08-26T10:00:00Z");
+        LeadEtapaResumen resumen = LeadEtapaResumen.builder()
+                .idLead(10L)
+                .etapa(Etapa.PREVENTA)
+                .build();
+        when(repository.findByIdLeadAndEtapa(10L, Etapa.PREVENTA)).thenReturn(Optional.of(resumen));
+
+        service.asignarFechaMeritoHistorico(10L, Etapa.PREVENTA, fechaHistorica);
+
+        assertSame(fechaHistorica, resumen.getFechaMerito());
+        verify(leadRepository, never()).findById(10L);
         verify(repository).save(resumen);
     }
 
@@ -237,5 +272,12 @@ class LeadEtapaResumenServiceTest {
         verify(repository).save(preventa);
         verify(repository).save(venta);
         verify(repository, never()).findByIdLeadAndEtapa(10L, Etapa.POSTVENTA);
+    }
+
+    private static Lead lead(Etapa etapa) {
+        return Lead.builder()
+                .id(10L)
+                .etapa(etapa)
+                .build();
     }
 }

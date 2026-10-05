@@ -6594,24 +6594,16 @@ public class LeadService {
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
 
         List<Object[]> filas = modo == ModoConteo.GESTIONADOS
-                ? eventoRepository.preventasDetalleGestionadas(
-                        Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
-                        rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids())
-                : switch (campo) {
-                    case PRIMERA -> leadEtapaResumenRepository.preventasDetalleIngresadasPrimera(
-                            ACCIONES_INGRESO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
-                            rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
-                    case ULTIMA -> leadEtapaResumenRepository.preventasDetalleIngresadasUltima(
-                            ACCIONES_INGRESO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
-                            rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
-                    case MAYOR -> leadEtapaResumenRepository.preventasDetalleIngresadasMayor(
-                            ACCIONES_INGRESO, Accion.TIPIFICACION, Etapa.PREVENTA, "PREVENTA",
-                            rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
-                };
+                ? leadEtapaResumenRepository.preventasDetalleGestionadasPorMerito(
+                        Etapa.PREVENTA, "PREVENTA", rango.inicio(), rango.fin(),
+                        equipos.filtrar(), equipos.ids())
+                : leadEtapaResumenRepository.preventasDetalleIngresadasPorMerito(
+                        ACCIONES_INGRESO, Etapa.PREVENTA, "PREVENTA", rango.inicio(), rango.fin(),
+                        equipos.filtrar(), equipos.ids());
 
-        // Las filas vienen por createdAt DESC: la primera de cada lead es su preventa más reciente.
+        // Las filas vienen por fechaMerito DESC: la primera de cada lead es su preventa meritoria.
         // Columnas: [idLead, lead, usermeta, numeroDocumento, nombreCompleto, nombreAsesor,
-        // tipificadoAt, nombreCampana]. Las filas vienen por createdAt DESC.
+        // tipificadoAt, nombreCampana].
         Map<Long, PreventaDetalleResponse> porLead = new LinkedHashMap<>();
         for (Object[] fila : filas) {
             Long idLead = (Long) fila[0];

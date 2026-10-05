@@ -2,9 +2,13 @@ package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.LeadEtapaResumen;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
+import pe.albrugroup.lead_service.repository.LeadRepository;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,6 +26,7 @@ import java.util.Objects;
 public class LeadEtapaResumenService {
 
     private final LeadEtapaResumenRepository repository;
+    private final LeadRepository leadRepository;
 
     /** Al ENTRAR a una etapa: crea la fila (o la reabre si el lead reingresa). */
     public void registrarEntradaEtapa(Long idLead, Etapa etapa, Instant at) {
@@ -188,20 +193,40 @@ public class LeadEtapaResumenService {
 
     /** Merito de la etapa: compatibilidad para asignar asesor y fecha en bloque. */
     public void registrarMerito(Long idLead, Etapa etapa, Long idAsesorMerito, String nombreAsesorMerito, Instant at) {
-        asignarAsesorMerito(idLead, etapa, idAsesorMerito, nombreAsesorMerito, at);
-        asignarFechaMerito(idLead, etapa, at);
+        validarLeadEnEtapaDeMerito(idLead, etapa);
+        asignarAsesorMeritoSinValidarEtapaActual(idLead, etapa, idAsesorMerito, nombreAsesorMerito, at);
+        asignarFechaMeritoSinValidarEtapaActual(idLead, etapa, at);
     }
 
     /** Asigna solo asesor de merito, sin tocar fechaMerito. */
     public void asignarAsesorMerito(Long idLead, Etapa etapa, Long idAsesorMerito, String nombreAsesorMerito, Instant at) {
+        validarLeadEnEtapaDeMerito(idLead, etapa);
+        asignarAsesorMeritoSinValidarEtapaActual(idLead, etapa, idAsesorMerito, nombreAsesorMerito, at);
+    }
+
+    /** Asigna solo fechaMerito, sin tocar asesor de merito. */
+    public void asignarFechaMerito(Long idLead, Etapa etapa, Instant at) {
+        validarLeadEnEtapaDeMerito(idLead, etapa);
+        asignarFechaMeritoSinValidarEtapaActual(idLead, etapa, at);
+    }
+
+    void asignarAsesorMeritoHistorico(Long idLead, Etapa etapa, Long idAsesorMerito, String nombreAsesorMerito, Instant at) {
+        asignarAsesorMeritoSinValidarEtapaActual(idLead, etapa, idAsesorMerito, nombreAsesorMerito, at);
+    }
+
+    void asignarFechaMeritoHistorico(Long idLead, Etapa etapa, Instant at) {
+        asignarFechaMeritoSinValidarEtapaActual(idLead, etapa, at);
+    }
+
+    private void asignarAsesorMeritoSinValidarEtapaActual(
+            Long idLead, Etapa etapa, Long idAsesorMerito, String nombreAsesorMerito, Instant at) {
         LeadEtapaResumen resumen = obtenerOCrear(idLead, etapa, at);
         resumen.setIdAsesorMerito(idAsesorMerito);
         resumen.setNombreAsesorMerito(nombreAsesorMerito);
         repository.save(resumen);
     }
 
-    /** Asigna solo fechaMerito, sin tocar asesor de merito. */
-    public void asignarFechaMerito(Long idLead, Etapa etapa, Instant at) {
+    private void asignarFechaMeritoSinValidarEtapaActual(Long idLead, Etapa etapa, Instant at) {
         LeadEtapaResumen resumen = obtenerOCrear(idLead, etapa, at);
         resumen.setFechaMerito(at);
         repository.save(resumen);
@@ -260,6 +285,18 @@ public class LeadEtapaResumenService {
                         .etapa(etapa)
                         .fechaIngresoEtapa(at)
                         .build());
+    }
+
+    private void validarLeadEnEtapaDeMerito(Long idLead, Etapa etapa) {
+        Etapa etapaActual = leadRepository.findById(idLead)
+                .map(Lead::getEtapa)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        if (!Objects.equals(etapaActual, etapa)) {
+            throw new BadRequestException(
+                    "No se puede asignar merito de " + etapa + " porque el lead esta en " + etapaActual,
+                    idLead
+            );
+        }
     }
 
     private static int nvl(Integer value, int fallback) {

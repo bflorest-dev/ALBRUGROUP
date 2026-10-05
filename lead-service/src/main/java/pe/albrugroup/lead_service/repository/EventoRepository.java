@@ -1237,73 +1237,6 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fin") Instant fin
     );
 
-    // H por equipo: [idEquipo, leadsPreventa].
-    @Query("""
-            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
-            FROM Evento e
-            JOIN Lead l ON l.id = e.idLead
-            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion IN :accionesIngreso
-              AND l.origen.esOrganico = true
-              AND e.createdAt >= :inicio
-              AND e.createdAt < :fin
-              AND r.ultimaCodigoTipificacion = :codigoTipificacion
-              AND (r.ultimaCodigoSubtipificacion IS NULL OR r.ultimaCodigoSubtipificacion <> 'INCOMPLETA')
-              AND r.ultimaTipificacionAt >= :inicio
-            GROUP BY l.idEquipo
-            """)
-    List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoUltima(
-            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
-            @Param("etapaResumen") Etapa etapaResumen,
-            @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin,
-            @Param("codigoTipificacion") String codigoTipificacion
-    );
-
-    @Query("""
-            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
-            FROM Evento e
-            JOIN Lead l ON l.id = e.idLead
-            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion IN :accionesIngreso
-              AND l.origen.esOrganico = true
-              AND e.createdAt >= :inicio
-              AND e.createdAt < :fin
-              AND r.primeraCodigoTipificacion = :codigoTipificacion
-              AND (r.primeraCodigoSubtipificacion IS NULL OR r.primeraCodigoSubtipificacion <> 'INCOMPLETA')
-              AND r.primeraTipificacionAt >= :inicio
-            GROUP BY l.idEquipo
-            """)
-    List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoPrimera(
-            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
-            @Param("etapaResumen") Etapa etapaResumen,
-            @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin,
-            @Param("codigoTipificacion") String codigoTipificacion
-    );
-
-    @Query("""
-            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
-            FROM Evento e
-            JOIN Lead l ON l.id = e.idLead
-            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
-            WHERE e.accion IN :accionesIngreso
-              AND l.origen.esOrganico = true
-              AND e.createdAt >= :inicio
-              AND e.createdAt < :fin
-              AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
-              AND (r.mayorRangoCodigoSubtipificacion IS NULL OR r.mayorRangoCodigoSubtipificacion <> 'INCOMPLETA')
-              AND r.mayorRangoAt >= :inicio
-            GROUP BY l.idEquipo
-            """)
-    List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoMayor(
-            @Param("accionesIngreso") java.util.Collection<Accion> accionesIngreso,
-            @Param("etapaResumen") Etapa etapaResumen,
-            @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin,
-            @Param("codigoTipificacion") String codigoTipificacion
-    );
-
     // --- Modo GESTIONADOS: mide la OPERACIÓN del período, no la cohorte de ingesta ---
 
     /**
@@ -1343,63 +1276,6 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("etapa") Etapa etapa,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
-    );
-
-    /**
-     * Preventas OCURRIDAS en el período por equipo. A diferencia del modo INGRESADOS, cuenta el
-     * cierre por su fecha real: incluye leads traídos de otros días y excluye los que cerraron después.
-     */
-    @Query("""
-            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
-            FROM Evento e
-            JOIN Lead l ON l.id = e.idLead
-            WHERE e.accion = :accion
-              AND e.etapa = :etapa
-              AND e.tipificacion = :codigoTipificacion
-              AND (e.subtipificacion IS NULL OR e.subtipificacion <> 'INCOMPLETA')
-              AND e.createdAt >= :inicio
-              AND e.createdAt < :fin
-            GROUP BY l.idEquipo
-            """)
-    List<Object[]> contarPreventasDelPeriodoPorEquipo(
-            @Param("accion") Accion accion,
-            @Param("etapa") Etapa etapa,
-            @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin,
-            @Param("codigoTipificacion") String codigoTipificacion
-    );
-
-    /**
-     * Detalle de preventas GESTIONADAS del período por equipo: cada evento de tipificación a PREVENTA
-     * en el rango, con el lead, su usermeta, el documento y nombre del titular (datos de preventa), el
-     * asesor que tipificó y la campaña. Un lead puede tener más de un evento; el servicio se queda con
-     * el más reciente por lead. Filas [idLead, lead, usermeta, numeroDocumento, nombreCompleto,
-     * nombreActor, createdAt, nombreCampana].
-     */
-    @Query("""
-            SELECT l.id, l.lead, l.usermeta, dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
-                   e.nombreActor, e.createdAt, c.nombre
-            FROM Evento e
-            JOIN Lead l ON l.id = e.idLead
-            LEFT JOIN l.datosPreventa dp
-            LEFT JOIN l.campana c
-            WHERE e.accion = :accion
-              AND e.etapa = :etapa
-              AND e.tipificacion = :codigoTipificacion
-              AND (e.subtipificacion IS NULL OR e.subtipificacion <> 'INCOMPLETA')
-              AND e.createdAt >= :inicio
-              AND e.createdAt < :fin
-              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-            ORDER BY e.createdAt DESC
-            """)
-    List<Object[]> preventasDetalleGestionadas(
-            @Param("accion") Accion accion,
-            @Param("etapa") Etapa etapa,
-            @Param("codigoTipificacion") String codigoTipificacion,
-            @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin,
-            @Param("filtrarEquipos") boolean filtrarEquipos,
-            @Param("equipoIds") java.util.Collection<Long> equipoIds
     );
 
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);

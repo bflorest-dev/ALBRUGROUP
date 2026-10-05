@@ -387,97 +387,98 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("fin") Instant fin
     );
 
-    // ===== Detalle de preventas INGRESADAS: cohorte de registro del día cuya tipificación <campo> es
-    // PREVENTA, unida a su evento de tipificación a PREVENTA (para traer el asesor real, igual que
-    // GESTIONADAS) y a los datos de preventa (documento y nombre del titular). Un lead puede tener
-    // varios eventos PREVENTA; el servicio se queda con el más reciente. Filas [idLead, lead, usermeta,
-    // numeroDocumento, nombreCompleto, nombreActor, createdAt, nombreCampana].
+    // ===== RESUMEN DIARIO: preventas reales por mérito de PREVENTA =====
+    // Fuente de verdad del cierre PREVENTA -> VENTA: LeadEtapaResumen.fechaMerito de la etapa PREVENTA.
+    // Se excluyen leads que volvieron a PREVENTA, porque el mérito histórico queda permanente.
 
     @Query("""
-            SELECT l.id, l.lead, l.usermeta, dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
-                   te.nombreActor, te.createdAt, c.nombre
-            FROM Evento re
-            JOIN Lead l ON l.id = re.idLead
+            SELECT l.idEquipo, COUNT(DISTINCT l.id)
+            FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
-            JOIN Evento te ON te.idLead = l.id AND te.accion = :accionTipificacion
-                          AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
-            LEFT JOIN l.datosPreventa dp
-            LEFT JOIN l.campana c
-            WHERE re.accion IN :accionesIngreso
-              AND l.origen.esOrganico = true
-              AND re.createdAt >= :inicio
-              AND re.createdAt < :fin
-              AND r.primeraCodigoTipificacion = :codigoTipificacion
-              AND (r.primeraCodigoSubtipificacion IS NULL OR r.primeraCodigoSubtipificacion <> 'INCOMPLETA')
-              AND r.primeraTipificacionAt >= :inicio
-              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-            ORDER BY te.createdAt DESC
+            WHERE r.mayorRangoCodigoTipificacion = :codigoTipificacion
+              AND (r.mayorRangoCodigoSubtipificacion IS NULL OR r.mayorRangoCodigoSubtipificacion <> 'INCOMPLETA')
+              AND r.fechaMerito >= :inicio
+              AND r.fechaMerito < :fin
+              AND l.etapa <> :etapa
+            GROUP BY l.idEquipo
             """)
-    List<Object[]> preventasDetalleIngresadasPrimera(
-            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
-            @Param("accionTipificacion") Accion accionTipificacion,
+    List<Object[]> contarPreventasGestionadasPorMerito(
             @Param("etapa") Etapa etapa,
             @Param("codigoTipificacion") String codigoTipificacion,
             @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin,
-            @Param("filtrarEquipos") boolean filtrarEquipos,
-            @Param("equipoIds") java.util.Collection<Long> equipoIds
+            @Param("fin") Instant fin
     );
 
     @Query("""
-            SELECT l.id, l.lead, l.usermeta, dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
-                   te.nombreActor, te.createdAt, c.nombre
-            FROM Evento re
-            JOIN Lead l ON l.id = re.idLead
+            SELECT l.idEquipo, COUNT(DISTINCT l.id)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
-            JOIN Evento te ON te.idLead = l.id AND te.accion = :accionTipificacion
-                          AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
-            LEFT JOIN l.datosPreventa dp
-            LEFT JOIN l.campana c
-            WHERE re.accion IN :accionesIngreso
+            WHERE e.accion IN :accionesIngreso
               AND l.origen.esOrganico = true
-              AND re.createdAt >= :inicio
-              AND re.createdAt < :fin
-              AND r.ultimaCodigoTipificacion = :codigoTipificacion
-              AND (r.ultimaCodigoSubtipificacion IS NULL OR r.ultimaCodigoSubtipificacion <> 'INCOMPLETA')
-              AND r.ultimaTipificacionAt >= :inicio
-              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-            ORDER BY te.createdAt DESC
-            """)
-    List<Object[]> preventasDetalleIngresadasUltima(
-            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
-            @Param("accionTipificacion") Accion accionTipificacion,
-            @Param("etapa") Etapa etapa,
-            @Param("codigoTipificacion") String codigoTipificacion,
-            @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin,
-            @Param("filtrarEquipos") boolean filtrarEquipos,
-            @Param("equipoIds") java.util.Collection<Long> equipoIds
-    );
-
-    @Query("""
-            SELECT l.id, l.lead, l.usermeta, dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
-                   te.nombreActor, te.createdAt, c.nombre
-            FROM Evento re
-            JOIN Lead l ON l.id = re.idLead
-            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
-            JOIN Evento te ON te.idLead = l.id AND te.accion = :accionTipificacion
-                          AND te.etapa = :etapa AND te.tipificacion = :codigoTipificacion
-            LEFT JOIN l.datosPreventa dp
-            LEFT JOIN l.campana c
-            WHERE re.accion IN :accionesIngreso
-              AND l.origen.esOrganico = true
-              AND re.createdAt >= :inicio
-              AND re.createdAt < :fin
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
               AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
               AND (r.mayorRangoCodigoSubtipificacion IS NULL OR r.mayorRangoCodigoSubtipificacion <> 'INCOMPLETA')
-              AND r.mayorRangoAt >= :inicio
-              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-            ORDER BY te.createdAt DESC
+              AND r.fechaMerito >= :inicio
+              AND r.fechaMerito < :fin
+              AND l.etapa <> :etapa
+            GROUP BY l.idEquipo
             """)
-    List<Object[]> preventasDetalleIngresadasMayor(
+    List<Object[]> contarPreventasIngresadasPorMerito(
             @Param("accionesIngreso") Collection<Accion> accionesIngreso,
-            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("etapa") Etapa etapa,
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT l.id, l.lead, l.usermeta, dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
+                   r.nombreAsesorMerito, r.fechaMerito, c.nombre
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.campana c
+            WHERE r.mayorRangoCodigoTipificacion = :codigoTipificacion
+              AND (r.mayorRangoCodigoSubtipificacion IS NULL OR r.mayorRangoCodigoSubtipificacion <> 'INCOMPLETA')
+              AND r.fechaMerito >= :inicio
+              AND r.fechaMerito < :fin
+              AND l.etapa <> :etapa
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            ORDER BY r.fechaMerito DESC
+            """)
+    List<Object[]> preventasDetalleGestionadasPorMerito(
+            @Param("etapa") Etapa etapa,
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") java.util.Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT l.id, l.lead, l.usermeta, dp.numeroDocumentoTitularServicio, dp.nombreTitularServicio,
+                   r.nombreAsesorMerito, r.fechaMerito, c.nombre
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.campana c
+            WHERE e.accion IN :accionesIngreso
+              AND l.origen.esOrganico = true
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
+              AND (r.mayorRangoCodigoSubtipificacion IS NULL OR r.mayorRangoCodigoSubtipificacion <> 'INCOMPLETA')
+              AND r.fechaMerito >= :inicio
+              AND r.fechaMerito < :fin
+              AND l.etapa <> :etapa
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            ORDER BY r.fechaMerito DESC
+            """)
+    List<Object[]> preventasDetalleIngresadasPorMerito(
+            @Param("accionesIngreso") Collection<Accion> accionesIngreso,
             @Param("etapa") Etapa etapa,
             @Param("codigoTipificacion") String codigoTipificacion,
             @Param("inicio") Instant inicio,

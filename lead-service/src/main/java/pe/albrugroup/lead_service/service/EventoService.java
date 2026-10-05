@@ -604,7 +604,7 @@ public class EventoService {
                 acc[6] += cantidad;
             }
         }
-        for (Object[] fila : ventaCerradaPorEquipoSegunCampo(campo, inicio, fin)) {
+        for (Object[] fila : preventasIngresadasPorMerito(inicio, fin)) {
             acumuladorEquipo(porEquipo, (Long) fila[0])[7] = (Long) fila[1];
         }
     }
@@ -621,8 +621,8 @@ public class EventoService {
                 Accion.TIPIFICACION, Etapa.PREVENTA, inicio, fin)) {
             acumuladorEquipo(porEquipo, (Long) fila[0])[9] = (Long) fila[1];
         }
-        for (Object[] fila : eventoRepository.contarPreventasDelPeriodoPorEquipo(
-                Accion.TIPIFICACION, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA)) {
+        for (Object[] fila : leadEtapaResumenRepository.contarPreventasGestionadasPorMerito(
+                Etapa.PREVENTA, TIPIFICACION_PREVENTA, inicio, fin)) {
             acumuladorEquipo(porEquipo, (Long) fila[0])[7] = (Long) fila[1];
         }
     }
@@ -654,15 +654,9 @@ public class EventoService {
         };
     }
 
-    private List<Object[]> ventaCerradaPorEquipoSegunCampo(CampoTipificacion campo, Instant inicio, Instant fin) {
-        return switch (campo) {
-            case PRIMERA -> eventoRepository.contarLeadsDiariosVentaCerradaPorEquipoPrimera(
-                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
-            case ULTIMA -> eventoRepository.contarLeadsDiariosVentaCerradaPorEquipoUltima(
-                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
-            case MAYOR -> eventoRepository.contarLeadsDiariosVentaCerradaPorEquipoMayor(
-                    ACCIONES_INGRESO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
-        };
+    private List<Object[]> preventasIngresadasPorMerito(Instant inicio, Instant fin) {
+        return leadEtapaResumenRepository.contarPreventasIngresadasPorMerito(
+                ACCIONES_INGRESO, Etapa.PREVENTA, TIPIFICACION_PREVENTA, inicio, fin);
     }
 
     /**

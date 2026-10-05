@@ -210,10 +210,10 @@ public class LeadEtapaResumenBackfillService {
         // El mérito nunca se borra (ni al reconstruir por backfill): un re-backfill preserva asesor/fecha de
         // mérito. Los comportamientos ANULA_* quedan sin efecto; la coherencia se resuelve en el read-side.
         if (valores.contains(ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)) {
-            resumenService.asignarAsesorMerito(idLead, etapa, idAsesor, nombreAsesor, at);
+            resumenService.asignarAsesorMeritoHistorico(idLead, etapa, idAsesor, nombreAsesor, at);
         }
         if (valores.contains(ComportamientoTipificacion.ASIGNA_FECHA_MERITO)) {
-            resumenService.asignarFechaMerito(idLead, etapa, at);
+            resumenService.asignarFechaMeritoHistorico(idLead, etapa, at);
         }
     }
 
