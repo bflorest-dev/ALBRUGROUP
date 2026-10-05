@@ -204,9 +204,25 @@ public class LeadEtapaResumenService {
         asignarAsesorMeritoSinValidarEtapaActual(idLead, etapa, idAsesorMerito, nombreAsesorMerito, at);
     }
 
+    void asignarAsesorMeritoEnEtapaActual(
+            Long idLead,
+            Etapa etapa,
+            Etapa etapaActualOperacion,
+            Long idAsesorMerito,
+            String nombreAsesorMerito,
+            Instant at) {
+        validarEtapaDeMerito(idLead, etapa, etapaActualOperacion);
+        asignarAsesorMeritoSinValidarEtapaActual(idLead, etapa, idAsesorMerito, nombreAsesorMerito, at);
+    }
+
     /** Asigna solo fechaMerito, sin tocar asesor de merito. */
     public void asignarFechaMerito(Long idLead, Etapa etapa, Instant at) {
         validarLeadEnEtapaDeMerito(idLead, etapa);
+        asignarFechaMeritoSinValidarEtapaActual(idLead, etapa, at);
+    }
+
+    void asignarFechaMeritoEnEtapaActual(Long idLead, Etapa etapa, Etapa etapaActualOperacion, Instant at) {
+        validarEtapaDeMerito(idLead, etapa, etapaActualOperacion);
         asignarFechaMeritoSinValidarEtapaActual(idLead, etapa, at);
     }
 
@@ -291,6 +307,10 @@ public class LeadEtapaResumenService {
         Etapa etapaActual = leadRepository.findById(idLead)
                 .map(Lead::getEtapa)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        validarEtapaDeMerito(idLead, etapa, etapaActual);
+    }
+
+    private void validarEtapaDeMerito(Long idLead, Etapa etapa, Etapa etapaActual) {
         if (!Objects.equals(etapaActual, etapa)) {
             throw new BadRequestException(
                     "No se puede asignar merito de " + etapa + " porque el lead esta en " + etapaActual,

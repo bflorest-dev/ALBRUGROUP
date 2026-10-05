@@ -83,6 +83,37 @@ class LeadEtapaResumenServiceTest {
     }
 
     @Test
+    void asignarMeritoEnEtapaActualPermiteTransicionConEtapaCapturada() {
+        Instant fechaMerito = Instant.parse("2026-08-26T10:00:00Z");
+        LeadEtapaResumen resumen = LeadEtapaResumen.builder()
+                .idLead(10L)
+                .etapa(Etapa.PREVENTA)
+                .build();
+        when(repository.findByIdLeadAndEtapa(10L, Etapa.PREVENTA)).thenReturn(Optional.of(resumen));
+
+        service.asignarAsesorMeritoEnEtapaActual(
+                10L, Etapa.PREVENTA, Etapa.PREVENTA, 99L, "Asesor Preventa", fechaMerito);
+        service.asignarFechaMeritoEnEtapaActual(10L, Etapa.PREVENTA, Etapa.PREVENTA, fechaMerito);
+
+        assertEquals(99L, resumen.getIdAsesorMerito());
+        assertEquals("Asesor Preventa", resumen.getNombreAsesorMerito());
+        assertSame(fechaMerito, resumen.getFechaMerito());
+        verify(leadRepository, never()).findById(10L);
+        verify(repository, times(2)).save(resumen);
+    }
+
+    @Test
+    void asignarMeritoEnEtapaActualRechazaEtapaCapturadaDistinta() {
+        assertThrows(BadRequestException.class,
+                () -> service.asignarFechaMeritoEnEtapaActual(
+                        10L, Etapa.PREVENTA, Etapa.VENTA, Instant.parse("2026-08-26T10:00:00Z")));
+
+        verify(leadRepository, never()).findById(10L);
+        verify(repository, never()).findByIdLeadAndEtapa(10L, Etapa.PREVENTA);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
     void asignarMeritoHistoricoPermiteReconstruirEtapaAnterior() {
         Instant fechaHistorica = Instant.parse("2026-08-26T10:00:00Z");
         LeadEtapaResumen resumen = LeadEtapaResumen.builder()

@@ -3199,10 +3199,10 @@ public class LeadService {
         // deliberadamente sin efecto. La validez de una preventa se decide por coherencia de etapa en el
         // read-side (una preventa cuyo lead volvió a PREVENTA no cuenta como completa), no borrando el dato.
         if (valores.contains(ComportamientoTipificacion.ASIGNA_ASESOR_MERITO)) {
-            leadEtapaResumenService.asignarAsesorMerito(idLead, etapa, idAsesor, nombreAsesor, at);
+            leadEtapaResumenService.asignarAsesorMeritoEnEtapaActual(idLead, etapa, etapa, idAsesor, nombreAsesor, at);
         }
         if (valores.contains(ComportamientoTipificacion.ASIGNA_FECHA_MERITO)) {
-            leadEtapaResumenService.asignarFechaMerito(idLead, etapa, at);
+            leadEtapaResumenService.asignarFechaMeritoEnEtapaActual(idLead, etapa, etapa, at);
         }
     }
 
