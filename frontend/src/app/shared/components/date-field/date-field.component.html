@@ -10,12 +10,13 @@
     [placeholder]="placeholder"
     [minDate]="parsedMinDate"
     [maxDate]="parsedMaxDate"
+    [defaultDate]="calendarViewDate"
     [showIcon]="true"
     iconDisplay="input"
     [showButtonBar]="true"
     [readonlyInput]="readonly"
     [disabled]="isDisabled || readonly"
-    [showOnFocus]="openOnHover"
+    [showOnFocus]="!readonly"
     [keepInvalid]="keepInvalid"
     [baseZIndex]="baseZIndex"
     dateFormat="dd/mm/yy"
@@ -23,6 +24,8 @@
     [inputStyleClass]="inputStyleClass"
     [panelStyleClass]="panelStyleClass"
     (onBlur)="onInputBlur()"
+    (onMonthChange)="onCalendarMonthChange($event)"
+    (onYearChange)="onCalendarYearChange($event)"
     (mouseenter)="onMouseEnter()"
   />
 </div>

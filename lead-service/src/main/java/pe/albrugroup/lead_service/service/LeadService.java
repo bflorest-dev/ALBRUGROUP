@@ -4005,7 +4005,6 @@ public class LeadService {
         leadEtapaResumenService.registrarAsignacion(savedLead.getId(), savedLead.getEtapa(), OperationalDateTime.now());
         // Atención GTR: si el lead asignado vive en otra etapa, notificar también a la bandeja del GTR.
         notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior, savedLead.getEtapa() != Etapa.PREVENTA);
-        propagarAsesorAHermanas(savedLead, idAsesorAsignado, savedLead.getNombreAsesorAsignado());
     }
 
     private void validarAsesorPerteneceEquipoLead(Lead lead, Long idAsesorAsignado) {
@@ -4027,31 +4026,6 @@ public class LeadService {
                     lead.getId(),
                     detalleConflictoAsignacion("ASESOR_YA_TIENE_LEAD_DERIVADO", idAsesorAsignado, null)
             );
-        }
-    }
-
-    // Coherencia multi-titular: al asignar un lead, sus hermanas (mismo contacto+equipo) en PREVENTA
-    // pasan al mismo asesor, para que una sola persona maneje toda la comunicación del contacto.
-    // El @Filter acota a las del equipo del que asigna.
-    private void propagarAsesorAHermanas(Lead lead, Long idAsesor, String nombreAsesor) {
-        if (lead.getContacto() == null) {
-            return;
-        }
-        List<Lead> hermanas = leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(lead.getContacto().getId());
-        for (Lead hermana : hermanas) {
-            if (hermana.getId().equals(lead.getId()) || hermana.getEtapa() != Etapa.PREVENTA) {
-                continue;
-            }
-            if (java.util.Objects.equals(hermana.getIdAsesorAsignado(), idAsesor)) {
-                continue;
-            }
-            hermana.setIdAsesorAsignado(idAsesor);
-            hermana.setNombreAsesorAsignado(nombreAsesor);
-            Lead guardada = leadRepository.save(hermana);
-            Long idCampana = guardada.getCampana() == null ? null : guardada.getCampana().getId();
-            registrarEventoAsignacion(guardada.getId(), idCampana, guardada.getEtapa(), idAsesor, nombreAsesor);
-            leadEtapaResumenService.registrarAsignacion(guardada.getId(), guardada.getEtapa(), OperationalDateTime.now());
-            notificarCambioLead("ASIGNACION", guardada, null, null);
         }
     }
 

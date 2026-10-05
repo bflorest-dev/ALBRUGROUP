@@ -3,6 +3,7 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, Input, O
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { DatePickerModule } from 'primeng/datepicker';
+import type { DatePickerMonthChangeEvent, DatePickerYearChangeEvent } from 'primeng/types/datepicker';
 
 @Component({
   selector: 'app-date-field',
@@ -34,6 +35,7 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
   @Input() fixedYearPrefix: string | null = null;
 
   protected selectedDate: Date | null = null;
+  protected calendarViewDate = new Date();
   protected isDisabled = false;
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -64,7 +66,9 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
   }
 
   writeValue(value: string | null): void {
-    this.selectedDate = this.parseIsoDate(value);
+    const parsed = this.parseIsoDate(value);
+    this.selectedDate = parsed;
+    if (parsed) this.calendarViewDate = parsed;
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -125,6 +129,14 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
       }
     }
     this.onTouched();
+  }
+
+  protected onCalendarMonthChange(event: DatePickerMonthChangeEvent): void {
+    this.setCalendarViewDate(event.month, event.year);
+  }
+
+  protected onCalendarYearChange(event: DatePickerYearChangeEvent): void {
+    this.setCalendarViewDate(event.month, event.year);
   }
 
   protected get parsedMinDate(): Date | null {
@@ -197,8 +209,14 @@ export class DateFieldComponent implements ControlValueAccessor, AfterViewInit, 
       return false;
     }
     this.selectedDate = date;
+    this.calendarViewDate = date;
     this.onChange(this.toIsoDate(date));
     return true;
+  }
+
+  private setCalendarViewDate(month?: number, year?: number): void {
+    if (!month || !year) return;
+    this.calendarViewDate = new Date(year, month - 1, 1);
   }
 
   private formatDisplayDate(date: Date): string {
