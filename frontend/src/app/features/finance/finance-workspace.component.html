@@ -266,6 +266,7 @@
           optionLabel="nombreCuenta"
           optionValue="id"
           placeholder="Seleccionar cuenta"
+          [disabled]="!!facade.editingRechargeId()"
           appendTo="body"
         >
           <ng-template #item let-account>

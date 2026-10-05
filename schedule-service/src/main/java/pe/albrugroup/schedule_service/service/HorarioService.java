@@ -123,7 +123,7 @@ public class HorarioService implements IHorario {
 
             if (!horario.getFechaInicio().isBefore(fechaInicioNuevo)) {
                 throw new ConflictException(
-                        "Existe un horario solapado con fecha de inicio igual o posterior. Requiere correccion administrativa",
+                        "El horario provocaria solapamiento con un horario futuro",
                         horario.getId()
                 );
             }
@@ -235,6 +235,7 @@ public class HorarioService implements IHorario {
 
         validarDiasDuplicados(request.getDetalles().stream().map(detalle -> detalle.getDia()).toList());
         normalizarAlmuerzoPorModalidad(request.getModalidad(), request.getDetalles());
+        reprogramarFechaInicioSiCorresponde(horario, request.getFechaInicio());
 
         horario.setCompensable(request.getCompensable());
         PoliticaModalidad politica = politicaModalidadService.getPolitica(request.getModalidad());
@@ -258,6 +259,53 @@ public class HorarioService implements IHorario {
                 null
         );
         return mapper.toResponse(savedHorario);
+    }
+
+    private void reprogramarFechaInicioSiCorresponde(Horario horario, LocalDate nuevaFechaInicio) {
+        if (nuevaFechaInicio == null || nuevaFechaInicio.isEqual(horario.getFechaInicio())) {
+            return;
+        }
+
+        if (horario.getFechaFin() != null && nuevaFechaInicio.isAfter(horario.getFechaFin())) {
+            throw new BadRequestException("fechaInicio no puede ser posterior a fechaFin", nuevaFechaInicio);
+        }
+
+        if (asistenciaRepository.existsByIdEmpleadoAndFechaGreaterThanEqual(
+                horario.getIdEmpleado(), nuevaFechaInicio)) {
+            throw new ConflictException(
+                    "No se puede mover el inicio del horario porque ya existe asistencia registrada en esa fecha o posteriores",
+                    nuevaFechaInicio
+            );
+        }
+
+        List<Horario> solapados = horarioRepository.findSolapamientos(
+                horario.getIdEmpleado(),
+                nuevaFechaInicio,
+                horario.getFechaFin(),
+                horario.getId()
+        );
+
+        for (Horario solapado : solapados) {
+            if (solapado.getFechaInicio().isEqual(nuevaFechaInicio)) {
+                throw new ConflictException(
+                        "Ya existe otro horario que empieza en la fecha indicada",
+                        nuevaFechaInicio
+                );
+            }
+
+            if (!solapado.getFechaInicio().isBefore(nuevaFechaInicio)) {
+                throw new ConflictException(
+                        "El horario provocaria solapamiento con un horario futuro",
+                        solapado.getId()
+                );
+            }
+
+            solapado.setFechaFin(nuevaFechaInicio.minusDays(1));
+            horarioRepository.save(solapado);
+        }
+
+        horario.setFechaInicio(nuevaFechaInicio);
+        horarioRepository.flush();
     }
 
     @Override

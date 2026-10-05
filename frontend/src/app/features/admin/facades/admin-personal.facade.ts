@@ -2097,9 +2097,9 @@ export class AdminPersonalFacade implements OnDestroy {
     }
 
     const formFechaInicio = this.horarioForm.controls.fechaInicio.getRawValue();
-    if (formFechaInicio < horario.fechaInicio) {
+    if (formFechaInicio < this.getToday()) {
       this.scheduleChangeErrorMessage.set(
-        'La nueva fecha de inicio no puede ser anterior al inicio del horario actual.'
+        'La nueva fecha de inicio no puede ser anterior a hoy.'
       );
       return;
     }
@@ -2110,6 +2110,11 @@ export class AdminPersonalFacade implements OnDestroy {
 
     try {
       const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
+
+      if (horario.fechaInicio > this.getToday() && formFechaInicio !== horario.fechaInicio) {
+        await this.runCorregirHorario(employee.idEmpleado, horario.id, baseRequest);
+        return;
+      }
 
       const horarioEnFecha = await firstValueFrom(
         this.adminRrhhService
@@ -2136,6 +2141,7 @@ export class AdminPersonalFacade implements OnDestroy {
   ): Promise<void> {
     const patchRequest: CorregirHorarioRequest = {
       modalidad: baseRequest.modalidad,
+      fechaInicio: baseRequest.fechaInicio,
       compensable: baseRequest.compensable,
       detalles: baseRequest.detalles
     };
@@ -2145,22 +2151,21 @@ export class AdminPersonalFacade implements OnDestroy {
         this.adminRrhhService.corregirHorario(idHorario, patchRequest).pipe(timeout(this.requestTimeoutMs))
       );
 
-      this.scheduleChangeSuccessMessage.set('Horario corregido. Los cambios aplican desde la vigencia actual.');
+      this.scheduleChangeSuccessMessage.set('Horario corregido. Los cambios aplican desde la fecha seleccionada.');
       this.scheduleByEmployeeId.update((current) => ({ ...current, [empleadoId]: horario }));
       this.isScheduleChangeVisible.set(false);
       void this.loadEmployeeStates();
     } catch (error) {
       const httpError = error as HttpErrorResponse;
-      if (httpError?.status === 409) {
+      const message = this.getErrorMessage(httpError, 'No se pudo corregir el horario.');
+      if (httpError?.status === 409 && message.includes('marcaciones reales')) {
         // Backend detecto marcaciones reales; pedimos al admin como aplicarlo.
         this.correctionDecisionMotivo.set('Correccion administrativa');
         this.correctionDecisionCustomDate.set(this.addDays(this.getToday(), 1));
         this.isCorrectionDecisionVisible.set(true);
         return;
       }
-      this.scheduleChangeErrorMessage.set(
-        this.getErrorMessage(httpError, 'No se pudo corregir el horario.')
-      );
+      this.scheduleChangeErrorMessage.set(message);
     }
   }
 

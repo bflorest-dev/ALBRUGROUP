@@ -6,14 +6,13 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import pe.albrugroup.schedule_service.entity.enums.ModalidadContrato;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Corrige IN-SITU un horario ya existente que aun no ha producido marcaciones reales.
- * No mueve la vigencia (no recibe fechaInicio); reemplaza modalidad, compensable y los
- * detalles por dia. Si el horario tiene al menos una asistencia con marcacion real
- * (fechaHoraIngreso != null), el servicio rechaza con CONFLICT y se debe usar una
- * ExcepcionHorario para cambios puntuales o un reemplazo para cambios estructurales.
+ * Corrige un horario ya existente que aun no ha producido marcaciones reales.
+ * Puede mover fechaInicio cuando el cambio no pisa asistencias registradas; si
+ * solapa un horario anterior, el servicio lo cierra el dia anterior al nuevo inicio.
  */
 @Getter
 @Setter
@@ -24,6 +23,8 @@ public class CorregirHorarioRequest {
 
     @NotNull(message = "modalidad es obligatoria")
     private ModalidadContrato modalidad;
+
+    private LocalDate fechaInicio;
 
     @Builder.Default
     @NotNull(message = "compensable es obligatorio")
