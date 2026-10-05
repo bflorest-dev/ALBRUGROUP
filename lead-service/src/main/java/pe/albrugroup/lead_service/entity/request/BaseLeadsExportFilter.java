@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.VistaBaseLeads;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,6 +26,8 @@ public class BaseLeadsExportFilter {
     private CampoTipificacion campoTipificacion = CampoTipificacion.ULTIMA;
 
     private AnclaFechaBaseLeads anclaFecha = AnclaFechaBaseLeads.TIPIFICACION;
+
+    private VistaBaseLeads vista = VistaBaseLeads.BASE;
 
     private Long idProveedorOrigen;
 

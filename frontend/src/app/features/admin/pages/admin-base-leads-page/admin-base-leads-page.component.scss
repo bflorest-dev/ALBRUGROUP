@@ -35,7 +35,16 @@
 
 /* ── Header ── */
 .page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 18px;
+}
+
+.view-switch {
+  width: 160px;
+  flex: 0 0 160px;
 }
 
 .page-head h1 {
@@ -70,6 +79,10 @@
   min-width: 0;
 }
 
+.filter-row--instalados {
+  grid-template-columns: minmax(260px, 1.2fr) minmax(220px, 1fr) minmax(160px, .55fr);
+}
+
 .field-label {
   display: block;
   font-size: 10px;
@@ -97,6 +110,12 @@
 }
 
 .date-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.period-field {
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -263,6 +282,39 @@
   .p-multiselect:not(.p-disabled):hover {
     border-color: var(--line-strong);
     background: var(--panel-2);
+  }
+
+  app-period-selector {
+    width: 100%;
+  }
+
+  app-period-selector .period,
+  app-period-selector .p-selectbutton {
+    width: 100%;
+  }
+
+  app-period-selector .p-togglebutton {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 38px;
+    border-color: var(--line);
+    background: var(--panel-2);
+    color: var(--ink-2);
+    box-shadow: none;
+    font: 700 12px 'Archivo';
+    transition: border-color .16s ease, background-color .16s ease, color .16s ease;
+  }
+
+  app-period-selector .p-togglebutton:not(.p-disabled):hover {
+    border-color: var(--line-strong);
+    background: var(--panel-2);
+    color: var(--ink);
+  }
+
+  app-period-selector .p-togglebutton.p-togglebutton-checked {
+    border-color: color-mix(in srgb, var(--signal) 58%, var(--line));
+    background: var(--signal-wash);
+    color: #f1c27c;
   }
 }
 
@@ -652,6 +704,10 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .filter-row--instalados {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .table-head, .data-row {
     min-width: 1100px;
   }
@@ -664,7 +720,17 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 @media (max-width: 640px) {
   .base-leads { padding: 18px 12px; }
 
+  .page-head {
+    flex-direction: column;
+  }
+
+  .view-switch {
+    width: 100%;
+    flex-basis: auto;
+  }
+
   .filter-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filter-row--instalados { grid-template-columns: 1fr; }
   .export-rail { flex-direction: column; align-items: stretch; }
   .export-actions {
     flex-direction: column;

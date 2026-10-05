@@ -1,5 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { MetricsPeriodo } from '../../../shared/components/period-selector/period-selector.component';
+import { MetricsRango, localToday, monthStart, resolveMetricsRange } from '../../../shared/utils/metrics-period';
 import { CampoTipificacion, Etapa, SubtipificacionResponse, TipificacionResponse } from '../../../shared/models/preventa/preventa.models';
 import { AdminEquipoService, ProveedorLite } from '../services/admin-equipo.service';
 import { AdminTipificacionService } from '../services/admin-tipificacion.service';
@@ -8,7 +10,8 @@ import {
   AnclaFechaBaseLeads,
   BaseLeadsExportFilter,
   BaseLeadsService,
-  OrigenResponse
+  OrigenResponse,
+  VistaBaseLeads
 } from '../services/base-leads.service';
 
 export type ModoExport = 'ALB' | 'EXCEL';
@@ -19,9 +22,13 @@ export class AdminBaseLeadsFacade {
   private readonly equipoService = inject(AdminEquipoService);
   private readonly tipificacionService = inject(AdminTipificacionService);
 
+  readonly vista = signal<VistaBaseLeads>('BASE');
   readonly etapa = signal<Etapa>('PREVENTA');
   readonly desde = signal<Date>(this.defaultDesde());
   readonly hasta = signal<Date>(new Date());
+  readonly periodoInstalados = signal<MetricsPeriodo>('mes');
+  readonly diaInstalados = signal<string | null>(monthStart());
+  readonly hastaInstalados = signal<string | null>(localToday());
   readonly campoTipificacion = signal<CampoTipificacion>('ULTIMA');
   readonly anclaFecha = signal<AnclaFechaBaseLeads>('TIPIFICACION');
   readonly idProveedorOrigen = signal<number | null>(null);
@@ -61,6 +68,11 @@ export class AdminBaseLeadsFacade {
     { label: 'Cobranza', value: 'COBRANZA' }
   ];
 
+  readonly vistaOptions: { label: string; value: VistaBaseLeads }[] = [
+    { label: 'Base', value: 'BASE' },
+    { label: 'Instalados', value: 'INSTALADOS' }
+  ];
+
   readonly campoOptions: { label: string; value: CampoTipificacion }[] = [
     { label: 'Primera', value: 'PRIMERA' },
     { label: 'Última', value: 'ULTIMA' },
@@ -89,6 +101,7 @@ export class AdminBaseLeadsFacade {
   });
 
   readonly hasResults = computed(() => this.totalForExport() > 0);
+  readonly isInstalados = computed(() => this.vista() === 'INSTALADOS');
   readonly archivosEstimados = computed(() =>
     Math.ceil(this.totalForExport() / this.clampMaxLeads())
   );
@@ -176,6 +189,37 @@ export class AdminBaseLeadsFacade {
     await Promise.all([this.loadPreview(), this.loadCount()]);
   }
 
+  async setVista(vista: VistaBaseLeads): Promise<void> {
+    if (this.vista() === vista) {
+      return;
+    }
+    this.vista.set(vista);
+    this.rows.set([]);
+    this.totalElements.set(0);
+    this.totalForExport.set(0);
+    this.suggestedName.set('');
+    this.page.set(0);
+    if (vista === 'INSTALADOS') {
+      this.codigosTipificacion.set([]);
+      this.codigosSubtipificacion.set([]);
+      this.modoExport.set('EXCEL');
+    }
+  }
+
+  setPeriodoInstalados(periodo: MetricsPeriodo | null | undefined): void {
+    if (!periodo) {
+      return;
+    }
+    this.periodoInstalados.set(periodo);
+    const range = resolveMetricsRange(periodo, this.diaInstalados(), this.hastaInstalados());
+    this.applyInstaladosRange(range.desde, range.hasta);
+  }
+
+  setRangoInstalados(rango: MetricsRango): void {
+    this.periodoInstalados.set('dia');
+    this.applyInstaladosRange(rango.desde, rango.hasta);
+  }
+
   async loadPreview(): Promise<void> {
     this.isLoading.set(true);
     try {
@@ -245,7 +289,21 @@ export class AdminBaseLeadsFacade {
   }
 
   private buildFilter(): BaseLeadsExportFilter {
+    if (this.isInstalados()) {
+      const range = resolveMetricsRange(this.periodoInstalados(), this.diaInstalados(), this.hastaInstalados());
+      const filter: BaseLeadsExportFilter = {
+        vista: 'INSTALADOS',
+        etapa: 'VENTA',
+        desde: range.desde ?? localToday(),
+        hasta: range.hasta ?? range.desde ?? localToday()
+      };
+      const pv = this.idProveedor();
+      if (pv != null) filter.idProveedor = pv;
+      return filter;
+    }
+
     const filter: BaseLeadsExportFilter = {
+      vista: 'BASE',
       etapa: this.etapa(),
       desde: this.formatDate(this.desde()),
       hasta: this.formatDate(this.hasta()),
@@ -261,6 +319,13 @@ export class AdminBaseLeadsFacade {
     const subCodigos = this.codigosSubtipificacion();
     if (subCodigos.length) filter.codigosSubtipificacion = subCodigos;
     return filter;
+  }
+
+  private applyInstaladosRange(desde?: string, hasta?: string): void {
+    const fallback = localToday();
+    const from = desde ?? fallback;
+    this.diaInstalados.set(from);
+    this.hastaInstalados.set(hasta ?? from);
   }
 
   private formatDate(d: Date): string {

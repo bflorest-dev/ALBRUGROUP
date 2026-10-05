@@ -19,6 +19,7 @@ import pe.albrugroup.lead_service.entity.Origen;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.AnclaFechaBaseLeads;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.VistaBaseLeads;
 import pe.albrugroup.lead_service.entity.request.BaseLeadsExportFilter;
 import pe.albrugroup.lead_service.entity.request.BaseLeadsExportRequest;
 import pe.albrugroup.lead_service.entity.response.AlbLeadRow;
@@ -255,6 +256,13 @@ public class BaseLeadsExportService {
     }
 
     private Page<BaseLeadPreviewResponse> ejecutarQuery(BaseLeadsExportFilter filter, Pageable pageable) {
+        if (filter.getVista() == VistaBaseLeads.INSTALADOS) {
+            boolean filtrarProveedor = filter.getIdProveedor() != null;
+            Long idProveedor = filtrarProveedor ? filter.getIdProveedor() : 0L;
+            return leadRepository.buscarBaseLeadsInstalados(
+                    filtrarProveedor, idProveedor, filter.getDesde(), filter.getHasta(), pageable);
+        }
+
         Instant desde = OperationalDateTime.startOfDay(filter.getDesde());
         Instant hasta = OperationalDateTime.endExclusiveOfDay(filter.getHasta());
 
@@ -306,6 +314,11 @@ public class BaseLeadsExportService {
     }
 
     public String generarNombreSugerido(BaseLeadsExportFilter filter) {
+        if (filter.getVista() == VistaBaseLeads.INSTALADOS) {
+            return "INSTALADOS_" + filter.getDesde().format(DATE_FMT)
+                    + "-" + filter.getHasta().format(DATE_FMT);
+        }
+
         StringBuilder sb = new StringBuilder();
 
         sb.append(filter.getEtapa().name());

@@ -2,157 +2,209 @@
   <header class="page-head">
     <div>
       <h1>Base de Leads</h1>
-      <p>Exporta leads filtrados como archivos encriptados .alb</p>
+      <p>{{ facade.isInstalados() ? 'Consulta instalaciones por fecha y proveedor listas para descargar.' : 'Exporta leads filtrados como archivos encriptados .alb' }}</p>
     </div>
+    <p-select
+      class="view-switch"
+      [options]="facade.vistaOptions"
+      [ngModel]="facade.vista()"
+      (ngModelChange)="facade.setVista($event)"
+      optionLabel="label"
+      optionValue="value"
+      appendTo="body"
+      panelStyleClass="base-leads-select-panel"
+      ariaLabel="Vista"
+    />
   </header>
 
   <!-- Filtros -->
   <section class="control-rail" aria-label="Filtros de exportacion">
-    <div class="filter-row">
-      <label class="select-field">
-        <span class="field-label">Etapa</span>
-        <p-select
-          [options]="facade.etapaOptions"
-          [ngModel]="facade.etapa()"
-          (ngModelChange)="facade.etapa.set($event); onEtapaChange()"
-          optionLabel="label"
-          optionValue="value"
-          appendTo="body"
-          panelStyleClass="base-leads-select-panel"
-        />
-      </label>
+    @if (facade.isInstalados()) {
+      <div class="filter-row filter-row--instalados">
+        <div class="period-field">
+          <span class="field-label">Periodo de instalación</span>
+          <app-period-selector
+            [periodo]="facade.periodoInstalados()"
+            [dia]="facade.diaInstalados()"
+            [hasta]="facade.hastaInstalados()"
+            (periodoChange)="facade.setPeriodoInstalados($event)"
+            (rangoChange)="facade.setRangoInstalados($event)"
+          />
+        </div>
 
-      <label class="select-field">
-        <span class="field-label">Proveedor origen</span>
-        <p-select
-          [options]="facade.proveedoresOrigen()"
-          [ngModel]="facade.idProveedorOrigen()"
-          (ngModelChange)="facade.idProveedorOrigen.set($event ?? null); onProveedorOrigenChange()"
-          [disabled]="facade.isLoadingCatalog()"
-          [loading]="facade.isLoadingCatalog()"
-          optionLabel="nombre"
-          optionValue="id"
-          placeholder="Todos"
-          [showClear]="true"
-          appendTo="body"
-          panelStyleClass="base-leads-select-panel"
-        />
-      </label>
+        <label class="select-field">
+          <span class="field-label">Proveedor</span>
+          <p-select
+            [options]="facade.proveedores()"
+            [ngModel]="facade.idProveedor()"
+            (ngModelChange)="facade.idProveedor.set($event ?? null)"
+            [disabled]="facade.isLoadingCatalog()"
+            [loading]="facade.isLoadingCatalog()"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Todos"
+            [showClear]="true"
+            appendTo="body"
+            panelStyleClass="base-leads-select-panel"
+          />
+        </label>
 
-      <label class="select-field">
-        <span class="field-label">Proveedor final</span>
-        <p-select
-          [options]="facade.proveedores()"
-          [ngModel]="facade.idProveedor()"
-          (ngModelChange)="facade.idProveedor.set($event ?? null); onProveedorChange()"
-          [disabled]="facade.isLoadingCatalog()"
-          [loading]="facade.isLoadingCatalog()"
-          optionLabel="nombre"
-          optionValue="id"
-          placeholder="Todos"
-          [showClear]="true"
-          appendTo="body"
-          panelStyleClass="base-leads-select-panel"
-        />
-      </label>
+        <button class="btn-search" type="button" [disabled]="facade.isLoading()" (click)="facade.buscar()">
+          @if (facade.isLoading()) {
+            <span class="spinner"></span>
+          } @else {
+            <i class="pi pi-search"></i>
+          }
+          Buscar
+        </button>
+      </div>
+    } @else {
+      <div class="filter-row">
+        <label class="select-field">
+          <span class="field-label">Etapa</span>
+          <p-select
+            [options]="facade.etapaOptions"
+            [ngModel]="facade.etapa()"
+            (ngModelChange)="facade.etapa.set($event); onEtapaChange()"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            panelStyleClass="base-leads-select-panel"
+          />
+        </label>
 
-      <label class="select-field">
-        <span class="field-label">Periodo</span>
-        <p-select
-          [options]="facade.anclaFechaOptions"
-          [ngModel]="facade.anclaFecha()"
-          (ngModelChange)="facade.anclaFecha.set($event)"
-          optionLabel="label"
-          optionValue="value"
-          appendTo="body"
-          panelStyleClass="base-leads-select-panel"
-        />
-      </label>
+        <label class="select-field">
+          <span class="field-label">Proveedor origen</span>
+          <p-select
+            [options]="facade.proveedoresOrigen()"
+            [ngModel]="facade.idProveedorOrigen()"
+            (ngModelChange)="facade.idProveedorOrigen.set($event ?? null); onProveedorOrigenChange()"
+            [disabled]="facade.isLoadingCatalog()"
+            [loading]="facade.isLoadingCatalog()"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Todos"
+            [showClear]="true"
+            appendTo="body"
+            panelStyleClass="base-leads-select-panel"
+          />
+        </label>
 
-      <label class="select-field">
-        <span class="field-label">Campo</span>
-        <p-select
-          [options]="facade.campoOptions"
-          [ngModel]="facade.campoTipificacion()"
-          (ngModelChange)="facade.campoTipificacion.set($event)"
-          optionLabel="label"
-          optionValue="value"
-          appendTo="body"
-          panelStyleClass="base-leads-select-panel"
-        />
-      </label>
-    </div>
+        <label class="select-field">
+          <span class="field-label">Proveedor final</span>
+          <p-select
+            [options]="facade.proveedores()"
+            [ngModel]="facade.idProveedor()"
+            (ngModelChange)="facade.idProveedor.set($event ?? null); onProveedorChange()"
+            [disabled]="facade.isLoadingCatalog()"
+            [loading]="facade.isLoadingCatalog()"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Todos"
+            [showClear]="true"
+            appendTo="body"
+            panelStyleClass="base-leads-select-panel"
+          />
+        </label>
 
-    <div class="filter-row">
-      <label class="date-field">
-        <span class="field-label">Desde</span>
-        <p-datepicker
-          [ngModel]="facade.desde()"
-          (ngModelChange)="facade.desde.set($event)"
-          dateFormat="dd/mm/yy"
-          [showIcon]="true"
-          appendTo="body"
-          [baseZIndex]="1400"
-          panelStyleClass="base-leads-calendar"
-        />
-      </label>
+        <label class="select-field">
+          <span class="field-label">Periodo</span>
+          <p-select
+            [options]="facade.anclaFechaOptions"
+            [ngModel]="facade.anclaFecha()"
+            (ngModelChange)="facade.anclaFecha.set($event)"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            panelStyleClass="base-leads-select-panel"
+          />
+        </label>
 
-      <label class="date-field">
-        <span class="field-label">Hasta</span>
-        <p-datepicker
-          [ngModel]="facade.hasta()"
-          (ngModelChange)="facade.hasta.set($event)"
-          dateFormat="dd/mm/yy"
-          [showIcon]="true"
-          appendTo="body"
-          [baseZIndex]="1400"
-          panelStyleClass="base-leads-calendar"
-        />
-      </label>
+        <label class="select-field">
+          <span class="field-label">Campo</span>
+          <p-select
+            [options]="facade.campoOptions"
+            [ngModel]="facade.campoTipificacion()"
+            (ngModelChange)="facade.campoTipificacion.set($event)"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            panelStyleClass="base-leads-select-panel"
+          />
+        </label>
+      </div>
 
-      <label class="multiselect-field">
-        <span class="field-label">Tipificacion</span>
-        <p-multiselect
-          [options]="facade.tipificaciones()"
-          [ngModel]="facade.codigosTipificacion()"
-          (ngModelChange)="facade.codigosTipificacion.set($event); facade.codigosSubtipificacion.set([])"
-          [disabled]="(!facade.idProveedor() && !facade.idProveedorOrigen()) || facade.isLoadingTipificaciones()"
-          [loading]="facade.isLoadingTipificaciones()"
-          optionLabel="codigo"
-          optionValue="codigo"
-          appendTo="body"
-          panelStyleClass="base-leads-multiselect-panel"
-          [placeholder]="facade.isLoadingTipificaciones() ? 'Cargando…' : 'Todas'"
-          [maxSelectedLabels]="2"
-        />
-      </label>
+      <div class="filter-row">
+        <label class="date-field">
+          <span class="field-label">Desde</span>
+          <p-datepicker
+            [ngModel]="facade.desde()"
+            (ngModelChange)="facade.desde.set($event)"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            appendTo="body"
+            [baseZIndex]="1400"
+            panelStyleClass="base-leads-calendar"
+          />
+        </label>
 
-      <label class="multiselect-field">
-        <span class="field-label">Subtipificacion</span>
-        <p-multiselect
-          [options]="facade.subtipificacionesDisponibles()"
-          [ngModel]="facade.codigosSubtipificacion()"
-          (ngModelChange)="facade.codigosSubtipificacion.set($event)"
-          [disabled]="(!facade.idProveedor() && !facade.idProveedorOrigen()) || facade.isLoadingTipificaciones() || !facade.tipificaciones().length"
-          [loading]="facade.isLoadingTipificaciones()"
-          optionLabel="codigo"
-          optionValue="codigo"
-          appendTo="body"
-          panelStyleClass="base-leads-multiselect-panel"
-          [placeholder]="facade.isLoadingTipificaciones() ? 'Cargando…' : 'Todas'"
-          [maxSelectedLabels]="2"
-        />
-      </label>
+        <label class="date-field">
+          <span class="field-label">Hasta</span>
+          <p-datepicker
+            [ngModel]="facade.hasta()"
+            (ngModelChange)="facade.hasta.set($event)"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            appendTo="body"
+            [baseZIndex]="1400"
+            panelStyleClass="base-leads-calendar"
+          />
+        </label>
 
-      <button class="btn-search" type="button" [disabled]="facade.isLoading()" (click)="facade.buscar()">
-        @if (facade.isLoading()) {
-          <span class="spinner"></span>
-        } @else {
-          <i class="pi pi-search"></i>
-        }
-        Buscar
-      </button>
-    </div>
+        <label class="multiselect-field">
+          <span class="field-label">Tipificacion</span>
+          <p-multiselect
+            [options]="facade.tipificaciones()"
+            [ngModel]="facade.codigosTipificacion()"
+            (ngModelChange)="facade.codigosTipificacion.set($event); facade.codigosSubtipificacion.set([])"
+            [disabled]="(!facade.idProveedor() && !facade.idProveedorOrigen()) || facade.isLoadingTipificaciones()"
+            [loading]="facade.isLoadingTipificaciones()"
+            optionLabel="codigo"
+            optionValue="codigo"
+            appendTo="body"
+            panelStyleClass="base-leads-multiselect-panel"
+            [placeholder]="facade.isLoadingTipificaciones() ? 'Cargando…' : 'Todas'"
+            [maxSelectedLabels]="2"
+          />
+        </label>
+
+        <label class="multiselect-field">
+          <span class="field-label">Subtipificacion</span>
+          <p-multiselect
+            [options]="facade.subtipificacionesDisponibles()"
+            [ngModel]="facade.codigosSubtipificacion()"
+            (ngModelChange)="facade.codigosSubtipificacion.set($event)"
+            [disabled]="(!facade.idProveedor() && !facade.idProveedorOrigen()) || facade.isLoadingTipificaciones() || !facade.tipificaciones().length"
+            [loading]="facade.isLoadingTipificaciones()"
+            optionLabel="codigo"
+            optionValue="codigo"
+            appendTo="body"
+            panelStyleClass="base-leads-multiselect-panel"
+            [placeholder]="facade.isLoadingTipificaciones() ? 'Cargando…' : 'Todas'"
+            [maxSelectedLabels]="2"
+          />
+        </label>
+
+        <button class="btn-search" type="button" [disabled]="facade.isLoading()" (click)="facade.buscar()">
+          @if (facade.isLoading()) {
+            <span class="spinner"></span>
+          } @else {
+            <i class="pi pi-search"></i>
+          }
+          Buscar
+        </button>
+      </div>
+    }
   </section>
 
   @if (facade.catalogError()) {
@@ -248,7 +300,7 @@
         <span>Subtipificacion</span>
         <span>Proveedor</span>
         <span>Proveedor origen</span>
-        <span>{{ facade.anclaFecha() === 'INGRESO_ETAPA' ? 'Ingreso a etapa' : 'Fecha tipificación' }}</span>
+        <span>{{ fechaColumna() }}</span>
       </div>
       @if (facade.isLoading()) {
         <div class="loading-state"><span class="spinner"></span></div>
@@ -264,7 +316,7 @@
             <span>{{ row.codigoSubtipificacion }}</span>
             <span>{{ row.nombreProveedor || '—' }}</span>
             <span>{{ row.nombreProveedorOrigen || '—' }}</span>
-            <span class="mono">{{ (facade.anclaFecha() === 'INGRESO_ETAPA' ? row.fechaIngresoEtapa : row.fechaTipificacion) | slice:0:10 }}</span>
+            <span class="mono">{{ fechaFila(row) | slice:0:10 }}</span>
           </div>
         }
         @if (!facade.rows().length) {

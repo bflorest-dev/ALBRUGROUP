@@ -43,6 +43,6 @@ public class LeadSeguimiento {
     private Instant fechaSuspension;
     private Instant fechaBaja;
 
-    @UpdateTimestamp
+    @UpdateTimestamp 
     private Instant updatedAt;
 }

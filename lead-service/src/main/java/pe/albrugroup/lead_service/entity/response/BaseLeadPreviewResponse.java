@@ -1,6 +1,7 @@
 package pe.albrugroup.lead_service.entity.response;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 public record BaseLeadPreviewResponse(
         Long id,
@@ -16,5 +17,6 @@ public record BaseLeadPreviewResponse(
         String nombreProveedor,
         String nombreProveedorOrigen,
         Instant fechaIngresoEtapa,
-        Instant fechaTipificacion
+        Instant fechaTipificacion,
+        LocalDate fechaInstalacion
 ) {}

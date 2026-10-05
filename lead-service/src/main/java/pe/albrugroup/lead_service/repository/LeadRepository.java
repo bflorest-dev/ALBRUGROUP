@@ -3553,12 +3553,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 p.nombre,
                 po.nombre,
                 r.fechaIngresoEtapa,
-                r.primeraTipificacionAt
+                r.primeraTipificacionAt,
+                seg.fechaInstalacion
             )
             FROM Lead l
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.proveedor p
             LEFT JOIN l.proveedorOrigen po
+            LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             WHERE l.etapa = :etapa
               AND (:filtrarProveedorOrigen = false OR po.id = :idProveedorOrigen)
@@ -3597,12 +3599,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 p.nombre,
                 po.nombre,
                 r.fechaIngresoEtapa,
-                r.ultimaTipificacionAt
+                r.ultimaTipificacionAt,
+                seg.fechaInstalacion
             )
             FROM Lead l
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.proveedor p
             LEFT JOIN l.proveedorOrigen po
+            LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             WHERE l.etapa = :etapa
               AND (:filtrarProveedorOrigen = false OR po.id = :idProveedorOrigen)
@@ -3641,12 +3645,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 p.nombre,
                 po.nombre,
                 r.fechaIngresoEtapa,
-                r.mayorRangoAt
+                r.mayorRangoAt,
+                seg.fechaInstalacion
             )
             FROM Lead l
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.proveedor p
             LEFT JOIN l.proveedorOrigen po
+            LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             WHERE l.etapa = :etapa
               AND (:filtrarProveedorOrigen = false OR po.id = :idProveedorOrigen)
@@ -3669,6 +3675,40 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaPorIngresoEtapa") boolean fechaPorIngresoEtapa,
             @Param("desde") Instant desde,
             @Param("hasta") Instant hasta,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.BaseLeadPreviewResponse(
+                l.id,
+                l.prefijo, l.lead, l.usermeta,
+                dp.numeroDocumentoTitularServicio,
+                l.direccionSnapshot,
+                dp.nombreTitularServicio,
+                CAST(l.etapa AS string),
+                l.codigoTipificacion,
+                l.codigoSubtipificacion,
+                p.nombre,
+                po.nombre,
+                l.lastEntryAt,
+                l.updatedAt,
+                seg.fechaInstalacion
+            )
+            FROM Lead l
+            JOIN LeadSeguimiento seg ON seg.idLead = l.id
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.proveedor p
+            LEFT JOIN l.proveedorOrigen po
+            WHERE seg.fechaInstalacion >= :desde
+              AND seg.fechaInstalacion <= :hasta
+              AND (:filtrarProveedor = false OR p.id = :idProveedor)
+            ORDER BY seg.fechaInstalacion DESC, l.id DESC
+            """)
+    Page<BaseLeadPreviewResponse> buscarBaseLeadsInstalados(
+            @Param("filtrarProveedor") boolean filtrarProveedor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("desde") LocalDate desde,
+            @Param("hasta") LocalDate hasta,
             Pageable pageable
     );
 

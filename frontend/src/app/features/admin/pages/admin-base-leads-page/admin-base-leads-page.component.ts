@@ -6,11 +6,12 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
+import { PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { AdminBaseLeadsFacade } from '../../facades/admin-base-leads.facade';
 
 @Component({
   selector: 'app-admin-base-leads-page',
-  imports: [SlicePipe, FormsModule, SelectModule, DatePickerModule, MultiSelectModule, ConfirmDialogModule],
+  imports: [SlicePipe, FormsModule, SelectModule, DatePickerModule, MultiSelectModule, ConfirmDialogModule, PeriodSelectorComponent],
   providers: [ConfirmationService],
   templateUrl: './admin-base-leads-page.component.html',
   styleUrl: './admin-base-leads-page.component.scss',
@@ -39,6 +40,9 @@ export class AdminBaseLeadsPageComponent implements OnInit {
   }
 
   onProveedorChange(): void {
+    if (this.facade.isInstalados()) {
+      return;
+    }
     this.resetAndLoadTipificaciones();
   }
 
@@ -68,5 +72,19 @@ export class AdminBaseLeadsPageComponent implements OnInit {
       rejectLabel: 'Cancelar',
       accept: () => this.facade.exportar()
     });
+  }
+
+  protected fechaColumna(): string {
+    if (this.facade.isInstalados()) {
+      return 'Instalación';
+    }
+    return this.facade.anclaFecha() === 'INGRESO_ETAPA' ? 'Ingreso a etapa' : 'Fecha tipificación';
+  }
+
+  protected fechaFila(row: { fechaIngresoEtapa: string | null; fechaTipificacion: string | null; fechaInstalacion: string | null }): string | null {
+    if (this.facade.isInstalados()) {
+      return row.fechaInstalacion;
+    }
+    return this.facade.anclaFecha() === 'INGRESO_ETAPA' ? row.fechaIngresoEtapa : row.fechaTipificacion;
   }
 }

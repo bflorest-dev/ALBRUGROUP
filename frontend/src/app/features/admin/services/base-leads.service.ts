@@ -8,6 +8,7 @@ export interface BaseLeadsExportFilter {
   etapa: Etapa;
   desde: string;
   hasta: string;
+  vista?: VistaBaseLeads;
   campoTipificacion?: CampoTipificacion;
   anclaFecha?: AnclaFechaBaseLeads;
   idProveedorOrigen?: number | null;
@@ -17,6 +18,7 @@ export interface BaseLeadsExportFilter {
 }
 
 export type AnclaFechaBaseLeads = 'TIPIFICACION' | 'INGRESO_ETAPA';
+export type VistaBaseLeads = 'BASE' | 'INSTALADOS';
 
 export interface BaseLeadPreviewResponse {
   prefijo: string;
@@ -32,6 +34,7 @@ export interface BaseLeadPreviewResponse {
   nombreProveedorOrigen: string | null;
   fechaIngresoEtapa: string | null;
   fechaTipificacion: string | null;
+  fechaInstalacion: string | null;
 }
 
 export interface BaseLeadsCountResponse {
@@ -89,6 +92,9 @@ export class BaseLeadsService {
       .set('desde', filter.desde)
       .set('hasta', filter.hasta);
 
+    if (filter.vista) {
+      params = params.set('vista', filter.vista);
+    }
     if (filter.campoTipificacion) {
       params = params.set('campoTipificacion', filter.campoTipificacion);
     }
