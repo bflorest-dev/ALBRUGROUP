@@ -116,7 +116,7 @@ export class ResumenDiarioFacade implements OnDestroy {
   private started = false;
   private readonly criteria = signal<Criteria | null>(null);
 
-  readonly campo = signal<GestionCampoTipi>('MAYOR');
+  readonly campo = signal<GestionCampoTipi>('ULTIMA');
   readonly modo = signal<GestionModo>('GESTIONADOS');
   readonly periodo = signal<MetricsPeriodo>('dia');
   readonly diaSeleccionado = signal<string | null>(null);

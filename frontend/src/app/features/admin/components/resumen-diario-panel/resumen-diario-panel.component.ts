@@ -118,6 +118,14 @@ export class ResumenDiarioPanelComponent implements OnInit {
     }
   });
 
+  protected readonly estadoCampo = computed<GestionCampoTipi>(() =>
+    this.campo() === 'PRIMERA' ? 'PRIMERA' : 'ULTIMA'
+  );
+
+  protected readonly estadoCampoLabel = computed(() =>
+    this.estadoCampo() === 'PRIMERA' ? 'Primera' : 'Última'
+  );
+
   protected readonly fechaLabel = computed(() => {
     const periodo = this.periodo();
     if (periodo === 'semana') {
@@ -209,7 +217,7 @@ export class ResumenDiarioPanelComponent implements OnInit {
         this.detalleService.obtenerPreventasDetalle(
           this.idEquipo(),
           modo,
-          this.campo() ?? 'MAYOR',
+          this.campo() ?? 'ULTIMA',
           range.desde,
           range.hasta
         )
@@ -261,7 +269,7 @@ export class ResumenDiarioPanelComponent implements OnInit {
           this.idEquipo(),
           fila.key,
           this.modo() ?? 'GESTIONADOS',
-          this.campo() ?? 'MAYOR',
+          this.estadoCampo(),
           range.desde,
           range.hasta
         )

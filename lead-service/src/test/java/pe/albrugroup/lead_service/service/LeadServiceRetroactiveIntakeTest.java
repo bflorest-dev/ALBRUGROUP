@@ -41,6 +41,7 @@ import pe.albrugroup.lead_service.entity.request.LeadNumeroParaLlamarRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.CampoConfigResponse;
+import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.NumeroLlamadaResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.ConflictException;
@@ -1052,6 +1053,56 @@ class LeadServiceRetroactiveIntakeTest {
         ArgumentCaptor<RegistrarEventoRequest> captor = ArgumentCaptor.forClass(RegistrarEventoRequest.class);
         verify(eventoService).registrarEvento(captor.capture());
         assertThat(captor.getValue().getComentario()).isEqualTo("Comentario del asesor");
+    }
+
+    @Test
+    void tipificarLeadEnOtraEtapaActualizaUltimaTipificacionDePreventaSinCambiarEtapa() {
+        Instant eventoAt = Instant.parse("2026-10-03T16:46:51Z");
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.setEtapa(Etapa.VENTA);
+        lead.setNombreAsesorAsignado("Asesor Preventa");
+        LeadTipificacionRequest request = new LeadTipificacionRequest();
+        request.setCodigoTipificacion("NO_DESEA");
+        request.setCodigoSubtipificacion("SIN_INTERES");
+        request.setIdProveedor(1L);
+        Tipificacion tipificacion = new Tipificacion();
+        tipificacion.setId(90L);
+        tipificacion.setMatriz(matriz(Etapa.PREVENTA, 1L));
+        tipificacion.setCodigo("NO_DESEA");
+        tipificacion.setOrden(2);
+        tipificacion.setActivo(true);
+        Subtipificacion subtipificacion = new Subtipificacion();
+        subtipificacion.setId(91L);
+        subtipificacion.setTipificacion(tipificacion);
+        subtipificacion.setCodigo("SIN_INTERES");
+        subtipificacion.setOrden(1);
+        subtipificacion.setActivo(true);
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignado(25202L, 7L)).thenReturn(Optional.of(lead));
+        when(equipoProveedorRepository.existsByIdEquipoAndProveedorId(10L, 1L)).thenReturn(true);
+        when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
+                Etapa.PREVENTA, 1L, "NO_DESEA"
+        )).thenReturn(Optional.of(tipificacion));
+        when(subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(90L, "SIN_INTERES"))
+                .thenReturn(Optional.of(subtipificacion));
+        when(leadRepository.save(lead)).thenReturn(lead);
+        when(eventoService.registrarEvento(any(RegistrarEventoRequest.class)))
+                .thenReturn(EventoResponse.builder().createdAt(eventoAt).build());
+
+        leadService.tipificarLead(25202L, request);
+
+        assertThat(lead.getEtapa()).isEqualTo(Etapa.VENTA);
+        verify(leadEtapaResumenService).registrarTipificacion(
+                25202L,
+                Etapa.PREVENTA,
+                "NO_DESEA",
+                "SIN_INTERES",
+                2,
+                7L,
+                "Asesor Preventa",
+                eventoAt
+        );
     }
 
     @Test

@@ -88,9 +88,7 @@ export class DashboardPreventaStageComponent implements OnInit {
   protected readonly dia = signal<string | null>(null);
   /** Fin del rango. `null` o igual a `dia` = día suelto. */
   protected readonly hasta = signal<string | null>(null);
-  // Mismo default que Gestión por campaña: dos controles idénticos en la misma pantalla no pueden
-  // arrancar en valores distintos.
-  protected readonly campo = signal<GestionCampoTipi>('MAYOR');
+  protected readonly campo = signal<GestionCampoTipi>('ULTIMA');
   protected readonly modo = signal<GestionModoMetricas>('INGRESADOS');
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');

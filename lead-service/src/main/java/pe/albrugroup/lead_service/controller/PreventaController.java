@@ -288,7 +288,7 @@ public class PreventaController {
     public ResponseEntity<ResumenDiarioResponse> obtenerResumenDiario(
             @RequestParam(required = false) Long idEquipo,
             @RequestParam(defaultValue = "GESTIONADOS") ModoConteo modo,
-            @RequestParam(defaultValue = "MAYOR") CampoTipificacion campo,
+            @RequestParam(defaultValue = "ULTIMA") CampoTipificacion campo,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
@@ -300,7 +300,7 @@ public class PreventaController {
     public ResponseEntity<List<PreventaDetalleResponse>> obtenerPreventasDetalle(
             @RequestParam(required = false) Long idEquipo,
             @RequestParam(defaultValue = "GESTIONADOS") ModoConteo modo,
-            @RequestParam(defaultValue = "MAYOR") CampoTipificacion campo,
+            @RequestParam(defaultValue = "ULTIMA") CampoTipificacion campo,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
@@ -326,7 +326,7 @@ public class PreventaController {
             @RequestParam(required = false) Long idEquipo,
             @RequestParam String codigoTipificacion,
             @RequestParam(defaultValue = "GESTIONADOS") ModoConteo modo,
-            @RequestParam(defaultValue = "MAYOR") CampoTipificacion campo,
+            @RequestParam(defaultValue = "ULTIMA") CampoTipificacion campo,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {

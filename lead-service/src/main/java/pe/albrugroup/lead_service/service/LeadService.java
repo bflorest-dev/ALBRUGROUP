@@ -92,6 +92,7 @@ import pe.albrugroup.lead_service.entity.response.GtrTipificacionCampanaResponse
 import pe.albrugroup.lead_service.entity.response.GtrTipificacionRankingResponse;
 import pe.albrugroup.lead_service.entity.response.GtrSubtipificacionRankingResponse;
 import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasEquipoResponse;
+import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.PreventaDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenAsesorResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenDiarioResponse;
@@ -2719,6 +2720,7 @@ public class LeadService {
     private void tipificarLeadOtraEtapaInformativo(Lead lead, LeadTipificacionRequest request) {
         Etapa etapaLead = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
         Long idProveedorMatriz = resolverIdProveedorMatriz(lead, Etapa.PREVENTA, request.getIdProveedor());
         Tipificacion tipificacion = tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigoAndSeleccionableManualTrueAndActivoTrue(
@@ -2752,7 +2754,7 @@ public class LeadService {
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         // El evento se registra en PREVENTA (el catálogo que usó el asesor), coherente con el resto
         // de tipificaciones de preventa. Es solo un registro informativo: no impacta el lead.
-        registrarEventoTipificacion(
+        EventoResponse evento = registrarEventoTipificacion(
                 savedLead.getId(),
                 idCampana,
                 Etapa.PREVENTA,
@@ -2765,6 +2767,19 @@ public class LeadService {
                 resultado.subtipificacion().getCodigo(),
                 request.getComentario(),
                 request.getHoraProgramada()
+        );
+        Instant tipificadoAt = evento == null || evento.getCreatedAt() == null
+                ? OperationalDateTime.now()
+                : evento.getCreatedAt();
+        leadEtapaResumenService.registrarTipificacion(
+                savedLead.getId(),
+                Etapa.PREVENTA,
+                tipificacion.getCodigo(),
+                subtipificacion.getCodigo(),
+                tipificacion.getOrden(),
+                idAsesorAnterior,
+                nombreAsesorAnterior,
+                tipificadoAt
         );
         notificarCambioLead("TIPIFICACION", savedLead, etapaLead, idAsesorAnterior, true);
     }
@@ -4669,7 +4684,7 @@ public class LeadService {
         );
     }
 
-    private void registrarEventoTipificacion(
+    private EventoResponse registrarEventoTipificacion(
             Long idLead,
             Long idCampana,
             Etapa etapa,
@@ -4689,7 +4704,7 @@ public class LeadService {
         java.time.LocalDate fechaProgramacion = horaProgramada == null
                 ? null
                 : OperationalDateTime.scheduledDateFromTime(OperationalDateTime.now(), horaProgramada);
-        eventoService.registrarEvento(
+        return eventoService.registrarEvento(
                 RegistrarEventoRequest.builder()
                         .idLead(idLead)
                         .idCampana(idCampana)
@@ -6573,8 +6588,9 @@ public class LeadService {
 
         ResumenRankingResponse ranking = construirRankingResumen(idEquipo, modo, desde, hasta);
 
+        CampoTipificacion campoEstadoLeads = campoEstadoLeads(campo);
         List<GtrTipificacionRankingResponse> estadoLeads =
-                listarTipificacionesRankingGtr(desde, hasta, true, idEquipo, modo, campo);
+                listarTipificacionesRankingGtr(desde, hasta, true, idEquipo, modo, campoEstadoLeads);
 
         List<ResumenSubtipCampanaCeldaResponse> gestionCampana =
                 construirGestionSubtipCampana(idEquipo, modo, campo, desde, hasta);
@@ -6667,6 +6683,7 @@ public class LeadService {
         if (codigo.isBlank()) {
             throw new BadRequestException("Selecciona una tipificacion para ver el detalle.");
         }
+        CampoTipificacion campoEstadoLeads = campoEstadoLeads(campo);
         OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         boolean ingresados = modo == ModoConteo.INGRESADOS;
@@ -6677,13 +6694,13 @@ public class LeadService {
                 return List.of();
             }
             rows = leadRepository.detalleEstadoLeadsSinTipificarGtr(
-                    campo == CampoTipificacion.PRIMERA,
-                    campo == CampoTipificacion.ULTIMA,
-                    campo == CampoTipificacion.MAYOR,
+                    campoEstadoLeads == CampoTipificacion.PRIMERA,
+                    campoEstadoLeads == CampoTipificacion.ULTIMA,
+                    false,
                     ACCIONES_INGRESO, Accion.TIPIFICACION, rango.inicio(), rango.fin(),
                     equipos.filtrar(), equipos.ids());
         } else {
-            rows = switch (campo) {
+            rows = switch (campoEstadoLeads) {
                 case PRIMERA -> leadRepository.detalleEstadoLeadsPrimeraGtr(
                         codigo, ingresados, ACCIONES_INGRESO, Accion.TIPIFICACION,
                         rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
@@ -6699,6 +6716,10 @@ public class LeadService {
                 .sorted(Comparator.comparing(ResumenEstadoLeadDetalleResponse::fechaIngresoAt,
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
+    }
+
+    private CampoTipificacion campoEstadoLeads(CampoTipificacion campo) {
+        return campo == CampoTipificacion.PRIMERA ? CampoTipificacion.PRIMERA : CampoTipificacion.ULTIMA;
     }
 
     private Instant maxInstant(Instant left, Instant right) {
