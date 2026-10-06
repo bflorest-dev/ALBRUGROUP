@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { BrowserSessionService } from '../../../core/services/browser-session.service';
 import { CurrentUserProviderScopeService } from '../../../core/services/current-user-provider-scope.service';
+import { OperationalGateService } from '../../../core/services/operational-gate.service';
 import { PresenceService } from '../../../core/services/presence.service';
 import { SessionService } from '../../../core/services/session.service';
 import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
@@ -74,10 +75,48 @@ export class PostventaWorkspaceFacade {
   private readonly browserSession = inject(BrowserSessionService);
   private readonly providerScope = inject(CurrentUserProviderScopeService);
   private readonly presence = inject(PresenceService);
+  private readonly operationalGateService = inject(OperationalGateService);
   private readonly destroyRef = inject(DestroyRef);
   private lastProviderId: number | null | undefined = undefined;
+  private initializeInFlight = false;
+  private lastAttendanceStatus: string | null = null;
+  private readonly operationalGate = this.operationalGateService.createGate('postventa-workspace');
+
+  readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
+  readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
+  readonly operationalGateMessage = this.operationalGate.blockedMessage;
 
   constructor() {
+    effect(() => {
+      const status = this.operationalGateService.currentStatus();
+
+      // Solo limpiamos con un OFFLINE confirmado por el backend. Durante la carga o un re-login,
+      // el estado OFFLINE inicial significa "verificando" y no debe vaciar la bandeja.
+      if (this.operationalGateService.isConfirmedOffline()) {
+        this.clearOperationalData();
+        this.lastAttendanceStatus = status;
+        return;
+      }
+
+      if (
+        this.operationalGate.canActivateOperationalData() &&
+        !this.operationalGate.hasActivatedOperationalData() &&
+        !this.initializeInFlight
+      ) {
+        untracked(() => void this.initialize());
+      } else if (
+        this.operationalGate.canActivateOperationalData() &&
+        this.lastAttendanceStatus !== 'ONLINE'
+      ) {
+        untracked(() => {
+          this.startRealtime();
+          void this.loadBoard(this._pageNumber(), true);
+        });
+      }
+
+      this.lastAttendanceStatus = status;
+    });
+
     // Cambio de proveedor activo (selector del sidebar): recargar la bandeja desde la primera página
     // con el nuevo proveedor (el header X-Proveedor-Id lo aplica el interceptor). Nunca se mezclan
     // bandejas. La primera ejecución solo registra el valor inicial.
@@ -267,6 +306,9 @@ export class PostventaWorkspaceFacade {
   // Bandeja
   // ---------------------------------------------------------------------------
   async loadBoard(pageNumber = this._pageNumber(), silent = false): Promise<void> {
+    if (!this.canLoadOperationalData()) {
+      return;
+    }
     if (!silent && this._loadingBoard()) {
       return;
     }
@@ -315,6 +357,9 @@ export class PostventaWorkspaceFacade {
   }
 
   async loadCortes(): Promise<void> {
+    if (!this.canLoadOperationalData()) {
+      return;
+    }
     try {
       const cortes = await firstValueFrom(this.service.listarCortes());
       const options = cortes
@@ -332,7 +377,7 @@ export class PostventaWorkspaceFacade {
    * de POSTVENTA (p. ej. BACKOFFICE tipifica "instalado"), se toma/libera o se tipifica. Idempotente.
    */
   startRealtime(): void {
-    if (this.realtimeIniciado) {
+    if (this.realtimeIniciado || !this.canLoadOperationalData()) {
       return;
     }
     this.realtimeIniciado = true;
@@ -366,7 +411,7 @@ export class PostventaWorkspaceFacade {
   }
 
   private async reconcile(): Promise<void> {
-    if (this._reconciling()) {
+    if (this._reconciling() || !this.canDisplayOperationalData()) {
       return;
     }
     this._reconciling.set(true);
@@ -550,7 +595,7 @@ export class PostventaWorkspaceFacade {
   // Abrir gestion (tomar con relevo) y cerrar
   // ---------------------------------------------------------------------------
   async gestionar(row: VisualLeadPostventa, confirmarReasignacion = false): Promise<void> {
-    if (this._saving()) {
+    if (this._saving() || !this.ensureCanMutate()) {
       return;
     }
     this._saving.set(true);
@@ -630,6 +675,9 @@ export class PostventaWorkspaceFacade {
   }
 
   private async loadContext(row: VisualLeadPostventa, silent = false, consultaOnly = false): Promise<void> {
+    if (!this.canLoadOperationalData()) {
+      return;
+    }
     if (!silent) {
       this._loadingContext.set(true);
     }
@@ -646,6 +694,9 @@ export class PostventaWorkspaceFacade {
         firstValueFrom(this.service.obtenerResumenEncuestas(row.idLead)),
         firstValueFrom(this.service.listarPagos(row.idLead, this.recentPage()))
       ]);
+      if (!this.canLoadOperationalData()) {
+        return;
+      }
       this._detail.set(detail);
       this._eventos.set(eventos.content);
       this._catalogo.set(catalogo);
@@ -668,6 +719,9 @@ export class PostventaWorkspaceFacade {
   // Plataforma digital
   // ---------------------------------------------------------------------------
   async onPlataformaChanged(idPlataforma: number | null): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     this._paquetes.set([]);
     this._credenciales.set([]);
     if (!idPlataforma) {
@@ -681,6 +735,9 @@ export class PostventaWorkspaceFacade {
   }
 
   async onPaqueteChanged(idPaquete: number | null): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     this._credenciales.set([]);
     if (!idPaquete) {
       return;
@@ -864,7 +921,7 @@ export class PostventaWorkspaceFacade {
   // ---------------------------------------------------------------------------
   async tipificar(request: LeadTipificacionPostventaRequest): Promise<void> {
     const lead = this._selectedLead();
-    if (!lead || this._saving()) {
+    if (!lead || this._saving() || !this.ensureCanMutate()) {
       return;
     }
     if (this._consultaOnly()) {
@@ -897,6 +954,9 @@ export class PostventaWorkspaceFacade {
     okMessage: string,
     failMessage: string
   ): Promise<boolean> {
+    if (!this.ensureCanMutate()) {
+      return false;
+    }
     this._saving.set(true);
     try {
       await firstValueFrom(action());
@@ -937,6 +997,57 @@ export class PostventaWorkspaceFacade {
     this._gestionModificada.set(false);
     this._medioContacto.set(null);
     this._consultaOnly.set(false);
+  }
+
+  async initialize(): Promise<void> {
+    if (!this.operationalGate.canActivateOperationalData() || this.initializeInFlight) {
+      return;
+    }
+
+    this.initializeInFlight = true;
+    try {
+      await Promise.all([this.loadCortes(), this.loadBoard()]);
+      if (this.operationalGate.canActivateOperationalData()) {
+        this.startRealtime();
+        this.operationalGate.markActivated();
+      }
+    } finally {
+      this.initializeInFlight = false;
+    }
+  }
+
+  private canLoadOperationalData(): boolean {
+    return this.canDisplayOperationalData() || this.initializeInFlight;
+  }
+
+  private ensureCanMutate(): boolean {
+    if (this.canMutateOperationalData()) {
+      return true;
+    }
+
+    this.notify('warn', this.operationalGateMessage());
+    return false;
+  }
+
+  private clearOperationalData(): void {
+    this.operationalGate.clearActivation();
+    this.setPostventaManagingPresence(false);
+    this.boardRequestSeq += 1;
+    this._rows.set([]);
+    this._totalRows.set(0);
+    this._pageNumber.set(0);
+    this._loadingBoard.set(false);
+    this._coincidenciasBusqueda.set([]);
+    this._corteOptions.set([]);
+    this._selectedCorteValue.set(TODOS_LOS_CORTES);
+    this.searchInput.set('');
+    this.searchActive.set('');
+    this.selectedSemaforoParents.set([]);
+    this.selectedSemaforoChildren.set([]);
+    this._drawerOpen.set(false);
+    this._selectedLead.set(null);
+    this._loadingContext.set(false);
+    this.resetContext();
   }
 
   private recentPage() {

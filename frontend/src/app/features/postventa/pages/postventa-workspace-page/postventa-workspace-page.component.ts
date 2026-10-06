@@ -50,9 +50,7 @@ export class PostventaWorkspacePageComponent implements OnInit {
   protected readonly providerLogo = resolveProviderLogo;
 
   ngOnInit(): void {
-    void this.facade.loadCortes();
-    void this.facade.loadBoard();
-    this.facade.startRealtime();
+    void this.facade.initialize();
   }
 
   protected onSearchInput(event: Event): void {

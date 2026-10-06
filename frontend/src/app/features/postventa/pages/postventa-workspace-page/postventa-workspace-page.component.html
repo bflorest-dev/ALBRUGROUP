@@ -14,6 +14,13 @@
     </div>
   </header>
 
+  @if (!facade.canDisplayOperationalData()) {
+    <div class="postventa-board__blocked" role="status">
+      <i class="ti ti-lock" aria-hidden="true"></i>
+      <strong>Postventa bloqueada</strong>
+      <span>{{ facade.operationalGateMessage() }}</span>
+    </div>
+  } @else {
   <!-- CONTROLS -->
   <section class="postventa-board__controls">
     <div class="postventa-board__controls-left">
@@ -229,6 +236,7 @@
       styleClass="board-paginator"
     />
   </div>
+  }
 
   <app-postventa-gestion-drawer />
 </section>

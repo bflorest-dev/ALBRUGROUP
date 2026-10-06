@@ -71,6 +71,33 @@
   font-weight: 700;
 }
 
+.postventa-board__blocked {
+  align-items: center;
+  align-self: stretch;
+  background: var(--board-panel);
+  border: 1px solid var(--board-line);
+  border-radius: 8px;
+  color: var(--board-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  grid-row: 2 / -1;
+  justify-content: center;
+  min-height: 0;
+  padding: 2rem;
+  text-align: center;
+}
+
+.postventa-board__blocked i {
+  color: var(--board-signal);
+  font-size: 1.5rem;
+}
+
+.postventa-board__blocked strong {
+  color: var(--board-ink);
+  font-size: 1rem;
+}
+
 // ── CONTROLS ────────────────────────────────────────────────────
 .postventa-board__controls {
   align-items: center;
