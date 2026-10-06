@@ -70,5 +70,10 @@ public interface PeriodoFacturacionPostventaRepository extends JpaRepository<Per
             Integer numeroPeriodo
     );
 
+    List<PeriodoFacturacionPostventa> findByLeadIdAndEstadoOrderByNumeroPeriodoAsc(
+            Long idLead,
+            EstadoPeriodoFacturacionPostventa estado
+    );
+
     List<PeriodoFacturacionPostventa> findByLeadIdInOrderByLeadIdAscNumeroPeriodoDesc(Collection<Long> leadIds);
 }

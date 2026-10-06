@@ -18,6 +18,7 @@ import pe.albrugroup.lead_service.entity.request.CerrarPeriodoFacturacionRequest
 import pe.albrugroup.lead_service.entity.request.CorregirCorteFacturacionRequest;
 import pe.albrugroup.lead_service.entity.request.PeriodoFacturacionFacturaRequest;
 import pe.albrugroup.lead_service.entity.response.CalendarioFacturacionPostventaResponse;
+import pe.albrugroup.lead_service.entity.response.CambioCorteLeadResponse;
 import pe.albrugroup.lead_service.entity.response.CorreccionCorteFacturacionResponse;
 import pe.albrugroup.lead_service.entity.response.PeriodoFacturacionPostventaResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
@@ -87,6 +88,38 @@ public class FacturacionPostventaService {
         return CorreccionCorteFacturacionResponse.builder()
                 .calendario(toCalendarioResponse(calendarioRepository.save(calendario)))
                 .periodoRecalculado(toResponse(periodoRepository.save(periodoRecalculado)))
+                .build();
+    }
+
+    @Transactional
+    public CambioCorteLeadResponse cambiarCorteLead(
+            Long idLead,
+            CorregirCorteFacturacionRequest request
+    ) {
+        CalendarioFacturacionPostventa calendario = calendarioRepository.findWithLeadByLeadId(idLead)
+                .orElseThrow(() -> new NotFoundException(CalendarioFacturacionPostventa.class, idLead));
+        postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(calendario.getLead());
+        validarMesCorteBase(request);
+        validarProveedorWin(calendario);
+        validarLeadEnPostventa(calendario);
+
+        aplicarCambioCorte(calendario, request);
+        calendarioRepository.save(calendario);
+
+        CalculadoraFacturacionPostventa calculadora = calculadoraResolver.resolver(calendario.getTipoReglaProveedor());
+        List<PeriodoFacturacionPostventa> periodosAbiertos = periodoRepository
+                .findByLeadIdAndEstadoOrderByNumeroPeriodoAsc(idLead, EstadoPeriodoFacturacionPostventa.ABIERTO);
+
+        List<PeriodoFacturacionPostventaResponse> periodosRecalculados = periodosAbiertos.stream()
+                .map(periodo -> {
+                    recalcularEstimados(calculadora, calendario, periodo);
+                    return toResponse(periodoRepository.save(periodo));
+                })
+                .toList();
+
+        return CambioCorteLeadResponse.builder()
+                .calendario(toCalendarioResponse(calendario))
+                .periodosRecalculados(periodosRecalculados)
                 .build();
     }
 
@@ -265,6 +298,32 @@ public class FacturacionPostventaService {
                 : BloqueFacturacion.MISMO_MES);
         calendario.setCorteCorregido(true);
         calendario.setFechaCorreccionCorte(Instant.now());
+    }
+
+    private void aplicarCambioCorte(
+            CalendarioFacturacionPostventa calendario,
+            CorregirCorteFacturacionRequest request
+    ) {
+        calendario.setMesCorteBase(request.getMesCorteBase());
+        calendario.setNumeroCorteBase(request.getNumeroCorteBase());
+        calendario.setBloqueFacturacion(request.getNumeroCorteBase() == CORTE_WIN_SEGUNDO
+                ? BloqueFacturacion.MES_SIGUIENTE
+                : BloqueFacturacion.MISMO_MES);
+    }
+
+    private void recalcularEstimados(
+            CalculadoraFacturacionPostventa calculadora,
+            CalendarioFacturacionPostventa calendario,
+            PeriodoFacturacionPostventa periodo
+    ) {
+        PeriodoFacturacionPostventa plantilla = calculadora.crearPeriodo(calendario, periodo.getNumeroPeriodo());
+        periodo.setFechaInicioPeriodo(plantilla.getFechaInicioPeriodo());
+        periodo.setFechaFinPeriodo(plantilla.getFechaFinPeriodo());
+        periodo.setFechaCorteEstimada(plantilla.getFechaCorteEstimada());
+        periodo.setFechaEmisionEstimada(plantilla.getFechaEmisionEstimada());
+        periodo.setFechaVencimientoEstimado(plantilla.getFechaVencimientoEstimado());
+        periodo.setMontoEsperado(plantilla.getMontoEsperado());
+        periodo.setMontoProrrateo(plantilla.getMontoProrrateo());
     }
 
     private PeriodoFacturacionPostventa recalcularPeriodoUno(
