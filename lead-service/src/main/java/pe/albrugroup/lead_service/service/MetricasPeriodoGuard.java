@@ -11,11 +11,13 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class MetricasPeriodoGuard {
 
+    private static final String ADMINISTRADOR = "ADMINISTRADOR";
+
     private final CurrentUser currentUser;
 
     public LocalDate validarFecha(LocalDate fecha) {
-        if (fecha == null) {
-            return null;
+        if (fecha == null || esAdministrador()) {
+            return fecha;
         }
         LocalDate fechaIngreso = fechaIngresoRequerida();
         if (fecha.isBefore(fechaIngreso)) {
@@ -25,8 +27,8 @@ public class MetricasPeriodoGuard {
     }
 
     public Rango protegerRango(LocalDate desde, LocalDate hasta) {
-        if (desde == null && hasta == null) {
-            return new Rango(null, null);
+        if ((desde == null && hasta == null) || esAdministrador()) {
+            return new Rango(desde, hasta);
         }
         LocalDate fechaIngreso = fechaIngresoRequerida();
         LocalDate hastaEvaluado = hasta != null ? hasta : desde;
@@ -43,6 +45,10 @@ public class MetricasPeriodoGuard {
             throw new ForbiddenException("No se pudo validar tu fecha de ingreso. Vuelve a iniciar sesion");
         }
         return fechaIngreso;
+    }
+
+    private boolean esAdministrador() {
+        return currentUser.roles().contains(ADMINISTRADOR);
     }
 
     public record Rango(LocalDate desde, LocalDate hasta) {

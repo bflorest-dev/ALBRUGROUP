@@ -452,6 +452,9 @@ export class PeriodSelectorComponent implements OnDestroy {
     if (explicit) {
       return explicit;
     }
+    if (this.session.hasRole('ADMINISTRADOR')) {
+      return null;
+    }
     return this.enforceSessionMinDate() ? this.session.fechaIngresoEmpleado() : null;
   }
 
