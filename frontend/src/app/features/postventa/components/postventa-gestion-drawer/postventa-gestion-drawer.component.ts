@@ -90,8 +90,9 @@ export class PostventaGestionDrawerComponent {
 
   protected corteLabel(lead: LeadPostventaBandejaResponse): string {
     if (!lead.mesCorteBase) return '—';
-    const [y, m] = lead.mesCorteBase.split('-');
-    return `${m}/${y} - Corte ${lead.numeroCorteBase ?? 1}`;
+    const month = Number(lead.mesCorteBase.slice(5, 7));
+    const monthLabel = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'][month - 1];
+    return `${monthLabel ?? lead.mesCorteBase.slice(5, 7)} ${lead.numeroCorteBase ?? 1}`;
   }
 
   protected async guardarCorte(): Promise<void> {

@@ -12,15 +12,13 @@
               <span>#{{ lead.idLead }}</span>
             </div>
             <dl>
-              <div>
-                <dt><i class="pi pi-calendar" aria-hidden="true"></i> Fecha de instalacion</dt>
-                <dd>{{ display(lead.fechaInstalacion) }}</dd>
-              </div>
               <div class="postventa-v2__corte-row">
                 <div>
-                  <dt><i class="pi pi-sync" aria-hidden="true"></i> Corte</dt>
+                  <dt><i class="pi pi-calendar" aria-hidden="true"></i> Fecha de instalación y corte</dt>
                   <dd>
-                    {{ corteLabel(lead) }}
+                    <span class="postventa-v2__mono">{{ display(lead.fechaInstalacion) }}</span>
+                    <span aria-hidden="true">·</span>
+                    <span class="postventa-v2__mono">{{ corteLabel(lead) }}</span>
                     @if (lead.corteCorregido) {
                       <span class="postventa-v2__corte-badge">corregido</span>
                     }
