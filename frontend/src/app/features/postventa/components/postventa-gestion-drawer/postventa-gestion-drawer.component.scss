@@ -1,136 +1,182 @@
-// Ancho del drawer: amplio en desktop, casi full en pantallas chicas.
-:host ::ng-deep .postventa-drawer {
-  width: min(960px, 96vw);
+:host {
+  --pv-accent: var(--layout-role-accent, #5b8def);
+  --pv-ink: #152640;
+  --pv-muted: #64748b;
+  --pv-line: #dce4ec;
+  --pv-surface: #fbfcfd;
+  --pv-canvas: #f3f6f8;
+  font-family: Archivo, system-ui, sans-serif;
 }
 
-:host ::ng-deep .postventa-drawer .p-drawer-content {
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  overflow: hidden;
+// ---------- Overlay shell ----------
+
+.postventa-v2 { position: fixed; inset: 0 0 0 4.5rem; z-index: 1200; }
+.postventa-v2__backdrop { position: absolute; inset: 0; border: 0; background: rgba(9, 21, 38, .37); backdrop-filter: blur(5px); cursor: default; }
+.postventa-v2__stage { position: absolute; inset: 0 0 0 auto; display: flex; align-items: stretch; max-width: calc(100vw - 4.5rem); filter: drop-shadow(-1rem 0 2rem rgba(15, 31, 51, .16)); }
+.postventa-v2__drawer { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: min(72rem, calc(100vw - 16rem)); min-width: 48rem; height: 100%; color: var(--pv-ink); background: var(--pv-surface); border-left: 1px solid rgba(255,255,255,.75); }
+
+// ---------- Summary strip ----------
+
+.postventa-v2__summary { width: 17rem; padding: 4.75rem 0 1.5rem; overflow: hidden; transition: opacity 160ms ease; }
+.postventa-v2__summary--closed { width: 0; opacity: 0; pointer-events: none; }
+.postventa-v2__summary-sheet { width: 17rem; height: 100%; padding: 1.15rem 1.2rem; color: #eaf1f8; background: #17314f; border: 1px solid rgba(255,255,255,.08); border-right: 0; border-radius: .5rem 0 0 .5rem; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; }
+.postventa-v2__summary-sheet::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.postventa-v2__summary-kicker { display: flex; justify-content: space-between; padding-bottom: 1rem; color: #a9bdd1; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,.14); }
+.postventa-v2__summary dl { margin: 0; }
+.postventa-v2__summary dl div { padding: .82rem 0; border-bottom: 1px solid rgba(255,255,255,.1); }
+.postventa-v2__summary dt { display: flex; align-items: center; gap: .4rem; margin-bottom: .25rem; color: #9fb3c8; font-size: .72rem; }
+.postventa-v2__summary dt i { font-size: .7rem; }
+.postventa-v2__summary dd { margin: 0; font-size: .86rem; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+.postventa-v2__summary dd small { margin-right: .35rem; color: #9fb3c8; font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.postventa-v2__mono { font-family: 'Spline Sans Mono', Consolas, monospace; letter-spacing: .02em; }
+
+// ---------- Corte inline edit ----------
+
+.postventa-v2__corte-row { display: flex; align-items: flex-start; justify-content: space-between; gap: .35rem; }
+.postventa-v2__corte-row > div { flex: 1; min-width: 0; }
+.postventa-v2__corte-badge { display: inline-block; margin-left: .35rem; padding: .1rem .4rem; color: #fbbf24; font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: rgba(251, 191, 36, .15); border-radius: .25rem; vertical-align: middle; }
+.postventa-v2__corte-edit { flex-shrink: 0; display: grid; place-items: center; width: 1.5rem; height: 1.5rem; margin-top: .2rem; padding: 0; color: #9fb3c8; background: transparent; border: 1px solid rgba(255,255,255,.15); border-radius: .3rem; cursor: pointer; transition: color 120ms, background 120ms; }
+.postventa-v2__corte-edit:hover { color: #eaf1f8; background: rgba(255,255,255,.1); }
+.postventa-v2__corte-edit i { font-size: .65rem; }
+.postventa-v2__corte-form { display: grid; grid-template-columns: 1fr auto auto; gap: .35rem; padding: .5rem 0 .2rem !important; border-bottom: none !important; }
+.postventa-v2__corte-form label { display: flex; flex-direction: column; gap: .15rem; }
+.postventa-v2__corte-form label span { color: #9fb3c8; font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.postventa-v2__corte-form input,
+.postventa-v2__corte-form select { width: 100%; padding: .3rem .4rem; color: #eaf1f8; font-size: .78rem; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); border-radius: .3rem; outline: none; }
+.postventa-v2__corte-form input:focus,
+.postventa-v2__corte-form select:focus { border-color: var(--pv-accent); }
+.postventa-v2__corte-form select option { color: #152640; background: #fff; }
+.postventa-v2__corte-save { align-self: flex-end; display: grid; place-items: center; width: 1.65rem; height: 1.65rem; padding: 0; color: #fff; background: var(--pv-accent); border: 0; border-radius: .3rem; cursor: pointer; transition: opacity 120ms; }
+.postventa-v2__corte-save:hover { opacity: .85; }
+.postventa-v2__corte-save:disabled { opacity: .4; cursor: not-allowed; }
+.postventa-v2__corte-save i { font-size: .72rem; }
+
+// Summary toggle
+.postventa-v2__summary-toggle { align-self: stretch; display: grid; place-items: center; width: 2.7rem; min-height: 4.75rem; padding: 0; border: 0; border-right: 1px solid var(--pv-line); border-radius: 0 .35rem .35rem 0; color: var(--pv-accent); background: #f8fafc; transition: color 140ms ease, background 140ms ease; cursor: pointer; }
+.postventa-v2__summary-toggle:hover { background: #edf3f8; }
+.postventa-v2__summary-toggle:focus-visible { outline: 2px solid var(--pv-accent); outline-offset: -3px; }
+
+// ---------- Semaforos ----------
+
+.postventa-v2__semaforos { display: flex; flex-direction: column; gap: .1rem; padding: .82rem 0 !important; }
+.postventa-v2__semaforo { display: grid; grid-template-columns: .55rem 1fr auto; gap: .45rem; align-items: center; padding: .35rem 0; }
+.postventa-v2__sem-dot { width: .55rem; height: .55rem; border-radius: 50%; }
+.postventa-v2__sem-label { color: #9fb3c8; font-size: .72rem; }
+.postventa-v2__sem-value { font-size: .76rem; font-weight: 650; }
+
+.sem--green { background: #34d399; }
+.sem--yellow { background: #fbbf24; }
+.sem--red { background: #f87171; }
+.sem--blue { background: #60a5fa; }
+.sem--gray { background: #94a3b8; }
+.sem--purple { background: #a78bfa; }
+
+// ---------- Header ----------
+
+.postventa-v2__header { display: grid; grid-template-columns: auto minmax(5rem, .5fr) minmax(10rem, 1.4fr) auto auto; gap: .9rem; align-items: center; min-height: 4.75rem; padding: 0 1.1rem 0 0; background: #fff; border-bottom: 1px solid var(--pv-line); }
+.postventa-v2__provider span { display: block; color: var(--pv-accent); font-size: .88rem; font-weight: 800; text-transform: uppercase; }
+.postventa-v2__provider small { display: block; color: var(--pv-muted); font-size: .75rem; }
+.postventa-v2__customer h2 { margin: 0 0 .12rem; font-size: 1.05rem; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.postventa-v2__customer span { color: var(--pv-muted); font-size: .75rem; }
+.postventa-v2__contact { display: flex; align-items: center; gap: .4rem; }
+.postventa-v2__chat-btn { width: 7rem; }
+.postventa-v2__close { display: inline-flex; align-items: center; justify-content: center; width: 2.2rem; height: 2.2rem; padding: 0; border: 0; border-radius: .35rem; color: var(--pv-ink); background: transparent; cursor: pointer; }
+.postventa-v2__close:hover { background: #edf3f8; }
+
+// ---------- Workspace ----------
+
+.postventa-v2__workspace { display: flex; flex-direction: column; min-height: 0; }
+.postventa-v2__skeleton { display: flex; flex-direction: column; gap: .75rem; padding: 1.4rem 1.65rem; }
+
+.postventa-v2__tabs { display: flex; gap: .25rem; padding: .65rem 1.65rem 0; background: var(--pv-surface); border-bottom: 1px solid var(--pv-line); }
+.postventa-v2__tabs button { position: relative; display: inline-flex; align-items: center; gap: .45rem; padding: .6rem .85rem; border: 0; border-bottom: 2px solid transparent; border-radius: .35rem .35rem 0 0; color: #728095; background: transparent; font: inherit; font-size: .78rem; font-weight: 650; cursor: pointer; transition: color 120ms, border-color 120ms; }
+.postventa-v2__tabs button i { font-size: .9rem; }
+.postventa-v2__tabs button:hover { color: var(--pv-ink); }
+.postventa-v2__tabs button.is-active { color: var(--pv-accent); border-bottom-color: var(--pv-accent); }
+
+.postventa-v2__content { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 1.4rem 1.65rem 2.25rem; background: var(--pv-canvas); }
+
+// ---------- Section cards (shared by all tab panels) ----------
+
+:host ::ng-deep {
+  .postventa-v2__record { display: grid; gap: 1.1rem; max-width: 58rem; margin: 0 auto; }
+  .postventa-v2__section { background: #fff; border: 1px solid var(--pv-line); border-radius: .45rem; }
+  .postventa-v2__section-head { display: flex; align-items: center; justify-content: space-between; min-height: 3.7rem; padding: .65rem 1rem; border-bottom: 1px solid var(--pv-line); }
+  .postventa-v2__section-head > div:first-child { display: flex; align-items: center; gap: .7rem; }
+  .postventa-v2__section-head > div:first-child > i { display: grid; place-items: center; width: 2rem; height: 2rem; color: var(--pv-accent); background: color-mix(in srgb, var(--pv-accent) 10%, white); border-radius: .35rem; }
+  .postventa-v2__section-head strong, .postventa-v2__section-head small { display: block; }
+  .postventa-v2__section-head strong { font-size: .9rem; }
+  .postventa-v2__section-head small { margin-top: .14rem; color: var(--pv-muted); font-size: .73rem; }
+  .postventa-v2__section-actions { display: flex; align-items: center; gap: .4rem; }
+
+  .postventa-v2__fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .postventa-v2__fields label { min-width: 0; min-height: 4.4rem; padding: .85rem 1rem; border-right: 1px solid var(--pv-line); border-bottom: 1px solid var(--pv-line); }
+  .postventa-v2__fields label:nth-child(4n) { border-right: 0; }
+  .postventa-v2__fields label.span-2 { grid-column: span 2; }
+  .postventa-v2__fields label.span-3 { grid-column: span 3; }
+  .postventa-v2__fields label.span-4 { grid-column: 1 / -1; }
+  .postventa-v2__fields label > span { display: block; margin-bottom: .36rem; color: var(--pv-muted); font-size: .72rem; font-weight: 650; }
+  .postventa-v2__fields label > strong { display: block; font-size: .84rem; font-weight: 650; line-height: 1.45; overflow-wrap: anywhere; }
+
+  // PrimeNG overrides inside the drawer
+  .postventa-v2__content :is(.p-select, .p-inputtext, .p-datepicker) { width: 100%; min-height: 2.4rem; border-radius: .32rem; font-size: .8rem; }
+  .postventa-v2__content .p-datepicker-input { width: 100%; }
+
+  // Section action buttons
+  .postventa-v2__sec-btn { min-height: 2rem; padding: 0 .65rem; border: 1px solid var(--pv-line); border-radius: .32rem; color: var(--pv-ink); background: #fff; font: inherit; font-size: .75rem; font-weight: 650; cursor: pointer; }
+  .postventa-v2__sec-btn:hover { background: #edf3f8; }
+  .postventa-v2__sec-btn.is-primary { color: #fff; background: var(--pv-accent); border-color: var(--pv-accent); }
+
+  // Filters
+  .postventa-v2__filters { display: flex; gap: .35rem; }
+  .postventa-v2__filters button { padding: .4rem .6rem; border: 1px solid var(--pv-line); border-radius: .3rem; color: var(--pv-muted); background: transparent; font: inherit; font-size: .74rem; cursor: pointer; }
+  .postventa-v2__filters button.is-active { color: var(--pv-accent); background: #fff; border-color: color-mix(in srgb, var(--pv-accent) 45%, var(--pv-line)); }
+
+  // Timeline
+  .postventa-v2__timeline > section > h4 { position: sticky; top: -1.4rem; z-index: 1; margin: 0; padding: 1rem 0 .6rem; color: var(--pv-ink); background: var(--pv-canvas); font-size: .79rem; }
+  .postventa-v2__timeline h4 span { color: var(--pv-muted); font-weight: 500; }
+  .postventa-v2__timeline article { display: grid; grid-template-columns: 2rem 1fr; gap: .8rem; padding: .9rem 0; border-top: 1px solid var(--pv-line); }
+  .postventa-v2__event-mark { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; color: var(--pv-accent); background: #fff; border: 1px solid var(--pv-line); border-radius: 50%; font-size: .7rem; }
+  .postventa-v2__event-top { display: flex; justify-content: space-between; gap: 1rem; }
+  .postventa-v2__event-top strong { font-size: .83rem; }
+  .postventa-v2__event-top time, .postventa-v2__timeline article p { color: var(--pv-muted); font-size: .72rem; }
+  .postventa-v2__timeline article p { margin: .3rem 0 0; }
+  .postventa-v2__timeline blockquote { margin: .65rem 0 0; padding: .6rem .75rem; color: #45566b; background: #fff; border-left: 2px solid var(--pv-accent); font-size: .78rem; }
+
+  // Empty state
+  .postventa-v2__state { display: flex; justify-content: center; align-items: center; gap: .6rem; min-height: 15rem; color: var(--pv-muted); font-size: .82rem; }
 }
 
-:host ::ng-deep .postventa-drawer .p-drawer-header {
-  align-items: flex-start;
-  padding-right: 3.5rem;
-  position: relative;
+// ---------- Footer dock ----------
+
+.postventa-v2__dock { padding: .65rem .8rem .7rem; background: #fff; border-top: 1px solid var(--pv-line); box-shadow: 0 -.6rem 1.5rem rgba(15,31,51,.055); }
+.postventa-v2__dock-hint { display: flex; align-items: center; gap: .4rem; margin: 0 0 .5rem; color: var(--pv-accent); font-size: .78rem; font-weight: 600; }
+
+// ---------- Responsive ----------
+
+@media (max-width: 78rem) {
+  .postventa-v2__drawer { width: calc(100vw - 4.5rem); min-width: 0; }
+  .postventa-v2__summary { position: absolute; z-index: 4; inset: 0 auto 0 0; padding-top: 4.75rem; transform: translateX(-100%); overflow: visible; }
+  .postventa-v2__summary:not(.postventa-v2__summary--closed) { transform: translateX(0); width: 17rem; }
+  .postventa-v2__summary--closed { width: 0; }
+  .postventa-v2__header { grid-template-columns: auto .5fr 1.4fr auto auto; }
 }
 
-:host ::ng-deep .postventa-drawer .p-drawer-close-button {
-  margin: 0;
-  position: absolute;
-  right: 0.75rem;
-  top: 0.75rem;
-}
+@media (max-width: 62rem) {
+  .postventa-v2 { inset-left: 0; }
+  .postventa-v2__drawer { width: 100vw; }
+  .postventa-v2__header { grid-template-columns: auto .6fr 1fr auto auto; }
+  .postventa-v2__contact .postventa-v2__chat-btn span { display: none; }
 
-// Header en 3 zonas: identidad (crece) · acciones de contacto · semáforos. Envuelve en anchos
-// chicos y su posición no depende del largo del nombre (se trunca).
-.drawer-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem 1rem;
-  width: 100%;
-}
-
-.drawer-header__id {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-  margin-right: auto;
-}
-
-.drawer-header__name {
-  color: var(--role-primary);
-  font-size: 1.15rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 22rem;
-}
-
-.drawer-header__doc {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.4rem;
-
-  strong {
-    color: var(--app-text);
-    font-size: 0.98rem;
-    letter-spacing: 0.02em;
+  :host ::ng-deep {
+    .postventa-v2__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .postventa-v2__fields label:nth-child(4n) { border-right: 1px solid var(--pv-line); }
+    .postventa-v2__fields label:nth-child(2n) { border-right: 0; }
+    .postventa-v2__fields label.span-3 { grid-column: 1 / -1; }
   }
 }
 
-.drawer-header__doc-type {
-  color: var(--role-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.drawer-header__eyebrow {
-  color: var(--role-accent);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.drawer-header__contact {
-  display: flex;
-  gap: 0.4rem;
-  flex: 0 0 auto;
-}
-
-.drawer-header__chat {
-  width: 8.75rem;
-}
-
-.drawer-header__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  justify-content: flex-end;
-  flex: 0 0 auto;
-}
-
-.drawer-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.drawer-skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.25rem;
-}
-
-// La zona de secciones scrollea; la barra de tipificacion queda fija abajo.
-.drawer-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 1rem 1.25rem 1.5rem;
-}
-
-.drawer-footer {
-  flex: 0 0 auto;
-  border-top: 1px solid var(--app-border);
-  background: var(--app-surface);
-  padding: 0.75rem 1.25rem;
-}
-
-.drawer-footer__hint {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0 0 0.6rem;
-  color: var(--role-accent);
-  font-size: 0.8rem;
-  font-weight: 600;
+@media (prefers-reduced-motion: reduce) {
+  .postventa-v2__summary, .postventa-v2__summary-toggle { transition: none; }
+  .postventa-v2__backdrop { backdrop-filter: none; }
 }

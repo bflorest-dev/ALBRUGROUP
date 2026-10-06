@@ -1,71 +1,62 @@
-@use '../postventa-shared' as shared;
-
 :host {
   display: block;
 }
 
-.form-grid {
-  @include shared.form-grid;
-}
-
-.form-actions {
-  @include shared.form-actions;
-}
-
-.panel-heading {
-  @include shared.panel-heading;
-}
-
-.nested-table {
-  @include shared.nested-table;
-}
-
-.empty-hint {
-  @include shared.empty-hint;
-}
-
-.medio-contacto {
+.avg-badge {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  margin: 0 0 0.85rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-
-.medio-contacto--ok {
-  color: var(--role-accent);
-}
-
-.medio-contacto--warn {
-  color: #b45309;
-}
-
-.satisfaccion-resumen {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  background: var(--role-accent-soft);
-  border: 1px solid var(--app-border);
-  border-radius: 0.75rem;
-  padding: 0.7rem 1rem;
-  margin-bottom: 1rem;
-}
-
-.satisfaccion-resumen__avg {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  gap: .5rem;
+  padding: .35rem .65rem;
+  background: color-mix(in srgb, var(--pv-accent, #5b8def) 8%, white);
+  border-radius: .35rem;
 
   span {
-    color: var(--role-muted);
-    font-size: 0.75rem;
-    font-weight: 600;
+    color: var(--pv-muted, #64748b);
+    font-size: .72rem;
+    font-weight: 650;
   }
 
   strong {
-    color: var(--role-primary);
-    font-size: 1.15rem;
+    font-size: 1rem;
+    color: var(--pv-accent, #5b8def);
   }
+}
+
+.medio-ok {
+  color: var(--pv-accent, #5b8def);
+  i { margin-right: .3rem; }
+}
+
+.medio-warn {
+  color: #b45309;
+  i { margin-right: .3rem; }
+}
+
+.encuesta-form {
+  padding: .85rem 1rem;
+  border-top: 1px solid var(--pv-line, #dce4ec);
+}
+
+.encuesta-form__rating {
+  > span {
+    display: block;
+    margin-bottom: .4rem;
+    color: var(--pv-muted, #64748b);
+    font-size: .72rem;
+    font-weight: 650;
+  }
+}
+
+.encuesta-form__hint {
+  margin: .6rem 0 0;
+  color: var(--pv-muted, #64748b);
+  font-size: .72rem;
+  font-style: italic;
+}
+
+.empty-hint {
+  text-align: center;
+  color: var(--pv-muted, #64748b);
+  font-size: .82rem;
+  padding: 1.5rem 0;
 }

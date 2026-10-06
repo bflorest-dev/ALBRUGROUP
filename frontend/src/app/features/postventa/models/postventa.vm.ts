@@ -120,3 +120,71 @@ export function shortName(value?: string | null): string {
   const parts = value.trim().split(/\s+/).filter(Boolean);
   return parts.length <= 2 ? value : `${parts[0]} ${parts[1]}`;
 }
+
+// ---------------------------------------------------------------------------
+// Semáforo segmentado — helpers de color, abreviación y label completo
+// ---------------------------------------------------------------------------
+export type SemaforoColor = 'sem--green' | 'sem--yellow' | 'sem--red' | 'sem--blue' | 'sem--gray' | 'sem--purple';
+
+const SEM_COLOR_MAP: Record<string, SemaforoColor> = {
+  ACTIVO: 'sem--green',
+  SUSPENDIDO: 'sem--red',
+  BAJA: 'sem--red',
+  ENTREGADAS: 'sem--blue',
+  PENDIENTES: 'sem--yellow',
+  NO_REQUIERE: 'sem--gray',
+  POR_EMITIR: 'sem--gray',
+  PENDIENTE_PAGO: 'sem--yellow',
+  VENCIDA: 'sem--red',
+  PAGADA: 'sem--green',
+  SIN_CALIFICAR: 'sem--gray',
+  INSATISFECHO: 'sem--red',
+  SATISFECHO: 'sem--green',
+  MUY_SATISFECHO: 'sem--purple'
+};
+
+const SEM_ABREV_MAP: Record<string, string> = {
+  ACTIVO: 'Activo',
+  SUSPENDIDO: 'Susp.',
+  BAJA: 'Baja',
+  ENTREGADAS: 'Entreg.',
+  PENDIENTES: 'Pend.',
+  NO_REQUIERE: 'N/A',
+  POR_EMITIR: 'x emit.',
+  PENDIENTE_PAGO: 'Pend.',
+  VENCIDA: 'Vencida',
+  PAGADA: 'Pagada',
+  SIN_CALIFICAR: 'S/C',
+  INSATISFECHO: 'Insatis.',
+  SATISFECHO: 'Satisf.',
+  MUY_SATISFECHO: 'Muy sat.'
+};
+
+const SEM_LABEL_MAP: Record<string, string> = {
+  ACTIVO: 'Activo',
+  SUSPENDIDO: 'Suspendido',
+  BAJA: 'Baja',
+  ENTREGADAS: 'Entregadas',
+  PENDIENTES: 'Pendientes',
+  NO_REQUIERE: 'No requiere',
+  POR_EMITIR: 'Por emitir',
+  PENDIENTE_PAGO: 'Pendiente',
+  VENCIDA: 'Vencida',
+  PAGADA: 'Pagada',
+  SIN_CALIFICAR: 'Sin calificar',
+  INSATISFECHO: 'Insatisfecho',
+  SATISFECHO: 'Satisfecho',
+  MUY_SATISFECHO: 'Muy satisfecho'
+};
+
+export function semColor(value: unknown): SemaforoColor {
+  return SEM_COLOR_MAP[String(value ?? '')] ?? 'sem--gray';
+}
+
+export function semAbrev(value: unknown): string {
+  return SEM_ABREV_MAP[String(value ?? '')] ?? '—';
+}
+
+export function semLabel(value: unknown): string {
+  return SEM_LABEL_MAP[String(value ?? '')] ?? humanize(value);
+}

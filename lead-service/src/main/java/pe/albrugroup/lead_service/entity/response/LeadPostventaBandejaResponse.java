@@ -13,6 +13,7 @@ import pe.albrugroup.lead_service.entity.enums.EstadoServicioPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -33,6 +34,8 @@ public class LeadPostventaBandejaResponse {
     private String telefonoRegistro;
     private String proveedor;
     private String plan;
+    private BigDecimal montoPlanSnapshot;
+    private String adicionales;
     private LocalDate mesCorteBase;
     private Integer numeroCorteBase;
     private Boolean corteCorregido;
@@ -44,6 +47,7 @@ public class LeadPostventaBandejaResponse {
     private EstadoPagoPeriodoPostventa estadoPago;
     private EstadoServicioPostventa estadoServicio;
     private EstadoPlataformaDigitalLead estadoPlataformaDigital;
+    private Integer numeroPeriodoVigente;
     private String ultimoGestor;
     private Instant ultimaGestion;
 }

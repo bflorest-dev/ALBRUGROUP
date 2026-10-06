@@ -15,10 +15,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoCredencialesPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoPagoPeriodoPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoServicioPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionPostventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTomaVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
+import pe.albrugroup.lead_service.entity.response.CortePostventaResponse;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaBandejaResponse;
@@ -29,6 +34,7 @@ import pe.albrugroup.lead_service.service.LeadService;
 import pe.albrugroup.lead_service.service.PostventaBandejaService;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController @Validated
 @RequiredArgsConstructor
@@ -43,10 +49,26 @@ public class PostventaController {
     public ResponseEntity<PageResponse<LeadPostventaBandejaResponse>> listarBandejaOperativaPostventa(
             @Valid @ModelAttribute PageRequest pageRequest,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate mesCorteBase,
-            @RequestParam(required = false) Integer numeroCorteBase
+            @RequestParam(required = false) Integer numeroCorteBase,
+            @RequestParam(required = false) String buscar,
+            @RequestParam(required = false) List<EstadoClientePostventa> estadoCliente,
+            @RequestParam(required = false) List<EstadoCredencialesPostventa> estadoCredenciales,
+            @RequestParam(required = false) List<EstadoPagoPeriodoPostventa> estadoPago,
+            @RequestParam(required = false) List<EstadoServicioPostventa> estadoServicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
     ) {
-        var leads = postventaBandejaService.listarBandeja(pageRequest, mesCorteBase, numeroCorteBase);
+        var leads = postventaBandejaService.listarBandeja(
+                pageRequest, mesCorteBase, numeroCorteBase,
+                buscar, estadoCliente, estadoCredenciales, estadoPago, estadoServicio,
+                fechaDesde, fechaHasta
+        );
         return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+
+    @GetMapping("/cortes") @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")
+    public ResponseEntity<List<CortePostventaResponse>> listarCortesPostventa() {
+        return ResponseEntity.status(HttpStatus.OK).body(postventaBandejaService.listarCortes());
     }
 
     @GetMapping("/buscar") @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")

@@ -1,18 +1,14 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { TextareaModule } from 'primeng/textarea';
 import { StarRatingComponent } from '../../../../shared/components/star-rating/star-rating.component';
 import { PostventaWorkspaceFacade } from '../../facades/postventa-workspace.facade';
 import { TipoEncuestaPostventa } from '../../services/postventa-lead.service';
-import { EstadoBadge, SelectOption, display, estadoBadge } from '../../models/postventa.vm';
+import { EstadoBadge, display, estadoBadge } from '../../models/postventa.vm';
 
-/** Encuesta de satisfaccion del cliente y su historial. El medio de contacto se infiere del ultimo
- *  boton Llamar/Chat usado; sin contacto previo no se puede registrar la encuesta. */
 @Component({
   selector: 'app-postventa-encuesta-panel',
   imports: [
@@ -20,10 +16,8 @@ import { EstadoBadge, SelectOption, display, estadoBadge } from '../../models/po
     DecimalPipe,
     ReactiveFormsModule,
     ButtonModule,
-    SelectModule,
     TableModule,
     TagModule,
-    TextareaModule,
     StarRatingComponent
   ],
   templateUrl: './postventa-encuesta-panel.component.html',
@@ -32,22 +26,15 @@ import { EstadoBadge, SelectOption, display, estadoBadge } from '../../models/po
 })
 export class PostventaEncuestaPanelComponent {
   protected readonly facade = inject(PostventaWorkspaceFacade);
-  private readonly fb = inject(NonNullableFormBuilder);
+  protected readonly calificacionCtrl = new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(1), Validators.max(10)] });
+
+  private readonly autoTipoEncuesta = computed<TipoEncuestaPostventa>(() =>
+    this.facade.encuestas().length === 0 ? 'SATISFACCION_ASESOR' : 'SATISFACCION_SERVICIO'
+  );
 
   constructor() {
     this.facade.registerBeforeTipificarTask('encuesta', () => this.guardarPendienteAntesDeTipificar());
   }
-
-  protected readonly tipoEncuestaOptions: SelectOption<TipoEncuestaPostventa>[] = [
-    { label: 'Satisfaccion del servicio', value: 'SATISFACCION_SERVICIO' },
-    { label: 'Satisfaccion con el asesor', value: 'SATISFACCION_ASESOR' }
-  ];
-
-  protected readonly form = this.fb.group({
-    tipoEncuesta: ['SATISFACCION_SERVICIO' as TipoEncuestaPostventa],
-    calificacion: [0, [Validators.required, Validators.min(1), Validators.max(10)]],
-    comentario: ['']
-  });
 
   protected badge(value: unknown): EstadoBadge {
     return estadoBadge(value);
@@ -57,44 +44,33 @@ export class PostventaEncuestaPanelComponent {
     return display(value);
   }
 
-  /** Etiqueta legible del medio de contacto detectado (o null si aun no se ha contactado). */
+  protected autoTipoLabel(): string {
+    return this.autoTipoEncuesta() === 'SATISFACCION_ASESOR' ? 'Satisfaccion del asesor' : 'Satisfaccion del servicio';
+  }
+
   protected medioLabel(): string | null {
     const medio = this.facade.medioContacto();
-    if (medio === 'LLAMADA') {
-      return 'Llamada';
-    }
-    if (medio === 'CHAT') {
-      return 'Chat';
-    }
+    if (medio === 'LLAMADA') return 'Llamada';
+    if (medio === 'CHAT') return 'Chat';
     return null;
   }
 
   private async guardar(): Promise<boolean> {
-    if (this.form.invalid || !this.facade.medioContacto()) {
-      return false;
-    }
-    const raw = this.form.getRawValue();
+    if (this.calificacionCtrl.invalid || !this.facade.medioContacto()) return false;
     const ok = await this.facade.registrarEncuesta({
-      tipoEncuesta: raw.tipoEncuesta,
-      calificacion: raw.calificacion,
-      comentario: raw.comentario || null
+      tipoEncuesta: this.autoTipoEncuesta(),
+      calificacion: this.calificacionCtrl.value,
+      comentario: null
     });
     if (ok) {
-      this.form.reset({ tipoEncuesta: raw.tipoEncuesta, calificacion: 0, comentario: '' });
-      this.form.markAsPristine();
+      this.calificacionCtrl.reset(0);
+      this.calificacionCtrl.markAsPristine();
     }
     return ok;
   }
 
   private async guardarPendienteAntesDeTipificar(): Promise<boolean> {
-    if (!this.encuestaTieneDatos()) {
-      return true;
-    }
+    if (this.calificacionCtrl.value <= 0) return true;
     return this.guardar();
-  }
-
-  private encuestaTieneDatos(): boolean {
-    const raw = this.form.getRawValue();
-    return Boolean(raw.calificacion > 0 || raw.comentario?.trim());
   }
 }

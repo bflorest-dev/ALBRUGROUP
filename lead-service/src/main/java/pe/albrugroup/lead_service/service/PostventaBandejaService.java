@@ -10,6 +10,7 @@ import pe.albrugroup.lead_service.entity.DatosPreventa;
 import pe.albrugroup.lead_service.entity.EncuestaPostventa;
 import pe.albrugroup.lead_service.entity.EntregaCredencialPlataforma;
 import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.LeadAdicional;
 import pe.albrugroup.lead_service.entity.PeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.Plataforma;
 import pe.albrugroup.lead_service.entity.enums.Accion;
@@ -26,6 +27,7 @@ import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaBandejaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaBusquedaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
+import pe.albrugroup.lead_service.entity.response.CortePostventaResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.repository.CalendarioFacturacionPostventaRepository;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
@@ -43,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -61,7 +64,7 @@ public class PostventaBandejaService {
     private final PostventaAsesorProveedorService postventaAsesorProveedorService;
 
     private static final Set<String> BANDEJA_SORT_FIELDS = Set.of(
-            "fechaInstalacion", "createdAt", "updatedAt"
+            "fechaInstalacion", "createdAt", "updatedAt", "mesCorteBase"
     );
 
     private static final List<Accion> ACCIONES_GESTION_POSTVENTA = List.of(
@@ -70,21 +73,47 @@ public class PostventaBandejaService {
             Accion.ASIGNACION
     );
 
+    private static final LocalDate FECHA_MIN = LocalDate.of(1970, 1, 1);
+    private static final LocalDate FECHA_MAX = LocalDate.of(2999, 12, 31);
+
+    public List<CortePostventaResponse> listarCortes() {
+        ProveedorScopeService.Scope scope = postventaAsesorProveedorService.resolverScopeActual();
+        if (scope.vacio()) {
+            return List.of();
+        }
+        return scope.restringido()
+                ? calendarioRepository.listarCortesPostventaPorProveedores(
+                        Etapa.POSTVENTA, scope.idsParaQuery(), scope.nombresParaQuery())
+                : calendarioRepository.listarCortesPostventa(Etapa.POSTVENTA);
+    }
+
     public PageResponse<LeadPostventaBandejaResponse> listarBandeja(
             PageRequest pageRequest,
             LocalDate mesCorteBase,
-            Integer numeroCorteBase
+            Integer numeroCorteBase,
+            String buscar,
+            List<EstadoClientePostventa> estadoCliente,
+            List<EstadoCredencialesPostventa> estadoCredenciales,
+            List<EstadoPagoPeriodoPostventa> estadoPago,
+            List<EstadoServicioPostventa> estadoServicio,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta
     ) {
+        boolean hasSemaforoFilters = hasElements(estadoCliente) || hasElements(estadoCredenciales)
+                || hasElements(estadoPago) || hasElements(estadoServicio);
+
         Pageable pageable = paginationService.toPageable(normalizarOrden(pageRequest), BANDEJA_SORT_FIELDS);
         ProveedorScopeService.Scope scope = postventaAsesorProveedorService.resolverScopeActual();
         if (scope.vacio()) {
             return PageResponse.from(Page.empty(pageable));
         }
+
+        String buscarNorm = normalizarBusqueda(buscar);
+        LocalDate desde = fechaDesde != null ? fechaDesde : FECHA_MIN;
+        LocalDate hasta = fechaHasta != null ? fechaHasta : FECHA_MAX;
+
         Page<CalendarioFacturacionPostventa> calendarios = listarCalendarios(
-                mesCorteBase,
-                numeroCorteBase,
-                pageable,
-                scope
+                mesCorteBase, numeroCorteBase, buscarNorm, desde, hasta, pageable, scope
         );
 
         List<Long> leadIds = calendarios.getContent().stream()
@@ -97,6 +126,29 @@ public class PostventaBandejaService {
         Map<Long, PeriodoFacturacionPostventa> periodosVigentes = obtenerPeriodosVigentes(leadIds);
         Map<Long, UltimaGestion> ultimasGestiones = obtenerUltimasGestiones(leadIds);
 
+        List<LeadPostventaBandejaResponse> responses = calendarios.getContent().stream()
+                .map(calendario -> toResponse(
+                        calendario,
+                        ultimasEncuestas.get(calendario.getLead().getId()),
+                        estadosPlataforma.getOrDefault(calendario.getLead().getId(), EstadoPlataformaDigitalLead.NO_ENTREGADA),
+                        periodosVigentes.get(calendario.getLead().getId()),
+                        ultimasGestiones.get(calendario.getLead().getId())
+                ))
+                .toList();
+
+        if (hasSemaforoFilters) {
+            List<LeadPostventaBandejaResponse> filtered = responses.stream()
+                    .filter(r -> matchesSemaforo(r, estadoCliente, estadoCredenciales, estadoPago, estadoServicio))
+                    .toList();
+            return PageResponse.<LeadPostventaBandejaResponse>builder()
+                    .content(filtered)
+                    .totalElements((long) filtered.size())
+                    .totalPages(1)
+                    .page(0)
+                    .size(filtered.size())
+                    .build();
+        }
+
         Page<LeadPostventaBandejaResponse> responsePage = calendarios.map(calendario -> toResponse(
                 calendario,
                 ultimasEncuestas.get(calendario.getLead().getId()),
@@ -106,6 +158,29 @@ public class PostventaBandejaService {
         ));
 
         return PageResponse.from(responsePage);
+    }
+
+    private boolean matchesSemaforo(
+            LeadPostventaBandejaResponse r,
+            List<EstadoClientePostventa> estadoCliente,
+            List<EstadoCredencialesPostventa> estadoCredenciales,
+            List<EstadoPagoPeriodoPostventa> estadoPago,
+            List<EstadoServicioPostventa> estadoServicio
+    ) {
+        if (hasElements(estadoCliente) && !estadoCliente.contains(r.getEstadoCliente())) return false;
+        if (hasElements(estadoCredenciales) && !estadoCredenciales.contains(r.getEstadoCredenciales())) return false;
+        if (hasElements(estadoPago) && !estadoPago.contains(r.getEstadoPago())) return false;
+        if (hasElements(estadoServicio) && !estadoServicio.contains(r.getEstadoServicio())) return false;
+        return true;
+    }
+
+    private static boolean hasElements(List<?> list) {
+        return list != null && !list.isEmpty();
+    }
+
+    private String normalizarBusqueda(String buscar) {
+        if (buscar == null || buscar.isBlank()) return "";
+        return buscar.trim();
     }
 
     public LeadPostventaBusquedaResponse buscarLead(String buscar) {
@@ -241,34 +316,28 @@ public class PostventaBandejaService {
     private Page<CalendarioFacturacionPostventa> listarCalendarios(
             LocalDate mesCorteBase,
             Integer numeroCorteBase,
+            String buscar,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
             Pageable pageable,
             ProveedorScopeService.Scope scope
     ) {
         if (!scope.restringido()) {
             return mesCorteBase == null || numeroCorteBase == null
-                    ? calendarioRepository.listarBandejaPostventa(Etapa.POSTVENTA, pageable)
+                    ? calendarioRepository.listarBandejaPostventa(
+                            Etapa.POSTVENTA, buscar, fechaDesde, fechaHasta, pageable)
                     : calendarioRepository.listarBandejaPostventaPorCorte(
-                            Etapa.POSTVENTA,
-                            mesCorteBase,
-                            numeroCorteBase,
-                            pageable
-                    );
+                            Etapa.POSTVENTA, mesCorteBase, numeroCorteBase,
+                            buscar, fechaDesde, fechaHasta, pageable);
         }
         return mesCorteBase == null || numeroCorteBase == null
                 ? calendarioRepository.listarBandejaPostventaPorProveedores(
-                        Etapa.POSTVENTA,
-                        scope.idsParaQuery(),
-                        scope.nombresParaQuery(),
-                        pageable
-                )
+                        Etapa.POSTVENTA, scope.idsParaQuery(), scope.nombresParaQuery(),
+                        buscar, fechaDesde, fechaHasta, pageable)
                 : calendarioRepository.listarBandejaPostventaPorCorteYProveedores(
-                        Etapa.POSTVENTA,
-                        mesCorteBase,
-                        numeroCorteBase,
-                        scope.idsParaQuery(),
-                        scope.nombresParaQuery(),
-                        pageable
-                );
+                        Etapa.POSTVENTA, mesCorteBase, numeroCorteBase,
+                        scope.idsParaQuery(), scope.nombresParaQuery(),
+                        buscar, fechaDesde, fechaHasta, pageable);
     }
 
     private PageRequest normalizarOrden(PageRequest request) {
@@ -390,6 +459,8 @@ public class PostventaBandejaService {
                 .telefonoRegistro(datos == null ? null : datos.getCelularRegistro())
                 .proveedor(calendario.getProveedorSnapshot())
                 .plan(calendario.getPlanSnapshot())
+                .montoPlanSnapshot(calendario.getMontoPlanSnapshot())
+                .adicionales(resolverAdicionalesLabel(lead))
                 .mesCorteBase(calendario.getMesCorteBase())
                 .numeroCorteBase(calendario.getNumeroCorteBase())
                 .corteCorregido(calendario.getCorteCorregido())
@@ -401,6 +472,7 @@ public class PostventaBandejaService {
                 .estadoPago(resolverEstadoPago(periodoVigente))
                 .estadoServicio(resolverEstadoServicio(ultimaEncuesta))
                 .estadoPlataformaDigital(estadoPlataforma)
+                .numeroPeriodoVigente(periodoVigente == null ? null : periodoVigente.getNumeroPeriodo())
                 .ultimoGestor(ultimaGestion == null ? null : ultimaGestion.nombreGestor())
                 .ultimaGestion(ultimaGestion == null ? null : ultimaGestion.fechaGestion())
                 .build();
@@ -477,6 +549,18 @@ public class PostventaBandejaService {
             return EstadoServicioPostventa.SATISFECHO;
         }
         return EstadoServicioPostventa.MUY_SATISFECHO;
+    }
+
+    private String resolverAdicionalesLabel(Lead lead) {
+        Set<LeadAdicional> adicionales = lead.getAdicionales();
+        if (adicionales == null || adicionales.isEmpty()) {
+            return null;
+        }
+        return adicionales.stream()
+                .map(la -> la.getAdicional().getNombre())
+                .filter(nombre -> nombre != null && !nombre.isBlank())
+                .sorted()
+                .collect(Collectors.joining(", "));
     }
 
     private record UltimaGestion(String nombreGestor, Instant fechaGestion) {

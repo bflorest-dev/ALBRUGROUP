@@ -38,6 +38,8 @@ export interface LeadPostventaBandejaResponse {
   telefonoRegistro?: string | null;
   proveedor?: string | null;
   plan?: string | null;
+  montoPlanSnapshot?: number | null;
+  adicionales?: string | null;
   mesCorteBase?: string | null;
   numeroCorteBase?: number | null;
   corteCorregido?: boolean | null;
@@ -49,8 +51,24 @@ export interface LeadPostventaBandejaResponse {
   estadoPago?: EstadoPagoPeriodoPostventa | string | null;
   estadoServicio?: EstadoServicioPostventa | string | null;
   estadoPlataformaDigital?: string | null;
+  numeroPeriodoVigente?: number | null;
   ultimoGestor?: string | null;
   ultimaGestion?: string | null;
+}
+
+export interface CortePostventaResponse {
+  mesCorteBase?: string | null;
+  numeroCorteBase?: number | null;
+}
+
+export interface CambioCorteLeadRequest {
+  mesCorteBase: string;
+  numeroCorteBase: number;
+}
+
+export interface CambioCorteLeadResponse {
+  calendario?: unknown;
+  periodosRecalculados?: unknown[];
 }
 
 export interface LeadPostventaBusquedaResponse {
@@ -65,6 +83,13 @@ export interface LeadPostventaBusquedaResponse {
 export interface PostventaBandejaQuery extends PageQuery {
   mesCorteBase?: string | null;
   numeroCorteBase?: number | null;
+  buscar?: string | null;
+  estadoCliente?: string[] | null;
+  estadoCredenciales?: string[] | null;
+  estadoPago?: string[] | null;
+  estadoServicio?: string[] | null;
+  fechaDesde?: string | null;
+  fechaHasta?: string | null;
 }
 
 export interface PlataformaDigitalResponse {
@@ -243,6 +268,14 @@ export class PostventaLeadService {
     });
   }
 
+  listarCortes(): Observable<CortePostventaResponse[]> {
+    return this.http.get<CortePostventaResponse[]>(`${this.leadUrl}/postventa/cortes`);
+  }
+
+  cambiarCorteLead(idLead: number, request: CambioCorteLeadRequest): Observable<CambioCorteLeadResponse> {
+    return this.http.patch<CambioCorteLeadResponse>(`${this.leadUrl}/postventa/leads/${idLead}/corte`, request);
+  }
+
   buscarLead(buscar: string): Observable<LeadPostventaBusquedaResponse> {
     return this.http.get<LeadPostventaBusquedaResponse>(`${this.leadUrl}/postventa/buscar`, {
       params: new HttpParams().set('buscar', buscar)
@@ -357,6 +390,23 @@ export class PostventaLeadService {
     }
     if (query.numeroCorteBase) {
       params = params.set('numeroCorteBase', query.numeroCorteBase);
+    }
+    if (query.buscar) {
+      params = params.set('buscar', query.buscar);
+    }
+    if (query.fechaDesde) {
+      params = params.set('fechaDesde', query.fechaDesde);
+    }
+    if (query.fechaHasta) {
+      params = params.set('fechaHasta', query.fechaHasta);
+    }
+    for (const key of ['estadoCliente', 'estadoCredenciales', 'estadoPago', 'estadoServicio'] as const) {
+      const values = query[key];
+      if (values?.length) {
+        for (const v of values) {
+          params = params.append(key, v);
+        }
+      }
     }
     return params;
   }

@@ -8,6 +8,9 @@ import { CurrentUserProviderScopeService } from '../../../core/services/current-
 import { PresenceService } from '../../../core/services/presence.service';
 import { SessionService } from '../../../core/services/session.service';
 import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
+import { MetricsPeriodo } from '../../../shared/components/period-selector/period-selector.component';
+import { TreeSelectGroup, TreeSelectSelection } from '../../../shared/components/tree-select/tree-select.component';
+import { MetricsRango, localToday, resolveMetricsRange } from '../../../shared/utils/metrics-period';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import {
   CatalogoResponse,
@@ -17,12 +20,14 @@ import {
   TipificacionResponse
 } from '../../../shared/models/preventa/preventa.models';
 import {
+  CambioCorteLeadRequest,
   CredencialPlataformaResponse,
   EncuestaPostventaRequest,
   EncuestaPostventaResponse,
   EntregaCredencialPlataformaRequest,
   EntregaCredencialPlataformaResponse,
   CerrarPeriodoFacturacionRequest,
+  CortePostventaResponse,
   LeadPostventaBandejaResponse,
   LeadTipificacionPostventaRequest,
   PagoPostventaRequest,
@@ -45,12 +50,6 @@ const ESTADOS_PERIODO_CERRADO = [
   'CERRADO_BAJA_ADEUDO'
 ];
 const TODOS_LOS_CORTES = 'TODOS';
-const MESES_PERMANENCIA_WIN = 3;
-const MESES_PERMANENCIA_CLARO = 3;
-const DIA_INICIO_CORTE_DOS_WIN = 23;
-const DIA_INICIO_CORTE_DOS_CLARO = 12;
-const DIA_CIERRE_EMPRESA_POSTVENTA = 15;
-const CORTES_GRACIA_PRE_CIERRE_EMPRESA = 2;
 type BeforeTipificarTask = () => Promise<boolean>;
 
 export interface CortePostventaOption {
@@ -92,8 +91,8 @@ export class PostventaWorkspaceFacade {
         return;
       }
       this.lastProviderId = activeId;
-      this.normalizarCorteSeleccionado();
-      void this.loadBoard(0);
+      this._selectedCorteValue.set(TODOS_LOS_CORTES);
+      void this.loadCortes().then(() => this.loadBoard(0));
     });
 
     this.destroyRef.onDestroy(() => this.setPostventaManagingPresence(false));
@@ -114,6 +113,7 @@ export class PostventaWorkspaceFacade {
   private readonly _pageNumber = signal(0);
   private readonly _loadingBoard = signal(false);
   private readonly _selectedCorteValue = signal(TODOS_LOS_CORTES);
+  private readonly _corteOptions = signal<CortePostventaOption[]>([]);
   private readonly _coincidenciasBusqueda = signal<VisualLeadPostventa[]>([]);
   readonly rows = this._rows.asReadonly();
   readonly totalRows = this._totalRows.asReadonly();
@@ -123,11 +123,57 @@ export class PostventaWorkspaceFacade {
   readonly coincidenciasBusqueda = this._coincidenciasBusqueda.asReadonly();
   readonly corteOptions = computed<CortePostventaOption[]>(() => [
     { label: 'Todos los cortes', value: TODOS_LOS_CORTES, mesCorteBase: null, numeroCorteBase: null },
-    ...this.buildCortesActivos()
+    ...this._corteOptions()
   ]);
   readonly selectedCorteLabel = computed(() =>
     this.corteOptions().find((option) => option.value === this._selectedCorteValue())?.label ?? 'Todos los cortes'
   );
+  readonly corteActivo = computed(() => this._selectedCorteValue() !== TODOS_LOS_CORTES);
+
+  // --- Búsqueda auto (debounce) ---
+  readonly searchInput = signal('');
+  readonly searchActive = signal('');
+  private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // --- Periodo ---
+  readonly periodo = signal<MetricsPeriodo>('semana');
+  readonly dia = signal<string | null>(null);
+  readonly hasta = signal<string | null>(null);
+
+  // --- Semáforo tree-select ---
+  readonly selectedSemaforoParents = signal<string[]>([]);
+  readonly selectedSemaforoChildren = signal<string[]>([]);
+  readonly semaforoGroups: TreeSelectGroup[] = [
+    { label: 'Estado', nodes: [
+      { key: 'ACTIVO', label: 'Activo' },
+      { key: 'SUSPENDIDO', label: 'Suspendido' },
+      { key: 'BAJA', label: 'Baja' }
+    ]},
+    { label: 'Plataforma', nodes: [
+      { key: 'ENTREGADAS', label: 'Entregadas' },
+      { key: 'PENDIENTES', label: 'Pendientes' },
+      { key: 'NO_REQUIERE', label: 'No requiere' }
+    ]},
+    { label: 'Pago', nodes: [
+      { key: 'POR_EMITIR', label: 'Por emitir' },
+      { key: 'PENDIENTE_PAGO', label: 'Pendiente' },
+      { key: 'VENCIDA', label: 'Vencida' },
+      { key: 'PAGADA', label: 'Pagada' }
+    ]},
+    { label: 'Servicio', nodes: [
+      { key: 'SIN_CALIFICAR', label: 'Sin calificar' },
+      { key: 'INSATISFECHO', label: 'Insatisfecho' },
+      { key: 'SATISFECHO', label: 'Satisfecho' },
+      { key: 'MUY_SATISFECHO', label: 'Muy satisfecho' }
+    ]}
+  ];
+  readonly semaforoFilterCount = computed(() =>
+    this.selectedSemaforoParents().length + this.selectedSemaforoChildren().length
+  );
+
+  // --- Organizar ---
+  readonly sortBy = signal<string>('fechaInstalacion');
+  readonly direction = signal<'asc' | 'desc'>('desc');
 
   // --- Gestion (drawer) ---
   private readonly _drawerOpen = signal(false);
@@ -233,12 +279,19 @@ export class PostventaWorkspaceFacade {
       this._loadingBoard.set(true);
     }
     try {
+      const usandoCorte = this.corteActivo();
+      const range = usandoCorte ? null : resolveMetricsRange(this.periodo(), this.dia(), this.hasta());
+      const semaforoQuery = this.buildSemaforoQuery();
       const query = {
         pageNumber,
         pageSize: this.pageSize,
-        sortBy: 'fechaInstalacion',
-        direction: 'desc' as const,
-        ...this.selectedCorteQuery()
+        sortBy: this.sortBy(),
+        direction: this.direction(),
+        ...(usandoCorte ? this.selectedCorteQuery() : {}),
+        buscar: this.searchActive() || null,
+        fechaDesde: range?.desde ?? null,
+        fechaHasta: range?.hasta ?? (range?.desde ? localToday() : null),
+        ...semaforoQuery
       };
       const page = await firstValueFrom(
         this.service.listarBandeja(query)
@@ -258,6 +311,19 @@ export class PostventaWorkspaceFacade {
       if (!silent && requestSeq === this.boardRequestSeq) {
         this._loadingBoard.set(false);
       }
+    }
+  }
+
+  async loadCortes(): Promise<void> {
+    try {
+      const cortes = await firstValueFrom(this.service.listarCortes());
+      const options = cortes
+        .map((corte) => this.toCorteOption(corte))
+        .filter((option): option is CortePostventaOption => option !== null);
+      this._corteOptions.set(options);
+      this.normalizarCorteSeleccionado();
+    } catch (error) {
+      this.notify('error', this.errorMessage(error, 'No se pudieron cargar los cortes disponibles.'));
     }
   }
 
@@ -325,6 +391,114 @@ export class PostventaWorkspaceFacade {
     }
     this._selectedCorteValue.set(next);
     await this.loadBoard(0);
+  }
+
+  // --- Búsqueda auto con debounce ---
+  onSearchInput(value: string): void {
+    this.searchInput.set(value);
+    this.cancelSearchDebounce();
+    this.searchDebounceTimer = setTimeout(() => {
+      this.searchDebounceTimer = null;
+      const raw = this.searchInput().trim();
+      if (raw && !this.normalizeSearch(raw)) {
+        return;
+      }
+      void this.buscar();
+    }, 320);
+  }
+
+  async buscar(): Promise<void> {
+    this.cancelSearchDebounce();
+    const term = this.normalizeSearch(this.searchInput());
+    if (term === this.searchActive() && term === this.searchInput()) {
+      return;
+    }
+    this.searchInput.set(term);
+    this.searchActive.set(term);
+    this._pageNumber.set(0);
+    await this.loadBoard(0);
+  }
+
+  async limpiarBusqueda(): Promise<void> {
+    this.cancelSearchDebounce();
+    this.searchInput.set('');
+    this.searchActive.set('');
+    this._pageNumber.set(0);
+    await this.loadBoard(0);
+  }
+
+  private cancelSearchDebounce(): void {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
+  }
+
+  // --- Periodo (mutuamente excluyente con corte) ---
+  async onPeriodoChange(periodo: MetricsPeriodo): Promise<void> {
+    this.periodo.set(periodo);
+    this.dia.set(null);
+    this.hasta.set(null);
+    this._selectedCorteValue.set(TODOS_LOS_CORTES);
+    this._pageNumber.set(0);
+    await this.loadBoard(0);
+  }
+
+  async onRangoChange(rango: MetricsRango): Promise<void> {
+    this.dia.set(rango.desde);
+    this.hasta.set(rango.hasta);
+    this._selectedCorteValue.set(TODOS_LOS_CORTES);
+    this._pageNumber.set(0);
+    await this.loadBoard(0);
+  }
+
+  // --- Semáforo filter ---
+  async onSemaforoSelectionChange(selection: TreeSelectSelection): Promise<void> {
+    this.selectedSemaforoParents.set(selection.parents);
+    this.selectedSemaforoChildren.set(selection.children);
+    this._pageNumber.set(0);
+    await this.loadBoard(0);
+  }
+
+  private buildSemaforoQuery(): Record<string, string[]> {
+    const result: Record<string, string[]> = {};
+    const SEMAFORO_GROUP_KEYS: Record<string, string> = {
+      Estado: 'estadoCliente',
+      Plataforma: 'estadoCredenciales',
+      Pago: 'estadoPago',
+      Servicio: 'estadoServicio'
+    };
+    const selectedParents = this.selectedSemaforoParents();
+    const selectedChildren = this.selectedSemaforoChildren();
+    for (const group of this.semaforoGroups) {
+      const paramKey = SEMAFORO_GROUP_KEYS[group.label];
+      if (!paramKey) continue;
+      if (selectedParents.includes(group.label)) {
+        result[paramKey] = group.nodes.map(n => n.key);
+      } else {
+        const childKeys = group.nodes.filter(n => selectedChildren.includes(n.key)).map(n => n.key);
+        if (childKeys.length > 0) {
+          result[paramKey] = childKeys;
+        }
+      }
+    }
+    return result;
+  }
+
+  // --- Sort ---
+  changeColumnSort(field: string): void {
+    if (this.sortBy() === field) {
+      this.direction.set(this.direction() === 'desc' ? 'asc' : 'desc');
+    } else {
+      this.sortBy.set(field);
+      this.direction.set('desc');
+    }
+    void this.loadBoard(0);
+  }
+
+  sortIcon(field: string): string {
+    if (this.sortBy() !== field) return 'ti ti-arrows-sort';
+    return this.direction() === 'asc' ? 'ti ti-sort-ascending' : 'ti ti-sort-descending';
   }
 
   async buscarRapido(term: string): Promise<void> {
@@ -527,6 +701,16 @@ export class PostventaWorkspaceFacade {
       () => this.service.entregarCredencial(lead.idLead, request),
       'Credencial entregada.',
       'No se pudo entregar la credencial.'
+    );
+  }
+
+  async cambiarCorteLead(request: CambioCorteLeadRequest): Promise<boolean> {
+    const lead = this._selectedLead();
+    if (!lead) return false;
+    return this.run(
+      () => this.service.cambiarCorteLead(lead.idLead, request),
+      'Corte actualizado correctamente.',
+      'No se pudo cambiar el corte.'
     );
   }
 
@@ -856,84 +1040,30 @@ export class PostventaWorkspaceFacade {
     });
   }
 
-  private buildCortesActivos(): CortePostventaOption[] {
-    const proveedor = this.proveedorActivoNormalizado();
-    const config = proveedor === 'CLARO'
-      ? {
-          diaInicioCorteDos: DIA_INICIO_CORTE_DOS_CLARO,
-          mesesPermanencia: MESES_PERMANENCIA_CLARO,
-          inicioNumeroCorte: 1,
-          aplicarGraciaPreCierreEmpresa: false
-        }
-      : {
-          diaInicioCorteDos: DIA_INICIO_CORTE_DOS_WIN,
-          mesesPermanencia: MESES_PERMANENCIA_WIN,
-          inicioNumeroCorte: 2,
-          aplicarGraciaPreCierreEmpresa: true
-        };
-    const [year, month, day] = this.today.split('-').map(Number);
-    const currentNumber = day >= config.diaInicioCorteDos ? 2 : 1;
-    const current = { year, month, number: currentNumber };
-    const startDate = this.addMonths(year, month, -config.mesesPermanencia);
-    const options: CortePostventaOption[] = [];
-    let cursor = { year: startDate.year, month: startDate.month, number: config.inicioNumeroCorte };
-    if (config.aplicarGraciaPreCierreEmpresa && day <= DIA_CIERRE_EMPRESA_POSTVENTA) {
-      for (let i = 0; i < CORTES_GRACIA_PRE_CIERRE_EMPRESA; i++) {
-        cursor = this.previousCorte(cursor);
-      }
+  private toCorteOption(corte: CortePostventaResponse): CortePostventaOption | null {
+    if (!corte.mesCorteBase || corte.numeroCorteBase == null) {
+      return null;
     }
-
-    while (this.corteRank(cursor) <= this.corteRank(current)) {
-      options.push(this.toCorteOption(cursor.year, cursor.month, cursor.number));
-      cursor = this.nextCorte(cursor);
+    const mesCorteBase = corte.mesCorteBase.slice(0, 10);
+    const [year, month] = mesCorteBase.split('-').map(Number);
+    if (!year || !month) {
+      return null;
     }
-
-    return options;
-  }
-
-  private proveedorActivoNormalizado(): string {
-    return this.providerScope.proveedorActivo()?.nombre?.trim().toUpperCase() ?? '';
-  }
-
-  private toCorteOption(year: number, month: number, number: number): CortePostventaOption {
-    const mesCorteBase = `${year}-${String(month).padStart(2, '0')}-01`;
     return {
-      label: `${this.monthLabel(year, month)} ${number}`,
-      value: `${mesCorteBase}#${number}`,
+      label: this.corteLabel(year, month, corte.numeroCorteBase),
+      value: `${mesCorteBase}#${corte.numeroCorteBase}`,
       mesCorteBase,
-      numeroCorteBase: number
+      numeroCorteBase: corte.numeroCorteBase
     };
   }
 
-  private nextCorte(corte: { year: number; month: number; number: number }): { year: number; month: number; number: number } {
-    if (corte.number === 1) {
-      return { ...corte, number: 2 };
-    }
-    const nextMonth = this.addMonths(corte.year, corte.month, 1);
-    return { year: nextMonth.year, month: nextMonth.month, number: 1 };
-  }
-
-  private previousCorte(corte: { year: number; month: number; number: number }): { year: number; month: number; number: number } {
-    if (corte.number === 2) {
-      return { ...corte, number: 1 };
-    }
-    const previousMonth = this.addMonths(corte.year, corte.month, -1);
-    return { year: previousMonth.year, month: previousMonth.month, number: 2 };
-  }
-
-  private addMonths(year: number, month: number, delta: number): { year: number; month: number } {
-    const date = new Date(year, month - 1 + delta, 1);
-    return { year: date.getFullYear(), month: date.getMonth() + 1 };
-  }
-
-  private corteRank(corte: { year: number; month: number; number: number }): number {
-    return (corte.year * 12 + corte.month) * 2 + corte.number;
-  }
-
-  private monthLabel(year: number, month: number): string {
-    const label = new Intl.DateTimeFormat('es-PE', { month: 'long' }).format(new Date(year, month - 1, 1));
-    const capitalized = label.charAt(0).toUpperCase() + label.slice(1);
-    return year === new Date().getFullYear() ? capitalized : `${capitalized} ${year}`;
+  private corteLabel(year: number, month: number, number: number): string {
+    const monthLabel = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'][month - 1]
+      ?? String(month).padStart(2, '0');
+    const currentYear = new Date().getFullYear();
+    return year === currentYear
+      ? `${monthLabel} ${number}`
+      : `${monthLabel} ${number} · ${year}`;
   }
 
   private notify(severity: ToastSeverity, detail: string): void {

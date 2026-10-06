@@ -1,105 +1,229 @@
-<p-drawer
-  [visible]="facade.drawerOpen()"
-  (visibleChange)="onVisibleChange($event)"
-  position="right"
-  styleClass="postventa-drawer"
-  [dismissible]="!facade.gestionModificada()"
->
-  <ng-template #header>
-    @if (facade.selectedLead(); as lead) {
-      <div class="drawer-header">
-        <div class="drawer-header__id">
-          <span class="drawer-header__eyebrow">{{ facade.consultaOnly() ? 'Consulta de Cobranza' : 'Gestion de Postventa' }}</span>
-          <strong class="drawer-header__name">{{ display(facade.detail()?.nombreTitular ?? lead.nombreCliente) }}</strong>
-          <span class="drawer-header__doc">
-            <span class="drawer-header__doc-type">{{ display(lead.tipoDocumento) }}</span>
-            <strong>{{ display(lead.numeroDocumento) }}</strong>
-          </span>
-        </div>
+@if (facade.drawerOpen()) {
+  <div class="postventa-v2" role="presentation">
+    <button class="postventa-v2__backdrop" type="button" aria-label="Cerrar gestion" (click)="facade.requestCloseDrawer()"></button>
 
-        <div class="drawer-header__contact">
-          <app-phone-action-button
-            [idLead]="lead.idLead"
-            [prefijo]="facade.detail()?.prefijo"
-            [lead]="facade.detail()?.lead"
-            size="small"
-            [buttonWidth]="'8.75rem'"
-            [severity]="facade.medioContacto() === 'LLAMADA' ? undefined : 'secondary'"
-            [disabled]="!facade.detail() || facade.consultaOnly()"
-            [loading]="facade.saving()"
-            (callStarted)="facade.registrarLlamadaOperativa()"
-            (callError)="facade.showCallError($event)"
-          />
+    <div class="postventa-v2__stage" role="dialog" aria-modal="true" aria-labelledby="pv2-title">
+      <!-- Summary strip -->
+      <aside class="postventa-v2__summary" [class.postventa-v2__summary--closed]="!summaryOpen()" aria-label="Resumen del lead">
+        @if (facade.selectedLead(); as lead) {
+          <div class="postventa-v2__summary-sheet">
+            <div class="postventa-v2__summary-kicker">
+              <span>Resumen del lead</span>
+              <span>#{{ lead.idLead }}</span>
+            </div>
+            <dl>
+              <div>
+                <dt><i class="pi pi-calendar" aria-hidden="true"></i> Fecha de instalacion</dt>
+                <dd>{{ display(lead.fechaInstalacion) }}</dd>
+              </div>
+              <div class="postventa-v2__corte-row">
+                <div>
+                  <dt><i class="pi pi-sync" aria-hidden="true"></i> Corte</dt>
+                  <dd>
+                    {{ corteLabel(lead) }}
+                    @if (lead.corteCorregido) {
+                      <span class="postventa-v2__corte-badge">corregido</span>
+                    }
+                  </dd>
+                </div>
+                @if (!facade.consultaOnly()) {
+                  <button class="postventa-v2__corte-edit" type="button" aria-label="Cambiar corte" (click)="editingCorte.set(!editingCorte())">
+                    <i [class]="editingCorte() ? 'pi pi-times' : 'pi pi-pencil'" aria-hidden="true"></i>
+                  </button>
+                }
+              </div>
+              @if (editingCorte()) {
+                <div class="postventa-v2__corte-form">
+                  <label>
+                    <span>Mes</span>
+                    <input type="month" [value]="corteMes()" (change)="corteMes.set($any($event.target).value)" />
+                  </label>
+                  <label>
+                    <span>Nro. corte</span>
+                    <select [value]="corteNumero()" (change)="corteNumero.set(+$any($event.target).value)">
+                      <option [value]="1">1</option>
+                      <option [value]="2">2</option>
+                    </select>
+                  </label>
+                  <button class="postventa-v2__corte-save" type="button" [disabled]="facade.saving()" (click)="guardarCorte()">
+                    <i class="pi pi-check" aria-hidden="true"></i>
+                  </button>
+                </div>
+              }
+              <div>
+                <dt><i class="pi pi-user" aria-hidden="true"></i> Asesor preventa</dt>
+                <dd>{{ display(facade.detail()?.nombreAsesorMeritoPreventa) }}</dd>
+              </div>
+              <div>
+                <dt><i class="pi pi-id-card" aria-hidden="true"></i> Documento</dt>
+                <dd>
+                  @if (lead.tipoDocumento) { <small>{{ lead.tipoDocumento }}</small> }
+                  {{ display(lead.numeroDocumento) }}
+                </dd>
+              </div>
+              <div>
+                <dt><i class="pi pi-user" aria-hidden="true"></i> Nombre</dt>
+                <dd>{{ display(facade.detail()?.nombreTitular ?? lead.nombreCliente) }}</dd>
+              </div>
+              <div>
+                <dt><i class="pi pi-envelope" aria-hidden="true"></i> Correo</dt>
+                <dd>{{ display(facade.detail()?.correo) }}</dd>
+              </div>
+              <div>
+                <dt><i class="pi pi-wifi" aria-hidden="true"></i> Plan</dt>
+                <dd>{{ display(facade.detail()?.nombrePlan ?? lead.plan) }}</dd>
+              </div>
+              <div>
+                <dt><i class="pi pi-dollar" aria-hidden="true"></i> Precio</dt>
+                <dd class="postventa-v2__mono">{{ formatPrice(facade.detail()?.precioPlan ?? lead.montoPlanSnapshot) }}</dd>
+              </div>
+              <!-- Semaforos -->
+              <div class="postventa-v2__semaforos">
+                <div class="postventa-v2__semaforo">
+                  <span class="postventa-v2__sem-dot" [class]="semColor(lead.estadoCliente)"></span>
+                  <span class="postventa-v2__sem-label">Cliente</span>
+                  <span class="postventa-v2__sem-value">{{ semLabel(lead.estadoCliente) }}</span>
+                </div>
+                <div class="postventa-v2__semaforo">
+                  <span class="postventa-v2__sem-dot" [class]="semColor(lead.estadoCredenciales)"></span>
+                  <span class="postventa-v2__sem-label">Credenciales</span>
+                  <span class="postventa-v2__sem-value">{{ semLabel(lead.estadoCredenciales) }}</span>
+                </div>
+                <div class="postventa-v2__semaforo">
+                  <span class="postventa-v2__sem-dot" [class]="semColor(lead.estadoPago)"></span>
+                  <span class="postventa-v2__sem-label">Pago</span>
+                  <span class="postventa-v2__sem-value">{{ semLabel(lead.estadoPago) }}</span>
+                </div>
+                <div class="postventa-v2__semaforo">
+                  <span class="postventa-v2__sem-dot" [class]="semColor(lead.estadoServicio)"></span>
+                  <span class="postventa-v2__sem-label">Servicio</span>
+                  <span class="postventa-v2__sem-value">{{ semLabel(lead.estadoServicio) }}</span>
+                </div>
+              </div>
+            </dl>
+          </div>
+        }
+      </aside>
+
+      <!-- Main drawer -->
+      <section class="postventa-v2__drawer">
+        <!-- Header -->
+        <header class="postventa-v2__header">
           <button
-            pButton
+            class="postventa-v2__summary-toggle"
             type="button"
-            class="drawer-header__chat"
-            icon="pi pi-whatsapp"
-            label="Chat"
-            size="small"
-            [outlined]="facade.medioContacto() !== 'CHAT'"
-            [severity]="facade.medioContacto() === 'CHAT' ? undefined : 'secondary'"
-            [disabled]="!facade.detail() || facade.consultaOnly()"
-            (click)="facade.chat()"
-          ></button>
+            [attr.aria-label]="summaryOpen() ? 'Contraer resumen' : 'Abrir resumen'"
+            [attr.aria-expanded]="summaryOpen()"
+            (click)="summaryOpen.set(!summaryOpen())"
+          >
+            <i [class]="summaryOpen() ? 'pi pi-chevron-left' : 'pi pi-chevron-right'" aria-hidden="true"></i>
+          </button>
+
+          @if (facade.selectedLead(); as lead) {
+            <div class="postventa-v2__provider">
+              <span>{{ facade.consultaOnly() ? 'Cobranza' : 'Postventa' }}</span>
+              <small>Gestion</small>
+            </div>
+            <div class="postventa-v2__customer">
+              <h2 id="pv2-title">{{ display(facade.detail()?.nombreTitular ?? lead.nombreCliente) }}</h2>
+              <span>{{ lead.tipoDocumento }} {{ display(lead.numeroDocumento) }}</span>
+            </div>
+            <div class="postventa-v2__contact">
+              <app-phone-action-button
+                [idLead]="lead.idLead"
+                [prefijo]="facade.detail()?.prefijo"
+                [lead]="facade.detail()?.lead"
+                size="small"
+                [buttonWidth]="'8rem'"
+                [severity]="facade.medioContacto() === 'LLAMADA' ? undefined : 'secondary'"
+                [disabled]="!facade.detail() || facade.consultaOnly()"
+                [loading]="facade.saving()"
+                (callStarted)="facade.registrarLlamadaOperativa()"
+                (callError)="facade.showCallError($event)"
+              />
+              <button
+                pButton
+                type="button"
+                class="postventa-v2__chat-btn"
+                icon="pi pi-whatsapp"
+                label="Chat"
+                size="small"
+                [outlined]="facade.medioContacto() !== 'CHAT'"
+                [severity]="facade.medioContacto() === 'CHAT' ? undefined : 'secondary'"
+                [disabled]="!facade.detail() || facade.consultaOnly()"
+                (click)="facade.chat()"
+              ></button>
+            </div>
+            <button class="postventa-v2__close" type="button" aria-label="Cerrar" (click)="facade.requestCloseDrawer()">
+              <i class="pi pi-times" aria-hidden="true"></i>
+            </button>
+          }
+        </header>
+
+        <!-- Workspace: tabs + content -->
+        <div class="postventa-v2__workspace">
+          @if (facade.loadingContext()) {
+            <div class="postventa-v2__skeleton">
+              @for (_ of skeletonRows; track $index) {
+                <p-skeleton height="2.2rem" />
+              }
+            </div>
+          } @else {
+            <nav class="postventa-v2__tabs">
+              @if (!facade.consultaOnly()) {
+                <button type="button" [class.is-active]="activeTab() === 'plataforma'" (click)="activeTab.set('plataforma')">
+                  <i class="pi pi-box" aria-hidden="true"></i>
+                  Plataforma
+                </button>
+                <button type="button" [class.is-active]="activeTab() === 'encuesta'" (click)="activeTab.set('encuesta')">
+                  <i class="pi pi-star" aria-hidden="true"></i>
+                  Satisfaccion
+                </button>
+              }
+              <button type="button" [class.is-active]="activeTab() === 'factura'" (click)="activeTab.set('factura')">
+                <i class="pi pi-receipt" aria-hidden="true"></i>
+                Facturacion
+              </button>
+              <button type="button" [class.is-active]="activeTab() === 'historial'" (click)="activeTab.set('historial')">
+                <i class="pi pi-history" aria-hidden="true"></i>
+                Historial
+              </button>
+            </nav>
+
+            <main class="postventa-v2__content">
+              @if (activeTab() === 'plataforma' && !facade.consultaOnly()) {
+                <app-postventa-plataforma-panel />
+              } @else if (activeTab() === 'encuesta' && !facade.consultaOnly()) {
+                <app-postventa-encuesta-panel />
+              } @else if (activeTab() === 'factura') {
+                <app-postventa-facturacion-panel />
+              } @else if (activeTab() === 'historial') {
+                <app-postventa-historial-panel />
+              }
+            </main>
+          }
         </div>
 
-        <div class="drawer-header__tags">
-          <p-tag [severity]="badge(lead.estadoCredenciales).severity" [value]="badge(lead.estadoCredenciales).label" />
-          <p-tag [severity]="badge(lead.estadoPago).severity" [value]="badge(lead.estadoPago).label" />
-          <p-tag [severity]="badge(lead.estadoServicio).severity" [value]="badge(lead.estadoServicio).label" />
-        </div>
-      </div>
-    }
-  </ng-template>
-
-  <div class="drawer-body">
-    @if (facade.loadingContext()) {
-      <div class="drawer-skeleton">
-        @for (_ of skeletonRows; track $index) {
-          <p-skeleton height="2.2rem" />
-        }
-      </div>
-    } @else {
-      <div class="drawer-scroll">
-        <p-tabs [value]="activeTab()" (valueChange)="activeTab.set($any($event))">
-          <p-tablist>
-            <p-tab value="resumen">Resumen</p-tab>
-            @if (!facade.consultaOnly()) {
-              <p-tab value="plataforma">Plataforma digital</p-tab>
-              <p-tab value="encuesta">Encuesta</p-tab>
+        <!-- Footer dock -->
+        @if (!facade.consultaOnly() && !facade.loadingContext()) {
+          <footer class="postventa-v2__dock">
+            @if (facade.gestionModificada()) {
+              <p class="postventa-v2__dock-hint">
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                Registraste cambios en esta gestion: tipificala para cerrarla.
+              </p>
             }
-            <p-tab value="factura">Facturacion</p-tab>
-            <p-tab value="historial">Historial</p-tab>
-          </p-tablist>
-          <p-tabpanels>
-            <p-tabpanel value="resumen"><app-postventa-resumen-panel /></p-tabpanel>
-            @if (!facade.consultaOnly()) {
-              <p-tabpanel value="plataforma"><app-postventa-plataforma-panel /></p-tabpanel>
-              <p-tabpanel value="encuesta"><app-postventa-encuesta-panel /></p-tabpanel>
-            }
-            <p-tabpanel value="factura"><app-postventa-facturacion-panel /></p-tabpanel>
-            <p-tabpanel value="historial"><app-postventa-historial-panel /></p-tabpanel>
-          </p-tabpanels>
-        </p-tabs>
-      </div>
-
-      <footer class="drawer-footer">
-        @if (facade.consultaOnly()) {
-          <p class="drawer-footer__hint">
-            <i class="pi pi-info-circle"></i>
-            Este lead esta en COBRANZA: puedes revisar sus periodos sin modificar la gestion.
-          </p>
-        } @else if (facade.gestionModificada()) {
-          <p class="drawer-footer__hint">
-            <i class="pi pi-info-circle"></i>
-            Registraste cambios en esta gestion: tipificala para cerrarla.
-          </p>
+            <app-postventa-tipificacion-bar />
+          </footer>
+        } @else if (facade.consultaOnly() && !facade.loadingContext()) {
+          <footer class="postventa-v2__dock">
+            <p class="postventa-v2__dock-hint">
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              Este lead esta en COBRANZA: puedes revisar sus periodos sin modificar la gestion.
+            </p>
+          </footer>
         }
-        @if (!facade.consultaOnly()) {
-          <app-postventa-tipificacion-bar />
-        }
-      </footer>
-    }
+      </section>
+    </div>
   </div>
-</p-drawer>
+}

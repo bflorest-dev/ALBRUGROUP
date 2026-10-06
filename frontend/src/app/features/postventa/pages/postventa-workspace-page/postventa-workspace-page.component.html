@@ -1,23 +1,234 @@
-<section class="postventa-page">
+<section class="postventa-board">
   <p-toast position="top-right" />
   <p-confirmDialog />
 
-  <app-page-header eyebrow="Postventa" title="Postventa" [variant]="'solid'">
-    <div class="header-actions">
-      <p-tag severity="info" [value]="facade.totalRows() + ' leads'" />
-      <button
-        pButton
-        type="button"
-        icon="pi pi-refresh"
-        label="Actualizar"
-        severity="secondary"
-        [loading]="facade.loadingBoard()"
-        (click)="facade.loadBoard()"
-      ></button>
+  <!-- HEADER -->
+  <header class="postventa-board__head">
+    <div class="postventa-board__title">
+      <span class="postventa-board__eyebrow">Postventa</span>
+      <h1 class="postventa-board__h1">Postventa</h1>
     </div>
-  </app-page-header>
+    <div class="postventa-board__meta">
+      <strong>{{ facade.totalRows() }}</strong>
+      <span>leads listados</span>
+    </div>
+  </header>
 
-  <app-postventa-board />
+  <!-- CONTROLS -->
+  <section class="postventa-board__controls">
+    <div class="postventa-board__controls-left">
+      <form class="search-strip" role="search" (submit)="$event.preventDefault()">
+        <i class="ti ti-search" aria-hidden="true"></i>
+        <input
+          type="text"
+          placeholder="Lead, documento o @usermeta"
+          [value]="facade.searchInput()"
+          (input)="onSearchInput($event)"
+          (keydown)="onSearchKeydown($event)"
+        />
+        @if (facade.searchInput()) {
+          <button
+            type="button"
+            class="search-strip__clear"
+            (click)="facade.limpiarBusqueda()"
+            aria-label="Limpiar búsqueda"
+          >
+            <i class="ti ti-x" aria-hidden="true"></i>
+          </button>
+        }
+      </form>
+
+      <p-select
+        [options]="facade.corteOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="facade.selectedCorteValue()"
+        (ngModelChange)="facade.changeCorte($event)"
+        styleClass="ctrl-select"
+        [showClear]="false"
+      />
+
+      <app-tree-select
+        [groups]="facade.semaforoGroups"
+        [(selectedParents)]="facade.selectedSemaforoParents"
+        [(selectedChildren)]="facade.selectedSemaforoChildren"
+        placeholder="Semáforos"
+        icon="ti ti-circle-filled"
+        (selectionChange)="onSemaforoSelectionChange($event)"
+      />
+    </div>
+
+    <div class="postventa-board__controls-right">
+      <div class="period-wrap" [class.period-wrap--disabled]="facade.corteActivo()">
+        <app-period-selector
+          [periodo]="facade.periodo()"
+          [dia]="facade.dia()"
+          [hasta]="facade.hasta()"
+          (periodoChange)="onPeriodoChange($event)"
+          (rangoChange)="onRangoChange($event)"
+        />
+      </div>
+
+      <button
+        type="button"
+        class="ctrl-btn"
+        [class.ctrl-btn--loading]="facade.loadingBoard()"
+        (click)="facade.loadBoard()"
+      >
+        <i class="ti ti-refresh" aria-hidden="true"></i>
+      </button>
+    </div>
+  </section>
+
+  <!-- BODY -->
+  <div class="postventa-board__body">
+    <!-- SELECTION RAIL -->
+    @if (facade.searchActive() || facade.semaforoFilterCount() > 0) {
+      <div class="selection-rail">
+        @if (facade.searchActive()) {
+          <span class="selection-rail__pill">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            {{ facade.searchActive() }}
+          </span>
+        }
+        @if (facade.semaforoFilterCount() > 0) {
+          <span class="selection-rail__pill">
+            <i class="ti ti-circle-filled" aria-hidden="true"></i>
+            {{ facade.semaforoFilterCount() }} semáforos
+          </span>
+        }
+      </div>
+    }
+
+    <section class="table-shell">
+      <p-table
+        [value]="facade.rows()"
+        [scrollable]="true"
+        scrollHeight="flex"
+        [loading]="facade.loadingBoard()"
+        [lazy]="true"
+        [tableStyle]="{ 'table-layout': 'fixed', width: '100%' }"
+        styleClass="p-datatable-sm postventa-table"
+      >
+        <ng-template #header>
+          <tr>
+            <th class="col-install">
+              <button type="button" class="sort-header"
+                [class.sort-header--active]="facade.sortBy() === 'fechaInstalacion'"
+                (click)="facade.changeColumnSort('fechaInstalacion')">
+                Instalación <i [class]="facade.sortIcon('fechaInstalacion')" aria-hidden="true"></i>
+              </button>
+            </th>
+            <th class="col-client">Cliente</th>
+            <th class="col-plan">Plan</th>
+            <th class="col-semaforo">
+              <div class="sem-header">
+                <span>Estado</span>
+                <span>Plataf.</span>
+                <span>Pago</span>
+                <span>Servicio</span>
+              </div>
+            </th>
+            <th class="col-gestion">
+              <button type="button" class="sort-header"
+                [class.sort-header--active]="facade.sortBy() === 'mesCorteBase'"
+                (click)="facade.changeColumnSort('mesCorteBase')">
+                Gestión <i [class]="facade.sortIcon('mesCorteBase')" aria-hidden="true"></i>
+              </button>
+            </th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+          <tr (click)="onRowClick(row)" class="board-row">
+            <!-- INSTALACIÓN -->
+            <td class="col-install">
+              <div class="cell-stack">
+                <strong>{{ formatDate(row.fechaInstalacion) }}</strong>
+                <span>{{ formatCorte(row) }}</span>
+              </div>
+            </td>
+
+            <!-- CLIENTE -->
+            <td class="col-client">
+              <div class="cell-stack">
+                <strong>{{ row.tipoDocumento ?? '' }} {{ row.numeroDocumento ?? '—' }}</strong>
+                <span>{{ row.nombreCliente ?? '—' }}</span>
+              </div>
+            </td>
+
+            <!-- PLAN -->
+            <td class="col-plan">
+              <div class="plan-cell">
+                @if (providerLogo(row.proveedor); as logo) {
+                  <img class="plan-logo" [src]="logo" [alt]="row.proveedor" />
+                } @else {
+                  <span class="plan-logo-text">{{ (row.proveedor ?? '?').slice(0, 3) }}</span>
+                }
+                <div class="cell-stack">
+                  <strong>{{ row.plan ?? '—' }}</strong>
+                  <span>
+                    {{ formatMonto(row.montoPlanSnapshot) }}
+                    @if (row.adicionales) {
+                      <span class="addon-chip" [pTooltip]="row.adicionales" tooltipPosition="top">
+                        +{{ countAdicionales(row.adicionales) }}
+                      </span>
+                    }
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <!-- SEMÁFOROS (tag segmentado) -->
+            <td class="col-semaforo">
+              <div class="semaforo">
+                <div class="semaforo__seg" [class]="semColor(row.estadoCliente)"
+                     [pTooltip]="'Estado: ' + semLabel(row.estadoCliente)" tooltipPosition="top">
+                  {{ semAbrev(row.estadoCliente) }}
+                </div>
+                <div class="semaforo__seg" [class]="semColor(row.estadoCredenciales)"
+                     [pTooltip]="'Plataforma: ' + semLabel(row.estadoCredenciales)" tooltipPosition="top">
+                  {{ semAbrev(row.estadoCredenciales) }}
+                </div>
+                <div class="semaforo__seg" [class]="semColor(row.estadoPago)"
+                     [pTooltip]="'Pago: ' + semLabel(row.estadoPago)" tooltipPosition="top">
+                  {{ semAbrev(row.estadoPago) }}
+                </div>
+                <div class="semaforo__seg" [class]="semColor(row.estadoServicio)"
+                     [pTooltip]="'Servicio: ' + semLabel(row.estadoServicio)" tooltipPosition="top">
+                  {{ semAbrev(row.estadoServicio) }}
+                </div>
+              </div>
+            </td>
+
+            <!-- ÚLTIMA GESTIÓN -->
+            <td class="col-gestion">
+              <div class="cell-stack">
+                <strong>{{ shortName(row.ultimoGestor) }}</strong>
+                <span>{{ formatGestionDate(row.ultimaGestion) }}</span>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td [attr.colspan]="5" class="empty-cell">
+              No hay leads que mostrar con los filtros actuales.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </section>
+
+    <p-paginator
+      [rows]="facade.pageSize"
+      [totalRecords]="facade.totalRows()"
+      [first]="facade.pageNumber() * facade.pageSize"
+      (onPageChange)="facade.changePage($event.page ?? 0)"
+      styleClass="board-paginator"
+    />
+  </div>
 
   <app-postventa-gestion-drawer />
 </section>

@@ -8,7 +8,6 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { TextareaModule } from 'primeng/textarea';
 import { PostventaWorkspaceFacade } from '../../facades/postventa-workspace.facade';
 import { AportantePago, CondicionPagoPostventa } from '../../services/postventa-lead.service';
 import { EstadoBadge, SelectOption, display, estadoBadge } from '../../models/postventa.vm';
@@ -27,8 +26,7 @@ type ModoRegistroPago = 'PAGO' | 'COMPROMISO';
     MessageModule,
     SelectModule,
     TableModule,
-    TagModule,
-    TextareaModule
+    TagModule
   ],
   templateUrl: './postventa-facturacion-panel.component.html',
   styleUrl: './postventa-facturacion-panel.component.scss',
@@ -54,8 +52,7 @@ export class PostventaFacturacionPanelComponent {
   protected readonly facturaForm = this.fb.group({
     fechaEmisionConfirmada: [''],
     fechaVencimientoConfirmado: [''],
-    montoFacturado: [null as number | null],
-    observacion: ['']
+    montoFacturado: [null as number | null]
   });
 
   protected readonly pagoForm = this.fb.group({
@@ -65,8 +62,7 @@ export class PostventaFacturacionPanelComponent {
     monto: [null as number | null, [Validators.min(0.01)]],
     fechaPago: [''],
     fechaCompromisoPago: [''],
-    numeroOperacion: [''],
-    observacion: ['']
+    numeroOperacion: ['']
   });
 
   constructor() {
@@ -84,8 +80,7 @@ export class PostventaFacturacionPanelComponent {
       this.facturaForm.reset({
         fechaEmisionConfirmada: emision,
         fechaVencimientoConfirmado: vencimiento,
-        montoFacturado: monto,
-        observacion: periodo.observacion ?? ''
+        montoFacturado: monto
       });
       this.pagoForm.reset({
         modoRegistro: 'PAGO',
@@ -94,8 +89,7 @@ export class PostventaFacturacionPanelComponent {
         monto,
         fechaPago: '',
         fechaCompromisoPago: '',
-        numeroOperacion: '',
-        observacion: ''
+        numeroOperacion: ''
       });
       this.actualizarEstadoAportante();
     });
@@ -129,7 +123,7 @@ export class PostventaFacturacionPanelComponent {
       fechaEmisionConfirmada: raw.fechaEmisionConfirmada || null,
       fechaVencimientoConfirmado: raw.fechaVencimientoConfirmado || null,
       montoFacturado: raw.montoFacturado,
-      observacion: raw.observacion || null
+      observacion: null
     });
     if (ok) {
       this.facturaForm.markAsPristine();
@@ -156,7 +150,7 @@ export class PostventaFacturacionPanelComponent {
       fechaPago: esPago ? raw.fechaPago || null : null,
       fechaCompromisoPago: esPago ? null : raw.fechaCompromisoPago || null,
       numeroOperacion: esPago && aportante === 'EMPRESA' ? raw.numeroOperacion || null : null,
-      observacion: raw.observacion || null
+      observacion: null
     });
     if (ok) {
       this.pagoForm.patchValue({
@@ -165,8 +159,7 @@ export class PostventaFacturacionPanelComponent {
         condicion: 'NORMAL',
         fechaPago: '',
         fechaCompromisoPago: '',
-        numeroOperacion: '',
-        observacion: ''
+        numeroOperacion: ''
       });
       this.pagoForm.markAsPristine();
     }
@@ -290,7 +283,6 @@ export class PostventaFacturacionPanelComponent {
       raw.fechaPago
       || raw.fechaCompromisoPago
       || raw.numeroOperacion
-      || raw.observacion
       || raw.aportante
       || raw.condicion !== 'NORMAL'
     );

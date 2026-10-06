@@ -1,82 +1,27 @@
-@use '../postventa-shared' as shared;
-
 :host {
   display: block;
 }
 
-.form-grid {
-  @include shared.form-grid;
-}
-
-.close-grid {
-  @include shared.form-grid;
-  align-items: end;
-}
-
-.form-actions {
-  @include shared.form-actions;
-}
-
-.panel-heading {
-  @include shared.panel-heading;
-
-  &:first-of-type {
-    margin-top: 0.5rem;
-  }
-}
-
-.nested-table {
-  @include shared.nested-table;
+.readonly-note {
+  display: block;
+  margin-bottom: .85rem;
 }
 
 .empty-hint {
-  @include shared.empty-hint;
+  text-align: center;
+  color: var(--pv-muted, #64748b);
+  font-size: .82rem;
+  padding: 1.5rem 0;
 }
 
-.periodo-selector {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.85rem;
+.field-warn {
+  color: #b45309;
+  font-size: .72rem;
+  font-weight: 650;
 }
 
-.readonly-note {
-  display: block;
-  margin-bottom: 0.85rem;
-}
-
-.temporal-note {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0 0 0.6rem;
-  color: var(--role-muted);
-  font-size: 0.78rem;
-  font-style: italic;
-}
-
-.period-card {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.75rem 1rem;
-  background: var(--role-accent-soft);
-  border: 1px solid var(--app-border);
-  border-radius: 0.75rem;
-  padding: 0.85rem 1rem;
-
-  div {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-
-    span {
-      color: var(--role-muted);
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    strong {
-      color: var(--role-primary);
-    }
-  }
+.field-info {
+  color: var(--pv-accent, #5b8def);
+  font-size: .72rem;
+  font-weight: 650;
 }

@@ -1,65 +1,88 @@
-@if (facade.resumenEncuestas(); as resumen) {
-  <div class="satisfaccion-resumen">
-    <div class="satisfaccion-resumen__avg">
-      <span>Promedio de satisfacción</span>
-      <strong>{{ resumen.promedioSatisfaccion != null ? (resumen.promedioSatisfaccion | number: '1.1-1') : 'Sin encuestas' }}</strong>
+<div class="postventa-v2__record">
+  <!-- Encuesta de satisfaccion -->
+  <section class="postventa-v2__section">
+    <div class="postventa-v2__section-head">
+      <div>
+        <i class="pi pi-star" aria-hidden="true"></i>
+        <div>
+          <strong>Encuesta de satisfaccion</strong>
+          <small>Califica la experiencia del cliente</small>
+        </div>
+      </div>
+      @if (facade.resumenEncuestas(); as resumen) {
+        @if (resumen.promedioSatisfaccion != null) {
+          <div class="avg-badge">
+            <span>Promedio</span>
+            <strong>{{ resumen.promedioSatisfaccion | number: '1.1-1' }}</strong>
+            @if (resumen.statusSatisfaccion) {
+              <p-tag [severity]="badge(resumen.statusSatisfaccion).severity" [value]="badge(resumen.statusSatisfaccion).label" />
+            }
+          </div>
+        }
+      }
     </div>
-    @if (resumen.statusSatisfaccion) {
-      <p-tag [severity]="badge(resumen.statusSatisfaccion).severity" [value]="badge(resumen.statusSatisfaccion).label" />
-    }
-  </div>
-}
 
-@if (medioLabel(); as medio) {
-  <p class="medio-contacto medio-contacto--ok">
-    <i class="pi pi-check-circle"></i>
-    Medio de contacto: <strong>{{ medio }}</strong>
-  </p>
-} @else {
-  <p class="medio-contacto medio-contacto--warn">
-    <i class="pi pi-exclamation-triangle"></i>
-    Comunícate con el cliente (Llamar o Chat, arriba) antes de registrar la encuesta.
-  </p>
-}
+    <div class="postventa-v2__fields">
+      <label class="span-2">
+        <span>Tipo de encuesta (automatico)</span>
+        <strong>{{ autoTipoLabel() }}</strong>
+      </label>
+      <label class="span-2">
+        <span>Medio de contacto</span>
+        @if (medioLabel(); as medio) {
+          <strong class="medio-ok"><i class="pi pi-check-circle" aria-hidden="true"></i> {{ medio }}</strong>
+        } @else {
+          <strong class="medio-warn"><i class="pi pi-exclamation-triangle" aria-hidden="true"></i> Falta contacto</strong>
+        }
+      </label>
+    </div>
 
-<form class="form-grid" [formGroup]="form">
-  <label>
-    <span>Tipo de encuesta</span>
-    <p-select formControlName="tipoEncuesta" [options]="tipoEncuestaOptions" optionLabel="label" optionValue="value" appendTo="body" />
-  </label>
-  <label class="full">
-    <span>Calificación general</span>
-    <app-star-rating formControlName="calificacion" />
-  </label>
-  <label class="full">
-    <span>Comentario</span>
-    <textarea pTextarea rows="3" formControlName="comentario"></textarea>
-  </label>
-</form>
+    <div class="encuesta-form">
+      <div class="encuesta-form__rating">
+        <span>Calificacion general</span>
+        <app-star-rating [formControl]="calificacionCtrl" />
+      </div>
+      <p class="encuesta-form__hint">
+        Primera encuesta = Satisfaccion del asesor. Las siguientes = Satisfaccion del servicio.
+      </p>
+    </div>
+  </section>
 
-<h3 class="panel-heading">Historial de encuestas</h3>
-<p-table [value]="facade.encuestas()" styleClass="p-datatable-sm nested-table" [rowHover]="true">
-  <ng-template #header>
-    <tr>
-      <th>Fecha</th>
-      <th>Tipo</th>
-      <th>Contacto</th>
-      <th>Calificacion</th>
-      <th>Estado</th>
-      <th>Asesor</th>
-    </tr>
-  </ng-template>
-  <ng-template #body let-encuesta>
-    <tr>
-      <td>{{ encuesta.createdAt ? (encuesta.createdAt | date: 'dd/MM/yyyy') : '—' }}</td>
-      <td>{{ display(encuesta.tipoEncuesta) }}</td>
-      <td>{{ display(encuesta.tipoContacto) }}</td>
-      <td>{{ display(encuesta.calificacion) }}</td>
-      <td><p-tag [severity]="badge(encuesta.estado).severity" [value]="badge(encuesta.estado).label" /></td>
-      <td>{{ display(encuesta.nombreAsesorEncuesta) }}</td>
-    </tr>
-  </ng-template>
-  <ng-template #emptymessage>
-    <tr><td colspan="6" class="empty-hint">Sin encuestas registradas.</td></tr>
-  </ng-template>
-</p-table>
+  <!-- Encuestas anteriores -->
+  <section class="postventa-v2__section">
+    <div class="postventa-v2__section-head">
+      <div>
+        <i class="pi pi-chart-bar" aria-hidden="true"></i>
+        <div>
+          <strong>Encuestas anteriores</strong>
+          <small>{{ facade.encuestas().length }} encuesta{{ facade.encuestas().length !== 1 ? 's' : '' }}</small>
+        </div>
+      </div>
+    </div>
+    <p-table [value]="facade.encuestas()" styleClass="p-datatable-sm" [rowHover]="true">
+      <ng-template #header>
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Contacto</th>
+          <th>Calificacion</th>
+          <th>Estado</th>
+          <th>Asesor</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-encuesta>
+        <tr>
+          <td>{{ encuesta.createdAt ? (encuesta.createdAt | date: 'dd/MM/yyyy') : '—' }}</td>
+          <td>{{ display(encuesta.tipoEncuesta) }}</td>
+          <td>{{ display(encuesta.tipoContacto) }}</td>
+          <td>{{ display(encuesta.calificacion) }}</td>
+          <td><p-tag [severity]="badge(encuesta.estado).severity" [value]="badge(encuesta.estado).label" /></td>
+          <td>{{ display(encuesta.nombreAsesorEncuesta) }}</td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="6" class="empty-hint">Sin encuestas registradas.</td></tr>
+      </ng-template>
+    </p-table>
+  </section>
+</div>

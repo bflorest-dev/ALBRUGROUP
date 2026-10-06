@@ -1,23 +1,44 @@
-<p-table [value]="facade.eventos()" styleClass="p-datatable-sm nested-table" [rowHover]="true">
-  <ng-template #header>
-    <tr>
-      <th>Fecha</th>
-      <th>Gestor</th>
-      <th>Tipificacion</th>
-      <th>Subtipificacion</th>
-      <th>Comentario</th>
-    </tr>
-  </ng-template>
-  <ng-template #body let-evento>
-    <tr>
-      <td>{{ evento.createdAt ? (evento.createdAt | date: 'dd/MM/yyyy hh:mm a') : '—' }}</td>
-      <td>{{ display(evento.nombreActor) }}</td>
-      <td>{{ display(evento.tipificacion) }}</td>
-      <td>{{ display(evento.subtipificacion) }}</td>
-      <td class="comment-cell">{{ display(evento.comentario) }}</td>
-    </tr>
-  </ng-template>
-  <ng-template #emptymessage>
-    <tr><td colspan="5" class="empty-hint">Sin gestiones registradas.</td></tr>
-  </ng-template>
-</p-table>
+<section class="postventa-v2__history">
+  <div class="postventa-v2__history-head">
+    <div>
+      <span>Rastro de actividad</span>
+      <h3>Historial de postventa</h3>
+    </div>
+    <div class="postventa-v2__filters">
+      <button type="button" [class.is-active]="historyFilter() === 'TODO'" (click)="historyFilter.set('TODO')">Todo</button>
+      <button type="button" [class.is-active]="historyFilter() === 'TIPIFICACION'" (click)="historyFilter.set('TIPIFICACION')">Tipificaciones</button>
+    </div>
+  </div>
+
+  @if (historyGroups().length === 0) {
+    <div class="postventa-v2__state">
+      <i class="pi pi-history"></i>
+      <span>Sin gestiones registradas.</span>
+    </div>
+  } @else {
+    <div class="postventa-v2__timeline">
+      @for (group of historyGroups(); track group.key) {
+        <section>
+          <h4>{{ group.label }} <span>· {{ group.events.length }} evento{{ group.events.length !== 1 ? 's' : '' }}</span></h4>
+          @for (event of group.events; track event.id) {
+            <article>
+              <div class="postventa-v2__event-mark">
+                <i [class]="eventIcon(event)" aria-hidden="true"></i>
+              </div>
+              <div>
+                <div class="postventa-v2__event-top">
+                  <strong>{{ eventTitle(event) }}</strong>
+                  <time>{{ formatTime(event.createdAt) }}</time>
+                </div>
+                <p>{{ event.nombreActor ?? '—' }}</p>
+                @if (event.comentario) {
+                  <blockquote>{{ event.comentario }}</blockquote>
+                }
+              </div>
+            </article>
+          }
+        </section>
+      }
+    </div>
+  }
+</section>

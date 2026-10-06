@@ -3,24 +3,17 @@
 }
 
 .tipification-bar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 9.5rem 10.5rem minmax(0, 1fr) auto;
+  gap: .5rem;
   align-items: center;
-  gap: 0.6rem;
 
   ::ng-deep .tipi-select {
-    flex: 1 1 12rem;
-    min-width: 10rem;
+    width: 100%;
   }
 
   .comment-input {
-    flex: 2 1 16rem;
-    min-width: 12rem;
-  }
-
-  button {
-    flex: 0 0 auto;
-    margin-left: auto;
+    width: 100%;
   }
 }
 
@@ -30,6 +23,20 @@
   line-height: 1.2;
 
   small {
-    color: var(--role-muted);
+    color: var(--pv-muted, var(--role-muted));
+  }
+}
+
+@media (max-width: 62rem) {
+  .tipification-bar {
+    grid-template-columns: 1fr 1fr;
+
+    .comment-input {
+      grid-column: 1 / -1;
+    }
+
+    button {
+      grid-column: 1 / -1;
+    }
   }
 }

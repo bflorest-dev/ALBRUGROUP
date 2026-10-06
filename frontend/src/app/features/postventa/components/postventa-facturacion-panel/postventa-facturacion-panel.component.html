@@ -1,172 +1,203 @@
 @if (facade.selectedPeriodo(); as periodo) {
-  @if (facade.periodos().length > 1) {
-    <div class="periodo-selector">
-      @for (p of facade.periodos(); track p.id) {
-        <button
-          pButton
-          type="button"
-          size="small"
-          [label]="periodoLabel(p)"
-          [outlined]="p.id !== periodo.id"
-          [severity]="p.id === periodo.id ? undefined : 'secondary'"
-          (click)="onPeriodoChange(p.id)"
-        ></button>
-      }
-    </div>
-  }
-
-  @if (facade.selectedPeriodoCerrado() || facade.consultaOnly()) {
-    <p-message severity="info" text="Este periodo esta cerrado. Solo puedes consultarlo." styleClass="readonly-note" />
-  }
-
-  <div class="period-card">
-    <div>
-      <span>Periodo</span>
-      <strong>{{ display(periodo.numeroPeriodo) }}</strong>
-    </div>
-    <div>
-      <span>Emision estimada</span>
-      <strong>{{ display(periodo.fechaEmisionEstimada) }}</strong>
-    </div>
-    <div>
-      <span>Vencimiento estimado</span>
-      <strong>{{ display(periodo.fechaVencimientoEstimado) }}</strong>
-    </div>
-    <div>
-      <span>Monto esperado</span>
-      <strong>{{ display(periodo.montoEsperado) }}</strong>
-    </div>
-    <div>
-      <span>Estado</span>
-      <p-tag [severity]="badge(periodo.estado).severity" [value]="badge(periodo.estado).label" />
-    </div>
-  </div>
-
-  @if (!facade.selectedPeriodoCerrado() && !facade.consultaOnly()) {
-    <h3 class="panel-heading">Factura</h3>
-    <form class="form-grid" [formGroup]="facturaForm">
-      <label>
-        <span>Fecha de emision</span>
-        <input pInputText type="date" formControlName="fechaEmisionConfirmada" />
-      </label>
-      <label>
-        <span>Fecha de vencimiento</span>
-        <input pInputText type="date" formControlName="fechaVencimientoConfirmado" />
-      </label>
-      <label>
-        <span>Monto facturado</span>
-        <p-inputNumber formControlName="montoFacturado" mode="currency" currency="PEN" locale="es-PE" [min]="0" />
-      </label>
-      <label class="full">
-        <span>Observacion</span>
-        <textarea pTextarea rows="2" formControlName="observacion"></textarea>
-      </label>
-      @if (vencimientoInvalido) {
-        <p-message class="full" severity="warn" text="El vencimiento no puede ser anterior a la emision." />
-      }
-    </form>
-
-    <h3 class="panel-heading">Pago</h3>
-    <form class="form-grid" [formGroup]="pagoForm">
-      <label>
-        <span>Tipo de registro</span>
-        <p-select
-          formControlName="modoRegistro"
-          [options]="[
-            { label: 'Pago realizado', value: 'PAGO' },
-            { label: 'Compromiso de pago', value: 'COMPROMISO' }
-          ]"
-          optionLabel="label"
-          optionValue="value"
-          appendTo="body"
-          (onChange)="onModoRegistroChange($event.value)"
-        />
-      </label>
-
-      @if (mostrarPago()) {
-        <label>
-          <span>Condicion</span>
-          <p-select
-            formControlName="condicion"
-            [options]="condicionPagoOptions"
-            optionLabel="label"
-            optionValue="value"
-            appendTo="body"
-            (onChange)="onCondicionChange($event.value)"
-          />
-        </label>
-      }
-
-      @if (mostrarPago()) {
-        <label>
-          <span>Quien paga</span>
-          <p-select formControlName="aportante" [options]="aportanteOptions" optionLabel="label" optionValue="value" appendTo="body" [showClear]="true" />
-        </label>
-      }
-
-      <label>
-        <span>Monto</span>
-        <p-inputNumber formControlName="monto" mode="currency" currency="PEN" locale="es-PE" [min]="0" />
-      </label>
-
-      @if (mostrarPago()) {
-        <label>
-          <span>Fecha de pago</span>
-          <input pInputText type="date" formControlName="fechaPago" />
-        </label>
-      }
-
-      @if (mostrarCompromiso()) {
-        @if (registrarCompromisoDeshabilitado()) {
-          <p-message class="full" severity="info" text="El compromiso de pago solo se registra cuando la factura ya esta vencida." />
-        } @else {
-          <label>
-            <span>Compromiso de pago</span>
-            <input pInputText type="date" formControlName="fechaCompromisoPago" />
-          </label>
+  <div class="postventa-v2__record">
+    <!-- Periodo selector (filter pills) -->
+    @if (facade.periodos().length > 1) {
+      <div class="postventa-v2__filters">
+        @for (p of facade.periodos(); track p.id) {
+          <button type="button" [class.is-active]="p.id === periodo.id" (click)="onPeriodoChange(p.id)">
+            {{ periodoLabel(p) }}
+          </button>
         }
-      }
+      </div>
+    }
 
-      @if (mostrarNumeroOperacion()) {
+    @if (facade.selectedPeriodoCerrado() || facade.consultaOnly()) {
+      <p-message severity="info" text="Este periodo esta cerrado. Solo puedes consultarlo." styleClass="readonly-note" />
+    }
+
+    <!-- Periodo vigente -->
+    <section class="postventa-v2__section">
+      <div class="postventa-v2__section-head">
+        <div>
+          <i class="pi pi-calendar" aria-hidden="true"></i>
+          <div>
+            <strong>Periodo {{ display(periodo.numeroPeriodo) }}</strong>
+            <small>Datos del ciclo de facturacion</small>
+          </div>
+        </div>
+        <p-tag [severity]="badge(periodo.estado).severity" [value]="badge(periodo.estado).label" />
+      </div>
+      <div class="postventa-v2__fields">
         <label>
-          <span>Nro. de operacion</span>
-          <input pInputText formControlName="numeroOperacion" />
+          <span>Emision estimada</span>
+          <strong>{{ display(periodo.fechaEmisionEstimada) }}</strong>
         </label>
-      }
+        <label>
+          <span>Vencimiento estimado</span>
+          <strong>{{ display(periodo.fechaVencimientoEstimado) }}</strong>
+        </label>
+        <label>
+          <span>Monto esperado</span>
+          <strong>{{ display(periodo.montoEsperado) }}</strong>
+        </label>
+        <label>
+          <span>Estado</span>
+          <strong>{{ badge(periodo.estado).label }}</strong>
+        </label>
+      </div>
+    </section>
 
-      <label class="full">
-        <span>Observacion</span>
-        <textarea pTextarea rows="2" formControlName="observacion"></textarea>
-      </label>
-    </form>
-  }
+    @if (!facade.selectedPeriodoCerrado() && !facade.consultaOnly()) {
+      <!-- Factura -->
+      <section class="postventa-v2__section">
+        <div class="postventa-v2__section-head">
+          <div>
+            <i class="pi pi-file" aria-hidden="true"></i>
+            <div>
+              <strong>Factura</strong>
+              <small>Confirmar datos de emision</small>
+            </div>
+          </div>
+        </div>
+        <form [formGroup]="facturaForm">
+          <div class="postventa-v2__fields">
+            <label>
+              <span>Fecha de emision</span>
+              <input pInputText type="date" formControlName="fechaEmisionConfirmada" />
+            </label>
+            <label>
+              <span>Fecha de vencimiento</span>
+              <input pInputText type="date" formControlName="fechaVencimientoConfirmado" />
+            </label>
+            <label>
+              <span>Monto facturado</span>
+              <p-inputNumber formControlName="montoFacturado" mode="currency" currency="PEN" locale="es-PE" [min]="0" />
+            </label>
+            <label>
+              @if (vencimientoInvalido) {
+                <span class="field-warn">El vencimiento no puede ser anterior a la emision</span>
+              }
+            </label>
+          </div>
+        </form>
+      </section>
 
-  <h3 class="panel-heading">Pagos del periodo</h3>
-  <p-table [value]="facade.pagosDelPeriodo()" styleClass="p-datatable-sm nested-table" [rowHover]="true">
-    <ng-template #header>
-      <tr>
-        <th>Monto</th>
-        <th>Quien paga</th>
-        <th>Condicion</th>
-        <th>Compromiso</th>
-        <th>Pago</th>
-        <th>Estado</th>
-      </tr>
-    </ng-template>
-    <ng-template #body let-pago>
-      <tr>
-        <td>{{ display(pago.monto) }}</td>
-        <td>{{ display(pago.aportante) }}</td>
-        <td>{{ display(pago.condicion) }}</td>
-        <td>{{ display(pago.fechaCompromisoPago) }}</td>
-        <td>{{ display(pago.fechaPago) }}</td>
-        <td><p-tag [severity]="badge(pago.estado).severity" [value]="badge(pago.estado).label" /></td>
-      </tr>
-    </ng-template>
-    <ng-template #emptymessage>
-      <tr><td colspan="6" class="empty-hint">Sin pagos registrados en este periodo.</td></tr>
-    </ng-template>
-  </p-table>
+      <!-- Pago -->
+      <section class="postventa-v2__section">
+        <div class="postventa-v2__section-head">
+          <div>
+            <i class="pi pi-wallet" aria-hidden="true"></i>
+            <div>
+              <strong>Pago</strong>
+              <small>Registrar pago o compromiso</small>
+            </div>
+          </div>
+        </div>
+        <form [formGroup]="pagoForm">
+          <div class="postventa-v2__fields">
+            <label>
+              <span>Tipo de registro</span>
+              <p-select
+                formControlName="modoRegistro"
+                [options]="[
+                  { label: 'Pago realizado', value: 'PAGO' },
+                  { label: 'Compromiso de pago', value: 'COMPROMISO' }
+                ]"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+                (onChange)="onModoRegistroChange($event.value)"
+              />
+            </label>
+
+            @if (mostrarPago()) {
+              <label>
+                <span>Condicion</span>
+                <p-select formControlName="condicion" [options]="condicionPagoOptions" optionLabel="label" optionValue="value" appendTo="body" (onChange)="onCondicionChange($event.value)" />
+              </label>
+              <label>
+                <span>Quien paga</span>
+                <p-select formControlName="aportante" [options]="aportanteOptions" optionLabel="label" optionValue="value" appendTo="body" [showClear]="true" />
+              </label>
+            }
+
+            <label>
+              <span>Monto</span>
+              <p-inputNumber formControlName="monto" mode="currency" currency="PEN" locale="es-PE" [min]="0" />
+            </label>
+
+            @if (mostrarPago()) {
+              <label>
+                <span>Fecha de pago</span>
+                <input pInputText type="date" formControlName="fechaPago" />
+              </label>
+            }
+
+            @if (mostrarCompromiso()) {
+              @if (registrarCompromisoDeshabilitado()) {
+                <label class="span-2">
+                  <span class="field-info">El compromiso de pago solo se registra cuando la factura esta vencida.</span>
+                </label>
+              } @else {
+                <label>
+                  <span>Compromiso de pago</span>
+                  <input pInputText type="date" formControlName="fechaCompromisoPago" />
+                </label>
+              }
+            }
+
+            @if (mostrarNumeroOperacion()) {
+              <label>
+                <span>Nro. de operacion</span>
+                <input pInputText formControlName="numeroOperacion" />
+              </label>
+            }
+          </div>
+        </form>
+      </section>
+    }
+
+    <!-- Pagos registrados -->
+    <section class="postventa-v2__section">
+      <div class="postventa-v2__section-head">
+        <div>
+          <i class="pi pi-list" aria-hidden="true"></i>
+          <div>
+            <strong>Pagos del periodo</strong>
+            <small>{{ facade.pagosDelPeriodo().length }} registro{{ facade.pagosDelPeriodo().length !== 1 ? 's' : '' }}</small>
+          </div>
+        </div>
+      </div>
+      <p-table [value]="facade.pagosDelPeriodo()" styleClass="p-datatable-sm" [rowHover]="true">
+        <ng-template #header>
+          <tr>
+            <th>Monto</th>
+            <th>Quien paga</th>
+            <th>Condicion</th>
+            <th>Compromiso</th>
+            <th>Pago</th>
+            <th>Estado</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-pago>
+          <tr>
+            <td>{{ display(pago.monto) }}</td>
+            <td>{{ display(pago.aportante) }}</td>
+            <td>{{ display(pago.condicion) }}</td>
+            <td>{{ display(pago.fechaCompromisoPago) }}</td>
+            <td>{{ display(pago.fechaPago) }}</td>
+            <td><p-tag [severity]="badge(pago.estado).severity" [value]="badge(pago.estado).label" /></td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr><td colspan="6" class="empty-hint">Sin pagos registrados en este periodo.</td></tr>
+        </ng-template>
+      </p-table>
+    </section>
+  </div>
 } @else {
-  <p-message severity="info" text="Este lead aun no tiene un periodo de facturacion activo." />
+  <div class="postventa-v2__state">
+    <i class="pi pi-calendar"></i>
+    <span>Este lead aun no tiene un periodo de facturacion activo.</span>
+  </div>
 }

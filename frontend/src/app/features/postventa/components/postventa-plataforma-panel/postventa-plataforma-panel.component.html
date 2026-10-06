@@ -1,144 +1,138 @@
-@if (!facade.tienePlataformaOfrecida()) {
-  <p-message severity="info" text="Este lead no tiene plataforma digital contratada. Si el cliente acepta, puedes ofrecerle una para sostener la permanencia." styleClass="panel-note" />
-}
-
-@if (noHayPlataformas()) {
-  <div class="inventory-empty">
-    <i class="pi pi-box"></i>
-    <p>No hay plataformas digitales configuradas. Un administrador debe registrar el inventario (plataformas, paquetes y credenciales) antes de poder entregar.</p>
-  </div>
-} @else {
-<form class="form-grid" [formGroup]="form">
-  <label>
-    <span>Plataforma</span>
-    <p-select
-      formControlName="idPlataforma"
-      [options]="facade.plataformas()"
-      optionLabel="nombre"
-      optionValue="id"
-      placeholder="Elige plataforma"
-      appendTo="body"
-      (onChange)="onPlataformaChange($event.value)"
-    />
-  </label>
-  <label>
-    <span>Paquete</span>
-    <p-select
-      formControlName="idPaquete"
-      [options]="facade.paquetes()"
-      optionLabel="nombre"
-      optionValue="id"
-      placeholder="Elige paquete"
-      appendTo="body"
-      (onChange)="onPaqueteChange($event.value)"
-    />
-  </label>
-  @if (sinPaquetes()) {
-    <p class="inventory-hint full">La plataforma seleccionada no tiene paquetes disponibles. Pide a un administrador que registre un paquete.</p>
-  }
-  <label>
-    <span>Credencial disponible</span>
-    <p-select
-      formControlName="idCredencial"
-      [options]="facade.credenciales()"
-      optionLabel="usuario"
-      optionValue="id"
-      placeholder="Elige credencial"
-      appendTo="body"
-    >
-      <ng-template #item let-credencial>
-        <div class="select-option">
-          <strong>{{ credencial.usuario }}</strong>
-          <small>{{ display(credencial.cuposDisponibles) }} cupos libres · vence {{ display(credencial.fechaExpiracion) }}</small>
-        </div>
-      </ng-template>
-    </p-select>
-  </label>
-  @if (sinCredenciales()) {
-    <p class="inventory-hint full">Este paquete no tiene credenciales disponibles. Falta inventario: pide a un administrador que registre credenciales.</p>
-  }
-  <label>
-    <span>Cupos a asignar</span>
-    <p-inputNumber formControlName="cantidadUsuariosAsignados" [min]="1" [showButtons]="true" />
-  </label>
-
-  <label>
-    <span>Fecha de entrega</span>
-    <input pInputText type="date" formControlName="fechaEntrega" />
-  </label>
-  <label>
-    <span>Inicio de acceso</span>
-    <input pInputText type="date" formControlName="fechaInicioAcceso" />
-  </label>
-  <label class="checkbox-field">
-    <p-checkbox formControlName="esObsequio" [binary]="true" inputId="pv-es-obsequio" (onChange)="onObsequioChange($event.checked)" />
-    <span>Es obsequio (sin costo)</span>
-  </label>
-  @if (!esObsequio()) {
-    <label>
-      <span>Monto de venta</span>
-      <p-inputNumber formControlName="montoVenta" mode="currency" currency="PEN" locale="es-PE" [min]="0" />
-    </label>
+<div class="postventa-v2__record">
+  @if (!facade.tienePlataformaOfrecida()) {
+    <p-message severity="info" text="Este lead no tiene plataforma digital contratada. Si el cliente acepta, puedes ofrecerle una para sostener la permanencia." styleClass="panel-note" />
   }
 
-  <div class="device-block full">
-    <span class="device-block__title">Dispositivo (opcional)</span>
-    <div class="device-grid">
-      <label>
-        <span>Tipo</span>
-        <p-select formControlName="tipoDispositivo" [options]="tipoDispositivoOptions" optionLabel="label" optionValue="value" placeholder="Tipo" [showClear]="true" appendTo="body" />
-      </label>
-      <label>
-        <span>Marca</span>
-        <p-autoComplete
-          formControlName="marca"
-          [suggestions]="marcaSuggestions()"
-          optionLabel="nombre"
-          [dropdown]="true"
-          [forceSelection]="false"
-          placeholder="Elige o escribe una marca"
-          appendTo="body"
-          (completeMethod)="filtrarMarcas($event.query)"
-        />
-      </label>
-      <label>
-        <span>Descripcion</span>
-        <input pInputText formControlName="descripcionDispositivo" placeholder="Ej. modelo o detalle" />
-      </label>
+  @if (noHayPlataformas()) {
+    <div class="postventa-v2__state">
+      <i class="pi pi-box"></i>
+      <span>No hay plataformas digitales configuradas.</span>
     </div>
-  </div>
+  } @else {
+    <!-- Entrega de credenciales -->
+    <section class="postventa-v2__section">
+      <div class="postventa-v2__section-head">
+        <div>
+          <i class="pi pi-box" aria-hidden="true"></i>
+          <div>
+            <strong>Entrega de credenciales</strong>
+            <small>Plataforma digital ofrecida al cliente</small>
+          </div>
+        </div>
+      </div>
 
-  <label class="full">
-    <span>Observacion</span>
-    <textarea pTextarea rows="2" formControlName="observacion"></textarea>
-  </label>
+      <form [formGroup]="form">
+        <div class="postventa-v2__fields">
+          <label>
+            <span>Plataforma</span>
+            <p-select formControlName="idPlataforma" [options]="facade.plataformas()" optionLabel="nombre" optionValue="id" placeholder="Elige plataforma" appendTo="body" (onChange)="onPlataformaChange($event.value)" />
+          </label>
+          <label>
+            <span>Paquete</span>
+            <p-select formControlName="idPaquete" [options]="facade.paquetes()" optionLabel="nombre" optionValue="id" placeholder="Elige paquete" appendTo="body" (onChange)="onPaqueteChange($event.value)" />
+          </label>
+          <label>
+            <span>Credencial disponible</span>
+            <p-select formControlName="idCredencial" [options]="facade.credenciales()" optionLabel="usuario" optionValue="id" placeholder="Elige credencial" appendTo="body">
+              <ng-template #item let-credencial>
+                <div class="select-option">
+                  <strong>{{ credencial.usuario }}</strong>
+                  <small>{{ display(credencial.cuposDisponibles) }} cupos libres · vence {{ display(credencial.fechaExpiracion) }}</small>
+                </div>
+              </ng-template>
+            </p-select>
+          </label>
+          <label>
+            <span>Cupos a asignar</span>
+            <p-inputNumber formControlName="cantidadUsuariosAsignados" [min]="1" [showButtons]="true" />
+          </label>
+          <label>
+            <span>Fecha de entrega</span>
+            <input pInputText type="date" formControlName="fechaEntrega" />
+          </label>
+          <label>
+            <span>Inicio de acceso</span>
+            <input pInputText type="date" formControlName="fechaInicioAcceso" />
+          </label>
+          <label>
+            <span>Obsequio</span>
+            <strong>
+              <p-checkbox formControlName="esObsequio" [binary]="true" inputId="pv-es-obsequio" (onChange)="onObsequioChange($event.checked)" />
+              <label for="pv-es-obsequio" class="checkbox-label">Sin costo</label>
+            </strong>
+          </label>
+          @if (!esObsequio()) {
+            <label>
+              <span>Monto de venta</span>
+              <p-inputNumber formControlName="montoVenta" mode="currency" currency="PEN" locale="es-PE" [min]="0" />
+            </label>
+          }
+        </div>
 
-</form>
-}
+        @if (sinPaquetes()) {
+          <p class="inventory-hint">La plataforma seleccionada no tiene paquetes disponibles.</p>
+        }
+        @if (sinCredenciales()) {
+          <p class="inventory-hint">Este paquete no tiene credenciales disponibles.</p>
+        }
 
-<h3 class="panel-heading">Entregas registradas</h3>
-<p-table [value]="facade.entregas()" styleClass="p-datatable-sm nested-table" [rowHover]="true">
-  <ng-template #header>
-    <tr>
-      <th>Plataforma</th>
-      <th>Usuario</th>
-      <th>Cupos</th>
-      <th>Vigencia</th>
-      <th>Estado</th>
-      <th>Asesor</th>
-    </tr>
-  </ng-template>
-  <ng-template #body let-entrega>
-    <tr>
-      <td>{{ display(entrega.plataforma) }}</td>
-      <td>{{ display(entrega.usuario) }}</td>
-      <td>{{ display(entrega.cantidadUsuariosAsignados) }}</td>
-      <td>{{ display(entrega.fechaInicioAcceso) }} — {{ display(entrega.fechaFinAcceso) }}</td>
-      <td><p-tag [severity]="badge(entrega.estado).severity" [value]="badge(entrega.estado).label" /></td>
-      <td>{{ display(entrega.nombreAsesorEntrega) }}</td>
-    </tr>
-  </ng-template>
-  <ng-template #emptymessage>
-    <tr><td colspan="6" class="empty-hint">Sin entregas registradas.</td></tr>
-  </ng-template>
-</p-table>
+        <!-- Dispositivo -->
+        <div class="device-block">
+          <span class="device-block__title">Dispositivo (opcional)</span>
+          <div class="device-grid">
+            <label>
+              <span>Tipo</span>
+              <p-select formControlName="tipoDispositivo" [options]="tipoDispositivoOptions" optionLabel="label" optionValue="value" placeholder="Tipo" [showClear]="true" appendTo="body" />
+            </label>
+            <label>
+              <span>Marca</span>
+              <p-autoComplete formControlName="marca" [suggestions]="marcaSuggestions()" optionLabel="nombre" [dropdown]="true" [forceSelection]="false" placeholder="Elige o escribe una marca" appendTo="body" (completeMethod)="filtrarMarcas($event.query)" />
+            </label>
+            <label>
+              <span>Descripcion</span>
+              <input pInputText formControlName="descripcionDispositivo" placeholder="Ej. modelo o detalle" />
+            </label>
+          </div>
+        </div>
+      </form>
+    </section>
+  }
+
+  <!-- Entregas registradas -->
+  <section class="postventa-v2__section">
+    <div class="postventa-v2__section-head">
+      <div>
+        <i class="pi pi-list" aria-hidden="true"></i>
+        <div>
+          <strong>Entregas registradas</strong>
+          <small>{{ facade.entregas().length }} entrega{{ facade.entregas().length !== 1 ? 's' : '' }}</small>
+        </div>
+      </div>
+    </div>
+    <p-table [value]="facade.entregas()" styleClass="p-datatable-sm" [rowHover]="true">
+      <ng-template #header>
+        <tr>
+          <th>Plataforma</th>
+          <th>Usuario</th>
+          <th>Cupos</th>
+          <th>Vigencia</th>
+          <th>Estado</th>
+          <th>Asesor</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-entrega>
+        <tr>
+          <td>{{ display(entrega.plataforma) }}</td>
+          <td>{{ display(entrega.usuario) }}</td>
+          <td>{{ display(entrega.cantidadUsuariosAsignados) }}</td>
+          <td>{{ display(entrega.fechaInicioAcceso) }} — {{ display(entrega.fechaFinAcceso) }}</td>
+          <td><p-tag [severity]="badge(entrega.estado).severity" [value]="badge(entrega.estado).label" /></td>
+          <td>{{ display(entrega.nombreAsesorEntrega) }}</td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="6" class="empty-hint">Sin entregas registradas.</td></tr>
+      </ng-template>
+    </p-table>
+  </section>
+</div>

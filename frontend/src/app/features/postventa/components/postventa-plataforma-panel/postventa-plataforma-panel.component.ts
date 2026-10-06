@@ -9,7 +9,6 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { TextareaModule } from 'primeng/textarea';
 import { PostventaWorkspaceFacade } from '../../facades/postventa-workspace.facade';
 import { PlataformaDigitalResponse, TipoDispositivo } from '../../services/postventa-lead.service';
 import { EstadoBadge, SelectOption, display, estadoBadge } from '../../models/postventa.vm';
@@ -28,8 +27,7 @@ import { EstadoBadge, SelectOption, display, estadoBadge } from '../../models/po
     MessageModule,
     SelectModule,
     TableModule,
-    TagModule,
-    TextareaModule
+    TagModule
   ],
   templateUrl: './postventa-plataforma-panel.component.html',
   styleUrl: './postventa-plataforma-panel.component.scss',
@@ -71,8 +69,7 @@ export class PostventaPlataformaPanelComponent {
     fechaInicioAcceso: [this.today],
     tipoDispositivo: ['' as TipoDispositivo | ''],
     marca: [null as PlataformaDigitalResponse | string | null],
-    descripcionDispositivo: [''],
-    observacion: ['']
+    descripcionDispositivo: ['']
   });
 
   constructor() {
@@ -99,8 +96,7 @@ export class PostventaPlataformaPanelComponent {
         fechaInicioAcceso: this.today,
         tipoDispositivo: '',
         marca: null,
-        descripcionDispositivo: '',
-        observacion: ''
+        descripcionDispositivo: ''
       });
       this.esObsequio.set(true);
       this.selectedPlataformaId.set(idPlataforma ?? 0);
@@ -158,11 +154,11 @@ export class PostventaPlataformaPanelComponent {
       montoVenta: raw.esObsequio ? null : raw.montoVenta,
       fechaEntrega: raw.fechaEntrega || null,
       fechaInicioAcceso: raw.fechaInicioAcceso || null,
-      observacion: raw.observacion || null,
+      observacion: null,
       dispositivos: this.buildDispositivos(raw)
     });
     if (ok) {
-      this.form.patchValue({ idCredencial: 0, cantidadUsuariosAsignados: 1, tipoDispositivo: '', marca: null, descripcionDispositivo: '', observacion: '' });
+      this.form.patchValue({ idCredencial: 0, cantidadUsuariosAsignados: 1, tipoDispositivo: '', marca: null, descripcionDispositivo: '' });
       this.form.markAsPristine();
     }
     return ok;
