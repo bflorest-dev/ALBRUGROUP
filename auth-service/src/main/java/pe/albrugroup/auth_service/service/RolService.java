@@ -184,6 +184,7 @@ public class RolService {
                 .refreshToken(tokens.refreshToken())
                 .type("Bearer")
                 .expiresIn(tokens.expiresIn())
+                .fechaIngresoEmpleado(usuario.getFechaIngresoEmpleado())
                 .rolesAsignados(nombresRoles(usuario).stream().sorted().toList())
                 .rolPrincipal(usuario.getRolPrincipal().getNombre())
                 .rolActivo(tokens.rolActivo().getNombre())

@@ -164,6 +164,7 @@ export class LoginPageComponent {
       username: response.username,
       empleadoId: response.empleadoId,
       nombreCompleto: response.nombreCompleto,
+      fechaIngresoEmpleado: response.fechaIngresoEmpleado,
       roles,
       primaryRole,
       activeRole,

@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,6 +29,8 @@ public class Usuario {
     private String dni;
     @Column(name = "nombre_completo")
     private String nombreCompleto;
+    @Column(name = "fecha_ingreso_empleado")
+    private LocalDate fechaIngresoEmpleado;
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;

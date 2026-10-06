@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
+import java.time.LocalDate;
 import java.util.Base64;
 import java.util.List;
 
@@ -49,6 +50,11 @@ public class JWTUtil {
 
     public String extractNombreCompleto(String token) {
         return extractAllClaims(token).get("nombreCompleto", String.class);
+    }
+
+    public LocalDate extractFechaIngresoEmpleado(String token) {
+        String value = extractAllClaims(token).get("fechaIngresoEmpleado", String.class);
+        return value == null || value.isBlank() ? null : LocalDate.parse(value);
     }
 
     public List<String> extractRoles(String token) {

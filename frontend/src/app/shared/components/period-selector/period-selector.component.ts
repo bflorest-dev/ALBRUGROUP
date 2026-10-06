@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { DatePickerModule } from 'primeng/datepicker';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { SessionService } from '../../../core/services/session.service';
 import { MetricsRango } from '../../utils/metrics-period';
 
 export type MetricsPeriodo = 'dia' | 'semana' | 'mes';
@@ -53,6 +54,8 @@ export class PeriodSelectorComponent implements OnDestroy {
   /** Algunas bandejas, como Programados, necesitan elegir fechas futuras. */
   readonly allowFuture = input(false);
   readonly disabled = input(false);
+  readonly minDate = input<string | null>(null);
+  readonly enforceSessionMinDate = input(false);
   /**
    * Segmentos a mostrar y en qué orden. Default = los tres. Permite acotar el control a un subconjunto
    * (ej. `['dia']` = solo día/rango, `['dia','mes']` sin semanal). Incluir `'dia'` es lo natural si se
@@ -65,6 +68,7 @@ export class PeriodSelectorComponent implements OnDestroy {
   readonly rangoChange = output<MetricsRango>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly session = inject(SessionService);
   private readonly dayPopover = viewChild.required<Popover>('dayPopover');
   private cierreTimer: ReturnType<typeof setTimeout> | null = null;
   private hoverPopoverTimer: ReturnType<typeof setTimeout> | null = null;
@@ -130,6 +134,10 @@ export class PeriodSelectorComponent implements OnDestroy {
   }
 
   protected readonly maxDate = computed<Date | null>(() => this.allowFuture() ? null : new Date());
+  protected readonly minDateValue = computed<Date | null>(() => {
+    const min = this.minDateIso();
+    return min ? this.parse(min) : null;
+  });
 
   // Modelo local del datepicker: se sincroniza al ABRIR el popover y no se toca durante la seleccion
   // del rango, para que PrimeNG no resetee el mes visible al recibir un nuevo ngModel.
@@ -324,12 +332,12 @@ export class PeriodSelectorComponent implements OnDestroy {
     const fin = dates?.[1];
     if (!fin) {
       const dia = this.formatLocal(inicio);
-      this.rangoChange.emit({ desde: dia, hasta: dia });
+      this.emitirRangoProtegido(dia, dia);
       return;
     }
 
     const [desde, hasta] = inicio <= fin ? [inicio, fin] : [fin, inicio];
-    this.rangoChange.emit({ desde: this.formatLocal(desde), hasta: this.formatLocal(hasta) });
+    this.emitirRangoProtegido(this.formatLocal(desde), this.formatLocal(hasta));
     this.cerrar();
   }
 
@@ -346,7 +354,7 @@ export class PeriodSelectorComponent implements OnDestroy {
     if (this.periodo() !== 'dia') {
       this.periodoChange.emit('dia');
     }
-    this.rangoChange.emit({ desde, hasta });
+    this.emitirRangoProtegido(desde, hasta);
     this.cerrar();
   }
 
@@ -408,7 +416,7 @@ export class PeriodSelectorComponent implements OnDestroy {
     if (this.periodo() !== 'dia') {
       this.periodoChange.emit('dia');
     }
-    this.rangoChange.emit({ desde: this.hoy, hasta: this.hoy });
+    this.emitirRangoProtegido(this.hoy, this.hoy);
   }
 
   private emitirMesActual(): void {
@@ -418,14 +426,33 @@ export class PeriodSelectorComponent implements OnDestroy {
     if (this.periodo() !== 'dia') {
       this.periodoChange.emit('dia');
     }
-    this.rangoChange.emit({ desde, hasta });
+    this.emitirRangoProtegido(desde, hasta);
   }
 
   private emitirSemanaHastaHoy(): void {
     if (this.periodo() !== 'dia') {
       this.periodoChange.emit('dia');
     }
-    this.rangoChange.emit({ desde: this.inicioSemanaOperativa(), hasta: this.hoy });
+    this.emitirRangoProtegido(this.inicioSemanaOperativa(), this.hoy);
+  }
+
+  private emitirRangoProtegido(desde: string, hasta: string): void {
+    const min = this.minDateIso();
+    if (!min) {
+      this.rangoChange.emit({ desde, hasta });
+      return;
+    }
+    const desdeProtegido = desde < min ? min : desde;
+    const hastaProtegido = hasta < desdeProtegido ? desdeProtegido : hasta;
+    this.rangoChange.emit({ desde: desdeProtegido, hasta: hastaProtegido });
+  }
+
+  private minDateIso(): string | null {
+    const explicit = this.minDate();
+    if (explicit) {
+      return explicit;
+    }
+    return this.enforceSessionMinDate() ? this.session.fechaIngresoEmpleado() : null;
   }
 
   private formatLocal(date: Date): string {

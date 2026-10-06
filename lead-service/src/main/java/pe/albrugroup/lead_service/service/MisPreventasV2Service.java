@@ -21,6 +21,7 @@ import pe.albrugroup.lead_service.entity.response.MisPreventasV2Response;
 import pe.albrugroup.lead_service.entity.response.VentaDetallePage;
 import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.VentaDetalleQueryRepository;
+import pe.albrugroup.lead_service.exception.ForbiddenException;
 
 import pe.albrugroup.lead_service.entity.response.ProyeccionVentasResponse;
 
@@ -92,6 +93,7 @@ public class MisPreventasV2Service {
         LocalDate hoy = OperationalDateTime.today();
         LocalDate desdeR = yearMonth.atDay(1);
         LocalDate hastaR = yearMonth.atEndOfMonth().isBefore(hoy) ? yearMonth.atEndOfMonth() : hoy;
+        desdeR = protegerDesdeMes(desdeR, hastaR);
 
         Instant inicio = OperationalDateTime.startOfDay(desdeR);
         Instant fin = OperationalDateTime.endExclusiveOfDay(hastaR);
@@ -187,6 +189,7 @@ public class MisPreventasV2Service {
         LocalDate hoy = OperationalDateTime.today();
         LocalDate desdeR = yearMonth.atDay(1);
         LocalDate hastaR = yearMonth.atEndOfMonth().isBefore(hoy) ? yearMonth.atEndOfMonth() : hoy;
+        desdeR = protegerDesdeMes(desdeR, hastaR);
 
         Instant inicio = OperationalDateTime.startOfDay(desdeR);
         Instant fin = OperationalDateTime.endExclusiveOfDay(hastaR);
@@ -239,6 +242,7 @@ public class MisPreventasV2Service {
         YearMonth yearMonth = OperationalDateTime.currentMonth();
         LocalDate primerDia = yearMonth.atDay(1);
         LocalDate hoy = OperationalDateTime.today();
+        primerDia = protegerDesdeMes(primerDia, hoy);
         int diasTranscurridos = hoy.getDayOfMonth();
         int diasTotales = yearMonth.lengthOfMonth();
         LocalDate hastaExcl = hoy.plusDays(1);
@@ -253,6 +257,7 @@ public class MisPreventasV2Service {
         YearMonth yearMonth = OperationalDateTime.currentMonth();
         LocalDate primerDia = yearMonth.atDay(1);
         LocalDate hoy = OperationalDateTime.today();
+        primerDia = protegerDesdeMes(primerDia, hoy);
         int diasTranscurridos = hoy.getDayOfMonth();
         int diasTotales = yearMonth.lengthOfMonth();
         LocalDate hastaExcl = hoy.plusDays(1);
@@ -267,6 +272,17 @@ public class MisPreventasV2Service {
         if (session.getEnabledFilter("equipoFilter") != null) {
             session.disableFilter("equipoFilter");
         }
+    }
+
+    private LocalDate protegerDesdeMes(LocalDate desde, LocalDate hasta) {
+        LocalDate fechaIngreso = currentUser.fechaIngresoEmpleado();
+        if (fechaIngreso == null) {
+            throw new ForbiddenException("No se pudo validar tu fecha de ingreso. Vuelve a iniciar sesion");
+        }
+        if (hasta.isBefore(fechaIngreso)) {
+            throw new ForbiddenException("No puedes consultar metricas anteriores a tu fecha de ingreso");
+        }
+        return desde.isBefore(fechaIngreso) ? fechaIngreso : desde;
     }
 
     // ── Acumulador Q1 (replica de DashboardVentaService.Acumulador sin Q2) ────────────────────

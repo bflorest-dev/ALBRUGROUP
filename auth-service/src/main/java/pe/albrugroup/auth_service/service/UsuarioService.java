@@ -68,6 +68,7 @@ public class UsuarioService implements IUsuario {
                 .empleadoId(request.getEmpleadoId())
                 .dni(request.getDni().trim())
                 .nombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()))
+                .fechaIngresoEmpleado(request.getFechaIngresoEmpleado())
                 .activo(true)
                 .passwordInicializada(false)
                 .roles(new HashSet<>())
@@ -84,13 +85,18 @@ public class UsuarioService implements IUsuario {
         validarEmailDisponible(nuevoEmail, usuario.getEmail());
 
         boolean cambioUsername = !nuevoUsername.equalsIgnoreCase(usuario.getUsername());
+        boolean sincronizaFechaIngreso = usuario.getFechaIngresoEmpleado() == null
+                && request.getFechaIngresoEmpleado() != null;
         usuario.setUsername(nuevoUsername);
         usuario.setEmail(nuevoEmail);
         usuario.setDni(request.getDni().trim());
         usuario.setNombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()));
+        if (sincronizaFechaIngreso) {
+            usuario.setFechaIngresoEmpleado(request.getFechaIngresoEmpleado());
+        }
         Usuario guardado = usuarioRepository.save(usuario);
-        if (cambioUsername) {
-            invalidarSesiones(guardado, "cambio de username");
+        if (cambioUsername || sincronizaFechaIngreso) {
+            invalidarSesiones(guardado, cambioUsername ? "cambio de username" : "fecha de ingreso sincronizada");
         }
     }
 

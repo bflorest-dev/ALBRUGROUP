@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -19,6 +20,7 @@ public class TokenRefreshResponse {
     private String refreshToken;
     private String type;
     private Long expiresIn;
+    private LocalDate fechaIngresoEmpleado;
     private List<String> rolesAsignados;
     private String rolPrincipal;
     private String rolActivo;

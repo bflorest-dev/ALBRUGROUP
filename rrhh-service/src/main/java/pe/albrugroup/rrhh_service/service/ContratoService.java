@@ -132,8 +132,9 @@ public class ContratoService implements IContrato {
         contrato.setEmpleado(empleado);
 
         ContratoResponse contratoResponse = mapper.toResponse(contratoRepository.save(contrato));
+        LocalDate fechaIngresoEmpleado = resolverFechaIngresoEmpleado(idEmpleado, fechaInicioNuevo);
         eventoService.registrarEventoContratacion(empleado, responsableId);
-        programarSincronizacionExternaPostCommit(empleado, nuevoContrato, authHeader);
+        programarSincronizacionExternaPostCommit(empleado, nuevoContrato, authHeader, fechaIngresoEmpleado);
         return contratoResponse;
     }
 
@@ -315,7 +316,7 @@ public class ContratoService implements IContrato {
                 ));
     }
 
-    private void registrarUsuarioAuth(Empleado empleado, String authHeader) {
+    private void registrarUsuarioAuth(Empleado empleado, String authHeader, LocalDate fechaIngresoEmpleado) {
         String email = (empleado.getCorreoCorporativo() != null && !empleado.getCorreoCorporativo().isBlank())
                 ? empleado.getCorreoCorporativo()
                 : empleado.getCorreoPersonal();
@@ -326,9 +327,16 @@ public class ContratoService implements IContrato {
                 .apellidos(empleado.getApellidos())
                 .dni(empleado.getNumeroDocumento())
                 .email(email)
+                .fechaIngresoEmpleado(fechaIngresoEmpleado)
                 .build();
 
         authServiceClient.upsertUsuario(authHeader, request);
+    }
+
+    private LocalDate resolverFechaIngresoEmpleado(Long idEmpleado, LocalDate fechaInicioNuevo) {
+        return contratoRepository.findPrimerInicioContratoByEmpleadoId(idEmpleado)
+                .map(primerInicio -> primerInicio.isBefore(fechaInicioNuevo) ? primerInicio : fechaInicioNuevo)
+                .orElse(fechaInicioNuevo);
     }
 
     private void confirmarContratacionRecruitment(Empleado empleado,
@@ -362,11 +370,12 @@ public class ContratoService implements IContrato {
 
     private void programarSincronizacionExternaPostCommit(Empleado empleado,
                                                           RegistrarContratoRequest nuevoContrato,
-                                                          String authHeader) {
+                                                          String authHeader,
+                                                          LocalDate fechaIngresoEmpleado) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                registrarUsuarioAuth(empleado, authHeader);
+                registrarUsuarioAuth(empleado, authHeader, fechaIngresoEmpleado);
                 confirmarContratacionRecruitment(empleado, nuevoContrato, authHeader);
             }
         });

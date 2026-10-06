@@ -18,6 +18,7 @@ import pe.albrugroup.lead_service.entity.response.DashboardVentaResponse;
 import pe.albrugroup.lead_service.entity.response.DashboardVentaTramosResponse;
 import pe.albrugroup.lead_service.entity.response.VentaDetallePage;
 import pe.albrugroup.lead_service.service.DashboardVentaService;
+import pe.albrugroup.lead_service.service.MetricasPeriodoGuard;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.List;
 public class DashboardVentaController {
 
     private final DashboardVentaService dashboardVentaService;
+    private final MetricasPeriodoGuard metricasPeriodoGuard;
 
     // Proveedores seleccionables en el dashboard (asignados si el rol está acotado, o todos si no).
     @GetMapping("/dashboard/proveedores")
@@ -47,7 +49,8 @@ public class DashboardVentaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
-        return ResponseEntity.ok(dashboardVentaService.obtener(idProveedor, desde, hasta));
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
+        return ResponseEntity.ok(dashboardVentaService.obtener(idProveedor, rango.desde(), rango.hasta()));
     }
 
     // Bloque 4: matriz tramo horario × día (hoy/mañana/pasado). Foto actual; no usa período.
@@ -78,8 +81,9 @@ public class DashboardVentaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
         return ResponseEntity.ok(dashboardVentaService.obtenerDetalle(
-                idProveedor, metrica, enfoque, zona, subtipificacion, tipificacion, idAsesor, desde, hasta,
+                idProveedor, metrica, enfoque, zona, subtipificacion, tipificacion, idAsesor, rango.desde(), rango.hasta(),
                 search, groupBy, pageRequest));
     }
 }

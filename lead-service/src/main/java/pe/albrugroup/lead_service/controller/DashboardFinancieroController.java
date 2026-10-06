@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.response.ResumenFinancieroDiaResponse;
+import pe.albrugroup.lead_service.service.MetricasPeriodoGuard;
 import pe.albrugroup.lead_service.service.ResumenFinancieroDiaService;
 
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ import java.util.List;
 public class DashboardFinancieroController {
 
     private final ResumenFinancieroDiaService resumenService;
+    private final MetricasPeriodoGuard metricasPeriodoGuard;
 
     @GetMapping("/dashboard/proveedores")
     @PreAuthorize("hasAuthority('READ_DASHBOARD_FINANCIERO')")
@@ -36,7 +38,8 @@ public class DashboardFinancieroController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
-        return ResponseEntity.ok(resumenService.consultar(idProveedor, desde, hasta));
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
+        return ResponseEntity.ok(resumenService.consultar(idProveedor, rango.desde(), rango.hasta()));
     }
 
     @PostMapping("/resumen-diario/recalcular")

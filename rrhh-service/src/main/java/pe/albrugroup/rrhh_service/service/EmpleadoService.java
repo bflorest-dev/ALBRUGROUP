@@ -197,6 +197,9 @@ public class EmpleadoService implements IEmpleado {
                             .apellidos(empleado.getApellidos())
                             .dni(empleado.getNumeroDocumento())
                             .email(email)
+                            .fechaIngresoEmpleado(contratoRepository
+                                    .findPrimerInicioContratoByEmpleadoId(empleado.getId())
+                                    .orElse(contratoVigente.getFechaInicio()))
                             .build();
                     TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                         @Override

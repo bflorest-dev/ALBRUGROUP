@@ -15,6 +15,7 @@ export class SessionService {
   readonly activeRole = computed(() => this.sessionState()?.activeRole ?? this.sessionState()?.primaryRole ?? null);
   readonly primaryRole = computed(() => this.sessionState()?.primaryRole ?? null);
   readonly assignedRoles = computed(() => this.sessionState()?.roles ?? []);
+  readonly fechaIngresoEmpleado = computed(() => this.sessionState()?.fechaIngresoEmpleado ?? null);
   readonly homeRoute = computed(() => {
     const activeRole = this.activeRole();
     return activeRole ? ROLE_HOME_ROUTES[activeRole] ?? '/app/admin' : '/auth/access';
@@ -75,7 +76,12 @@ export class SessionService {
     return true;
   }
 
-  applyRoleContext(roles: string[], primaryRole: string | null, activeRole: string | null): void {
+  applyRoleContext(
+    roles: string[],
+    primaryRole: string | null,
+    activeRole: string | null,
+    fechaIngresoEmpleado?: string | null
+  ): void {
     const session = this.sessionState();
     if (!session) {
       return;
@@ -86,6 +92,7 @@ export class SessionService {
       roles,
       primaryRole,
       activeRole: normalizedActiveRole,
+      fechaIngresoEmpleado: fechaIngresoEmpleado ?? session.fechaIngresoEmpleado ?? null,
       homeRoute: normalizedActiveRole
         ? ROLE_HOME_ROUTES[normalizedActiveRole] ?? session.homeRoute
         : session.homeRoute
@@ -131,6 +138,7 @@ export class SessionService {
       roles,
       primaryRole,
       activeRole,
+      fechaIngresoEmpleado: session.fechaIngresoEmpleado ?? null,
       homeRoute: activeRole ? ROLE_HOME_ROUTES[activeRole] ?? session.homeRoute : session.homeRoute
     };
   }

@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
 public class RegistrarUsuarioRequest {
@@ -20,6 +22,8 @@ public class RegistrarUsuarioRequest {
     @NotBlank(message = "Falta Email")
     @Email(message = "Email Invalido")
     private String email;
+    @NotNull(message = "Fecha de ingreso del empleado es obligatoria")
+    private LocalDate fechaIngresoEmpleado;
 }
 
 

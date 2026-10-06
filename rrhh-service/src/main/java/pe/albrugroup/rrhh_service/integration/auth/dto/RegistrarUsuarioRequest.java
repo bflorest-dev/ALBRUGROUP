@@ -2,6 +2,8 @@ package pe.albrugroup.rrhh_service.integration.auth.dto;
 
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
 public class RegistrarUsuarioRequest {
@@ -10,4 +12,5 @@ public class RegistrarUsuarioRequest {
     private String apellidos;
     private String dni;
     private String email;
+    private LocalDate fechaIngresoEmpleado;
 }

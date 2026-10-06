@@ -25,6 +25,7 @@ import pe.albrugroup.lead_service.service.LeadCampanaCorreccionService;
 import pe.albrugroup.lead_service.service.LeadExcelIntakeService;
 import pe.albrugroup.lead_service.service.LeadMeritoCorreccionService;
 import pe.albrugroup.lead_service.service.LeadService;
+import pe.albrugroup.lead_service.service.MetricasPeriodoGuard;
 import pe.albrugroup.lead_service.service.MisPreventasV2Service;
 
 import java.time.LocalDate;
@@ -42,6 +43,7 @@ public class PreventaController {
     private final LeadMeritoCorreccionService leadMeritoCorreccionService;
     private final AuthEquipoClient authEquipoClient;
     private final MisPreventasV2Service misPreventasV2Service;
+    private final MetricasPeriodoGuard metricasPeriodoGuard;
 
     //GTR
 
@@ -253,7 +255,9 @@ public class PreventaController {
             @RequestParam(defaultValue = "true") boolean soloActivos,
             @RequestParam(required = false) Long idEquipo
     ) {
-        var tipificaciones = leadService.listarTipificacionesCampanaGtr(desde, hasta, soloActivos, idEquipo);
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
+        var tipificaciones = leadService.listarTipificacionesCampanaGtr(
+                rango.desde(), rango.hasta(), soloActivos, idEquipo);
         return ResponseEntity.ok(tipificaciones);
     }
 
@@ -266,7 +270,9 @@ public class PreventaController {
             @RequestParam(defaultValue = "GESTIONADOS") ModoConteo modo,
             @RequestParam(defaultValue = "MAYOR") CampoTipificacion campo
     ) {
-        return ResponseEntity.ok(leadService.listarTipificacionesRankingGtr(desde, hasta, soloActivos, idEquipo, modo, campo));
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
+        return ResponseEntity.ok(leadService.listarTipificacionesRankingGtr(
+                rango.desde(), rango.hasta(), soloActivos, idEquipo, modo, campo));
     }
 
     @GetMapping("/gtr/tipificaciones/{codigoTipificacion}/subtipificaciones") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
@@ -279,8 +285,9 @@ public class PreventaController {
             @RequestParam(defaultValue = "GESTIONADOS") ModoConteo modo,
             @RequestParam(defaultValue = "MAYOR") CampoTipificacion campo
     ) {
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
         return ResponseEntity.ok(leadService.listarSubtipificacionesRankingGtr(
-                codigoTipificacion, desde, hasta, soloActivos, idEquipo, modo, campo));
+                codigoTipificacion, rango.desde(), rango.hasta(), soloActivos, idEquipo, modo, campo));
     }
 
     // 2.5. RESUMEN DIARIO: las 4 tablas del reporte diario en un solo payload (DASHBOARD de PREVENTA)
@@ -292,7 +299,8 @@ public class PreventaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
-        return ResponseEntity.ok(leadService.obtenerResumenDiario(idEquipo, modo, campo, desde, hasta));
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
+        return ResponseEntity.ok(leadService.obtenerResumenDiario(idEquipo, modo, campo, rango.desde(), rango.hasta()));
     }
 
     // 2.6. Detalle de preventas detrás de un card del RESUMEN (modo = Ingresos/Gestión del día)
@@ -304,7 +312,8 @@ public class PreventaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
-        return ResponseEntity.ok(leadService.obtenerPreventasDetalle(idEquipo, modo, campo, desde, hasta));
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
+        return ResponseEntity.ok(leadService.obtenerPreventasDetalle(idEquipo, modo, campo, rango.desde(), rango.hasta()));
     }
 
     // 2.7. Detalle de una fila del ranking de asesores del RESUMEN DIARIO
@@ -317,7 +326,9 @@ public class PreventaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
-        return ResponseEntity.ok(leadService.obtenerRankingAsesorDetalle(idEquipo, idAsesor, grupoOjt, modo, desde, hasta));
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
+        return ResponseEntity.ok(leadService.obtenerRankingAsesorDetalle(
+                idEquipo, idAsesor, grupoOjt, modo, rango.desde(), rango.hasta()));
     }
 
     // 2.8. Detalle de una fila del bloque Estado Leads del RESUMEN DIARIO
@@ -330,8 +341,9 @@ public class PreventaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
         return ResponseEntity.ok(leadService.obtenerEstadoLeadsDetalle(
-                idEquipo, codigoTipificacion, modo, campo, desde, hasta));
+                idEquipo, codigoTipificacion, modo, campo, rango.desde(), rango.hasta()));
     }
 
     @PostMapping("/gtr/{idLead}/tomar-gestion")
@@ -427,7 +439,8 @@ public class PreventaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
     ) {
-        var leads = leadService.listarMisPreventas(pageRequest, fechaDesde, fechaHasta);
+        var rango = metricasPeriodoGuard.protegerRango(fechaDesde, fechaHasta);
+        var leads = leadService.listarMisPreventas(pageRequest, rango.desde(), rango.hasta());
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     @GetMapping("/asesor-ventas/mis-preventas/resumen") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
@@ -435,7 +448,8 @@ public class PreventaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
     ) {
-        var resumen = leadService.obtenerResumenMisPreventas(fechaDesde, fechaHasta);
+        var rango = metricasPeriodoGuard.protegerRango(fechaDesde, fechaHasta);
+        var resumen = leadService.obtenerResumenMisPreventas(rango.desde(), rango.hasta());
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
     }
     @GetMapping("/asesor-ventas/mis-preventas/cuadrante") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
@@ -443,7 +457,8 @@ public class PreventaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
     ) {
-        var cuadrante = leadService.obtenerCuadranteMisPreventas(fechaDesde, fechaHasta);
+        var rango = metricasPeriodoGuard.protegerRango(fechaDesde, fechaHasta);
+        var cuadrante = leadService.obtenerCuadranteMisPreventas(rango.desde(), rango.hasta());
         return ResponseEntity.status(HttpStatus.OK).body(cuadrante);
     }
     @GetMapping("/asesor-ventas/mis-preventas/por-resumen") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
@@ -452,7 +467,8 @@ public class PreventaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
     ) {
-        var leads = leadService.listarMisPreventasPorResumenEtapa(pageRequest, fechaDesde, fechaHasta);
+        var rango = metricasPeriodoGuard.protegerRango(fechaDesde, fechaHasta);
+        var leads = leadService.listarMisPreventasPorResumenEtapa(pageRequest, rango.desde(), rango.hasta());
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     @GetMapping("/asesor-ventas/mis-preventas/por-resumen/resumen") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
@@ -460,7 +476,8 @@ public class PreventaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
     ) {
-        var resumen = leadService.obtenerResumenMisPreventasPorResumenEtapa(fechaDesde, fechaHasta);
+        var rango = metricasPeriodoGuard.protegerRango(fechaDesde, fechaHasta);
+        var resumen = leadService.obtenerResumenMisPreventasPorResumenEtapa(rango.desde(), rango.hasta());
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
     }
     // ── MIS PREVENTAS V2 (cuadrante + detalle scoped por asesor, sin alterar métricas generales) ──

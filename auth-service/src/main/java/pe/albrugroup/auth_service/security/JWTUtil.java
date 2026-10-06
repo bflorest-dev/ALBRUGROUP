@@ -55,6 +55,10 @@ public class JWTUtil {
         claims.put("tokenVersion", tokenVersion);
         claims.put("empleadoId", userDetails.getEmpleadoId());
         claims.put("nombreCompleto", userDetails.getNombreCompleto());
+        var fechaIngresoEmpleado = userDetails.getUsuario().getFechaIngresoEmpleado();
+        if (fechaIngresoEmpleado != null) {
+            claims.put("fechaIngresoEmpleado", fechaIngresoEmpleado.toString());
+        }
         claims.put("roles", java.util.List.of(rolActivo.getNombre()));
         claims.put("rolActivo", rolActivo.getNombre());
         claims.put("rolPrincipal", userDetails.getUsuario().getRolPrincipal().getNombre());

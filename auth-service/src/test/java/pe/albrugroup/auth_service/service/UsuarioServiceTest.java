@@ -12,6 +12,7 @@ import pe.albrugroup.auth_service.entity.Usuario;
 import pe.albrugroup.auth_service.entity.request.RegistrarUsuarioRequest;
 import pe.albrugroup.auth_service.repository.UsuarioRepository;
 
+import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 
@@ -45,6 +46,7 @@ class UsuarioServiceTest {
         assertThat(creado.getUsername()).isEqualTo("N70000001P@albru.pe");
         assertThat(creado.getRoles()).isEmpty();
         assertThat(creado.getRolPrincipal()).isNull();
+        assertThat(creado.getFechaIngresoEmpleado()).isEqualTo(LocalDate.of(2026, 9, 7));
     }
 
     @Test
@@ -57,6 +59,7 @@ class UsuarioServiceTest {
                 .username("N70000001P@albru.pe")
                 .email("anterior@albru.pe")
                 .dni("70000001")
+                .fechaIngresoEmpleado(LocalDate.of(2026, 9, 7))
                 .activo(false)
                 .roles(new LinkedHashSet<>(java.util.List.of(principal, secundario)))
                 .rolPrincipal(principal)
@@ -79,6 +82,7 @@ class UsuarioServiceTest {
                 .apellidos(apellidos)
                 .dni(dni)
                 .email(email)
+                .fechaIngresoEmpleado(LocalDate.of(2026, 9, 7))
                 .build();
     }
 }

@@ -2,6 +2,7 @@ package pe.albrugroup.auth_service.entity.Response;
 
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.Set;
 
 @Getter @Setter @Builder
@@ -11,6 +12,7 @@ public class UsuarioResponse {
     private Long empleadoId;
     private String dni;
     private String nombreCompleto;
+    private LocalDate fechaIngresoEmpleado;
     private String username;
     private Boolean activo;
     private Boolean passwordInicializada;

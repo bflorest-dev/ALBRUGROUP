@@ -46,7 +46,8 @@ export class AuthSessionService {
         this.sessionService.applyRoleContext(
           response.rolesAsignados,
           response.rolPrincipal,
-          response.rolActivo
+          response.rolActivo,
+          response.fechaIngresoEmpleado
         );
         return response.token;
       }),
@@ -77,7 +78,8 @@ export class AuthSessionService {
         this.sessionService.applyRoleContext(
           response.rolesAsignados,
           response.rolPrincipal,
-          response.rolActivo
+          response.rolActivo,
+          response.fechaIngresoEmpleado
         );
         return response.rolActivo;
       })

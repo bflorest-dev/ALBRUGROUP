@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.response.DashboardFunnelResponse;
 import pe.albrugroup.lead_service.service.DashboardFunnelService;
+import pe.albrugroup.lead_service.service.MetricasPeriodoGuard;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.List;
 public class DashboardFunnelController {
 
     private final DashboardFunnelService dashboardFunnelService;
+    private final MetricasPeriodoGuard metricasPeriodoGuard;
 
     @GetMapping("/dashboard/proveedores")
     @PreAuthorize("hasAuthority('READ_DASHBOARD_FUNNEL')")
@@ -35,6 +37,7 @@ public class DashboardFunnelController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
-        return ResponseEntity.ok(dashboardFunnelService.obtener(idProveedor, desde, hasta));
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
+        return ResponseEntity.ok(dashboardFunnelService.obtener(idProveedor, rango.desde(), rango.hasta()));
     }
 }

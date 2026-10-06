@@ -26,6 +26,7 @@ public class Mapper {
                 .empleadoId(usuario.getEmpleadoId())
                 .dni(usuario.getDni())
                 .nombreCompleto(usuario.getNombreCompleto())
+                .fechaIngresoEmpleado(usuario.getFechaIngresoEmpleado())
                 .username(usuario.getUsername())
                 .activo(usuario.getActivo())
                 .passwordInicializada(usuario.getPasswordInicializada())

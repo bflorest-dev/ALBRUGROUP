@@ -49,6 +49,7 @@ import pe.albrugroup.lead_service.service.EventoService;
 import pe.albrugroup.lead_service.service.LeadInstalacionCorreccionService;
 import pe.albrugroup.lead_service.service.LeadPreventaInstalacionService;
 import pe.albrugroup.lead_service.service.LeadService;
+import pe.albrugroup.lead_service.service.MetricasPeriodoGuard;
 import pe.albrugroup.lead_service.service.VentaResumenDiarioService;
 
 import java.time.LocalDate;
@@ -64,6 +65,7 @@ public class VentaController {
     private final LeadInstalacionCorreccionService leadInstalacionCorreccionService;
     private final LeadPreventaInstalacionService leadPreventaInstalacionService;
     private final VentaResumenDiarioService ventaResumenDiarioService;
+    private final MetricasPeriodoGuard metricasPeriodoGuard;
 
     // BackOffice
     // 1. Listar Leads que se encuentren en la etapa de Venta. Permite filtrar por numero de lead.
@@ -163,7 +165,8 @@ public class VentaController {
             @RequestParam(required = false) LocalDate desde,
             @RequestParam(required = false) LocalDate hasta
     ) {
-        var resumen = ventaResumenDiarioService.obtener(idEquipo, idProveedor, desde, hasta);
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
+        var resumen = ventaResumenDiarioService.obtener(idEquipo, idProveedor, rango.desde(), rango.hasta());
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
     }
 
@@ -236,11 +239,13 @@ public class VentaController {
             @RequestParam(required = false) EstadoCumplimientoSemana estadoCumplimientoSemana,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
+        var rangoPreventa = metricasPeriodoGuard.protegerRango(fechaPreventaDesde, fechaPreventaHasta);
+        var rangoInstalacion = metricasPeriodoGuard.protegerRango(fechaInstalacionDesde, fechaInstalacionHasta);
         var reporte = leadPreventaInstalacionService.listar(
-                fechaPreventaDesde,
-                fechaPreventaHasta,
-                fechaInstalacionDesde,
-                fechaInstalacionHasta,
+                rangoPreventa.desde(),
+                rangoPreventa.hasta(),
+                rangoInstalacion.desde(),
+                rangoInstalacion.hasta(),
                 idProveedor,
                 idAsesorPreventa,
                 estadoPostventa,

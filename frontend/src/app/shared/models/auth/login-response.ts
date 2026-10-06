@@ -6,6 +6,7 @@ export interface LoginResponse {
   username: string;
   empleadoId: number;
   nombreCompleto: string;
+  fechaIngresoEmpleado: string | null;
   roles: string[];
   rolesAsignados: string[];
   rolPrincipal: string;

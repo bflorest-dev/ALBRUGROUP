@@ -13,6 +13,7 @@ import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.service.ProveedorScopeService;
 
+import java.time.LocalDate;
 import java.util.Set;
 
 import static org.mockito.Mockito.mock;
@@ -42,6 +43,7 @@ class EquipoFilterInterceptorTest {
                 "postventa.backoffice",
                 15L,
                 "Postventa Backoffice",
+                LocalDate.of(2026, 9, 7),
                 java.util.List.of("ASESOR_POSTVENTA", "ASESOR_BACKOFFICE"),
                 java.util.List.of("VER_TODOS_LOS_EQUIPOS"),
                 java.util.List.of()

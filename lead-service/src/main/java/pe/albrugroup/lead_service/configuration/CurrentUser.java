@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import pe.albrugroup.lead_service.exception.UnauthorizedException;
 import pe.albrugroup.lead_service.security.UserSession;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Component
@@ -23,6 +24,9 @@ public class CurrentUser {
     }
     public String nombreCompleto() {
         return get().nombreCompleto();
+    }
+    public LocalDate fechaIngresoEmpleado() {
+        return get().fechaIngresoEmpleado();
     }
     public List<String> roles() {
         return get().roles();

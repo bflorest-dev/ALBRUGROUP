@@ -29,6 +29,7 @@ import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.RegistroDiarioLeadResponse;
 import pe.albrugroup.lead_service.service.EventoService;
+import pe.albrugroup.lead_service.service.MetricasPeriodoGuard;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -39,6 +40,7 @@ import java.util.List;
 public class EventoController {
 
     private final EventoService eventoService;
+    private final MetricasPeriodoGuard metricasPeriodoGuard;
 
     @GetMapping("/lead/{idLead}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")
     public ResponseEntity<PageResponse<EventoResponse>> listarEventosPorLead(
@@ -100,7 +102,7 @@ public class EventoController {
     public ResponseEntity<LeadsDiariosMetricasResponse> obtenerMetricasRegistrosDiarios(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
     ) {
-        return ResponseEntity.ok(eventoService.obtenerMetricasRegistrosDiarios(fecha));
+        return ResponseEntity.ok(eventoService.obtenerMetricasRegistrosDiarios(metricasPeriodoGuard.validarFecha(fecha)));
     }
 
     /**
@@ -117,8 +119,9 @@ public class EventoController {
     ) {
         LocalDate desdeResuelto = desde != null ? desde : fecha;
         LocalDate hastaResuelto = hasta != null ? hasta : fecha;
+        var rango = metricasPeriodoGuard.protegerRango(desdeResuelto, hastaResuelto);
         return ResponseEntity.ok(
-                eventoService.obtenerMetricasRegistrosDiariosPorEquipo(desdeResuelto, hastaResuelto, campo, modo));
+                eventoService.obtenerMetricasRegistrosDiariosPorEquipo(rango.desde(), rango.hasta(), campo, modo));
     }
 
     @GetMapping("/metricas/gestion-por-campana") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
@@ -129,7 +132,8 @@ public class EventoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
-        return ResponseEntity.ok(eventoService.obtenerGestionPorCampana(etapa, campo, modo, desde, hasta));
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
+        return ResponseEntity.ok(eventoService.obtenerGestionPorCampana(etapa, campo, modo, rango.desde(), rango.hasta()));
     }
 
     @GetMapping("/metricas/afluencia-por-hora") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
@@ -138,7 +142,8 @@ public class EventoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
-        return ResponseEntity.ok(eventoService.obtenerAfluenciaPorHora(modo, desde, hasta));
+        var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
+        return ResponseEntity.ok(eventoService.obtenerAfluenciaPorHora(modo, rango.desde(), rango.hasta()));
     }
 
     @GetMapping("/empleado/{idEmpleado}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")

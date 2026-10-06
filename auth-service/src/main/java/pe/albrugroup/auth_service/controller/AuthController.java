@@ -86,6 +86,7 @@ public class AuthController {
                     .username(userDetails.getUsername())
                     .empleadoId(userDetails.getEmpleadoId())
                     .nombreCompleto(userDetails.getNombreCompleto())
+                    .fechaIngresoEmpleado(userDetails.getUsuario().getFechaIngresoEmpleado())
                     .roles(List.of(rolPrincipal.getNombre()))
                     .rolesAsignados(rolesAsignados)
                     .rolPrincipal(rolPrincipal.getNombre())

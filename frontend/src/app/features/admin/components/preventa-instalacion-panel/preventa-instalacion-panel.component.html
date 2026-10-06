@@ -12,6 +12,7 @@
           [periodo]="facade.periodo()"
           [dia]="facade.dia()"
           [hasta]="facade.hasta()"
+          [enforceSessionMinDate]="true"
           (periodoChange)="onPeriodoChange($event)"
           (rangoChange)="facade.onRangoChange($event)"
         />
