@@ -13,7 +13,6 @@ import pe.albrugroup.lead_service.entity.enums.EstadoPagoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
-import pe.albrugroup.lead_service.entity.enums.TipoReglaFacturacion;
 import pe.albrugroup.lead_service.entity.request.CerrarPeriodoFacturacionRequest;
 import pe.albrugroup.lead_service.entity.request.CorregirCorteFacturacionRequest;
 import pe.albrugroup.lead_service.entity.request.PeriodoFacturacionFacturaRequest;
@@ -74,7 +73,6 @@ public class FacturacionPostventaService {
         CalendarioFacturacionPostventa calendario = obtenerCalendarioConLead(idCalendario);
         PeriodoFacturacionPostventa periodoUno = obtenerPeriodoUno(calendario);
         validarMesCorteBase(request);
-        validarProveedorWin(calendario);
         validarLeadEnPostventa(calendario);
         validarPeriodoUno(periodoUno);
         validarCorteNoCorregido(calendario);
@@ -100,7 +98,6 @@ public class FacturacionPostventaService {
                 .orElseThrow(() -> new NotFoundException(CalendarioFacturacionPostventa.class, idLead));
         postventaAsesorProveedorService.validarLeadVisibleParaUsuarioActual(calendario.getLead());
         validarMesCorteBase(request);
-        validarProveedorWin(calendario);
         validarLeadEnPostventa(calendario);
 
         aplicarCambioCorte(calendario, request);
@@ -222,12 +219,6 @@ public class FacturacionPostventaService {
         }
         if (request.getMesCorteBase().getDayOfMonth() != 1) {
             throw new BadRequestException("mesCorteBase debe ser el primer dia del mes");
-        }
-    }
-
-    private void validarProveedorWin(CalendarioFacturacionPostventa calendario) {
-        if (calendario.getTipoReglaProveedor() != TipoReglaFacturacion.WIN) {
-            throw new BadRequestException("La correccion de corte solo esta habilitada para WIN");
         }
     }
 
