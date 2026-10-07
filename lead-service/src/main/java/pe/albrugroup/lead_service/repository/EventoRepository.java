@@ -2209,6 +2209,160 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("equipoIds") Collection<Long> equipoIds
     );
 
+    // --- Detalle Estado Leads: devuelve los leads individuales detrás de un código de tipificación ---
+    // Columnas: [0] idLead, [1] fechaIngresoAt, [2] lead, [3] usermeta, [4] nombreCampana,
+    //           [5] nombreActor (quien tipificó), [6] fechaTipificacionAt
+
+    @Query(value = """
+            SELECT sub.id_lead, sub.fecha_ingreso, sub.lead, sub.usermeta,
+                   sub.nombre_campana, sub.nombre_actor, sub.created_at AS fecha_tipi
+            FROM (
+                SELECT DISTINCT ON (e.id_lead)
+                       e.id_lead, l.lead, l.usermeta, c.nombre AS nombre_campana,
+                       e.nombre_actor, e.created_at, e.tipificacion,
+                       (SELECT MAX(reg.created_at) FROM evento reg
+                        WHERE reg.id_lead = e.id_lead
+                          AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                          AND reg.created_at >= :desde AND reg.created_at < :hasta
+                       ) AS fecha_ingreso
+                FROM evento e
+                JOIN lead l ON l.id = e.id_lead
+                LEFT JOIN campana c ON c.id = l.id_campana
+                WHERE e.accion = 'TIPIFICACION'
+                  AND e.etapa = 'PREVENTA'
+                  AND e.created_at >= :desde AND e.created_at < :hasta
+                  AND e.tipificacion IS NOT NULL AND TRIM(e.tipificacion) <> ''
+                  AND (:ingresados = false
+                       OR (EXISTS (SELECT 1 FROM origen o WHERE o.id = l.id_origen AND o.es_organico = true)
+                           AND EXISTS (SELECT 1 FROM evento reg WHERE reg.id_lead = e.id_lead
+                                       AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                                       AND reg.created_at >= :desde AND reg.created_at < :hasta)))
+                  AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
+                ORDER BY e.id_lead, e.created_at DESC
+            ) sub
+            WHERE TRIM(sub.tipificacion) = :codigoTipificacion
+            """, nativeQuery = true)
+    List<Object[]> detalleEstadoLeadsPorUltima(
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("ingresados") boolean ingresados,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query(value = """
+            SELECT sub.id_lead, sub.fecha_ingreso, sub.lead, sub.usermeta,
+                   sub.nombre_campana, sub.nombre_actor, sub.created_at AS fecha_tipi
+            FROM (
+                SELECT DISTINCT ON (e.id_lead)
+                       e.id_lead, l.lead, l.usermeta, c.nombre AS nombre_campana,
+                       e.nombre_actor, e.created_at, e.tipificacion,
+                       (SELECT MAX(reg.created_at) FROM evento reg
+                        WHERE reg.id_lead = e.id_lead
+                          AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                          AND reg.created_at >= :desde AND reg.created_at < :hasta
+                       ) AS fecha_ingreso
+                FROM evento e
+                JOIN lead l ON l.id = e.id_lead
+                LEFT JOIN campana c ON c.id = l.id_campana
+                WHERE e.accion = 'TIPIFICACION'
+                  AND e.etapa = 'PREVENTA'
+                  AND e.created_at >= :desde AND e.created_at < :hasta
+                  AND e.tipificacion IS NOT NULL AND TRIM(e.tipificacion) <> ''
+                  AND (:ingresados = false
+                       OR (EXISTS (SELECT 1 FROM origen o WHERE o.id = l.id_origen AND o.es_organico = true)
+                           AND EXISTS (SELECT 1 FROM evento reg WHERE reg.id_lead = e.id_lead
+                                       AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                                       AND reg.created_at >= :desde AND reg.created_at < :hasta)))
+                  AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
+                ORDER BY e.id_lead, e.created_at ASC
+            ) sub
+            WHERE TRIM(sub.tipificacion) = :codigoTipificacion
+            """, nativeQuery = true)
+    List<Object[]> detalleEstadoLeadsPorPrimera(
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("ingresados") boolean ingresados,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query(value = """
+            SELECT sub.id_lead, sub.fecha_ingreso, sub.lead, sub.usermeta,
+                   sub.nombre_campana, sub.nombre_actor, sub.created_at AS fecha_tipi
+            FROM (
+                SELECT DISTINCT ON (e.id_lead)
+                       e.id_lead, l.lead, l.usermeta, c.nombre AS nombre_campana,
+                       e.nombre_actor, e.created_at, e.tipificacion,
+                       (SELECT MAX(reg.created_at) FROM evento reg
+                        WHERE reg.id_lead = e.id_lead
+                          AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                          AND reg.created_at >= :desde AND reg.created_at < :hasta
+                       ) AS fecha_ingreso
+                FROM evento e
+                JOIN lead l ON l.id = e.id_lead
+                LEFT JOIN campana c ON c.id = l.id_campana
+                LEFT JOIN equipo_proveedor ep
+                    ON ep.id_equipo = l.id_equipo AND ep.fallback_lead_sin_campana = true
+                LEFT JOIN matriz_tipificacion m
+                    ON m.id_proveedor = COALESCE(
+                        (SELECT ca.id_proveedor FROM campana ca WHERE ca.id = l.id_campana),
+                        ep.id_proveedor)
+                    AND m.etapa = 'PREVENTA'
+                LEFT JOIN tipificacion t ON t.matriz_id = m.id AND t.codigo = e.tipificacion
+                WHERE e.accion = 'TIPIFICACION'
+                  AND e.etapa = 'PREVENTA'
+                  AND e.created_at >= :desde AND e.created_at < :hasta
+                  AND e.tipificacion IS NOT NULL AND TRIM(e.tipificacion) <> ''
+                  AND (:ingresados = false
+                       OR (EXISTS (SELECT 1 FROM origen o WHERE o.id = l.id_origen AND o.es_organico = true)
+                           AND EXISTS (SELECT 1 FROM evento reg WHERE reg.id_lead = e.id_lead
+                                       AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                                       AND reg.created_at >= :desde AND reg.created_at < :hasta)))
+                  AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
+                ORDER BY e.id_lead, COALESCE(t.orden, -1) DESC, e.created_at DESC
+            ) sub
+            WHERE TRIM(sub.tipificacion) = :codigoTipificacion
+            """, nativeQuery = true)
+    List<Object[]> detalleEstadoLeadsPorMayor(
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("ingresados") boolean ingresados,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query(value = """
+            SELECT l.id AS id_lead,
+                   MAX(reg.created_at) AS fecha_ingreso,
+                   l.lead, l.usermeta, c.nombre AS nombre_campana
+            FROM evento reg
+            JOIN lead l ON l.id = reg.id_lead
+            JOIN origen o ON o.id = l.id_origen AND o.es_organico = true
+            LEFT JOIN campana c ON c.id = l.id_campana
+            WHERE reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+              AND reg.created_at >= :desde AND reg.created_at < :hasta
+              AND NOT EXISTS (
+                  SELECT 1 FROM evento tip
+                  WHERE tip.id_lead = l.id
+                    AND tip.accion = 'TIPIFICACION'
+                    AND tip.etapa = 'PREVENTA'
+                    AND tip.created_at >= :desde AND tip.created_at < :hasta
+                    AND tip.tipificacion IS NOT NULL AND TRIM(tip.tipificacion) <> ''
+              )
+              AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
+            GROUP BY l.id, l.lead, l.usermeta, c.nombre
+            """, nativeQuery = true)
+    List<Object[]> detalleEstadoLeadsSinTipificar(
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
     // --- Subtip × Campaña: fuente de verdad = eventos TIPIFICACION del rango ---
     // Columnas: [0] idEquipo, [1] idCampana, [2] nombreCampana, [3] codigoTipificacion,
     //           [4] codigoSubtipificacion, [5] cantidad

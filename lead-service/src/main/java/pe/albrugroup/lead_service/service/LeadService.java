@@ -6686,31 +6686,39 @@ public class LeadService {
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         boolean ingresados = modo == ModoConteo.INGRESADOS;
 
-        List<ResumenEstadoLeadDetalleResponse> rows;
         if ("SIN_TIPIFICAR".equalsIgnoreCase(codigo)) {
             if (!ingresados) {
                 return List.of();
             }
-            rows = leadRepository.detalleEstadoLeadsSinTipificarGtr(
-                    campoEstadoLeads == CampoTipificacion.PRIMERA,
-                    campoEstadoLeads == CampoTipificacion.ULTIMA,
-                    false,
-                    ACCIONES_INGRESO, Accion.TIPIFICACION, rango.inicio(), rango.fin(),
-                    equipos.filtrar(), equipos.ids());
-        } else {
-            rows = switch (campoEstadoLeads) {
-                case PRIMERA -> leadRepository.detalleEstadoLeadsPrimeraGtr(
-                        codigo, ingresados, ACCIONES_INGRESO, Accion.TIPIFICACION,
-                        rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
-                case ULTIMA -> leadRepository.detalleEstadoLeadsUltimaGtr(
-                        codigo, ingresados, ACCIONES_INGRESO, Accion.TIPIFICACION,
-                        rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
-                case MAYOR -> leadRepository.detalleEstadoLeadsMayorGtr(
-                        codigo, ingresados, ACCIONES_INGRESO, Accion.TIPIFICACION,
-                        rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
-            };
+            List<Object[]> filas = eventoRepository.detalleEstadoLeadsSinTipificar(
+                    rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            return filas.stream()
+                    .map(f -> new ResumenEstadoLeadDetalleResponse(
+                            ((Number) f[0]).longValue(),
+                            f[1] == null ? null : ((java.sql.Timestamp) f[1]).toInstant(),
+                            (String) f[2], (String) f[3], (String) f[4],
+                            null, null, null, null))
+                    .sorted(Comparator.comparing(ResumenEstadoLeadDetalleResponse::fechaIngresoAt,
+                            Comparator.nullsLast(Comparator.reverseOrder())))
+                    .toList();
         }
-        return rows.stream()
+
+        List<Object[]> filas = switch (campoEstadoLeads) {
+            case PRIMERA -> eventoRepository.detalleEstadoLeadsPorPrimera(
+                    codigo, ingresados, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            case ULTIMA -> eventoRepository.detalleEstadoLeadsPorUltima(
+                    codigo, ingresados, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            case MAYOR -> eventoRepository.detalleEstadoLeadsPorMayor(
+                    codigo, ingresados, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+        };
+        return filas.stream()
+                .map(f -> new ResumenEstadoLeadDetalleResponse(
+                        ((Number) f[0]).longValue(),
+                        f[1] == null ? null : ((java.sql.Timestamp) f[1]).toInstant(),
+                        (String) f[2], (String) f[3], (String) f[4],
+                        (String) f[5],
+                        f[6] == null ? null : ((java.sql.Timestamp) f[6]).toInstant(),
+                        null, null))
                 .sorted(Comparator.comparing(ResumenEstadoLeadDetalleResponse::fechaIngresoAt,
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
