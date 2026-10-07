@@ -18,6 +18,7 @@ import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection
 import pe.albrugroup.lead_service.repository.projection.AsesorProveedorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorUltimoEventoProjection;
 import pe.albrugroup.lead_service.repository.projection.CampanaTipificacionCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.TipificacionCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
 import pe.albrugroup.lead_service.repository.projection.LeadUltimaAsignacionProjection;
 
@@ -2112,5 +2113,199 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("etapa") Etapa etapa,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
+    );
+
+    // --- Estado leads del día: fuente de verdad = eventos TIPIFICACION del rango ---
+
+    @Query(value = """
+            SELECT TRIM(sub.tipificacion) AS tipificacion, COUNT(*) AS cantidad
+            FROM (
+                SELECT DISTINCT ON (e.id_lead) e.tipificacion
+                FROM evento e
+                JOIN lead l ON l.id = e.id_lead
+                WHERE e.accion = 'TIPIFICACION'
+                  AND e.etapa = 'PREVENTA'
+                  AND e.created_at >= :desde AND e.created_at < :hasta
+                  AND e.tipificacion IS NOT NULL AND TRIM(e.tipificacion) <> ''
+                  AND (:ingresados = false
+                       OR (EXISTS (SELECT 1 FROM origen o WHERE o.id = l.id_origen AND o.es_organico = true)
+                           AND EXISTS (SELECT 1 FROM evento reg WHERE reg.id_lead = e.id_lead
+                                       AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                                       AND reg.created_at >= :desde AND reg.created_at < :hasta)))
+                  AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
+                ORDER BY e.id_lead, e.created_at DESC
+            ) sub
+            GROUP BY TRIM(sub.tipificacion)
+            """, nativeQuery = true)
+    List<TipificacionCantidadProjection> estadoLeadsPorUltima(
+            @Param("ingresados") boolean ingresados,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query(value = """
+            SELECT TRIM(sub.tipificacion) AS tipificacion, COUNT(*) AS cantidad
+            FROM (
+                SELECT DISTINCT ON (e.id_lead) e.tipificacion
+                FROM evento e
+                JOIN lead l ON l.id = e.id_lead
+                WHERE e.accion = 'TIPIFICACION'
+                  AND e.etapa = 'PREVENTA'
+                  AND e.created_at >= :desde AND e.created_at < :hasta
+                  AND e.tipificacion IS NOT NULL AND TRIM(e.tipificacion) <> ''
+                  AND (:ingresados = false
+                       OR (EXISTS (SELECT 1 FROM origen o WHERE o.id = l.id_origen AND o.es_organico = true)
+                           AND EXISTS (SELECT 1 FROM evento reg WHERE reg.id_lead = e.id_lead
+                                       AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                                       AND reg.created_at >= :desde AND reg.created_at < :hasta)))
+                  AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
+                ORDER BY e.id_lead, e.created_at ASC
+            ) sub
+            GROUP BY TRIM(sub.tipificacion)
+            """, nativeQuery = true)
+    List<TipificacionCantidadProjection> estadoLeadsPorPrimera(
+            @Param("ingresados") boolean ingresados,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query(value = """
+            SELECT TRIM(sub.tipificacion) AS tipificacion, COUNT(*) AS cantidad
+            FROM (
+                SELECT DISTINCT ON (e.id_lead) e.tipificacion
+                FROM evento e
+                JOIN lead l ON l.id = e.id_lead
+                LEFT JOIN equipo_proveedor ep
+                    ON ep.id_equipo = l.id_equipo AND ep.fallback_lead_sin_campana = true
+                LEFT JOIN matriz_tipificacion m
+                    ON m.id_proveedor = COALESCE(
+                        (SELECT c.id_proveedor FROM campana c WHERE c.id = l.id_campana),
+                        ep.id_proveedor)
+                    AND m.etapa = 'PREVENTA'
+                LEFT JOIN tipificacion t ON t.matriz_id = m.id AND t.codigo = e.tipificacion
+                WHERE e.accion = 'TIPIFICACION'
+                  AND e.etapa = 'PREVENTA'
+                  AND e.created_at >= :desde AND e.created_at < :hasta
+                  AND e.tipificacion IS NOT NULL AND TRIM(e.tipificacion) <> ''
+                  AND (:ingresados = false
+                       OR (EXISTS (SELECT 1 FROM origen o WHERE o.id = l.id_origen AND o.es_organico = true)
+                           AND EXISTS (SELECT 1 FROM evento reg WHERE reg.id_lead = e.id_lead
+                                       AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                                       AND reg.created_at >= :desde AND reg.created_at < :hasta)))
+                  AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
+                ORDER BY e.id_lead, COALESCE(t.orden, -1) DESC, e.created_at DESC
+            ) sub
+            GROUP BY TRIM(sub.tipificacion)
+            """, nativeQuery = true)
+    List<TipificacionCantidadProjection> estadoLeadsPorMayor(
+            @Param("ingresados") boolean ingresados,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    // --- Subtip × Campaña: fuente de verdad = eventos TIPIFICACION del rango ---
+    // Columnas: [0] idEquipo, [1] idCampana, [2] nombreCampana, [3] codigoTipificacion,
+    //           [4] codigoSubtipificacion, [5] cantidad
+
+    @Query(value = """
+            SELECT sub.id_equipo, sub.id_campana, sub.nombre_campana,
+                   sub.tipificacion, sub.subtipificacion, COUNT(*)
+            FROM (
+                SELECT DISTINCT ON (e.id_lead)
+                       l.id_equipo, l.id_campana, c.nombre AS nombre_campana,
+                       e.tipificacion, e.subtipificacion
+                FROM evento e
+                JOIN lead l ON l.id = e.id_lead
+                LEFT JOIN campana c ON c.id = l.id_campana
+                WHERE e.accion = 'TIPIFICACION'
+                  AND e.etapa = 'PREVENTA'
+                  AND e.created_at >= :desde AND e.created_at < :hasta
+                  AND e.tipificacion IS NOT NULL
+                  AND (:ingresados = false
+                       OR (EXISTS (SELECT 1 FROM origen o WHERE o.id = l.id_origen AND o.es_organico = true)
+                           AND EXISTS (SELECT 1 FROM evento reg WHERE reg.id_lead = e.id_lead
+                                       AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                                       AND reg.created_at >= :desde AND reg.created_at < :hasta)))
+                ORDER BY e.id_lead, e.created_at DESC
+            ) sub
+            GROUP BY sub.id_equipo, sub.id_campana, sub.nombre_campana,
+                     sub.tipificacion, sub.subtipificacion
+            """, nativeQuery = true)
+    List<Object[]> subtipCampanaPorUltima(
+            @Param("ingresados") boolean ingresados,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta
+    );
+
+    @Query(value = """
+            SELECT sub.id_equipo, sub.id_campana, sub.nombre_campana,
+                   sub.tipificacion, sub.subtipificacion, COUNT(*)
+            FROM (
+                SELECT DISTINCT ON (e.id_lead)
+                       l.id_equipo, l.id_campana, c.nombre AS nombre_campana,
+                       e.tipificacion, e.subtipificacion
+                FROM evento e
+                JOIN lead l ON l.id = e.id_lead
+                LEFT JOIN campana c ON c.id = l.id_campana
+                WHERE e.accion = 'TIPIFICACION'
+                  AND e.etapa = 'PREVENTA'
+                  AND e.created_at >= :desde AND e.created_at < :hasta
+                  AND e.tipificacion IS NOT NULL
+                  AND (:ingresados = false
+                       OR (EXISTS (SELECT 1 FROM origen o WHERE o.id = l.id_origen AND o.es_organico = true)
+                           AND EXISTS (SELECT 1 FROM evento reg WHERE reg.id_lead = e.id_lead
+                                       AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                                       AND reg.created_at >= :desde AND reg.created_at < :hasta)))
+                ORDER BY e.id_lead, e.created_at ASC
+            ) sub
+            GROUP BY sub.id_equipo, sub.id_campana, sub.nombre_campana,
+                     sub.tipificacion, sub.subtipificacion
+            """, nativeQuery = true)
+    List<Object[]> subtipCampanaPorPrimera(
+            @Param("ingresados") boolean ingresados,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta
+    );
+
+    @Query(value = """
+            SELECT sub.id_equipo, sub.id_campana, sub.nombre_campana,
+                   sub.tipificacion, sub.subtipificacion, COUNT(*)
+            FROM (
+                SELECT DISTINCT ON (e.id_lead)
+                       l.id_equipo, l.id_campana, c.nombre AS nombre_campana,
+                       e.tipificacion, e.subtipificacion
+                FROM evento e
+                JOIN lead l ON l.id = e.id_lead
+                LEFT JOIN campana c ON c.id = l.id_campana
+                LEFT JOIN equipo_proveedor ep
+                    ON ep.id_equipo = l.id_equipo AND ep.fallback_lead_sin_campana = true
+                LEFT JOIN matriz_tipificacion m
+                    ON m.id_proveedor = COALESCE(c.id_proveedor, ep.id_proveedor)
+                    AND m.etapa = 'PREVENTA'
+                LEFT JOIN tipificacion t ON t.matriz_id = m.id AND t.codigo = e.tipificacion
+                WHERE e.accion = 'TIPIFICACION'
+                  AND e.etapa = 'PREVENTA'
+                  AND e.created_at >= :desde AND e.created_at < :hasta
+                  AND e.tipificacion IS NOT NULL
+                  AND (:ingresados = false
+                       OR (EXISTS (SELECT 1 FROM origen o WHERE o.id = l.id_origen AND o.es_organico = true)
+                           AND EXISTS (SELECT 1 FROM evento reg WHERE reg.id_lead = e.id_lead
+                                       AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                                       AND reg.created_at >= :desde AND reg.created_at < :hasta)))
+                ORDER BY e.id_lead, COALESCE(t.orden, -1) DESC, e.created_at DESC
+            ) sub
+            GROUP BY sub.id_equipo, sub.id_campana, sub.nombre_campana,
+                     sub.tipificacion, sub.subtipificacion
+            """, nativeQuery = true)
+    List<Object[]> subtipCampanaPorMayor(
+            @Param("ingresados") boolean ingresados,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta
     );
 }

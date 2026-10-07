@@ -6495,16 +6495,14 @@ public class LeadService {
             ModoConteo modo, CampoTipificacion campo) {
         OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
-        // Cuenta LEADS distintos por su tipificacion del campo elegido en PREVENTA (uno por lead), no
-        // eventos. modo/campo con la misma semantica que el DASHBOARD del ADMIN. soloActivos no aplica.
         boolean ingresados = modo == ModoConteo.INGRESADOS;
         List<TipificacionCantidadProjection> rows = switch (campo) {
-            case PRIMERA -> leadRepository.resumirTipiRankingGtrPrimera(
-                    ingresados, ACCIONES_INGRESO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
-            case ULTIMA -> leadRepository.resumirTipiRankingGtrUltima(
-                    ingresados, ACCIONES_INGRESO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
-            case MAYOR -> leadRepository.resumirTipiRankingGtrMayor(
-                    ingresados, ACCIONES_INGRESO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            case PRIMERA -> eventoRepository.estadoLeadsPorPrimera(
+                    ingresados, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            case ULTIMA -> eventoRepository.estadoLeadsPorUltima(
+                    ingresados, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            case MAYOR -> eventoRepository.estadoLeadsPorMayor(
+                    ingresados, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
         };
         long tipificados = rows.stream().mapToLong(TipificacionCantidadProjection::getCantidad).sum();
         long sinTipificar = 0;
@@ -6819,38 +6817,28 @@ public class LeadService {
         }
         Instant inicio = OperationalDateTime.startOfDay(desdeResuelto);
         Instant fin = OperationalDateTime.endExclusiveOfDay(hastaResuelto);
-        Etapa etapa = Etapa.PREVENTA;
 
-        List<Object[]> filas = switch (modo) {
-            case GESTIONADOS -> switch (campo) {
-                case PRIMERA -> leadEtapaResumenRepository.gestionSubtipPorCampanaPrimera(etapa, inicio, fin);
-                case ULTIMA -> leadEtapaResumenRepository.gestionSubtipPorCampanaUltima(etapa, inicio, fin);
-                case MAYOR -> leadEtapaResumenRepository.gestionSubtipPorCampanaMayor(etapa, inicio, fin);
-            };
-            case INGRESADOS -> switch (campo) {
-                case PRIMERA -> leadEtapaResumenRepository.ingresadosSubtipPorCampanaPrimera(
-                        ACCIONES_INGRESO, etapa, inicio, fin);
-                case ULTIMA -> leadEtapaResumenRepository.ingresadosSubtipPorCampanaUltima(
-                        ACCIONES_INGRESO, etapa, inicio, fin);
-                case MAYOR -> leadEtapaResumenRepository.ingresadosSubtipPorCampanaMayor(
-                        ACCIONES_INGRESO, etapa, inicio, fin);
-            };
+        boolean ingresados = modo == ModoConteo.INGRESADOS;
+        List<Object[]> filas = switch (campo) {
+            case PRIMERA -> eventoRepository.subtipCampanaPorPrimera(ingresados, inicio, fin);
+            case ULTIMA -> eventoRepository.subtipCampanaPorUltima(ingresados, inicio, fin);
+            case MAYOR -> eventoRepository.subtipCampanaPorMayor(ingresados, inicio, fin);
         };
 
         Map<String, Integer> ordenPorTipi = ordenTipificacionesPreventa(idEquipo);
 
         return filas.stream()
-                .filter(f -> idEquipo == null || idEquipo.equals((Long) f[0]))
+                .filter(f -> idEquipo == null || idEquipo.equals(((Number) f[0]).longValue()))
                 .map(f -> {
                     String codTipi = (String) f[3];
                     return new ResumenSubtipCampanaCeldaResponse(
-                            (Long) f[0],
-                            (Long) f[1],
+                            ((Number) f[0]).longValue(),
+                            f[1] == null ? null : ((Number) f[1]).longValue(),
                             (String) f[2],
                             codTipi,
                             codTipi == null ? null : ordenPorTipi.get(codTipi),
                             (String) f[4],
-                            (Long) f[5]);
+                            ((Number) f[5]).longValue());
                 })
                 .toList();
     }
