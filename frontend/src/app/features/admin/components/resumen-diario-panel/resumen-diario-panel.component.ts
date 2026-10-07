@@ -119,12 +119,13 @@ export class ResumenDiarioPanelComponent implements OnInit {
   });
 
   protected readonly estadoCampo = computed<GestionCampoTipi>(() =>
-    this.campo() === 'PRIMERA' ? 'PRIMERA' : 'ULTIMA'
+    this.campo() ?? 'ULTIMA'
   );
 
-  protected readonly estadoCampoLabel = computed(() =>
-    this.estadoCampo() === 'PRIMERA' ? 'Primera' : 'Última'
-  );
+  protected readonly estadoCampoLabel = computed(() => {
+    const c = this.estadoCampo();
+    return c === 'PRIMERA' ? 'Primera' : c === 'MAYOR' ? 'Mayor' : 'Última';
+  });
 
   protected readonly fechaLabel = computed(() => {
     const periodo = this.periodo();
