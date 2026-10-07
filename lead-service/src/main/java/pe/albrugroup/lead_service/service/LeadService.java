@@ -6695,7 +6695,7 @@ public class LeadService {
             return filas.stream()
                     .map(f -> new ResumenEstadoLeadDetalleResponse(
                             ((Number) f[0]).longValue(),
-                            f[1] == null ? null : ((java.sql.Timestamp) f[1]).toInstant(),
+                            (Instant) f[1],
                             (String) f[2], (String) f[3], (String) f[4],
                             null, null, null, null))
                     .sorted(Comparator.comparing(ResumenEstadoLeadDetalleResponse::fechaIngresoAt,
@@ -6714,10 +6714,10 @@ public class LeadService {
         return filas.stream()
                 .map(f -> new ResumenEstadoLeadDetalleResponse(
                         ((Number) f[0]).longValue(),
-                        f[1] == null ? null : ((java.sql.Timestamp) f[1]).toInstant(),
+                        (Instant) f[1],
                         (String) f[2], (String) f[3], (String) f[4],
                         (String) f[5],
-                        f[6] == null ? null : ((java.sql.Timestamp) f[6]).toInstant(),
+                        (Instant) f[6],
                         null, null))
                 .sorted(Comparator.comparing(ResumenEstadoLeadDetalleResponse::fechaIngresoAt,
                         Comparator.nullsLast(Comparator.reverseOrder())))
