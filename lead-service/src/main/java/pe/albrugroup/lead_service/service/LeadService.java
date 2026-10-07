@@ -6717,7 +6717,7 @@ public class LeadService {
     }
 
     private CampoTipificacion campoEstadoLeads(CampoTipificacion campo) {
-        return campo == CampoTipificacion.PRIMERA ? CampoTipificacion.PRIMERA : CampoTipificacion.ULTIMA;
+        return campo;
     }
 
     private Instant maxInstant(Instant left, Instant right) {
