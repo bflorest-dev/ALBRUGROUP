@@ -23,6 +23,7 @@ interface AuthEquipoResponse {
 })
 export class AuthService {
   private readonly authUrl = `${API_CONSTANTS.gatewayBaseUrl}${API_CONSTANTS.authBasePath}`;
+  private readonly authEquiposUrl = `${API_CONSTANTS.gatewayBaseUrl}/auth/equipos`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -57,6 +58,6 @@ export class AuthService {
   }
 
   getMisEquipos(): Observable<AuthEquipoResponse[]> {
-    return this.http.get<AuthEquipoResponse[]>(`${this.authUrl}/equipos/mis-equipos`);
+    return this.http.get<AuthEquipoResponse[]>(`${this.authEquiposUrl}/mis-equipos`);
   }
 }

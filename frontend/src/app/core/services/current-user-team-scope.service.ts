@@ -90,6 +90,9 @@ export class CurrentUserTeamScopeService {
       if (activeId !== null) {
         void this.syncPresenceEquipoActivo(activeId);
       }
+      if (this.hasFallbackNames()) {
+        void this.refreshEquipoNames();
+      }
       return;
     }
     this.loadedForEmpleadoId = session.empleadoId;
@@ -155,6 +158,30 @@ export class CurrentUserTeamScopeService {
     return [...new Set(ids)]
       .filter((id) => Number.isInteger(id) && id > 0)
       .map((id) => ({ id, nombre: `Equipo ${id}` }));
+  }
+
+  private hasFallbackNames(): boolean {
+    return this.equiposState().some((equipo) => equipo.nombre === `Equipo ${equipo.id}`);
+  }
+
+  private async refreshEquipoNames(): Promise<void> {
+    try {
+      const equipos = await firstValueFrom(this.authService.getMisEquipos());
+      if (equipos?.length) {
+        this.equiposState.set(this.mergeEquipoNames(this.equiposState(), equipos));
+        this.normalizarActivo();
+      }
+    } catch {
+      // Si el endpoint no esta disponible para el rol, conservamos el fallback por ID.
+    }
+  }
+
+  private mergeEquipoNames(current: EquipoScopeOption[], incoming: EquipoScopeOption[]): EquipoScopeOption[] {
+    const namesById = new Map(incoming.map((equipo) => [equipo.id, equipo.nombre]));
+    return current.map((equipo) => ({
+      ...equipo,
+      nombre: namesById.get(equipo.id) ?? equipo.nombre
+    }));
   }
 
   private normalizarActivo(): void {
