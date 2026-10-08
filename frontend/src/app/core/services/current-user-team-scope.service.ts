@@ -29,6 +29,11 @@ export class CurrentUserTeamScopeService {
   private readonly equiposState = signal<EquipoScopeOption[]>([]);
   private readonly activeIdState = signal<number | null>(this.readStoredActiveId());
   private loadedForEmpleadoId: number | null = null;
+  private loadingForEmpleadoId: number | null = null;
+  private loadPromise: Promise<void> | null = null;
+  private namesRefreshPromise: Promise<void> | null = null;
+  private namesRefreshAttemptedForEmpleadoId: number | null = null;
+  private lastSyncedPresenceEquipoId: number | null = null;
 
   readonly equipos = this.equiposState.asReadonly();
   readonly activeId = this.activeIdState.asReadonly();
@@ -82,20 +87,38 @@ export class CurrentUserTeamScopeService {
     const session = this.sessionService.getSession();
     if (!session?.empleadoId || !this.isTeamScoped()) {
       this.loadedForEmpleadoId = null;
+      this.loadingForEmpleadoId = null;
+      this.loadPromise = null;
+      this.namesRefreshPromise = null;
+      this.namesRefreshAttemptedForEmpleadoId = null;
+      this.lastSyncedPresenceEquipoId = null;
       this.equiposState.set([]);
       return;
     }
     if (this.loadedForEmpleadoId === session.empleadoId) {
-      const activeId = this.activeIdState();
-      if (activeId !== null) {
-        void this.syncPresenceEquipoActivo(activeId);
-      }
+      this.syncActivePresenceIfNeeded();
       if (this.hasFallbackNames()) {
-        void this.refreshEquipoNames();
+        await this.refreshEquipoNamesOnce(session.empleadoId);
       }
       return;
     }
-    this.loadedForEmpleadoId = session.empleadoId;
+
+    if (this.loadPromise && this.loadingForEmpleadoId === session.empleadoId) {
+      await this.loadPromise;
+      return;
+    }
+
+    this.loadingForEmpleadoId = session.empleadoId;
+    this.loadPromise = this.loadForEmpleado(session.empleadoId).finally(() => {
+      this.loadingForEmpleadoId = null;
+      this.loadPromise = null;
+    });
+    await this.loadPromise;
+  }
+
+  private async loadForEmpleado(empleadoId: number): Promise<void> {
+    this.loadedForEmpleadoId = empleadoId;
+    this.namesRefreshAttemptedForEmpleadoId = null;
     const equiposSesion = this.equiposFromIds(this.sessionEquipoIds());
     if (equiposSesion.length) {
       this.equiposState.set(equiposSesion);
@@ -106,7 +129,7 @@ export class CurrentUserTeamScopeService {
       this.equiposState.set(equipos?.length ? equipos : equiposSesion);
       this.normalizarActivo();
     } catch {
-      const ids = equiposSesion.length ? equiposSesion.map((equipo) => equipo.id) : await this.getEquipoIds(session.empleadoId);
+      const ids = equiposSesion.length ? equiposSesion.map((equipo) => equipo.id) : await this.getEquipoIds(empleadoId);
       this.equiposState.set(this.equiposFromIds(ids));
       this.normalizarActivo();
     }
@@ -120,12 +143,22 @@ export class CurrentUserTeamScopeService {
 
   clear(): void {
     this.loadedForEmpleadoId = null;
+    this.loadingForEmpleadoId = null;
+    this.loadPromise = null;
+    this.namesRefreshPromise = null;
+    this.namesRefreshAttemptedForEmpleadoId = null;
+    this.lastSyncedPresenceEquipoId = null;
     this.equiposState.set([]);
     this.activeIdState.set(null);
   }
 
   resetForOperationalScopeChange(): void {
     this.loadedForEmpleadoId = null;
+    this.loadingForEmpleadoId = null;
+    this.loadPromise = null;
+    this.namesRefreshPromise = null;
+    this.namesRefreshAttemptedForEmpleadoId = null;
+    this.lastSyncedPresenceEquipoId = null;
     this.equiposState.set([]);
   }
 
@@ -164,6 +197,19 @@ export class CurrentUserTeamScopeService {
     return this.equiposState().some((equipo) => equipo.nombre === `Equipo ${equipo.id}`);
   }
 
+  private async refreshEquipoNamesOnce(empleadoId: number): Promise<void> {
+    if (this.namesRefreshAttemptedForEmpleadoId === empleadoId) {
+      return;
+    }
+    if (!this.namesRefreshPromise) {
+      this.namesRefreshAttemptedForEmpleadoId = empleadoId;
+      this.namesRefreshPromise = this.refreshEquipoNames().finally(() => {
+        this.namesRefreshPromise = null;
+      });
+    }
+    await this.namesRefreshPromise;
+  }
+
   private async refreshEquipoNames(): Promise<void> {
     try {
       const equipos = await firstValueFrom(this.authService.getMisEquipos());
@@ -192,15 +238,26 @@ export class CurrentUserTeamScopeService {
     }
     const actual = this.activeIdState();
     if (actual !== null && equipos.some((equipo) => equipo.id === actual)) {
-      void this.syncPresenceEquipoActivo(actual);
+      this.syncActivePresenceIfNeeded();
       return;
     }
     this.activeIdState.set(equipos[0].id);
   }
 
+  private syncActivePresenceIfNeeded(): void {
+    const activeId = this.activeIdState();
+    if (activeId !== null) {
+      void this.syncPresenceEquipoActivo(activeId);
+    }
+  }
+
   private async syncPresenceEquipoActivo(id: number): Promise<void> {
+    if (this.lastSyncedPresenceEquipoId === id) {
+      return;
+    }
     try {
       await this.presenceService.actualizarEquipoActivo(id);
+      this.lastSyncedPresenceEquipoId = id;
     } catch {
       // La presencia puede no estar inicializada todavia; el siguiente cambio/normalizacion reintentara.
     }
