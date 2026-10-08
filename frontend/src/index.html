@@ -9,6 +9,53 @@
   <meta name="google" content="notranslate" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="alternate icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    (() => {
+      const reloadKey = 'albru_asset_bootstrap_reload_at';
+      const cooldownMs = 30000;
+
+      const reloadWithCacheBust = () => {
+        const lastReload = Number(sessionStorage.getItem(reloadKey) || 0);
+        if (Number.isFinite(lastReload) && Date.now() - lastReload < cooldownMs) {
+          return;
+        }
+
+        sessionStorage.setItem(reloadKey, String(Date.now()));
+        const url = new URL(window.location.href);
+        url.searchParams.set('_albru_v', `asset-${Date.now()}`);
+        window.location.replace(url.toString());
+      };
+
+      const isLocalAsset = (value) => {
+        try {
+          const url = new URL(value, window.location.origin);
+          return url.origin === window.location.origin && /\.(js|css)($|\?)/i.test(url.pathname);
+        } catch {
+          return false;
+        }
+      };
+
+      window.addEventListener('error', (event) => {
+        const target = event.target;
+        if (target instanceof HTMLScriptElement && isLocalAsset(target.src)) {
+          reloadWithCacheBust();
+          return;
+        }
+        if (target instanceof HTMLLinkElement && target.rel === 'stylesheet' && isLocalAsset(target.href)) {
+          reloadWithCacheBust();
+        }
+      }, true);
+
+      window.addEventListener('unhandledrejection', (event) => {
+        const reason = event.reason instanceof Error
+          ? `${event.reason.name} ${event.reason.message}`
+          : String(event.reason || '');
+        if (/ChunkLoadError|Loading chunk|dynamically imported module|module script failed|Failed to fetch/i.test(reason)) {
+          reloadWithCacheBust();
+        }
+      });
+    })();
+  </script>
   <!-- Bitácora (tab ADMIN de corrección): tipografía propia del expediente -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
