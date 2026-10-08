@@ -1707,6 +1707,7 @@ export class AdminPersonalFacade implements OnDestroy {
         roles: event.roles?.length ? event.roles : existing?.roles ?? (employee ? [employee.puestoTrabajo] : []),
         status: 'ONLINE',
         disponibilidad: event.disponibilidad ?? existing?.disponibilidad ?? null,
+        equipoActivoId: event.equipoActivoId ?? existing?.equipoActivoId ?? null,
         lastSeen: event.lastSeen ?? event.occurredAt ?? existing?.lastSeen ?? null
       };
 

@@ -415,6 +415,7 @@ public class PresenceService {
                 .nombreCompleto(presence.getNombreCompleto())
                 .roles(safeRoles(presence.getRoles()))
                 .disponibilidad(presence.getDisponibilidad() == null ? null : presence.getDisponibilidad().name())
+                .equipoActivoId(presence.getEquipoActivoId())
                 .lastSeen(presence.getLastSeen())
                 .online(online)
                 .source(source)

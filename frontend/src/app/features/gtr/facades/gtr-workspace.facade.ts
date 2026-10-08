@@ -5562,6 +5562,7 @@ export class GtrWorkspaceFacade {
             connected: false,
             operativo: false,
             disponibilidad: 'SIN_PRESENCIA',
+            equipoActivoId: null,
             estadoSchedule: 'OFFLINE',
             lastSeen: event.lastSeen ?? event.occurredAt ?? advisor.lastSeen ?? null
           };
@@ -5572,6 +5573,7 @@ export class GtrWorkspaceFacade {
           nombreCompleto: event.nombreCompleto || advisor.nombreCompleto,
           connected: event.online,
           disponibilidad: event.disponibilidad ?? advisor.disponibilidad ?? null,
+          equipoActivoId: event.equipoActivoId ?? advisor.equipoActivoId ?? null,
           lastSeen: event.lastSeen ?? event.occurredAt ?? advisor.lastSeen ?? null
         };
       });

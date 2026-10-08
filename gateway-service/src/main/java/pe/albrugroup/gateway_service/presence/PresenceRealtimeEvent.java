@@ -12,6 +12,7 @@ public record PresenceRealtimeEvent(
         String nombreCompleto,
         List<String> roles,
         String disponibilidad,
+        Long equipoActivoId,
         Instant lastSeen,
         boolean online,
         String source,
