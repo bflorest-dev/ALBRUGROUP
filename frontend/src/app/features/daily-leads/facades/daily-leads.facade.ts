@@ -47,6 +47,7 @@ type AdvisorOption = {
   connected: boolean;
   operativo: boolean;
   disponibilidad?: string | null;
+  equipoActivoId?: number | null;
   estadoSchedule?: string | null;
   esperadoHoy?: boolean;
   lastSeen?: string | null;
@@ -239,7 +240,7 @@ export class DailyLeadsFacade {
     }
 
     return this.advisors()
-      .filter((advisor) => advisor.equipoIds.includes(idEquipo))
+      .filter((advisor) => advisor.equipoIds.includes(idEquipo) && this.isAdvisorActiveForTeam(advisor, idEquipo))
       .filter((advisor) => availabilityOrder.has(advisor.disponibilidad ?? ''))
       .sort((left, right) => {
         const leftOrder = availabilityOrder.get(left.disponibilidad ?? '') ?? Number.MAX_SAFE_INTEGER;
@@ -1401,6 +1402,7 @@ export class DailyLeadsFacade {
           equipoIds,
           connected: !!presence,
           operativo: monitor?.operativo ?? false,
+          equipoActivoId: monitor?.equipoActivoId ?? presence?.equipoActivoId ?? null,
           estadoSchedule: monitor?.estadoSchedule ?? null,
           esperadoHoy: monitor?.esperadoHoy ?? false,
           disponibilidad: monitor?.disponibilidad ?? presence?.disponibilidad,
@@ -1413,6 +1415,12 @@ export class DailyLeadsFacade {
           Number(right.connected) - Number(left.connected) ||
           left.nombreCompleto.localeCompare(right.nombreCompleto)
       );
+  }
+
+  private isAdvisorActiveForTeam(advisor: AdvisorOption, idEquipo: number): boolean {
+    return advisor.equipoActivoId === null ||
+      advisor.equipoActivoId === undefined ||
+      advisor.equipoActivoId === idEquipo;
   }
 
   private mergePorEmpleado<T extends { empleadoId: number }>(...lists: T[][]): T[] {

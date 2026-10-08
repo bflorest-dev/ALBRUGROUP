@@ -67,4 +67,57 @@ class EquipoFilterInterceptorTest {
         verify(proveedorFilter).setParameterList("proveedores", java.util.List.of(2L));
         verify(session, never()).enableFilter("equipoFilter");
     }
+
+    @Test
+    void equipoActivoValidoReduceElFiltroDeEquipos() {
+        autenticarUsuarioEquipos(java.util.List.of(1L, 2L));
+        Session session = mock(Session.class);
+        Filter equipoFilter = mock(Filter.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(entityManager.unwrap(Session.class)).thenReturn(session);
+        when(session.enableFilter("equipoFilter")).thenReturn(equipoFilter);
+        when(equipoFilter.setParameterList("equipos", java.util.List.of(2L))).thenReturn(equipoFilter);
+        when(proveedorScopeService.ambitoActual()).thenReturn(null);
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(false);
+        when(currentUser.equipos()).thenReturn(java.util.List.of(1L, 2L));
+        when(request.getHeader(EquipoFilterInterceptor.HEADER_EQUIPO)).thenReturn("2");
+
+        interceptor.preHandle(request, mock(HttpServletResponse.class), new Object());
+
+        verify(equipoFilter).setParameterList("equipos", java.util.List.of(2L));
+    }
+
+    @Test
+    void equipoActivoFueraDelUsuarioFallaCerrado() {
+        autenticarUsuarioEquipos(java.util.List.of(1L, 2L));
+        Session session = mock(Session.class);
+        Filter equipoFilter = mock(Filter.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(entityManager.unwrap(Session.class)).thenReturn(session);
+        when(session.enableFilter("equipoFilter")).thenReturn(equipoFilter);
+        when(equipoFilter.setParameterList("equipos", java.util.List.of(-1L))).thenReturn(equipoFilter);
+        when(proveedorScopeService.ambitoActual()).thenReturn(null);
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(false);
+        when(currentUser.equipos()).thenReturn(java.util.List.of(1L, 2L));
+        when(request.getHeader(EquipoFilterInterceptor.HEADER_EQUIPO)).thenReturn("99");
+
+        interceptor.preHandle(request, mock(HttpServletResponse.class), new Object());
+
+        verify(equipoFilter).setParameterList("equipos", java.util.List.of(-1L));
+    }
+
+    private void autenticarUsuarioEquipos(java.util.List<Long> equipos) {
+        var user = new UserSession(
+                "asesor.ventas",
+                10L,
+                "Asesor Ventas",
+                LocalDate.of(2026, 9, 7),
+                java.util.List.of("ASESOR_VENTAS"),
+                java.util.List.of(),
+                equipos
+        );
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(user, null)
+        );
+    }
 }

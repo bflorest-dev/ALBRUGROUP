@@ -28,6 +28,7 @@ import { ROLE_HOME_ROUTES } from '../../constants/role.constants';
 import { GtrAgendadosAlertFacade } from '../../../features/gtr/facades/gtr-agendados-alert.facade';
 import { EquiposNavService } from '../../services/equipos-nav.service';
 import { CurrentUserProviderScopeService } from '../../services/current-user-provider-scope.service';
+import { CurrentUserTeamScopeService } from '../../services/current-user-team-scope.service';
 import { ProyeccionVentasService } from '../../services/proyeccion-ventas.service';
 import { LeadRealtimeService } from '../../../features/preventa/services/lead-realtime.service';
 import { ProyeccionBannerData } from '../../../shared/components/top-banner/top-banner.component';
@@ -101,6 +102,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
   private readonly sessionService = inject(SessionService);
   private readonly gtrAgendadosAlertFacade = inject(GtrAgendadosAlertFacade);
   private readonly equiposNav = inject(EquiposNavService);
+  private readonly teamScope = inject(CurrentUserTeamScopeService);
   private readonly providerScope = inject(CurrentUserProviderScopeService);
   private readonly proyeccionService = inject(ProyeccionVentasService);
   private readonly leadRealtime = inject(LeadRealtimeService);
@@ -109,6 +111,9 @@ export class PrivateLayoutComponent implements AfterViewInit {
   protected readonly proveedoresUsuario = this.providerScope.proveedores;
   protected readonly proveedorActivoId = this.providerScope.activeId;
   protected readonly mostrarSelectorProveedor = this.providerScope.mostrarSelector;
+  protected readonly equiposUsuario = this.teamScope.equipos;
+  protected readonly equipoActivoId = this.teamScope.activeId;
+  protected readonly mostrarSelectorEquipo = this.teamScope.mostrarSelector;
   protected readonly mobileMenuOpen = signal(false);
   private readonly currentUrl = signal(this.router.url);
   protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
@@ -565,6 +570,15 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
     effect(() => {
       const role = this.activeRole();
+      if (!role) {
+        this.teamScope.clear();
+        return;
+      }
+      untracked(() => void this.teamScope.load());
+    });
+
+    effect(() => {
+      const role = this.activeRole();
       const confirmed = this.attendanceFacade.statusConfirmed();
       const status = this.attendanceFacade.rawStatus();
       const isVenta = role === 'ASESOR_VENTAS' || role === 'SUPERVISOR_VENTAS';
@@ -681,10 +695,16 @@ export class PrivateLayoutComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     // Carga perezosa de los proveedores del usuario (no-op salvo BACKOFFICE / POSTVENTA).
     void this.providerScope.load();
+    // Carga perezosa de equipos del usuario (no-op salvo roles acotados por equipo).
+    void this.teamScope.load();
   }
 
   protected seleccionarProveedor(idProveedor: number): void {
     this.providerScope.setActive(idProveedor);
+  }
+
+  protected seleccionarEquipo(idEquipo: number): void {
+    this.teamScope.setActive(idEquipo);
   }
 
   protected async seleccionarModoTrabajo(role: string): Promise<void> {
@@ -694,8 +714,10 @@ export class PrivateLayoutComponent implements AfterViewInit {
     try {
       await firstValueFrom(this.authSessionService.switchActiveRole(role));
       this.providerScope.resetForOperationalScopeChange();
+      this.teamScope.resetForOperationalScopeChange();
       const route = ROLE_HOME_ROUTES[role] ?? this.sessionService.getHomeRoute();
       await this.providerScope.load();
+      await this.teamScope.load();
       void this.router.navigate([route]);
     } catch {
       // La sesión conserva el rol anterior cuando el backend rechaza el cambio.

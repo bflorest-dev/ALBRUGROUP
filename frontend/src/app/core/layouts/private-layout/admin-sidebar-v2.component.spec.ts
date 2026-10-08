@@ -321,4 +321,36 @@ describe('AdminSidebarV2Component', () => {
 
     expect(emitted).toEqual(['ASESOR_BACKOFFICE']);
   });
+
+  it('muestra equipos asignados y emite el equipo activo elegido', () => {
+    TestBed.configureTestingModule({
+      imports: [AdminSidebarV2Component],
+      providers: [provideRouter([])]
+    });
+
+    const fixture = TestBed.createComponent(AdminSidebarV2Component);
+    fixture.componentRef.setInput('items', items);
+    fixture.componentRef.setInput('domainDefinitions', domains);
+    fixture.componentRef.setInput('activeTeamId', 1);
+    fixture.componentRef.setInput('teams', [
+      { id: 1, nombre: 'Win' },
+      { id: 2, nombre: 'Claro' }
+    ]);
+    const emitted: number[] = [];
+    fixture.componentInstance.teamSelected.subscribe((teamId) => emitted.push(teamId));
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.admin-nav-v2__profile-trigger') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const actions = fixture.nativeElement.querySelectorAll('.admin-nav-v2__profile-action') as NodeListOf<HTMLButtonElement>;
+    expect(actions[0].textContent).toContain('Win');
+    expect(actions[0].classList).toContain('is-active');
+    expect(actions[1].textContent).toContain('Claro');
+
+    actions[1].click();
+    fixture.detectChanges();
+
+    expect(emitted).toEqual([2]);
+  });
 });

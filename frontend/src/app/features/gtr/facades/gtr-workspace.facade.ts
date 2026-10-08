@@ -152,6 +152,7 @@ type AdvisorOption = {
   connected: boolean;
   operativo: boolean;
   disponibilidad?: string | null;
+  equipoActivoId?: number | null;
   estadoSchedule?: string | null;
   esperadoHoy?: boolean;
   lastSeen?: string | null;
@@ -488,7 +489,9 @@ export class GtrWorkspaceFacade {
   });
   /** Asesores disponibles (conectados) para recibir una reasignacion. */
   readonly availableAdvisorsForReassign = computed(() =>
-    this.advisors().filter((advisor) => advisor.connected)
+    this.advisors().filter((advisor) =>
+      advisor.connected && this.isAdvisorActiveForAbandonedGroup(advisor)
+    )
   );
 
   readonly intakeForm = this.fb.group({
@@ -1147,7 +1150,9 @@ export class GtrWorkspaceFacade {
     return this.advisorsView()
       .filter((advisor) => {
         const idEquipo = this.assignmentTargetEquipoId();
-        return idEquipo !== null && advisor.equipoIds.includes(idEquipo);
+        return idEquipo !== null &&
+          advisor.equipoIds.includes(idEquipo) &&
+          this.isAdvisorActiveForTeam(advisor, idEquipo);
       })
       .filter((advisor) => availabilityOrder.has(advisor.disponibilidad ?? ''))
       .sort((left, right) => {
@@ -2889,6 +2894,7 @@ export class GtrWorkspaceFacade {
           equipoIds: user.equipoIds ?? [],
           connected: !!presence,
           operativo: monitor?.operativo ?? false,
+          equipoActivoId: monitor?.equipoActivoId ?? presence?.equipoActivoId ?? null,
           estadoSchedule: monitor?.estadoSchedule ?? null,
           esperadoHoy: monitor?.esperadoHoy ?? false,
           disponibilidad: (() => {
@@ -2914,6 +2920,22 @@ export class GtrWorkspaceFacade {
 
   isOjtAdvisor(advisor: Pick<AdvisorOption, 'roles'>): boolean {
     return advisor.roles?.includes('OJT') ?? false;
+  }
+
+  private isAdvisorActiveForAbandonedGroup(advisor: AdvisorOption): boolean {
+    const grupo = this.abandonedTargetGroup();
+    const lead = grupo?.leads?.[0];
+    if (!lead) {
+      return true;
+    }
+    const idEquipo = (lead as Partial<Pick<LeadGtrResponse, 'idEquipo'>>).idEquipo ?? null;
+    return idEquipo === null || this.isAdvisorActiveForTeam(advisor, idEquipo);
+  }
+
+  private isAdvisorActiveForTeam(advisor: AdvisorOption, idEquipo: number): boolean {
+    return advisor.equipoActivoId === null ||
+      advisor.equipoActivoId === undefined ||
+      advisor.equipoActivoId === idEquipo;
   }
 
   async nextPage(): Promise<void> {

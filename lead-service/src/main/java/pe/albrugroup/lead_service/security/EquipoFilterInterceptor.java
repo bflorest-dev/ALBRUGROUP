@@ -33,6 +33,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EquipoFilterInterceptor implements HandlerInterceptor {
 
+    public static final String HEADER_EQUIPO = "X-Equipo-Id";
+
     private final EntityManager entityManager;
     private final CurrentUser currentUser;
     private final ProveedorScopeService proveedorScopeService;
@@ -59,7 +61,7 @@ public class EquipoFilterInterceptor implements HandlerInterceptor {
             return true;
         }
         List<Long> equipos = currentUser.equipos();
-        List<Long> valores = (equipos == null || equipos.isEmpty()) ? List.of(-1L) : equipos;
+        List<Long> valores = resolverEquiposEfectivos(request, equipos);
         try {
             entityManager.unwrap(Session.class)
                     .enableFilter("equipoFilter")
@@ -68,5 +70,28 @@ public class EquipoFilterInterceptor implements HandlerInterceptor {
             log.warn("No se pudo habilitar el filtro por equipo: {}", e.getMessage());
         }
         return true;
+    }
+
+    private List<Long> resolverEquiposEfectivos(HttpServletRequest request, List<Long> equipos) {
+        if (equipos == null || equipos.isEmpty()) {
+            return List.of(-1L);
+        }
+        Long activo = equipoActivoHeader(request);
+        if (activo == null) {
+            return equipos;
+        }
+        return equipos.contains(activo) ? List.of(activo) : List.of(-1L);
+    }
+
+    private Long equipoActivoHeader(HttpServletRequest request) {
+        String raw = request == null ? null : request.getHeader(HEADER_EQUIPO);
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(raw.trim());
+        } catch (NumberFormatException e) {
+            return -1L;
+        }
     }
 }

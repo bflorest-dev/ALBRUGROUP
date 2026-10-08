@@ -13,6 +13,7 @@ export interface AsesorGtrPresenceResponse {
   empleadoId: number;
   nombreCompleto: string;
   disponibilidad?: string | null;
+  equipoActivoId?: number | null;
   lastSeen?: string | null;
   estadoSchedule?: string | null;
   desde?: string | null;
@@ -59,12 +60,14 @@ export interface ConnectedUserResponse {
   roles: string[];
   status?: string | null;
   disponibilidad?: string | null;
+  equipoActivoId?: number | null;
   lastSeen?: string | null;
 }
 
 export interface ConnectedStatusResponse {
   empleadoId: number;
   conectado: boolean;
+  equipoActivoId?: number | null;
 }
 
 export type DisponibilidadOperativa =
@@ -143,6 +146,10 @@ export class PresenceService {
 
   async actualizarDisponibilidad(disponibilidad: DisponibilidadOperativa): Promise<void> {
     await firstValueFrom(this.http.patch<void>(`${this.baseUrl}/presence/disponibilidad/${disponibilidad}`, {}));
+  }
+
+  async actualizarEquipoActivo(equipoId: number): Promise<void> {
+    await firstValueFrom(this.http.patch<void>(`${this.baseUrl}/presence/equipo-activo/${equipoId}`, {}));
   }
 
   listarAsesoresConectadosGtr(fecha?: string): import('rxjs').Observable<AsesorGtrPresenceResponse[]> {

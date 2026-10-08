@@ -89,6 +89,7 @@ public class PresenceService {
                             .roles(safeRoles(existingPresence.getRoles()).isEmpty() ? user.roles() : existingPresence.getRoles())
                             .status("OFFLINE")
                             .disponibilidad(existingPresence.getDisponibilidad())
+                            .equipoActivoId(existingPresence.getEquipoActivoId())
                             .lastSeen(Instant.now())
                             .build();
 
@@ -139,10 +140,16 @@ public class PresenceService {
     }
 
     public Mono<ConnectedStatusResponse> estaConectado(Long empleadoId) {
-        return stringRedisTemplate.hasKey(PresenceKeys.employeeKey(empleadoId))
-                .map(connected -> ConnectedStatusResponse.builder()
+        return presenceRedisTemplate.opsForValue()
+                .get(PresenceKeys.employeeKey(empleadoId))
+                .map(presence -> ConnectedStatusResponse.builder()
                         .empleadoId(empleadoId)
-                        .conectado(Boolean.TRUE.equals(connected))
+                        .conectado(true)
+                        .equipoActivoId(presence.getEquipoActivoId())
+                        .build())
+                .defaultIfEmpty(ConnectedStatusResponse.builder()
+                        .empleadoId(empleadoId)
+                        .conectado(false)
                         .build());
     }
 
@@ -168,6 +175,7 @@ public class PresenceService {
                             .roles(existingPresence.getRoles())
                             .status(existingPresence.getStatus())
                             .disponibilidad(disponibilidad)
+                            .equipoActivoId(existingPresence.getEquipoActivoId())
                             .disponibilidadDesde(disponibilidadDesde)
                             .lastSeen(Instant.now())
                             .build();
@@ -180,6 +188,50 @@ public class PresenceService {
                                             updatedPresence,
                                             true,
                                             "DISPONIBILIDAD_ENDPOINT"
+                                    ));
+                                }
+                            });
+                });
+    }
+
+    public Mono<Void> actualizarEquipoActivo(AuthenticatedUser user, Long equipoActivoId) {
+        if (equipoActivoId == null || !safeEquipos(user.equipos()).contains(equipoActivoId)) {
+            return Mono.error(new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El equipo activo no pertenece al empleado autenticado"
+            ));
+        }
+
+        String key = PresenceKeys.employeeKey(user.empleadoId());
+
+        return presenceRedisTemplate.opsForValue()
+                .get(key)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "El empleado no tiene presencia activa en Redis"
+                )))
+                .flatMap(existingPresence -> {
+                    boolean changed = !Objects.equals(existingPresence.getEquipoActivoId(), equipoActivoId);
+                    EmployeePresence updatedPresence = EmployeePresence.builder()
+                            .empleadoId(existingPresence.getEmpleadoId())
+                            .username(existingPresence.getUsername())
+                            .nombreCompleto(existingPresence.getNombreCompleto())
+                            .roles(existingPresence.getRoles())
+                            .status(existingPresence.getStatus())
+                            .disponibilidad(existingPresence.getDisponibilidad())
+                            .equipoActivoId(equipoActivoId)
+                            .disponibilidadDesde(existingPresence.getDisponibilidadDesde())
+                            .lastSeen(Instant.now())
+                            .build();
+
+                    return writePresence(updatedPresence, existingPresence.getRoles(), existingPresence.getRoles())
+                            .doOnSuccess(ignored -> {
+                                if (changed) {
+                                    broadcaster.publish(buildEvent(
+                                            "PRESENCE_EQUIPO_ACTIVO_ACTUALIZADO",
+                                            updatedPresence,
+                                            true,
+                                            "EQUIPO_ACTIVO_ENDPOINT"
                                     ));
                                 }
                             });
@@ -243,6 +295,7 @@ public class PresenceService {
         Instant disponibilidadDesde = existingPresence == null || existingPresence.getDisponibilidadDesde() == null
                 ? Instant.now()
                 : existingPresence.getDisponibilidadDesde();
+        Long equipoActivoId = existingPresence == null ? null : existingPresence.getEquipoActivoId();
 
         EmployeePresence presence = EmployeePresence.builder()
                 .empleadoId(user.empleadoId())
@@ -251,6 +304,7 @@ public class PresenceService {
                 .roles(user.roles())
                 .status("ONLINE")
                 .disponibilidad(disponibilidad)
+                .equipoActivoId(equipoActivoId)
                 .disponibilidadDesde(disponibilidadDesde)
                 .lastSeen(Instant.now())
                 .build();
@@ -297,6 +351,10 @@ public class PresenceService {
         return roles == null ? List.of() : roles;
     }
 
+    private List<Long> safeEquipos(List<Long> equipos) {
+        return equipos == null ? List.of() : equipos;
+    }
+
     private Flux<String> obtenerEmpleadoIdsActivos(PuestoTrabajo role) {
         String key = role == null
                 ? PresenceKeys.employeeIndexKey()
@@ -327,6 +385,7 @@ public class PresenceService {
                 .roles(presence.getRoles())
                 .status(presence.getStatus())
                 .disponibilidad(presence.getDisponibilidad())
+                .equipoActivoId(presence.getEquipoActivoId())
                 .disponibilidadDesde(presence.getDisponibilidadDesde())
                 .lastSeen(presence.getLastSeen())
                 .build();

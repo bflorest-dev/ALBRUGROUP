@@ -9,5 +9,6 @@ export const STORAGE_KEYS = {
   tabId: 'albru_tab_id',
   lastActivityAt: 'albru_last_activity_at',
   appVersion: 'albru_app_version',
-  activeProveedorId: 'albru_active_proveedor_id'
+  activeProveedorId: 'albru_active_proveedor_id',
+  activeEquipoId: 'albru_active_equipo_id'
 } as const;

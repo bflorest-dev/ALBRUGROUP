@@ -4026,11 +4026,14 @@ public class LeadService {
         if (lead.getIdEquipo() == null) {
             throw new BadRequestException("El Lead no tiene equipo asignado.");
         }
-        if (idAsesorAsignado != null && idAsesorAsignado.equals(currentUser.empleadoID())) {
-            return;
-        }
-        if (!authEquipoClient.asesorPerteneceEquipo(lead.getIdEquipo(), idAsesorAsignado)) {
+        boolean perteneceAlEquipo = idAsesorAsignado != null && idAsesorAsignado.equals(currentUser.empleadoID())
+                ? currentUser.equipos() != null && currentUser.equipos().contains(lead.getIdEquipo())
+                : authEquipoClient.asesorPerteneceEquipo(lead.getIdEquipo(), idAsesorAsignado);
+        if (!perteneceAlEquipo) {
             throw new BadRequestException("El asesor seleccionado no pertenece al equipo del Lead.");
+        }
+        if (!authEquipoClient.asesorActivoEnEquipo(lead.getIdEquipo(), idAsesorAsignado)) {
+            throw new BadRequestException("El asesor seleccionado esta trabajando en otro equipo.");
         }
     }
 

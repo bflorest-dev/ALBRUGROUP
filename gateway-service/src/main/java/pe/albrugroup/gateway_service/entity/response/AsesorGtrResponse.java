@@ -14,6 +14,7 @@ public class AsesorGtrResponse {
     private Long empleadoId;
     private String nombreCompleto;
     private Disponibilidad disponibilidad;
+    private Long equipoActivoId;
     private Instant lastSeen;
     private String estadoSchedule;
     private LocalDateTime desde;

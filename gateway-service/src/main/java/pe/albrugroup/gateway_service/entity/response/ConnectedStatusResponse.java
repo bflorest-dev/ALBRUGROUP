@@ -9,4 +9,5 @@ public class ConnectedStatusResponse {
 
     private Long empleadoId;
     private boolean conectado;
+    private Long equipoActivoId;
 }

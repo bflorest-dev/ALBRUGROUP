@@ -45,6 +45,7 @@ public class AuthenticationFilter implements WebFilter {
             Long sessionIssuedAt = jwtUtil.extractSessionIssuedAt(token);
             String nombreCompleto = jwtUtil.extractNombreCompleto(token);
             List<String> roles = jwtUtil.extractRoles(token);
+            List<Long> equipos = jwtUtil.extractEquipos(token);
             List<String> permisos = jwtUtil.extractPermisos(token);
 
             List<SimpleGrantedAuthority> authorities = Stream.concat(
@@ -56,7 +57,8 @@ public class AuthenticationFilter implements WebFilter {
                     username,
                     empleadoId,
                     nombreCompleto,
-                    roles
+                    roles,
+                    equipos
             );
 
             UsernamePasswordAuthenticationToken authentication =

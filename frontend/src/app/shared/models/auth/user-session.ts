@@ -3,6 +3,7 @@ export interface UserSession {
   empleadoId?: number;
   nombreCompleto?: string;
   fechaIngresoEmpleado?: string | null;
+  equipos?: number[];
   roles: string[];
   primaryRole: string | null;
   activeRole?: string | null;

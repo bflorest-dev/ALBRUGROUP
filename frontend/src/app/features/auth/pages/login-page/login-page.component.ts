@@ -165,6 +165,7 @@ export class LoginPageComponent {
       empleadoId: response.empleadoId,
       nombreCompleto: response.nombreCompleto,
       fechaIngresoEmpleado: response.fechaIngresoEmpleado,
+      equipos: this.tokenService.getEquipoIds(response.token),
       roles,
       primaryRole,
       activeRole,

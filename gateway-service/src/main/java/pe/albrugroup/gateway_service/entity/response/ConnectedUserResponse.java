@@ -16,6 +16,7 @@ public class ConnectedUserResponse {
     private List<String> roles;
     private String status;
     private Disponibilidad disponibilidad;
+    private Long equipoActivoId;
     private Instant disponibilidadDesde;
     private Instant lastSeen;
 }

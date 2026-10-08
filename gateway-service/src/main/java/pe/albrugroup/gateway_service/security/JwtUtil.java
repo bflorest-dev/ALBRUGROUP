@@ -66,6 +66,16 @@ public class JwtUtil {
     public List<String> extractRoles(String token) {
         return extractClaim(token, claims -> claims.get("roles", List.class));
     }
+    public List<Long> extractEquipos(String token) {
+        List<?> equipos = extractClaim(token, claims -> claims.get("equipos", List.class));
+        if (equipos == null) {
+            return List.of();
+        }
+        return equipos.stream()
+                .map(this::toLong)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
     public List<String> extractPermisos(String token) {
         return extractClaim(token, claims -> claims.get("permisos", List.class));
     }
@@ -106,5 +116,19 @@ public class JwtUtil {
                 .replaceAll("-----BEGIN [A-Z ]+-----", "")
                 .replaceAll("-----END [A-Z ]+-----", "")
                 .replaceAll("\\s", "");
+    }
+
+    private Long toLong(Object value) {
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String text) {
+            try {
+                return Long.parseLong(text);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
     }
 }

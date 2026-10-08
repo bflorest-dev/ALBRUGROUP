@@ -47,7 +47,8 @@ export class AuthSessionService {
           response.rolesAsignados,
           response.rolPrincipal,
           response.rolActivo,
-          response.fechaIngresoEmpleado
+          response.fechaIngresoEmpleado,
+          this.tokenService.getEquipoIds(response.token)
         );
         return response.token;
       }),
@@ -79,7 +80,8 @@ export class AuthSessionService {
           response.rolesAsignados,
           response.rolPrincipal,
           response.rolActivo,
-          response.fechaIngresoEmpleado
+          response.fechaIngresoEmpleado,
+          this.tokenService.getEquipoIds(response.token)
         );
         return response.rolActivo;
       })

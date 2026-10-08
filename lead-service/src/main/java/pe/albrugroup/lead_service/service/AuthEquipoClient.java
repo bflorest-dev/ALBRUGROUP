@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import pe.albrugroup.lead_service.entity.response.ConnectedStatusGatewayResponse;
 import pe.albrugroup.lead_service.entity.response.UsuarioRolAuthResponse;
 import pe.albrugroup.lead_service.exception.ForbiddenException;
 
@@ -28,6 +29,9 @@ public class AuthEquipoClient {
 
     @Value("${app.auth.base-url:http://auth-service:8081}")
     private String authBaseUrl;
+
+    @Value("${app.gateway.base-url:http://gateway-service:8080}")
+    private String gatewayBaseUrl;
 
     public boolean asesorPerteneceEquipo(Long idEquipo, Long idAsesor) {
         if (idEquipo == null || idAsesor == null) {
@@ -78,6 +82,34 @@ public class AuthEquipoClient {
             log.warn("No se pudo validar al freelance {} en el equipo {}: {}",
                     idFreelance, idEquipo, ex.getMessage());
             return false;
+        }
+    }
+
+    public boolean asesorActivoEnEquipo(Long idEquipo, Long idAsesor) {
+        if (idEquipo == null || idAsesor == null) {
+            return false;
+        }
+        String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authorization == null || authorization.isBlank()) {
+            return true;
+        }
+        try {
+            ConnectedStatusGatewayResponse status = restClientBuilder
+                    .baseUrl(gatewayBaseUrl)
+                    .build()
+                    .get()
+                    .uri("/presence/connected-users/{idAsesor}", idAsesor)
+                    .header(HttpHeaders.AUTHORIZATION, authorization)
+                    .retrieve()
+                    .body(ConnectedStatusGatewayResponse.class);
+
+            if (status == null || !status.conectado() || status.equipoActivoId() == null) {
+                return true;
+            }
+            return idEquipo.equals(status.equipoActivoId());
+        } catch (RestClientException ex) {
+            log.warn("No se pudo validar el equipo activo del asesor {}: {}", idAsesor, ex.getMessage());
+            return true;
         }
     }
 

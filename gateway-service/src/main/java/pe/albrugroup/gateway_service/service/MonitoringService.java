@@ -237,6 +237,7 @@ public class MonitoringService {
                 .empleadoId(conectado.getEmpleadoId())
                 .nombreCompleto(conectado.getNombreCompleto())
                 .disponibilidad(conectado.getDisponibilidad())
+                .equipoActivoId(conectado.getEquipoActivoId())
                 .lastSeen(conectado.getLastSeen())
                 .estadoSchedule(monitor.getEstadoActual())
                 .desde(monitor.getDesde())

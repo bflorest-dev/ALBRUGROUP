@@ -80,7 +80,8 @@ export class SessionService {
     roles: string[],
     primaryRole: string | null,
     activeRole: string | null,
-    fechaIngresoEmpleado?: string | null
+    fechaIngresoEmpleado?: string | null,
+    equipos?: number[]
   ): void {
     const session = this.sessionState();
     if (!session) {
@@ -93,6 +94,7 @@ export class SessionService {
       primaryRole,
       activeRole: normalizedActiveRole,
       fechaIngresoEmpleado: fechaIngresoEmpleado ?? session.fechaIngresoEmpleado ?? null,
+      equipos: equipos ?? session.equipos ?? [],
       homeRoute: normalizedActiveRole
         ? ROLE_HOME_ROUTES[normalizedActiveRole] ?? session.homeRoute
         : session.homeRoute
@@ -127,6 +129,7 @@ export class SessionService {
 
   private normalizeSession(session: UserSession): UserSession {
     const roles = session.roles ?? [];
+    const equipos = session.equipos?.length ? session.equipos : this.tokenService.getEquipoIds();
     const primaryRole = session.primaryRole && roles.includes(session.primaryRole)
       ? session.primaryRole
       : roles[0] ?? null;
@@ -139,6 +142,7 @@ export class SessionService {
       primaryRole,
       activeRole,
       fechaIngresoEmpleado: session.fechaIngresoEmpleado ?? null,
+      equipos: [...new Set(equipos.filter((id) => Number.isInteger(id) && id > 0))],
       homeRoute: activeRole ? ROLE_HOME_ROUTES[activeRole] ?? session.homeRoute : session.homeRoute
     };
   }

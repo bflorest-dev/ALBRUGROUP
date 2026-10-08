@@ -62,6 +62,16 @@ public class PresenceController {
                 .thenReturn(ResponseEntity.noContent().build());
     }
 
+    @PatchMapping("/equipo-activo/{equipoId}")
+    @Operation(summary = "Actualizar equipo activo del empleado", description = "Publica en presencia el equipo operativo elegido por el empleado autenticado.")
+    public Mono<ResponseEntity<Void>> actualizarEquipoActivo(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long equipoId
+    ) {
+        return presenceService.actualizarEquipoActivo(user, equipoId)
+                .thenReturn(ResponseEntity.noContent().build());
+    }
+
     @GetMapping("/connected-users")
     @Operation(summary = "Listar usuarios conectados", description = "Lista los empleados conectados. Se puede filtrar por rol.")
     public Mono<ResponseEntity<List<ConnectedUserResponse>>> listarUsuariosConectados(

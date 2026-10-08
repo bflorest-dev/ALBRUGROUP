@@ -1,6 +1,8 @@
 import { Injectable, effect, signal } from '@angular/core';
 import { STORAGE_KEYS } from '../constants/storage.constants';
 
+type JwtPayload = Record<string, unknown>;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -42,6 +44,17 @@ export class TokenService {
     return this.refreshTokenState();
   }
 
+  getEquipoIds(token = this.getAccessToken()): number[] {
+    const payload = this.decodePayload(token);
+    const raw = payload?.['equipos'];
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0);
+  }
+
   setAccessToken(token: string): void {
     this.accessTokenState.set(token);
   }
@@ -58,5 +71,22 @@ export class TokenService {
   clearTokens(): void {
     this.accessTokenState.set(null);
     this.refreshTokenState.set(null);
+  }
+
+  private decodePayload(token: string | null): JwtPayload | null {
+    if (!token) {
+      return null;
+    }
+    const [, payload] = token.split('.');
+    if (!payload) {
+      return null;
+    }
+    try {
+      const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+      return JSON.parse(atob(padded)) as JwtPayload;
+    } catch {
+      return null;
+    }
   }
 }

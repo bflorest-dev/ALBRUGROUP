@@ -24,6 +24,11 @@ export type SidebarProviderOption = {
   nombre: string;
 };
 
+export type SidebarTeamOption = {
+  id: number;
+  nombre: string;
+};
+
 export type SidebarRoleModeOption = {
   role: string;
   label: string;
