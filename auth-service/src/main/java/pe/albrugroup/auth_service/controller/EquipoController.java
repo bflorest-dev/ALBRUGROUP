@@ -54,7 +54,7 @@ public class EquipoController {
     }
 
     @GetMapping("/mis-equipos")
-    @PreAuthorize("hasAnyAuthority('READ_LEADS_GTR', 'ASSIGN_LEADS', 'READ_EQUIPOS')")
+    @PreAuthorize("hasAnyAuthority('READ_LEADS_ASESOR', 'READ_LEADS_GTR', 'ASSIGN_LEADS', 'READ_EQUIPOS')")
     @Operation(summary = "Mis equipos", description = "Lista los equipos activos visibles para el usuario autenticado.")
     public ResponseEntity<List<EquipoResponse>> misEquipos() {
         return ResponseEntity.ok(equipoService.listarMisEquipos());
