@@ -574,7 +574,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
         this.teamScope.clear();
         return;
       }
-      untracked(() => void this.teamScope.load());
+      untracked(() => void this.teamScope.load().catch(() => undefined));
     });
 
     effect(() => {
@@ -694,9 +694,9 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     // Carga perezosa de los proveedores del usuario (no-op salvo BACKOFFICE / POSTVENTA).
-    void this.providerScope.load();
+    void this.providerScope.load().catch(() => undefined);
     // Carga perezosa de equipos del usuario (no-op salvo roles acotados por equipo).
-    void this.teamScope.load();
+    void this.teamScope.load().catch(() => undefined);
   }
 
   protected seleccionarProveedor(idProveedor: number): void {
