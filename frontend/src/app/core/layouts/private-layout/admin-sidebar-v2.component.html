@@ -111,96 +111,128 @@
       </div>
 
       <div class="admin-nav-v2__profile-actions">
-        @if (showDeleteLeadsAction() || canCorrectMerito() || roleModes().length || providers().length || teams().length) {
-          <span class="admin-nav-v2__section-label">Herramientas de la sesión</span>
+        @if (showDeleteLeadsAction() || canCorrectMerito()) {
+          <section class="admin-nav-v2__profile-group" aria-labelledby="session-tools-title">
+            <h2 id="session-tools-title" class="admin-nav-v2__section-label">
+              <i class="ti ti-tool" aria-hidden="true"></i>
+              <span>Herramientas de la sesión</span>
+            </h2>
+
+            @if (showDeleteLeadsAction()) {
+              <button
+                type="button"
+                class="admin-nav-v2__profile-action"
+                role="switch"
+                [attr.aria-checked]="deleteLeadsVisible()"
+                (click)="selectProfileAction('delete')"
+              >
+                <i class="ti ti-trash" aria-hidden="true"></i>
+                <span>
+                  <strong>Eliminar leads</strong>
+                </span>
+                <span class="admin-nav-v2__switch" [class.is-on]="deleteLeadsVisible()" aria-hidden="true">
+                  <span></span>
+                </span>
+              </button>
+            }
+
+            @if (canCorrectMerito()) {
+              <button type="button" class="admin-nav-v2__profile-action" (click)="selectProfileAction('merito')">
+                <i class="ti ti-user-edit" aria-hidden="true"></i>
+                <span>
+                  <strong>Corrección de mérito</strong>
+                </span>
+                <i class="ti ti-chevron-right" aria-hidden="true"></i>
+              </button>
+            }
+          </section>
         }
 
-        @if (showDeleteLeadsAction()) {
-          <button
-            type="button"
-            class="admin-nav-v2__profile-action"
-            role="switch"
-            [attr.aria-checked]="deleteLeadsVisible()"
-            (click)="selectProfileAction('delete')"
-          >
-            <i class="ti ti-trash" aria-hidden="true"></i>
-            <span>
-              <strong>Eliminar leads</strong>
-            </span>
-            <span class="admin-nav-v2__switch" [class.is-on]="deleteLeadsVisible()" aria-hidden="true">
-              <span></span>
-            </span>
-          </button>
+        @if (roleModes().length) {
+          <section class="admin-nav-v2__profile-group" aria-labelledby="session-roles-title">
+            <h2 id="session-roles-title" class="admin-nav-v2__section-label">
+              <i class="ti ti-shield-check" aria-hidden="true"></i>
+              <span>Roles</span>
+            </h2>
+
+            @for (mode of roleModes(); track mode.role) {
+              <button
+                type="button"
+                class="admin-nav-v2__profile-action"
+                [class.is-active]="mode.role === activeRole()"
+                [attr.aria-pressed]="mode.role === activeRole()"
+                (click)="selectRoleMode(mode.role)"
+              >
+                <i [class]="mode.icon" aria-hidden="true"></i>
+                <span>
+                  <strong>{{ mode.label }}</strong>
+                  <small>{{ mode.role === activeRole() ? 'Modo de trabajo activo' : mode.description }}</small>
+                </span>
+                <i
+                  [class]="mode.role === activeRole() ? 'ti ti-circle-check' : 'ti ti-chevron-right'"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            }
+          </section>
         }
 
-        @if (canCorrectMerito()) {
-          <button type="button" class="admin-nav-v2__profile-action" (click)="selectProfileAction('merito')">
-            <i class="ti ti-user-edit" aria-hidden="true"></i>
-            <span>
-              <strong>Corrección de mérito</strong>
-            </span>
-            <i class="ti ti-chevron-right" aria-hidden="true"></i>
-          </button>
+        @if (providers().length) {
+          <section class="admin-nav-v2__profile-group" aria-labelledby="session-providers-title">
+            <h2 id="session-providers-title" class="admin-nav-v2__section-label">
+              <i class="ti ti-building-store" aria-hidden="true"></i>
+              <span>Proveedores</span>
+            </h2>
+
+            @for (provider of providers(); track provider.id) {
+              <button
+                type="button"
+                class="admin-nav-v2__profile-action"
+                [class.is-active]="provider.id === activeProviderId()"
+                [attr.aria-pressed]="provider.id === activeProviderId()"
+                (click)="selectProvider(provider.id)"
+              >
+                <i class="ti ti-building-store" aria-hidden="true"></i>
+                <span>
+                  <strong>{{ provider.nombre }}</strong>
+                  <small>{{ provider.id === activeProviderId() ? 'Proveedor activo' : 'Cambiar proveedor' }}</small>
+                </span>
+                <i
+                  [class]="provider.id === activeProviderId() ? 'ti ti-circle-check' : 'ti ti-chevron-right'"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            }
+          </section>
         }
 
-        @for (mode of roleModes(); track mode.role) {
-          <button
-            type="button"
-            class="admin-nav-v2__profile-action"
-            [class.is-active]="mode.role === activeRole()"
-            [attr.aria-pressed]="mode.role === activeRole()"
-            (click)="selectRoleMode(mode.role)"
-          >
-            <i [class]="mode.icon" aria-hidden="true"></i>
-            <span>
-              <strong>{{ mode.label }}</strong>
-              <small>{{ mode.role === activeRole() ? 'Modo de trabajo activo' : mode.description }}</small>
-            </span>
-            <i
-              [class]="mode.role === activeRole() ? 'ti ti-circle-check' : 'ti ti-chevron-right'"
-              aria-hidden="true"
-            ></i>
-          </button>
-        }
+        @if (teams().length) {
+          <section class="admin-nav-v2__profile-group" aria-labelledby="session-teams-title">
+            <h2 id="session-teams-title" class="admin-nav-v2__section-label">
+              <i class="ti ti-users-group" aria-hidden="true"></i>
+              <span>Equipos</span>
+            </h2>
 
-        @for (provider of providers(); track provider.id) {
-          <button
-            type="button"
-            class="admin-nav-v2__profile-action"
-            [class.is-active]="provider.id === activeProviderId()"
-            [attr.aria-pressed]="provider.id === activeProviderId()"
-            (click)="selectProvider(provider.id)"
-          >
-            <i class="ti ti-building-store" aria-hidden="true"></i>
-            <span>
-              <strong>{{ provider.nombre }}</strong>
-              <small>{{ provider.id === activeProviderId() ? 'Proveedor activo' : 'Cambiar proveedor' }}</small>
-            </span>
-            <i
-              [class]="provider.id === activeProviderId() ? 'ti ti-circle-check' : 'ti ti-chevron-right'"
-              aria-hidden="true"
-            ></i>
-          </button>
-        }
-
-        @for (team of teams(); track team.id) {
-          <button
-            type="button"
-            class="admin-nav-v2__profile-action"
-            [class.is-active]="team.id === activeTeamId()"
-            [attr.aria-pressed]="team.id === activeTeamId()"
-            (click)="selectTeam(team.id)"
-          >
-            <i class="ti ti-users-group" aria-hidden="true"></i>
-            <span>
-              <strong>{{ team.nombre }}</strong>
-              <small>{{ team.id === activeTeamId() ? 'Equipo activo' : 'Cambiar equipo' }}</small>
-            </span>
-            <i
-              [class]="team.id === activeTeamId() ? 'ti ti-circle-check' : 'ti ti-chevron-right'"
-              aria-hidden="true"
-            ></i>
-          </button>
+            @for (team of teams(); track team.id) {
+              <button
+                type="button"
+                class="admin-nav-v2__profile-action"
+                [class.is-active]="team.id === activeTeamId()"
+                [attr.aria-pressed]="team.id === activeTeamId()"
+                (click)="selectTeam(team.id)"
+              >
+                <i class="ti ti-users-group" aria-hidden="true"></i>
+                <span>
+                  <strong>{{ team.nombre }}</strong>
+                  <small>{{ team.id === activeTeamId() ? 'Equipo activo' : 'Cambiar equipo' }}</small>
+                </span>
+                <i
+                  [class]="team.id === activeTeamId() ? 'ti ti-circle-check' : 'ti ti-chevron-right'"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            }
+          </section>
         }
       </div>
 

@@ -440,13 +440,29 @@ section:focus-visible {
 }
 
 .admin-nav-v2__section-label {
+  align-items: center;
   color: var(--admin-panel-muted);
-  display: block;
+  display: flex;
   font-size: .68rem;
   font-weight: 700;
+  gap: .45rem;
   letter-spacing: .11em;
-  margin: 0 0 .7rem .3rem;
+  margin: 0 .3rem .15rem;
   text-transform: uppercase;
+}
+
+.admin-nav-v2__section-label::after {
+  background: var(--admin-panel-line);
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  margin-left: .15rem;
+}
+
+.admin-nav-v2__section-label > i {
+  color: var(--admin-signal);
+  font-size: .78rem;
+  letter-spacing: normal;
 }
 
 .admin-nav-v2__items,
@@ -638,7 +654,22 @@ section:focus-visible {
 .admin-nav-v2__profile-actions {
   align-content: start;
   flex: 1 1 auto;
+  gap: 1rem;
+  min-height: 0;
+  overflow-y: auto;
   padding: 1.3rem 1.25rem;
+  scrollbar-color: rgba(255, 255, 255, .28) transparent;
+  scrollbar-width: thin;
+}
+
+.admin-nav-v2__profile-group {
+  display: grid;
+  gap: .35rem;
+}
+
+.admin-nav-v2__profile-group + .admin-nav-v2__profile-group {
+  border-top: 1px solid var(--admin-panel-line);
+  padding-top: .9rem;
 }
 
 .admin-nav-v2__profile-action {
