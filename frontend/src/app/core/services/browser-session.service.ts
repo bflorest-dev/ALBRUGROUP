@@ -29,7 +29,6 @@ export class BrowserSessionService {
     if (!this.isBrowser()) {
       return;
     }
-
     const existingTabId = sessionStorage.getItem(STORAGE_KEYS.tabId);
     this.tabId = existingTabId ?? this.createAndStoreTabId();
 

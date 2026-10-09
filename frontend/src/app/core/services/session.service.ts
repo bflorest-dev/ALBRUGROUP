@@ -113,14 +113,14 @@ export class SessionService {
   }
 
   private readStoredSession(): UserSession | null {
-    const session = localStorage.getItem(STORAGE_KEYS.session);
+    const raw = localStorage.getItem(STORAGE_KEYS.session);
 
-    if (!session) {
+    if (!raw) {
       return null;
     }
 
     try {
-      return this.normalizeSession(JSON.parse(session) as UserSession);
+      return this.normalizeSession(JSON.parse(raw) as UserSession);
     } catch {
       localStorage.removeItem(STORAGE_KEYS.session);
       return null;
@@ -129,7 +129,7 @@ export class SessionService {
 
   private normalizeSession(session: UserSession): UserSession {
     const roles = session.roles ?? [];
-    const equipos = session.equipos?.length ? session.equipos : this.tokenService.getEquipoIds();
+    const equipos = session.equipos?.length ? session.equipos : (this.tokenService?.getEquipoIds() ?? []);
     const primaryRole = session.primaryRole && roles.includes(session.primaryRole)
       ? session.primaryRole
       : roles[0] ?? null;

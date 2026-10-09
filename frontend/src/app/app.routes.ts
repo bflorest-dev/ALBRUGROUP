@@ -16,8 +16,7 @@ export const routes: Routes = [
     path: 'app',
     component: PrivateLayoutComponent,
     canActivate: [authGuard],
-    loadChildren: () =>
-      import('./features/platform/platform.routes').then((m) => m.PLATFORM_ROUTES)
+    loadChildren: () => import('./features/platform/platform.routes').then((m) => m.PLATFORM_ROUTES)
   },
   {
     path: '**',

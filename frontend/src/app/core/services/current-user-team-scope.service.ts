@@ -51,7 +51,6 @@ export class CurrentUserTeamScopeService {
         return;
       }
       localStorage.setItem(STORAGE_KEYS.activeEquipoId, String(id));
-      void this.syncPresenceEquipoActivo(id);
     });
   }
 
@@ -96,7 +95,6 @@ export class CurrentUserTeamScopeService {
       return;
     }
     if (this.loadedForEmpleadoId === session.empleadoId) {
-      this.syncActivePresenceIfNeeded();
       if (this.hasFallbackNames()) {
         await this.refreshEquipoNamesOnce(session.empleadoId);
       }
@@ -133,11 +131,16 @@ export class CurrentUserTeamScopeService {
       this.equiposState.set(this.equiposFromIds(ids));
       this.normalizarActivo();
     }
+    const finalId = this.activeIdState();
+    if (finalId !== null) {
+      void this.syncPresenceEquipoActivo(finalId);
+    }
   }
 
   setActive(id: number): void {
     if (this.equiposState().some((equipo) => equipo.id === id)) {
       this.activeIdState.set(id);
+      void this.syncPresenceEquipoActivo(id);
     }
   }
 
@@ -238,17 +241,9 @@ export class CurrentUserTeamScopeService {
     }
     const actual = this.activeIdState();
     if (actual !== null && equipos.some((equipo) => equipo.id === actual)) {
-      this.syncActivePresenceIfNeeded();
       return;
     }
     this.activeIdState.set(equipos[0].id);
-  }
-
-  private syncActivePresenceIfNeeded(): void {
-    const activeId = this.activeIdState();
-    if (activeId !== null) {
-      void this.syncPresenceEquipoActivo(activeId);
-    }
   }
 
   private async syncPresenceEquipoActivo(id: number): Promise<void> {

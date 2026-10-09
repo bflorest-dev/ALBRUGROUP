@@ -16,8 +16,6 @@ export class AppVersionService {
   private readonly versionUrl = '/version.json';
   private readonly checkIntervalMs = 30000;
   private readonly firstCheckDelayMs = 5000;
-  private readonly recoveryReloadKey = 'albru_asset_recovery_reload_at';
-  private readonly recoveryCooldownMs = 30000;
   private checkTimerId: number | null = null;
   private isReloading = false;
   private currentVersion = '';
@@ -28,13 +26,7 @@ export class AppVersionService {
   ) {}
 
   initialize(): void {
-    if (!this.isBrowser()) {
-      return;
-    }
-
-    this.installAssetLoadRecovery();
-
-    if (!environment.production) {
+    if (!environment.production || !this.isBrowser()) {
       return;
     }
 
@@ -99,7 +91,7 @@ export class AppVersionService {
     }
 
     this.browserSessionService.allowExternalNavigation();
-    this.reloadWithCacheBust(nextVersion);
+    window.location.reload();
   }
 
   private rememberVersion(version: string): void {
@@ -109,79 +101,5 @@ export class AppVersionService {
 
   private isBrowser(): boolean {
     return !!this.document?.defaultView;
-  }
-
-  private installAssetLoadRecovery(): void {
-    const windowRef = this.document.defaultView;
-    if (!windowRef) {
-      return;
-    }
-
-    windowRef.addEventListener('error', (event) => {
-      if (this.isRecoverableAssetLoadEvent(event)) {
-        this.reloadAfterAssetLoadFailure();
-      }
-    }, true);
-
-    windowRef.addEventListener('unhandledrejection', (event) => {
-      if (this.isRecoverableAssetLoadError(event.reason)) {
-        this.reloadAfterAssetLoadFailure();
-      }
-    });
-  }
-
-  private reloadAfterAssetLoadFailure(): void {
-    if (this.isReloading) {
-      return;
-    }
-
-    const lastReload = Number(sessionStorage.getItem(this.recoveryReloadKey) ?? 0);
-    if (Number.isFinite(lastReload) && Date.now() - lastReload < this.recoveryCooldownMs) {
-      return;
-    }
-
-    this.isReloading = true;
-    sessionStorage.setItem(this.recoveryReloadKey, String(Date.now()));
-    this.browserSessionService.allowExternalNavigation();
-    this.reloadWithCacheBust(`asset-${Date.now()}`);
-  }
-
-  private reloadWithCacheBust(version: string): void {
-    const windowRef = this.document.defaultView;
-    if (!windowRef) {
-      return;
-    }
-
-    const url = new URL(windowRef.location.href);
-    url.searchParams.set('_albru_v', version);
-    windowRef.location.replace(url.toString());
-  }
-
-  private isRecoverableAssetLoadEvent(event: Event): boolean {
-    const target = event.target;
-    if (target instanceof HTMLScriptElement) {
-      return this.isLocalAssetUrl(target.src);
-    }
-    if (target instanceof HTMLLinkElement && target.rel === 'stylesheet') {
-      return this.isLocalAssetUrl(target.href);
-    }
-    return false;
-  }
-
-  private isRecoverableAssetLoadError(error: unknown): boolean {
-    const value = error instanceof Error ? `${error.name} ${error.message}` : String(error ?? '');
-    return /ChunkLoadError|Loading chunk|dynamically imported module|module script failed|Failed to fetch/i.test(value);
-  }
-
-  private isLocalAssetUrl(value: string): boolean {
-    try {
-      const url = new URL(value, this.document.defaultView?.location.origin);
-      if (url.origin !== this.document.defaultView?.location.origin) {
-        return false;
-      }
-      return /\.(js|css)($|\?)/i.test(url.pathname);
-    } catch {
-      return false;
-    }
   }
 }

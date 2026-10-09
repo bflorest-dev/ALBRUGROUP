@@ -504,14 +504,11 @@ export class AttendanceFacade {
         return;
       }
 
-      // Roles siempre operativos no marcan asistencia; su badge es fijo ONLINE en el layout
-      // (isAlwaysOnlineRole). Coherente con el guard de initialize() en private-layout.
       const activeRole = this.sessionService.getActiveRole();
       if (Boolean(activeRole && ALWAYS_OPERATIONAL_ROLES.has(activeRole))) {
         return;
       }
 
-      // Sesion operativa: asegurar una carga fresca una vez por sesion (initialize es idempotente).
       untracked(() => this.initialize());
     });
 
