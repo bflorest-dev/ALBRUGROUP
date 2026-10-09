@@ -88,6 +88,40 @@ class EquipoFilterInterceptorTest {
     }
 
     @Test
+    void administradorUsaProveedorActivoEnBackofficeGlobal() {
+        var user = new UserSession(
+                "admin",
+                1L,
+                "Administrador",
+                LocalDate.of(2026, 9, 7),
+                java.util.List.of("ADMINISTRADOR"),
+                java.util.List.of("VER_TODOS_LOS_EQUIPOS"),
+                java.util.List.of()
+        );
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(user, null)
+        );
+        Session session = mock(Session.class);
+        Filter proveedorFilter = mock(Filter.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(entityManager.unwrap(Session.class)).thenReturn(session);
+        when(session.enableFilter("proveedorFilter")).thenReturn(proveedorFilter);
+        when(proveedorFilter.setParameterList("proveedores", java.util.List.of(2L))).thenReturn(proveedorFilter);
+        when(proveedorScopeService.ambitoActual()).thenReturn(null);
+        when(proveedorScopeService.resolverScopeAdministrativo(AmbitoProveedor.BACKOFFICE))
+                .thenReturn(new ProveedorScopeService.Scope(true, Set.of(2L), Set.of("CLARO")));
+        when(proveedorScopeService.esAdministrador()).thenReturn(true);
+        when(request.getRequestURI()).thenReturn("/venta");
+        when(request.getParameter("idEquipo")).thenReturn(null);
+
+        interceptor.preHandle(request, mock(HttpServletResponse.class), new Object());
+
+        verify(session).enableFilter("proveedorFilter");
+        verify(proveedorFilter).setParameterList("proveedores", java.util.List.of(2L));
+        verify(session, never()).enableFilter("equipoFilter");
+    }
+
+    @Test
     void equipoActivoFueraDelUsuarioFallaCerrado() {
         autenticarUsuarioEquipos(java.util.List.of(1L, 2L));
         Session session = mock(Session.class);

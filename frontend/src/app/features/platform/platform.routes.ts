@@ -285,7 +285,7 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
-    path: 'admin/plataformas/equipos/:idEquipo/gtr/plataforma',
+    path: 'admin/plataformas/equipos/:idEquipo/plataforma',
     component: GtrWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
@@ -294,7 +294,7 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
-    path: 'admin/plataformas/equipos/:idEquipo/gtr/agendados',
+    path: 'admin/plataformas/equipos/:idEquipo/agendados',
     component: GtrWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
@@ -303,66 +303,12 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
-    path: 'admin/plataformas/equipos/:idEquipo/gtr/historicos',
+    path: 'admin/plataformas/equipos/:idEquipo/historicos',
     component: GtrWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],
       section: 'historicos'
-    }
-  },
-  {
-    path: 'admin/plataformas/equipos/:idEquipo/backoffice/plataforma',
-    component: BackofficeWorkspacePageComponent,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['ADMINISTRADOR'],
-      section: 'plataforma'
-    }
-  },
-  {
-    path: 'admin/plataformas/equipos/:idEquipo/backoffice/general',
-    component: BackofficeGeneralBoardPageComponent,
-    canActivate: [roleGuard],
-    canDeactivate: [canDeactivateBackofficeGeneralBoard],
-    data: {
-      roles: ['ADMINISTRADOR']
-    }
-  },
-  {
-    path: 'admin/plataformas/equipos/:idEquipo/backoffice/programados',
-    component: BackofficeWorkspacePageComponent,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['ADMINISTRADOR'],
-      section: 'programados'
-    }
-  },
-  {
-    path: 'admin/plataformas/equipos/:idEquipo/backoffice/subsanables',
-    component: BackofficeWorkspacePageComponent,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['ADMINISTRADOR'],
-      section: 'subsanables'
-    }
-  },
-  {
-    path: 'admin/plataformas/equipos/:idEquipo/backoffice/rechazados',
-    component: BackofficeWorkspacePageComponent,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['ADMINISTRADOR'],
-      section: 'rechazados'
-    }
-  },
-  {
-    path: 'admin/plataformas/equipos/:idEquipo/backoffice/instalados',
-    component: BackofficeWorkspacePageComponent,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['ADMINISTRADOR'],
-      section: 'instalados'
     }
   },
   {
@@ -525,7 +471,7 @@ export const PLATFORM_ROUTES: Routes = [
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
+      roles: ['ADMINISTRADOR', 'ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
       section: 'plataforma'
     }
   },
@@ -535,7 +481,7 @@ export const PLATFORM_ROUTES: Routes = [
     canActivate: [roleGuard],
     canDeactivate: [canDeactivateBackofficeGeneralBoard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR']
+      roles: ['ADMINISTRADOR', 'ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR']
     }
   },
   {
@@ -548,7 +494,7 @@ export const PLATFORM_ROUTES: Routes = [
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
+      roles: ['ADMINISTRADOR', 'ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
       section: 'programados'
     }
   },
@@ -557,7 +503,7 @@ export const PLATFORM_ROUTES: Routes = [
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
+      roles: ['ADMINISTRADOR', 'ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
       section: 'subsanables'
     }
   },
@@ -566,7 +512,7 @@ export const PLATFORM_ROUTES: Routes = [
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
+      roles: ['ADMINISTRADOR', 'ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
       section: 'rechazados'
     }
   },
@@ -575,7 +521,7 @@ export const PLATFORM_ROUTES: Routes = [
     component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
+      roles: ['ADMINISTRADOR', 'ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR'],
       section: 'instalados'
     }
   },

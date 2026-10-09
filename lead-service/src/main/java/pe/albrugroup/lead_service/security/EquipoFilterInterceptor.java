@@ -21,7 +21,9 @@ import java.util.List;
  *
  * Reglas:
  * - Sin usuario autenticado (público/health): no se filtra.
- * - Visibilidad global (permiso VER_TODOS_LOS_EQUIPOS): no se filtra (ve todo).
+ * - ADMIN en bandejas globales de Backoffice: filtro `proveedorFilter` por el proveedor activo;
+ *   GTR conserva su filtro por equipo.
+ * - Visibilidad global (permiso VER_TODOS_LOS_EQUIPOS): no se filtra fuera de Backoffice global.
  * - Rol activo acotado por PROVEEDOR (BACKOFFICE / POSTVENTA): filtro `proveedorFilter`
  *   por sus proveedores (estrechado al proveedor activo del selector, header X-Proveedor-Id). Se usa
  *   proveedorFilter EN LUGAR de equipoFilter (nunca ambos) para evitar doble filtro.
@@ -48,13 +50,13 @@ public class EquipoFilterInterceptor implements HandlerInterceptor {
         AmbitoProveedor ambito = proveedorScopeService.ambitoActual();
         if (ambito != null) {
             ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(ambito);
-            try {
-                entityManager.unwrap(Session.class)
-                        .enableFilter("proveedorFilter")
-                        .setParameterList("proveedores", List.copyOf(scope.idsParaQuery()));
-            } catch (Exception e) {
-                log.warn("No se pudo habilitar el filtro por proveedor: {}", e.getMessage());
-            }
+            habilitarFiltroProveedor(scope);
+            return true;
+        }
+        if (esBackofficeGlobal(request)) {
+            habilitarFiltroProveedor(
+                    proveedorScopeService.resolverScopeAdministrativo(AmbitoProveedor.BACKOFFICE)
+            );
             return true;
         }
         if (currentUser.tieneVisibilidadGlobalEquipos()) {
@@ -70,6 +72,24 @@ public class EquipoFilterInterceptor implements HandlerInterceptor {
             log.warn("No se pudo habilitar el filtro por equipo: {}", e.getMessage());
         }
         return true;
+    }
+
+    private boolean esBackofficeGlobal(HttpServletRequest request) {
+        if (!proveedorScopeService.esAdministrador() || request == null) {
+            return false;
+        }
+        String uri = request.getRequestURI();
+        return uri != null && uri.contains("/venta") && request.getParameter("idEquipo") == null;
+    }
+
+    private void habilitarFiltroProveedor(ProveedorScopeService.Scope scope) {
+        try {
+            entityManager.unwrap(Session.class)
+                    .enableFilter("proveedorFilter")
+                    .setParameterList("proveedores", List.copyOf(scope.idsParaQuery()));
+        } catch (Exception e) {
+            log.warn("No se pudo habilitar el filtro por proveedor: {}", e.getMessage());
+        }
     }
 
     private List<Long> resolverEquiposEfectivos(HttpServletRequest request, List<Long> equipos) {

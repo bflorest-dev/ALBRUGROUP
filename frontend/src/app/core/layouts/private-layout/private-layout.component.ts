@@ -34,7 +34,7 @@ import { LeadRealtimeService } from '../../../features/preventa/services/lead-re
 import { ProyeccionBannerData } from '../../../shared/components/top-banner/top-banner.component';
 import { LeadMeritoCorreccionDrawerComponent } from '../../../shared/components/lead-merito-correccion-drawer/lead-merito-correccion-drawer.component';
 import { AdminSidebarV2Component } from './admin-sidebar-v2.component';
-import { SidebarDomainDefinition, SidebarItem, SidebarRoleModeOption } from './sidebar-item.model';
+import { SidebarDomainDefinition, SidebarItem, SidebarRoleModeOption, SidebarTeamOption } from './sidebar-item.model';
 import { sidebarDomainsForRole } from './sidebar-v2.config';
 import { shouldGuideAttendanceLogout } from './attendance-logout-guidance';
 import { SidebarAttendancePickerComponent } from './sidebar-attendance-picker.component';
@@ -75,6 +75,63 @@ const ROLE_MODE_ICON: Record<string, string> = {
   COMMUNITY: 'ti ti-speakerphone',
   MONITOR: 'ti ti-device-desktop-analytics'
 };
+
+export function buildAdminPlatformsNavigation(teams: readonly SidebarTeamOption[]): SidebarItem[] {
+  const equipos = teams.map((team) => ({
+    key: `plataformas-equipo-${team.id}`,
+    label: team.nombre,
+    icon: 'pi pi-building',
+    children: [
+      {
+        label: 'Plataforma',
+        route: `/app/admin/plataformas/equipos/${team.id}/plataforma`,
+        icon: 'pi pi-desktop',
+        exact: true
+      },
+      {
+        label: 'Agendados',
+        route: `/app/admin/plataformas/equipos/${team.id}/agendados`,
+        icon: 'pi pi-calendar',
+        exact: true
+      },
+      {
+        label: 'Historicos',
+        route: `/app/admin/plataformas/equipos/${team.id}/historicos`,
+        icon: 'pi pi-history',
+        exact: true
+      }
+    ]
+  }));
+
+  return [
+    {
+      key: 'plataformas-equipos',
+      label: 'Equipos',
+      icon: 'pi pi-building',
+      children: equipos
+    },
+    {
+      key: 'plataformas-backoffice',
+      label: 'Backoffice',
+      icon: 'pi pi-briefcase',
+      children: [
+        { label: 'Gestión', route: '/app/backoffice/general', icon: 'pi pi-list-check', exact: true },
+        { label: 'Plataforma', route: '/app/backoffice/plataforma', icon: 'pi pi-desktop', exact: true },
+        { label: 'Programados', route: '/app/backoffice/programados', icon: 'pi pi-calendar-clock', exact: true },
+        { label: 'Subsanables', route: '/app/backoffice/subsanables', icon: 'pi pi-wrench', exact: true },
+        { label: 'Rechazados', route: '/app/backoffice/rechazados', icon: 'pi pi-exclamation-triangle', exact: true },
+        { label: 'Instalados', route: '/app/backoffice/instalados', icon: 'pi pi-check-circle', exact: true }
+      ]
+    },
+    {
+      label: 'Postventa',
+      route: '/app/admin/plataformas/postventa',
+      icon: 'pi pi-briefcase',
+      exact: true,
+      startsGroup: true
+    }
+  ];
+}
 
 @Component({
   selector: 'app-private-layout',
@@ -239,90 +296,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
         { label: 'Financiero', route: '/app/admin/dashboard/financiero', icon: 'pi pi-chart-line', exact: true }
       ];
 
-      const plataformasChildren: SidebarItem[] = [
-        ...this.equiposNav.activeTeams().map((team) => ({
-          key: `plataformas-equipo-${team.id}`,
-          label: team.nombre,
-          icon: 'pi pi-building',
-          children: [
-            {
-              key: `plataformas-equipo-${team.id}-gtr`,
-              label: 'GTR',
-              icon: 'pi pi-headphones',
-              children: [
-                {
-                  label: 'Plataforma',
-                  route: `/app/admin/plataformas/equipos/${team.id}/gtr/plataforma`,
-                  icon: 'pi pi-desktop',
-                  exact: true
-                },
-                {
-                  label: 'Agendados',
-                  route: `/app/admin/plataformas/equipos/${team.id}/gtr/agendados`,
-                  icon: 'pi pi-calendar',
-                  exact: true
-                },
-                {
-                  label: 'Historicos',
-                  route: `/app/admin/plataformas/equipos/${team.id}/gtr/historicos`,
-                  icon: 'pi pi-history',
-                  exact: true
-                },
-              ]
-            },
-            {
-              key: `plataformas-equipo-${team.id}-backoffice`,
-              label: 'Backoffice',
-              icon: 'pi pi-briefcase',
-              children: [
-                {
-                  label: 'Gestión',
-                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/general`,
-                  icon: 'pi pi-list-check',
-                  exact: true
-                },
-                {
-                  label: 'Plataforma',
-                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/plataforma`,
-                  icon: 'pi pi-desktop',
-                  exact: true
-                },
-                {
-                  label: 'Programados',
-                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/programados`,
-                  icon: 'pi pi-calendar-clock',
-                  exact: true
-                },
-                {
-                  label: 'Subsanables',
-                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/subsanables`,
-                  icon: 'pi pi-wrench',
-                  exact: true
-                },
-                {
-                  label: 'Rechazados',
-                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/rechazados`,
-                  icon: 'pi pi-exclamation-triangle',
-                  exact: true
-                },
-                {
-                  label: 'Instalados',
-                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/instalados`,
-                  icon: 'pi pi-check-circle',
-                  exact: true
-                },
-              ]
-            }
-          ]
-        })),
-        {
-          label: 'Postventa',
-          route: '/app/admin/plataformas/postventa',
-          icon: 'pi pi-briefcase',
-          exact: true,
-          startsGroup: true
-        }
-      ];
+      const plataformasChildren = buildAdminPlatformsNavigation(this.equiposNav.activeTeams());
 
       const items: SidebarItem[] = [
         { domainId: 'overview', label: 'Dashboard', icon: 'pi pi-chart-pie', children: dashboardChildren },
