@@ -7,6 +7,7 @@ import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.UsuarioProveedor;
 import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.UsuarioProveedorRepository;
 
 import java.util.List;
@@ -19,9 +20,10 @@ import static org.mockito.Mockito.when;
 class ProveedorScopeServiceTest {
 
     private final UsuarioProveedorRepository repository = mock(UsuarioProveedorRepository.class);
+    private final ProveedorRepository proveedorRepository = mock(ProveedorRepository.class);
     private final CurrentUser currentUser = mock(CurrentUser.class);
     private final HttpServletRequest request = mock(HttpServletRequest.class);
-    private final ProveedorScopeService service = new ProveedorScopeService(repository, currentUser, request);
+    private final ProveedorScopeService service = new ProveedorScopeService(repository, proveedorRepository, currentUser, request);
 
     @Test
     void rolActivoPostventaDeterminaElAmbito() {
@@ -75,6 +77,21 @@ class ProveedorScopeServiceTest {
         assertThatThrownBy(() -> service.resolverScope(AmbitoProveedor.POSTVENTA))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Proveedor activo invalido");
+    }
+
+    @Test
+    void administradorPuedeAcotarPostventaAlProveedorActivo() {
+        Proveedor claro = Proveedor.builder().id(2L).nombre("CLARO").activo(true).build();
+        Proveedor win = Proveedor.builder().id(1L).nombre("WIN").activo(true).build();
+        when(currentUser.roles()).thenReturn(List.of("ADMINISTRADOR"));
+        when(request.getHeader(ProveedorScopeService.HEADER_PROVEEDOR)).thenReturn("2");
+        when(proveedorRepository.listarPorActivo(true)).thenReturn(List.of(claro, win));
+
+        var scope = service.resolverScopeAdministrativo(AmbitoProveedor.POSTVENTA);
+
+        assertThat(scope.restringido()).isTrue();
+        assertThat(scope.proveedorIds()).containsExactly(2L);
+        assertThat(scope.proveedorNombres()).containsExactly("CLARO");
     }
 
 }

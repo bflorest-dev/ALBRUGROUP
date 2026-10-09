@@ -8,6 +8,7 @@ import { SessionService } from './session.service';
 
 /** Roles cuya bandeja se acota por proveedor (no por equipo). */
 const PROVIDER_SCOPED_ROLES = new Set([
+  'ADMINISTRADOR',
   'ASESOR_BACKOFFICE',
   'SUPERVISOR_BACKOFFICE',
   'MONITOR',

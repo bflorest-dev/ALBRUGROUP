@@ -130,6 +130,9 @@ export class PostventaWorkspaceFacade {
         return;
       }
       this.lastProviderId = activeId;
+      if (this.initializeInFlight) {
+        return;
+      }
       this._selectedCorteValue.set(TODOS_LOS_CORTES);
       void this.loadCortes().then(() => this.loadBoard(0));
     });
@@ -1006,6 +1009,8 @@ export class PostventaWorkspaceFacade {
 
     this.initializeInFlight = true;
     try {
+      // Resolver el proveedor activo antes de la primera bandeja evita mezclar proveedores.
+      await this.providerScope.load();
       await Promise.all([this.loadCortes(), this.loadBoard()]);
       if (this.operationalGate.canActivateOperationalData()) {
         this.startRealtime();

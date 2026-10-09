@@ -9,6 +9,7 @@ import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.UsuarioProveedor;
 import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.UsuarioProveedorRepository;
 
 import java.util.Collection;
@@ -23,8 +24,8 @@ import java.util.stream.Collectors;
  * estrecha al proveedor activo del selector. Fail-closed: un usuario acotado sin proveedores
  * asignados no ve nada.
  *
- * Reemplaza la partición por equipo para los roles BACKOFFICE y POSTVENTA. GTR/ventas y ADMIN
- * no pasan por aquí (siguen por equipo / visibilidad global).
+ * Reemplaza la partición por equipo para los roles BACKOFFICE y POSTVENTA. GTR/ventas mantienen
+ * su visibilidad global; ADMIN puede acotar POSTVENTA mediante el proveedor activo del selector.
  */
 @Service
 @RequiredArgsConstructor
@@ -37,6 +38,7 @@ public class ProveedorScopeService {
     private static final Set<String> ROLES_POSTVENTA = Set.of("ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA");
 
     private final UsuarioProveedorRepository repository;
+    private final ProveedorRepository proveedorRepository;
     private final CurrentUser currentUser;
     private final HttpServletRequest request;
 
@@ -58,6 +60,9 @@ public class ProveedorScopeService {
     /** Proveedores asignados al usuario actual en su ámbito (para el selector / /mis-proveedores). */
     @Transactional(readOnly = true)
     public List<Proveedor> misProveedores() {
+        if (esAdministrador()) {
+            return proveedorRepository.listarPorActivo(true);
+        }
         AmbitoProveedor ambito = ambitoActual();
         if (ambito == null) {
             return List.of();
@@ -83,20 +88,42 @@ public class ProveedorScopeService {
         } else {
             efectivos = asignados;
         }
-        return new Scope(
-                true,
-                efectivos.stream().map(Proveedor::getId).collect(Collectors.toSet()),
-                efectivos.stream()
-                        .map(p -> normalizarNombre(p.getNombre()))
-                        .filter(nombre -> nombre != null && !nombre.isBlank())
-                        .collect(Collectors.toSet())
-        );
+        return crearScope(efectivos);
+    }
+
+    /** Scope POSTVENTA usado por ADMIN, que puede escoger cualquier proveedor activo. */
+    @Transactional(readOnly = true)
+    public Scope resolverScopeAdministrativo(AmbitoProveedor ambito) {
+        if (!esAdministrador() || ambito == null) {
+            return resolverScope(ambito);
+        }
+        List<Proveedor> activos = proveedorRepository.listarPorActivo(true);
+        Long activo = proveedorActivoHeader();
+        List<Proveedor> efectivos = activo == null
+                ? activos
+                : activos.stream().filter(p -> activo.equals(p.getId())).toList();
+        return crearScope(efectivos);
+    }
+
+    public boolean esAdministrador() {
+        return currentUser.roles().contains(ADMINISTRADOR);
     }
 
     /** Scope del usuario actual resuelto automáticamente por su rol (o sin restricción si no aplica). */
     @Transactional(readOnly = true)
     public Scope resolverScopeActual() {
         return resolverScope(ambitoActual());
+    }
+
+    private Scope crearScope(List<Proveedor> proveedores) {
+        return new Scope(
+                true,
+                proveedores.stream().map(Proveedor::getId).collect(Collectors.toSet()),
+                proveedores.stream()
+                        .map(p -> normalizarNombre(p.getNombre()))
+                        .filter(nombre -> nombre != null && !nombre.isBlank())
+                        .collect(Collectors.toSet())
+        );
     }
 
     private List<Proveedor> proveedoresAsignados(Long idEmpleado, AmbitoProveedor ambito) {

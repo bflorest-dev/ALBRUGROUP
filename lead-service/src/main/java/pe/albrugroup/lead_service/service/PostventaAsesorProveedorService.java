@@ -34,9 +34,12 @@ public class PostventaAsesorProveedorService {
         return usuarioProveedorService.listarProveedoresDeEmpleado(idEmpleado, AmbitoProveedor.POSTVENTA);
     }
 
-    /** Scope postventa del usuario actual: sin restricción si no es postventa (ADMIN incluido). */
+    /** Scope postventa del usuario actual, incluido el proveedor elegido por ADMIN. */
     @Transactional(readOnly = true)
     public ProveedorScopeService.Scope resolverScopeActual() {
+        if (proveedorScopeService.esAdministrador()) {
+            return proveedorScopeService.resolverScopeAdministrativo(AmbitoProveedor.POSTVENTA);
+        }
         if (proveedorScopeService.ambitoActual() != AmbitoProveedor.POSTVENTA) {
             return ProveedorScopeService.Scope.sinRestriccion();
         }
