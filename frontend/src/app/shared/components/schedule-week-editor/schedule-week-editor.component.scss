@@ -1,5 +1,18 @@
 :host {
   display: block;
+  --schedule-shift: #2c6e8f;
+  --schedule-extra: #d4a514;
+  --schedule-extra-wash: #fbf3c9;
+  --schedule-compensation: #a77b52;
+  --schedule-compensation-wash: #f1e4d6;
+}
+
+:host-context([data-theme='dark']) {
+  --schedule-shift: #67adcb;
+  --schedule-extra: #e6c95d;
+  --schedule-extra-wash: #3a3217;
+  --schedule-compensation: #d0a984;
+  --schedule-compensation-wash: #39291e;
 }
 
 .week-editor {
@@ -31,7 +44,9 @@
   &__legend {
     display: flex;
     justify-content: center;
+    flex-wrap: wrap;
     gap: 1rem;
+    row-gap: 0.4rem;
     font-size: 0.75rem;
     color: var(--role-muted);
 
@@ -264,12 +279,22 @@
     &--readonly {
       cursor: default;
     }
+
+    &--today {
+      outline: 1px solid color-mix(in srgb, var(--schedule-accent, #b5680e) 58%, var(--app-border-soft));
+      outline-offset: -1px;
+    }
   }
 
   &__day {
     width: 42px;
     font-size: 0.75rem;
     color: var(--role-muted);
+
+    &--today {
+      color: var(--role-panel-text);
+      font-weight: 800;
+    }
   }
 
   &__track {
@@ -290,11 +315,74 @@
     border-radius: 4px;
   }
 
+  &__segment {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    min-width: 2px;
+    border-radius: 4px;
+    overflow: hidden;
+
+    &--base {
+      background: var(--schedule-work, #c0dd97);
+    }
+
+    &--shift {
+      z-index: 2;
+      background: repeating-linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--schedule-shift, #2c6e8f) 18%, transparent) 0,
+        color-mix(in srgb, var(--schedule-shift, #2c6e8f) 18%, transparent) 5px,
+        color-mix(in srgb, var(--schedule-shift, #2c6e8f) 46%, transparent) 5px,
+        color-mix(in srgb, var(--schedule-shift, #2c6e8f) 46%, transparent) 8px
+      );
+      border: 1px solid var(--schedule-shift, #2c6e8f);
+    }
+
+    &--extra {
+      z-index: 3;
+      background-color: var(--schedule-extra-wash, #fbf3c9);
+      background-image: repeating-linear-gradient(
+        135deg,
+        transparent 0,
+        transparent 5px,
+        color-mix(in srgb, var(--schedule-extra, #d4a514) 78%, transparent) 5px,
+        color-mix(in srgb, var(--schedule-extra, #d4a514) 78%, transparent) 8px
+      );
+      border: 1px solid var(--schedule-extra, #d4a514);
+    }
+
+    &--compensation {
+      z-index: 3;
+      background-color: var(--schedule-compensation-wash, #f1e4d6);
+      background-image: repeating-linear-gradient(
+        45deg,
+        transparent 0,
+        transparent 5px,
+        color-mix(in srgb, var(--schedule-compensation, #a77b52) 78%, transparent) 5px,
+        color-mix(in srgb, var(--schedule-compensation, #a77b52) 78%, transparent) 8px
+      );
+      border: 1px solid var(--schedule-compensation, #a77b52);
+    }
+  }
+
   &__lunch {
     position: absolute;
     top: 0;
     bottom: 0;
     background: var(--schedule-lunch, #ef9f27);
+    z-index: 4;
+
+    &--modified {
+      background-image: repeating-linear-gradient(
+        45deg,
+        transparent 0,
+        transparent 4px,
+        rgb(255 255 255 / 42%) 4px,
+        rgb(255 255 255 / 42%) 7px
+      );
+      border: 1px dashed color-mix(in srgb, var(--schedule-lunch, #ef9f27) 45%, #5a3b0b);
+    }
   }
 
   &__cap {
@@ -309,6 +397,10 @@
     font-size: 0.68rem;
     color: var(--schedule-work-text, #166534);
     white-space: nowrap;
+
+    &--shift {
+      color: var(--schedule-shift, #2c6e8f);
+    }
   }
 
   &__rest {
@@ -326,6 +418,18 @@
       var(--app-border-soft) 6px,
       var(--app-border-soft) 12px
     );
+
+    &:focus-visible,
+    &:hover {
+      color: var(--role-panel-text);
+    }
+  }
+
+  &__segment:focus-visible,
+  &__lunch:focus-visible,
+  &__rest:focus-visible {
+    outline: 2px solid var(--schedule-accent, #b5680e);
+    outline-offset: -2px;
   }
 
   &__empty {
@@ -351,6 +455,46 @@
   }
   &--lunch {
     background: var(--schedule-lunch, #ef9f27);
+  }
+  &--lunch-additional {
+    background-color: var(--schedule-lunch, #ef9f27);
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent 0,
+      transparent 4px,
+      rgb(255 255 255 / 42%) 4px,
+      rgb(255 255 255 / 42%) 7px
+    );
+    border: 1px dashed color-mix(in srgb, var(--schedule-lunch, #ef9f27) 45%, #5a3b0b);
+  }
+  &--shift {
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--schedule-shift, #2c6e8f) 25%, transparent) 0,
+      color-mix(in srgb, var(--schedule-shift, #2c6e8f) 25%, transparent) 4px,
+      color-mix(in srgb, var(--schedule-shift, #2c6e8f) 58%, transparent) 4px,
+      color-mix(in srgb, var(--schedule-shift, #2c6e8f) 58%, transparent) 7px
+    );
+  }
+  &--extra {
+    background-color: var(--schedule-extra-wash, #fbf3c9);
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 4px,
+      var(--schedule-extra, #d4a514) 4px,
+      var(--schedule-extra, #d4a514) 7px
+    );
+  }
+  &--compensation {
+    background-color: var(--schedule-compensation-wash, #f1e4d6);
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent 0,
+      transparent 4px,
+      var(--schedule-compensation, #a77b52) 4px,
+      var(--schedule-compensation, #a77b52) 7px
+    );
   }
   &--rest {
     background: var(--app-border-soft);

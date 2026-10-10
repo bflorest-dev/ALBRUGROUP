@@ -85,18 +85,44 @@
         class="timeline__row"
         [class.timeline__row--readonly]="readOnly"
         [class.timeline__row--selected]="selected() === bar.index"
+        [class.timeline__row--today]="bar.esHoy"
         (click)="!readOnly && selectDay(bar.index)"
       >
-        <span class="timeline__day">{{ bar.short }}</span>
+        <span class="timeline__day" [class.timeline__day--today]="bar.esHoy">{{ bar.short }}</span>
         <div class="timeline__track">
-          @if (!bar.laborable) {
-            <span class="timeline__rest">Descanso</span>
+          @if (bar.empty) {
+            <span class="timeline__empty">Sin horario</span>
+          } @else if (bar.restLabel) {
+            <span class="timeline__rest" tabindex="0" [attr.title]="bar.rowLabel" [attr.aria-label]="bar.rowLabel">{{ bar.restLabel }}</span>
           } @else if (bar.hasWindow) {
-            <div class="timeline__work" [style.left.%]="bar.leftPct" [style.width.%]="bar.widthPct">
-              <span class="timeline__cap"><span>{{ bar.e }}</span><span>{{ bar.s }}</span></span>
-            </div>
+            @for (segment of bar.segments; track segment.key) {
+              <div
+                class="timeline__segment"
+                [class.timeline__segment--base]="segment.kind === 'base'"
+                [class.timeline__segment--shift]="segment.kind === 'shift'"
+                [class.timeline__segment--extra]="segment.kind === 'extra'"
+                [class.timeline__segment--compensation]="segment.kind === 'compensation'"
+                [style.left.%]="segment.leftPct"
+                [style.width.%]="segment.widthPct"
+                tabindex="0"
+                [attr.title]="segment.tooltip"
+                [attr.aria-label]="segment.tooltip"
+              >
+                @if (segment.showTimes && segment.widthPct >= 18) {
+                  <span class="timeline__cap" [class.timeline__cap--shift]="segment.kind === 'shift'"><span>{{ segment.e }}</span><span>{{ segment.s }}</span></span>
+                }
+              </div>
+            }
             @if (bar.showLunch) {
-              <div class="timeline__lunch" [style.left.%]="bar.lunchLeftPct" [style.width.%]="bar.lunchWidthPct"></div>
+              <div
+                class="timeline__lunch"
+                [class.timeline__lunch--modified]="bar.lunchModified"
+                [style.left.%]="bar.lunchLeftPct"
+                [style.width.%]="bar.lunchWidthPct"
+                tabindex="0"
+                [attr.title]="bar.lunchTooltip"
+                [attr.aria-label]="bar.lunchTooltip"
+              ></div>
             }
           } @else {
             <span class="timeline__empty">Sin horario</span>
@@ -107,9 +133,17 @@
   </div>
 
   <div class="week-editor__legend">
-    <span><i class="legend-dot legend-dot--work"></i> Horario</span>
-    <span><i class="legend-dot legend-dot--lunch"></i> Almuerzo</span>
-    <span><i class="legend-dot legend-dot--rest"></i> Descanso</span>
+    @if (jornadaPeriodo) {
+      <span><i class="legend-dot legend-dot--work"></i> Horario base</span>
+      <span><i class="legend-dot legend-dot--shift"></i> Horario corrido</span>
+      <span><i class="legend-dot legend-dot--extra"></i> Horas extra</span>
+      <span><i class="legend-dot legend-dot--compensation"></i> Compensación</span>
+      <span><i class="legend-dot legend-dot--lunch"></i> Almuerzo</span>
+      <span><i class="legend-dot legend-dot--lunch-additional"></i> Almuerzo+</span>
+    } @else {
+      <span><i class="legend-dot legend-dot--work"></i> Horario</span>
+      <span><i class="legend-dot legend-dot--lunch"></i> Almuerzo</span>
+    }
   </div>
 
   @if (!readOnly) {

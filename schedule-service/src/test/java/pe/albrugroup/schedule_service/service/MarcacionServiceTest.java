@@ -168,6 +168,82 @@ class MarcacionServiceTest {
     }
 
     @Test
+    void programaAlmuerzoHoySinAsistenciaPreviaSinCrearMarcacionReal() {
+        horarioBase(LocalTime.of(8, 0), LocalTime.of(17, 0));
+        reloj(8, 0);
+
+        service.ajustarAlmuerzoProgramado(EMP, DIA, LocalTime.of(12, 0), LocalTime.of(13, 0));
+
+        Asistencia asistencia = almacen.get();
+        assertThat(asistencia).isNotNull();
+        assertThat(asistencia.getEstadoActual()).isEqualTo(EstadoAsistencia.OFFLINE);
+        assertThat(asistencia.getFechaHoraIngreso()).isNull();
+        assertThat(asistencia.getFechaHoraSalida()).isNull();
+        assertThat(asistencia.getAlmuerzoRealInicio()).isNull();
+        assertThat(asistencia.getInicioAlmuerzoProgramado()).isEqualTo(LocalTime.of(12, 0));
+        assertThat(asistencia.getFinAlmuerzoProgramado()).isEqualTo(LocalTime.of(13, 0));
+    }
+
+    @Test
+    void programaAlmuerzoFuturoSinAsistenciaPrevia() {
+        LocalDate futuro = DIA.plusDays(1);
+        horarioBase(LocalTime.of(8, 0), LocalTime.of(17, 0));
+        when(horarioRepository.findHorarioVigente(EMP, futuro)).thenReturn(Optional.of(horario));
+        when(excepcionRepository.findByHorarioIdAndFecha(7L, futuro)).thenReturn(Optional.empty());
+        when(ajusteRepository.findByIdEmpleadoAndFechaOperativaAndEstadoOrderByInicioAsc(
+                EMP, futuro, EstadoAjusteJornada.ACTIVO)).thenReturn(List.of());
+        lenient().when(asistenciaRepository.findByIdEmpleadoAndFecha(EMP, futuro))
+                .thenAnswer(i -> Optional.ofNullable(almacen.get()));
+        reloj(8, 0);
+
+        service.ajustarAlmuerzoProgramado(EMP, futuro, LocalTime.of(12, 0), LocalTime.of(13, 0));
+
+        assertThat(almacen.get().getFecha()).isEqualTo(futuro);
+        assertThat(almacen.get().getFechaHoraIngreso()).isNull();
+        assertThat(almacen.get().getInicioAlmuerzoProgramado()).isEqualTo(LocalTime.of(12, 0));
+        assertThat(almacen.get().getFinAlmuerzoProgramado()).isEqualTo(LocalTime.of(13, 0));
+    }
+
+    @Test
+    void rechazaProgramarAlmuerzoParaFechaPasadaSinCrearAsistencia() {
+        reloj(8, 0);
+
+        assertThatThrownBy(() -> service.ajustarAlmuerzoProgramado(
+                EMP, DIA.minusDays(1), LocalTime.of(12, 0), LocalTime.of(13, 0)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("No se puede programar ni modificar el almuerzo de una fecha pasada");
+        assertThat(almacen.get()).isNull();
+    }
+
+    @Test
+    void rechazaAlmuerzoFueraDeJornadaSinCrearAsistencia() {
+        horarioBase(LocalTime.of(8, 0), LocalTime.of(17, 0));
+        reloj(8, 0);
+
+        assertThatThrownBy(() -> service.ajustarAlmuerzoProgramado(
+                EMP, DIA, LocalTime.of(7, 0), LocalTime.of(8, 0)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("El almuerzo debe caer dentro del horario base");
+        assertThat(almacen.get()).isNull();
+    }
+
+    @Test
+    void ingresoPosteriorReutilizaAsistenciaCreadaAlProgramarAlmuerzo() {
+        horarioBase(LocalTime.of(8, 0), LocalTime.of(17, 0));
+        reloj(8, 0);
+
+        service.ajustarAlmuerzoProgramado(EMP, DIA, LocalTime.of(12, 0), LocalTime.of(13, 0));
+        Long idAsistencia = almacen.get().getId();
+
+        service.registrarIngreso();
+
+        assertThat(almacen.get().getId()).isEqualTo(idAsistencia);
+        assertThat(almacen.get().getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(2026, 8, 10, 8, 0));
+        assertThat(almacen.get().getInicioAlmuerzoProgramado()).isEqualTo(LocalTime.of(12, 0));
+        assertThat(almacen.get().getFinAlmuerzoProgramado()).isEqualTo(LocalTime.of(13, 0));
+    }
+
+    @Test
     void detalleMarcaIngresoDisponibleParaOjtDentroDelHorario() {
         when(currentUser.roles()).thenReturn(List.of("OJT"));
         reloj(8, 25);

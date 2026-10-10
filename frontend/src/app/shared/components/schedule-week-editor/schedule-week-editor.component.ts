@@ -4,6 +4,7 @@ import {
   DestroyRef,
   Input,
   OnChanges,
+  SimpleChanges,
   computed,
   inject,
   signal
@@ -11,16 +12,40 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormGroup } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import {
+  CambioJornadaPeriodoResponse,
+  JornadaEfectivaPeriodoDiaResponse,
+  JornadaEfectivaPeriodoResponse
+} from '../../models/schedule/jornada-efectiva-periodo-response';
 
 interface RawDay {
   index: number;
   dia: string;
   short: string;
+  date: string | null;
+  esHoy: boolean;
   laborable: boolean;
   e: string;
   s: string;
   li: string;
   lf: string;
+  empty: boolean;
+  restLabel: string | null;
+  lunchModified: boolean;
+  lunchTooltip: string;
+  rowLabel: string;
+  segments: TimelineSegment[];
+}
+
+type TimelineSegmentKind = 'base' | 'shift' | 'extra' | 'compensation';
+
+interface TimelineSegment {
+  key: string;
+  kind: TimelineSegmentKind;
+  e: string;
+  s: string;
+  showTimes: boolean;
+  tooltip: string;
 }
 
 interface DayBar extends RawDay {
@@ -30,6 +55,7 @@ interface DayBar extends RawDay {
   lunchLeftPct: number;
   lunchWidthPct: number;
   showLunch: boolean;
+  segments: Array<TimelineSegment & { leftPct: number; widthPct: number }>;
 }
 
 const DAY_LABELS: Record<string, string> = {
@@ -71,6 +97,8 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   @Input() refreshKey = 0;
   /** Presenta la jornada sin controles ni edición; conserva las barras para lectura y captura. */
   @Input() readOnly = false;
+  /** Datos efectivos semanales; cuando no se envían, el componente conserva su comportamiento base. */
+  @Input() jornadaPeriodo: JornadaEfectivaPeriodoResponse | null = null;
 
   private readonly destroyRef = inject(DestroyRef);
   private boundForm: FormGroup | null = null;
@@ -99,12 +127,25 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   private prevEntrada: string | null = null;
 
   protected readonly axis = computed(() => {
-    const laborables = this.rows().filter((r) => r.laborable && toMin(r.e) !== null && toMin(r.s) !== null);
+    const laborables = this.rows().flatMap((r) => {
+      const times = r.segments.length
+        ? r.segments.flatMap((segment) => [segment.e, segment.s])
+        : [r.e, r.s];
+      return r.laborable ? times : [];
+    });
     let min = 6 * 60;
     let max = 20 * 60;
-    for (const r of laborables) {
-      min = Math.min(min, toMin(r.e)!);
-      max = Math.max(max, toMin(r.s)!);
+    for (const value of laborables) {
+      const minutes = toMin(value);
+      if (minutes === null) continue;
+      min = Math.min(min, minutes);
+      max = Math.max(max, minutes);
+    }
+    for (const row of this.rows()) {
+      const lunchStart = toMin(row.li);
+      const lunchEnd = toMin(row.lf);
+      if (lunchStart !== null) min = Math.min(min, lunchStart);
+      if (lunchEnd !== null) max = Math.max(max, lunchEnd);
     }
     min = Math.max(0, Math.floor(min / 60) * 60);
     max = Math.min(24 * 60, Math.ceil(max / 60) * 60);
@@ -130,16 +171,37 @@ export class ScheduleWeekEditorComponent implements OnChanges {
       const s = toMin(r.s);
       const li = toMin(r.li);
       const lf = toMin(r.lf);
-      const hasWindow = r.laborable && e !== null && s !== null && s > e;
+      const segments = (r.segments.length ? r.segments : e !== null && s !== null && s > e
+        ? [{
+            key: `${r.index}-base`,
+            kind: 'base' as const,
+            e: r.e,
+            s: r.s,
+            showTimes: true,
+            tooltip: `Horario base: ${r.e}–${r.s}`
+          }]
+        : [])
+        .flatMap((segment) => {
+          const start = toMin(segment.e);
+          const end = toMin(segment.s);
+          if (start === null || end === null || end <= start) return [];
+          return [{
+            ...segment,
+            leftPct: pct(start),
+            widthPct: pct(end) - pct(start)
+          }];
+        });
+      const hasWindow = segments.length > 0;
       const showLunch = hasWindow && li !== null && lf !== null && lf > li;
       return {
         ...r,
         hasWindow,
-        leftPct: hasWindow ? pct(e!) : 0,
-        widthPct: hasWindow ? pct(s!) - pct(e!) : 0,
+        leftPct: hasWindow ? segments[0].leftPct : 0,
+        widthPct: hasWindow ? segments[0].widthPct : 0,
         showLunch,
         lunchLeftPct: showLunch ? pct(li!) : 0,
-        lunchWidthPct: showLunch ? pct(lf!) - pct(li!) : 0
+        lunchWidthPct: showLunch ? pct(lf!) - pct(li!) : 0,
+        segments
       };
     });
   });
@@ -149,10 +211,11 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     return i === null ? 'Editando: todos los días' : `Editando: ${DAY_LABELS[this.rows()[i]?.dia] ?? ''}`;
   });
 
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges): void {
     const formChanged = this.horarioForm !== this.boundForm;
     const refreshRequested = this.refreshKey !== this.boundRefreshKey;
-    if (!formChanged && !refreshRequested) return;
+    const periodChanged = 'jornadaPeriodo' in changes;
+    if (!formChanged && !refreshRequested && !periodChanged) return;
     this.boundRefreshKey = this.refreshKey;
     if (formChanged) {
       this.boundForm = this.horarioForm;
@@ -206,20 +269,156 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   }
 
   private refresh(): void {
+    if (this.readOnly && this.jornadaPeriodo) {
+      this.rows.set(this.periodRows(this.jornadaPeriodo));
+      return;
+    }
     const rows = this.detalles().controls.map((ctrl, index) => {
       const dia = String(ctrl.get('dia')?.value ?? '');
+      const laborable = ctrl.get('laborable')?.value === 'true';
+      const e = hhmm5(String(ctrl.get('horaEntrada')?.value ?? ''));
+      const s = hhmm5(String(ctrl.get('horaSalida')?.value ?? ''));
+      const li = hhmm5(String(ctrl.get('inicioAlmuerzo')?.value ?? ''));
+      const lf = hhmm5(String(ctrl.get('finAlmuerzo')?.value ?? ''));
       return {
         index,
         dia,
         short: (DAY_LABELS[dia] ?? dia).slice(0, 3),
-        laborable: ctrl.get('laborable')?.value === 'true',
-        e: hhmm5(String(ctrl.get('horaEntrada')?.value ?? '')),
-        s: hhmm5(String(ctrl.get('horaSalida')?.value ?? '')),
-        li: hhmm5(String(ctrl.get('inicioAlmuerzo')?.value ?? '')),
-        lf: hhmm5(String(ctrl.get('finAlmuerzo')?.value ?? ''))
+        date: null,
+        esHoy: dia === dayOfWeek(todayIso()),
+        laborable,
+        e,
+        s,
+        li,
+        lf,
+        empty: false,
+        restLabel: laborable ? null : 'Descanso',
+        lunchModified: false,
+        lunchTooltip: li && lf ? `Almuerzo: ${li}–${lf}` : 'Sin almuerzo',
+        rowLabel: `${DAY_LABELS[dia] ?? dia}: ${laborable ? `${e}–${s}` : 'Descanso'}`,
+        segments: []
       } satisfies RawDay;
     });
     this.rows.set(rows);
+  }
+
+  private periodRows(periodo: JornadaEfectivaPeriodoResponse): RawDay[] {
+    return periodo.dias.map((day, index) => this.periodRow(day, index));
+  }
+
+  private periodRow(day: JornadaEfectivaPeriodoDiaResponse, index: number): RawDay {
+    const base = day.horarioBase;
+    const baseStart = timeOnly(base?.inicio);
+    const baseEnd = timeOnly(base?.fin);
+    const lunchStart = timeOnly(day.almuerzo?.inicioEfectivo ?? base?.almuerzoInicio);
+    const lunchEnd = timeOnly(day.almuerzo?.finEfectivo ?? base?.almuerzoFin);
+    const additionalRest = Boolean(
+      base?.laborable
+      && !day.jornadaEfectiva.laborable
+      && day.cambios.some((change) =>
+        change.tipo === 'DIA_NO_LABORABLE' || (change.tipo === 'EXCEPCION_HORARIO' && change.codigo === 'DIA_LIBRE'))
+    );
+    const segments: TimelineSegment[] = [];
+    const replacesBase = day.jornadaEfectiva.tramos.some((tramo) => {
+      const change = tramo.idAjuste === null
+        ? day.cambios.find((item) => item.tipo === 'EXCEPCION_HORARIO')
+        : day.cambios.find((item) => item.id === tramo.idAjuste);
+      return tramo.origen === 'REEMPLAZO_BASE'
+        || tramo.razon?.startsWith('CORRIMIENTO')
+        || change?.tipo === 'EXCEPCION_HORARIO';
+    });
+    if (base?.laborable && baseStart && baseEnd && !additionalRest && !replacesBase) {
+      segments.push({
+        key: `${index}-base`,
+        kind: 'base',
+        e: baseStart,
+        s: baseEnd,
+        showTimes: true,
+        tooltip: `Horario base: ${baseStart}–${baseEnd}`
+      });
+    }
+
+    for (const tramo of day.jornadaEfectiva.tramos) {
+      const start = timeOnly(tramo.inicio);
+      const end = timeOnly(tramo.fin);
+      if (!start || !end || (tramo.idAjuste === null && sameTime(start, baseStart) && sameTime(end, baseEnd))) continue;
+      const change = tramo.idAjuste === null
+        ? day.cambios.find((item) => item.tipo === 'EXCEPCION_HORARIO')
+        : day.cambios.find((item) => item.id === tramo.idAjuste);
+      const kind = this.segmentKind(tramo.razon, tramo.origen, change);
+      segments.push({
+        key: `${index}-${kind}-${tramo.idAjuste ?? start}`,
+        kind,
+        e: start,
+        s: end,
+        showTimes: kind === 'shift',
+        tooltip: this.segmentTooltip(kind, start, end, tramo.motivo, change)
+      });
+    }
+
+    const dayName = DAY_LABELS[dayOfWeek(day.fecha)] ?? day.fecha;
+    const restLabel = additionalRest
+      ? 'Descanso adicional'
+      : day.estado === 'SIN_HORARIO'
+        ? null
+        : day.jornadaEfectiva.laborable ? null : 'Descanso';
+    const empty = day.estado === 'SIN_HORARIO';
+    const lunchTooltip = this.lunchTooltip(day, lunchStart, lunchEnd);
+    return {
+      index,
+      dia: dayOfWeek(day.fecha),
+      short: (DAY_LABELS[dayOfWeek(day.fecha)] ?? day.fecha).slice(0, 3),
+      date: day.fecha,
+      esHoy: day.esHoy,
+      laborable: day.jornadaEfectiva.laborable,
+      e: baseStart ?? '',
+      s: baseEnd ?? '',
+      li: lunchStart ?? '',
+      lf: lunchEnd ?? '',
+      empty,
+      restLabel,
+      lunchModified: day.almuerzo?.modificado ?? false,
+      lunchTooltip,
+      rowLabel: `${dayName}: ${restLabel ?? (segments.length ? 'Horario programado' : 'Sin cambios')}`,
+      segments
+    };
+  }
+
+  private segmentKind(
+    razon: string | null,
+    origen: string | null,
+    change: CambioJornadaPeriodoResponse | undefined
+  ): TimelineSegmentKind {
+    if (razon === 'COMPENSACION') return 'compensation';
+    if (razon === 'AMPLIACION_OPERATIVA' || origen === 'JORNADA_EXTRAORDINARIA' || origen === 'TRAMO_ADICIONAL') {
+      return 'extra';
+    }
+    return change?.tipo === 'EXCEPCION_HORARIO' || razon?.startsWith('CORRIMIENTO') || origen === 'REEMPLAZO_BASE'
+      ? 'shift'
+      : 'extra';
+  }
+
+  private segmentTooltip(
+    kind: TimelineSegmentKind,
+    start: string,
+    end: string,
+    motivo: string | null,
+    change: CambioJornadaPeriodoResponse | undefined
+  ): string {
+    const label = kind === 'shift' ? 'Horario corrido' : kind === 'compensation' ? 'Compensación' : 'Horas extra';
+    const reason = change?.razon ? ` · ${reasonLabel(change.razon)}` : motivo ? ` · ${motivo}` : '';
+    return `${label}: ${start}–${end}${reason}`;
+  }
+
+  private lunchTooltip(day: JornadaEfectivaPeriodoDiaResponse, start: string | null, end: string | null): string {
+    if (!start || !end) return 'Sin almuerzo programado';
+    if (!day.almuerzo?.modificado) return `Almuerzo: ${start}–${end}`;
+    const baseStart = timeOnly(day.almuerzo.inicioBase);
+    const baseEnd = timeOnly(day.almuerzo.finBase);
+    if (!baseStart || !baseEnd) return `Almuerzo adicional: ${start}–${end}`;
+    return baseStart && baseEnd
+      ? `Almuerzo modificado: ${start}–${end} · antes ${baseStart}–${baseEnd}`
+      : `Almuerzo programado: ${start}–${end}`;
   }
 
   /** Deriva el patrón del bloque 1 (modo "todos") desde el primer día laborable con horas. */
@@ -368,6 +567,31 @@ function toIsoDate(value: string): string {
 function hhmm5(value: string): string {
   const m = /^(\d{1,2}):(\d{2})/.exec(value);
   return m ? `${m[1].padStart(2, '0')}:${m[2]}` : value;
+}
+
+function timeOnly(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const m = /(\d{1,2}):(\d{2})/.exec(value);
+  return m ? `${m[1].padStart(2, '0')}:${m[2]}` : null;
+}
+
+function sameTime(left: string | null, right: string | null): boolean {
+  return !!left && !!right && left === right;
+}
+
+function dayOfWeek(isoDate: string): string {
+  const date = new Date(`${isoDate}T12:00:00`);
+  const days = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+  return days[date.getDay()] ?? '';
+}
+
+function reasonLabel(value: string): string {
+  return {
+    AMPLIACION_OPERATIVA: 'horas extra',
+    COMPENSACION: 'compensación',
+    CORRIMIENTO_COMPENSABLE: 'corrimiento compensable',
+    CORRIMIENTO_JUSTIFICADA: 'corrimiento justificado'
+  }[value] ?? value;
 }
 
 function toMin(value: string | null | undefined): number | null {

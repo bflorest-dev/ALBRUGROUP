@@ -12,6 +12,7 @@ import { CorregirHorarioRequest } from '../../../shared/models/schedule/corregir
 import { DeclararDiaNoLaborableRequest, TipoDiaNoLaborable } from '../../../shared/models/schedule/dia-no-laborable-request';
 import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
 import { AjusteJornadaRequest, JornadaEfectivaResponse, RazonAjuste, RegistrarAjusteV2Request } from '../../../shared/models/schedule/jornada-efectiva-response';
+import { JornadaEfectivaPeriodoResponse } from '../../../shared/models/schedule/jornada-efectiva-periodo-response';
 import { ReporteDiaResponse } from '../../../shared/models/schedule/reporte-dia-response';
 import { RegistrarExcepcionHorarioRequest } from '../../../shared/models/schedule/registrar-excepcion-horario-request';
 import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
@@ -53,6 +54,10 @@ export class PersonalScheduleFacade {
   } | null = null;
 
   readonly schedule = signal<HorarioResponse | null>(null);
+  readonly jornadaPeriodo = signal<JornadaEfectivaPeriodoResponse | null>(null);
+  readonly isLoadingJornadaPeriodo = signal(false);
+  readonly jornadaPeriodoError = signal('');
+  readonly showEffectiveChanges = signal(true);
   readonly history = signal<HorarioResponse[]>([]);
   readonly isLoadingHistory = signal(false);
   readonly historyError = signal('');
@@ -122,12 +127,16 @@ export class PersonalScheduleFacade {
     this.employeeId = employeeId;
     this.contract = contract;
     this.schedule.set(schedule);
+    this.jornadaPeriodo.set(null);
+    this.jornadaPeriodoError.set('');
+    this.showEffectiveChanges.set(true);
     this.editingSchedule = schedule;
     this.isCreatingFutureSchedule.set(false);
     this.clearMessages();
     this.closeCorrection();
     this.resetAdjustmentState();
     void this.loadMonthlyBalance(employeeId);
+    void this.loadJornadaPeriodo(employeeId);
     this.resetForm(schedule);
     void this.loadHistory(employeeId);
   }
@@ -138,6 +147,10 @@ export class PersonalScheduleFacade {
     this.editingSchedule = null;
     this.isCreatingFutureSchedule.set(false);
     this.schedule.set(null);
+    this.jornadaPeriodo.set(null);
+    this.isLoadingJornadaPeriodo.set(false);
+    this.jornadaPeriodoError.set('');
+    this.showEffectiveChanges.set(true);
     this.history.set([]);
     this.historyError.set('');
     this.resetForm(null);
@@ -201,6 +214,30 @@ export class PersonalScheduleFacade {
     } finally {
       this.isLoadingHistory.set(false);
     }
+  }
+
+  async loadJornadaPeriodo(employeeId = this.employeeId): Promise<void> {
+    if (!employeeId) return;
+    const { desde, hasta } = this.currentOperationalWeek();
+    this.isLoadingJornadaPeriodo.set(true);
+    this.jornadaPeriodoError.set('');
+    try {
+      const periodo = await firstValueFrom(
+        this.adjustmentService.getJornadaPeriodo(employeeId, desde, hasta).pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      this.jornadaPeriodo.set(periodo);
+    } catch (error) {
+      this.jornadaPeriodo.set(null);
+      this.jornadaPeriodoError.set(
+        formatApiErrorMessage(error as HttpErrorResponse, 'No pudimos cargar los cambios de esta semana.')
+      );
+    } finally {
+      this.isLoadingJornadaPeriodo.set(false);
+    }
+  }
+
+  setShowEffectiveChanges(value: boolean): void {
+    this.showEffectiveChanges.set(value);
   }
 
   async save(): Promise<boolean> {
@@ -457,7 +494,10 @@ export class PersonalScheduleFacade {
     if (!this.employeeId) return;
     try {
       this.schedule.set(await firstValueFrom(this.service.getHorarioVigente(this.employeeId).pipe(timeout(REQUEST_TIMEOUT_MS))));
-      await this.loadHistory(this.employeeId);
+      await Promise.all([
+        this.loadHistory(this.employeeId),
+        this.loadJornadaPeriodo(this.employeeId)
+      ]);
     } finally {
       await this.loadDayAdjustment();
     }
@@ -491,12 +531,34 @@ export class PersonalScheduleFacade {
     };
   }
 
+  private currentOperationalWeek(): { desde: string; hasta: string } {
+    const [year, month, day] = this.today().split('-').map(Number);
+    const monday = new Date(year, month - 1, day, 12);
+    const dayOfWeek = monday.getDay();
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    monday.setDate(monday.getDate() - daysFromMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return {
+      desde: this.formatDate(monday),
+      hasta: this.formatDate(sunday)
+    };
+  }
+
+  private formatDate(value: Date): string {
+    const pad = (part: number) => String(part).padStart(2, '0');
+    return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+  }
+
   private async finishMutation(schedule: HorarioResponse, message: string): Promise<void> {
     this.schedule.set(schedule);
     this.isCreatingFutureSchedule.set(false);
     this.success.set(message);
     this.error.set('');
-    await this.loadHistory(this.employeeId);
+    await Promise.all([
+      this.loadHistory(this.employeeId),
+      this.loadJornadaPeriodo(this.employeeId)
+    ]);
   }
 
   private buildRequest(modalidad: string): {

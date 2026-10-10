@@ -484,10 +484,22 @@
         <section class="summary-block schedule-overview">
           <div class="schedule-overview__heading">
             <div>
-              <h3>Horario base</h3>
-              <p class="schedule-overview__description">Consulta y gestiona el horario vigente para el empleado.</p>
+              <h3>Horario semanal</h3>
+              <p class="schedule-overview__description">Consulta el horario base y los cambios aplicados esta semana.</p>
             </div>
-            @if (schedule()) { <span class="schedule-state">{{ schedule()?.modalidad ? label(schedule()?.modalidad) : 'Horario vigente' }}</span> }
+            <div class="schedule-overview__heading-actions">
+              @if (schedule()) {
+                <label class="schedule-change-toggle schedule-state">
+                  <input
+                    type="checkbox"
+                    [checked]="scheduleFacade.showEffectiveChanges()"
+                    (change)="scheduleFacade.setShowEffectiveChanges($any($event.target).checked)"
+                  />
+                  <span>Mostrar cambios</span>
+                </label>
+                <span class="schedule-state">{{ schedule()?.modalidad ? label(schedule()?.modalidad) : 'Horario vigente' }}</span>
+              }
+            </div>
           </div>
           @if (isLoadingEmployment()) {
             <p class="muted">Consultando horario vigente…</p>
@@ -496,12 +508,18 @@
           } @else if (!schedule()) {
             <p class="pending-copy">Este empleado todavía no tiene un horario base asignado.</p>
           } @else {
+            @if (scheduleFacade.isLoadingJornadaPeriodo()) {
+              <p class="muted" role="status">Consultando cambios de esta semana…</p>
+            } @if (scheduleFacade.jornadaPeriodoError()) {
+              <p class="feedback error" role="alert">Se muestra el horario base porque no pudimos cargar los cambios de esta semana.</p>
+            }
             <app-schedule-week-editor
               [horarioForm]="scheduleFacade.form"
               [requiresLunch]="scheduleFacade.requiresLunch()"
               [perDayLunch]="true"
               [readOnly]="true"
               [refreshKey]="scheduleFacade.editorKey()"
+              [jornadaPeriodo]="scheduleFacade.showEffectiveChanges() ? scheduleFacade.jornadaPeriodo() : null"
             />
             <dl class="schedule-facts">
               <div><dt>Inicio</dt><dd class="mono">{{ schedule()?.fechaInicio }}</dd></div>

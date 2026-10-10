@@ -8,6 +8,7 @@ import {
   PreviewAjusteJornadaResponse,
   RegistrarAjusteV2Request
 } from '../../shared/models/schedule/jornada-efectiva-response';
+import { JornadaEfectivaPeriodoResponse } from '../../shared/models/schedule/jornada-efectiva-periodo-response';
 import { DeclararDiaNoLaborableRequest } from '../../shared/models/schedule/dia-no-laborable-request';
 import { ReporteDiaResponse } from '../../shared/models/schedule/reporte-dia-response';
 import { API_CONSTANTS } from '../constants/api.constants';
@@ -23,6 +24,20 @@ export class ScheduleAdjustmentService {
     const params = fecha ? new HttpParams().set('fecha', fecha) : undefined;
     return this.http.get<JornadaEfectivaResponse>(
       `${this.scheduleUrl}/${idEmpleado}/jornada-efectiva`,
+      { params }
+    );
+  }
+
+  getJornadaPeriodo(
+    idEmpleado: number,
+    desde: string,
+    hasta: string
+  ): Observable<JornadaEfectivaPeriodoResponse> {
+    const params = new HttpParams()
+      .set('desde', desde)
+      .set('hasta', hasta);
+    return this.http.get<JornadaEfectivaPeriodoResponse>(
+      `${this.scheduleUrl}/${idEmpleado}/jornada-efectiva/periodo`,
       { params }
     );
   }

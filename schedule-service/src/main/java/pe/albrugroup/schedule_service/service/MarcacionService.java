@@ -1035,8 +1035,12 @@ public class MarcacionService {
      */
     @Transactional
     public ReporteDiaResponse ajustarAlmuerzoProgramado(Long idEmpleado, LocalDate fecha, LocalTime inicio, LocalTime fin) {
+        if (fecha.isBefore(OperationalDateTime.today())) {
+            throw new BadRequestException("No se puede programar ni modificar el almuerzo de una fecha pasada");
+        }
+
         Asistencia a = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha)
-                .orElseThrow(() -> new BadRequestException("No hay una jornada iniciada ese dia para ajustar el almuerzo"));
+                .orElseGet(() -> crearAsistenciaProgramadaParaAjuste(idEmpleado, fecha, inicio, fin));
         if (a.getFechaHoraSalida() != null) {
             throw new BadRequestException("La jornada ya cerro; no se puede cambiar el almuerzo");
         }
@@ -1052,17 +1056,7 @@ public class MarcacionService {
             a.setFinAlmuerzoProgramado(null);
             newLunch = 0;
         } else {
-            if (inicio == null || fin == null) {
-                throw new BadRequestException("El almuerzo debe tener inicio y fin, o quitarse por completo");
-            }
-            LocalTime entrada = a.getEntradaProgramada();
-            LocalTime salida = a.getSalidaProgramada();
-            if (entrada == null || salida == null) {
-                throw new BadRequestException("El dia no tiene horario base sobre el cual ubicar el almuerzo");
-            }
-            if (!inicio.isAfter(entrada) || !fin.isAfter(inicio) || !salida.isAfter(fin)) {
-                throw new BadRequestException("El almuerzo debe caer dentro del horario base");
-            }
+            validarAlmuerzoDentroDeJornada(inicio, fin, a.getEntradaProgramada(), a.getSalidaProgramada());
             a.setInicioAlmuerzoProgramado(inicio);
             a.setFinAlmuerzoProgramado(fin);
             newLunch = (int) Duration.between(inicio, fin).toMinutes();
@@ -1073,6 +1067,53 @@ public class MarcacionService {
         asistenciaRepository.save(a);
         publicar("EXCEPCION_HORARIO_AFECTADA", "AJUSTE_ALMUERZO", idEmpleado, fecha, a.getEstadoActual());
         return getReporteDia(idEmpleado, fecha);
+    }
+
+    private Asistencia crearAsistenciaProgramadaParaAjuste(
+            Long idEmpleado,
+            LocalDate fecha,
+            LocalTime inicio,
+            LocalTime fin
+    ) {
+        JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolverSiExiste(idEmpleado, fecha)
+                .orElseThrow(() -> new BadRequestException(
+                        "La fecha no tiene un horario laborable para programar el almuerzo"));
+
+        TramoJornadaResponse tramoBase = jornada.getTramos().stream()
+                .filter(tramo -> Boolean.TRUE.equals(tramo.getBase()))
+                .findFirst()
+                .orElse(null);
+        if (tramoBase == null || tramoBase.getInicio() == null || tramoBase.getFin() == null) {
+            throw new BadRequestException(
+                    "La fecha no tiene un horario laborable para programar el almuerzo");
+        }
+
+        validarAlmuerzoDentroDeJornada(
+                inicio,
+                fin,
+                tramoBase.getInicio().toLocalTime(),
+                tramoBase.getFin().toLocalTime());
+        return crearAsistencia(idEmpleado, fecha, tramoBase, jornada);
+    }
+
+    private void validarAlmuerzoDentroDeJornada(
+            LocalTime inicio,
+            LocalTime fin,
+            LocalTime entrada,
+            LocalTime salida
+    ) {
+        if (inicio == null && fin == null) {
+            return;
+        }
+        if (inicio == null || fin == null) {
+            throw new BadRequestException("El almuerzo debe tener inicio y fin, o quitarse por completo");
+        }
+        if (entrada == null || salida == null) {
+            throw new BadRequestException("El dia no tiene horario base sobre el cual ubicar el almuerzo");
+        }
+        if (!inicio.isAfter(entrada) || !fin.isAfter(inicio) || !salida.isAfter(fin)) {
+            throw new BadRequestException("El almuerzo debe caer dentro del horario base");
+        }
     }
 
     /**
