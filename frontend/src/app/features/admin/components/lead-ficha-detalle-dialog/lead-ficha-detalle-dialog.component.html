@@ -1,0 +1,144 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: '620px', maxWidth: '95vw' }"
+  styleClass="ficha-detalle-dialog"
+>
+  <ng-template pTemplate="header">
+    <div class="ficha-header">
+      <span class="ficha-title">Ficha detalle</span>
+      @if (leadLabel()) {
+        <span class="ficha-lead-label">{{ leadLabel() }}</span>
+      }
+    </div>
+  </ng-template>
+
+  <div class="ficha-body">
+    <!-- Selector de etapa -->
+    <div class="etapa-selector">
+      <p-selectButton
+        [options]="etapaOptions"
+        [ngModel]="etapa()"
+        (ngModelChange)="onEtapaChange($event)"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+        size="small"
+      />
+    </div>
+
+    @if (loading()) {
+      <div class="ficha-loading">
+        <p-progressSpinner [style]="{ width: '40px', height: '40px' }" strokeWidth="3" />
+      </div>
+    } @else if (error()) {
+      <div class="ficha-error">No se pudo cargar la ficha del lead.</div>
+    } @else if (data(); as d) {
+      <!-- QUIEN: Actores de la etapa -->
+      <div class="section-label">
+        <i class="pi pi-users"></i>
+        Actores de la etapa
+      </div>
+
+      <div class="quien-grid">
+        <div class="quien-card">
+          <span class="quien-label">Primera asignacion</span>
+          <span class="quien-name">
+            <span class="badge badge-first">1ro</span>
+            {{ actorNombre(quien()?.primeraAsignacion) }}
+          </span>
+          <span class="quien-date">{{ actorFecha(quien()?.primeraAsignacion) }}</span>
+        </div>
+        <div class="quien-card">
+          <span class="quien-label">Ultima asignacion</span>
+          <span class="quien-name">
+            <span class="badge badge-last">Ult</span>
+            {{ actorNombre(quien()?.ultimaAsignacion) }}
+          </span>
+          <span class="quien-date">{{ actorFecha(quien()?.ultimaAsignacion) }}</span>
+        </div>
+        <div class="quien-card">
+          <span class="quien-label">Primera tipificacion</span>
+          <span class="quien-name">
+            <span class="badge badge-first">1ro</span>
+            {{ actorNombre(quien()?.primeraTipificacion) }}
+            @if (quien()?.primeraCodigoTipificacion) {
+              <span class="badge-tipi">{{ quien()?.primeraCodigoTipificacion }}</span>
+            }
+          </span>
+          <span class="quien-date">{{ actorFecha(quien()?.primeraTipificacion) }}</span>
+        </div>
+        <div class="quien-card">
+          <span class="quien-label">Ultima tipificacion</span>
+          <span class="quien-name">
+            <span class="badge badge-last">Ult</span>
+            {{ actorNombre(quien()?.ultimaTipificacion) }}
+            @if (quien()?.ultimaCodigoTipificacion) {
+              <span class="badge-tipi">{{ quien()?.ultimaCodigoTipificacion }}</span>
+            }
+          </span>
+          <span class="quien-date">{{ actorFecha(quien()?.ultimaTipificacion) }}</span>
+        </div>
+        <div class="quien-card quien-card-full">
+          <span class="quien-label">Mayor tipificacion alcanzada</span>
+          <span class="quien-name">
+            <span class="badge badge-best">
+              <i class="pi pi-trophy"></i>
+            </span>
+            {{ actorNombre(quien()?.mayorTipificacion) }}
+            @if (quien()?.mayorRangoCodigoTipificacion) {
+              <span class="badge-tipi">{{ quien()?.mayorRangoCodigoTipificacion }}</span>
+            }
+          </span>
+          <span class="quien-date">{{ actorFecha(quien()?.mayorTipificacion) }}</span>
+        </div>
+      </div>
+
+      <!-- CUANDO: Timeline del lead -->
+      <div class="section-label">
+        <i class="pi pi-clock"></i>
+        Timeline del lead
+      </div>
+
+      <ul class="timeline">
+        <li class="tl-item">
+          <span class="tl-dot tl-dot-accent"></span>
+          <div class="tl-content">
+            <span class="tl-label">Primer registro</span>
+            <span class="tl-date">{{ formatInstant(cuando()?.primerRegistro) || '—' }}</span>
+          </div>
+        </li>
+        <li class="tl-item">
+          <span class="tl-dot tl-dot-accent"></span>
+          <div class="tl-content">
+            <span class="tl-label">Ultimo registro</span>
+            <span class="tl-date">{{ formatInstant(cuando()?.ultimoRegistro) || '—' }}</span>
+          </div>
+        </li>
+        <li class="tl-item">
+          <span class="tl-dot" [class.tl-dot-success]="cuando()?.ingresoVenta" [class.tl-dot-empty]="!cuando()?.ingresoVenta"></span>
+          <div class="tl-content">
+            <span class="tl-label">Ingreso a venta</span>
+            <span class="tl-date">{{ formatInstant(cuando()?.ingresoVenta) || '—' }}</span>
+          </div>
+        </li>
+        <li class="tl-item">
+          <span class="tl-dot" [class.tl-dot-success]="cuando()?.fechaInstalacion" [class.tl-dot-empty]="!cuando()?.fechaInstalacion"></span>
+          <div class="tl-content">
+            <span class="tl-label">Instalacion</span>
+            <span class="tl-date">{{ formatDate(cuando()?.fechaInstalacion) || '—' }}</span>
+          </div>
+        </li>
+        <li class="tl-item">
+          <span class="tl-dot" [class.tl-dot-warn]="cuando()?.ultimaGestionPostventa" [class.tl-dot-empty]="!cuando()?.ultimaGestionPostventa"></span>
+          <div class="tl-content">
+            <span class="tl-label">Ultima gestion postventa</span>
+            <span class="tl-date">{{ formatInstant(cuando()?.ultimaGestionPostventa) || '—' }}</span>
+          </div>
+        </li>
+      </ul>
+    }
+  </div>
+</p-dialog>

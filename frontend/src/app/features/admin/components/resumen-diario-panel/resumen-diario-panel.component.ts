@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { DialogModule } from 'primeng/dialog';
@@ -9,6 +9,7 @@ import { localToday, resolveMetricsRange } from '../../../../shared/utils/metric
 import { GestionCampoTipi, GestionModo } from '../../services/admin-gestion-campana.service';
 import { EstadoLeadDetalle, PreventaDetalle, RankingAsesorDetalle, ResumenDiarioService } from '../../services/resumen-diario.service';
 import { ResumenAsesorVista, ResumenDiarioFacade, ResumenEstadoFila } from '../../facades/resumen-diario.facade';
+import { LeadFichaDetalleDialogComponent } from '../lead-ficha-detalle-dialog/lead-ficha-detalle-dialog.component';
 
 /**
  * Panel RESUMEN DIARIO del DASHBOARD de PREVENTA: las 4 tablas del reporte diario como un poster
@@ -17,7 +18,7 @@ import { ResumenAsesorVista, ResumenDiarioFacade, ResumenEstadoFila } from '../.
  */
 @Component({
   selector: 'app-resumen-diario-panel',
-  imports: [DecimalPipe, DialogModule, MessageModule, TooltipModule],
+  imports: [DecimalPipe, DialogModule, MessageModule, TooltipModule, LeadFichaDetalleDialogComponent],
   providers: [ResumenDiarioFacade],
   templateUrl: './resumen-diario-panel.component.html',
   styleUrl: './resumen-diario-panel.component.scss',
@@ -51,6 +52,8 @@ export class ResumenDiarioPanelComponent implements OnInit {
   protected readonly estadoDetalleError = signal(false);
   protected readonly estadoDetalle = signal<EstadoLeadDetalle[]>([]);
   protected readonly estadoDetalleFila = signal<ResumenEstadoFila | null>(null);
+
+  private readonly fichaDialog = viewChild<LeadFichaDetalleDialogComponent>('fichaDialog');
 
   /** Card del que se abrió el detalle (para el subtítulo del modal). */
   protected readonly detalleCard = computed(() =>
@@ -281,6 +284,12 @@ export class ResumenDiarioPanelComponent implements OnInit {
     } finally {
       this.estadoDetalleLoading.set(false);
     }
+  }
+
+  protected abrirFichaDetalle(idLead: number, lead: string | null, usermeta: string | null, event: Event): void {
+    event.stopPropagation();
+    const label = lead || (usermeta ? `@${usermeta}` : `#${idLead}`);
+    this.fichaDialog()?.abrir(idLead, label);
   }
 
   /** Hora local (America/Lima) HH:MM de un instante ISO. */

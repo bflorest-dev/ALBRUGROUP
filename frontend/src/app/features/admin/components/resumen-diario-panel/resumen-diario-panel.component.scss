@@ -841,6 +841,25 @@ tr.is-win .est-name {
     min-width: 125px;
   }
 
+  .lead-link {
+    all: unset;
+    cursor: pointer;
+    display: inline-flex;
+    flex-direction: column;
+    border-radius: 4px;
+    padding: 1px 4px;
+    transition: background 0.15s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+
+      .lead-main:not(.is-empty), .stack-main:not(.is-empty) {
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+    }
+  }
+
   table.ranking-detalle .campaign-cell {
     min-width: 150px;
     max-width: 210px;

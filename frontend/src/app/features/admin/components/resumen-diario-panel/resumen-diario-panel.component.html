@@ -237,16 +237,18 @@
             <tr>
               <td class="n">{{ i + 1 }}</td>
               <td class="lead-cell">
-                @if (row.lead) {
-                  <span class="lead-main">{{ row.lead }}</span>
-                  @if (row.usermeta) {
-                    <span class="lead-sub">&#64;{{ row.usermeta }}</span>
+                <button type="button" class="lead-link" (click)="abrirFichaDetalle(row.idLead, row.lead, row.usermeta, $event)" title="Ver ficha detalle">
+                  @if (row.lead) {
+                    <span class="lead-main">{{ row.lead }}</span>
+                    @if (row.usermeta) {
+                      <span class="lead-sub">&#64;{{ row.usermeta }}</span>
+                    }
+                  } @else if (row.usermeta) {
+                    <span class="lead-main">&#64;{{ row.usermeta }}</span>
+                  } @else {
+                    <span class="lead-main is-empty">—</span>
                   }
-                } @else if (row.usermeta) {
-                  <span class="lead-main">&#64;{{ row.usermeta }}</span>
-                } @else {
-                  <span class="lead-main is-empty">—</span>
-                }
+                </button>
               </td>
               <td>{{ row.numeroDocumento || '—' }}</td>
               <td class="nombre-cell">
@@ -331,18 +333,20 @@
                 </span>
               </td>
               <td class="lead-cell">
-                <span class="stack-cell">
-                  @if (row.lead) {
-                    <span class="stack-main">{{ row.lead }}</span>
-                    @if (row.usermeta) {
-                      <span class="stack-secondary">&#64;{{ row.usermeta }}</span>
+                <button type="button" class="lead-link" (click)="abrirFichaDetalle(row.idLead, row.lead, row.usermeta, $event)" title="Ver ficha detalle">
+                  <span class="stack-cell">
+                    @if (row.lead) {
+                      <span class="stack-main">{{ row.lead }}</span>
+                      @if (row.usermeta) {
+                        <span class="stack-secondary">&#64;{{ row.usermeta }}</span>
+                      }
+                    } @else if (row.usermeta) {
+                      <span class="stack-main">&#64;{{ row.usermeta }}</span>
+                    } @else {
+                      <span class="stack-main is-empty">—</span>
                     }
-                  } @else if (row.usermeta) {
-                    <span class="stack-main">&#64;{{ row.usermeta }}</span>
-                  } @else {
-                    <span class="stack-main is-empty">—</span>
-                  }
-                </span>
+                  </span>
+                </button>
               </td>
               <td>{{ asesorCorto(row.nombreAsesorMayorTipificacion) }}</td>
               <td>
@@ -425,18 +429,20 @@
                 </span>
               </td>
               <td class="lead-cell">
-                <span class="stack-cell">
-                  @if (row.lead) {
-                    <span class="stack-main">{{ row.lead }}</span>
-                    @if (row.usermeta) {
-                      <span class="stack-secondary">&#64;{{ row.usermeta }}</span>
+                <button type="button" class="lead-link" (click)="abrirFichaDetalle(row.idLead, row.lead, row.usermeta, $event)" title="Ver ficha detalle">
+                  <span class="stack-cell">
+                    @if (row.lead) {
+                      <span class="stack-main">{{ row.lead }}</span>
+                      @if (row.usermeta) {
+                        <span class="stack-secondary">&#64;{{ row.usermeta }}</span>
+                      }
+                    } @else if (row.usermeta) {
+                      <span class="stack-main">&#64;{{ row.usermeta }}</span>
+                    } @else {
+                      <span class="stack-main is-empty">—</span>
                     }
-                  } @else if (row.usermeta) {
-                    <span class="stack-main">&#64;{{ row.usermeta }}</span>
-                  } @else {
-                    <span class="stack-main is-empty">—</span>
-                  }
-                </span>
+                  </span>
+                </button>
               </td>
               <td>
                 <span class="stack-cell tip-stack">
@@ -458,3 +464,5 @@
     <p class="detalle-count">{{ rankingDetalle().length }} lead(s)</p>
   }
 </p-dialog>
+
+<app-lead-ficha-detalle-dialog #fichaDialog />
