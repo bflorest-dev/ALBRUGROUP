@@ -122,6 +122,57 @@ class EquipoFilterInterceptorTest {
     }
 
     @Test
+    void administradorNoAcotaDashboardVentaPorProveedorActivo() {
+        autenticarAdministrador();
+        Session session = mock(Session.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(entityManager.unwrap(Session.class)).thenReturn(session);
+        when(proveedorScopeService.ambitoActual()).thenReturn(null);
+        when(proveedorScopeService.esAdministrador()).thenReturn(true);
+        when(request.getRequestURI()).thenReturn("/venta/dashboard");
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+
+        interceptor.preHandle(request, mock(HttpServletResponse.class), new Object());
+
+        verify(session, never()).enableFilter("proveedorFilter");
+        verify(session, never()).enableFilter("equipoFilter");
+    }
+
+    @Test
+    void administradorNoAcotaSeguimientoDeVentaPorProveedorActivo() {
+        autenticarAdministrador();
+        Session session = mock(Session.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(entityManager.unwrap(Session.class)).thenReturn(session);
+        when(proveedorScopeService.ambitoActual()).thenReturn(null);
+        when(proveedorScopeService.esAdministrador()).thenReturn(true);
+        when(request.getRequestURI()).thenReturn("/venta/resumen-diario");
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+
+        interceptor.preHandle(request, mock(HttpServletResponse.class), new Object());
+
+        verify(session, never()).enableFilter("proveedorFilter");
+        verify(session, never()).enableFilter("equipoFilter");
+    }
+
+    @Test
+    void administradorNoAcotaDashboardPreventaInstalacionPorProveedorActivo() {
+        autenticarAdministrador();
+        Session session = mock(Session.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(entityManager.unwrap(Session.class)).thenReturn(session);
+        when(proveedorScopeService.ambitoActual()).thenReturn(null);
+        when(proveedorScopeService.esAdministrador()).thenReturn(true);
+        when(request.getRequestURI()).thenReturn("/venta/preventa-instalacion");
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+
+        interceptor.preHandle(request, mock(HttpServletResponse.class), new Object());
+
+        verify(session, never()).enableFilter("proveedorFilter");
+        verify(session, never()).enableFilter("equipoFilter");
+    }
+
+    @Test
     void equipoActivoFueraDelUsuarioFallaCerrado() {
         autenticarUsuarioEquipos(java.util.List.of(1L, 2L));
         Session session = mock(Session.class);
@@ -149,6 +200,21 @@ class EquipoFilterInterceptorTest {
                 java.util.List.of("ASESOR_VENTAS"),
                 java.util.List.of(),
                 equipos
+        );
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(user, null)
+        );
+    }
+
+    private void autenticarAdministrador() {
+        var user = new UserSession(
+                "admin",
+                1L,
+                "Administrador",
+                LocalDate.of(2026, 9, 7),
+                java.util.List.of("ADMINISTRADOR"),
+                java.util.List.of("VER_TODOS_LOS_EQUIPOS"),
+                java.util.List.of()
         );
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(user, null)

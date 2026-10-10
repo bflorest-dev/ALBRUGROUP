@@ -22,7 +22,7 @@ import java.util.List;
  * Reglas:
  * - Sin usuario autenticado (público/health): no se filtra.
  * - ADMIN en bandejas globales de Backoffice: filtro `proveedorFilter` por el proveedor activo;
- *   GTR conserva su filtro por equipo.
+ *   los endpoints de métricas/dashboard conservan la visibilidad global del ADMIN.
  * - Visibilidad global (permiso VER_TODOS_LOS_EQUIPOS): no se filtra fuera de Backoffice global.
  * - Rol activo acotado por PROVEEDOR (BACKOFFICE / POSTVENTA): filtro `proveedorFilter`
  *   por sus proveedores (estrechado al proveedor activo del selector, header X-Proveedor-Id). Se usa
@@ -79,7 +79,20 @@ public class EquipoFilterInterceptor implements HandlerInterceptor {
             return false;
         }
         String uri = request.getRequestURI();
-        return uri != null && uri.contains("/venta") && request.getParameter("idEquipo") == null;
+        return uri != null
+                && uri.contains("/venta")
+                && !esDashboardAdministrativo(uri)
+                && request.getParameter("idEquipo") == null;
+    }
+
+    /**
+     * Los dashboards de ADMIN ya reciben sus filtros explícitos (por proveedor/equipo) o agregan
+     * ambos proveedores. No deben heredar el proveedor activo del panel de sesión.
+     */
+    private boolean esDashboardAdministrativo(String uri) {
+        return uri.contains("/venta/dashboard")
+                || uri.contains("/venta/resumen-diario")
+                || uri.contains("/venta/preventa-instalacion");
     }
 
     private void habilitarFiltroProveedor(ProveedorScopeService.Scope scope) {
