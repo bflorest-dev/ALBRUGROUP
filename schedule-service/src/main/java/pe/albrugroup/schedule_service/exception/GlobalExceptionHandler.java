@@ -11,6 +11,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -77,6 +78,17 @@ public class GlobalExceptionHandler {
                 "status", HttpStatus.BAD_REQUEST.value(),
                 "error", HttpStatus.BAD_REQUEST.getReasonPhrase(),
                 "message", "Parametros invalidos"
+        ));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, Object>> handleMissingParameter(
+            MissingServletRequestParameterException e
+    ) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "error", HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "message", "Falta indicar el parametro requerido: " + e.getParameterName()
         ));
     }
 

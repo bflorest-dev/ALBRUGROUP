@@ -13,6 +13,8 @@ public interface DiaNoLaborableRepository extends JpaRepository<DiaNoLaborable, 
     /** Todos los overrides de calendario de una fecha (pocos); la precedencia se resuelve en memoria. */
     List<DiaNoLaborable> findByFecha(LocalDate fecha);
 
+    List<DiaNoLaborable> findByFechaBetween(LocalDate desde, LocalDate hasta);
+
     Optional<DiaNoLaborable> findFirstByAlcanceAndRefIdAndFecha(
             AlcanceDiaNoLaborable alcance, Long refId, LocalDate fecha);
 

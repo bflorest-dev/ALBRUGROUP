@@ -7,9 +7,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.schedule_service.entity.request.horario.AjusteJornadaRequest;
 import pe.albrugroup.schedule_service.entity.response.horario.AjusteJornadaResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaPeriodoResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.PreviewAjusteJornadaResponse;
 import pe.albrugroup.schedule_service.service.AjusteJornadaService;
@@ -32,6 +34,16 @@ public class AjusteJornadaController {
             @RequestParam(required = false) LocalDate fecha
     ) {
         return ResponseEntity.ok(service.getJornada(idEmpleado, fecha));
+    }
+
+    @GetMapping("/jornada-efectiva/periodo")
+    @PreAuthorize("hasAnyAuthority('READ_HORARIOS','READ_HORARIOS_SELF','UPDATE_HORARIOS')")
+    public ResponseEntity<JornadaEfectivaPeriodoResponse> jornadaPeriodo(
+            @PathVariable @Positive Long idEmpleado,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
+    ) {
+        return ResponseEntity.ok(service.getJornadaPeriodo(idEmpleado, desde, hasta));
     }
 
     @PostMapping("/ajustes/preview")

@@ -10,12 +10,14 @@ import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
 import pe.albrugroup.schedule_service.configuration.ScheduleEngineProperties;
 import pe.albrugroup.schedule_service.entity.AjusteJornada;
 import pe.albrugroup.schedule_service.entity.Asistencia;
+import pe.albrugroup.schedule_service.entity.DiaNoLaborable;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.HorarioDetalle;
 import pe.albrugroup.schedule_service.entity.enums.*;
 import pe.albrugroup.schedule_service.entity.request.horario.AjusteJornadaRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarAjusteRequest;
 import pe.albrugroup.schedule_service.entity.response.horario.AjusteJornadaResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaPeriodoResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaResponse;
 import pe.albrugroup.schedule_service.repository.*;
 
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -57,6 +60,8 @@ class AjusteJornadaServiceTest {
                 ajusteRepository,
                 horarioRepository,
                 asistenciaRepository,
+                excepcionRepository,
+                diaNoLaborableRepository,
                 resolver,
                 notifier,
                 currentUser,
@@ -303,6 +308,117 @@ class AjusteJornadaServiceTest {
                 .hasMessageContaining("no reemplaza el base");
     }
 
+    @Test
+    void jornadaPeriodoDevuelveUnaFilaPorCadaDiaYMarcaElDiaOperativo() {
+        LocalDate desde = LocalDate.of(2026, 6, 15);
+        LocalDate hasta = desde.plusDays(6);
+        Horario horario = horarioSemanal(desde.minusDays(14));
+        prepararPeriodo(desde, hasta, horario);
+
+        JornadaEfectivaPeriodoResponse response = service.getJornadaPeriodo(21L, desde, hasta);
+
+        assertThat(response.getDias()).hasSize(7);
+        assertThat(response.getDias()).filteredOn(dia -> Boolean.TRUE.equals(dia.getEsHoy())).hasSize(1);
+        assertThat(response.getDias().getFirst().getFecha()).isEqualTo(desde);
+        assertThat(response.getDias().getFirst().getEstado()).isEqualTo("CON_HORARIO");
+        assertThat(response.getDias().getFirst().getHorarioBase().getInicio()).isEqualTo(LocalTime.of(8, 0));
+    }
+
+    @Test
+    void jornadaPeriodoExponeCorrimientoYAlmuerzoModificado() {
+        LocalDate fecha = LocalDate.of(2026, 6, 15);
+        Horario horario = horarioSemanal(fecha.minusDays(14));
+        AjusteJornada ajuste = AjusteJornada.builder()
+                .id(88L)
+                .idEmpleado(21L)
+                .horario(horario)
+                .fechaOperativa(fecha)
+                .inicio(LocalDateTime.of(fecha, LocalTime.of(9, 0)))
+                .fin(LocalDateTime.of(fecha, LocalTime.of(18, 0)))
+                .estado(EstadoAjusteJornada.ACTIVO)
+                .origen(OrigenAjusteJornada.REEMPLAZO_BASE)
+                .razon(RazonAjuste.CORRIMIENTO_COMPENSABLE)
+                .motivo("Ingreso posterior compensable")
+                .build();
+        prepararPeriodo(fecha, fecha, horario);
+        when(ajusteRepository.findByIdEmpleadoAndFechaOperativaBetweenAndEstado(
+                21L, fecha, fecha, EstadoAjusteJornada.ACTIVO)).thenReturn(List.of(ajuste));
+        when(asistenciaRepository.findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(21L, fecha, fecha))
+                .thenReturn(List.of(Asistencia.builder()
+                        .id(90L)
+                        .idEmpleado(21L)
+                        .idHorario(7L)
+                        .fecha(fecha)
+                        .inicioAlmuerzoProgramado(LocalTime.of(13, 0))
+                        .finAlmuerzoProgramado(LocalTime.of(14, 0))
+                        .build()));
+
+        JornadaEfectivaPeriodoResponse response = service.getJornadaPeriodo(21L, fecha, fecha);
+
+        var dia = response.getDias().getFirst();
+        assertThat(dia.getJornadaEfectiva().getTramos()).hasSize(1);
+        assertThat(dia.getJornadaEfectiva().getTramos().getFirst().getRazon())
+                .isEqualTo(RazonAjuste.CORRIMIENTO_COMPENSABLE);
+        assertThat(dia.getAlmuerzo().getModificado()).isTrue();
+        assertThat(dia.getAlmuerzo().getFuente()).isEqualTo("ASISTENCIA");
+        assertThat(dia.getCambios()).extracting("tipo")
+                .containsExactly("AJUSTE_JORNADA", "CAMBIO_ALMUERZO");
+    }
+
+    @Test
+    void jornadaPeriodoPriorizaDiaNoLaborableDelEmpleadoSobreElGlobal() {
+        LocalDate fecha = LocalDate.of(2026, 6, 15);
+        Horario horario = horarioSemanal(fecha.minusDays(14));
+        prepararPeriodo(fecha, fecha, horario);
+        DiaNoLaborable global = DiaNoLaborable.builder()
+                .id(1L)
+                .alcance(AlcanceDiaNoLaborable.GLOBAL)
+                .fecha(fecha)
+                .laborable(false)
+                .tipo(TipoDiaNoLaborable.FERIADO)
+                .motivo("Feriado nacional")
+                .build();
+        DiaNoLaborable empleado = DiaNoLaborable.builder()
+                .id(2L)
+                .alcance(AlcanceDiaNoLaborable.EMPLEADO)
+                .refId(21L)
+                .fecha(fecha)
+                .laborable(false)
+                .tipo(TipoDiaNoLaborable.PERMISO)
+                .motivo("Permiso aprobado")
+                .build();
+        when(diaNoLaborableRepository.findByFechaBetween(fecha, fecha))
+                .thenReturn(List.of(global, empleado));
+
+        JornadaEfectivaPeriodoResponse response = service.getJornadaPeriodo(21L, fecha, fecha);
+
+        var dia = response.getDias().getFirst();
+        assertThat(dia.getEstado()).isEqualTo("DIA_LIBRE");
+        assertThat(dia.getJornadaEfectiva().getLaborable()).isFalse();
+        assertThat(dia.getCambios().getFirst().getCodigo()).isEqualTo("PERMISO");
+        assertThat(dia.getCambios().getFirst().getMotivo()).isEqualTo("Permiso aprobado");
+    }
+
+    @Test
+    void jornadaPeriodoRechazaUnRangoMayorAUnaSemana() {
+        assertThatThrownBy(() -> service.getJornadaPeriodo(
+                21L,
+                LocalDate.of(2026, 6, 15),
+                LocalDate.of(2026, 6, 22)))
+                .isInstanceOf(pe.albrugroup.schedule_service.exception.BadRequestException.class)
+                .hasMessageContaining("siete días");
+    }
+
+    @Test
+    void jornadaPeriodoRechazaFechasInvertidas() {
+        assertThatThrownBy(() -> service.getJornadaPeriodo(
+                21L,
+                LocalDate.of(2026, 6, 16),
+                LocalDate.of(2026, 6, 15)))
+                .isInstanceOf(pe.albrugroup.schedule_service.exception.BadRequestException.class)
+                .hasMessageContaining("posterior");
+    }
+
     private Asistencia asistenciaConBalance(int balance) {
         return Asistencia.builder()
                 .id(1L).idEmpleado(21L).idHorario(7L).fecha(LocalDate.of(2026, 6, 10))
@@ -330,6 +446,17 @@ class AjusteJornadaServiceTest {
                 .thenReturn(Optional.empty());
     }
 
+    private void prepararPeriodo(LocalDate desde, LocalDate hasta, Horario horario) {
+        when(horarioRepository.findHorariosEnRango(21L, desde, hasta)).thenReturn(List.of(horario));
+        when(ajusteRepository.findByIdEmpleadoAndFechaOperativaBetweenAndEstado(
+                21L, desde, hasta, EstadoAjusteJornada.ACTIVO)).thenReturn(List.of());
+        when(excepcionRepository.findByHorarioIdInAndFechaBetween(
+                List.of(horario.getId()), desde, hasta)).thenReturn(List.of());
+        when(diaNoLaborableRepository.findByFechaBetween(desde, hasta)).thenReturn(List.of());
+        when(asistenciaRepository.findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(21L, desde, hasta))
+                .thenReturn(List.of());
+    }
+
     private void prepararHorario(Horario horario) {
         when(horarioRepository.findHorarioVigente(21L, LocalDate.of(2026, 6, 15)))
                 .thenReturn(Optional.of(horario));
@@ -352,6 +479,34 @@ class AjusteJornadaServiceTest {
                         .horaEntrada(entrada)
                         .horaSalida(salida)
                         .build()))
+                .build();
+    }
+
+    private Horario horarioSemanal(LocalDate fechaInicio) {
+        return Horario.builder()
+                .id(7L)
+                .idEmpleado(21L)
+                .fechaInicio(fechaInicio)
+                .detalles(List.of(
+                        detalle(Dia.LUNES),
+                        detalle(Dia.MARTES),
+                        detalle(Dia.MIERCOLES),
+                        detalle(Dia.JUEVES),
+                        detalle(Dia.VIERNES),
+                        detalle(Dia.SABADO),
+                        detalle(Dia.DOMINGO)
+                ))
+                .build();
+    }
+
+    private HorarioDetalle detalle(Dia dia) {
+        return HorarioDetalle.builder()
+                .dia(dia)
+                .laborable(true)
+                .horaEntrada(LocalTime.of(8, 0))
+                .horaSalida(LocalTime.of(17, 0))
+                .inicioAlmuerzo(LocalTime.of(12, 0))
+                .finAlmuerzo(LocalTime.of(13, 0))
                 .build();
     }
 

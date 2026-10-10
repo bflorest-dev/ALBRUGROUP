@@ -63,6 +63,7 @@ export class PersonalScheduleFacade {
   readonly correctionReason = signal('Corrección administrativa');
   readonly correctionDate = signal(this.tomorrow());
   readonly isApplyingCorrection = signal(false);
+  readonly isCreatingFutureSchedule = signal(false);
   readonly editorKey = signal(0);
 
   readonly adjustmentDate = signal(this.today());
@@ -122,6 +123,7 @@ export class PersonalScheduleFacade {
     this.contract = contract;
     this.schedule.set(schedule);
     this.editingSchedule = schedule;
+    this.isCreatingFutureSchedule.set(false);
     this.clearMessages();
     this.closeCorrection();
     this.resetAdjustmentState();
@@ -134,6 +136,7 @@ export class PersonalScheduleFacade {
     this.employeeId = 0;
     this.contract = null;
     this.editingSchedule = null;
+    this.isCreatingFutureSchedule.set(false);
     this.schedule.set(null);
     this.history.set([]);
     this.historyError.set('');
@@ -147,7 +150,17 @@ export class PersonalScheduleFacade {
 
   openEditor(schedule: HorarioResponse | null = this.schedule()): void {
     this.editingSchedule = schedule;
+    this.isCreatingFutureSchedule.set(false);
     this.resetForm(schedule);
+    this.clearMessages();
+    this.closeCorrection();
+  }
+
+  openFutureSchedule(): void {
+    this.editingSchedule = null;
+    this.isCreatingFutureSchedule.set(true);
+    this.resetForm(null);
+    this.form.controls.fechaInicio.setValue(this.tomorrow());
     this.clearMessages();
     this.closeCorrection();
   }
@@ -155,6 +168,7 @@ export class PersonalScheduleFacade {
   closeEditor(): void {
     this.clearMessages();
     this.closeCorrection();
+    this.isCreatingFutureSchedule.set(false);
     this.editingSchedule = this.schedule();
     this.resetForm(this.schedule());
   }
@@ -205,7 +219,7 @@ export class PersonalScheduleFacade {
 
     const raw = this.form.getRawValue();
     const fechaInicio = raw.fechaInicio;
-    const current = this.editingSchedule ?? this.schedule();
+    const current = this.isCreatingFutureSchedule() ? null : (this.editingSchedule ?? this.schedule());
     if (current && fechaInicio < this.today() && fechaInicio !== current.fechaInicio) {
       this.error.set('La nueva fecha de inicio no puede ser anterior a hoy.');
       return false;
@@ -479,6 +493,7 @@ export class PersonalScheduleFacade {
 
   private async finishMutation(schedule: HorarioResponse, message: string): Promise<void> {
     this.schedule.set(schedule);
+    this.isCreatingFutureSchedule.set(false);
     this.success.set(message);
     this.error.set('');
     await this.loadHistory(this.employeeId);

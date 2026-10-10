@@ -772,6 +772,13 @@ export class EmployeeWorkspaceDrawerComponent {
     this.subview.set('editar-horario');
   }
 
+  protected openFutureSchedule(): void {
+    if (!this.contract() || !this.schedule()) return;
+    this.scheduleFacade.openFutureSchedule();
+    this.clearActionFeedback();
+    this.subview.set('editar-horario');
+  }
+
   protected closeScheduleEditor(): void {
     this.scheduleFacade.closeEditor();
     this.subview.set('none');

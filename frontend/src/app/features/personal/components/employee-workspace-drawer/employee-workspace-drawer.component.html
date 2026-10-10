@@ -386,8 +386,8 @@
           <div class="subview-heading">
             <button class="back-button" type="button" [disabled]="scheduleFacade.isSaving() || scheduleFacade.isApplyingCorrection()" (click)="closeScheduleEditor()"><i class="ti ti-arrow-left"></i>Volver</button>
             <div>
-              <h3>Editar horario base</h3>
-              <p>Define la jornada recurrente del empleado por día y conserva el historial de cambios.</p>
+              <h3>{{ scheduleFacade.isCreatingFutureSchedule() ? 'Agregar horario futuro' : 'Editar horario base' }}</h3>
+              <p>{{ scheduleFacade.isCreatingFutureSchedule() ? 'Programa una nueva jornada recurrente sin modificar el horario vigente.' : 'Define la jornada recurrente del empleado por día y conserva el historial de cambios.' }}</p>
             </div>
           </div>
 
@@ -625,7 +625,7 @@
           <button type="button" class="primary-button push-right" [disabled]="scheduleFacade.isApplyingCorrection()" (click)="applyScheduleCorrection('custom')">{{ scheduleFacade.isApplyingCorrection() ? 'Aplicando…' : 'Aplicar fecha' }}</button>
         } @else {
           <button type="button" class="ghost-button" [disabled]="scheduleFacade.isSaving()" (click)="closeScheduleEditor()">Cancelar</button>
-          <button type="button" class="primary-button push-right" [disabled]="scheduleFacade.isSaving() || !contract() || !scheduleFacade.canMutateOperationalData()" (click)="saveSchedule()">{{ scheduleFacade.isSaving() ? 'Guardando…' : (schedule() ? 'Guardar horario' : 'Asignar horario') }}</button>
+          <button type="button" class="primary-button push-right" [disabled]="scheduleFacade.isSaving() || !contract() || !scheduleFacade.canMutateOperationalData()" (click)="saveSchedule()">{{ scheduleFacade.isSaving() ? 'Guardando…' : (scheduleFacade.isCreatingFutureSchedule() ? 'Guardar horario futuro' : (schedule() ? 'Guardar horario' : 'Asignar horario')) }}</button>
           }
       } @else if (adjustmentSubview(); as adjustmentView) {
         <button type="button" class="ghost-button" [disabled]="isSavingAdjustment()" (click)="closeDayAdjustment()">Cancelar</button>
@@ -647,6 +647,9 @@
         @if (contract() && canEditContract()) { <button type="button" class="ghost-button" (click)="openEditContract()"><i class="ti ti-pencil" aria-hidden="true"></i>Editar contrato</button> }
         @if (contract()) { <button type="button" class="danger-ghost-button push-right" (click)="openCloseContract()">Finalizar contrato</button> }
       } @else if (section() === 'horario') {
+        @if (schedule()) {
+          <button type="button" class="ghost-button" [disabled]="!contract() || !scheduleFacade.canMutateOperationalData()" (click)="openFutureSchedule()"><i class="ti ti-calendar-plus" aria-hidden="true"></i>Agregar horario futuro</button>
+        }
         <button type="button" class="primary-button push-right" [disabled]="!contract() || !scheduleFacade.canMutateOperationalData()" (click)="openScheduleEditor()">{{ schedule() ? 'Editar horario base' : 'Asignar horario base' }}</button>
       } @else if (section() === 'roles' && canManageRoles()) {
         <button type="button" class="ghost-button" (click)="openRoleHistory()"><i class="ti ti-history"></i>Ver historial</button>

@@ -66,7 +66,20 @@ public class JornadaEfectivaResolver {
     }
 
     JornadaEfectivaResponse resolver(Horario horario, LocalDate fecha, List<AjusteJornada> ajustes) {
-        BaseDiaria base = resolverBase(horario, fecha);
+        DiaNoLaborable diaNoLaborable = resolverDiaNoLaborable(horario.getIdEmpleado(), fecha);
+        ExcepcionHorario excepcion = excepcionHorarioRepository
+                .findByHorarioIdAndFecha(horario.getId(), fecha).orElse(null);
+        return resolver(horario, fecha, ajustes, diaNoLaborable, excepcion);
+    }
+
+    JornadaEfectivaResponse resolver(
+            Horario horario,
+            LocalDate fecha,
+            List<AjusteJornada> ajustes,
+            DiaNoLaborable diaNoLaborable,
+            ExcepcionHorario excepcion
+    ) {
+        BaseDiaria base = resolverBase(horario, fecha, diaNoLaborable, excepcion);
         List<TramoJornadaResponse> tramos = new ArrayList<>();
         TramoJornadaResponse tramoBase = base.laborable()
                 ? toBaseTramo(fecha, base)
@@ -109,15 +122,24 @@ public class JornadaEfectivaResolver {
     }
 
     BaseDiaria resolverBase(Horario horario, LocalDate fecha) {
+        DiaNoLaborable diaNoLaborable = resolverDiaNoLaborable(horario.getIdEmpleado(), fecha);
+        ExcepcionHorario excepcion = excepcionHorarioRepository
+                .findByHorarioIdAndFecha(horario.getId(), fecha).orElse(null);
+        return resolverBase(horario, fecha, diaNoLaborable, excepcion);
+    }
+
+    BaseDiaria resolverBase(
+            Horario horario,
+            LocalDate fecha,
+            DiaNoLaborable diaNoLaborable,
+            ExcepcionHorario excepcion
+    ) {
         // Dia no laborable (feriado / vacaciones / permiso), precedencia EMPLEADO > GLOBAL. laborable=false
         // => dia libre; laborable=true => override "si trabaja" (continua la resolucion normal).
-        DiaNoLaborable diaNoLaborable = resolverDiaNoLaborable(horario.getIdEmpleado(), fecha);
         if (diaNoLaborable != null && !Boolean.TRUE.equals(diaNoLaborable.getLaborable())) {
             return new BaseDiaria(false, null, null);
         }
 
-        ExcepcionHorario excepcion = excepcionHorarioRepository
-                .findByHorarioIdAndFecha(horario.getId(), fecha).orElse(null);
         if (excepcion != null) {
             if (excepcion.getTipo() == TipoExcepcionHorario.DIA_LIBRE
                     || Boolean.FALSE.equals(excepcion.getLaborable())) {
@@ -193,7 +215,7 @@ public class JornadaEfectivaResolver {
                         .orElse(null));
     }
 
-    private Dia mapearDia(DayOfWeek dayOfWeek) {
+    static Dia mapearDia(DayOfWeek dayOfWeek) {
         return switch (dayOfWeek) {
             case MONDAY -> Dia.LUNES;
             case TUESDAY -> Dia.MARTES;

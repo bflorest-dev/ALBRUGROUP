@@ -7,10 +7,16 @@ import pe.albrugroup.schedule_service.configuration.CurrentUser;
 import pe.albrugroup.schedule_service.configuration.ScheduleEngineProperties;
 import pe.albrugroup.schedule_service.entity.AjusteJornada;
 import pe.albrugroup.schedule_service.entity.Asistencia;
+import pe.albrugroup.schedule_service.entity.DiaNoLaborable;
+import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
+import pe.albrugroup.schedule_service.entity.HorarioDetalle;
+import pe.albrugroup.schedule_service.entity.enums.AlcanceDiaNoLaborable;
+import pe.albrugroup.schedule_service.entity.enums.Dia;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
+import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.request.horario.AjusteJornadaRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarAjusteRequest;
 import pe.albrugroup.schedule_service.entity.response.horario.*;
@@ -18,15 +24,24 @@ import pe.albrugroup.schedule_service.exception.BadRequestException;
 import pe.albrugroup.schedule_service.exception.NotFoundException;
 import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
+import pe.albrugroup.schedule_service.repository.DiaNoLaborableRepository;
+import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
 import pe.albrugroup.schedule_service.repository.HorarioRepository;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +50,8 @@ public class AjusteJornadaService {
     private final AjusteJornadaRepository ajusteRepository;
     private final HorarioRepository horarioRepository;
     private final AsistenciaRepository asistenciaRepository;
+    private final ExcepcionHorarioRepository excepcionHorarioRepository;
+    private final DiaNoLaborableRepository diaNoLaborableRepository;
     private final JornadaEfectivaResolver jornadaResolver;
     private final AttendanceRealtimeNotifier realtimeNotifier;
     private final CurrentUser currentUser;
@@ -44,6 +61,321 @@ public class AjusteJornadaService {
     @Transactional(readOnly = true)
     public JornadaEfectivaResponse getJornada(Long idEmpleado, LocalDate fecha) {
         return jornadaResolver.resolver(idEmpleado, fecha == null ? LocalDate.now(operationalClock) : fecha);
+    }
+
+    @Transactional(readOnly = true)
+    public JornadaEfectivaPeriodoResponse getJornadaPeriodo(Long idEmpleado, LocalDate desde, LocalDate hasta) {
+        validarPeriodo(desde, hasta);
+
+        List<Horario> horarios = horarioRepository.findHorariosEnRango(idEmpleado, desde, hasta);
+        List<Long> idHorarios = horarios.stream().map(Horario::getId).toList();
+        List<AjusteJornada> ajustes = ajusteRepository
+                .findByIdEmpleadoAndFechaOperativaBetweenAndEstado(
+                        idEmpleado, desde, hasta, EstadoAjusteJornada.ACTIVO);
+        List<ExcepcionHorario> excepciones = idHorarios.isEmpty()
+                ? List.of()
+                : excepcionHorarioRepository.findByHorarioIdInAndFechaBetween(idHorarios, desde, hasta);
+        List<DiaNoLaborable> diasNoLaborables = diaNoLaborableRepository.findByFechaBetween(desde, hasta);
+        List<Asistencia> asistencias = asistenciaRepository
+                .findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(idEmpleado, desde, hasta);
+
+        Map<LocalDate, List<AjusteJornada>> ajustesPorFecha = ajustes.stream()
+                .collect(Collectors.groupingBy(AjusteJornada::getFechaOperativa));
+        Map<Long, Map<LocalDate, ExcepcionHorario>> excepcionesPorHorario = excepciones.stream()
+                .collect(Collectors.groupingBy(
+                        excepcion -> excepcion.getHorario().getId(),
+                        Collectors.toMap(ExcepcionHorario::getFecha, Function.identity())
+                ));
+        Map<LocalDate, List<DiaNoLaborable>> diasNoLaborablesPorFecha = diasNoLaborables.stream()
+                .collect(Collectors.groupingBy(DiaNoLaborable::getFecha));
+        Map<LocalDate, Asistencia> asistenciasPorFecha = asistencias.stream()
+                .collect(Collectors.toMap(Asistencia::getFecha, Function.identity()));
+
+        List<JornadaEfectivaPeriodoDiaResponse> dias = new ArrayList<>();
+        for (LocalDate fecha = desde; !fecha.isAfter(hasta); fecha = fecha.plusDays(1)) {
+            Horario horario = horarioVigente(horarios, fecha);
+            dias.add(construirDiaPeriodo(
+                    fecha,
+                    horario,
+                    ajustesPorFecha.getOrDefault(fecha, List.of()),
+                    horario == null
+                            ? null
+                            : excepcionesPorHorario
+                            .getOrDefault(horario.getId(), Map.of())
+                            .get(fecha),
+                    resolverDiaNoLaborable(diasNoLaborablesPorFecha.getOrDefault(fecha, List.of()), idEmpleado),
+                    asistenciasPorFecha.get(fecha)
+            ));
+        }
+
+        return JornadaEfectivaPeriodoResponse.builder()
+                .idEmpleado(idEmpleado)
+                .desde(desde)
+                .hasta(hasta)
+                .dias(dias)
+                .build();
+    }
+
+    private void validarPeriodo(LocalDate desde, LocalDate hasta) {
+        if (desde == null || hasta == null) {
+            throw new BadRequestException("Debes indicar el inicio y fin del periodo");
+        }
+        if (desde.isAfter(hasta)) {
+            throw new BadRequestException("El inicio del periodo no puede ser posterior al fin");
+        }
+        if (ChronoUnit.DAYS.between(desde, hasta) + 1 > 7) {
+            throw new BadRequestException("El periodo no puede superar siete días");
+        }
+    }
+
+    private JornadaEfectivaPeriodoDiaResponse construirDiaPeriodo(
+            LocalDate fecha,
+            Horario horario,
+            List<AjusteJornada> ajustes,
+            ExcepcionHorario excepcion,
+            DiaNoLaborable diaNoLaborable,
+            Asistencia asistencia
+    ) {
+        if (horario == null) {
+            return JornadaEfectivaPeriodoDiaResponse.builder()
+                    .fecha(fecha)
+                    .esHoy(esHoy(fecha))
+                    .estado("SIN_HORARIO")
+                    .jornadaEfectiva(JornadaPeriodoEfectivaResponse.builder()
+                            .laborable(false)
+                            .tramos(List.of())
+                            .build())
+                    .almuerzo(AlmuerzoPeriodoResponse.builder()
+                            .modificado(false)
+                            .build())
+                    .cambios(List.of())
+                    .build();
+        }
+
+        HorarioDetalle detalleBase = detalleBase(horario, fecha);
+        JornadaEfectivaResponse efectiva = jornadaResolver.resolver(
+                horario, fecha, ajustes, diaNoLaborable, excepcion);
+        boolean laborableEfectiva = !efectiva.getTramos().isEmpty();
+        HorarioBasePeriodoResponse horarioBase = toHorarioBase(detalleBase);
+        AlmuerzoPeriodoResponse almuerzo = resolverAlmuerzo(
+                detalleBase, excepcion, asistencia, laborableEfectiva);
+
+        return JornadaEfectivaPeriodoDiaResponse.builder()
+                .fecha(fecha)
+                .esHoy(esHoy(fecha))
+                .idHorario(horario.getId())
+                .estado(estadoDia(detalleBase, laborableEfectiva, diaNoLaborable, excepcion))
+                .horarioBase(horarioBase)
+                .jornadaEfectiva(toJornadaPeriodoEfectiva(efectiva, ajustes))
+                .almuerzo(almuerzo)
+                .cambios(construirCambios(fecha, ajustes, excepcion, diaNoLaborable, asistencia, almuerzo))
+                .build();
+    }
+
+    private boolean esHoy(LocalDate fecha) {
+        return fecha.equals(LocalDate.now(operationalClock));
+    }
+
+    private Horario horarioVigente(List<Horario> horarios, LocalDate fecha) {
+        return horarios.stream()
+                .filter(horario -> !horario.getFechaInicio().isAfter(fecha))
+                .filter(horario -> horario.getFechaFin() == null || !horario.getFechaFin().isBefore(fecha))
+                .max(Comparator.comparing(Horario::getFechaInicio))
+                .orElse(null);
+    }
+
+    private DiaNoLaborable resolverDiaNoLaborable(List<DiaNoLaborable> candidatos, Long idEmpleado) {
+        return candidatos.stream()
+                .filter(item -> item.getAlcance() == AlcanceDiaNoLaborable.EMPLEADO)
+                .filter(item -> Objects.equals(item.getRefId(), idEmpleado))
+                .findFirst()
+                .orElseGet(() -> candidatos.stream()
+                        .filter(item -> item.getAlcance() == AlcanceDiaNoLaborable.GLOBAL)
+                        .findFirst()
+                        .orElse(null));
+    }
+
+    private HorarioDetalle detalleBase(Horario horario, LocalDate fecha) {
+        Dia dia = JornadaEfectivaResolver.mapearDia(fecha.getDayOfWeek());
+        return horario.getDetalles().stream()
+                .filter(detalle -> detalle.getDia() == dia)
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("No existe detalle de horario para el dia", dia));
+    }
+
+    private HorarioBasePeriodoResponse toHorarioBase(HorarioDetalle detalle) {
+        boolean laborable = Boolean.TRUE.equals(detalle.getLaborable());
+        return HorarioBasePeriodoResponse.builder()
+                .laborable(laborable)
+                .inicio(laborable ? detalle.getHoraEntrada() : null)
+                .fin(laborable ? detalle.getHoraSalida() : null)
+                .almuerzoInicio(laborable ? detalle.getInicioAlmuerzo() : null)
+                .almuerzoFin(laborable ? detalle.getFinAlmuerzo() : null)
+                .build();
+    }
+
+    private JornadaPeriodoEfectivaResponse toJornadaPeriodoEfectiva(
+            JornadaEfectivaResponse efectiva,
+            List<AjusteJornada> ajustes
+    ) {
+        Map<Long, AjusteJornada> ajustesPorId = ajustes.stream()
+                .filter(ajuste -> ajuste.getId() != null)
+                .collect(Collectors.toMap(AjusteJornada::getId, Function.identity()));
+        List<TramoJornadaPeriodoResponse> tramos = efectiva.getTramos().stream()
+                .map(tramo -> {
+                    AjusteJornada ajuste = tramo.getIdAjuste() == null
+                            ? null
+                            : ajustesPorId.get(tramo.getIdAjuste());
+                    return TramoJornadaPeriodoResponse.builder()
+                            .idAjuste(tramo.getIdAjuste())
+                            .inicio(tramo.getInicio())
+                            .fin(tramo.getFin())
+                            .origen(tramo.getOrigen())
+                            .razon(ajuste == null ? null : ajuste.getRazon())
+                            .esBaseEfectiva(tramo.getBase())
+                            .motivo(ajuste == null ? tramo.getMotivo() : ajuste.getMotivo())
+                            .build();
+                })
+                .toList();
+        return JornadaPeriodoEfectivaResponse.builder()
+                .laborable(!tramos.isEmpty())
+                .tramos(tramos)
+                .build();
+    }
+
+    private String estadoDia(
+            HorarioDetalle detalleBase,
+            boolean laborableEfectiva,
+            DiaNoLaborable diaNoLaborable,
+            ExcepcionHorario excepcion
+    ) {
+        if (laborableEfectiva) {
+            return "CON_HORARIO";
+        }
+        if (!Boolean.TRUE.equals(detalleBase.getLaborable()) && diaNoLaborable == null && excepcion == null) {
+            return "DESCANSO_BASE";
+        }
+        return "DIA_LIBRE";
+    }
+
+    private AlmuerzoPeriodoResponse resolverAlmuerzo(
+            HorarioDetalle detalleBase,
+            ExcepcionHorario excepcion,
+            Asistencia asistencia,
+            boolean laborableEfectiva
+    ) {
+        LocalTime baseInicio = Boolean.TRUE.equals(detalleBase.getLaborable())
+                ? detalleBase.getInicioAlmuerzo()
+                : null;
+        LocalTime baseFin = Boolean.TRUE.equals(detalleBase.getLaborable())
+                ? detalleBase.getFinAlmuerzo()
+                : null;
+        LocalTime efectivoInicio = baseInicio;
+        LocalTime efectivoFin = baseFin;
+        String fuente = null;
+
+        if (laborableEfectiva) {
+            if (asistencia != null
+                    && (asistencia.getInicioAlmuerzoProgramado() != null
+                    || asistencia.getFinAlmuerzoProgramado() != null)) {
+                efectivoInicio = asistencia.getInicioAlmuerzoProgramado();
+                efectivoFin = asistencia.getFinAlmuerzoProgramado();
+                fuente = "ASISTENCIA";
+            } else if (excepcion != null
+                    && (excepcion.getInicioAlmuerzo() != null || excepcion.getFinAlmuerzo() != null)) {
+                efectivoInicio = excepcion.getInicioAlmuerzo();
+                efectivoFin = excepcion.getFinAlmuerzo();
+                fuente = "EXCEPCION_HORARIO";
+            }
+        } else {
+            efectivoInicio = null;
+            efectivoFin = null;
+        }
+
+        boolean modificado = !Objects.equals(baseInicio, efectivoInicio)
+                || !Objects.equals(baseFin, efectivoFin);
+        return AlmuerzoPeriodoResponse.builder()
+                .inicioBase(baseInicio)
+                .finBase(baseFin)
+                .inicioEfectivo(efectivoInicio)
+                .finEfectivo(efectivoFin)
+                .modificado(modificado)
+                .fuente(modificado ? fuente : null)
+                .build();
+    }
+
+    private List<CambioJornadaPeriodoResponse> construirCambios(
+            LocalDate fecha,
+            List<AjusteJornada> ajustes,
+            ExcepcionHorario excepcion,
+            DiaNoLaborable diaNoLaborable,
+            Asistencia asistencia,
+            AlmuerzoPeriodoResponse almuerzo
+    ) {
+        List<CambioJornadaPeriodoResponse> cambios = new ArrayList<>();
+        ajustes.forEach(ajuste -> cambios.add(CambioJornadaPeriodoResponse.builder()
+                .id(ajuste.getId())
+                .tipo("AJUSTE_JORNADA")
+                .codigo(ajuste.getRazon() == null ? ajuste.getOrigen().name() : ajuste.getRazon().name())
+                .fuente("AJUSTE_JORNADA")
+                .inicio(ajuste.getInicio())
+                .fin(ajuste.getFin())
+                .laborable(true)
+                .origen(ajuste.getOrigen())
+                .razon(ajuste.getRazon())
+                .motivo(ajuste.getMotivo())
+                .build()));
+
+        if (diaNoLaborable != null) {
+            cambios.add(CambioJornadaPeriodoResponse.builder()
+                    .id(diaNoLaborable.getId())
+                    .tipo("DIA_NO_LABORABLE")
+                    .codigo(diaNoLaborable.getTipo().name())
+                    .fuente("DIA_NO_LABORABLE")
+                    .laborable(diaNoLaborable.getLaborable())
+                    .tipoDiaNoLaborable(diaNoLaborable.getTipo())
+                    .alcance(diaNoLaborable.getAlcance())
+                    .motivo(diaNoLaborable.getMotivo())
+                    .build());
+        }
+
+        if (excepcion != null) {
+            cambios.add(CambioJornadaPeriodoResponse.builder()
+                    .id(excepcion.getId())
+                    .tipo("EXCEPCION_HORARIO")
+                    .codigo(excepcion.getTipo().name())
+                    .fuente("EXCEPCION_HORARIO")
+                    .inicio(fechaHora(fecha, excepcion.getHoraEntrada()))
+                    .fin(fechaHora(fecha, excepcion.getHoraSalida()))
+                    .almuerzoInicio(excepcion.getInicioAlmuerzo())
+                    .almuerzoFin(excepcion.getFinAlmuerzo())
+                    .laborable(excepcion.getLaborable())
+                    .tipoExcepcion(excepcion.getTipo())
+                    .motivo(excepcion.getMotivo())
+                    .build());
+        }
+
+        if (Boolean.TRUE.equals(almuerzo.getModificado())) {
+            cambios.add(CambioJornadaPeriodoResponse.builder()
+                    .id(asistencia == null ? null : asistencia.getId())
+                    .tipo("CAMBIO_ALMUERZO")
+                    .codigo("ALMUERZO_PROGRAMADO")
+                    .fuente(almuerzo.getFuente())
+                    .almuerzoInicio(almuerzo.getInicioEfectivo())
+                    .almuerzoFin(almuerzo.getFinEfectivo())
+                    .motivo("Almuerzo programado modificado")
+                    .build());
+        }
+
+        cambios.sort(Comparator.comparing(
+                CambioJornadaPeriodoResponse::getInicio,
+                Comparator.nullsLast(Comparator.naturalOrder())
+        ));
+        return cambios;
+    }
+
+    private LocalDateTime fechaHora(LocalDate fecha, java.time.LocalTime hora) {
+        return hora == null ? null : LocalDateTime.of(fecha, hora);
     }
 
     @Transactional(readOnly = true)
