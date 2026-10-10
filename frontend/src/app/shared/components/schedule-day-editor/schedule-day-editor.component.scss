@@ -1,0 +1,159 @@
+:host { display: block; }
+
+.day-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  color: var(--role-panel-text);
+}
+
+.day-editor__heading {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--app-border-soft);
+
+  h3 { margin: 0.18rem 0 0.3rem; font-size: 1.05rem; text-transform: capitalize; }
+  p { margin: 0; color: var(--role-muted); font-size: 0.78rem; line-height: 1.45; }
+}
+
+.eyebrow {
+  color: var(--role-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.day-editor__summary,
+.day-editor__notice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  margin: 0;
+  padding: 0.78rem 0.9rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 10px;
+  background: var(--app-surface-soft);
+  font-size: 0.78rem;
+
+  span { color: var(--role-muted); line-height: 1.4; }
+}
+
+.day-editor__notice { color: var(--role-panel-text); border-color: color-mix(in srgb, var(--schedule-accent, #b5680e) 45%, var(--app-border-soft)); }
+
+.day-editor__changes { display: grid; gap: 0.5rem; }
+
+.day-editor__change {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.65rem 0.72rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 9px;
+  background: var(--app-surface-soft);
+
+  div { display: flex; flex-direction: column; gap: 0.18rem; min-width: 0; }
+  strong { font-size: 0.78rem; }
+  span:not(.day-editor__change-dot) { color: var(--role-muted); font-size: 0.72rem; line-height: 1.35; }
+}
+
+.day-editor__change-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  margin-top: 0.23rem;
+  border-radius: 3px;
+  background: var(--schedule-extra, #d4a514);
+  &[data-kind='CAMBIO_ALMUERZO'] { background: var(--schedule-lunch, #ef9f27); }
+  &[data-kind='DIA_NO_LABORABLE'] { background: var(--app-border-soft); }
+  &[data-kind='EXCEPCION_HORARIO'] { background: var(--schedule-shift, #2c6e8f); }
+}
+
+.day-editor__options { display: grid; gap: 0.6rem; }
+
+.day-editor__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--role-panel-text);
+  text-align: left;
+  cursor: pointer;
+
+  span { display: flex; flex-direction: column; gap: 0.22rem; min-width: 0; }
+  strong { font-size: 0.8rem; }
+  small { color: var(--role-muted); font-size: 0.72rem; line-height: 1.35; }
+  &:hover:not(:disabled) { border-color: var(--schedule-accent, #15803d); background: var(--app-surface-soft); }
+  &:disabled { cursor: not-allowed; opacity: 0.58; }
+}
+
+.day-editor__option--primary { border-color: color-mix(in srgb, var(--schedule-accent, #15803d) 45%, var(--app-border-soft)); }
+.day-editor__option--reset { color: var(--app-danger, #b91c1c); }
+
+.day-editor__form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.day-editor__field { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.day-editor__field--wide { grid-column: 1 / -1; }
+.day-editor__field span,
+.day-editor__lunch-toggle span { color: var(--role-muted); font-size: 0.74rem; }
+.day-editor__field input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 0.65rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 8px;
+  background: var(--schedule-input-bg, var(--schedule-control-bg, #fff));
+  color: var(--role-panel-text);
+  font: 600 0.82rem 'Spline Sans Mono', ui-monospace, monospace;
+}
+
+.day-editor__lunch-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  align-self: end;
+  min-height: 40px;
+  cursor: pointer;
+  input { accent-color: var(--schedule-accent, #15803d); }
+}
+
+.day-editor__additional {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--app-border-soft);
+  strong, span { display: block; }
+  strong { font-size: 0.8rem; }
+  span { margin-top: 0.2rem; color: var(--role-muted); font-size: 0.72rem; }
+}
+
+.day-editor__action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+.day-editor__action-grid button {
+  min-height: 36px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--role-panel-text);
+  font-size: 0.72rem;
+  cursor: pointer;
+  &:hover { border-color: var(--schedule-accent, #15803d); background: var(--app-surface-soft); }
+}
+
+.day-editor__empty { margin: 0; color: var(--role-muted); font-size: 0.8rem; }
+
+@media (max-width: 520px) {
+  .day-editor__form, .day-editor__action-grid { grid-template-columns: 1fr; }
+  .day-editor__field--wide { grid-column: auto; }
+}

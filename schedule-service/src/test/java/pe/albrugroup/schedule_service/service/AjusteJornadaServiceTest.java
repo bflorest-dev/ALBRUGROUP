@@ -11,6 +11,7 @@ import pe.albrugroup.schedule_service.configuration.ScheduleEngineProperties;
 import pe.albrugroup.schedule_service.entity.AjusteJornada;
 import pe.albrugroup.schedule_service.entity.Asistencia;
 import pe.albrugroup.schedule_service.entity.DiaNoLaborable;
+import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.HorarioDetalle;
 import pe.albrugroup.schedule_service.entity.enums.*;
@@ -417,6 +418,133 @@ class AjusteJornadaServiceTest {
                 LocalDate.of(2026, 6, 15)))
                 .isInstanceOf(pe.albrugroup.schedule_service.exception.BadRequestException.class)
                 .hasMessageContaining("posterior");
+    }
+
+    @Test
+    void restablecerDiaCancelaCambiosPropiosYConservaLaAsistenciaReal() {
+        LocalDate fecha = LocalDate.of(2026, 6, 15);
+        Horario horario = horarioSemanal(fecha.minusDays(14));
+        AjusteJornada ajuste = AjusteJornada.builder()
+                .id(88L)
+                .idEmpleado(21L)
+                .horario(horario)
+                .fechaOperativa(fecha)
+                .inicio(LocalDateTime.of(fecha, LocalTime.of(18, 0)))
+                .fin(LocalDateTime.of(fecha, LocalTime.of(19, 0)))
+                .estado(EstadoAjusteJornada.ACTIVO)
+                .origen(OrigenAjusteJornada.TRAMO_ADICIONAL)
+                .razon(RazonAjuste.AMPLIACION_OPERATIVA)
+                .motivo("Horas extra")
+                .build();
+        Asistencia asistencia = Asistencia.builder()
+                .id(90L)
+                .idEmpleado(21L)
+                .fecha(fecha)
+                .inicioAlmuerzoProgramado(LocalTime.of(13, 0))
+                .finAlmuerzoProgramado(LocalTime.of(14, 0))
+                .fechaHoraInicioAlmuerzo(LocalDateTime.of(fecha, LocalTime.of(13, 5)))
+                .fechaHoraFinAlmuerzo(LocalDateTime.of(fecha, LocalTime.of(13, 45)))
+                .build();
+        DiaNoLaborable empleado = DiaNoLaborable.builder()
+                .id(12L)
+                .alcance(AlcanceDiaNoLaborable.EMPLEADO)
+                .refId(21L)
+                .fecha(fecha)
+                .laborable(false)
+                .tipo(TipoDiaNoLaborable.PERMISO)
+                .build();
+        ExcepcionHorario excepcion = ExcepcionHorario.builder()
+                .id(33L)
+                .horario(horario)
+                .fecha(fecha)
+                .tipo(TipoExcepcionHorario.CAMBIO_COMPLETO)
+                .horaEntrada(LocalTime.of(9, 0))
+                .horaSalida(LocalTime.of(17, 0))
+                .motivo("Cambio puntual")
+                .build();
+
+        when(ajusteRepository.findForUpdateByIdEmpleadoAndFechaOperativaAndEstado(
+                21L, fecha, EstadoAjusteJornada.ACTIVO)).thenReturn(List.of(ajuste));
+        when(asistenciaRepository.findByIdEmpleadoAndFecha(21L, fecha)).thenReturn(Optional.of(asistencia));
+        when(horarioRepository.findHorarioVigente(21L, fecha)).thenReturn(Optional.of(horario));
+        when(excepcionRepository.findByHorarioIdAndFecha(7L, fecha)).thenReturn(Optional.of(excepcion));
+        when(diaNoLaborableRepository.findFirstByAlcanceAndRefIdAndFecha(
+                AlcanceDiaNoLaborable.EMPLEADO, 21L, fecha)).thenReturn(Optional.of(empleado));
+
+        service.restablecerDia(21L, fecha);
+
+        assertThat(ajuste.getEstado()).isEqualTo(EstadoAjusteJornada.CANCELADO);
+        assertThat(asistencia.getInicioAlmuerzoProgramado()).isNull();
+        assertThat(asistencia.getFinAlmuerzoProgramado()).isNull();
+        assertThat(asistencia.getFechaHoraInicioAlmuerzo()).isNotNull();
+        assertThat(asistencia.getFechaHoraFinAlmuerzo()).isNotNull();
+        verify(ajusteRepository).saveAll(List.of(ajuste));
+        verify(excepcionRepository).delete(excepcion);
+        verify(diaNoLaborableRepository).delete(empleado);
+        verify(asistenciaRepository).save(asistencia);
+        verify(notifier).publishAfterCommit("HORARIO_RESTABLECIDO", "HORARIO", 21L, fecha, null);
+    }
+
+    @Test
+    void restablecerDiaConservaElDiaNoLaborableGlobal() {
+        LocalDate fecha = LocalDate.of(2026, 6, 15);
+        when(ajusteRepository.findForUpdateByIdEmpleadoAndFechaOperativaAndEstado(
+                21L, fecha, EstadoAjusteJornada.ACTIVO)).thenReturn(List.of());
+        when(asistenciaRepository.findByIdEmpleadoAndFecha(21L, fecha)).thenReturn(Optional.empty());
+        when(horarioRepository.findHorarioVigente(21L, fecha)).thenReturn(Optional.empty());
+        when(diaNoLaborableRepository.findFirstByAlcanceAndRefIdAndFecha(
+                AlcanceDiaNoLaborable.EMPLEADO, 21L, fecha)).thenReturn(Optional.empty());
+
+        service.restablecerDia(21L, fecha);
+
+        verify(diaNoLaborableRepository, never()).delete(any(DiaNoLaborable.class));
+        verify(notifier).publishAfterCommit("HORARIO_RESTABLECIDO", "HORARIO", 21L, fecha, null);
+    }
+
+    @Test
+    void restablecerDiaRechazaUnaFechaPasadaSinModificarNada() {
+        LocalDate fecha = LocalDate.of(2026, 6, 14);
+
+        assertThatThrownBy(() -> service.restablecerDia(21L, fecha))
+                .isInstanceOf(pe.albrugroup.schedule_service.exception.BadRequestException.class)
+                .hasMessageContaining("hoy o una fecha futura");
+
+        verifyNoInteractions(ajusteRepository, asistenciaRepository, excepcionRepository, diaNoLaborableRepository);
+        verify(notifier, never()).publishAfterCommit(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void restablecerDiaNoPermiteCancelarElTramoQueSeEstaTrabajando() {
+        LocalDate fecha = LocalDate.of(2026, 6, 15);
+        Horario horario = horarioSemanal(fecha.minusDays(14));
+        AjusteJornada ajuste = AjusteJornada.builder()
+                .id(88L)
+                .idEmpleado(21L)
+                .horario(horario)
+                .fechaOperativa(fecha)
+                .inicio(LocalDateTime.of(fecha, LocalTime.of(8, 0)))
+                .fin(LocalDateTime.of(fecha, LocalTime.of(10, 0)))
+                .estado(EstadoAjusteJornada.ACTIVO)
+                .origen(OrigenAjusteJornada.REEMPLAZO_BASE)
+                .motivo("Corrimiento")
+                .build();
+        Asistencia asistencia = Asistencia.builder()
+                .idEmpleado(21L)
+                .fecha(fecha)
+                .entradaProgramada(LocalTime.of(8, 0))
+                .salidaProgramada(LocalTime.of(17, 0))
+                .fechaHoraIngreso(LocalDateTime.of(fecha, LocalTime.of(8, 5)))
+                .build();
+        when(ajusteRepository.findForUpdateByIdEmpleadoAndFechaOperativaAndEstado(
+                21L, fecha, EstadoAjusteJornada.ACTIVO)).thenReturn(List.of(ajuste));
+        when(asistenciaRepository.findByIdEmpleadoAndFecha(21L, fecha)).thenReturn(Optional.of(asistencia));
+
+        assertThatThrownBy(() -> service.restablecerDia(21L, fecha))
+                .isInstanceOf(pe.albrugroup.schedule_service.exception.BadRequestException.class)
+                .hasMessageContaining("está trabajando");
+
+        verify(ajusteRepository, never()).saveAll(any());
+        verify(notifier, never()).publishAfterCommit(any(), any(), any(), any(), any());
     }
 
     private Asistencia asistenciaConBalance(int balance) {

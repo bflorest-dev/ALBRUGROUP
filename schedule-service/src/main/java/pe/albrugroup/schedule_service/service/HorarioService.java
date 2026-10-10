@@ -18,6 +18,7 @@ import pe.albrugroup.schedule_service.entity.request.horario.ReemplazarHorarioRe
 import pe.albrugroup.schedule_service.entity.request.horario.CorregirHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.CerrarHorarioEmpleadoRequest;
 import pe.albrugroup.schedule_service.entity.enums.ModalidadContrato;
+import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.response.PageResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.HorarioMesResponse;
@@ -325,6 +326,7 @@ public class HorarioService implements IHorario {
     @Transactional
     public ExcepcionHorarioResponse registrarExcepcion(Long idHorario, RegistrarExcepcionHorarioRequest request) {
         Horario horario = getHorarioById(idHorario);
+        validarCambioCompleto(request);
         validarFechaDentroDeVigencia(horario, request.getFecha());
         excepcionHorarioRepository.findByHorarioIdAndFecha(idHorario, request.getFecha())
                 .ifPresent(value -> {
@@ -348,6 +350,7 @@ public class HorarioService implements IHorario {
     @Transactional
     public ExcepcionHorarioResponse actualizarExcepcion(Long idHorario, Long idExcepcion, RegistrarExcepcionHorarioRequest request) {
         Horario horario = getHorarioById(idHorario);
+        validarCambioCompleto(request);
         validarFechaDentroDeVigencia(horario, request.getFecha());
         ExcepcionHorario excepcion = getExcepcionById(idHorario, idExcepcion);
 
@@ -367,6 +370,37 @@ public class HorarioService implements IHorario {
                 null
         );
         return mapper.toResponse(savedExcepcion);
+    }
+
+    private void validarCambioCompleto(RegistrarExcepcionHorarioRequest request) {
+        if (request.getTipo() != TipoExcepcionHorario.CAMBIO_COMPLETO) {
+            return;
+        }
+        if (request.getMotivo() == null || request.getMotivo().trim().isEmpty()) {
+            throw new BadRequestException("Indica el motivo del cambio de horario");
+        }
+        if (request.getHoraEntrada() == null || request.getHoraSalida() == null) {
+            throw new BadRequestException("Para cambiar la jornada debes indicar la hora de entrada y de salida");
+        }
+        if (Boolean.FALSE.equals(request.getLaborable())) {
+            throw new BadRequestException("Un cambio completo debe marcar el día como laborable");
+        }
+        if (!request.getHoraSalida().isAfter(request.getHoraEntrada())) {
+            throw new BadRequestException("La hora de salida debe ser posterior a la hora de entrada");
+        }
+        boolean almuerzoIncompleto = (request.getInicioAlmuerzo() == null) != (request.getFinAlmuerzo() == null);
+        if (almuerzoIncompleto) {
+            throw new BadRequestException("Indica el inicio y el fin del almuerzo, o deja ambos vacíos");
+        }
+        if (request.getInicioAlmuerzo() != null) {
+            if (!request.getFinAlmuerzo().isAfter(request.getInicioAlmuerzo())) {
+                throw new BadRequestException("La hora de fin del almuerzo debe ser posterior a su inicio");
+            }
+            if (request.getInicioAlmuerzo().isBefore(request.getHoraEntrada())
+                    || request.getFinAlmuerzo().isAfter(request.getHoraSalida())) {
+                throw new BadRequestException("El almuerzo debe estar dentro del horario de trabajo");
+            }
+        }
     }
 
     @Override

@@ -1,0 +1,72 @@
+<section class="day-editor" [attr.aria-label]="mode() === 'options' ? 'Cambios del día' : 'Editar día'">
+  <div class="day-editor__heading">
+    <div>
+      <span class="eyebrow">Edición puntual</span>
+      <h3>{{ dayLabel() }}</h3>
+      <p>{{ mode() === 'options' ? 'Revisa los cambios de este día antes de continuar.' : 'Modifica solo este día. El resto de la semana permanecerá igual.' }}</p>
+    </div>
+  </div>
+
+  @if (!day()) {
+    <p class="day-editor__empty">Selecciona un día del horario semanal para continuar.</p>
+  } @else if (mode() === 'options') {
+    <div class="day-editor__summary">
+      <strong>{{ hasChanges() ? 'Cambios registrados' : 'Sin cambios registrados' }}</strong>
+      <span>{{ hasChanges() ? 'Estos cambios están aplicados sobre el horario base del día.' : 'Puedes agregar un cambio puntual para esta fecha.' }}</span>
+    </div>
+
+    @if (hasChanges()) {
+      <div class="day-editor__changes">
+        @for (change of day()!.cambios; track change.id ?? $index) {
+          <article class="day-editor__change">
+            <span class="day-editor__change-dot" [attr.data-kind]="change.tipo"></span>
+            <div><strong>{{ changeLabel(change.codigo, change.tipo) }}</strong><span>{{ changeDetail(change) }}</span></div>
+          </article>
+        }
+      </div>
+    }
+
+    <div class="day-editor__options">
+      <button type="button" class="day-editor__option day-editor__option--primary" [disabled]="!canMutate()" (click)="editRequested.emit()">
+        <span><strong>Agregar cambio</strong><small>Modifica la jornada o agrega un ajuste para este día.</small></span>
+        <i class="ti ti-chevron-right" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="day-editor__option day-editor__option--reset" [disabled]="!canReset() || saving()" (click)="resetRequested.emit()">
+        <span><strong>Restablecer horario base</strong><small>{{ canReset() ? 'Quita los cambios propios y conserva la asistencia real.' : resetReason() }}</small></span>
+        <i class="ti ti-rotate" aria-hidden="true"></i>
+      </button>
+    </div>
+  } @else {
+    @if (editorBlockedMessage()) {
+      <p class="day-editor__notice" role="status">{{ editorBlockedMessage() }}</p>
+    }
+    @if (formError() || error()) {
+      <p class="feedback error" role="alert">{{ formError() || error() }}</p>
+    }
+    <div class="day-editor__form">
+      <label class="day-editor__field"><span>Entrada</span><input type="time" [value]="entrada()" (input)="entrada.set($any($event.target).value)" /></label>
+      <label class="day-editor__field"><span>Salida</span><input type="time" [value]="salida()" (input)="salida.set($any($event.target).value)" /></label>
+      @if (requiresLunch()) {
+        <label class="day-editor__lunch-toggle"><input type="checkbox" [checked]="tieneAlmuerzo()" (change)="setLunchEnabled($any($event.target).checked)" /><span>Almuerzo programado</span></label>
+        @if (tieneAlmuerzo()) {
+          <label class="day-editor__field"><span>Inicio del almuerzo</span><input type="time" [value]="inicioAlmuerzo()" (input)="inicioAlmuerzo.set($any($event.target).value)" /></label>
+          <label class="day-editor__field"><span>Fin del almuerzo</span><input type="time" [value]="finAlmuerzo()" (input)="finAlmuerzo.set($any($event.target).value)" /></label>
+        }
+      }
+      <label class="day-editor__field day-editor__field--wide"><span>Motivo</span><input type="text" maxlength="300" placeholder="Ej.: cobertura de turno" [value]="motivo()" (input)="motivo.set($any($event.target).value)" /></label>
+    </div>
+
+    <div class="day-editor__additional">
+      <div><strong>Otros cambios para este día</strong><span>Usa una de estas opciones si no necesitas reemplazar la jornada completa.</span></div>
+      <div class="day-editor__action-grid">
+        <button type="button" (click)="addChange.emit('ajuste-extra')">Horas extra</button>
+        <button type="button" (click)="addChange.emit('ajuste-compensacion')">Compensación</button>
+        <button type="button" (click)="addChange.emit('ajuste-corrimiento')">Correr horario</button>
+        <button type="button" (click)="addChange.emit('ajuste-almuerzo')">Modificar almuerzo</button>
+        <button type="button" (click)="addChange.emit('ajuste-jornada-extra')">Habilitar jornada</button>
+        <button type="button" (click)="addChange.emit('ajuste-compensar-falta')">Recuperar falta</button>
+        <button type="button" (click)="addChange.emit('ajuste-dia-libre')">Declarar día libre</button>
+      </div>
+    </div>
+  }
+</section>

@@ -272,7 +272,7 @@
 
     &--selected {
       background: var(--app-surface-soft);
-      outline: 2px solid var(--schedule-accent, #15803d);
+      outline: 2px solid var(--schedule-selected, #69a9e8);
       outline-offset: -1px;
     }
 
@@ -283,6 +283,10 @@
     &--today {
       outline: 1px solid color-mix(in srgb, var(--schedule-accent, #b5680e) 58%, var(--app-border-soft));
       outline-offset: -1px;
+    }
+
+    &--today.timeline__row--selected {
+      outline: 2px solid var(--schedule-selected, #69a9e8);
     }
   }
 

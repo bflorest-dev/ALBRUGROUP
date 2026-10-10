@@ -80,6 +80,13 @@ export class ScheduleAdjustmentService {
     );
   }
 
+  restablecerDia(idEmpleado: number, fecha: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.scheduleUrl}/${idEmpleado}/jornada-efectiva/${fecha}/restablecer`,
+      {}
+    );
+  }
+
   getJornadaGtr(idEmpleado: number): Observable<JornadaEfectivaResponse> {
     return this.http.get<JornadaEfectivaResponse>(
       `${this.gtrUrl}/${idEmpleado}/jornada-efectiva`

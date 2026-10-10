@@ -7,6 +7,7 @@ import {
   SimpleChanges,
   computed,
   inject,
+  output,
   signal
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -99,6 +100,12 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   @Input() readOnly = false;
   /** Datos efectivos semanales; cuando no se envían, el componente conserva su comportamiento base. */
   @Input() jornadaPeriodo: JornadaEfectivaPeriodoResponse | null = null;
+  /** Mantiene las fechas y la selección del periodo, pero permite ocultar sus cambios. */
+  @Input() showEffectiveChanges = true;
+  /** Fecha seleccionada por el contenedor cuando la jornada se consulta en modo lectura. */
+  @Input() selectedDate: string | null = null;
+
+  readonly daySelected = output<JornadaEfectivaPeriodoDiaResponse>();
 
   private readonly destroyRef = inject(DestroyRef);
   private boundForm: FormGroup | null = null;
@@ -310,6 +317,40 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     const base = day.horarioBase;
     const baseStart = timeOnly(base?.inicio);
     const baseEnd = timeOnly(base?.fin);
+    if (!this.showEffectiveChanges) {
+      const lunchStart = timeOnly(base?.almuerzoInicio);
+      const lunchEnd = timeOnly(base?.almuerzoFin);
+      const baseSegments: TimelineSegment[] = base?.laborable && baseStart && baseEnd
+        ? [{
+            key: `${index}-base`,
+            kind: 'base',
+            e: baseStart,
+            s: baseEnd,
+            showTimes: true,
+            tooltip: `Horario base: ${baseStart}–${baseEnd}`
+          }]
+        : [];
+      const dayName = DAY_LABELS[dayOfWeek(day.fecha)] ?? day.fecha;
+      const restLabel = day.estado === 'SIN_HORARIO' ? null : base?.laborable ? null : 'Descanso';
+      return {
+        index,
+        dia: dayOfWeek(day.fecha),
+        short: (DAY_LABELS[dayOfWeek(day.fecha)] ?? day.fecha).slice(0, 3),
+        date: day.fecha,
+        esHoy: day.esHoy,
+        laborable: Boolean(base?.laborable),
+        e: baseStart ?? '',
+        s: baseEnd ?? '',
+        li: lunchStart ?? '',
+        lf: lunchEnd ?? '',
+        empty: day.estado === 'SIN_HORARIO',
+        restLabel,
+        lunchModified: false,
+        lunchTooltip: lunchStart && lunchEnd ? `Almuerzo: ${lunchStart}–${lunchEnd}` : 'Sin almuerzo programado',
+        rowLabel: `${dayName}: ${restLabel ?? (baseSegments.length ? 'Horario base' : 'Sin horario')}`,
+        segments: baseSegments
+      };
+    }
     const lunchStart = timeOnly(day.almuerzo?.inicioEfectivo ?? base?.almuerzoInicio);
     const lunchEnd = timeOnly(day.almuerzo?.finEfectivo ?? base?.almuerzoFin);
     const additionalRest = Boolean(
@@ -448,6 +489,12 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     this.bLab.set(r.laborable);
     this.bLunch.set(this.perDayLunch ? !!(r.li && r.lf) : true);
     this.prevEntrada = r.e || null;
+  }
+
+  protected selectReadOnlyDay(day: RawDay): void {
+    if (!this.readOnly || !day.date || !this.jornadaPeriodo) return;
+    const selected = this.jornadaPeriodo.dias.find((item) => item.fecha === day.date);
+    if (selected) this.daySelected.emit(selected);
   }
 
   /** Toggle "lleva almuerzo" del buffer actual (día o todos). Al encender sin horas, pone un default. */

@@ -81,4 +81,14 @@ public class AjusteJornadaController {
     ) {
         return ResponseEntity.ok(service.cancelar(idEmpleado, idAjuste));
     }
+
+    @PostMapping("/jornada-efectiva/{fecha}/restablecer")
+    @PreAuthorize("hasAuthority('UPDATE_HORARIOS')")
+    public ResponseEntity<Void> restablecerDia(
+            @PathVariable @Positive Long idEmpleado,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        service.restablecerDia(idEmpleado, fecha);
+        return ResponseEntity.noContent().build();
+    }
 }

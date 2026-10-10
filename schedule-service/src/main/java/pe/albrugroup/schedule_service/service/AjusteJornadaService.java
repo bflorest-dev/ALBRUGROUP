@@ -604,6 +604,71 @@ public class AjusteJornadaService {
         return toResponse(saved);
     }
 
+    /**
+     * Restablece una fecha sin tocar marcaciones reales ni reglas globales.
+     * La validacion de la asistencia activa se hace antes de cualquier escritura para que la operacion
+     * sea atomica si el tramo esta siendo trabajado.
+     */
+    @Transactional
+    public void restablecerDia(Long idEmpleado, LocalDate fecha) {
+        LocalDate hoy = LocalDate.now(operationalClock);
+        if (fecha == null) {
+            throw new BadRequestException("Debes indicar la fecha que deseas restablecer");
+        }
+        if (fecha.isBefore(hoy)) {
+            throw new BadRequestException("Solo puedes restablecer hoy o una fecha futura");
+        }
+
+        List<AjusteJornada> activos = ajusteRepository
+                .findForUpdateByIdEmpleadoAndFechaOperativaAndEstado(
+                        idEmpleado, fecha, EstadoAjusteJornada.ACTIVO);
+        Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha).orElse(null);
+        validarQueNoSeEsteTrabajando(activos, asistencia);
+
+        activos.forEach(ajuste -> ajuste.setEstado(EstadoAjusteJornada.CANCELADO));
+        if (!activos.isEmpty()) {
+            ajusteRepository.saveAll(activos);
+        }
+
+        horarioRepository.findHorarioVigente(idEmpleado, fecha).ifPresent(horario ->
+                excepcionHorarioRepository.findByHorarioIdAndFecha(horario.getId(), fecha)
+                        .ifPresent(excepcionHorarioRepository::delete)
+        );
+
+        diaNoLaborableRepository
+                .findFirstByAlcanceAndRefIdAndFecha(AlcanceDiaNoLaborable.EMPLEADO, idEmpleado, fecha)
+                .ifPresent(diaNoLaborableRepository::delete);
+
+        if (asistencia != null
+                && (asistencia.getInicioAlmuerzoProgramado() != null
+                || asistencia.getFinAlmuerzoProgramado() != null)) {
+            asistencia.setInicioAlmuerzoProgramado(null);
+            asistencia.setFinAlmuerzoProgramado(null);
+            asistenciaRepository.save(asistencia);
+        }
+
+        realtimeNotifier.publishAfterCommit(
+                "HORARIO_RESTABLECIDO", "HORARIO", idEmpleado, fecha, null);
+    }
+
+    private void validarQueNoSeEsteTrabajando(List<AjusteJornada> ajustes, Asistencia asistencia) {
+        if (asistencia == null
+                || asistencia.getFechaHoraIngreso() == null
+                || asistencia.getFechaHoraSalida() != null
+                || asistencia.getEntradaProgramada() == null
+                || asistencia.getSalidaProgramada() == null) {
+            return;
+        }
+        LocalDate fecha = asistencia.getFecha();
+        LocalDateTime inicioActivo = LocalDateTime.of(fecha, asistencia.getEntradaProgramada());
+        LocalDateTime finActivo = LocalDateTime.of(fecha, asistencia.getSalidaProgramada());
+        boolean afectaTramoActual = ajustes.stream().anyMatch(ajuste -> JornadaEfectivaResolver.overlaps(
+                ajuste.getInicio(), ajuste.getFin(), inicioActivo, finActivo));
+        if (afectaTramoActual) {
+            throw new BadRequestException("No se puede restablecer el día porque el empleado está trabajando ese tramo");
+        }
+    }
+
     private PreviewAjusteJornadaResponse construirPreview(
             Long idEmpleado,
             AjusteJornadaRequest request,

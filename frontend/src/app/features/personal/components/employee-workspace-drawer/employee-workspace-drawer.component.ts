@@ -13,6 +13,8 @@ import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-respon
 import { EmpresaContratistaResponse } from '../../../../shared/models/rrhh/empresa-contratista-response';
 import { HorarioResponse } from '../../../../shared/models/schedule/horario-response';
 import { AjusteJornadaRequest, RegistrarAjusteV2Request, RazonAjuste } from '../../../../shared/models/schedule/jornada-efectiva-response';
+import { JornadaEfectivaPeriodoDiaResponse } from '../../../../shared/models/schedule/jornada-efectiva-periodo-response';
+import { RegistrarExcepcionHorarioRequest } from '../../../../shared/models/schedule/registrar-excepcion-horario-request';
 import { TipoDiaNoLaborable } from '../../../../shared/models/schedule/dia-no-laborable-request';
 import { formatApiErrorMessage } from '../../../../shared/utils/api-error.utils';
 import { formatLabel } from '../../../../shared/utils/display-label';
@@ -25,6 +27,7 @@ import { ScheduleWeekEditorComponent } from '../../../../shared/components/sched
 import { ScheduleExtensionTimelineComponent } from '../../../../shared/components/schedule-extension-timeline/schedule-extension-timeline.component';
 import { ScheduleShiftEditorComponent } from '../../../../shared/components/schedule-shift-editor/schedule-shift-editor.component';
 import { LunchDayEditorComponent } from '../../../../shared/components/lunch-day-editor/lunch-day-editor.component';
+import { ScheduleDayChangeAction, ScheduleDayEditorComponent } from '../../../../shared/components/schedule-day-editor/schedule-day-editor.component';
 import { SessionService } from '../../../../core/services/session.service';
 import { PersonalAttendancePanelComponent } from '../personal-attendance-panel/personal-attendance-panel.component';
 import { PersonalAttendanceFacade } from '../../facades/personal-attendance.facade';
@@ -37,8 +40,8 @@ import {
 } from '../../services/personal-access.service';
 
 type DrawerSection = 'resumen' | 'contrato' | 'roles' | 'horario' | 'asistencia';
-type DrawerSubview = 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
-type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario'>;
+type DrawerSubview = 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
+type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones'>;
 type EditDataSection = 'personal' | 'contacto-ubicacion' | 'corporativo' | 'financiero';
 
 export interface DrawerScopeCapabilities {
@@ -59,7 +62,7 @@ export function canEditVigenteContract(roles: string[], hasContract: boolean): b
 
 @Component({
   selector: 'app-employee-workspace-drawer',
-  imports: [DatePipe, FormsModule, ReactiveFormsModule, DateFieldComponent, ScheduleWeekEditorComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent, PersonalAttendancePanelComponent],
+  imports: [DatePipe, FormsModule, ReactiveFormsModule, DateFieldComponent, ScheduleWeekEditorComponent, ScheduleDayEditorComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent, PersonalAttendancePanelComponent],
   providers: [PersonalScheduleFacade, PersonalAttendanceFacade],
   templateUrl: './employee-workspace-drawer.component.html',
   styleUrl: './employee-workspace-drawer.component.scss',
@@ -155,6 +158,31 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly adjustmentError = this.scheduleFacade.adjustmentError;
   protected readonly adjustmentReportError = this.scheduleFacade.adjustmentReportError;
   protected readonly adjustmentSuccess = this.scheduleFacade.adjustmentSuccess;
+  protected readonly selectedScheduleDayDate = signal<string | null>(null);
+  protected readonly resetDayConfirming = signal(false);
+  protected readonly selectedScheduleDay = computed<JornadaEfectivaPeriodoDiaResponse | null>(() => {
+    const date = this.selectedScheduleDayDate();
+    return date
+      ? this.scheduleFacade.jornadaPeriodo()?.dias.find((day) => day.fecha === date) ?? null
+      : null;
+  });
+  protected readonly selectedDayHasChanges = computed(() => Boolean(this.selectedScheduleDay()?.cambios.length));
+  protected readonly selectedDayCanReset = computed(() => {
+    const day = this.selectedScheduleDay();
+    if (!day || !this.scheduleFacade.canMutateOperationalData() || day.fecha < this.today()) return false;
+    return day.cambios.some((change) =>
+      change.tipo !== 'DIA_NO_LABORABLE' || change.alcance === 'EMPLEADO'
+    );
+  });
+  protected readonly selectedDayResetReason = computed(() => {
+    const day = this.selectedScheduleDay();
+    if (!day) return 'Selecciona un día del horario semanal.';
+    if (day.fecha < this.today()) return 'Las fechas pasadas se pueden consultar, pero no modificar.';
+    if (!this.scheduleFacade.canMutateOperationalData()) return this.scheduleFacade.blockedMessage();
+    if (this.selectedDayCanReset()) return '';
+    if (day.cambios.length) return 'Este día solo tiene un descanso global y no se puede quitar desde aquí.';
+    return 'Este día no tiene cambios propios para restablecer.';
+  });
   protected readonly adjustmentExtraEntrada = signal('09:00');
   protected readonly adjustmentExtraSalida = signal('18:00');
   protected readonly adjustmentExtraMotivo = signal('');
@@ -173,6 +201,7 @@ export class EmployeeWorkspaceDrawerComponent {
   @ViewChild(ScheduleExtensionTimelineComponent) private extensionEditor?: ScheduleExtensionTimelineComponent;
   @ViewChild(ScheduleShiftEditorComponent) private shiftEditor?: ScheduleShiftEditorComponent;
   @ViewChild(LunchDayEditorComponent) private lunchEditor?: LunchDayEditorComponent;
+  @ViewChild(ScheduleDayEditorComponent) protected singleDayEditor?: ScheduleDayEditorComponent;
 
   protected readonly personalForm = this.formBuilder.nonNullable.group({
     nombres: ['', [Validators.required]],
@@ -239,6 +268,8 @@ export class EmployeeWorkspaceDrawerComponent {
       this.activeEmployeeId = row.employee.idEmpleado;
       this.section.set('resumen');
       this.subview.set('none');
+      this.selectedScheduleDayDate.set(null);
+      this.resetDayConfirming.set(false);
       this.isEditingContract.set(false);
       this.editDataSection.set(null);
       this.employeeDetails.set(null);
@@ -757,6 +788,7 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected closeSubview(): void {
     this.subview.set('none');
+    this.resetDayConfirming.set(false);
     this.isEditingContract.set(false);
     this.clearActionFeedback();
   }
@@ -817,8 +849,66 @@ export class EmployeeWorkspaceDrawerComponent {
     return roles.includes('ADMINISTRADOR') || roles.includes('RRHH');
   }
 
-  protected openDayAdjustment(view: DayAdjustmentSubview): void {
+  protected onWeeklyDaySelected(day: JornadaEfectivaPeriodoDiaResponse): void {
+    this.selectedScheduleDayDate.set(day.fecha);
+    this.resetDayConfirming.set(false);
+    this.clearActionFeedback();
+  }
+
+  protected openSelectedDayEditor(): void {
+    const day = this.selectedScheduleDay();
+    if (!day) return;
+    if (day.fecha < this.today()) {
+      this.actionError.set('Las fechas pasadas se pueden consultar, pero no modificar.');
+      return;
+    }
+    this.clearActionFeedback();
+    this.resetDayConfirming.set(false);
+    this.scheduleFacade.adjustmentDate.set(day.fecha);
+    this.subview.set(this.selectedDayHasChanges() ? 'editar-dia-opciones' : 'editar-dia');
+  }
+
+  protected openSingleDayEditor(): void {
+    const day = this.selectedScheduleDay();
+    if (!day) return;
+    this.clearActionFeedback();
+    this.resetDayConfirming.set(false);
+    this.subview.set('editar-dia');
+  }
+
+  protected requestResetDay(): void {
+    if (!this.selectedDayCanReset()) return;
+    this.resetDayConfirming.set(true);
+  }
+
+  protected cancelResetDay(): void {
+    this.resetDayConfirming.set(false);
+  }
+
+  protected async confirmResetDay(): Promise<void> {
+    const date = this.selectedScheduleDayDate();
+    if (!date || !this.selectedDayCanReset()) return;
+    const saved = await this.scheduleFacade.resetDay(date);
+    if (!saved) return;
+    this.resetDayConfirming.set(false);
+    this.subview.set('none');
+    this.actionSuccess.set(this.scheduleFacade.adjustmentSuccess());
+    await this.attendanceFacade.refresh();
+    this.employeeChanged.emit();
+  }
+
+  protected async onSingleDaySaved(request: RegistrarExcepcionHorarioRequest): Promise<void> {
+    const saved = await this.scheduleFacade.submitSingleDaySchedule(request.fecha, request);
+    if (saved) await this.finishDayAdjustment();
+  }
+
+  protected onSingleDayChange(action: ScheduleDayChangeAction): void {
+    this.openDayAdjustment(action, this.selectedScheduleDayDate() ?? this.adjustmentDate());
+  }
+
+  protected openDayAdjustment(view: DayAdjustmentSubview, date = this.adjustmentDate()): void {
     if (!this.scheduleFacade.canMutateOperationalData()) return;
+    this.scheduleFacade.adjustmentDate.set(date);
     const base = this.adjustmentBaseTimes();
     this.adjustmentExtraEntrada.set(base.entrada);
     this.adjustmentExtraSalida.set(base.salida);
@@ -830,7 +920,7 @@ export class EmployeeWorkspaceDrawerComponent {
     this.adjustmentDayOffReason.set('');
     this.clearActionFeedback();
     this.subview.set(view);
-    void this.scheduleFacade.loadDayAdjustment(this.row()?.employee.idEmpleado, this.adjustmentDate());
+    void this.scheduleFacade.loadDayAdjustment(this.row()?.employee.idEmpleado, date);
   }
 
   protected closeDayAdjustment(): void {

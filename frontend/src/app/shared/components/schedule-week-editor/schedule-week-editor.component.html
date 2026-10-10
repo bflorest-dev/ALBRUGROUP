@@ -84,9 +84,14 @@
       <div
         class="timeline__row"
         [class.timeline__row--readonly]="readOnly"
-        [class.timeline__row--selected]="selected() === bar.index"
+        [class.timeline__row--selected]="readOnly ? selectedDate === bar.date : selected() === bar.index"
         [class.timeline__row--today]="bar.esHoy"
-        (click)="!readOnly && selectDay(bar.index)"
+        [attr.role]="readOnly ? 'button' : null"
+        [attr.tabindex]="readOnly ? 0 : null"
+        [attr.aria-label]="readOnly ? bar.rowLabel + '. Seleccionar día' : null"
+        (click)="readOnly ? selectReadOnlyDay(bar) : selectDay(bar.index)"
+        (keydown.enter)="readOnly && selectReadOnlyDay(bar)"
+        (keydown.space)="readOnly && selectReadOnlyDay(bar); $event.preventDefault()"
       >
         <span class="timeline__day" [class.timeline__day--today]="bar.esHoy">{{ bar.short }}</span>
         <div class="timeline__track">

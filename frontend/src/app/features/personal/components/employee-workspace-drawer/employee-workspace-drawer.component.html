@@ -426,6 +426,56 @@
             />
           }
         </section>
+      } @else if (subview() === 'editar-dia-opciones') {
+        <section class="drawer-subview schedule-day-view">
+          <div class="subview-heading">
+            <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left" aria-hidden="true"></i>Volver</button>
+            <div><h3>Editar día</h3><p>Gestiona los cambios de una sola fecha sin alterar el horario semanal.</p></div>
+          </div>
+          @if (resetDayConfirming()) {
+            <section class="schedule-conflict schedule-day-confirm" aria-labelledby="reset-day-title">
+              <div class="schedule-conflict__icon"><i class="ti ti-rotate" aria-hidden="true"></i></div>
+              <div>
+                <h4 id="reset-day-title">¿Restablecer el horario base?</h4>
+                <p>Se quitarán los cambios propios de este día. Las marcaciones reales y los feriados globales no se modificarán.</p>
+              </div>
+              @if (adjustmentError()) { <p class="feedback error" role="alert">{{ adjustmentError() }}</p> }
+              <div style="grid-column: 1 / -1; display: flex; gap: 8px;">
+                <button type="button" class="ghost-button" [disabled]="isSavingAdjustment()" (click)="cancelResetDay()">Cancelar</button>
+                <button type="button" class="danger-button" [disabled]="isSavingAdjustment()" (click)="confirmResetDay()">{{ isSavingAdjustment() ? 'Restableciendo…' : 'Restablecer horario base' }}</button>
+              </div>
+            </section>
+          } @else {
+            <app-schedule-day-editor
+              [day]="selectedScheduleDay()"
+              mode="options"
+              [canReset]="selectedDayCanReset()"
+              [resetReason]="selectedDayResetReason()"
+              [canMutate]="scheduleFacade.canMutateOperationalData()"
+              [saving]="isSavingAdjustment()"
+              [error]="adjustmentError()"
+              (editRequested)="openSingleDayEditor()"
+              (resetRequested)="requestResetDay()"
+            />
+          }
+        </section>
+      } @else if (subview() === 'editar-dia') {
+        <section class="drawer-subview schedule-day-view">
+          <div class="subview-heading">
+            <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left" aria-hidden="true"></i>Volver</button>
+            <div><h3>Editar día</h3><p>Modifica solo la jornada de la fecha seleccionada. El horario de los demás días permanecerá igual.</p></div>
+          </div>
+          <app-schedule-day-editor
+            #singleDayEditor
+            [day]="selectedScheduleDay()"
+            [canMutate]="scheduleFacade.canMutateOperationalData()"
+            [saving]="isSavingAdjustment()"
+            [error]="adjustmentError()"
+            [requiresLunch]="scheduleFacade.requiresLunch()"
+            (saved)="onSingleDaySaved($event)"
+            (addChange)="onSingleDayChange($event)"
+          />
+        </section>
       } @else if (section() === 'resumen') {
         <section class="summary-block">
           <h3>Preparación</h3>
@@ -519,7 +569,10 @@
               [perDayLunch]="true"
               [readOnly]="true"
               [refreshKey]="scheduleFacade.editorKey()"
-              [jornadaPeriodo]="scheduleFacade.showEffectiveChanges() ? scheduleFacade.jornadaPeriodo() : null"
+              [jornadaPeriodo]="scheduleFacade.jornadaPeriodo()"
+              [showEffectiveChanges]="scheduleFacade.showEffectiveChanges()"
+              [selectedDate]="selectedScheduleDayDate()"
+              (daySelected)="onWeeklyDaySelected($event)"
             />
             <dl class="schedule-facts">
               <div><dt>Inicio</dt><dd class="mono">{{ schedule()?.fechaInicio }}</dd></div>
@@ -653,6 +706,11 @@
           [disabled]="isSavingAdjustment() || isLoadingAdjustment() || (adjustmentView === 'ajuste-dia-libre' && !adjustmentDayOffDate()) || ((adjustmentView === 'ajuste-jornada-extra' || adjustmentView === 'ajuste-compensar-falta') && (!adjustmentExtraEntrada() || !adjustmentExtraSalida()))"
           (click)="saveDayAdjustment()"
         >{{ isSavingAdjustment() ? 'Guardando…' : (adjustmentView === 'ajuste-almuerzo' ? 'Guardar almuerzo' : adjustmentView === 'ajuste-corrimiento' ? 'Correr horario' : adjustmentView === 'ajuste-dia-libre' ? 'Declarar día libre' : 'Guardar ajuste') }}</button>
+      } @else if (subview() === 'editar-dia-opciones') {
+        <button type="button" class="ghost-button" [disabled]="isSavingAdjustment()" (click)="closeSubview()">Volver al horario</button>
+      } @else if (subview() === 'editar-dia') {
+        <button type="button" class="ghost-button" [disabled]="isSavingAdjustment()" (click)="closeSubview()">Cancelar</button>
+        <button type="button" class="primary-button push-right" [disabled]="isSavingAdjustment() || !selectedScheduleDay() || !scheduleFacade.canMutateOperationalData()" (click)="singleDayEditor?.submit()">{{ isSavingAdjustment() ? 'Guardando…' : 'Guardar cambio del día' }}</button>
       } @else if (subview() === 'historial-roles') {
         <button type="button" class="ghost-button" (click)="closeSubview()"><i class="ti ti-arrow-left"></i>Volver a roles</button>
       } @else if (section() === 'resumen') {
@@ -668,6 +726,7 @@
         @if (schedule()) {
           <button type="button" class="ghost-button" [disabled]="!contract() || !scheduleFacade.canMutateOperationalData()" (click)="openFutureSchedule()"><i class="ti ti-calendar-plus" aria-hidden="true"></i>Agregar horario futuro</button>
         }
+        <button type="button" class="ghost-button" [disabled]="!selectedScheduleDay() || !scheduleFacade.canMutateOperationalData() || selectedScheduleDay()!.fecha < today()" (click)="openSelectedDayEditor()"><i class="ti ti-calendar-event" aria-hidden="true"></i>Editar día</button>
         <button type="button" class="primary-button push-right" [disabled]="!contract() || !scheduleFacade.canMutateOperationalData()" (click)="openScheduleEditor()">{{ schedule() ? 'Editar horario base' : 'Asignar horario base' }}</button>
       } @else if (section() === 'roles' && canManageRoles()) {
         <button type="button" class="ghost-button" (click)="openRoleHistory()"><i class="ti ti-history"></i>Ver historial</button>

@@ -456,6 +456,60 @@ export class PersonalScheduleFacade {
     }
   }
 
+  async submitSingleDaySchedule(
+    fecha: string,
+    request: RegistrarExcepcionHorarioRequest
+  ): Promise<boolean> {
+    if (!this.canMutateOperationalData() || !this.employeeId) return false;
+    if (!fecha || fecha < this.today()) {
+      this.adjustmentError.set('Solo puedes modificar hoy o una fecha futura.');
+      return false;
+    }
+    const day = this.jornadaPeriodo()?.dias.find((item) => item.fecha === fecha);
+    if (!day?.idHorario) {
+      this.adjustmentError.set('Este día no tiene un horario vigente sobre el que se pueda aplicar el cambio.');
+      return false;
+    }
+    this.startAdjustmentSave();
+    this.adjustmentDate.set(fecha);
+    try {
+      await firstValueFrom(
+        this.service.registrarExcepcionHorario(day.idHorario, request).pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      this.adjustmentSuccess.set('El cambio del día fue guardado.');
+      await this.finishAdjustmentMutation(fecha);
+      return true;
+    } catch (error) {
+      this.adjustmentError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo guardar el cambio del día.'));
+      return false;
+    } finally {
+      this.isSavingAdjustment.set(false);
+    }
+  }
+
+  async resetDay(fecha: string): Promise<boolean> {
+    if (!this.canMutateOperationalData() || !this.employeeId) return false;
+    if (!fecha || fecha < this.today()) {
+      this.adjustmentError.set('Solo puedes restablecer hoy o una fecha futura.');
+      return false;
+    }
+    this.startAdjustmentSave();
+    this.adjustmentDate.set(fecha);
+    try {
+      await firstValueFrom(
+        this.adjustmentService.restablecerDia(this.employeeId, fecha).pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      this.adjustmentSuccess.set('El horario base del día fue restablecido.');
+      await this.finishAdjustmentMutation(fecha);
+      return true;
+    } catch (error) {
+      this.adjustmentError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo restablecer el horario del día.'));
+      return false;
+    } finally {
+      this.isSavingAdjustment.set(false);
+    }
+  }
+
   private async correct(schedule: HorarioResponse, request: CorregirHorarioRequest): Promise<void> {
     try {
       const corrected = await firstValueFrom(
@@ -490,7 +544,7 @@ export class PersonalScheduleFacade {
     }
   }
 
-  private async finishAdjustmentMutation(): Promise<void> {
+  private async finishAdjustmentMutation(fecha = this.adjustmentDate()): Promise<void> {
     if (!this.employeeId) return;
     try {
       this.schedule.set(await firstValueFrom(this.service.getHorarioVigente(this.employeeId).pipe(timeout(REQUEST_TIMEOUT_MS))));
@@ -499,7 +553,7 @@ export class PersonalScheduleFacade {
         this.loadJornadaPeriodo(this.employeeId)
       ]);
     } finally {
-      await this.loadDayAdjustment();
+      await this.loadDayAdjustment(this.employeeId, fecha);
     }
   }
 
