@@ -47,11 +47,12 @@ export class OperationalGateService {
 
   readonly currentStatus = computed(() => this.attendanceFacade.currentStatus());
   readonly canActivateOperationalData = computed(() => {
-    if (this.isAlwaysOperationalRole()) {
+    if (this.isCommunityRole()) {
+      // Bypass temporal: COMMUNITY no debe quedar bloqueado por el estado de asistencia.
       return true;
     }
-    if (this.isCommunityRole()) {
-      return this.communityCheckedInToday();
+    if (this.isAlwaysOperationalRole()) {
+      return true;
     }
     return this.attendanceFacade.isOperational();
   });
