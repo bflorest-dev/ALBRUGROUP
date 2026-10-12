@@ -58,10 +58,10 @@ public class LeadFichaDetalleService {
                 .orElse(null);
 
         ActorMomento mayorTipificacion = null;
-        if (resumen != null && resumen.getMayorRangoAt() != null) {
+        if (resumen != null && resumen.getMayorRangoCodigoTipificacion() != null) {
             mayorTipificacion = eventoRepository
-                    .findTopByIdLeadAndAccionAndEtapaAndCreatedAtOrderByIdDesc(
-                            idLead, Accion.TIPIFICACION, etapa, resumen.getMayorRangoAt())
+                    .findTopByIdLeadAndAccionAndEtapaAndTipificacionOrderByCreatedAtDescIdDesc(
+                            idLead, Accion.TIPIFICACION, etapa, resumen.getMayorRangoCodigoTipificacion())
                     .map(e -> actor(e))
                     .orElse(null);
         }
