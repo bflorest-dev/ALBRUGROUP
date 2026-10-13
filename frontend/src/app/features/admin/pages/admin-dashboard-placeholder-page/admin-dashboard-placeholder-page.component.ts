@@ -20,4 +20,6 @@ export class AdminDashboardPlaceholderPageComponent {
 
   protected readonly titulo = computed(() => (this.data()['titulo'] as string) ?? 'Próximamente');
   protected readonly descripcion = computed(() => (this.data()['descripcion'] as string) ?? '');
+  protected readonly eyebrow = computed(() => (this.data()['eyebrow'] as string) ?? 'Dashboard');
+  protected readonly emptyText = computed(() => (this.data()['emptyText'] as string) ?? 'Estamos preparando las métricas de esta etapa.');
 }

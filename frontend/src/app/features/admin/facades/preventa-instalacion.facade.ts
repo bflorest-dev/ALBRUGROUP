@@ -87,7 +87,7 @@ export class PreventaInstalacionFacade {
         this.isLoading.set(false);
       },
       error: () => {
-        this.errorMessage.set('No se pudo cargar RevisionSemanal.');
+        this.errorMessage.set('No se pudo cargar Cuota Semanal.');
         this.isLoading.set(false);
       }
     });

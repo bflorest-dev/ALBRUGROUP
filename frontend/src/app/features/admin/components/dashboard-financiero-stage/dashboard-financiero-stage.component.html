@@ -51,7 +51,7 @@
     <article class="poster" [style.--team-accent]="providerAccent()">
       <header class="poster-head">
         <div class="poster-head__left">
-          <p class="eyebrow">Dashboard · Financiero</p>
+          <p class="eyebrow">Dashboard · Proyeccion De Ventas</p>
           <h2 class="poster-title">Resumen Diario</h2>
         </div>
         <div class="poster-head__right">
@@ -61,9 +61,9 @@
         </div>
       </header>
 
-      <div class="fin-kpi-strip">
+      <div class="fin-kpi-strip" [class.fin-kpi-strip--compact]="!isMonthlyView()">
         <div class="fin-kpi-item">
-          <span class="fin-kpi-item__label">Factor conversión</span>
+          <span class="fin-kpi-item__label">CONVERSION</span>
           <span class="fin-kpi-item__value">{{ factorConversion() | percent:'1.2-2' }}</span>
         </div>
         <div class="fin-kpi-sep"></div>
@@ -73,9 +73,35 @@
                 [class.is-positive]="roiMensual() > 0"
                 [class.is-negative]="roiMensual() < 0">{{ roiMensual() | percent:'1.2-2' }}</span>
         </div>
+        @if (isMonthlyView()) {
+          <div class="fin-kpi-sep"></div>
+          <div class="fin-kpi-item fin-kpi-item--installed">
+            <span class="fin-kpi-item__label">INSTALADAS</span>
+            <span class="fin-kpi-item__value">{{ totalInstaladas() | number:'1.0-0' }}</span>
+          </div>
+          <div class="fin-kpi-sep"></div>
+          <div class="fin-kpi-item fin-kpi-item--projected">
+            <span class="fin-kpi-item__label">PROYECTADAS</span>
+            <span class="fin-kpi-item__value">{{ projectedInstaladas() | number:'1.0-0' }}</span>
+          </div>
+        }
       </div>
 
-      <div class="fin-table-wrap">
+      <p class="fin-table-hint" id="fin-table-hint">Desliza para ver todos los días</p>
+      <div
+        class="fin-table-wrap"
+        [class.is-dragging]="isDraggingTable()"
+        role="region"
+        aria-label="Resumen financiero por día"
+        aria-describedby="fin-table-hint"
+        tabindex="0"
+        (pointerdown)="onTablePointerDown($event)"
+        (pointermove)="onTablePointerMove($event)"
+        (pointerup)="onTablePointerUp($event)"
+        (pointercancel)="onTablePointerUp($event)"
+        (wheel)="onTableWheel($event)"
+        (keydown)="onTableKeydown($event)"
+      >
         <table class="fin-table">
           <thead>
             <tr>
@@ -93,7 +119,9 @@
             @for (row of tableRows(); track row.label) {
               @if (row.isSection) {
                 <tr class="fin-section-row" [attr.data-block]="row.block">
-                  <td class="fin-sticky fin-section-label" [attr.colspan]="2 + dayHeaders().length">{{ row.label }}</td>
+                  <td class="fin-sticky fin-section-label">{{ row.label }}</td>
+                  <td class="fin-sticky-total fin-section-total" aria-hidden="true"></td>
+                  <td class="fin-section-fill" [attr.colspan]="dayHeaders().length" aria-hidden="true"></td>
                 </tr>
               } @else {
                 <tr [class.is-total]="row.isTotal" [attr.data-block]="row.block">

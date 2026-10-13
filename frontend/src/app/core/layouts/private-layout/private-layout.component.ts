@@ -288,12 +288,12 @@ export class PrivateLayoutComponent implements AfterViewInit {
     if (activeRole === 'ADMINISTRADOR') {
       const dashboardChildren: SidebarItem[] = [
         { label: 'Preventa', route: '/app/admin/dashboard/preventa', icon: 'pi pi-users', exact: true },
-        { label: 'RevisionSemanal', route: '/app/admin/revision-semanal', icon: 'pi pi-calendar-clock', exact: true },
         { label: 'Venta', route: '/app/admin/dashboard/venta', icon: 'pi pi-shopping-cart', exact: true },
         { label: 'Postventa', route: '/app/admin/dashboard/postventa', icon: 'pi pi-briefcase', exact: true },
         { label: 'Cobranza', route: '/app/admin/dashboard/cobranza', icon: 'pi pi-wallet', exact: true },
+        { label: 'Cuota Semanal', route: '/app/admin/revision-semanal', icon: 'pi pi-calendar-clock', exact: true },
         { label: 'Funnel', route: '/app/admin/dashboard/funnel', icon: 'pi pi-filter', exact: true },
-        { label: 'Financiero', route: '/app/admin/dashboard/financiero', icon: 'pi pi-chart-line', exact: true }
+        { label: 'Proyeccion De Ventas', route: '/app/admin/dashboard/financiero', icon: 'pi pi-chart-line', exact: true }
       ];
 
       const plataformasChildren = buildAdminPlatformsNavigation(this.equiposNav.activeTeams());
@@ -312,7 +312,16 @@ export class PrivateLayoutComponent implements AfterViewInit {
         { domainId: 'operation', label: 'Mantenimiento', route: '/app/admin/mantenimiento', icon: 'pi pi-database', exact: true },
         { domainId: 'overview', label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { domainId: 'operation', label: 'CorrecciÃ³n de campaÃ±a', route: '/app/admin/correccion-campana', icon: 'pi pi-sync', exact: true },
-        { domainId: 'overview', label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
+        {
+          domainId: 'overview',
+          key: 'Finanzas',
+          label: 'Finanzas',
+          icon: 'pi pi-wallet',
+          children: [
+            { label: 'Gastos Generales', route: '/app/admin/finanzas/gastos-generales', icon: 'pi pi-receipt', exact: true },
+            { label: 'Gastos Por Campaña', route: '/app/admin/finanzas', icon: 'pi pi-chart-bar', exact: true }
+          ]
+        },
         { domainId: 'operation', label: 'Operaciones', route: '/app/admin/operaciones', icon: 'pi pi-wrench', exact: true },
         { domainId: 'operation', label: 'Base de Leads', route: '/app/admin/base-leads', icon: 'pi pi-download', exact: true }
       ];
@@ -434,7 +443,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
           exact: true
         },
         { domainId: 'insights', label: 'Dashboard', route: '/app/supervisor-ventas/dashboard', icon: 'pi pi-chart-pie', exact: true },
-        { domainId: 'insights', label: 'RevisionSemanal', route: '/app/supervisor-ventas/revision-semanal', icon: 'pi pi-calendar-clock', exact: true }
+        { domainId: 'insights', label: 'Cuota Semanal', route: '/app/supervisor-ventas/revision-semanal', icon: 'pi pi-calendar-clock', exact: true }
       ];
     }
 
@@ -501,7 +510,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     const order = new Map<string, number>([
       ['Dashboard', 1],
       ['/app/admin/bitacora', 1.5],
-      ['/app/admin/finanzas', 2],
+      ['Finanzas', 2],
       ['/app/admin/leads-del-dia', 3],
       ['Plataformas', 3.5],
       ['/app/personal', 4],

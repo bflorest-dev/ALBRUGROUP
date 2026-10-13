@@ -61,7 +61,11 @@ export class DashboardFinancieroStageComponent implements OnInit {
   protected readonly isLoading = signal(false);
   protected readonly isRecalculating = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly isDraggingTable = signal(false);
   private readonly data = signal<ResumenFinancieroDia[]>([]);
+  private dragStartX = 0;
+  private dragStartScrollLeft = 0;
+  private activePointerId: number | null = null;
 
   protected readonly proveedorOptions = computed(() =>
     this.proveedores().map(p => ({ label: p.nombre, value: p.id }))
@@ -181,6 +185,26 @@ export class DashboardFinancieroStageComponent implements OnInit {
     return totalIng > 0 ? totalInst / totalIng : 0;
   });
 
+  protected readonly totalInstaladas = computed(() =>
+    this.data().reduce(
+      (total, dia) => total + dia.zonas.reduce((subtotal, zona) => subtotal + zona.instaladas, 0),
+      0
+    )
+  );
+
+  protected readonly isMonthlyView = computed(() =>
+    this.periodo() === 'mes' || this.isFullMonthRange(this.dia(), this.hasta())
+  );
+
+  protected readonly projectedInstaladas = computed(() => {
+    const instaladas = this.totalInstaladas();
+    const { transcurridos, restantes } = this.operationalDaysForMonthlyRange();
+
+    if (transcurridos === 0 || restantes === 0) return instaladas;
+
+    return Math.round(instaladas + (instaladas / transcurridos) * restantes);
+  });
+
   protected readonly roiMensual = computed(() => {
     const dias = this.data();
     const totalCf = dias.reduce((s, d) => s + d.zonas.reduce((zs, z) => zs + z.cfInstaladas, 0), 0);
@@ -196,6 +220,66 @@ export class DashboardFinancieroStageComponent implements OnInit {
     const f = (iso: string) => { const [, m, d] = iso.split('-'); return `${d}/${m}`; };
     return first === last ? f(first) : `${f(first)} – ${f(last)}`;
   });
+
+  protected onTablePointerDown(event: PointerEvent): void {
+    const scroller = event.currentTarget as HTMLElement;
+    if (scroller.scrollWidth <= scroller.clientWidth) return;
+
+    this.dragStartX = event.clientX;
+    this.dragStartScrollLeft = scroller.scrollLeft;
+    this.activePointerId = event.pointerId;
+    scroller.setPointerCapture(event.pointerId);
+    this.isDraggingTable.set(true);
+  }
+
+  protected onTablePointerMove(event: PointerEvent): void {
+    if (this.activePointerId !== event.pointerId) return;
+
+    const scroller = event.currentTarget as HTMLElement;
+    scroller.scrollLeft = this.dragStartScrollLeft - (event.clientX - this.dragStartX);
+  }
+
+  protected onTablePointerUp(event: PointerEvent): void {
+    if (this.activePointerId !== event.pointerId) return;
+
+    const scroller = event.currentTarget as HTMLElement;
+    if (scroller.hasPointerCapture(event.pointerId)) {
+      scroller.releasePointerCapture(event.pointerId);
+    }
+    this.activePointerId = null;
+    this.isDraggingTable.set(false);
+  }
+
+  protected onTableWheel(event: WheelEvent): void {
+    const scroller = event.currentTarget as HTMLElement;
+    const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth;
+    if (maxScrollLeft <= 0) return;
+
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    if (delta === 0) return;
+
+    const nextScrollLeft = Math.max(0, Math.min(maxScrollLeft, scroller.scrollLeft + delta));
+    if (nextScrollLeft === scroller.scrollLeft) return;
+
+    scroller.scrollLeft = nextScrollLeft;
+    event.preventDefault();
+  }
+
+  protected onTableKeydown(event: KeyboardEvent): void {
+    const scroller = event.currentTarget as HTMLElement;
+    const step = Math.max(180, scroller.clientWidth * 0.35);
+    let nextScrollLeft: number | null = null;
+
+    if (event.key === 'ArrowLeft') nextScrollLeft = scroller.scrollLeft - step;
+    if (event.key === 'ArrowRight') nextScrollLeft = scroller.scrollLeft + step;
+    if (event.key === 'Home') nextScrollLeft = 0;
+    if (event.key === 'End') nextScrollLeft = scroller.scrollWidth;
+
+    if (nextScrollLeft === null) return;
+
+    event.preventDefault();
+    scroller.scrollTo({ left: nextScrollLeft, behavior: 'smooth' });
+  }
 
   async ngOnInit(): Promise<void> {
     try {
@@ -281,5 +365,71 @@ export class DashboardFinancieroStageComponent implements OnInit {
     const lastDay = new Date(y, m, 0).getDate();
     const hasta = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
     return { desde: start, hasta };
+  }
+
+  private operationalDaysForMonthlyRange(): { transcurridos: number; restantes: number } {
+    const selectedStart = this.dia();
+    const selectedEnd = this.hasta();
+
+    if (this.isFullMonthRange(selectedStart, selectedEnd)) {
+      const start = this.parseIsoDate(selectedStart!);
+      const end = this.parseIsoDate(selectedEnd!);
+      const today = new Date();
+      const isCurrentMonth = start.getFullYear() === today.getFullYear()
+        && start.getMonth() === today.getMonth();
+
+      if (!isCurrentMonth) {
+        return {
+          transcurridos: this.countDaysWithoutSunday(start, end),
+          restantes: 0
+        };
+      }
+    }
+
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const currentDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const tomorrow = new Date(currentDay);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return {
+      transcurridos: this.countDaysWithoutSunday(start, currentDay),
+      restantes: this.countDaysWithoutSunday(tomorrow, end)
+    };
+  }
+
+  private isFullMonthRange(desde: string | null, hasta: string | null): boolean {
+    if (!desde || !hasta) return false;
+
+    const start = this.parseIsoDateParts(desde);
+    const end = this.parseIsoDateParts(hasta);
+
+    return start.year === end.year
+      && start.month === end.month
+      && start.day === 1
+      && end.day === new Date(start.year, start.month, 0).getDate();
+  }
+
+  private parseIsoDate(value: string): Date {
+    const { year, month, day } = this.parseIsoDateParts(value);
+    return new Date(year, month - 1, day);
+  }
+
+  private parseIsoDateParts(value: string): { year: number; month: number; day: number } {
+    const [year, month, day] = value.split('-').map(Number);
+    return { year, month, day };
+  }
+
+  private countDaysWithoutSunday(from: Date, to: Date): number {
+    if (from > to) return 0;
+
+    let count = 0;
+    const date = new Date(from);
+    while (date <= to) {
+      if (date.getDay() !== 0) count += 1;
+      date.setDate(date.getDate() + 1);
+    }
+    return count;
   }
 }
