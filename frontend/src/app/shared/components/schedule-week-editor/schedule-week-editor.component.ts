@@ -59,6 +59,14 @@ interface DayBar extends RawDay {
   segments: Array<TimelineSegment & { leftPct: number; widthPct: number }>;
 }
 
+export interface SingleDayScheduleDraft {
+  horaEntrada: string;
+  horaSalida: string;
+  inicioAlmuerzo: string | null;
+  finAlmuerzo: string | null;
+  laborable: boolean;
+}
+
 const DAY_LABELS: Record<string, string> = {
   LUNES: 'Lunes',
   MARTES: 'Martes',
@@ -84,7 +92,7 @@ const DAY_LABELS: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ScheduleWeekEditorComponent implements OnChanges {
-  @Input({ required: true }) horarioForm!: FormGroup;
+  @Input() horarioForm: FormGroup | null = null;
   @Input() requiresLunch = true;
   /** Cuando true, el almuerzo se decide POR DÍA (toggle "lleva almuerzo"); si false, es global. */
   @Input() perDayLunch = false;
@@ -104,12 +112,19 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   @Input() showEffectiveChanges = true;
   /** Fecha seleccionada por el contenedor cuando la jornada se consulta en modo lectura. */
   @Input() selectedDate: string | null = null;
+  /** Editor puntual: muestra una sola fila y mantiene el borrador separado del horario semanal. */
+  @Input() singleDayMode = false;
+  @Input() singleDay: JornadaEfectivaPeriodoDiaResponse | null = null;
 
   readonly daySelected = output<JornadaEfectivaPeriodoDiaResponse>();
+  readonly singleDayDraftChange = output<SingleDayScheduleDraft>();
+  readonly singleDayNonWorkingRequested = output<void>();
 
   private readonly destroyRef = inject(DestroyRef);
   private boundForm: FormGroup | null = null;
   private boundRefreshKey = -1;
+  private boundSingleDayKey = '';
+  private readonly singleDayPreview = signal<SingleDayScheduleDraft | null>(null);
 
   protected readonly rows = signal<RawDay[]>([]);
   protected readonly selected = signal<number | null>(null);
@@ -128,7 +143,7 @@ export class ScheduleWeekEditorComponent implements OnChanges {
 
   /** ¿Se muestran/escriben los campos de almuerzo para el buffer actual? */
   protected lunchOn(): boolean {
-    return !this.perDayLunch || this.bLunch();
+    return this.singleDayMode || this.perDayLunch ? this.bLunch() : this.requiresLunch;
   }
 
   private prevEntrada: string | null = null;
@@ -214,11 +229,25 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   });
 
   protected readonly scopeLabel = computed(() => {
+    if (this.singleDayMode) {
+      const day = this.rows()[0];
+      return day ? `Reprogramando: ${day.short}` : 'Reprogramar día';
+    }
     const i = this.selected();
     return i === null ? 'Editando: todos los días' : `Editando: ${DAY_LABELS[this.rows()[i]?.dia] ?? ''}`;
   });
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (this.singleDayMode) {
+      const day = this.singleDay;
+      const key = day ? `${day.fecha}:${day.estado}:${day.cambios.length}` : '';
+      if (key === this.boundSingleDayKey) return;
+      this.boundSingleDayKey = key;
+      if (day) this.initializeSingleDay(day);
+      else this.rows.set([]);
+      return;
+    }
+
     const formChanged = this.horarioForm !== this.boundForm;
     const refreshRequested = this.refreshKey !== this.boundRefreshKey;
     const periodChanged = 'jornadaPeriodo' in changes;
@@ -238,9 +267,9 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     this.refresh();
     this.selected.set(null);
     this.resetBufferToPattern();
-    const iso = toIsoDate(String(this.horarioForm.get('fechaInicio')?.value ?? ''));
+    const iso = toIsoDate(String(this.horarioForm?.get('fechaInicio')?.value ?? ''));
     this.dateValue.set(iso);
-    this.compensable.set(this.horarioForm.get('compensable')?.value === 'true');
+    this.compensable.set(this.horarioForm?.get('compensable')?.value === 'true');
   }
 
   /** Fecha mínima efectiva (ISO): la provista, o hoy cuando se muestra el selector de fecha. */
@@ -252,30 +281,34 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   protected onDate(value: string): void {
     const min = this.minAttr();
     const next = min && value && value < min ? min : value;
-    const ctrl = this.horarioForm.get('fechaInicio');
+    const ctrl = this.horarioForm?.get('fechaInicio');
     ctrl?.setValue(next);
     ctrl?.markAsDirty();
     this.dateValue.set(next);
   }
 
   protected setCompensable(value: boolean): void {
-    this.horarioForm.get('compensable')?.setValue(value ? 'true' : 'false');
+    this.horarioForm?.get('compensable')?.setValue(value ? 'true' : 'false');
     this.compensable.set(value);
   }
 
   private detalles(): FormArray {
-    return this.horarioForm.get('detalles') as FormArray;
+    return this.horarioForm?.get('detalles') as FormArray;
   }
 
   /** Fuerza el modo por día (sin emitir): el submit/validador usan los detalles, no el modo simple. */
   private forceAdvanced(): void {
-    const ctrl = this.horarioForm.get('modoAvanzado');
+    const ctrl = this.horarioForm?.get('modoAvanzado');
     if (ctrl && ctrl.value !== 'true') {
       ctrl.setValue('true', { emitEvent: false });
     }
   }
 
   private refresh(): void {
+    if (this.singleDayMode) {
+      this.rows.set(this.singleDay ? [this.singleDayRow(this.singleDay)] : []);
+      return;
+    }
     if (this.readOnly && this.jornadaPeriodo) {
       this.rows.set(this.periodRows(this.jornadaPeriodo));
       return;
@@ -311,6 +344,69 @@ export class ScheduleWeekEditorComponent implements OnChanges {
 
   private periodRows(periodo: JornadaEfectivaPeriodoResponse): RawDay[] {
     return periodo.dias.map((day, index) => this.periodRow(day, index));
+  }
+
+  private initializeSingleDay(day: JornadaEfectivaPeriodoDiaResponse): void {
+    const base = day.horarioBase;
+    const effective = day.jornadaEfectiva.tramos.find((tramo) => tramo.esBaseEfectiva)
+      ?? day.jornadaEfectiva.tramos[0];
+    const entrada = timeOnly(base?.inicio) || timeOnly(effective?.inicio) || '';
+    const salida = timeOnly(base?.fin) || timeOnly(effective?.fin) || '';
+    const inicioAlmuerzo = timeOnly(day.almuerzo?.inicioEfectivo) || timeOnly(base?.almuerzoInicio) || '';
+    const finAlmuerzo = timeOnly(day.almuerzo?.finEfectivo) || timeOnly(base?.almuerzoFin) || '';
+    const laborable = day.jornadaEfectiva.laborable;
+    this.bE.set(entrada);
+    this.bS.set(salida);
+    this.bLi.set(inicioAlmuerzo);
+    this.bLf.set(finAlmuerzo);
+    this.bLab.set(laborable);
+    this.bLunch.set(Boolean(inicioAlmuerzo && finAlmuerzo));
+    this.singleDayPreview.set({
+      horaEntrada: entrada,
+      horaSalida: salida,
+      inicioAlmuerzo: inicioAlmuerzo || null,
+      finAlmuerzo: finAlmuerzo || null,
+      laborable
+    });
+    this.error.set(null);
+    this.refresh();
+  }
+
+  private singleDayRow(day: JornadaEfectivaPeriodoDiaResponse): RawDay {
+    const source = this.periodRow(day, 0);
+    const preview = this.singleDayPreview();
+    if (!preview) return source;
+    const start = toMin(preview.horaEntrada);
+    const end = toMin(preview.horaSalida);
+    const hasWindow = preview.laborable && start !== null && end !== null && end > start;
+    const segments: TimelineSegment[] = hasWindow
+      ? [{
+          key: 'single-day-preview',
+          kind: 'base',
+          e: preview.horaEntrada,
+          s: preview.horaSalida,
+          showTimes: true,
+          tooltip: `Horario reprogramado: ${preview.horaEntrada}–${preview.horaSalida}`
+        }]
+      : [];
+    const dayName = DAY_LABELS[dayOfWeek(day.fecha)] ?? day.fecha;
+    const restLabel = preview.laborable ? null : 'Descanso';
+    return {
+      ...source,
+      laborable: preview.laborable,
+      e: preview.horaEntrada,
+      s: preview.horaSalida,
+      li: preview.inicioAlmuerzo ?? '',
+      lf: preview.finAlmuerzo ?? '',
+      empty: source.empty || (!hasWindow && preview.laborable),
+      restLabel,
+      lunchModified: false,
+      lunchTooltip: preview.inicioAlmuerzo && preview.finAlmuerzo
+        ? `Almuerzo: ${preview.inicioAlmuerzo}–${preview.finAlmuerzo}`
+        : 'Sin almuerzo programado',
+      rowLabel: `${dayName}: ${restLabel ?? (hasWindow ? 'Horario reprogramado' : 'Sin horario')}`,
+      segments
+    };
   }
 
   private periodRow(day: JornadaEfectivaPeriodoDiaResponse, index: number): RawDay {
@@ -508,6 +604,13 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     this.commitIfDay();
   }
 
+  protected applySingleDay(): void {
+    if (!this.validateSingleDayDraft()) return;
+    this.singleDayPreview.set(this.currentSingleDayDraft());
+    this.refresh();
+    this.emitSingleDayDraft();
+  }
+
   protected onEntrada(value: string): void {
     this.error.set(null);
     const before = toMin(this.prevEntrada);
@@ -547,6 +650,16 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   }
 
   protected toggleLaborable(checked: boolean): void {
+    if (this.singleDayMode) {
+      if (!checked) {
+        this.bLab.set(true);
+        this.singleDayNonWorkingRequested.emit();
+        return;
+      }
+      this.bLab.set(true);
+      this.commitIfDay();
+      return;
+    }
     const i = this.selected();
     if (i === null) return;
     this.error.set(null);
@@ -562,6 +675,10 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   }
 
   private commitIfDay(): void {
+    if (this.singleDayMode) {
+      this.emitSingleDayDraft();
+      return;
+    }
     const i = this.selected();
     if (i === null) return;
     this.writeRow(i);
@@ -596,6 +713,48 @@ export class ScheduleWeekEditorComponent implements OnChanges {
       });
       ctrl.markAsDirty();
     });
+  }
+
+  private currentSingleDayDraft(): SingleDayScheduleDraft {
+    return {
+      horaEntrada: this.bE(),
+      horaSalida: this.bS(),
+      inicioAlmuerzo: this.lunchOn() ? this.bLi() || null : null,
+      finAlmuerzo: this.lunchOn() ? this.bLf() || null : null,
+      laborable: this.bLab()
+    };
+  }
+
+  private emitSingleDayDraft(): void {
+    if (this.singleDayMode) this.singleDayDraftChange.emit(this.currentSingleDayDraft());
+  }
+
+  private validateSingleDayDraft(): boolean {
+    this.error.set(null);
+    const start = toMin(this.bE());
+    const end = toMin(this.bS());
+    if (!this.bE() || !this.bS()) {
+      this.error.set('Completa la hora de entrada y la hora de salida.');
+      return false;
+    }
+    if (start === null || end === null || end <= start) {
+      this.error.set('La hora de salida debe ser posterior a la hora de entrada.');
+      return false;
+    }
+    if (this.lunchOn() && (!this.bLi() || !this.bLf())) {
+      this.error.set('Completa el inicio y el fin del almuerzo, o desactívalo.');
+      return false;
+    }
+    if (this.lunchOn()) {
+      const lunchStart = toMin(this.bLi());
+      const lunchEnd = toMin(this.bLf());
+      if (lunchStart === null || lunchEnd === null || lunchEnd <= lunchStart
+          || lunchStart < start || lunchEnd > end) {
+        this.error.set('El almuerzo debe estar dentro del horario de trabajo.');
+        return false;
+      }
+    }
+    return true;
   }
 }
 

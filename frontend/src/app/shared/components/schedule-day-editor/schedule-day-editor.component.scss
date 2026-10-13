@@ -96,10 +96,10 @@
 .day-editor__option--primary { border-color: color-mix(in srgb, var(--schedule-accent, #15803d) 45%, var(--app-border-soft)); }
 .day-editor__option--reset { color: var(--app-danger, #b91c1c); }
 
-.day-editor__form {
+.day-editor__reason {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
+  padding-top: 0.2rem;
 }
 
 .day-editor__field { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
@@ -118,42 +118,8 @@
   font: 600 0.82rem 'Spline Sans Mono', ui-monospace, monospace;
 }
 
-.day-editor__lunch-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.42rem;
-  align-self: end;
-  min-height: 40px;
-  cursor: pointer;
-  input { accent-color: var(--schedule-accent, #15803d); }
-}
-
-.day-editor__additional {
-  display: grid;
-  gap: 0.7rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--app-border-soft);
-  strong, span { display: block; }
-  strong { font-size: 0.8rem; }
-  span { margin-top: 0.2rem; color: var(--role-muted); font-size: 0.72rem; }
-}
-
-.day-editor__action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
-.day-editor__action-grid button {
-  min-height: 36px;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--app-border-soft);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--role-panel-text);
-  font-size: 0.72rem;
-  cursor: pointer;
-  &:hover { border-color: var(--schedule-accent, #15803d); background: var(--app-surface-soft); }
-}
-
 .day-editor__empty { margin: 0; color: var(--role-muted); font-size: 0.8rem; }
 
 @media (max-width: 520px) {
-  .day-editor__form, .day-editor__action-grid { grid-template-columns: 1fr; }
   .day-editor__field--wide { grid-column: auto; }
 }

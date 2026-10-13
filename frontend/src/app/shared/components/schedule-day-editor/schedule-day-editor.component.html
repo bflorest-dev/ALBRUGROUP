@@ -43,30 +43,15 @@
     @if (formError() || error()) {
       <p class="feedback error" role="alert">{{ formError() || error() }}</p>
     }
-    <div class="day-editor__form">
-      <label class="day-editor__field"><span>Entrada</span><input type="time" [value]="entrada()" (input)="entrada.set($any($event.target).value)" /></label>
-      <label class="day-editor__field"><span>Salida</span><input type="time" [value]="salida()" (input)="salida.set($any($event.target).value)" /></label>
-      @if (requiresLunch()) {
-        <label class="day-editor__lunch-toggle"><input type="checkbox" [checked]="tieneAlmuerzo()" (change)="setLunchEnabled($any($event.target).checked)" /><span>Almuerzo programado</span></label>
-        @if (tieneAlmuerzo()) {
-          <label class="day-editor__field"><span>Inicio del almuerzo</span><input type="time" [value]="inicioAlmuerzo()" (input)="inicioAlmuerzo.set($any($event.target).value)" /></label>
-          <label class="day-editor__field"><span>Fin del almuerzo</span><input type="time" [value]="finAlmuerzo()" (input)="finAlmuerzo.set($any($event.target).value)" /></label>
-        }
-      }
-      <label class="day-editor__field day-editor__field--wide"><span>Motivo</span><input type="text" maxlength="300" placeholder="Ej.: cobertura de turno" [value]="motivo()" (input)="motivo.set($any($event.target).value)" /></label>
-    </div>
+    <app-schedule-week-editor
+      [singleDayMode]="true"
+      [singleDay]="day()"
+      (singleDayDraftChange)="onScheduleDraftChange($event)"
+      (singleDayNonWorkingRequested)="requestDayOff()"
+    />
 
-    <div class="day-editor__additional">
-      <div><strong>Otros cambios para este día</strong><span>Usa una de estas opciones si no necesitas reemplazar la jornada completa.</span></div>
-      <div class="day-editor__action-grid">
-        <button type="button" (click)="addChange.emit('ajuste-extra')">Horas extra</button>
-        <button type="button" (click)="addChange.emit('ajuste-compensacion')">Compensación</button>
-        <button type="button" (click)="addChange.emit('ajuste-corrimiento')">Correr horario</button>
-        <button type="button" (click)="addChange.emit('ajuste-almuerzo')">Modificar almuerzo</button>
-        <button type="button" (click)="addChange.emit('ajuste-jornada-extra')">Habilitar jornada</button>
-        <button type="button" (click)="addChange.emit('ajuste-compensar-falta')">Recuperar falta</button>
-        <button type="button" (click)="addChange.emit('ajuste-dia-libre')">Declarar día libre</button>
-      </div>
+    <div class="day-editor__reason">
+      <label class="day-editor__field day-editor__field--wide"><span>Motivo</span><input type="text" maxlength="300" placeholder="Ej.: cobertura de turno" [value]="motivo()" (input)="motivo.set($any($event.target).value)" /></label>
     </div>
   }
 </section>

@@ -27,7 +27,7 @@ import { ScheduleWeekEditorComponent } from '../../../../shared/components/sched
 import { ScheduleExtensionTimelineComponent } from '../../../../shared/components/schedule-extension-timeline/schedule-extension-timeline.component';
 import { ScheduleShiftEditorComponent } from '../../../../shared/components/schedule-shift-editor/schedule-shift-editor.component';
 import { LunchDayEditorComponent } from '../../../../shared/components/lunch-day-editor/lunch-day-editor.component';
-import { ScheduleDayChangeAction, ScheduleDayEditorComponent } from '../../../../shared/components/schedule-day-editor/schedule-day-editor.component';
+import { ScheduleDayEditorComponent } from '../../../../shared/components/schedule-day-editor/schedule-day-editor.component';
 import { ScheduleFooterActionsComponent } from '../../../../shared/components/schedule-footer-actions/schedule-footer-actions.component';
 import { ScheduleOverviewControlsComponent } from '../../../../shared/components/schedule-overview-controls/schedule-overview-controls.component';
 import { SessionService } from '../../../../core/services/session.service';
@@ -904,8 +904,9 @@ export class EmployeeWorkspaceDrawerComponent {
     if (saved) await this.finishDayAdjustment();
   }
 
-  protected onSingleDayChange(action: ScheduleDayChangeAction): void {
-    this.openDayAdjustment(action, this.selectedScheduleDayDate() ?? this.adjustmentDate());
+  protected onSingleDayNonWorkingRequested(): void {
+    const date = this.selectedScheduleDayDate() ?? this.adjustmentDate();
+    this.openDayAdjustment('ajuste-dia-libre', date);
   }
 
   protected openDayAdjustment(view: DayAdjustmentSubview, date = this.adjustmentDate()): void {

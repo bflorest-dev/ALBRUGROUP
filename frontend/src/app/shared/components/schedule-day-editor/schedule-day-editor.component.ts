@@ -1,18 +1,11 @@
 import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
 import { JornadaEfectivaPeriodoDiaResponse } from '../../models/schedule/jornada-efectiva-periodo-response';
 import { RegistrarExcepcionHorarioRequest } from '../../models/schedule/registrar-excepcion-horario-request';
-
-export type ScheduleDayChangeAction =
-  | 'ajuste-extra'
-  | 'ajuste-compensacion'
-  | 'ajuste-corrimiento'
-  | 'ajuste-almuerzo'
-  | 'ajuste-jornada-extra'
-  | 'ajuste-compensar-falta'
-  | 'ajuste-dia-libre';
+import { ScheduleWeekEditorComponent, SingleDayScheduleDraft } from '../schedule-week-editor/schedule-week-editor.component';
 
 @Component({
   selector: 'app-schedule-day-editor',
+  imports: [ScheduleWeekEditorComponent],
   templateUrl: './schedule-day-editor.component.html',
   styleUrl: './schedule-day-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -25,12 +18,11 @@ export class ScheduleDayEditorComponent {
   readonly canMutate = input(false);
   readonly saving = input(false);
   readonly error = input('');
-  readonly requiresLunch = input(true);
 
   readonly saved = output<RegistrarExcepcionHorarioRequest>();
   readonly resetRequested = output<void>();
-  readonly addChange = output<ScheduleDayChangeAction>();
   readonly editRequested = output<void>();
+  readonly dayOffRequested = output<void>();
 
   protected readonly entrada = signal('');
   protected readonly salida = signal('');
@@ -147,15 +139,17 @@ export class ScheduleDayEditorComponent {
     });
   }
 
-  protected setLunchEnabled(enabled: boolean): void {
+  protected onScheduleDraftChange(draft: SingleDayScheduleDraft): void {
+    this.entrada.set(draft.horaEntrada);
+    this.salida.set(draft.horaSalida);
+    this.inicioAlmuerzo.set(draft.inicioAlmuerzo ?? '');
+    this.finAlmuerzo.set(draft.finAlmuerzo ?? '');
+    this.tieneAlmuerzo.set(Boolean(draft.inicioAlmuerzo && draft.finAlmuerzo));
     this.formError.set('');
-    this.tieneAlmuerzo.set(enabled);
-    if (enabled && !this.inicioAlmuerzo()) {
-      const start = this.toMinutes(this.entrada()) ?? 8 * 60;
-      const lunch = Math.min(start + 4 * 60, (this.toMinutes(this.salida()) ?? 17 * 60) - 60);
-      this.inicioAlmuerzo.set(this.toTime(Math.max(start, lunch)));
-      this.finAlmuerzo.set(this.toTime(Math.max(start + 30, lunch + 60)));
-    }
+  }
+
+  protected requestDayOff(): void {
+    this.dayOffRequested.emit();
   }
 
   private initialize(day: JornadaEfectivaPeriodoDiaResponse): void {
@@ -170,7 +164,7 @@ export class ScheduleDayEditorComponent {
     this.salida.set(salida);
     this.inicioAlmuerzo.set(lunchStart);
     this.finAlmuerzo.set(lunchEnd);
-    this.tieneAlmuerzo.set(Boolean(lunchStart && lunchEnd) && this.requiresLunch());
+    this.tieneAlmuerzo.set(Boolean(lunchStart && lunchEnd));
     this.motivo.set('');
     this.formError.set('');
   }
@@ -186,8 +180,4 @@ export class ScheduleDayEditorComponent {
     return match ? Number(match[1]) * 60 + Number(match[2]) : null;
   }
 
-  private toTime(minutes: number): string {
-    const normalized = Math.max(0, Math.min(23 * 60 + 59, minutes));
-    return `${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(normalized % 60).padStart(2, '0')}`;
-  }
 }

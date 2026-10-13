@@ -432,7 +432,7 @@
         <section class="drawer-subview schedule-day-view">
           <div class="subview-heading">
             <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left" aria-hidden="true"></i>Volver</button>
-            <div><h3>Editar día</h3><p>Gestiona los cambios de una sola fecha sin alterar el horario semanal.</p></div>
+            <div><h3>Reprogramar día</h3><p>Gestiona los cambios de una sola fecha sin alterar el horario semanal.</p></div>
           </div>
           @if (resetDayConfirming()) {
             <section class="schedule-conflict schedule-day-confirm" aria-labelledby="reset-day-title">
@@ -465,7 +465,7 @@
         <section class="drawer-subview schedule-day-view">
           <div class="subview-heading">
             <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left" aria-hidden="true"></i>Volver</button>
-            <div><h3>Editar día</h3><p>Modifica solo la jornada de la fecha seleccionada. El horario de los demás días permanecerá igual.</p></div>
+            <div><h3>Reprogramar día</h3><p>Modifica solo la jornada de la fecha seleccionada. El horario de los demás días permanecerá igual.</p></div>
           </div>
           <app-schedule-day-editor
             #singleDayEditor
@@ -473,9 +473,8 @@
             [canMutate]="scheduleFacade.canMutateOperationalData()"
             [saving]="isSavingAdjustment()"
             [error]="adjustmentError()"
-            [requiresLunch]="scheduleFacade.requiresLunch()"
             (saved)="onSingleDaySaved($event)"
-            (addChange)="onSingleDayChange($event)"
+            (dayOffRequested)="onSingleDayNonWorkingRequested()"
           />
         </section>
       } @else if (section() === 'resumen') {
