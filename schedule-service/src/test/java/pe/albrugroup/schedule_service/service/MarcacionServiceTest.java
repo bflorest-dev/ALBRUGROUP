@@ -25,6 +25,9 @@ import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
 import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
 import pe.albrugroup.schedule_service.entity.enums.TipoTramoDia;
 import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
+import pe.albrugroup.schedule_service.entity.enums.TipoRegistroMarcacion;
+import pe.albrugroup.schedule_service.entity.request.asistencia.CorregirMarcacionesRequest;
+import pe.albrugroup.schedule_service.entity.request.asistencia.MarcacionPatchRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.PresenciaGapResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
@@ -716,6 +719,88 @@ class MarcacionServiceTest {
         assertThatThrownBy(() -> service.registrarIngreso())
                 .isInstanceOf(BadRequestException.class);
         assertThat(almacen.get()).isNull();
+    }
+
+    // ===================== Correccion administrativa de marcaciones =====================
+
+    @Test
+    void corrigeEntradaYSalidaDeJornadaCerrada() {
+        reloj(8, 0);
+        Asistencia asistencia = asistenciaOnline(LocalDateTime.of(DIA, LocalTime.of(8, 0)), 0);
+        asistencia.setFechaHoraSalida(LocalDateTime.of(DIA, LocalTime.of(17, 0)));
+        almacen.set(asistencia);
+
+        service.corregirMarcaciones(EMP, DIA, new CorregirMarcacionesRequest(List.of(
+                new MarcacionPatchRequest(TipoRegistroMarcacion.PRINCIPAL, 1L,
+                        LocalDateTime.of(DIA, LocalTime.of(8, 15)), LocalDateTime.of(DIA, LocalTime.of(17, 30)))
+        )));
+
+        assertThat(asistencia.getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(8, 15)));
+        assertThat(asistencia.getFechaHoraSalida()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(17, 30)));
+    }
+
+    @Test
+    void jornadaAbiertaSoloPermiteCorregirEntrada() {
+        reloj(8, 0);
+        Asistencia asistencia = asistenciaOnline(LocalDateTime.of(DIA, LocalTime.of(8, 0)), 0);
+        almacen.set(asistencia);
+
+        service.corregirMarcaciones(EMP, DIA, new CorregirMarcacionesRequest(List.of(
+                new MarcacionPatchRequest(TipoRegistroMarcacion.PRINCIPAL, 1L,
+                        LocalDateTime.of(DIA, LocalTime.of(8, 20)), null)
+        )));
+
+        assertThat(asistencia.getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(8, 20)));
+        assertThat(asistencia.getFechaHoraSalida()).isNull();
+        assertThatThrownBy(() -> service.corregirMarcaciones(EMP, DIA, new CorregirMarcacionesRequest(List.of(
+                new MarcacionPatchRequest(TipoRegistroMarcacion.PRINCIPAL, 1L,
+                        null, LocalDateTime.of(DIA, LocalTime.of(17, 0)))
+        )))).isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("jornada sigue abierta");
+    }
+
+    @Test
+    void corrigeTramoArchivadoSinModificarLaMarcacionPrincipal() {
+        reloj(8, 0);
+        Asistencia asistencia = asistenciaOnline(LocalDateTime.of(DIA, LocalTime.of(13, 0)), 0);
+        asistencia.setFechaHoraSalida(LocalDateTime.of(DIA, LocalTime.of(17, 0)));
+        almacen.set(asistencia);
+        AsistenciaTramo archivado = AsistenciaTramo.builder()
+                .id(44L).asistencia(asistencia).origen(OrigenTramo.BASE).tipoTramo(TipoTramoDia.BASE)
+                .fechaHoraIngreso(LocalDateTime.of(DIA, LocalTime.of(8, 0)))
+                .fechaHoraSalida(LocalDateTime.of(DIA, LocalTime.of(12, 0)))
+                .build();
+        when(asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(1L)).thenReturn(List.of(archivado));
+
+        service.corregirMarcaciones(EMP, DIA, new CorregirMarcacionesRequest(List.of(
+                new MarcacionPatchRequest(TipoRegistroMarcacion.TRAMO_ARCHIVADO, 44L,
+                        LocalDateTime.of(DIA, LocalTime.of(8, 15)), LocalDateTime.of(DIA, LocalTime.of(12, 15)))
+        )));
+
+        assertThat(archivado.getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(8, 15)));
+        assertThat(archivado.getFechaHoraSalida()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(12, 15)));
+        assertThat(asistencia.getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(13, 0)));
+    }
+
+    @Test
+    void rechazaSolapamientosFechasFuturasYCorreccionesSinValores() {
+        reloj(8, 0);
+        Asistencia asistencia = asistenciaOnline(LocalDateTime.of(DIA, LocalTime.of(8, 0)), 0);
+        asistencia.setFechaHoraSalida(LocalDateTime.of(DIA, LocalTime.of(12, 0)));
+        almacen.set(asistencia);
+
+        assertThatThrownBy(() -> service.corregirMarcaciones(EMP, DIA.plusDays(1),
+                new CorregirMarcacionesRequest(List.of(
+                        new MarcacionPatchRequest(TipoRegistroMarcacion.PRINCIPAL, 1L,
+                                LocalDateTime.of(DIA.plusDays(1), LocalTime.of(8, 0)), null)
+                )))).isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("fecha futura");
+
+        assertThatThrownBy(() -> service.corregirMarcaciones(EMP, DIA,
+                new CorregirMarcacionesRequest(List.of(
+                        new MarcacionPatchRequest(TipoRegistroMarcacion.PRINCIPAL, 1L, null, null)
+                )))).isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("entrada o una salida");
     }
 
     // ===================== helpers =====================

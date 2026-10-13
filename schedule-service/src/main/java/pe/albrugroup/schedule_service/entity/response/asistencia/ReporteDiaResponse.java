@@ -21,6 +21,8 @@ public class ReporteDiaResponse {
     private Boolean tieneHorario;
     private Boolean jornadaCerrada;
 
+    /** Marcaciones reales existentes, con identificadores estables para correccion administrativa. */
+    private List<MarcacionEditableResponse> marcaciones;
     private List<TramoDiaResponse> tramos;
     private List<SesionEstadoResponse> sesiones;
     private List<PresenciaGapResponse> tiemposMuertos;

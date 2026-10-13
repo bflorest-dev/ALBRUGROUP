@@ -118,4 +118,24 @@ describe('PersonalAttendanceFacade', () => {
     });
     expect(facade.days()).toHaveLength(1);
   });
+
+  it('cierra el detalle después de guardar una corrección desde el lápiz', async () => {
+    const date = '2026-09-01';
+    const getCumplimientoDetalle = vi.fn(() => of({ empleados: [{ idEmpleado: 42, dias: [day({ fecha: date })] }] }));
+    const corregirMarcaciones = vi.fn(() => of({ idEmpleado: 42, fecha: date } as ReporteDiaResponse));
+    const facade = setup(
+      { getCumplimientoDetalle },
+      { getReporteDia: vi.fn(), corregirMarcaciones }
+    );
+
+    await facade.initialize(42);
+    facade.expandedDay.set(date);
+    facade.editingDay.set(date);
+
+    await facade.saveMarcaciones(date, { marcaciones: [] });
+
+    expect(corregirMarcaciones).toHaveBeenCalledOnce();
+    expect(facade.editingDay()).toBeNull();
+    expect(facade.expandedDay()).toBeNull();
+  });
 });

@@ -20,13 +20,17 @@ import pe.albrugroup.schedule_service.entity.enums.EstadoTramoDia;
 import pe.albrugroup.schedule_service.entity.enums.TipoTramoDia;
 import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
 import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
+import pe.albrugroup.schedule_service.entity.enums.TipoRegistroMarcacion;
 import pe.albrugroup.schedule_service.entity.request.asistencia.IniciarAlmuerzoRequest;
+import pe.albrugroup.schedule_service.entity.request.asistencia.CorregirMarcacionesRequest;
+import pe.albrugroup.schedule_service.entity.request.asistencia.MarcacionPatchRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.PoliticaMarcacionResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.ExcesoDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.SesionEstadoResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.TramoDiaResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.MarcacionEditableResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.TramoJornadaResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
@@ -44,8 +48,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -868,6 +876,249 @@ public class MarcacionService {
         attendanceRealtimeNotifier.publishAfterCommit(tipo, origen, idEmpleado, fecha, estadoAnterior);
     }
 
+    /**
+     * Corrige marcaciones reales existentes desde administracion. Primero valida todos los intervalos
+     * y sus referencias; solo despues aplica los cambios y recalcula los totales del dia.
+     */
+    @Transactional
+    public ReporteDiaResponse corregirMarcaciones(Long idEmpleado, LocalDate fecha,
+                                                  CorregirMarcacionesRequest request) {
+        if (idEmpleado == null || idEmpleado <= 0) {
+            throw new BadRequestException("El empleado indicado no es válido");
+        }
+        if (fecha == null) {
+            throw new BadRequestException("Debes indicar la fecha de las marcaciones");
+        }
+        if (fecha.isAfter(OperationalDateTime.today())) {
+            throw new BadRequestException("No se pueden corregir marcaciones de una fecha futura");
+        }
+        if (request == null || request.marcaciones() == null || request.marcaciones().isEmpty()) {
+            throw new BadRequestException("Debes indicar al menos una marcación para corregir");
+        }
+
+        Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha)
+                .orElseThrow(() -> new NotFoundException("No existe una asistencia registrada para esa fecha"));
+        List<AsistenciaTramo> archivados = asistenciaTramoRepository
+                .findByAsistenciaIdOrderByIdAsc(asistencia.getId());
+
+        Map<String, MarcacionObjetivo> objetivos = new HashMap<>();
+        objetivos.put(clave(TipoRegistroMarcacion.PRINCIPAL, asistencia.getId()),
+                new MarcacionObjetivo(TipoRegistroMarcacion.PRINCIPAL, asistencia.getId(), asistencia, null));
+        for (AsistenciaTramo tramo : archivados) {
+            objetivos.put(clave(TipoRegistroMarcacion.TRAMO_ARCHIVADO, tramo.getId()),
+                    new MarcacionObjetivo(TipoRegistroMarcacion.TRAMO_ARCHIVADO, tramo.getId(), asistencia, tramo));
+        }
+
+        Map<String, MarcacionValores> cambios = new HashMap<>();
+        Set<String> recibidos = new HashSet<>();
+        for (MarcacionPatchRequest item : request.marcaciones()) {
+            if (item == null || item.tipoRegistro() == null || item.idRegistro() == null || item.idRegistro() <= 0) {
+                throw new BadRequestException("Cada marcación debe indicar un tipo y un identificador válido");
+            }
+            if (item.entrada() == null && item.salida() == null) {
+                throw new BadRequestException("Indica una entrada o una salida para cada marcación que quieras corregir");
+            }
+            String clave = clave(item.tipoRegistro(), item.idRegistro());
+            MarcacionObjetivo objetivo = objetivos.get(clave);
+            if (objetivo == null) {
+                throw new NotFoundException("La marcación indicada no pertenece al empleado o a la fecha solicitada");
+            }
+            if (!recibidos.add(clave)) {
+                throw new BadRequestException("No se puede enviar dos veces la misma marcación en una corrección");
+            }
+            if (item.entrada() != null && !item.entrada().toLocalDate().equals(fecha)) {
+                throw new BadRequestException("La entrada debe corresponder a la fecha de la asistencia");
+            }
+            if (item.salida() != null
+                    && (item.salida().toLocalDate().isBefore(fecha)
+                    || item.salida().toLocalDate().isAfter(fecha.plusDays(1)))) {
+                throw new BadRequestException("La salida debe corresponder al día de la asistencia");
+            }
+
+            LocalDateTime ingresoActual = objetivo.ingreso();
+            LocalDateTime salidaActual = objetivo.salida();
+            if (item.tipoRegistro() == TipoRegistroMarcacion.PRINCIPAL
+                    && salidaActual == null && item.salida() != null) {
+                throw new BadRequestException("La jornada sigue abierta; solo puedes corregir su hora de entrada");
+            }
+            LocalDateTime ingreso = item.entrada() != null ? item.entrada() : ingresoActual;
+            LocalDateTime salida = item.salida() != null ? item.salida() : salidaActual;
+            validarIntervalo(ingreso, salida);
+            cambios.put(clave, new MarcacionValores(ingreso, salida));
+        }
+
+        validarNoSolapamiento(objetivos, cambios);
+        for (Map.Entry<String, MarcacionValores> cambio : cambios.entrySet()) {
+            validarDatosRelacionados(objetivos.get(cambio.getKey()), cambio.getValue());
+        }
+
+        EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
+        for (MarcacionPatchRequest item : request.marcaciones()) {
+            MarcacionObjetivo objetivo = objetivos.get(clave(item.tipoRegistro(), item.idRegistro()));
+            MarcacionValores valores = cambios.get(clave(item.tipoRegistro(), item.idRegistro()));
+            if (objetivo.tramo() != null) {
+                objetivo.tramo().setFechaHoraIngreso(valores.ingreso());
+                objetivo.tramo().setFechaHoraSalida(valores.salida());
+                if (item.salida() != null) objetivo.tramo().setSalidaForzada(false);
+            } else {
+                asistencia.setFechaHoraIngreso(valores.ingreso());
+                asistencia.setFechaHoraSalida(valores.salida());
+                if (item.salida() != null) asistencia.setSalidaForzada(false);
+            }
+        }
+
+        recalcularMinutos(asistencia);
+        asistenciaTramoRepository.saveAll(archivados);
+        asistenciaRepository.save(asistencia);
+        publicar("ASISTENCIA_MARCACION_CORREGIDA", "CORRECCION_ADMINISTRATIVA",
+                idEmpleado, fecha, estadoAnterior);
+        return getReporteDia(idEmpleado, fecha);
+    }
+
+    private void validarIntervalo(LocalDateTime ingreso, LocalDateTime salida) {
+        if (ingreso == null) {
+            throw new BadRequestException("La marcación debe tener una hora de entrada");
+        }
+        if (salida != null && !salida.isAfter(ingreso)) {
+            throw new BadRequestException("La salida debe ser posterior a la entrada");
+        }
+    }
+
+    private void validarNoSolapamiento(Map<String, MarcacionObjetivo> objetivos,
+                                       Map<String, MarcacionValores> cambios) {
+        List<MarcacionVentana> ventanas = new ArrayList<>();
+        for (Map.Entry<String, MarcacionObjetivo> entry : objetivos.entrySet()) {
+            MarcacionObjetivo objetivo = entry.getValue();
+            MarcacionValores valores = cambios.getOrDefault(entry.getKey(),
+                    new MarcacionValores(objetivo.ingreso(), objetivo.salida()));
+            if (valores.ingreso() != null) {
+                ventanas.add(new MarcacionVentana(entry.getKey(), valores.ingreso(), valores.salida()));
+            }
+        }
+        ventanas.sort(Comparator.comparing(MarcacionVentana::ingreso));
+        for (int i = 0; i < ventanas.size(); i++) {
+            MarcacionVentana actual = ventanas.get(i);
+            if (actual.salida() == null && i < ventanas.size() - 1) {
+                throw new BadRequestException("Una jornada abierta no puede preceder a otro intervalo");
+            }
+            if (i > 0) {
+                MarcacionVentana anterior = ventanas.get(i - 1);
+                if (anterior.salida() != null && actual.ingreso().isBefore(anterior.salida())) {
+                    throw new BadRequestException("Las marcaciones no pueden solaparse");
+                }
+            }
+        }
+    }
+
+    private void validarDatosRelacionados(MarcacionObjetivo objetivo, MarcacionValores valores) {
+        Asistencia asistencia = objetivo.asistencia();
+        if (objetivo.tramo() != null) {
+            AsistenciaTramo tramo = objetivo.tramo();
+            validarDentroDelIntervalo(tramo.getFechaHoraInicioAlmuerzo(), tramo.getFechaHoraFinAlmuerzo(), valores,
+                    "El almuerzo real quedaría fuera de la marcación");
+            return;
+        }
+        validarDentroDelIntervalo(asistencia.getAlmuerzoRealInicio(), asistencia.getAlmuerzoRealFin(), valores,
+                "El almuerzo real quedaría fuera de la marcación");
+        for (SesionEstado sesion : sesionEstadoRepository.findByAsistenciaIdOrderByInicioAsc(asistencia.getId())) {
+            validarDentroDelIntervalo(sesion.getInicio(), sesion.getFin(), valores,
+                    "Una actividad registrada quedaría fuera de la marcación");
+        }
+    }
+
+    private void validarDentroDelIntervalo(LocalDateTime inicioRelacionado, LocalDateTime finRelacionado,
+                                           MarcacionValores valores, String mensaje) {
+        if (inicioRelacionado == null || valores.ingreso() == null) return;
+        boolean fueraPorInicio = inicioRelacionado.isBefore(valores.ingreso());
+        boolean fueraPorFin = valores.salida() != null && finRelacionado != null
+                && finRelacionado.isAfter(valores.salida());
+        if (fueraPorInicio || fueraPorFin) throw new BadRequestException(mensaje);
+    }
+
+    private String clave(TipoRegistroMarcacion tipo, Long id) {
+        return tipo.name() + ":" + id;
+    }
+
+    private LocalDateTime programado(LocalDate fecha, LocalTime hora, LocalTime inicio, boolean salida) {
+        if (hora == null) return null;
+        LocalDateTime value = LocalDateTime.of(fecha, hora);
+        if (salida && inicio != null && !hora.isAfter(inicio)) value = value.plusDays(1);
+        return value;
+    }
+
+    private List<MarcacionEditableResponse> marcacionesEditables(Asistencia asistencia) {
+        if (asistencia == null) return List.of();
+        List<MarcacionEditableResponse> result = new ArrayList<>();
+        for (AsistenciaTramo tramo : asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(asistencia.getId())) {
+            OrigenTramo origen = tramo.getOrigen();
+            TipoTramoDia tipo = tramo.getTipoTramo() != null ? tramo.getTipoTramo() : tipoDesde(origen, tramo.getAjusteJornada());
+            boolean base = esBase(origen);
+            result.add(MarcacionEditableResponse.builder()
+                    .tipoRegistro(TipoRegistroMarcacion.TRAMO_ARCHIVADO)
+                    .idRegistro(tramo.getId())
+                    .origen(origen)
+                    .tipoTramo(tipo)
+                    .esBase(base)
+                    .motivo(tramo.getMotivo())
+                    .entradaProgramada(tramo.getInicioProgramadoAt() != null ? tramo.getInicioProgramadoAt()
+                            : programado(asistencia.getFecha(), tramo.getEntradaProgramada(), tramo.getEntradaProgramada(), false))
+                    .salidaProgramada(tramo.getFinProgramadoAt() != null ? tramo.getFinProgramadoAt()
+                            : programado(asistencia.getFecha(), tramo.getSalidaProgramada(), tramo.getEntradaProgramada(), true))
+                    .entradaReal(tramo.getFechaHoraIngreso())
+                    .salidaReal(tramo.getFechaHoraSalida())
+                    .abierta(tramo.getFechaHoraIngreso() != null && tramo.getFechaHoraSalida() == null)
+                    .salidaForzada(Boolean.TRUE.equals(tramo.getSalidaForzada()))
+                    .build());
+        }
+        OrigenTramo origenActual = asistencia.getOrigenTramoActual() == null
+                ? OrigenTramo.BASE : asistencia.getOrigenTramoActual();
+        result.add(MarcacionEditableResponse.builder()
+                .tipoRegistro(TipoRegistroMarcacion.PRINCIPAL)
+                .idRegistro(asistencia.getId())
+                .origen(origenActual)
+                .tipoTramo(tipoDesde(origenActual, asistencia.getAjusteJornadaActual()))
+                .esBase(esBase(origenActual))
+                .entradaProgramada(programado(asistencia.getFecha(), asistencia.getEntradaProgramada(),
+                        asistencia.getEntradaProgramada(), false))
+                .salidaProgramada(programado(asistencia.getFecha(), asistencia.getSalidaProgramada(),
+                        asistencia.getEntradaProgramada(), true))
+                .entradaReal(asistencia.getFechaHoraIngreso())
+                .salidaReal(asistencia.getFechaHoraSalida())
+                .abierta(asistencia.getFechaHoraIngreso() != null && asistencia.getFechaHoraSalida() == null)
+                .salidaForzada(Boolean.TRUE.equals(asistencia.getSalidaForzada()))
+                .build());
+        return result.stream()
+                .sorted(Comparator.comparing((MarcacionEditableResponse item) -> !Boolean.TRUE.equals(item.getEsBase()))
+                        .thenComparing(item -> item.getEntradaReal() != null ? item.getEntradaReal()
+                                : item.getEntradaProgramada()))
+                .toList();
+    }
+
+    private TipoTramoDia tipoDesde(OrigenTramo origen, AjusteJornada ajuste) {
+        if (esBase(origen)) return TipoTramoDia.BASE;
+        if (ajuste != null && ajuste.getRazon() == RazonAjuste.COMPENSACION) return TipoTramoDia.COMPENSABLE;
+        return TipoTramoDia.EXTRA;
+    }
+
+    private boolean esBase(OrigenTramo origen) {
+        return origen == OrigenTramo.BASE || origen == OrigenTramo.REEMPLAZO_BASE;
+    }
+
+    private record MarcacionObjetivo(TipoRegistroMarcacion tipo, Long id, Asistencia asistencia,
+                                    AsistenciaTramo tramo) {
+        LocalDateTime ingreso() {
+            return tramo == null ? asistencia.getFechaHoraIngreso() : tramo.getFechaHoraIngreso();
+        }
+
+        LocalDateTime salida() {
+            return tramo == null ? asistencia.getFechaHoraSalida() : tramo.getFechaHoraSalida();
+        }
+    }
+
+    private record MarcacionValores(LocalDateTime ingreso, LocalDateTime salida) {}
+
+    private record MarcacionVentana(String clave, LocalDateTime ingreso, LocalDateTime salida) {}
+
     // ===================== Read model del dia =====================
 
     @Transactional(readOnly = true)
@@ -1008,6 +1259,7 @@ public class MarcacionService {
                 .fecha(fecha)
                 .tieneHorario(jornada != null)
                 .jornadaCerrada(asistencia != null && asistencia.getFechaHoraSalida() != null)
+                .marcaciones(marcacionesEditables(asistencia))
                 .tramos(construirTramosDia(asistencia, jornada))
                 .sesiones(sesiones)
                 .tiemposMuertos(presenciaTramoService.gapsDelDia(idEmpleado, fecha))

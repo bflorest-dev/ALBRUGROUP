@@ -1,0 +1,69 @@
+:host { display: block; }
+
+.marks-editor {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0 2px;
+}
+
+.marks-editor__heading,
+.marks-editor__actions,
+.mark-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.marks-editor__heading { justify-content: space-between; }
+.marks-editor__heading div { display: grid; gap: 3px; }
+.marks-editor__heading strong { color: var(--ink); font-size: 13px; }
+.marks-editor__heading span { color: var(--ink-2); font-size: 11px; }
+.marks-editor__date { color: var(--ink-3) !important; font: 600 11px 'Spline Sans Mono', ui-monospace, monospace; }
+
+.marks-editor__list { display: grid; gap: 8px; }
+.mark-row {
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px;
+  background: color-mix(in srgb, var(--panel-sunk) 55%, transparent);
+}
+.mark-row--base { border-color: color-mix(in srgb, var(--signal) 35%, var(--line)); }
+.mark-row__context { display: grid; flex: 1 1 180px; min-width: 150px; gap: 3px; }
+.mark-row__context strong { color: var(--ink); font-size: 11px; }
+.mark-row__context span,
+.mark-row__context small { color: var(--ink-3); font-size: 10px; }
+.mark-row__context small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mark-row label { display: grid; min-width: 112px; gap: 4px; color: var(--ink-3); font-size: 10px; font-weight: 700; }
+.mark-row input {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 600 12px 'Spline Sans Mono', ui-monospace, monospace;
+}
+.mark-row input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+.mark-row input:disabled { cursor: not-allowed; opacity: .6; }
+.mark-row__open,
+.mark-row__forced { font-size: 10px; font-style: normal; font-weight: 700; }
+.mark-row__open { color: var(--signal); }
+.mark-row__forced { color: var(--ink-2); }
+
+.marks-editor__error { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--danger); font-size: 11px; }
+.marks-editor__empty { margin: 0; color: var(--ink-2); font-size: 12px; }
+.marks-editor__actions { justify-content: flex-end; border-top: 1px solid var(--line); padding-top: 12px; }
+.marks-editor__actions button { min-height: 34px; border-radius: 7px; padding: 0 12px; font: 700 11px inherit; cursor: pointer; }
+.marks-editor__cancel { border: 1px solid var(--line); background: transparent; color: var(--ink-2); }
+.marks-editor__save { border: 1px solid var(--signal); background: var(--signal); color: #17120a; }
+.marks-editor__save:disabled { cursor: not-allowed; opacity: .55; }
+.marks-editor__cancel:disabled { cursor: not-allowed; opacity: .55; }
+
+@media (max-width: 620px) {
+  .mark-row { align-items: stretch; }
+  .mark-row__context { flex-basis: 100%; }
+  .mark-row label { flex: 1 1 100px; min-width: 0; }
+  .mark-row__open,
+  .mark-row__forced { align-self: center; }
+}

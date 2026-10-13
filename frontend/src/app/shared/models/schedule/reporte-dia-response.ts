@@ -1,4 +1,5 @@
 import { TipoSesionEstado, TramoDiaResponse } from './detalle-dia-response';
+import { MarcacionEditableResponse } from './marcacion-editable-response';
 
 /** Tiempo muerto detectado: hueco entre dos tramos de presencia (desconexión y retorno). */
 export interface PresenciaGapResponse {
@@ -42,6 +43,7 @@ export interface ReporteDiaResponse {
   tieneHorario: boolean | null;
   jornadaCerrada: boolean | null;
 
+  marcaciones: MarcacionEditableResponse[] | null;
   tramos: TramoDiaResponse[] | null;
   sesiones: SesionEstadoResponse[] | null;
   tiemposMuertos: PresenciaGapResponse[] | null;

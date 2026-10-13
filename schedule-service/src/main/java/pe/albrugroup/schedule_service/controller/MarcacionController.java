@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import pe.albrugroup.schedule_service.configuration.CurrentUser;
 import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
 import pe.albrugroup.schedule_service.entity.request.asistencia.AjustarAlmuerzoRequest;
+import pe.albrugroup.schedule_service.entity.request.asistencia.CorregirMarcacionesRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.IniciarAlmuerzoRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
@@ -63,6 +64,15 @@ public class MarcacionController {
                                                               @RequestBody AjustarAlmuerzoRequest request) {
         return ResponseEntity.ok(marcacionService.ajustarAlmuerzoProgramado(
                 idEmpleado, OperationalDateTime.resolveDate(fecha), request.inicio(), request.fin()));
+    }
+
+    /** Correccion administrativa de marcaciones reales existentes, sin crear asistencias nuevas. */
+    @PatchMapping("/empleados/{idEmpleado}/marcaciones/{fecha}")
+    @PreAuthorize("hasAuthority('CORREGIR_MARCACIONES')")
+    public ResponseEntity<ReporteDiaResponse> corregirMarcaciones(@PathVariable @Positive Long idEmpleado,
+                                                                   @PathVariable LocalDate fecha,
+                                                                   @RequestBody CorregirMarcacionesRequest request) {
+        return ResponseEntity.ok(marcacionService.corregirMarcaciones(idEmpleado, fecha, request));
     }
 
     @PostMapping("/ingreso")

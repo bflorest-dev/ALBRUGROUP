@@ -1,0 +1,58 @@
+<section class="marks-editor" aria-label="Corrección de marcaciones">
+  <header class="marks-editor__heading">
+    <div>
+      <strong>Corregir marcaciones</strong>
+      <span>Modifica únicamente los registros reales de este día.</span>
+    </div>
+    <span class="marks-editor__date">{{ reporte()?.fecha }}</span>
+  </header>
+
+  @if (!drafts().length) {
+    <p class="marks-editor__empty">No hay marcaciones reales para corregir en este día.</p>
+  } @else {
+    <div class="marks-editor__list">
+      @for (draft of drafts(); track draft.source.tipoRegistro + ':' + draft.source.idRegistro; let index = $index) {
+        <article class="mark-row" [class.mark-row--base]="draft.source.esBase">
+          <div class="mark-row__context">
+            <strong>{{ markLabel(draft.source) }}</strong>
+            <span>Programado {{ scheduledLabel(draft.source) }}</span>
+            @if (draft.source.motivo) { <small>{{ draft.source.motivo }}</small> }
+          </div>
+          <label>
+            <span>Entrada</span>
+            <input
+              type="time"
+              [value]="draft.entrada"
+              [attr.aria-label]="'Entrada de ' + markLabel(draft.source)"
+              (input)="setTime(index, 'entrada', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            <span>Salida</span>
+            <input
+              type="time"
+              [value]="draft.salida"
+              [disabled]="draft.source.abierta === true"
+              [attr.aria-label]="'Salida de ' + markLabel(draft.source)"
+              (input)="setTime(index, 'salida', $any($event.target).value)"
+            />
+          </label>
+          @if (draft.source.abierta) {
+            <em class="mark-row__open">Jornada abierta</em>
+          } @else if (draft.source.salidaForzada) {
+            <em class="mark-row__forced">Salida automática</em>
+          }
+        </article>
+      }
+    </div>
+  }
+
+  @if (error() || externalError()) {
+    <p class="marks-editor__error" role="alert"><i class="ti ti-alert-triangle" aria-hidden="true"></i>{{ error() || externalError() }}</p>
+  }
+
+  <footer class="marks-editor__actions">
+    <button type="button" class="marks-editor__cancel" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+    <button type="button" class="marks-editor__save" [disabled]="saving() || !drafts().length" (click)="submit()">{{ saving() ? 'Guardando…' : 'Guardar cambios' }}</button>
+  </footer>
+</section>

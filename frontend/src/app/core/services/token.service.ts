@@ -1,4 +1,4 @@
-import { Injectable, effect, signal } from '@angular/core';
+import { Injectable, computed, effect, signal } from '@angular/core';
 import { STORAGE_KEYS } from '../constants/storage.constants';
 
 type JwtPayload = Record<string, unknown>;
@@ -13,6 +13,8 @@ export class TokenService {
   private readonly refreshTokenState = signal<string | null>(
     localStorage.getItem(STORAGE_KEYS.refreshToken)
   );
+
+  readonly permisos = computed(() => this.getPermisos());
 
   constructor() {
     effect(() => {
@@ -53,6 +55,17 @@ export class TokenService {
     return raw
       .map((id) => Number(id))
       .filter((id) => Number.isInteger(id) && id > 0);
+  }
+
+  getPermisos(token = this.getAccessToken()): string[] {
+    const payload = this.decodePayload(token);
+    const raw = payload?.['permisos'];
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((permission): permission is string => typeof permission === 'string');
+  }
+
+  hasPermission(permission: string): boolean {
+    return this.getPermisos().includes(permission);
   }
 
   setAccessToken(token: string): void {

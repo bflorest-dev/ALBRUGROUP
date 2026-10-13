@@ -90,6 +90,7 @@
 .attendance-list { border-top: 1px solid var(--line); }
 .attendance-day { border-bottom: 1px solid var(--line); }
 .attendance-day.is-expanded { background: color-mix(in srgb, var(--panel-2) 65%, transparent); }
+.attendance-day__row { display: grid; grid-template-columns: minmax(0, 1fr) 48px; align-items: stretch; gap: 0; }
 
 .attendance-day__summary {
   width: 100%;
@@ -141,6 +142,21 @@
 .attendance-tags em,
 .attendance-note { color: var(--signal); font-size: 10px; font-style: normal; font-weight: 700; }
 .attendance-day__summary > .ti { color: var(--ink-3); font-size: 15px; }
+.attendance-day__edit {
+  align-self: stretch;
+  width: 100%;
+  min-height: 68px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.attendance-day__edit:hover { color: var(--signal); background: var(--panel-2); }
+.attendance-day__edit:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 
 .attendance-day__detail {
   padding: 0 0 16px 0;
@@ -184,6 +200,8 @@
   .attendance-metric:nth-child(3n) { border-right: 1px solid var(--line); }
   .attendance-metric:nth-child(2n) { border-right: 0; }
   .attendance-metric:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  .attendance-day__row { grid-template-columns: minmax(0, 1fr) 44px; gap: 0; }
+  .attendance-day__edit { min-height: 68px; }
   .attendance-day__summary { grid-template-columns: 1fr auto 18px; gap: 8px; padding: 12px 0; }
   .attendance-status { grid-column: 2; grid-row: 1; }
   .attendance-day__date { grid-column: 1; grid-row: 1; }

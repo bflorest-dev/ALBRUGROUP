@@ -6,7 +6,9 @@ import { OperationalGateService } from '../../../core/services/operational-gate.
 import { RrhhAsistenciaService } from '../../rrhh/asistencia/services/rrhh-asistencia.service';
 import { CumplimientoDetalleDiaResponse } from '../../../shared/models/schedule/cumplimiento-response';
 import { ReporteDiaResponse } from '../../../shared/models/schedule/reporte-dia-response';
+import { CorregirMarcacionesRequest } from '../../../shared/models/schedule/marcacion-editable-response';
 import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
+import { TokenService } from '../../../core/services/token.service';
 
 const REQUEST_TIMEOUT_MS = 20_000;
 
@@ -23,6 +25,7 @@ export interface PersonalAttendanceMetrics {
 export class PersonalAttendanceFacade {
   private readonly reviewService = inject(RrhhAsistenciaService);
   private readonly attendanceService = inject(AttendanceService);
+  private readonly tokenService = inject(TokenService);
   private readonly gate = inject(OperationalGateService).createGate('personal-attendance');
 
   private employeeId = 0;
@@ -36,6 +39,8 @@ export class PersonalAttendanceFacade {
   readonly dayReports = signal<Record<string, ReporteDiaResponse>>({});
   readonly isLoadingDay = signal(false);
   readonly dayError = signal('');
+  readonly editingDay = signal<string | null>(null);
+  readonly canEditMarcaciones = computed(() => this.tokenService.hasPermission('CORREGIR_MARCACIONES'));
 
   readonly canDisplayOperationalData = this.gate.canDisplayOperationalData;
   readonly blockedMessage = this.gate.blockedMessage;
@@ -87,6 +92,7 @@ export class PersonalAttendanceFacade {
     if (!/^\d{4}-\d{2}$/.test(month) || month === this.selectedMonth()) return;
     this.selectedMonth.set(month);
     this.expandedDay.set(null);
+    this.editingDay.set(null);
     this.dayReports.set({});
     this.dayError.set('');
     void this.loadMonth();
@@ -103,6 +109,7 @@ export class PersonalAttendanceFacade {
 
   async toggleDay(date: string): Promise<void> {
     if (this.expandedDay() === date) {
+      this.editingDay.set(null);
       this.expandedDay.set(null);
       this.dayError.set('');
       this.isLoadingDay.set(false);
@@ -110,6 +117,7 @@ export class PersonalAttendanceFacade {
     }
 
     this.expandedDay.set(date);
+    this.editingDay.set(null);
     this.dayError.set('');
     const cached = this.dayReports()[date];
     if (cached) return;
@@ -120,6 +128,43 @@ export class PersonalAttendanceFacade {
     }
 
     await this.loadDayReport(date);
+  }
+
+  async openEditDay(date: string): Promise<void> {
+    if (!this.canEditMarcaciones()) {
+      this.dayError.set('No tienes permiso para corregir marcaciones.');
+      return;
+    }
+    this.expandedDay.set(date);
+    this.editingDay.set(null);
+    this.dayError.set('');
+    if (!this.dayReports()[date]) await this.loadDayReport(date);
+    if (this.dayReports()[date] && this.expandedDay() === date) this.editingDay.set(date);
+  }
+
+  cancelEditDay(): void {
+    this.editingDay.set(null);
+    this.dayError.set('');
+  }
+
+  async saveMarcaciones(date: string, request: CorregirMarcacionesRequest): Promise<void> {
+    if (!this.employeeId || this.editingDay() !== date) return;
+    this.dayError.set('');
+    this.isLoadingDay.set(true);
+    const employeeId = this.employeeId;
+    try {
+      const report = await firstValueFrom(
+        this.attendanceService.corregirMarcaciones(employeeId, date, request).pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      this.dayReports.update((reports) => ({ ...reports, [date]: report }));
+      this.editingDay.set(null);
+      this.expandedDay.set(null);
+      await this.loadMonth();
+    } catch (error) {
+      this.dayError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudieron guardar las marcaciones.'));
+    } finally {
+      this.isLoadingDay.set(false);
+    }
   }
 
   async retryDay(): Promise<void> {
@@ -159,7 +204,7 @@ export class PersonalAttendanceFacade {
     }
   }
 
-  private async loadMonth(): Promise<void> {
+  private async loadMonth(preserveExpandedDay: string | null = null): Promise<void> {
     const employeeId = this.employeeId;
     if (!employeeId) return;
 
@@ -173,8 +218,11 @@ export class PersonalAttendanceFacade {
     this.isLoading.set(true);
     this.error.set('');
     this.days.set([]);
-    this.expandedDay.set(null);
-    this.dayReports.set({});
+    if (!preserveExpandedDay) {
+      this.expandedDay.set(null);
+      this.editingDay.set(null);
+      this.dayReports.set({});
+    }
     this.dayError.set('');
 
     try {
@@ -204,6 +252,7 @@ export class PersonalAttendanceFacade {
     this.isLoading.set(false);
     this.error.set('');
     this.expandedDay.set(null);
+    this.editingDay.set(null);
     this.dayReports.set({});
     this.isLoadingDay.set(false);
     this.dayError.set('');

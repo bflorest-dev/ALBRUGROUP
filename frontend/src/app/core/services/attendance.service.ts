@@ -7,6 +7,7 @@ import { ReporteDiaResponse } from '../../shared/models/schedule/reporte-dia-res
 import { ResumenMensualResponse } from '../../shared/models/schedule/resumen-mensual-response';
 import { AsistenciaMesResponse } from '../../shared/models/schedule/asistencia-mes-response';
 import { HorarioMesResponse } from '../../shared/models/schedule/horario-mes-response';
+import { CorregirMarcacionesRequest } from '../../shared/models/schedule/marcacion-editable-response';
 
 @Injectable({
   providedIn: 'root'
@@ -27,6 +28,13 @@ export class AttendanceService {
   getReporteDia(idEmpleado: number, fecha?: string): Observable<ReporteDiaResponse> {
     const params = fecha ? new HttpParams().set('fecha', fecha) : undefined;
     return this.http.get<ReporteDiaResponse>(`${this.attendanceUrl}/reporte-dia/${idEmpleado}`, { params });
+  }
+
+  corregirMarcaciones(idEmpleado: number, fecha: string, request: CorregirMarcacionesRequest): Observable<ReporteDiaResponse> {
+    return this.http.patch<ReporteDiaResponse>(
+      `${this.attendanceUrl}/empleados/${idEmpleado}/marcaciones/${fecha}`,
+      request
+    );
   }
 
   /** Resumen mensual CERRADO de un empleado (mes pasado). El mes en vivo se deriva en el frontend. */

@@ -49,30 +49,50 @@
         <div class="attendance-list" role="list">
           @for (day of attendance.days(); track trackDay($index, day)) {
             <article class="attendance-day" [class.is-expanded]="attendance.expandedDay() === day.fecha" role="listitem">
-              <button
-                class="attendance-day__summary"
-                type="button"
-                [attr.aria-expanded]="attendance.expandedDay() === day.fecha"
-                [attr.aria-controls]="'attendance-detail-' + day.fecha"
-                (click)="toggleDay(day.fecha)"
-              >
-                <span class="attendance-day__date"><strong>{{ dayDate(day.fecha) }}</strong><small>{{ day.fecha }}</small></span>
-                <span class="attendance-status" [class]="'attendance-status attendance-status--' + dayState(day)">{{ dayStateLabel(day) }}</span>
-                <span class="attendance-day__cell attendance-day__cell--scheduled"><small>Programado</small><strong>{{ scheduleLabel(day) }}</strong><span class="attendance-tags">@if (day.minutosExtra > 0) {<em>+ Extra</em>} @if (day.minutosCompensados > 0) {<em>+ Comp</em>}</span></span>
-                <span class="attendance-day__cell"><small>Marcaciones</small><strong>{{ connectionLabel(day) }}</strong>@if (day.salidaForzada && day.horaSalidaAsistencia) {<span class="attendance-note">Salida automática</span>} @if (day.horaEntradaAsistencia && !day.horaSalidaAsistencia) {<span class="attendance-note">Jornada abierta</span>} @if (lunchLabel(day, true)) {<span class="attendance-note">Alm. {{ lunchLabel(day, true) }}</span>}</span>
-                <span class="attendance-day__balance"><small>Balance</small><strong [class.is-danger]="day.minutosBalance < 0">{{ balanceLabel(day.minutosBalance) }}</strong></span>
-                <i class="ti" [class.ti-chevron-down]="attendance.expandedDay() === day.fecha" [class.ti-chevron-right]="attendance.expandedDay() !== day.fecha" aria-hidden="true"></i>
-              </button>
+              <div class="attendance-day__row">
+                <button
+                  class="attendance-day__summary"
+                  type="button"
+                  [attr.aria-expanded]="attendance.expandedDay() === day.fecha"
+                  [attr.aria-controls]="'attendance-detail-' + day.fecha"
+                  (click)="toggleDay(day.fecha)"
+                >
+                  <span class="attendance-day__date"><strong>{{ dayDate(day.fecha) }}</strong><small>{{ day.fecha }}</small></span>
+                  <span class="attendance-status" [class]="'attendance-status attendance-status--' + dayState(day)">{{ dayStateLabel(day) }}</span>
+                  <span class="attendance-day__cell attendance-day__cell--scheduled"><small>Programado</small><strong>{{ scheduleLabel(day) }}</strong><span class="attendance-tags">@if (day.minutosExtra > 0) {<em>+ Extra</em>} @if (day.minutosCompensados > 0) {<em>+ Comp</em>}</span></span>
+                  <span class="attendance-day__cell"><small>Marcaciones</small><strong>{{ connectionLabel(day) }}</strong>@if (day.salidaForzada && day.horaSalidaAsistencia) {<span class="attendance-note">Salida automática</span>} @if (day.horaEntradaAsistencia && !day.horaSalidaAsistencia) {<span class="attendance-note">Jornada abierta</span>} @if (lunchLabel(day, true)) {<span class="attendance-note">Alm. {{ lunchLabel(day, true) }}</span>}</span>
+                  <span class="attendance-day__balance"><small>Balance</small><strong [class.is-danger]="day.minutosBalance < 0">{{ balanceLabel(day.minutosBalance) }}</strong></span>
+                  <i class="ti" [class.ti-chevron-down]="attendance.expandedDay() === day.fecha" [class.ti-chevron-right]="attendance.expandedDay() !== day.fecha" aria-hidden="true"></i>
+                </button>
+                @if (attendance.canEditMarcaciones()) {
+                  <button
+                    class="attendance-day__edit"
+                    type="button"
+                    [attr.aria-label]="'Corregir marcaciones de ' + dayDate(day.fecha)"
+                    (click)="openEditor($event, day.fecha)"
+                  ><i class="ti ti-pencil" aria-hidden="true"></i></button>
+                }
+              </div>
 
               @if (attendance.expandedDay() === day.fecha) {
                 <div class="attendance-day__detail" [id]="'attendance-detail-' + day.fecha">
-                  <app-attendance-day-report
-                    [reporte]="attendance.dayReport()"
-                    [loading]="attendance.isLoadingDay()"
-                    [error]="attendance.dayError()"
-                    variant="personal"
-                  />
-                  @if (attendance.dayError()) {
+                  @if (attendance.editingDay() === day.fecha) {
+                    <app-attendance-marks-editor
+                      [reporte]="attendance.dayReport()"
+                      [externalError]="attendance.dayError()"
+                      [saving]="attendance.isLoadingDay()"
+                      (cancelar)="cancelEditor()"
+                      (guardar)="saveEditor(day.fecha, $event)"
+                    />
+                  } @else {
+                    <app-attendance-day-report
+                      [reporte]="attendance.dayReport()"
+                      [loading]="attendance.isLoadingDay()"
+                      [error]="attendance.dayError()"
+                      variant="personal"
+                    />
+                  }
+                  @if (attendance.dayError() && attendance.editingDay() !== day.fecha) {
                     <button class="attendance-retry attendance-retry--day" type="button" (click)="retryDay()">Reintentar detalle</button>
                   }
                 </div>

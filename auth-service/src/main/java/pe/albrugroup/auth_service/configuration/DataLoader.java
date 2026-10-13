@@ -133,6 +133,7 @@ public class DataLoader {
         savePermiso("READ_ASISTENCIAS_MONITOR", "Puede consultar estados de asistencia en tiempo real para monitoreo", "ASISTENCIA", "READ_MONITOR");
         savePermiso("READ_ASISTENCIAS_CUMPLIMIENTO", "Puede consultar cumplimiento de asistencia por periodos y grupos", "ASISTENCIA", "READ_COMPLIANCE");
         savePermiso("UPDATE_ASISTENCIAS", "Puede registrar movimientos de asistencia", "ASISTENCIA", "UPDATE");
+        savePermiso("CORREGIR_MARCACIONES", "Puede corregir marcaciones reales desde Administracion", "ASISTENCIA", "CORRECT");
 
         // LEADS - PREVENTA
         savePermiso("CREATE_CUENTA_PUBLICITARIA", "Puede registrar cuentas publicitarias", "CUENTA_PUBLICITARIA", "CREATE");

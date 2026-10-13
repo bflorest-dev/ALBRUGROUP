@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, untracked } from '@angular/core';
 import { CumplimientoDetalleDiaResponse } from '../../../../shared/models/schedule/cumplimiento-response';
 import { AttendanceDayReportComponent } from '../../../rrhh/asistencia/components/attendance-day-report/attendance-day-report.component';
+import { AttendanceMarksEditorComponent } from '../attendance-marks-editor/attendance-marks-editor.component';
 import { PersonalAttendanceFacade } from '../../facades/personal-attendance.facade';
+import { CorregirMarcacionesRequest } from '../../../../shared/models/schedule/marcacion-editable-response';
 
 export type PersonalAttendanceDayState = 'libre' | 'pendiente' | 'futuro' | 'falta' | 'tardanza' | 'presente' | 'extra';
 
@@ -38,7 +40,7 @@ export function personalAttendanceDurationLabel(minutes: number): string {
 @Component({
   selector: 'app-personal-attendance-panel',
   standalone: true,
-  imports: [AttendanceDayReportComponent],
+  imports: [AttendanceDayReportComponent, AttendanceMarksEditorComponent],
   templateUrl: './personal-attendance-panel.component.html',
   styleUrl: './personal-attendance-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -68,6 +70,19 @@ export class PersonalAttendancePanelComponent {
 
   protected toggleDay(date: string): void {
     void this.attendance.toggleDay(date);
+  }
+
+  protected openEditor(event: Event, date: string): void {
+    event.stopPropagation();
+    void this.attendance.openEditDay(date);
+  }
+
+  protected cancelEditor(): void {
+    this.attendance.cancelEditDay();
+  }
+
+  protected saveEditor(date: string, request: CorregirMarcacionesRequest): void {
+    void this.attendance.saveMarcaciones(date, request);
   }
 
   protected retryDay(): void {
