@@ -1,0 +1,43 @@
+:host {
+  display: block;
+  align-self: center;
+}
+
+.schedule-overview__heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.schedule-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  box-sizing: border-box;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: var(--ink-2);
+  font: 700 11px/1 'Archivo';
+  white-space: nowrap;
+}
+
+.schedule-state input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+  :host {
+    width: auto;
+    flex: 1 0 100%;
+    margin-top: 4px;
+  }
+
+  .schedule-overview__heading-actions {
+    justify-content: flex-end;
+  }
+}

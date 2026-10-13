@@ -93,7 +93,7 @@
         scrollHeight="flex"
         [rowHover]="true"
         styleClass="billing-table"
-        [tableStyle]="{ 'min-width': '2600px' }"
+        [tableStyle]="{ 'min-width': '2700px' }"
       >
         <ng-template #header>
           <tr class="billing-table__group-row">
@@ -103,7 +103,7 @@
             <th colspan="8" class="billing-band billing-band--contract">Contrato</th>
             <th colspan="3" class="billing-band billing-band--attendance">Asistencia</th>
             <th colspan="4" class="billing-band billing-band--discount">Descuentos</th>
-            <th colspan="6" class="billing-band billing-band--bonus">Bonos</th>
+            <th colspan="7" class="billing-band billing-band--bonus">Bonos</th>
             <th rowspan="2">Remuneracion neta</th>
             <th rowspan="2">Acciones</th>
           </tr>
@@ -130,6 +130,7 @@
             <th class="billing-band--bonus">Capacitacion</th>
             <th class="billing-band--bonus">Horas extras</th>
             <th class="billing-band--bonus">Pago extras</th>
+            <th class="billing-band--bonus">Bono adicional</th>
             <th class="billing-band--bonus">Total bonificaciones</th>
           </tr>
         </ng-template>
@@ -162,6 +163,18 @@
             <td class="billing-band--bonus billing-data">{{ facade.money(row.bonoCapacitacion) }}</td>
             <td class="billing-band--bonus billing-data">{{ facade.hoursFromMinutes(row.minutosExtras) }}</td>
             <td class="billing-band--bonus billing-data">{{ facade.money(row.pagoExtras) }}</td>
+            <td
+              class="billing-band--bonus billing-data billing-bonus-extra-cell"
+              [class.billing-bonus-extra-cell--active]="row.bonoAdicional > 0"
+              [pTooltip]="facade.bonoAdicionalTooltip(row)"
+              tooltipPosition="top"
+              tooltipStyleClass="billing-bonus-tooltip"
+            >
+              {{ facade.money(row.bonoAdicional) }}
+              @if (row.bonoAdicional > 0) {
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+              }
+            </td>
             <td class="billing-band--bonus billing-data">{{ facade.money(row.totalBonificaciones) }}</td>
             <td class="billing-net billing-data">{{ facade.money(row.remuneracionNeta) }}</td>
             <td class="billing-actions-cell">
@@ -175,7 +188,7 @@
           </tr>
         </ng-template>
         <ng-template #emptymessage>
-          <tr><td colspan="28" class="billing-empty">No hay planilla calculada para este periodo.</td></tr>
+          <tr><td colspan="29" class="billing-empty">No hay planilla calculada para este periodo.</td></tr>
         </ng-template>
       </p-table>
     </div>

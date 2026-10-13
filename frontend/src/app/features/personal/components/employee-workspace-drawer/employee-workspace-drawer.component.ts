@@ -28,6 +28,8 @@ import { ScheduleExtensionTimelineComponent } from '../../../../shared/component
 import { ScheduleShiftEditorComponent } from '../../../../shared/components/schedule-shift-editor/schedule-shift-editor.component';
 import { LunchDayEditorComponent } from '../../../../shared/components/lunch-day-editor/lunch-day-editor.component';
 import { ScheduleDayChangeAction, ScheduleDayEditorComponent } from '../../../../shared/components/schedule-day-editor/schedule-day-editor.component';
+import { ScheduleFooterActionsComponent } from '../../../../shared/components/schedule-footer-actions/schedule-footer-actions.component';
+import { ScheduleOverviewControlsComponent } from '../../../../shared/components/schedule-overview-controls/schedule-overview-controls.component';
 import { SessionService } from '../../../../core/services/session.service';
 import { PersonalAttendancePanelComponent } from '../personal-attendance-panel/personal-attendance-panel.component';
 import { PersonalAttendanceFacade } from '../../facades/personal-attendance.facade';
@@ -62,7 +64,7 @@ export function canEditVigenteContract(roles: string[], hasContract: boolean): b
 
 @Component({
   selector: 'app-employee-workspace-drawer',
-  imports: [DatePipe, FormsModule, ReactiveFormsModule, DateFieldComponent, ScheduleWeekEditorComponent, ScheduleDayEditorComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent, PersonalAttendancePanelComponent],
+  imports: [DatePipe, FormsModule, ReactiveFormsModule, DateFieldComponent, ScheduleWeekEditorComponent, ScheduleDayEditorComponent, ScheduleFooterActionsComponent, ScheduleOverviewControlsComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent, PersonalAttendancePanelComponent],
   providers: [PersonalScheduleFacade, PersonalAttendanceFacade],
   templateUrl: './employee-workspace-drawer.component.html',
   styleUrl: './employee-workspace-drawer.component.scss',

@@ -1,0 +1,7 @@
+<div class="schedule-overview__heading-actions">
+  <label class="schedule-state">
+    <input type="checkbox" [checked]="showChanges()" (change)="showChangesChange.emit($any($event.target).checked)" />
+    <span>Mostrar cambios</span>
+  </label>
+  <span class="schedule-state">{{ modality() }}</span>
+</div>

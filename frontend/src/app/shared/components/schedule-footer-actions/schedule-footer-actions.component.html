@@ -1,0 +1,8 @@
+<div class="schedule-footer-actions">
+  <button type="button" class="ghost-button" [disabled]="!canReprogram()" (click)="reprogramRequested.emit()">
+    <i class="ti ti-calendar-event" aria-hidden="true"></i><span>Reprogramar día</span>
+  </button>
+  <button type="button" class="primary-button" [disabled]="!canAdd()" (click)="addRequested.emit()">
+    <i class="ti ti-calendar-plus" aria-hidden="true"></i><span>Agregar Nuevo Horario</span>
+  </button>
+</div>

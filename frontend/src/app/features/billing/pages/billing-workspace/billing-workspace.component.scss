@@ -315,6 +315,26 @@
   font-weight: 800;
 }
 
+.billing-bonus-extra-cell {
+  cursor: help;
+}
+
+.billing-bonus-extra-cell i {
+  color: var(--billing-bonus);
+  font-size: 0.72rem;
+  margin-left: 0.28rem;
+  vertical-align: middle;
+}
+
+.billing-bonus-extra-cell--active {
+  font-weight: 800;
+}
+
+:host ::ng-deep .billing-bonus-tooltip {
+  max-width: min(22rem, 90vw);
+  white-space: pre-line;
+}
+
 .billing-band {
   letter-spacing: 0.07em !important;
 }

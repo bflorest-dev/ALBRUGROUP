@@ -162,7 +162,7 @@ export class ScheduleWeekEditorComponent implements OnChanges {
 
   protected readonly ticks = computed(() => {
     const { min, span } = this.axis();
-    const step = span > 12 * 60 ? 180 : 120;
+    const step = 120;
     const out: { label: string; leftPct: number }[] = [];
     for (let m = Math.ceil(min / step) * step; m <= min + span; m += step) {
       out.push({ label: hhmm(m), leftPct: ((m - min) / span) * 100 });

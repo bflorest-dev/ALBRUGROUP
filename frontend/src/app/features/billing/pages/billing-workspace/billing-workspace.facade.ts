@@ -71,9 +71,12 @@ export class BillingWorkspaceFacade {
     this.errorMessage.set(null);
     this.successMessage.set(null);
     try {
-      this.planilla.set(await firstValueFrom(this.billingService.obtenerPlanilla(anio, mes)));
+      const planilla = await firstValueFrom(this.billingService.obtenerPlanilla(anio, mes));
+      this.planilla.set(planilla);
+      await this.loadAdjustments();
     } catch (error) {
       this.planilla.set(null);
+      this.adjustments.set(null);
       if (this.isClosedMonth()) {
         this.errorMessage.set(this.getErrorMessage(error, 'No hay planilla calculada para el periodo seleccionado.'));
       } else {
@@ -94,7 +97,9 @@ export class BillingWorkspaceFacade {
     this.errorMessage.set(null);
     this.successMessage.set(null);
     try {
-      this.planilla.set(await firstValueFrom(this.billingService.calcularPlanilla(anio, mes)));
+      const planilla = await firstValueFrom(this.billingService.calcularPlanilla(anio, mes));
+      this.planilla.set(planilla);
+      await this.loadAdjustments();
       this.successMessage.set('Planilla calculada en borrador.');
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo calcular la planilla.'));
@@ -112,7 +117,9 @@ export class BillingWorkspaceFacade {
     this.errorMessage.set(null);
     this.successMessage.set(null);
     try {
-      this.planilla.set(await firstValueFrom(this.billingService.aprobarPlanilla(planilla.id)));
+      const aprobada = await firstValueFrom(this.billingService.aprobarPlanilla(planilla.id));
+      this.planilla.set(aprobada);
+      await this.loadAdjustments();
       this.successMessage.set('Planilla aprobada y congelada.');
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo aprobar la planilla.'));
@@ -284,6 +291,19 @@ export class BillingWorkspaceFacade {
   ajusteDate(value: string | null): string {
     if (!value) return '';
     return new Date(value).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' });
+  }
+
+  bonoAdicionalTooltip(row: PlanillaEmpleadoResponse): string {
+    if (Number(row.bonoAdicional ?? 0) <= 0) {
+      return 'Sin bono adicional registrado.';
+    }
+    const bonos = this.adjustments()?.bonosAdicionales.filter(item => item.idEmpleado === row.idEmpleado) ?? [];
+    if (bonos.length === 0) {
+      return `Bono adicional calculado: ${this.money(row.bonoAdicional)}.`;
+    }
+    return bonos
+      .map(item => `${this.money(item.monto)} - ${item.comentario}`)
+      .join('\n');
   }
 
   money(value: number | null | undefined): string {
