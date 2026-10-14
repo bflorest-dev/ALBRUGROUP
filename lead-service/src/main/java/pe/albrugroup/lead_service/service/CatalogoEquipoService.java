@@ -2,6 +2,7 @@ package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pe.albrugroup.lead_service.entity.enums.ComposicionServiciosPlan;
 import pe.albrugroup.lead_service.entity.response.CampanaResponse;
 import pe.albrugroup.lead_service.entity.response.PlanResponse;
 import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
@@ -63,5 +64,27 @@ public class CatalogoEquipoService {
         return todos.stream()
                 .filter(p -> p.getIdProveedor() != null && visibles.contains(p.getIdProveedor()))
                 .toList();
+    }
+
+    public List<PlanResponse> listarPlanesOfertaVisibles(
+            Long idProveedor,
+            Long idZona,
+            Boolean tienePrecioPromocional,
+            Boolean tieneVelocidadPromocional,
+            Boolean tienePromocionInterna,
+            ComposicionServiciosPlan composicion
+    ) {
+        Set<Long> visibles = equipoProveedorService.proveedorIdsVisibles();
+        if (visibles != null && !visibles.contains(idProveedor)) {
+            return List.of();
+        }
+        return planService.listarPlanesOferta(
+                idProveedor,
+                idZona,
+                tienePrecioPromocional,
+                tieneVelocidadPromocional,
+                tienePromocionInterna,
+                composicion
+        );
     }
 }

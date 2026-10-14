@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import pe.albrugroup.lead_service.entity.enums.ComposicionServiciosPlan;
 import pe.albrugroup.lead_service.entity.request.AdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.PlanRequest;
 import pe.albrugroup.lead_service.entity.request.PlanUpdateRequest;
@@ -43,6 +44,25 @@ public class PlanController {
             @RequestParam(defaultValue = "false") boolean soloVigentes
     ) {
         return ResponseEntity.ok(catalogoEquipoService.listarPlanesVisibles(idProveedor, soloVigentes));
+    }
+
+    @GetMapping("/oferta") @PreAuthorize("hasAuthority('READ_PLANES')")
+    public ResponseEntity<List<PlanResponse>> listarPlanesOferta(
+            @RequestParam Long idProveedor,
+            @RequestParam Long idZona,
+            @RequestParam(required = false) Boolean tienePrecioPromocional,
+            @RequestParam(required = false) Boolean tieneVelocidadPromocional,
+            @RequestParam(required = false) Boolean tienePromocionInterna,
+            @RequestParam(required = false) ComposicionServiciosPlan tipoServicio
+    ) {
+        return ResponseEntity.ok(catalogoEquipoService.listarPlanesOfertaVisibles(
+                idProveedor,
+                idZona,
+                tienePrecioPromocional,
+                tieneVelocidadPromocional,
+                tienePromocionInterna,
+                tipoServicio
+        ));
     }
 
     @GetMapping("/adicionales") @PreAuthorize("hasAuthority('READ_ADICIONALES')")

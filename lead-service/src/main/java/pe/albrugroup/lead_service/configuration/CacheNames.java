@@ -4,6 +4,7 @@ public final class CacheNames {
 
     public static final String CAMPANAS = "catalogo:campanas";
     public static final String PLANES = "catalogo:planes";
+    public static final String PLANES_OFERTA = "catalogo:planes-oferta";
     public static final String SERVICIOS_PROVEEDOR = "catalogo:servicios-proveedor";
     public static final String TIPIFICACIONES = "catalogo:tipificaciones";
     public static final String TIPIFICACIONES_POR_PROVEEDOR = "catalogo:tipificaciones-por-proveedor";

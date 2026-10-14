@@ -137,6 +137,7 @@ public class CacheConfig {
         Map<String, RedisCacheConfiguration> cacheConfigurations = Map.ofEntries(
                 Map.entry(CacheNames.CAMPANAS, campanasConfig),
                 Map.entry(CacheNames.PLANES, planesConfig),
+                Map.entry(CacheNames.PLANES_OFERTA, planesConfig),
                 Map.entry(CacheNames.SERVICIOS_PROVEEDOR, serviciosProveedorConfig),
                 Map.entry(CacheNames.TIPIFICACIONES, tipificacionesConfig),
                 Map.entry(CacheNames.TIPIFICACIONES_POR_PROVEEDOR, tipificacionesPorProveedorConfig),

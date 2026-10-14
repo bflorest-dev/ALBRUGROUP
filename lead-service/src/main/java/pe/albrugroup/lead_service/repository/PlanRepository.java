@@ -34,6 +34,78 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
     );
 
     @Query("""
+            select distinct p
+            from Plan p
+            left join fetch p.proveedor proveedor
+            left join fetch p.internet internet
+            left join fetch p.television television
+            left join fetch p.telefono telefono
+            left join fetch p.zona zona
+            left join fetch p.adicionales planAdicional
+            left join fetch planAdicional.adicional adicional
+            where p.activo = true
+              and p.proveedor.id = :idProveedor
+              and p.zona.id = :idZona
+              and p.vigenciaDesde <= :fechaActual
+              and (p.vigenciaHasta is null or p.vigenciaHasta >= :fechaActual)
+              and (
+                    :tienePrecioPromocional is null
+                    or (:tienePrecioPromocional = true and p.precioPromocional is not null)
+                    or (:tienePrecioPromocional = false and p.precioPromocional is null)
+              )
+              and (
+                    :tieneVelocidadPromocional is null
+                    or (:tieneVelocidadPromocional = true and p.velocidadPromocional is not null)
+                    or (:tieneVelocidadPromocional = false and p.velocidadPromocional is null)
+              )
+              and (
+                    :composicion is null
+                    or (:composicion = 'INTERNET' and internet.id is not null and television.id is null and telefono.id is null)
+                    or (:composicion = 'INTERNET_TV' and internet.id is not null and television.id is not null and telefono.id is null)
+                    or (:composicion = 'INTERNET_TELEFONIA' and internet.id is not null and television.id is null and telefono.id is not null)
+                    or (:composicion = 'INTERNET_TV_TELEFONIA' and internet.id is not null and television.id is not null and telefono.id is not null)
+                    or (:composicion = 'TV' and internet.id is null and television.id is not null and telefono.id is null)
+                    or (:composicion = 'TELEFONIA' and internet.id is null and television.id is null and telefono.id is not null)
+                    or (:composicion = 'TV_TELEFONIA' and internet.id is null and television.id is not null and telefono.id is not null)
+              )
+              and (
+                    :tienePromocionInterna is null
+                    or (
+                        :tienePromocionInterna = true
+                        and exists (
+                            select 1
+                            from PromocionComercial promocion
+                            where promocion.activo = true
+                              and (promocion.proveedor is null or promocion.proveedor.id = :idProveedor)
+                              and (promocion.zona is null or promocion.zona.id = :idZona)
+                              and (promocion.planes is empty or p member of promocion.planes)
+                        )
+                    )
+                    or (
+                        :tienePromocionInterna = false
+                        and not exists (
+                            select 1
+                            from PromocionComercial promocion
+                            where promocion.activo = true
+                              and (promocion.proveedor is null or promocion.proveedor.id = :idProveedor)
+                              and (promocion.zona is null or promocion.zona.id = :idZona)
+                              and (promocion.planes is empty or p member of promocion.planes)
+                        )
+                    )
+              )
+            order by p.nombre asc
+            """)
+    List<Plan> buscarParaOferta(
+            @Param("idProveedor") Long idProveedor,
+            @Param("idZona") Long idZona,
+            @Param("tienePrecioPromocional") Boolean tienePrecioPromocional,
+            @Param("tieneVelocidadPromocional") Boolean tieneVelocidadPromocional,
+            @Param("tienePromocionInterna") Boolean tienePromocionInterna,
+            @Param("composicion") String composicion,
+            @Param("fechaActual") LocalDate fechaActual
+    );
+
+    @Query("""
             SELECT p
             FROM Plan p
             JOIN FETCH p.proveedor pr

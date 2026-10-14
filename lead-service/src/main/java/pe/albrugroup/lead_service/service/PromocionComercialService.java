@@ -37,7 +37,7 @@ public class PromocionComercialService {
     private final PlanRepository planRepository;
     private final PromocionComercialMapper mapper;
 
-    @CacheEvict(value = CacheNames.PROMOCIONES_COMERCIALES, allEntries = true)
+    @CacheEvict(value = {CacheNames.PROMOCIONES_COMERCIALES, CacheNames.PLANES_OFERTA}, allEntries = true)
     public PromocionComercialResponse registrarPromocion(PromocionComercialRequest request) {
         Proveedor proveedor = null;
         if (request.getIdProveedor() != null) {
@@ -71,7 +71,7 @@ public class PromocionComercialService {
                 .toList();
     }
 
-    @CacheEvict(value = CacheNames.PROMOCIONES_COMERCIALES, allEntries = true)
+    @CacheEvict(value = {CacheNames.PROMOCIONES_COMERCIALES, CacheNames.PLANES_OFERTA}, allEntries = true)
     public PromocionComercialResponse desactivarPromocion(Long idPromocion) {
         PromocionComercial promocion = repository.findById(idPromocion)
                 .orElseThrow(() -> new NotFoundException(PromocionComercial.class, idPromocion));

@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.*;
+import pe.albrugroup.lead_service.entity.enums.ComposicionServiciosPlan;
 import pe.albrugroup.lead_service.entity.request.AdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.PlanAdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.PlanRequest;
@@ -63,7 +64,7 @@ public class PlanService {
         return mapper.toResponse(adicionalRepository.save(adicional));
     }
 
-    @CacheEvict(value = CacheNames.PLANES, allEntries = true)
+    @CacheEvict(value = {CacheNames.PLANES, CacheNames.PLANES_OFERTA}, allEntries = true)
     public PlanResponse registrarPlan(PlanRequest request) {
         Proveedor proveedor = buscarProveedorActivo(request.getIdProveedor());
         LocalDate fechaActual = OperationalDateTime.today();
@@ -117,6 +118,37 @@ public class PlanService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(
+            value = CacheNames.PLANES_OFERTA,
+            key = "#idProveedor + ':' + #idZona + ':' + #tienePrecioPromocional + ':' + #tieneVelocidadPromocional + ':' + #tienePromocionInterna + ':' + #composicion"
+    )
+    public List<PlanResponse> listarPlanesOferta(
+            Long idProveedor,
+            Long idZona,
+            Boolean tienePrecioPromocional,
+            Boolean tieneVelocidadPromocional,
+            Boolean tienePromocionInterna,
+            ComposicionServiciosPlan composicion
+    ) {
+        buscarProveedorActivo(idProveedor);
+        zonaRepository.findById(idZona)
+                .orElseThrow(() -> new NotFoundException(Zona.class, idZona));
+
+        String composicionFiltro = composicion == null ? null : composicion.name();
+        return planRepository.buscarParaOferta(
+                        idProveedor,
+                        idZona,
+                        tienePrecioPromocional,
+                        tieneVelocidadPromocional,
+                        tienePromocionInterna,
+                        composicionFiltro,
+                        OperationalDateTime.today()
+                ).stream()
+                .map(this::toPlanResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     @Cacheable(value = CacheNames.ADICIONALES, key = "#idProveedor")
     public List<AdicionalResponse> listarAdicionales(Long idProveedor) {
         buscarProveedorActivo(idProveedor);
@@ -125,7 +157,7 @@ public class PlanService {
                 .toList();
     }
 
-    @CacheEvict(value = CacheNames.PLANES, allEntries = true)
+    @CacheEvict(value = {CacheNames.PLANES, CacheNames.PLANES_OFERTA}, allEntries = true)
     public PlanResponse actualizarPlan(Long idPlan, PlanUpdateRequest request) {
         Plan plan = planRepository.findById(idPlan)
                 .orElseThrow(() -> new NotFoundException(Plan.class, idPlan));
@@ -148,7 +180,7 @@ public class PlanService {
         return toPlanResponse(planRepository.save(plan));
     }
 
-    @CacheEvict(value = CacheNames.PLANES, allEntries = true)
+    @CacheEvict(value = {CacheNames.PLANES, CacheNames.PLANES_OFERTA}, allEntries = true)
     public PlanResponse desactivarPlan(Long idPlan) {
         Plan plan = planRepository.findById(idPlan)
                 .orElseThrow(() -> new NotFoundException(Plan.class, idPlan));
