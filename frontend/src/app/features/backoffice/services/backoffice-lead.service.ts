@@ -322,9 +322,10 @@ export class BackofficeLeadService {
   }
 
   listarPlanesOfertaFiltrados(filters: PlanOfertaFilters): Observable<PlanResponse[]> {
-    let params = new HttpParams()
-      .set('idProveedor', filters.idProveedor)
-      .set('idZona', filters.idZona);
+    let params = new HttpParams().set('idProveedor', filters.idProveedor);
+    if (filters.idZona !== null && filters.idZona !== undefined) {
+      params = params.set('idZona', filters.idZona);
+    }
     if (filters.tienePrecioPromocional !== null && filters.tienePrecioPromocional !== undefined) {
       params = params.set('tienePrecioPromocional', filters.tienePrecioPromocional);
     }
