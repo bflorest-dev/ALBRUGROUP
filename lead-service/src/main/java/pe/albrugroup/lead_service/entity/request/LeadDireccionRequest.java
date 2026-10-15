@@ -14,6 +14,7 @@ public class LeadDireccionRequest {
 
     @NotBlank(message = "ubigeoDomicilio es obligatorio")
     private String ubigeoDomicilio;
+    private Long idProveedor;
     private TipoDomicilio tipoDomicilio;
     private TipoVia tipoVia;
     private String via;

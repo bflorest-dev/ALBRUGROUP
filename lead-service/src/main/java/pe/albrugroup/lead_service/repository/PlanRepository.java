@@ -45,7 +45,7 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
             left join fetch planAdicional.adicional adicional
             where p.activo = true
               and p.proveedor.id = :idProveedor
-              and p.zona.id = :idZona
+              and (:ignorarZona = true or p.zona.id = :idZona)
               and p.vigenciaDesde <= :fechaActual
               and (p.vigenciaHasta is null or p.vigenciaHasta >= :fechaActual)
               and (
@@ -100,6 +100,7 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
     List<Plan> buscarParaOferta(
             @Param("idProveedor") Long idProveedor,
             @Param("idZona") Long idZona,
+            @Param("ignorarZona") boolean ignorarZona,
             @Param("tienePrecioPromocional") Boolean tienePrecioPromocional,
             @Param("tieneVelocidadPromocional") Boolean tieneVelocidadPromocional,
             @Param("tienePromocionInterna") Boolean tienePromocionInterna,

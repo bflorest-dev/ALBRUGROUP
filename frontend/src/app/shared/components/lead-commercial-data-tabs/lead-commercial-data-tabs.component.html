@@ -436,7 +436,12 @@
             <h3>Encuentra la oferta correcta</h3>
             <p>Selecciona un proveedor y afina la búsqueda según lo que necesita el lead.</p>
           </div>
-          @if (planOfertaZoneAvailable) {
+          @if (planOfertaZoneFallback) {
+            <span class="plan-tab-header__context plan-tab-header__context--fallback">
+              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+              Planes sin filtro de zona
+            </span>
+          } @else if (planOfertaZoneAvailable) {
             <span class="plan-tab-header__context">
               <i class="pi pi-map-marker" aria-hidden="true"></i>
               {{ planOfertaZoneLabel || 'Zona identificada' }}
@@ -478,7 +483,12 @@
                 <h4>Ajusta la búsqueda</h4>
                 <small>Los checks empiezan activos; apágalos para no filtrar por ese criterio.</small>
               </div>
-              @if (planOfertaZoneAvailable) {
+              @if (planOfertaZoneFallback) {
+                <span class="plan-filters__zone plan-filters__zone--pending">
+                  <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                  No hay planes zonificados; mostrando planes del proveedor
+                </span>
+              } @else if (planOfertaZoneAvailable) {
                 <span class="plan-filters__zone">
                   <i class="pi pi-map-marker" aria-hidden="true"></i>
                   {{ planOfertaZoneLabel || 'Zona identificada' }}
@@ -501,7 +511,7 @@
                   [ngModel]="planOfertaFilters.tienePrecioPromocional"
                   [ngModelOptions]="{ standalone: true }"
                   [binary]="true"
-                  [disabled]="offerLocked || readonly || !selectedProviderId || !planOfertaZoneAvailable"
+                  [disabled]="offerLocked || readonly || !selectedProviderId"
                   (ngModelChange)="changePlanOfertaFilter('tienePrecioPromocional', $event)"
                 />
                 <span>
@@ -519,7 +529,7 @@
                   [ngModel]="planOfertaFilters.tieneVelocidadPromocional"
                   [ngModelOptions]="{ standalone: true }"
                   [binary]="true"
-                  [disabled]="offerLocked || readonly || !selectedProviderId || !planOfertaZoneAvailable"
+                  [disabled]="offerLocked || readonly || !selectedProviderId"
                   (ngModelChange)="changePlanOfertaFilter('tieneVelocidadPromocional', $event)"
                 />
                 <span>
@@ -537,7 +547,7 @@
                   [ngModel]="planOfertaFilters.tienePromocionInterna"
                   [ngModelOptions]="{ standalone: true }"
                   [binary]="true"
-                  [disabled]="offerLocked || readonly || !selectedProviderId || !planOfertaZoneAvailable"
+                  [disabled]="offerLocked || readonly || !selectedProviderId"
                   (ngModelChange)="changePlanOfertaFilter('tienePromocionInterna', $event)"
                 />
                 <span>
@@ -559,7 +569,7 @@
                 optionValue="value"
                 [allowEmpty]="false"
                 styleClass="plan-service-select"
-                [disabled]="offerLocked || readonly || !selectedProviderId || !planOfertaZoneAvailable"
+                [disabled]="offerLocked || readonly || !selectedProviderId"
                 (ngModelChange)="changePlanOfertaFilter('tipoServicio', $event)"
               />
             </div>
@@ -575,7 +585,13 @@
           <div class="plan-selection__header">
             <div>
               <span class="plan-section-label">Plan disponible</span>
-              <small>Los resultados corresponden al proveedor y la zona seleccionados.</small>
+              <small>
+                @if (planOfertaZoneFallback) {
+                  Mostrando planes del proveedor mientras se regulariza la cobertura zonificada.
+                } @else {
+                  Los resultados corresponden al proveedor y la zona seleccionados.
+                }
+              </small>
             </div>
             @if (showPlanFilters && !planOfertaLoading) {
               <span class="plan-selection__count">{{ planOptions.length > 0 ? planOptions.length - 1 : 0 }} resultados</span>
@@ -634,10 +650,10 @@
               }
             </ng-template>
           </p-select>
-          @if (showPlanFilters && !planOfertaLoading && !planOfertaError && planOfertaZoneAvailable && planOptions.length <= 1) {
+          @if (showPlanFilters && !planOfertaLoading && !planOfertaError && (planOfertaZoneAvailable || planOfertaZoneFallback) && planOptions.length <= 1) {
             <div class="plan-selection__empty" role="status">
               <i class="pi pi-search" aria-hidden="true"></i>
-              <span>No encontramos planes para esta combinación de proveedor, zona y filtros. Ajusta los checks o cambia los servicios.</span>
+              <span>No encontramos planes para esta combinación de proveedor y filtros, ni siquiera fuera de la zona. Ajusta los checks o cambia los servicios.</span>
             </div>
           }
         </section>

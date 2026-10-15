@@ -2537,11 +2537,29 @@ public class LeadService {
 
         lead.setDireccionSnapshot(direccion.getDireccion());
         lead.setDireccion(direccion);
-        if (lead.getProveedor() != null) {
-            lead.setZona(zonaService.resolverZonaGeografica(lead.getProveedor(), direccion));
+        Proveedor proveedorOperativo = resolverProveedorParaDireccion(lead, request);
+        if (proveedorOperativo != null) {
+            lead.setZona(zonaService.resolverZonaGeografica(proveedorOperativo, direccion));
         }
         moverAEnGestionSiAplica(lead);
         return leadRepository.save(lead);
+    }
+
+    private Proveedor resolverProveedorParaDireccion(Lead lead, LeadDireccionRequest request) {
+        Long idProveedor = request.getIdProveedor();
+        if (idProveedor == null) {
+            return resolverProveedorOperativoVenta(lead);
+        }
+        if (lead.getIdEquipo() == null
+                || !equipoProveedorRepository.existsByIdEquipoAndProveedorId(lead.getIdEquipo(), idProveedor)) {
+            throw new BadRequestException(
+                    "El proveedor seleccionado no pertenece al equipo del lead",
+                    idProveedor,
+                    lead.getIdEquipo() == null ? Map.of() : Map.of("idEquipo", lead.getIdEquipo())
+            );
+        }
+        return proveedorRepository.findByIdAndActivoTrue(idProveedor)
+                .orElseThrow(() -> new NotFoundException(Proveedor.class, idProveedor));
     }
 
     private Lead actualizarOfertaComercialInterno(Lead lead, LeadOfertaComercialRequest request) {

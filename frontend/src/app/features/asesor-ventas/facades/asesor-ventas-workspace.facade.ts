@@ -129,6 +129,7 @@ export class AsesorVentasWorkspaceFacade {
   private reconcileQueued = false;
   private reconcileQueuedLeadId: number | null = null;
   private planOfertaLoadSequence = 0;
+  private planOfertaZoneProviderId: number | null = null;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
   private lastNotificationAt = 0;
   private readonly operationalGate = this.operationalGateService.createGate('asesor-ventas-workspace');
@@ -183,6 +184,7 @@ export class AsesorVentasWorkspaceFacade {
   readonly planOfertaFilters = signal<PlanOfertaFilterState>({ ...DEFAULT_PLAN_OFERTA_FILTERS });
   readonly planOfertaLoading = signal(false);
   readonly planOfertaError = signal<string | null>(null);
+  readonly planOfertaZoneFallback = signal(false);
   readonly promociones = signal<PromocionComercialResponse[]>([]);
   readonly adicionales = signal<AdicionalResponse[]>([]);
   readonly selectedOfertaProviderId = signal<number | null>(null);
@@ -1174,6 +1176,7 @@ export class AsesorVentasWorkspaceFacade {
 
   async onOfertaProviderChanged(idProveedor: number): Promise<void> {
     this.selectedOfertaProviderId.set(idProveedor || null);
+    this.planOfertaZoneProviderId = null;
     this.limpiarDatosClaroSiNoCorresponde();
     this.ofertaForm.patchValue({
       idProveedor: idProveedor || 0,
@@ -1684,14 +1687,15 @@ export class AsesorVentasWorkspaceFacade {
 
     this.planOfertaLoading.set(true);
     this.planOfertaError.set(null);
+    this.planOfertaZoneFallback.set(false);
 
     try {
-      const zoneReady = await this.ensurePlanOfertaZone(detail);
+      const zoneResolution = await this.ensurePlanOfertaZone(detail);
       if (sequence !== this.planOfertaLoadSequence) {
         return;
       }
-      const idZona = this.detail()?.idZona;
-      if (!zoneReady || !idProveedor || !idZona) {
+      const idZona = this.detail()?.idZona ?? null;
+      if (!idProveedor || zoneResolution === 'BLOCKED') {
         this.planes.set([]);
         return;
       }
@@ -1714,8 +1718,24 @@ export class AsesorVentasWorkspaceFacade {
       if (uiFilters.tienePromocionInterna) {
         filters.tienePromocionInterna = true;
       }
-      const planes = await firstValueFrom(this.preventaService.listarPlanesOferta(filters));
+      let planes = await firstValueFrom(
+        this.preventaService.listarPlanesOferta({
+          ...filters,
+          ignorarZona: zoneResolution === 'FALLBACK'
+        })
+      );
+      let usedZoneFallback = zoneResolution === 'FALLBACK';
+      if (!planes.length && idZona && zoneResolution === 'READY') {
+        planes = await firstValueFrom(
+          this.preventaService.listarPlanesOferta({
+            ...filters,
+            ignorarZona: true
+          })
+        );
+        usedZoneFallback = true;
+      }
       if (sequence === this.planOfertaLoadSequence) {
+        this.planOfertaZoneFallback.set(usedZoneFallback);
         this.planes.set(planes);
       }
     } catch (error) {
@@ -1730,20 +1750,20 @@ export class AsesorVentasWorkspaceFacade {
     }
   }
 
-  private async ensurePlanOfertaZone(detail: LeadDetalleResponse | null): Promise<boolean> {
+  private async ensurePlanOfertaZone(detail: LeadDetalleResponse | null): Promise<'READY' | 'FALLBACK' | 'BLOCKED'> {
     const currentUbigeo = String(this.direccionForm.controls.ubigeoDomicilio.value ?? '').trim();
     const savedUbigeo = String(detail?.ubigeoDomicilio ?? '').trim();
     const idProveedor = this.selectedOfertaProviderId();
 
     if (!detail || !idProveedor) {
-      return false;
+      return 'BLOCKED';
     }
     if (!currentUbigeo) {
       this.planOfertaError.set('Completa el ubigeo del domicilio para consultar planes disponibles.');
-      return false;
+      return 'BLOCKED';
     }
-    if (detail.idZona && currentUbigeo === savedUbigeo) {
-      return true;
+    if (detail.idZona && currentUbigeo === savedUbigeo && this.planOfertaZoneProviderId === idProveedor) {
+      return 'READY';
     }
 
     try {
@@ -1752,15 +1772,14 @@ export class AsesorVentasWorkspaceFacade {
       this.detail.set(refreshedDetail);
       this.direccionForm.markAsPristine();
       if (refreshedDetail.idZona) {
-        return true;
+        this.planOfertaZoneProviderId = idProveedor;
+        return 'READY';
       }
-      this.planOfertaError.set(
-        'La dirección está registrada, pero no pudimos resolver una zona comercial para este proveedor.'
-      );
-      return false;
+      this.planOfertaError.set(null);
+      return 'FALLBACK';
     } catch (error) {
       this.planOfertaError.set(this.getErrorMessage(error, 'No pudimos actualizar la dirección para resolver la zona.'));
-      return false;
+      return 'BLOCKED';
     }
   }
 
@@ -1874,9 +1893,11 @@ export class AsesorVentasWorkspaceFacade {
     const idPlan = detail.idPlan ?? 0;
     const idProveedor = this.resolveProveedorOfertaInicial(detail);
     this.selectedOfertaProviderId.set(idProveedor);
+    this.planOfertaZoneProviderId = null;
     this.selectedOfertaAdditionals.set([]);
     this.planOfertaFilters.set({ ...DEFAULT_PLAN_OFERTA_FILTERS });
     this.planOfertaError.set(null);
+    this.planOfertaZoneFallback.set(false);
     this.ofertaForm.patchValue({
       idProveedor: idProveedor ?? 0,
       idPlan,
@@ -2193,6 +2214,7 @@ export class AsesorVentasWorkspaceFacade {
     const raw = this.direccionForm.getRawValue();
     return this.cleanObject({
       ubigeoDomicilio: raw.ubigeoDomicilio,
+      idProveedor: this.selectedOfertaProviderId(),
       tipoDomicilio: raw.tipoDomicilio,
       tipoVia: raw.tipoVia,
       via: raw.via,

@@ -866,6 +866,7 @@ export interface OportunidadHermana {
 
 export interface LeadDireccionRequest {
   ubigeoDomicilio: string;
+  idProveedor?: number | null;
   tipoDomicilio?: string | null;
   tipoVia?: string | null;
   via?: string | null;
@@ -1129,7 +1130,8 @@ export interface PlanOfertaFilterChange {
 
 export interface PlanOfertaFilters extends Partial<PlanOfertaFilterState> {
   idProveedor: number;
-  idZona: number;
+  idZona: number | null;
+  ignorarZona?: boolean;
 }
 
 export interface PromocionComercialResponse {

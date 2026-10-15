@@ -57,6 +57,7 @@ import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
 import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
+import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
 import pe.albrugroup.lead_service.repository.OrigenRepository;
@@ -113,6 +114,8 @@ class LeadServiceRetroactiveIntakeTest {
     @Mock private TipificacionService tipificacionService;
     @Mock private OrigenRepository origenRepository;
     @Mock private LeadSeguimientoService leadSeguimientoService;
+    @Mock private ProveedorRepository proveedorRepository;
+    @Mock private ZonaService zonaService;
 
     @InjectMocks private LeadService leadService;
 
@@ -977,6 +980,39 @@ class LeadServiceRetroactiveIntakeTest {
         assertThat(lead.getTecnologia()).isNull();
         assertThat(lead.isEsFullClaro()).isFalse();
         verify(leadRepository).save(lead);
+    }
+
+    @Test
+    void actualizarDireccionPreventaResuelveZonaConProveedorElegidoSinPersistirlo() {
+        Lead lead = leadCompletoParaCierrePreventa();
+        lead.setPlan(null);
+        lead.setProveedor(null);
+        LeadDireccionRequest request = new LeadDireccionRequest();
+        request.setUbigeoDomicilio("150101");
+        request.setIdProveedor(2L);
+        Proveedor proveedorElegido = Proveedor.builder().id(2L).nombre("CLARO").build();
+        Zona zona = Zona.builder()
+                .id(10L)
+                .nombre("LIMA")
+                .proveedor(proveedorElegido)
+                .esGeografica(true)
+                .activo(true)
+                .build();
+
+        when(currentUser.empleadoID()).thenReturn(7L);
+        when(leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(25202L, 7L, Etapa.PREVENTA))
+                .thenReturn(Optional.of(lead));
+        when(leadRepository.save(lead)).thenReturn(lead);
+        when(equipoProveedorRepository.existsByIdEquipoAndProveedorId(10L, 2L)).thenReturn(true);
+        when(proveedorRepository.findByIdAndActivoTrue(2L)).thenReturn(Optional.of(proveedorElegido));
+        when(zonaService.resolverZonaGeografica(any(Proveedor.class), any(Direccion.class)))
+                .thenReturn(zona);
+
+        leadService.actualizarDireccion(25202L, request);
+
+        assertThat(lead.getZona()).isSameAs(zona);
+        assertThat(lead.getProveedor()).isNull();
+        verify(zonaService).resolverZonaGeografica(eq(proveedorElegido), any(Direccion.class));
     }
 
     @Test

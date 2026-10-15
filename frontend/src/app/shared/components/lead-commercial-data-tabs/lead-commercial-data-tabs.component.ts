@@ -86,6 +86,7 @@ export class LeadCommercialDataTabsComponent implements OnChanges {
   };
   @Input() planOfertaLoading = false;
   @Input() planOfertaError: string | null = null;
+  @Input() planOfertaZoneFallback = false;
   @Input() planOfertaZoneLabel: string | null = null;
   @Input() planOfertaZoneAvailable = false;
   @Input() promocionOptions: Array<Partial<PromocionComercialResponse> & { id: number; reglaComercial: string }> = [];

@@ -69,6 +69,7 @@ public class CatalogoEquipoService {
     public List<PlanResponse> listarPlanesOfertaVisibles(
             Long idProveedor,
             Long idZona,
+            boolean ignorarZona,
             Boolean tienePrecioPromocional,
             Boolean tieneVelocidadPromocional,
             Boolean tienePromocionInterna,
@@ -81,6 +82,7 @@ public class CatalogoEquipoService {
         return planService.listarPlanesOferta(
                 idProveedor,
                 idZona,
+                ignorarZona,
                 tienePrecioPromocional,
                 tieneVelocidadPromocional,
                 tienePromocionInterna,

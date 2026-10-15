@@ -40,6 +40,7 @@ class PlanRepositoryOfertaTest {
     private Zona zona;
     private Plan planInternetTv;
     private Plan planTriple;
+    private Plan planInternetTvOtraZona;
 
     @BeforeEach
     void setUp() {
@@ -116,6 +117,25 @@ class PlanRepositoryOfertaTest {
                 .activo(true)
                 .build());
 
+        Zona otraZona = Zona.builder()
+                .nombre("Zona provincia test")
+                .proveedor(proveedor)
+                .activo(true)
+                .build();
+        entityManager.persist(otraZona);
+        planInternetTvOtraZona = planRepository.save(Plan.builder()
+                .proveedor(proveedor)
+                .zona(otraZona)
+                .nombre("Internet TV provincia")
+                .precio(new BigDecimal("74.90"))
+                .precioPromocional(new BigDecimal("64.90"))
+                .mesesPromocionPrecio(3)
+                .vigenciaDesde(LocalDate.now().minusDays(1))
+                .internet(internet)
+                .television(television)
+                .activo(true)
+                .build());
+
         promocionComercialRepository.save(PromocionComercial.builder()
                 .reglaComercial("PROMO PLAN")
                 .proveedor(proveedor)
@@ -137,6 +157,7 @@ class PlanRepositoryOfertaTest {
         List<Plan> planes = planRepository.buscarParaOferta(
                 proveedor.getId(),
                 zona.getId(),
+                false,
                 true,
                 null,
                 true,
@@ -150,6 +171,7 @@ class PlanRepositoryOfertaTest {
                 proveedor.getId(),
                 zona.getId(),
                 false,
+                false,
                 null,
                 true,
                 "INTERNET_TV_TELEFONIA",
@@ -157,6 +179,20 @@ class PlanRepositoryOfertaTest {
         );
 
         assertThat(triplesConPromo).extracting(Plan::getId).containsExactly(planTriple.getId());
+
+        List<Plan> planesSinZona = planRepository.buscarParaOferta(
+                proveedor.getId(),
+                zona.getId(),
+                true,
+                true,
+                null,
+                true,
+                "INTERNET_TV",
+                LocalDate.now()
+        );
+
+        assertThat(planesSinZona).extracting(Plan::getId)
+                .containsExactly(planInternetTv.getId(), planInternetTvOtraZona.getId());
     }
 
     private void entityManagerFlush() {

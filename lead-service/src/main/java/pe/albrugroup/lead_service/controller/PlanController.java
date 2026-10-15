@@ -49,7 +49,8 @@ public class PlanController {
     @GetMapping("/oferta") @PreAuthorize("hasAuthority('READ_PLANES')")
     public ResponseEntity<List<PlanResponse>> listarPlanesOferta(
             @RequestParam Long idProveedor,
-            @RequestParam Long idZona,
+            @RequestParam(required = false) Long idZona,
+            @RequestParam(defaultValue = "false") boolean ignorarZona,
             @RequestParam(required = false) Boolean tienePrecioPromocional,
             @RequestParam(required = false) Boolean tieneVelocidadPromocional,
             @RequestParam(required = false) Boolean tienePromocionInterna,
@@ -58,6 +59,7 @@ public class PlanController {
         return ResponseEntity.ok(catalogoEquipoService.listarPlanesOfertaVisibles(
                 idProveedor,
                 idZona,
+                ignorarZona,
                 tienePrecioPromocional,
                 tieneVelocidadPromocional,
                 tienePromocionInterna,

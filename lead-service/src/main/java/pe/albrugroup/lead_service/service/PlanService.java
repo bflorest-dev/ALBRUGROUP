@@ -120,24 +120,31 @@ public class PlanService {
     @Transactional(readOnly = true)
     @Cacheable(
             value = CacheNames.PLANES_OFERTA,
-            key = "#idProveedor + ':' + #idZona + ':' + #tienePrecioPromocional + ':' + #tieneVelocidadPromocional + ':' + #tienePromocionInterna + ':' + #composicion"
+            key = "#idProveedor + ':' + #idZona + ':' + #ignorarZona + ':' + #tienePrecioPromocional + ':' + #tieneVelocidadPromocional + ':' + #tienePromocionInterna + ':' + #composicion"
     )
     public List<PlanResponse> listarPlanesOferta(
             Long idProveedor,
             Long idZona,
+            boolean ignorarZona,
             Boolean tienePrecioPromocional,
             Boolean tieneVelocidadPromocional,
             Boolean tienePromocionInterna,
             ComposicionServiciosPlan composicion
     ) {
         buscarProveedorActivo(idProveedor);
-        zonaRepository.findById(idZona)
-                .orElseThrow(() -> new NotFoundException(Zona.class, idZona));
+        if (!ignorarZona && idZona == null) {
+            throw new BadRequestException("idZona es obligatorio cuando no se ignora la zona");
+        }
+        if (idZona != null) {
+            zonaRepository.findById(idZona)
+                    .orElseThrow(() -> new NotFoundException(Zona.class, idZona));
+        }
 
         String composicionFiltro = composicion == null ? null : composicion.name();
         return planRepository.buscarParaOferta(
                         idProveedor,
                         idZona,
+                        ignorarZona,
                         tienePrecioPromocional,
                         tieneVelocidadPromocional,
                         tienePromocionInterna,
