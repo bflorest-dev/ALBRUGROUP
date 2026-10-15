@@ -18,5 +18,8 @@ public record BaseLeadPreviewResponse(
         String nombreProveedorOrigen,
         Instant fechaIngresoEtapa,
         Instant fechaTipificacion,
-        LocalDate fechaInstalacion
+        LocalDate fechaInstalacion,
+        String latitud,
+        String longitud,
+        String comentario
 ) {}

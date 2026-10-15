@@ -54,6 +54,7 @@ import {
   LeadTipificacionRequest,
   LeadTomaGestionGtrRequest,
   PageQuery,
+  PlanOfertaFilters,
   PlanResponse,
   PlataformaDigitalResponse,
   PromocionComercialResponse,
@@ -478,6 +479,25 @@ export class PreventaLeadService {
       params = params.set('idProveedor', idProveedor);
     }
     return this.http.get<PlanResponse[]>(`${this.leadUrl}/planes`, { params });
+  }
+
+  listarPlanesOferta(filters: PlanOfertaFilters): Observable<PlanResponse[]> {
+    let params = new HttpParams()
+      .set('idProveedor', filters.idProveedor)
+      .set('idZona', filters.idZona);
+    if (filters.tienePrecioPromocional !== null && filters.tienePrecioPromocional !== undefined) {
+      params = params.set('tienePrecioPromocional', filters.tienePrecioPromocional);
+    }
+    if (filters.tieneVelocidadPromocional !== null && filters.tieneVelocidadPromocional !== undefined) {
+      params = params.set('tieneVelocidadPromocional', filters.tieneVelocidadPromocional);
+    }
+    if (filters.tienePromocionInterna !== null && filters.tienePromocionInterna !== undefined) {
+      params = params.set('tienePromocionInterna', filters.tienePromocionInterna);
+    }
+    if (filters.tipoServicio) {
+      params = params.set('tipoServicio', filters.tipoServicio);
+    }
+    return this.http.get<PlanResponse[]>(`${this.leadUrl}/planes/oferta`, { params });
   }
 
   listarCamposCapturaProveedor(idProveedor: number): Observable<CampoConfigItem[]> {

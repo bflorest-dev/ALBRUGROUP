@@ -250,14 +250,68 @@
                 <div class="venta-v2__plan-head"><div><span>Composición comercial</span><h3>{{ display(selectedPlan()?.nombre || detail?.nombrePlan, 'Plan sin registrar') }}</h3><small>{{ providerLabel() }}</small></div>@if (!readOnly && !offerLocked) { @if (planEditing()) { <div class="venta-v2__edit-actions"><button type="button" (click)="cancelPlanEdit()">Cancelar</button><button type="button" class="is-primary" (click)="applyPlanEdit()">Aplicar oferta</button></div> } @else { <button class="venta-v2__edit" type="button" (click)="startPlanEdit()"><i class="pi pi-pencil" aria-hidden="true"></i><span>Editar oferta</span></button> } }</div>
                 @if (planEditing()) {
                   <form class="venta-v2__plan-editor" [formGroup]="ofertaForm">
-                    <label><span>Proveedor</span><p-select formControlName="idProveedor" [options]="providerOptions" optionLabel="nombre" optionValue="id" appendTo="body" (onChange)="ofertaProviderChange.emit($event.value)" /></label>
+                    @if (providerLocked) {
+                      <div class="venta-v2__fixed-provider"><span>Proveedor</span><strong>{{ providerLabel() }}</strong><small>Definido por el lead</small></div>
+                    } @else {
+                      <label><span>Proveedor</span><p-select formControlName="idProveedor" [options]="providerOptions" optionLabel="nombre" optionValue="id" appendTo="body" (onChange)="ofertaProviderChange.emit($event.value)" /></label>
+                    }
                     <label class="venta-v2__plan-picker" (wheel)="onPlanWheel($event)">
                       <span>Plan</span>
-                      <p-select formControlName="idPlan" [options]="planOptions" optionLabel="nombre" optionValue="id" appendTo="body" (onChange)="planChange.emit()" />
+                      <p-select formControlName="idPlan" [options]="planOptions" optionLabel="nombre" optionValue="id" appendTo="body" [loading]="planOfertaLoading" [disabled]="offerLocked || readOnly || (showPlanFilters && !planOfertaZoneAvailable)" (onChange)="planChange.emit()">
+                        <ng-template #item let-plan>
+                          @if (!plan.id) {
+                            <span>Sin plan</span>
+                          } @else {
+                            <div class="venta-v2__plan-option"><div><strong>{{ plan.nombre }}</strong>@if (currentPlanId === plan.id) { <small>Plan actual</small> }</div><span>{{ plan.nombreProveedor || providerLabel() }}</span></div>
+                          }
+                        </ng-template>
+                      </p-select>
                       <small class="venta-v2__plan-hint">Usa la rueda para recorrer planes y comparar sus detalles</small>
                     </label>
                     <label><span>Promoción</span><p-select formControlName="idPromocionInterna" [options]="promocionOptions" optionLabel="reglaComercial" optionValue="id" appendTo="body" /></label>
                   </form>
+                  @if (showPlanFilters) {
+                    <section class="venta-v2__plan-filters" aria-label="Filtros del catálogo de planes">
+                      <div class="venta-v2__plan-filters-head">
+                        <div><span>Catálogo disponible</span><strong>Afina los resultados</strong><small>El proveedor se mantiene fijo; los planes se ajustan a la zona del lead.</small></div>
+                        @if (planOfertaZoneAvailable) {
+                          <span class="venta-v2__plan-zone"><i class="pi pi-map-marker" aria-hidden="true"></i>{{ planOfertaZoneLabel || 'Zona identificada' }}</span>
+                        } @else {
+                          <span class="venta-v2__plan-zone is-pending"><i class="pi pi-info-circle" aria-hidden="true"></i>Zona pendiente</span>
+                        }
+                      </div>
+                      <div class="venta-v2__plan-filter-toggles">
+                        <label class="venta-v2__plan-filter" [class.is-active]="planOfertaFilters.tienePrecioPromocional" for="backoffice-plan-price-promo">
+                          <p-checkbox inputId="backoffice-plan-price-promo" [binary]="true" [ngModel]="planOfertaFilters.tienePrecioPromocional" [ngModelOptions]="{ standalone: true }" [disabled]="offerLocked || readOnly || !planOfertaZoneAvailable" (ngModelChange)="changePlanOfertaFilter('tienePrecioPromocional', $event)" />
+                          <span><strong>Precio promocional</strong><small>Solo planes con descuento</small></span>
+                        </label>
+                        <label class="venta-v2__plan-filter" [class.is-active]="planOfertaFilters.tieneVelocidadPromocional" for="backoffice-plan-speed-promo">
+                          <p-checkbox inputId="backoffice-plan-speed-promo" [binary]="true" [ngModel]="planOfertaFilters.tieneVelocidadPromocional" [ngModelOptions]="{ standalone: true }" [disabled]="offerLocked || readOnly || !planOfertaZoneAvailable" (ngModelChange)="changePlanOfertaFilter('tieneVelocidadPromocional', $event)" />
+                          <span><strong>Velocidad promocional</strong><small>Solo con megas promocionales</small></span>
+                        </label>
+                        <label class="venta-v2__plan-filter" [class.is-active]="planOfertaFilters.tienePromocionInterna" for="backoffice-plan-internal-promo">
+                          <p-checkbox inputId="backoffice-plan-internal-promo" [binary]="true" [ngModel]="planOfertaFilters.tienePromocionInterna" [ngModelOptions]="{ standalone: true }" [disabled]="offerLocked || readOnly || !planOfertaZoneAvailable" (ngModelChange)="changePlanOfertaFilter('tienePromocionInterna', $event)" />
+                          <span><strong>Promoción interna</strong><small>Solo con campaña activa</small></span>
+                        </label>
+                      </div>
+                      <div class="venta-v2__service-filter">
+                        <div><strong>Servicios incluidos</strong><small>Elige la composición que quieres ofrecer</small></div>
+                        <div class="venta-v2__service-options" role="group" aria-label="Servicios incluidos">
+                          @for (option of planOfertaServiceOptions; track option.label) {
+                            <button type="button" [class.is-active]="planOfertaFilters.tipoServicio === option.value" [attr.aria-pressed]="planOfertaFilters.tipoServicio === option.value" [disabled]="offerLocked || readOnly || !planOfertaZoneAvailable" (click)="changePlanOfertaFilter('tipoServicio', option.value)">{{ option.label }}</button>
+                          }
+                        </div>
+                      </div>
+                      @if (planOfertaLoading) {
+                        <small class="venta-v2__plan-filter-message"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i>Consultando planes para esta combinación.</small>
+                      } @else if (planOfertaError) {
+                        <small class="venta-v2__plan-filter-message is-error"><i class="pi pi-exclamation-circle" aria-hidden="true"></i>{{ planOfertaError }}</small>
+                      }
+                    </section>
+                  }
+                  @if (showPlanFilters && !planOfertaLoading && !planOfertaError && planOfertaZoneAvailable && planOptions.length <= 1) {
+                    <div class="venta-v2__plan-empty" role="status"><i class="pi pi-search" aria-hidden="true"></i><span>No encontramos planes con esta combinación. Ajusta los checks o cambia los servicios.</span></div>
+                  }
                 }
                 <div class="venta-v2__services">
                   <article><i class="pi pi-wifi"></i><span>Internet</span><strong>{{ internetSpeed() }}</strong><small>{{ internetPromotion() }}</small></article>
@@ -266,7 +320,34 @@
                 </div>
                 <div class="venta-v2__plan-grid">
                   <section><div class="venta-v2__mini-title"><i class="pi pi-sparkles"></i><span>Promoción aplicada</span></div><strong>{{ display(selectedPromotion()?.reglaComercial || detail?.nombrePromocionInterna, 'Sin promoción') }}</strong></section>
-                  <section><div class="venta-v2__mini-title"><i class="pi pi-plus-circle"></i><span>Adicionales</span></div>@if (selectedAdditionals.length) { @for (item of selectedAdditionals; track item.idAdicional) { <div class="venta-v2__additional"><span>{{ item.nombre }} × {{ item.cantidad }}</span><strong>{{ money((item.precioUnitario || 0) * item.cantidad) }}</strong>@if (planEditing()) { <button type="button" (click)="disminuirAdicional.emit({ id: item.idAdicional, nombre: item.nombre, precioUnitario: item.precioUnitario ?? undefined })">−</button> }</div> } } @else { <p>Sin adicionales</p> } @if (planEditing()) { @for (item of availableAdditionals(); track item.id) { <button class="venta-v2__add-additional" type="button" (click)="incrementarAdicional.emit(item)">+ {{ item.nombre }}</button> } }</section>
+                  <section>
+                    <div class="venta-v2__mini-title"><i class="pi pi-plus-circle"></i><span>Adicionales</span></div>
+                    @if (includedAdditionals().length) {
+                      <div class="venta-v2__additional-group">
+                        <div class="venta-v2__additional-group-title"><span>Incluidos en el plan</span><small>Sin costo</small></div>
+                        @for (item of includedAdditionals(); track item.idAdicional ?? $index) {
+                          <div class="venta-v2__additional is-included">
+                            <span>{{ item.nombreAdicional || 'Adicional incluido' }} @if (item.cantidadIncluida && item.cantidadIncluida > 0) { × {{ item.cantidadIncluida }} }</span>
+                            <strong>Incluido</strong>
+                          </div>
+                        }
+                      </div>
+                    }
+                    @if (selectedAdditionals.length) {
+                      <div class="venta-v2__additional-group">
+                        @if (includedAdditionals().length) { <div class="venta-v2__additional-group-title"><span>Contratados</span><small>Importe mensual</small></div> }
+                        @for (item of selectedAdditionals; track item.idAdicional) {
+                          <div class="venta-v2__additional">
+                            <span>{{ item.nombre }} × {{ item.cantidad }}</span>
+                            <strong>{{ money((item.precioUnitario || 0) * item.cantidad) }}</strong>
+                            @if (planEditing()) { <button type="button" (click)="disminuirAdicional.emit({ id: item.idAdicional, nombre: item.nombre, precioUnitario: item.precioUnitario ?? undefined })">−</button> }
+                          </div>
+                        }
+                      </div>
+                    }
+                    @if (!includedAdditionals().length && !selectedAdditionals.length) { <p>Sin adicionales</p> }
+                    @if (planEditing()) { @for (item of availableAdditionals(); track item.id) { <button class="venta-v2__add-additional" type="button" (click)="incrementarAdicional.emit(item)">+ {{ item.nombre }}</button> } }
+                  </section>
                 </div>
                 <div class="venta-v2__ledger" [class.is-preview]="planEditing()">
                   @if (planEditing()) {

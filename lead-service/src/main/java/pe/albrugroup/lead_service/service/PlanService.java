@@ -72,7 +72,7 @@ public class PlanService {
         Plan plan = mapper.toEntity(request);
         plan.setProveedor(proveedor);
         plan.setActivo(Boolean.TRUE);
-        plan.setZona(resolverZona(request.getIdZona()));
+        plan.setZona(resolverZona(request.getIdZona(), proveedor));
         normalizarVigencias(plan, fechaActual);
         plan.setInternet(resolverInternet(request, proveedor));
         plan.setTelevision(resolverTelevision(request, proveedor));
@@ -167,7 +167,7 @@ public class PlanService {
         plan.setInternet(resolverInternet(request, proveedor));
         plan.setTelevision(resolverTelevision(request, proveedor, plan.getTelevision()));
         plan.setTelefono(resolverTelefono(request, proveedor));
-        plan.setZona(resolverZona(request.getIdZona()));
+        plan.setZona(resolverZona(request.getIdZona(), proveedor));
         validarPromocionesPlan(plan);
         normalizarVigencias(plan, OperationalDateTime.today());
         Set<PlanAdicional> adicionales = construirPlanAdicionales(
@@ -210,12 +210,24 @@ public class PlanService {
         }
     }
 
-    private Zona resolverZona(Long idZona) {
+    private Zona resolverZona(Long idZona, Proveedor proveedor) {
         if (idZona == null) {
             return null;
         }
-        return zonaRepository.findById(idZona)
+        Zona zona = zonaRepository.findById(idZona)
                 .orElseThrow(() -> new NotFoundException(Zona.class, idZona));
+        if (!zona.getProveedor().getId().equals(proveedor.getId())) {
+            throw new BadRequestException(
+                    "La zona no pertenece al proveedor del plan",
+                    null,
+                    Map.of(
+                            "idZona", idZona,
+                            "idProveedorPlan", proveedor.getId(),
+                            "idProveedorZona", zona.getProveedor().getId()
+                    )
+            );
+        }
+        return zona;
     }
 
     private void validarPromocionesPlan(Plan plan) {

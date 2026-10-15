@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.PromocionComercialRequest;
 import pe.albrugroup.lead_service.entity.response.PromocionComercialResponse;
 import pe.albrugroup.lead_service.service.PromocionComercialService;
@@ -28,13 +29,22 @@ public class PromocionComercialController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.registrarPromocion(request));
     }
 
+    @PutMapping("/{idPromocion}") @PreAuthorize("hasAuthority('CREATE_PROMOCIONES')")
+    public ResponseEntity<PromocionComercialResponse> editarPromocion(
+            @PathVariable Long idPromocion,
+            @Valid @RequestBody PromocionComercialRequest request
+    ) {
+        return ResponseEntity.ok(service.editarPromocion(idPromocion, request));
+    }
+
     @GetMapping @PreAuthorize("hasAuthority('READ_PROMOCIONES')")
     public ResponseEntity<List<PromocionComercialResponse>> listarPromociones(
             @RequestParam(required = false) Long idProveedor,
             @RequestParam(required = false) Long idZona,
-            @RequestParam(required = false) Long idPlan
+            @RequestParam(required = false) Long idPlan,
+            @RequestParam(required = false) Etapa etapa
     ) {
-        return ResponseEntity.ok(service.listarPromociones(idProveedor, idZona, idPlan));
+        return ResponseEntity.ok(service.listarPromociones(idProveedor, idZona, idPlan, etapa));
     }
 
     @DeleteMapping("/{idPromocion}") @PreAuthorize("hasAuthority('DELETE_PROMOCIONES')")

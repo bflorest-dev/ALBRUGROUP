@@ -301,6 +301,9 @@
         <span>Proveedor</span>
         <span>Proveedor origen</span>
         <span>{{ fechaColumna() }}</span>
+        <span>Direccion</span>
+        <span>Coordenadas</span>
+        <span>Comentario</span>
       </div>
       @if (facade.isLoading()) {
         <div class="loading-state"><span class="spinner"></span></div>
@@ -317,6 +320,9 @@
             <span>{{ row.nombreProveedor || '—' }}</span>
             <span>{{ row.nombreProveedorOrigen || '—' }}</span>
             <span class="mono">{{ fechaFila(row) | slice:0:10 }}</span>
+            <span class="cell-truncate" [title]="row.direccion || ''">{{ row.direccion || '—' }}</span>
+            <span class="mono">{{ coordenadas(row) }}</span>
+            <span class="cell-truncate" [title]="row.comentario || ''">{{ row.comentario || '—' }}</span>
           </div>
         }
         @if (!facade.rows().length) {

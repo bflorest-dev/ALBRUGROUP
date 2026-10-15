@@ -11,6 +11,7 @@ import {
   CampanaGastoResumenDiarioResponse,
   CampanaGastoResumenMensualResponse,
   CampanaResponse,
+  CashbackPeriodoResponse,
   CommunityLeadService,
   CriterioZona,
   CredencialPlataformaResponse,
@@ -182,6 +183,14 @@ export class CommunityWorkspaceFacade {
   readonly promocionesActivas = computed(() => this.promociones().filter((promocion) => promocion.activo !== false));
   readonly zonas = signal<ZonaResponse[]>([]);
   readonly zonasActivas = computed(() => this.zonas().filter((zona) => zona.activo !== false));
+  readonly planZonasActivas = computed(() => {
+    const idProveedor = this.selectedPlanProviderId();
+    if (!idProveedor) {
+      return [];
+    }
+
+    return this.zonasActivas().filter((zona) => zona.idProveedor === idProveedor);
+  });
   readonly plataformasDigitales = signal<PlataformaDigitalResponse[]>([]);
   readonly plataformasDigitalesActivas = computed(() =>
     this.plataformasDigitales().filter((plataforma) => plataforma.activo !== false)
@@ -233,6 +242,19 @@ export class CommunityWorkspaceFacade {
   readonly selectedPlanProviderId = signal(0);
   readonly selectedPlanAdditionals = signal<PlanAdditionalDraft[]>([]);
   readonly selectedPromotionProviderId = signal(0);
+  readonly promotionDialogOpen = signal(false);
+  readonly editingPromotionId = signal<number | null>(null);
+  readonly promotionCashbackPeriodos = signal<CashbackPeriodoResponse[]>([]);
+  readonly etapaOptions = [
+    { label: 'PREVENTA', value: 'PREVENTA' },
+    { label: 'POSTVENTA', value: 'POSTVENTA' }
+  ];
+  readonly maxCashbackPeriodo = computed(() => {
+    const idProveedor = this.selectedPromotionProviderId();
+    if (!idProveedor) return null;
+    const proveedor = this.proveedores().find((p) => p.id === idProveedor);
+    return proveedor?.mesesPermanencia ?? null;
+  });
   readonly availablePlanAdditionals = computed(() => {
     const idProveedor = this.selectedPlanProviderId();
     return this.adicionalesActivos().filter((adicional) => adicional.idProveedor === idProveedor);
@@ -256,6 +278,20 @@ export class CommunityWorkspaceFacade {
     }
 
     return 'Los adicionales agregados quedaran incluidos en la configuracion del plan.';
+  });
+  readonly availablePromotionZonas = computed(() => {
+    const idProveedor = this.selectedPromotionProviderId();
+    const activas = this.zonasActivas().filter((zona) => !idProveedor || zona.idProveedor === idProveedor);
+    const selectedIds = new Set(this.promotionForm.controls.idsZonas.value);
+    if (!selectedIds.size) return activas;
+    const activaIds = new Set(activas.map((z) => z.id));
+    const inactivasReferenciadas = this.zonas().filter((z) => selectedIds.has(z.id) && !activaIds.has(z.id));
+    return [...activas, ...inactivasReferenciadas];
+  });
+  readonly selectedFilterProviderId = signal(0);
+  readonly availableFilterZonas = computed(() => {
+    const idProveedor = this.selectedFilterProviderId();
+    return idProveedor ? this.zonasActivas().filter((zona) => zona.idProveedor === idProveedor) : [];
   });
   readonly availablePromotionPlans = computed<PromotionPlanOption[]>(() => {
     const idProveedor = this.selectedPromotionProviderId();
@@ -361,16 +397,18 @@ export class CommunityWorkspaceFacade {
 
   readonly promotionForm = this.fb.group({
     reglaComercial: ['', [Validators.required]],
+    etapa: ['PREVENTA' as string, [Validators.required]],
     scopes: [[] as PromotionScope[]],
     idProveedor: [0],
-    idZona: [0],
+    idsZonas: [[] as number[]],
     idsPlanes: [[] as number[]]
   });
 
   readonly promotionFiltersForm = this.fb.group({
     idProveedor: [0],
     idZona: [0],
-    idPlan: [0]
+    idPlan: [0],
+    etapa: ['' as string]
   });
 
   readonly digitalPlatformForm = this.fb.group({
@@ -1059,6 +1097,7 @@ export class CommunityWorkspaceFacade {
 
   onCreatePlanProviderChanged(): void {
     this.selectedPlanProviderId.set(this.createPlanForm.controls.idProveedor.value);
+    this.createPlanForm.controls.idZona.setValue(0);
     this.selectedPlanAdditionals.set([]);
   }
 
@@ -1155,17 +1194,93 @@ export class CommunityWorkspaceFacade {
     }
   }
 
+  openPromotionDialog(): void {
+    if (!this.ensureCanMutate()) return;
+    this.resetPromotionForm();
+    this.promotionDialogOpen.set(true);
+  }
+
+  closePromotionDialog(): void {
+    this.promotionDialogOpen.set(false);
+    this.editingPromotionId.set(null);
+    this.resetPromotionForm();
+  }
+
   async submitPromotion(): Promise<void> {
     if (this.promotionForm.invalid) {
       this.errorMessage.set('Completa los datos de la promocion.');
       return;
     }
 
-    await this.saveAction(
-      () => this.leadService.registrarPromocion(this.buildPromotionRequest()),
-      'Promocion registrada.',
-      () => this.refreshPromotions()
+    const editId = this.editingPromotionId();
+    if (editId) {
+      await this.saveAction(
+        () => this.leadService.editarPromocion(editId, this.buildPromotionRequest()),
+        'Promocion actualizada.',
+        async () => {
+          this.closePromotionDialog();
+          await this.refreshPromotions();
+        }
+      );
+    } else {
+      await this.saveAction(
+        () => this.leadService.registrarPromocion(this.buildPromotionRequest()),
+        'Promocion registrada.',
+        async () => {
+          this.closePromotionDialog();
+          await this.refreshPromotions();
+        }
+      );
+    }
+  }
+
+  startPromotionEdit(promo: PromocionComercialResponse): void {
+    this.editingPromotionId.set(promo.id);
+
+    const scopes: PromotionScope[] = [];
+    if (promo.idProveedor) scopes.push('proveedor');
+    if (promo.idsZonas?.length) scopes.push('zona');
+    if (promo.idsPlanes?.length) scopes.push('planes');
+
+    this.promotionForm.patchValue({
+      reglaComercial: promo.reglaComercial ?? '',
+      etapa: promo.etapa ?? 'PREVENTA',
+      scopes,
+      idProveedor: promo.idProveedor ?? 0,
+      idsZonas: promo.idsZonas ?? [],
+      idsPlanes: promo.idsPlanes ?? []
+    });
+    this.selectedPromotionProviderId.set(promo.idProveedor ?? 0);
+    this.promotionCashbackPeriodos.set(promo.cashbackPeriodos ?? []);
+    this.promotionDialogOpen.set(true);
+  }
+
+  cancelPromotionEdit(): void {
+    this.closePromotionDialog();
+  }
+
+  addCashbackPeriodo(): void {
+    const periodos = this.promotionCashbackPeriodos();
+    const max = this.maxCashbackPeriodo();
+    let nextPeriodo = periodos.length ? Math.max(...periodos.map((p) => p.numeroPeriodo)) + 1 : 1;
+    if (max !== null && nextPeriodo > max) nextPeriodo = max;
+    this.promotionCashbackPeriodos.set([...periodos, { numeroPeriodo: nextPeriodo, monto: 0 }]);
+  }
+
+  removeCashbackPeriodo(index: number): void {
+    this.promotionCashbackPeriodos.update((periodos) => periodos.filter((_, i) => i !== index));
+  }
+
+  updateCashbackPeriodo(index: number, field: 'numeroPeriodo' | 'monto', value: number): void {
+    this.promotionCashbackPeriodos.update((periodos) =>
+      periodos.map((p, i) => (i === index ? { ...p, [field]: value } : p))
     );
+  }
+
+  private resetPromotionForm(): void {
+    this.promotionForm.reset({ reglaComercial: '', etapa: 'PREVENTA', scopes: [], idProveedor: 0, idsZonas: [], idsPlanes: [] });
+    this.selectedPromotionProviderId.set(0);
+    this.promotionCashbackPeriodos.set([]);
   }
 
   hasPromotionScope(scope: PromotionScope): boolean {
@@ -1179,7 +1294,7 @@ export class CommunityWorkspaceFacade {
       this.selectedPromotionProviderId.set(0);
     }
     if (!selectedScopes.includes('zona')) {
-      this.promotionForm.patchValue({ idZona: 0 });
+      this.promotionForm.patchValue({ idsZonas: [] });
     }
     if (!selectedScopes.includes('planes')) {
       this.promotionForm.patchValue({ idsPlanes: [] });
@@ -1190,6 +1305,23 @@ export class CommunityWorkspaceFacade {
   onPromotionProviderChanged(): void {
     this.selectedPromotionProviderId.set(this.promotionForm.controls.idProveedor.value);
     this.syncPromotionPlansWithProvider();
+    this.clampCashbackPeriodos();
+  }
+
+  private clampCashbackPeriodos(): void {
+    const max = this.maxCashbackPeriodo();
+    if (max === null) return;
+    this.promotionCashbackPeriodos.update((periodos) =>
+      periodos
+        .map((p) => (p.numeroPeriodo > max ? { ...p, numeroPeriodo: max } : p))
+        .filter((p, i, arr) => arr.findIndex((x) => x.numeroPeriodo === p.numeroPeriodo) === i)
+    );
+  }
+
+  onFilterProviderChanged(): void {
+    const idProveedor = this.promotionFiltersForm.controls.idProveedor.value;
+    this.selectedFilterProviderId.set(idProveedor ?? 0);
+    this.promotionFiltersForm.patchValue({ idZona: 0 });
   }
 
   async filterPromotions(): Promise<void> {
@@ -1204,11 +1336,11 @@ export class CommunityWorkspaceFacade {
         this.leadService.listarPromociones({
           idProveedor: raw.idProveedor || undefined,
           idZona: raw.idZona || undefined,
-          idPlan: raw.idPlan || undefined
+          idPlan: raw.idPlan || undefined,
+          etapa: raw.etapa || undefined
         })
       );
       this.promociones.set(promociones);
-      this.successMessage.set('Promociones actualizadas con los filtros.');
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron filtrar promociones.'));
     }
@@ -1757,11 +1889,14 @@ export class CommunityWorkspaceFacade {
   private buildPromotionRequest(): Record<string, unknown> {
     const raw = this.promotionForm.getRawValue();
     const scopes = raw.scopes;
+    const cashback = this.promotionCashbackPeriodos().filter((p) => p.numeroPeriodo > 0 && p.monto > 0);
     return {
       reglaComercial: raw.reglaComercial,
+      etapa: raw.etapa,
       idProveedor: scopes.includes('proveedor') ? raw.idProveedor || null : null,
-      idZona: scopes.includes('zona') ? raw.idZona || null : null,
-      idsPlanes: scopes.includes('planes') && raw.idsPlanes.length ? raw.idsPlanes : null
+      idsZonas: scopes.includes('zona') && raw.idsZonas.length ? raw.idsZonas : null,
+      idsPlanes: scopes.includes('planes') && raw.idsPlanes.length ? raw.idsPlanes : null,
+      cashbackPeriodos: cashback.length ? cashback : null
     };
   }
 

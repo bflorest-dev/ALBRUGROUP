@@ -87,4 +87,11 @@ export class AdminBaseLeadsPageComponent implements OnInit {
     }
     return this.facade.anclaFecha() === 'INGRESO_ETAPA' ? row.fechaIngresoEtapa : row.fechaTipificacion;
   }
+
+  protected coordenadas(row: { latitud: string | null; longitud: string | null }): string {
+    const lat = row.latitud?.trim();
+    const lon = row.longitud?.trim();
+    if (lat && lon) return `${lat}, ${lon}`;
+    return lat || lon || '—';
+  }
 }

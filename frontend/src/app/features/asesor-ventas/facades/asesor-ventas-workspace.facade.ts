@@ -21,6 +21,9 @@ import {
   LeadSnapshotsRequest,
   OportunidadHermana,
   PageQuery,
+  PlanOfertaFilterChange,
+  PlanOfertaFilterState,
+  PlanOfertaFilters,
   PlanResponse,
   PlataformaDigitalResponse,
   PromocionComercialResponse,
@@ -45,6 +48,13 @@ type OfertaAdditionalSelection = {
   nombre: string;
   precioUnitario?: number;
   cantidad: number;
+};
+
+const DEFAULT_PLAN_OFERTA_FILTERS: PlanOfertaFilterState = {
+  tienePrecioPromocional: true,
+  tieneVelocidadPromocional: false,
+  tienePromocionInterna: true,
+  tipoServicio: null
 };
 
 const PERU_PHONE_PREFIX = '+51';
@@ -118,6 +128,7 @@ export class AsesorVentasWorkspaceFacade {
   private initializeInFlight = false;
   private reconcileQueued = false;
   private reconcileQueuedLeadId: number | null = null;
+  private planOfertaLoadSequence = 0;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
   private lastNotificationAt = 0;
   private readonly operationalGate = this.operationalGateService.createGate('asesor-ventas-workspace');
@@ -169,6 +180,9 @@ export class AsesorVentasWorkspaceFacade {
   readonly selectedTipificacionCode = signal('');
   readonly selectedSubtipificacionCode = signal('');
   readonly planes = signal<PlanResponse[]>([]);
+  readonly planOfertaFilters = signal<PlanOfertaFilterState>({ ...DEFAULT_PLAN_OFERTA_FILTERS });
+  readonly planOfertaLoading = signal(false);
+  readonly planOfertaError = signal<string | null>(null);
   readonly promociones = signal<PromocionComercialResponse[]>([]);
   readonly adicionales = signal<AdicionalResponse[]>([]);
   readonly selectedOfertaProviderId = signal<number | null>(null);
@@ -300,6 +314,11 @@ export class AsesorVentasWorkspaceFacade {
       }
     }
     return [...providersById.values()].sort((left, right) => left.nombre.localeCompare(right.nombre));
+  });
+  readonly planOfertaZoneLabel = computed(() => this.detail()?.nombreZona ?? this.detail()?.plan?.nombreZona ?? null);
+  readonly planOfertaZoneAvailable = computed(() => {
+    const idZona = this.detail()?.idZona;
+    return typeof idZona === 'number' && idZona > 0;
   });
   // Config efectiva de campos: si hay proveedor elegido en oferta, usa sus reglas de captura; si no,
   // usa la configuracion del equipo del lead que viaja en el detalle.
@@ -1170,12 +1189,21 @@ export class AsesorVentasWorkspaceFacade {
       try {
         await Promise.all([
           this.refreshProviderAdditionals(idProveedor),
-          this.ensureProviderCamposConfig(idProveedor)
+          this.ensureProviderCamposConfig(idProveedor),
+          this.refreshPlanesOferta()
         ]);
       } catch (error) {
         this.errorMessage.set(this.getErrorMessage(error, 'No pudimos actualizar los campos de este proveedor. Intenta elegirlo otra vez.'));
       }
     }
+  }
+
+  async onPlanOfertaFilterChanged(change: PlanOfertaFilterChange): Promise<void> {
+    this.planOfertaFilters.update((current) => ({
+      ...current,
+      [change.key]: change.value
+    }));
+    await this.refreshPlanesOferta();
   }
 
   adicionalCantidad(idAdicional: number): number {
@@ -1243,9 +1271,12 @@ export class AsesorVentasWorkspaceFacade {
     this.direccionForm.controls.ubigeoDomicilio.markAsDirty();
   }
 
-  setActiveDataTab(value: string | number | undefined): void {
+  async setActiveDataTab(value: string | number | undefined): Promise<void> {
     if (value === 'datos' || value === 'direccion' || value === 'oferta') {
       this.activeDataTab.set(value);
+      if (value === 'oferta') {
+        await this.refreshPlanesOferta();
+      }
     }
   }
 
@@ -1560,9 +1591,13 @@ export class AsesorVentasWorkspaceFacade {
   private async refreshOpenDetail(idLead: number): Promise<void> {
     try {
       const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
+      const activeTab = this.activeDataTab();
       this.detail.set(detail);
       if (!this.hasUnsavedModalChanges()) {
         this.patchForms(detail);
+        // La reconciliacion llega tambien despues de guardar la direccion para resolver la zona.
+        // Rehidratar el detalle no debe sacar al asesor del tab que estaba usando.
+        this.activeDataTab.set(activeTab);
       }
     } catch {
       // Un fallo de sincronizacion en segundo plano (p. ej. red intermitente) NO debe
@@ -1596,14 +1631,13 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   // El catálogo de tipificaciones ya no se precarga global: depende del equipo del lead y se trae por
-  // lead al abrir su gestión (ver openDetail/reopenManagedLead). Aquí solo planes y departamentos.
+  // lead al abrir su gestión (ver openDetail/reopenManagedLead). Los planes se consultan por oferta
+  // al entrar al tab Plan, ya acotados por proveedor, zona y filtros.
   private async refreshCatalogs(): Promise<void> {
-    const [planes, departamentos, plataformas] = await Promise.all([
-      firstValueFrom(this.preventaService.listarPlanes(undefined, true)),
+    const [departamentos, plataformas] = await Promise.all([
       firstValueFrom(this.preventaService.listarDepartamentos()),
       firstValueFrom(this.preventaService.listarPlataformasDigitales())
     ]);
-    this.planes.set(planes);
     this.departamentos.set(departamentos);
     this.plataformasDigitales.set(plataformas);
   }
@@ -1626,25 +1660,117 @@ export class AsesorVentasWorkspaceFacade {
   private async refreshOfferCatalogs(idPlan: number, idProveedorBase?: number | null): Promise<void> {
     const plan = this.planes().find((item) => item.id === idPlan);
     const idProveedor = plan?.idProveedor ?? idProveedorBase ?? this.selectedOfertaProviderId() ?? null;
+    const idZona = this.detail()?.idZona;
     this.selectedOfertaProviderId.set(idProveedor);
     this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
     const [promociones, adicionales] = await Promise.all([
       firstValueFrom(this.preventaService.listarPromociones({
         ...(idProveedor ? { idProveedor } : {}),
+        ...(idZona ? { idZona } : {}),
         ...(idPlan ? { idPlan } : {})
       })),
       idProveedor ? firstValueFrom(this.preventaService.listarAdicionales(idProveedor)) : Promise.resolve([]),
-      idProveedor ? this.ensureProviderCamposConfig(idProveedor) : Promise.resolve()
+      idProveedor ? this.ensureProviderCamposConfig(idProveedor) : Promise.resolve(),
+      this.refreshPlanesOferta()
     ]);
     this.promociones.set(promociones);
     this.adicionales.set(adicionales);
   }
 
+  private async refreshPlanesOferta(): Promise<void> {
+    const sequence = ++this.planOfertaLoadSequence;
+    const detail = this.detail();
+    const idProveedor = this.selectedOfertaProviderId();
+
+    this.planOfertaLoading.set(true);
+    this.planOfertaError.set(null);
+
+    try {
+      const zoneReady = await this.ensurePlanOfertaZone(detail);
+      if (sequence !== this.planOfertaLoadSequence) {
+        return;
+      }
+      const idZona = this.detail()?.idZona;
+      if (!zoneReady || !idProveedor || !idZona) {
+        this.planes.set([]);
+        return;
+      }
+
+      const uiFilters = this.planOfertaFilters();
+      const filters: PlanOfertaFilters = {
+        idProveedor,
+        idZona,
+        tipoServicio: uiFilters.tipoServicio
+      };
+      // En este drawer una casilla apagada significa "sin filtro". El endpoint
+      // conserva el significado explícito de false para otros consumidores,
+      // por eso solo enviamos las condiciones activas.
+      if (uiFilters.tienePrecioPromocional) {
+        filters.tienePrecioPromocional = true;
+      }
+      if (uiFilters.tieneVelocidadPromocional) {
+        filters.tieneVelocidadPromocional = true;
+      }
+      if (uiFilters.tienePromocionInterna) {
+        filters.tienePromocionInterna = true;
+      }
+      const planes = await firstValueFrom(this.preventaService.listarPlanesOferta(filters));
+      if (sequence === this.planOfertaLoadSequence) {
+        this.planes.set(planes);
+      }
+    } catch (error) {
+      if (sequence === this.planOfertaLoadSequence) {
+        this.planes.set([]);
+        this.planOfertaError.set(this.getErrorMessage(error, 'No pudimos consultar los planes para esta zona.'));
+      }
+    } finally {
+      if (sequence === this.planOfertaLoadSequence) {
+        this.planOfertaLoading.set(false);
+      }
+    }
+  }
+
+  private async ensurePlanOfertaZone(detail: LeadDetalleResponse | null): Promise<boolean> {
+    const currentUbigeo = String(this.direccionForm.controls.ubigeoDomicilio.value ?? '').trim();
+    const savedUbigeo = String(detail?.ubigeoDomicilio ?? '').trim();
+    const idProveedor = this.selectedOfertaProviderId();
+
+    if (!detail || !idProveedor) {
+      return false;
+    }
+    if (!currentUbigeo) {
+      this.planOfertaError.set('Completa el ubigeo del domicilio para consultar planes disponibles.');
+      return false;
+    }
+    if (detail.idZona && currentUbigeo === savedUbigeo) {
+      return true;
+    }
+
+    try {
+      await firstValueFrom(this.preventaService.actualizarDireccion(detail.id, this.getDireccionRequest()));
+      const refreshedDetail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(detail.id));
+      this.detail.set(refreshedDetail);
+      this.direccionForm.markAsPristine();
+      if (refreshedDetail.idZona) {
+        return true;
+      }
+      this.planOfertaError.set(
+        'La dirección está registrada, pero no pudimos resolver una zona comercial para este proveedor.'
+      );
+      return false;
+    } catch (error) {
+      this.planOfertaError.set(this.getErrorMessage(error, 'No pudimos actualizar la dirección para resolver la zona.'));
+      return false;
+    }
+  }
+
   private async refreshPlanPromotions(idPlan: number): Promise<void> {
     const idProveedor = this.selectedOfertaProviderId() ?? undefined;
+    const idZona = this.detail()?.idZona;
     this.promociones.set(
       await firstValueFrom(this.preventaService.listarPromociones({
         idProveedor,
+        ...(idZona ? { idZona } : {}),
         ...(idPlan ? { idPlan } : {})
       }))
     );
@@ -1749,6 +1875,8 @@ export class AsesorVentasWorkspaceFacade {
     const idProveedor = this.resolveProveedorOfertaInicial(detail);
     this.selectedOfertaProviderId.set(idProveedor);
     this.selectedOfertaAdditionals.set([]);
+    this.planOfertaFilters.set({ ...DEFAULT_PLAN_OFERTA_FILTERS });
+    this.planOfertaError.set(null);
     this.ofertaForm.patchValue({
       idProveedor: idProveedor ?? 0,
       idPlan,
@@ -1769,9 +1897,12 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   private resolveProveedorOfertaInicial(detail: LeadDetalleResponse): number | null {
-    const idPlan = detail.idPlan ?? 0;
     const proveedorFallback = detail.proveedoresEquipo?.find((proveedor) => proveedor.fallbackLeadSinCampana)?.id;
-    return this.planes().find((plan) => plan.id === idPlan)?.idProveedor ?? proveedorFallback ?? detail.idProveedorEquipo ?? null;
+    const planProviderName = detail.nombreProveedorPlan?.trim().toUpperCase();
+    const providerFromPlan = planProviderName
+      ? detail.proveedoresEquipo?.find((proveedor) => proveedor.nombre?.trim().toUpperCase() === planProviderName)?.id
+      : null;
+    return providerFromPlan ?? proveedorFallback ?? detail.idProveedorEquipo ?? null;
   }
 
   private reconcileTipificacionSelectionWithCatalog(): void {

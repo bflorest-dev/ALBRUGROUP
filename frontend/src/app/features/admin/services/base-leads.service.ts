@@ -35,6 +35,9 @@ export interface BaseLeadPreviewResponse {
   fechaIngresoEtapa: string | null;
   fechaTipificacion: string | null;
   fechaInstalacion: string | null;
+  latitud: string | null;
+  longitud: string | null;
+  comentario: string | null;
 }
 
 export interface BaseLeadsCountResponse {

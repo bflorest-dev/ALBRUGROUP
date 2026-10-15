@@ -3554,10 +3554,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 po.nombre,
                 r.fechaIngresoEtapa,
                 r.primeraTipificacionAt,
-                seg.fechaInstalacion
+                seg.fechaInstalacion,
+                dir.latitud,
+                dir.longitud,
+                l.comentario
             )
             FROM Lead l
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.direccion dir
             LEFT JOIN l.proveedor p
             LEFT JOIN l.proveedorOrigen po
             LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
@@ -3600,10 +3604,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 po.nombre,
                 r.fechaIngresoEtapa,
                 r.ultimaTipificacionAt,
-                seg.fechaInstalacion
+                seg.fechaInstalacion,
+                dir.latitud,
+                dir.longitud,
+                l.comentario
             )
             FROM Lead l
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.direccion dir
             LEFT JOIN l.proveedor p
             LEFT JOIN l.proveedorOrigen po
             LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
@@ -3646,10 +3654,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 po.nombre,
                 r.fechaIngresoEtapa,
                 r.mayorRangoAt,
-                seg.fechaInstalacion
+                seg.fechaInstalacion,
+                dir.latitud,
+                dir.longitud,
+                l.comentario
             )
             FROM Lead l
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.direccion dir
             LEFT JOIN l.proveedor p
             LEFT JOIN l.proveedorOrigen po
             LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
@@ -3718,6 +3730,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.BaseLeadExcelRow(
                 l.id,
+                l.lead,
                 dp.numeroDocumentoTitularServicio,
                 dp.nombreTitularServicio,
                 COALESCE(pl.nombre, l.nombrePlanSnapshot),
@@ -3726,7 +3739,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 pl.precio,
                 seg.fechaInstalacion,
                 dir.ubigeoDomicilio,
-                rp.nombreAsesorMerito
+                rp.nombreAsesorMerito,
+                COALESCE(dir.direccion, l.direccionSnapshot),
+                dir.latitud,
+                dir.longitud,
+                l.comentario
             )
             FROM Lead l
             LEFT JOIN l.datosPreventa dp

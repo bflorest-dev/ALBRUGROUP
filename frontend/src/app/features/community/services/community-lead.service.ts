@@ -215,14 +215,21 @@ export type PlanResponse = LeadEntity & {
   adicionales?: PlanAdicionalResponse[];
 };
 
+export type CashbackPeriodoResponse = {
+  numeroPeriodo: number;
+  monto: number;
+};
+
 export type PromocionComercialResponse = LeadEntity & {
   reglaComercial?: string;
+  etapa?: string;
   idProveedor?: number;
   nombreProveedor?: string;
-  idZona?: number;
-  nombreZona?: string;
+  idsZonas?: number[];
+  nombresZonas?: string[];
   idsPlanes?: number[];
   nombresPlanes?: string[];
+  cashbackPeriodos?: CashbackPeriodoResponse[];
 };
 
 export type NivelGeografico = 'DEPARTAMENTO' | 'PROVINCIA' | 'DISTRITO';
@@ -497,7 +504,11 @@ export class CommunityLeadService {
     return this.http.post<PromocionComercialResponse>(`${this.leadUrl}/promociones`, request);
   }
 
-  listarPromociones(filters: { idProveedor?: number; idZona?: number; idPlan?: number }): Observable<PromocionComercialResponse[]> {
+  editarPromocion(idPromocion: number, request: unknown): Observable<PromocionComercialResponse> {
+    return this.http.put<PromocionComercialResponse>(`${this.leadUrl}/promociones/${idPromocion}`, request);
+  }
+
+  listarPromociones(filters: { idProveedor?: number; idZona?: number; idPlan?: number; etapa?: string }): Observable<PromocionComercialResponse[]> {
     let params = new HttpParams();
     if (filters.idProveedor) {
       params = params.set('idProveedor', filters.idProveedor);
@@ -507,6 +518,9 @@ export class CommunityLeadService {
     }
     if (filters.idPlan) {
       params = params.set('idPlan', filters.idPlan);
+    }
+    if (filters.etapa) {
+      params = params.set('etapa', filters.etapa);
     }
     return this.http.get<PromocionComercialResponse[]>(`${this.leadUrl}/promociones`, { params });
   }
@@ -550,8 +564,11 @@ export class CommunityLeadService {
     return this.http.post<ZonaResponse>(`${this.leadUrl}/zonas`, request);
   }
 
-  listarZonas(activo?: boolean): Observable<ZonaResponse[]> {
-    const params = this.optionalActivoParam(activo);
+  listarZonas(activo?: boolean, idProveedor?: number): Observable<ZonaResponse[]> {
+    let params = this.optionalActivoParam(activo);
+    if (idProveedor) {
+      params = params.set('idProveedor', idProveedor);
+    }
     return this.http.get<ZonaResponse[]>(`${this.leadUrl}/zonas`, { params });
   }
 

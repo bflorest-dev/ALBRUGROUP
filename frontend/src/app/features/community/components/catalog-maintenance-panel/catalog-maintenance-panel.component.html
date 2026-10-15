@@ -534,140 +534,109 @@
         </p-tabpanel>
 
         <p-tabpanel value="promociones">
-          <section class="section-grid">
-            <p-card styleClass="community-form-card">
-              <ng-template #title>Registrar promocion</ng-template>
-              <form class="form-grid" [formGroup]="facade.promotionForm" (ngSubmit)="facade.submitPromotion()">
-                <label class="wide">
-                  <span>Regla comercial</span>
-                  <input pInputText type="text" formControlName="reglaComercial" />
-                </label>
-                <div class="wide">
-                  <label>
-                    <span>Alcance</span>
-                    <p-selectbutton
-                      formControlName="scopes"
-                      [options]="facade.promotionScopeOptions"
-                      optionLabel="label"
-                      optionValue="value"
-                      [multiple]="true"
-                      [allowEmpty]="true"
-                      [fluid]="true"
-                      styleClass="scope-select"
-                      (onChange)="facade.onPromotionScopesChanged($any($event.value))"
-                    >
-                      <ng-template #item let-scope>
-                        <p-tag
-                          [severity]="facade.hasPromotionScope(scope.value) ? scope.severity : 'secondary'"
-                          [value]="scope.label"
-                          [icon]="scope.icon"
-                          [rounded]="true"
-                        />
-                      </ng-template>
-                    </p-selectbutton>
-                  </label>
-                </div>
-                @if (facade.hasPromotionScope('proveedor')) {
-                  <div class="promotion-scope wide">
-                    <label>
-                      <span>Proveedor</span>
-                      <p-select
-                        formControlName="idProveedor"
-                        [options]="facade.proveedoresActivos()"
-                        optionLabel="nombre"
-                        optionValue="id"
-                        placeholder="Seleccionar proveedor"
-                        appendTo="body"
-                        (onChange)="facade.onPromotionProviderChanged()"
-                      />
-                    </label>
-                  </div>
-                }
-                @if (facade.hasPromotionScope('zona')) {
-                  <div class="promotion-scope wide">
-                    <label>
-                      <span>Zona</span>
-                      <p-select
-                        formControlName="idZona"
-                        [options]="facade.zonasActivas()"
-                        optionLabel="nombre"
-                        optionValue="id"
-                        placeholder="Seleccionar zona"
-                        appendTo="body"
-                      />
-                    </label>
-                  </div>
-                }
-                @if (facade.hasPromotionScope('planes')) {
-                  <div class="promotion-scope wide">
-                    <label>
-                      <span>Planes</span>
-                      <p-multiselect
-                        formControlName="idsPlanes"
-                        [options]="facade.availablePromotionPlans()"
-                        optionLabel="promotionOptionLabel"
-                        optionValue="id"
-                        placeholder="Seleccionar planes"
-                        display="chip"
-                        [filter]="true"
-                        appendTo="body"
-                      />
-                    </label>
-                    <p class="helper">Sin seleccion aplica a todos los planes.</p>
-                  </div>
-                }
-                <button pButton type="submit" icon="pi pi-plus" label="Registrar promocion" [loading]="facade.isSaving()"></button>
-              </form>
-            </p-card>
+          <section class="stack">
+            <div class="card-title-row">
+              <span>Promociones</span>
+              <button pButton type="button" icon="pi pi-plus" label="Agregar promocion" (click)="facade.openPromotionDialog()"></button>
+            </div>
 
-            <p-card styleClass="community-table-card">
-              <ng-template #title>Promociones</ng-template>
-              <form class="filter-grid" [formGroup]="facade.promotionFiltersForm" (ngSubmit)="facade.filterPromotions()">
-                <input pInputText type="number" min="0" placeholder="Proveedor ID" formControlName="idProveedor" />
-                <input pInputText type="number" min="0" placeholder="Zona ID" formControlName="idZona" />
-                <input pInputText type="number" min="0" placeholder="Plan ID" formControlName="idPlan" />
-                <button pButton type="submit" icon="pi pi-filter" label="Filtrar" severity="secondary"></button>
-              </form>
+            <form class="promotion-filter-bar" [formGroup]="facade.promotionFiltersForm" (ngSubmit)="facade.filterPromotions()">
+              <p-select
+                formControlName="idProveedor"
+                [options]="facade.proveedoresActivos()"
+                optionLabel="nombre"
+                optionValue="id"
+                placeholder="Proveedor"
+                [showClear]="true"
+                appendTo="body"
+                (onChange)="facade.onFilterProviderChanged()"
+              />
+              <p-select
+                formControlName="idZona"
+                [options]="facade.availableFilterZonas()"
+                optionLabel="nombre"
+                optionValue="id"
+                placeholder="Zona"
+                [showClear]="true"
+                [disabled]="!facade.selectedFilterProviderId()"
+                appendTo="body"
+              />
+              <p-select
+                formControlName="etapa"
+                [options]="facade.etapaOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Etapa"
+                [showClear]="true"
+                appendTo="body"
+              />
+              <button pButton type="submit" icon="pi pi-filter" severity="secondary" pTooltip="Filtrar"></button>
+            </form>
 
-              <p-table [value]="facade.promociones()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
-                <ng-template #header>
-                  <tr>
-                    <th>Regla</th>
-                    <th>Proveedor</th>
-                    <th>Zona</th>
-                    <th>Planes</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </ng-template>
-                <ng-template #body let-promocion>
-                  <tr>
-                    <td><strong>{{ promocion.reglaComercial }}</strong></td>
-                    <td>{{ scopeLabel(promocion.nombreProveedor, 'Todos') }}</td>
-                    <td>{{ scopeLabel(promocion.nombreZona, 'Todas') }}</td>
-                    <td>{{ planScopeLabel(promocion.nombresPlanes, promocion.idsPlanes) }}</td>
-                    <td><p-tag [severity]="statusSeverity(promocion.activo)" [value]="statusLabel(promocion.activo)" /></td>
-                    <td>
+            <p-table [value]="facade.promociones()" [paginator]="true" [rows]="10" [rowHover]="true" styleClass="p-datatable-sm">
+              <ng-template #header>
+                <tr>
+                  <th>Regla</th>
+                  <th>Etapa</th>
+                  <th>Proveedor</th>
+                  <th>Zonas</th>
+                  <th>Planes</th>
+                  <th>Cashback</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-promocion>
+                <tr>
+                  <td><strong>{{ promocion.reglaComercial }}</strong></td>
+                  <td><p-tag [value]="promocion.etapa" [severity]="promocion.etapa === 'POSTVENTA' ? 'info' : 'warn'" /></td>
+                  <td>{{ scopeLabel(promocion.nombreProveedor, 'Todos') }}</td>
+                  <td>{{ promocion.nombresZonas?.length ? promocion.nombresZonas.join(', ') : 'Todas' }}</td>
+                  <td>{{ planScopeLabel(promocion.nombresPlanes, promocion.idsPlanes) }}</td>
+                  <td>
+                    @if (promocion.cashbackPeriodos?.length) {
+                      <span class="cashback-summary">
+                        {{ promocion.cashbackPeriodos.length }}
+                        periodo{{ promocion.cashbackPeriodos.length > 1 ? 's' : '' }}
+                      </span>
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
+                  </td>
+                  <td><p-tag [severity]="statusSeverity(promocion.activo)" [value]="statusLabel(promocion.activo)" /></td>
+                  <td>
+                    <div class="promotion-actions">
                       @if (promocion.activo !== false) {
                         <button
                           pButton
                           type="button"
                           size="small"
-                          icon="pi pi-ban"
-                          label="Desactivar"
+                          icon="pi pi-pencil"
                           severity="secondary"
+                          [text]="true"
+                          (click)="facade.startPromotionEdit(promocion)"
+                          pTooltip="Editar"
+                        ></button>
+                        <button
+                          pButton
+                          type="button"
+                          size="small"
+                          icon="pi pi-ban"
+                          severity="danger"
+                          [text]="true"
                           [loading]="facade.isSaving()"
                           (click)="facade.deactivatePromotion(promocion.id)"
+                          pTooltip="Desactivar"
                         ></button>
                       }
-                    </td>
-                  </tr>
-                </ng-template>
-                <ng-template #emptymessage>
-                  <tr><td colspan="6">No hay promociones registradas.</td></tr>
-                </ng-template>
-              </p-table>
-            </p-card>
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template #emptymessage>
+                <tr><td colspan="8">No hay promociones registradas.</td></tr>
+              </ng-template>
+            </p-table>
           </section>
         </p-tabpanel>
 
@@ -923,7 +892,15 @@
       </label>
       <label>
         <span>Zona</span>
-        <p-select formControlName="idZona" [options]="facade.zonasActivas()" optionLabel="nombre" optionValue="id" placeholder="Sin zona" appendTo="body" />
+        <p-select
+          formControlName="idZona"
+          [options]="facade.planZonasActivas()"
+          optionLabel="nombre"
+          optionValue="id"
+          [placeholder]="facade.selectedPlanProviderId() ? 'Sin zona' : 'Selecciona proveedor primero'"
+          [disabled]="!facade.selectedPlanProviderId()"
+          appendTo="body"
+        />
       </label>
       <label>
         <span>Nombre del Plan</span>
@@ -1102,7 +1079,15 @@
       </label>
       <label>
         <span>Zona</span>
-        <p-select formControlName="idZona" [options]="facade.zonasActivas()" optionLabel="nombre" optionValue="id" placeholder="Sin zona" appendTo="body" />
+        <p-select
+          formControlName="idZona"
+          [options]="facade.planZonasActivas()"
+          optionLabel="nombre"
+          optionValue="id"
+          [placeholder]="facade.selectedPlanProviderId() ? 'Sin zona' : 'Selecciona proveedor primero'"
+          [disabled]="!facade.selectedPlanProviderId()"
+          appendTo="body"
+        />
       </label>
       <label>
         <span>Precio Regular</span>
@@ -1447,5 +1432,167 @@
       <button pButton type="button" icon="pi pi-save" label="Guardar zona" [loading]="facade.isSaving()" (click)="facade.saveZone()"></button>
     </div>
   </p-dialog>
+
+  <p-dialog
+    [header]="facade.editingPromotionId() ? 'Editar promocion' : 'Nueva promocion'"
+    [visible]="facade.promotionDialogOpen()"
+    [modal]="true"
+    [draggable]="false"
+    appendTo="body"
+    styleClass="promotion-dialog"
+    (onHide)="facade.closePromotionDialog()"
+  >
+    <form class="form-grid" [formGroup]="facade.promotionForm" (ngSubmit)="facade.submitPromotion()">
+      <label>
+        <span>Regla comercial</span>
+        <input pInputText type="text" formControlName="reglaComercial" />
+      </label>
+      <label>
+        <span>Etapa</span>
+        <p-select
+          formControlName="etapa"
+          [options]="facade.etapaOptions"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+        />
+      </label>
+      <div class="wide">
+        <label>
+          <span>Alcance</span>
+          <p-selectbutton
+            formControlName="scopes"
+            [options]="facade.promotionScopeOptions"
+            optionLabel="label"
+            optionValue="value"
+            [multiple]="true"
+            [allowEmpty]="true"
+            [fluid]="true"
+            styleClass="scope-select"
+            (onChange)="facade.onPromotionScopesChanged($any($event.value))"
+          >
+            <ng-template #item let-scope>
+              <p-tag
+                [severity]="facade.hasPromotionScope(scope.value) ? scope.severity : 'secondary'"
+                [value]="scope.label"
+                [icon]="scope.icon"
+                [rounded]="true"
+              />
+            </ng-template>
+          </p-selectbutton>
+        </label>
+      </div>
+      @if (facade.hasPromotionScope('proveedor')) {
+        <label>
+          <span>Proveedor</span>
+          <p-select
+            formControlName="idProveedor"
+            [options]="facade.proveedoresActivos()"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Seleccionar proveedor"
+            appendTo="body"
+            (onChange)="facade.onPromotionProviderChanged()"
+          />
+        </label>
+      }
+      @if (facade.hasPromotionScope('zona')) {
+        <label [class.wide]="!facade.hasPromotionScope('proveedor')">
+          <span>Zonas</span>
+          <p-multiselect
+            formControlName="idsZonas"
+            [options]="facade.availablePromotionZonas()"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Seleccionar zonas"
+            display="chip"
+            appendTo="body"
+          />
+        </label>
+      }
+      @if (facade.hasPromotionScope('planes')) {
+        <div class="wide">
+          <label>
+            <span>Planes</span>
+            <p-multiselect
+              formControlName="idsPlanes"
+              [options]="facade.availablePromotionPlans()"
+              optionLabel="promotionOptionLabel"
+              optionValue="id"
+              placeholder="Seleccionar planes"
+              display="chip"
+              [filter]="true"
+              appendTo="body"
+            />
+          </label>
+          <p class="helper">Sin seleccion aplica a todos los planes.</p>
+        </div>
+      }
+
+      <div class="wide">
+        <div class="cashback-section">
+          <div class="cashback-header">
+            <span>Cashback por periodo</span>
+            <button pButton type="button" icon="pi pi-plus" size="small" severity="secondary" [text]="true" label="Agregar" (click)="facade.addCashbackPeriodo()"></button>
+          </div>
+          @if (facade.maxCashbackPeriodo(); as max) {
+            <p class="helper">Maximo {{ max }} periodos (meses de permanencia del proveedor).</p>
+          }
+          @if (facade.promotionCashbackPeriodos().length) {
+            <div class="cashback-list">
+              @for (periodo of facade.promotionCashbackPeriodos(); track $index) {
+                <div class="cashback-row">
+                  <div class="cashback-row__inputs">
+                    <label>
+                      <span>Periodo</span>
+                      <p-inputnumber
+                        [ngModel]="periodo.numeroPeriodo"
+                        [ngModelOptions]="{ standalone: true }"
+                        (ngModelChange)="facade.updateCashbackPeriodo($index, 'numeroPeriodo', $event)"
+                        [min]="1"
+                        [max]="facade.maxCashbackPeriodo()"
+                        [showButtons]="true"
+                        [useGrouping]="false"
+                      />
+                    </label>
+                    <label>
+                      <span>Monto (S/)</span>
+                      <p-inputnumber
+                        [ngModel]="periodo.monto"
+                        [ngModelOptions]="{ standalone: true }"
+                        (ngModelChange)="facade.updateCashbackPeriodo($index, 'monto', $event)"
+                        [min]="0"
+                        [minFractionDigits]="2"
+                        [maxFractionDigits]="2"
+                        mode="decimal"
+                      />
+                    </label>
+                  </div>
+                  <button pButton type="button" icon="pi pi-trash" size="small" severity="danger" [text]="true" (click)="facade.removeCashbackPeriodo($index)"></button>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="helper">Sin cashback definido.</p>
+          }
+        </div>
+      </div>
+
+      @if (facade.errorMessage()) {
+        <p-message severity="error" [text]="facade.errorMessage() ?? ''" styleClass="wide" />
+      }
+      <div class="dialog-actions wide">
+        <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closePromotionDialog()"></button>
+        <button
+          pButton
+          type="submit"
+          [icon]="facade.editingPromotionId() ? 'pi pi-check' : 'pi pi-plus'"
+          [label]="facade.editingPromotionId() ? 'Guardar cambios' : 'Registrar promocion'"
+          [loading]="facade.isSaving()"
+        ></button>
+      </div>
+    </form>
+  </p-dialog>
+
   <p-confirmDialog appendTo="body" />
 </section>

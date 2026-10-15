@@ -27,6 +27,7 @@ import {
   LeadVentaGroupsResponse,
   LeadVentaResponse,
   PageQuery,
+  PlanOfertaFilters,
   PlanResponse,
   PromocionComercialResponse,
   UbigeoItem
@@ -318,6 +319,25 @@ export class BackofficeLeadService {
 
   listarPlanesOferta(idLead: number): Observable<PlanResponse[]> {
     return this.http.get<PlanResponse[]>(`${this.leadUrl}/venta/${idLead}/planes-oferta`);
+  }
+
+  listarPlanesOfertaFiltrados(filters: PlanOfertaFilters): Observable<PlanResponse[]> {
+    let params = new HttpParams()
+      .set('idProveedor', filters.idProveedor)
+      .set('idZona', filters.idZona);
+    if (filters.tienePrecioPromocional !== null && filters.tienePrecioPromocional !== undefined) {
+      params = params.set('tienePrecioPromocional', filters.tienePrecioPromocional);
+    }
+    if (filters.tieneVelocidadPromocional !== null && filters.tieneVelocidadPromocional !== undefined) {
+      params = params.set('tieneVelocidadPromocional', filters.tieneVelocidadPromocional);
+    }
+    if (filters.tienePromocionInterna !== null && filters.tienePromocionInterna !== undefined) {
+      params = params.set('tienePromocionInterna', filters.tienePromocionInterna);
+    }
+    if (filters.tipoServicio) {
+      params = params.set('tipoServicio', filters.tipoServicio);
+    }
+    return this.http.get<PlanResponse[]>(`${this.leadUrl}/planes/oferta`, { params });
   }
 
   listarEventos(idLead: number, query: PageQuery): Observable<LeadPage<EventoResponse>> {

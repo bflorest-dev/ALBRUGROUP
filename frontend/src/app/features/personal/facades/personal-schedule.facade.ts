@@ -172,7 +172,7 @@ export class PersonalScheduleFacade {
   openFutureSchedule(): void {
     this.editingSchedule = null;
     this.isCreatingFutureSchedule.set(true);
-    this.resetForm(null);
+    this.resetForm(this.schedule());
     this.form.controls.fechaInicio.setValue(this.tomorrow());
     this.clearMessages();
     this.closeCorrection();

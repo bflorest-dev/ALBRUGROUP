@@ -5847,7 +5847,7 @@ public class LeadService {
                 promocionInterna.getId(),
                 promocionInterna.getReglaComercial(),
                 promocionInterna.getProveedor() == null ? null : promocionInterna.getProveedor().getNombre(),
-                promocionInterna.getZona() == null ? null : promocionInterna.getZona().getNombre()
+                promocionInterna.getZonas().stream().map(Zona::getNombre).sorted(String.CASE_INSENSITIVE_ORDER).toList()
         );
     }
 
@@ -6208,7 +6208,7 @@ public class LeadService {
     }
 
     private void validarPromocionAplicaAZonaLead(PromocionComercial promocion, Lead lead) {
-        if (promocion.getZona() == null) {
+        if (promocion.getZonas() == null || promocion.getZonas().isEmpty()) {
             return;
         }
         if (lead.getDireccion() == null || leadMapper.trimToNull(lead.getDireccion().getUbigeoDomicilio()) == null) {
@@ -6225,22 +6225,21 @@ public class LeadService {
                         null,
                         Map.of("ubigeoDomicilio", lead.getDireccion().getUbigeoDomicilio())
                 ));
-        List<ZonaRegla> reglas = zonaReglaRepository.findByZonaIdAndZonaActivoTrue(promocion.getZona().getId());
-        boolean tieneInclusiones = reglas.stream().anyMatch(regla -> regla.getCriterio() == CriterioZona.INCLUIR);
-        boolean coincideExclusion = reglas.stream()
-                .anyMatch(regla -> regla.getCriterio() == CriterioZona.EXCLUIR && coincideReglaZona(regla, distrito));
-        if (coincideExclusion) {
+
+        boolean aplicaEnAlgunaZona = promocion.getZonas().stream().anyMatch(zona -> {
+            List<ZonaRegla> reglas = zonaReglaRepository.findByZonaIdAndZonaActivoTrue(zona.getId());
+            boolean tieneInclusiones = reglas.stream().anyMatch(regla -> regla.getCriterio() == CriterioZona.INCLUIR);
+            boolean coincideExclusion = reglas.stream()
+                    .anyMatch(regla -> regla.getCriterio() == CriterioZona.EXCLUIR && coincideReglaZona(regla, distrito));
+            if (coincideExclusion) return false;
+            boolean coincideInclusion = reglas.stream()
+                    .anyMatch(regla -> regla.getCriterio() == CriterioZona.INCLUIR && coincideReglaZona(regla, distrito));
+            return !tieneInclusiones || coincideInclusion;
+        });
+
+        if (!aplicaEnAlgunaZona) {
             throw new BadRequestException(
-                    "La promocion interna no aplica porque el ubigeo del lead esta excluido de la zona",
-                    null,
-                    Map.of("idPromocion", promocion.getId(), "ubigeoDomicilio", distrito.getCodigo())
-            );
-        }
-        boolean coincideInclusion = reglas.stream()
-                .anyMatch(regla -> regla.getCriterio() == CriterioZona.INCLUIR && coincideReglaZona(regla, distrito));
-        if (tieneInclusiones && !coincideInclusion) {
-            throw new BadRequestException(
-                    "La promocion interna no aplica porque el ubigeo del lead no esta incluido en la zona",
+                    "La promocion interna no aplica porque el ubigeo del lead no coincide con ninguna zona de la promocion",
                     null,
                     Map.of("idPromocion", promocion.getId(), "ubigeoDomicilio", distrito.getCodigo())
             );

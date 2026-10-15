@@ -79,6 +79,37 @@ describe('PersonalScheduleFacade', () => {
     expect(facade.schedule()?.id).toBe(5);
   });
 
+  it('usa el horario vigente como referencia al agregar un horario futuro', () => {
+    const current = schedule(1, '2020-01-01');
+    const service = {
+      listarHistoricoHorarios: vi.fn(() => of({ content: [current] }))
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        FormBuilder,
+        PersonalScheduleFacade,
+        { provide: AdminRrhhService, useValue: service },
+        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => true, blockedMessage: () => '' }) } }
+      ]
+    });
+
+    const facade = TestBed.inject(PersonalScheduleFacade);
+    facade.initialize(10, contract, current);
+    facade.openFutureSchedule();
+
+    const details = facade.form.getRawValue().detalles;
+    expect(details.find((detail) => detail.dia === 'LUNES')).toMatchObject({
+      horaEntrada: '09:00',
+      horaSalida: '18:00',
+      inicioAlmuerzo: '13:00',
+      finAlmuerzo: '14:00',
+      laborable: 'true'
+    });
+    expect(details.find((detail) => detail.dia === 'DOMINGO')).toMatchObject({
+      laborable: 'false'
+    });
+  });
+
   it('bloquea el guardado cuando el gate operativo no permite modificar', async () => {
     const service = { listarHistoricoHorarios: vi.fn(() => of({ content: [] })) };
     TestBed.configureTestingModule({

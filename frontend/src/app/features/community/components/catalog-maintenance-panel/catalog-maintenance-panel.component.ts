@@ -6,6 +6,7 @@ import { CardModule } from 'primeng/card';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { MultiSelectModule } from 'primeng/multiselect';
@@ -15,6 +16,7 @@ import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { TooltipModule } from 'primeng/tooltip';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { CommunitySection, CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
 import { CampanaResponse } from '../../services/community-lead.service';
@@ -39,6 +41,7 @@ export const CATALOG_MAINTENANCE_SECTIONS: { id: CommunitySection; label: string
     CheckboxModule,
     ConfirmDialogModule,
     DialogModule,
+    InputNumberModule,
     InputTextModule,
     MessageModule,
     MultiSelectModule,
@@ -48,6 +51,7 @@ export const CATALOG_MAINTENANCE_SECTIONS: { id: CommunitySection; label: string
     TabsModule,
     TagModule,
     ToggleSwitchModule,
+    TooltipModule,
     PhoneNumberFieldComponent
   ],
   templateUrl: './catalog-maintenance-panel.component.html',

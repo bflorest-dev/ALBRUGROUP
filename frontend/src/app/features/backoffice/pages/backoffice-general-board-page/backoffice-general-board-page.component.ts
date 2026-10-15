@@ -36,6 +36,9 @@ import {
   LeadDetalleResponse,
   LeadOfertaComercialRequest,
   LeadTipificacionVentaRequest,
+  PlanOfertaFilterChange,
+  PlanOfertaFilterState,
+  PlanOfertaFilters,
   TipificacionResponse,
   UbigeoItem,
   PlanResponse,
@@ -50,6 +53,13 @@ type SortDirection = 'asc' | 'desc';
 type GroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'PLAN' | 'TIPIFICACION' | 'SUBTIPIFICACION' | 'ULTIMO_GESTOR' | 'ASESOR_PREVENTA' | 'DEPARTAMENTO' | 'PROVINCIA' | 'DISTRITO';
 type FilterColumn = 'NINGUNO' | 'DEPARTAMENTO' | 'ESTADO' | 'PLAN' | 'ULTIMO_GESTOR';
 type Option<T extends string = string> = { label: string; value: T };
+
+const DEFAULT_PLAN_OFERTA_FILTERS: PlanOfertaFilterState = {
+  tienePrecioPromocional: true,
+  tieneVelocidadPromocional: false,
+  tienePromocionInterna: true,
+  tipoServicio: null
+};
 
 @Component({
   selector: 'app-backoffice-general-board-page',
@@ -153,6 +163,9 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected readonly adicionales = signal<AdicionalResponse[]>([]);
   protected readonly adicionalesSeleccionados = signal<Array<{ idAdicional: number; cantidad: number }>>([]);
   protected readonly selectedOfertaProviderId = signal<number | null>(null);
+  protected readonly planOfertaFilters = signal<PlanOfertaFilterState>({ ...DEFAULT_PLAN_OFERTA_FILTERS });
+  protected readonly planOfertaLoading = signal(false);
+  protected readonly planOfertaError = signal<string | null>(null);
   protected readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
   protected readonly distritosDomicilio = signal<UbigeoItem[]>([]);
   protected readonly isSaving = signal(false);
@@ -168,6 +181,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected readonly consultaFromConflict = signal(false);
   private selectedLeadId = signal<number | null>(null);
   private failedDetailRow = signal<LeadBandejaVentaResponse | null>(null);
+  private planOfertaLoadSequence = 0;
 
   protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
   protected readonly tipoDomicilioOptions = ['HOGAR', 'MULTIFAMILIAR', 'CONDOMINIO_EDIFICIO', 'CONDOMINIO_EDIFICIO_NO_HABILITADO'];
@@ -214,6 +228,11 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     const providerId = this.selectedOfertaProviderId();
     const plans = providerId ? this.ofertaPlanes().filter((plan) => plan.idProveedor === providerId) : [];
     return [{ id: 0, nombre: 'Sin plan' }, ...plans];
+  });
+  protected readonly planOfertaZoneLabel = computed(() => this.detail()?.nombreZona ?? this.detail()?.plan?.nombreZona ?? null);
+  protected readonly planOfertaZoneAvailable = computed(() => {
+    const idZona = this.detail()?.idZona;
+    return typeof idZona === 'number' && idZona > 0;
   });
   protected readonly promocionOptions = computed(() => [{ id: 0, reglaComercial: 'Sin promocion' }, ...this.promociones()]);
   protected readonly selectedAdditionals = computed(() => {
@@ -736,9 +755,14 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   }
 
   private async loadGestionCatalogs(idLead: number, lead: LeadDetalleResponse): Promise<void> {
-    const [catalogResult, plansResult] = await Promise.allSettled([
+    this.planOfertaFilters.set({ ...DEFAULT_PLAN_OFERTA_FILTERS });
+    this.planOfertaError.set(null);
+    const providerId = this.resolveLeadProviderId(lead);
+    this.selectedOfertaProviderId.set(providerId);
+    this.ofertaForm.controls.idProveedor.setValue(providerId ?? 0, { emitEvent: false });
+    const [catalogResult] = await Promise.allSettled([
       firstValueFrom(this.leadService.getCatalogoTipificaciones(idLead)),
-      firstValueFrom(this.leadService.listarPlanesOferta(idLead))
+      this.refreshPlanOfertaCatalog(lead)
     ]);
     if (this.selectedLeadId() !== idLead || !this.drawerOpen()) return;
     if (catalogResult.status === 'fulfilled') {
@@ -746,29 +770,107 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     } else {
       this.actionMessage.set('No se pudo cargar el catálogo de tipificaciones. Puedes reintentar desde la bandeja.');
     }
-    if (plansResult.status === 'fulfilled') {
-      this.ofertaPlanes.set(plansResult.value ?? []);
-      const currentPlan = plansResult.value.find((plan) => plan.id === (lead.idPlan ?? 0));
-      const providerId = currentPlan?.idProveedor ?? null;
-      this.selectedOfertaProviderId.set(providerId);
-      this.ofertaForm.controls.idProveedor.setValue(providerId ?? 0, { emitEvent: false });
-      this.adicionalesSeleccionados.set((lead.adicionales ?? [])
-        .filter((item) => (item.idAdicional ?? 0) > 0 && (item.cantidad ?? 0) > 0)
-        .map((item) => ({ idAdicional: item.idAdicional!, cantidad: item.cantidad! })));
-      try {
-        const [promotions, additionals] = await Promise.all([
-          firstValueFrom(this.leadService.listarPromociones(lead.idPlan ? { idPlan: lead.idPlan } : {})),
-          providerId ? firstValueFrom(this.leadService.listarAdicionales(providerId)) : Promise.resolve([])
-        ]);
-        if (this.selectedLeadId() !== idLead) return;
-        this.promociones.set(promotions);
-        this.adicionales.set(additionals);
-      } catch {
-        this.actionMessage.set('El drawer abrió, pero no se pudieron cargar todos los planes y promociones.');
-      }
-    } else {
-      this.actionMessage.set('El drawer abrió, pero no se pudo cargar el catálogo de planes.');
+    this.adicionalesSeleccionados.set((lead.adicionales ?? [])
+      .filter((item) => (item.idAdicional ?? 0) > 0 && (item.cantidad ?? 0) > 0)
+      .map((item) => ({ idAdicional: item.idAdicional!, cantidad: item.cantidad! })));
+    try {
+      const [promotions, additionals] = await Promise.all([
+        firstValueFrom(this.leadService.listarPromociones({
+          ...(providerId ? { idProveedor: providerId } : {}),
+          ...(lead.idZona ? { idZona: lead.idZona } : {}),
+          ...(lead.idPlan ? { idPlan: lead.idPlan } : {})
+        })),
+        providerId ? firstValueFrom(this.leadService.listarAdicionales(providerId)) : Promise.resolve([])
+      ]);
+      if (this.selectedLeadId() !== idLead) return;
+      this.promociones.set(promotions);
+      this.adicionales.set(additionals);
+    } catch {
+      this.actionMessage.set('El drawer abrió, pero no se pudieron cargar todos los planes y promociones.');
     }
+  }
+
+  private async refreshPlanOfertaCatalog(lead: LeadDetalleResponse): Promise<void> {
+    const sequence = ++this.planOfertaLoadSequence;
+    const providerId = this.resolveLeadProviderId(lead);
+    const idZona = lead.idZona ?? null;
+    this.planOfertaLoading.set(true);
+    this.planOfertaError.set(null);
+
+    if (!providerId || !idZona) {
+      this.ofertaPlanes.set([]);
+      this.planOfertaError.set(!providerId
+        ? 'No se pudo identificar el proveedor del lead.'
+        : 'El lead todavía no tiene una zona comercial resuelta.');
+      this.planOfertaLoading.set(false);
+      return;
+    }
+
+    try {
+      const plans = await firstValueFrom(this.leadService.listarPlanesOfertaFiltrados(
+        this.buildPlanOfertaFilters(providerId, idZona)
+      ));
+      if (sequence !== this.planOfertaLoadSequence) return;
+      this.ofertaPlanes.set(this.includeCurrentPlan(lead, plans, providerId));
+    } catch (error) {
+      if (sequence === this.planOfertaLoadSequence) {
+        this.ofertaPlanes.set([]);
+        this.planOfertaError.set(this.resolveDetailLoadError(error));
+      }
+    } finally {
+      if (sequence === this.planOfertaLoadSequence) {
+        this.planOfertaLoading.set(false);
+      }
+    }
+  }
+
+  private buildPlanOfertaFilters(idProveedor: number, idZona: number): PlanOfertaFilters {
+    const selected = this.planOfertaFilters();
+    const filters: PlanOfertaFilters = {
+      idProveedor,
+      idZona,
+      tipoServicio: selected.tipoServicio
+    };
+    if (selected.tienePrecioPromocional) filters.tienePrecioPromocional = true;
+    if (selected.tieneVelocidadPromocional) filters.tieneVelocidadPromocional = true;
+    if (selected.tienePromocionInterna) filters.tienePromocionInterna = true;
+    return filters;
+  }
+
+  private resolveLeadProviderId(lead: LeadDetalleResponse): number | null {
+    const providerName = String(lead.nombreProveedorPlan ?? lead.plan?.nombreProveedor ?? '').trim().toUpperCase();
+    const providerFromPlan = lead.proveedoresEquipo?.find((provider) =>
+      provider.nombre.trim().toUpperCase() === providerName
+    )?.id;
+    return providerFromPlan ?? lead.idProveedorEquipo ?? null;
+  }
+
+  private includeCurrentPlan(lead: LeadDetalleResponse, plans: PlanResponse[], idProveedor: number): PlanResponse[] {
+    const currentPlanId = lead.idPlan ?? lead.plan?.id ?? null;
+    if (!currentPlanId || plans.some((plan) => plan.id === currentPlanId) || !lead.plan) {
+      return plans;
+    }
+    const currentPlan: PlanResponse = {
+      id: currentPlanId,
+      nombre: lead.nombrePlan ?? lead.plan.nombre ?? 'Plan actual',
+      precio: lead.precioPlan ?? lead.plan.precio ?? undefined,
+      precioPromocional: lead.plan.precioPromocional,
+      mesesPromocionPrecio: lead.plan.mesesPromocionPrecio,
+      idProveedor,
+      nombreProveedor: lead.nombreProveedorPlan ?? lead.plan.nombreProveedor ?? undefined,
+      idZona: lead.idZona,
+      nombreZona: lead.nombreZona ?? lead.plan.nombreZona ?? undefined,
+      internetVelocidad: lead.plan.internet?.velocidad,
+      internetUnidad: lead.plan.internet?.unidad,
+      internetTecnologia: lead.plan.internet?.tecnologia,
+      velocidadPromocional: lead.plan.velocidadPromocional,
+      mesesPromocionVelocidad: lead.plan.mesesPromocionVelocidad,
+      televisionNombre: lead.plan.television?.nombre,
+      televisionCanales: lead.plan.television?.cantidadCanales,
+      telefonoMinutos: lead.plan.telefono?.minutos,
+      telefonoDescripcion: lead.plan.telefono?.descripcion
+    };
+    return [currentPlan, ...plans];
   }
 
   protected async onTipoDocumentoChanged(): Promise<void> {
@@ -831,8 +933,20 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     const idProveedor = this.selectedOfertaProviderId() ?? undefined;
     this.promociones.set(await firstValueFrom(this.leadService.listarPromociones({
       ...(idProveedor ? { idProveedor } : {}),
+      ...(this.detail()?.idZona ? { idZona: this.detail()!.idZona! } : {}),
       ...(idPlan ? { idPlan } : {})
     })));
+  }
+
+  protected async onPlanOfertaFilterChange(change: PlanOfertaFilterChange): Promise<void> {
+    if (!this.canMutateDrawer() || this.offerLocked()) return;
+    const detail = this.detail();
+    if (!detail) return;
+    this.planOfertaFilters.update((current) => ({
+      ...current,
+      [change.key]: change.value
+    } as PlanOfertaFilterState));
+    await this.refreshPlanOfertaCatalog(detail);
   }
 
   protected incrementarAdicional(adicional: AdicionalResponse): void {

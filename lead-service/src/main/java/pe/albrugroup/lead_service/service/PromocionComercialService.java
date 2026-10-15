@@ -1,5 +1,6 @@
 package pe.albrugroup.lead_service.service;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -7,10 +8,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.entity.Plan;
+import pe.albrugroup.lead_service.entity.PromocionCashbackPeriodo;
 import pe.albrugroup.lead_service.entity.PromocionComercial;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Zona;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.request.CashbackPeriodoRequest;
 import pe.albrugroup.lead_service.entity.request.PromocionComercialRequest;
+import pe.albrugroup.lead_service.entity.response.CashbackPeriodoResponse;
 import pe.albrugroup.lead_service.entity.response.PromocionComercialResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
@@ -20,11 +25,8 @@ import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.ZonaRepository;
 import pe.albrugroup.lead_service.service.mapper.PromocionComercialMapper;
 
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -36,37 +38,52 @@ public class PromocionComercialService {
     private final ZonaRepository zonaRepository;
     private final PlanRepository planRepository;
     private final PromocionComercialMapper mapper;
+    private final EntityManager entityManager;
 
     @CacheEvict(value = {CacheNames.PROMOCIONES_COMERCIALES, CacheNames.PLANES_OFERTA}, allEntries = true)
     public PromocionComercialResponse registrarPromocion(PromocionComercialRequest request) {
-        Proveedor proveedor = null;
-        if (request.getIdProveedor() != null) {
-            proveedor = proveedorRepository.findByIdAndActivoTrue(request.getIdProveedor())
-                    .orElseThrow(() -> new NotFoundException(Proveedor.class, request.getIdProveedor()));
-        }
-
-        Zona zona = null;
-        if (request.getIdZona() != null) {
-            zona = zonaRepository.findByIdAndActivoTrue(request.getIdZona())
-                    .orElseThrow(() -> new NotFoundException(Zona.class, request.getIdZona()));
-        }
-
+        Proveedor proveedor = resolverProveedor(request.getIdProveedor());
+        Set<Zona> zonas = resolverZonas(request.getIdsZonas());
         Set<Plan> planes = resolverPlanes(request.getIdsPlanes());
-        validarConsistencia(request, proveedor, planes);
+        validarConsistenciaProveedor(proveedor, planes, zonas);
 
         PromocionComercial promocion = mapper.toEntity(request);
         promocion.setProveedor(proveedor);
-        promocion.setZona(zona);
+        promocion.setZonas(zonas);
         promocion.setPlanes(planes);
         promocion.setActivo(Boolean.TRUE);
+        aplicarCashbackPeriodos(promocion, request.getCashbackPeriodos());
+
+        return toResponse(repository.save(promocion));
+    }
+
+    @CacheEvict(value = {CacheNames.PROMOCIONES_COMERCIALES, CacheNames.PLANES_OFERTA}, allEntries = true)
+    public PromocionComercialResponse editarPromocion(Long idPromocion, PromocionComercialRequest request) {
+        PromocionComercial promocion = repository.findById(idPromocion)
+                .orElseThrow(() -> new NotFoundException(PromocionComercial.class, idPromocion));
+
+        Proveedor proveedor = resolverProveedor(request.getIdProveedor());
+        Set<Zona> zonas = resolverZonas(request.getIdsZonas());
+        Set<Plan> planes = resolverPlanes(request.getIdsPlanes());
+        validarConsistenciaProveedor(proveedor, planes, zonas);
+
+        promocion.setReglaComercial(request.getReglaComercial());
+        promocion.setEtapa(request.getEtapa());
+        promocion.setProveedor(proveedor);
+        promocion.getZonas().clear();
+        promocion.getZonas().addAll(zonas);
+        promocion.getPlanes().clear();
+        promocion.getPlanes().addAll(planes);
+        aplicarCashbackPeriodos(promocion, request.getCashbackPeriodos());
 
         return toResponse(repository.save(promocion));
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = CacheNames.PROMOCIONES_COMERCIALES, key = "(#idProveedor == null ? 'all' : #idProveedor) + ':' + (#idZona == null ? 'all' : #idZona) + ':' + (#idPlan == null ? 'all' : #idPlan)")
-    public List<PromocionComercialResponse> listarPromociones(Long idProveedor, Long idZona, Long idPlan) {
-        return repository.listarActivas(idProveedor, idZona, idPlan).stream()
+    @Cacheable(value = CacheNames.PROMOCIONES_COMERCIALES,
+            key = "(#idProveedor == null ? 'all' : #idProveedor) + ':' + (#idZona == null ? 'all' : #idZona) + ':' + (#idPlan == null ? 'all' : #idPlan) + ':' + (#etapa == null ? 'all' : #etapa)")
+    public List<PromocionComercialResponse> listarPromociones(Long idProveedor, Long idZona, Long idPlan, Etapa etapa) {
+        return repository.listarActivas(idProveedor, idZona, idPlan, etapa).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -80,106 +97,107 @@ public class PromocionComercialService {
         return toResponse(repository.save(promocion));
     }
 
-    private Set<Plan> resolverPlanes(List<Long> idsPlanes) {
-        if (idsPlanes == null || idsPlanes.isEmpty()) {
-            return Set.of();
-        }
+    private Proveedor resolverProveedor(Long idProveedor) {
+        if (idProveedor == null) return null;
+        return proveedorRepository.findByIdAndActivoTrue(idProveedor)
+                .orElseThrow(() -> new NotFoundException(Proveedor.class, idProveedor));
+    }
 
-        Set<Long> idsUnicos = new HashSet<>(idsPlanes);
+    private Set<Zona> resolverZonas(List<Long> idsZonas) {
+        if (idsZonas == null || idsZonas.isEmpty()) return new HashSet<>();
+        Set<Long> idsUnicos = new LinkedHashSet<>(idsZonas);
+        Set<Zona> zonas = new HashSet<>(zonaRepository.findAllById(idsUnicos));
+        if (zonas.size() != idsUnicos.size()) {
+            throw new BadRequestException("Una o mas zonas enviadas no existen", null, Map.of("idsZonas", idsZonas));
+        }
+        return zonas;
+    }
+
+    private Set<Plan> resolverPlanes(List<Long> idsPlanes) {
+        if (idsPlanes == null || idsPlanes.isEmpty()) return new HashSet<>();
+
+        Set<Long> idsUnicos = new LinkedHashSet<>(idsPlanes);
         if (idsUnicos.size() != idsPlanes.size()) {
-            throw new BadRequestException(
-                    "No se puede repetir el mismo plan dentro de la promocion",
-                    null,
-                    Map.of("idsPlanes", idsPlanes)
-            );
+            throw new BadRequestException("No se puede repetir el mismo plan dentro de la promocion", null, Map.of("idsPlanes", idsPlanes));
         }
 
         Set<Plan> planes = new HashSet<>(planRepository.findAllById(idsUnicos));
         if (planes.size() != idsUnicos.size()) {
-            throw new BadRequestException(
-                    "Uno o mas planes enviados no existen",
-                    null,
-                    Map.of("idsPlanes", idsPlanes)
-            );
+            throw new BadRequestException("Uno o mas planes enviados no existen", null, Map.of("idsPlanes", idsPlanes));
         }
         return planes;
     }
 
-    private void validarConsistencia(PromocionComercialRequest request, Proveedor proveedor, Set<Plan> planes) {
-        Set<Long> proveedoresDePlanes = new HashSet<>();
+    private void validarConsistenciaProveedor(Proveedor proveedor, Set<Plan> planes, Set<Zona> zonas) {
+        if (proveedor == null) return;
+
         for (Plan plan : planes) {
             if (!Boolean.TRUE.equals(plan.getActivo())) {
-                throw new BadRequestException(
-                        "La promocion solo puede asociarse a planes activos",
-                        null,
-                        Map.of("idPlan", plan.getId())
-                );
+                throw new BadRequestException("La promocion solo puede asociarse a planes activos", null, Map.of("idPlan", plan.getId()));
             }
-            if (plan.getProveedor() != null) {
-                proveedoresDePlanes.add(plan.getProveedor().getId());
+            if (plan.getProveedor() != null && !proveedor.getId().equals(plan.getProveedor().getId())) {
+                throw new BadRequestException("El plan no pertenece al proveedor de la promocion", null,
+                        Map.of("idProveedor", proveedor.getId(), "idPlan", plan.getId()));
             }
         }
 
-        if (proveedoresDePlanes.size() > 1) {
-            throw new BadRequestException(
-                    "Todos los planes de una promocion deben pertenecer al mismo proveedor",
-                    null,
-                    Map.of("idsPlanes", request.getIdsPlanes())
-                );
-        }
-
-        if (proveedor != null && !proveedoresDePlanes.isEmpty() && !proveedor.getId().equals(proveedoresDePlanes.iterator().next())) {
-            throw new BadRequestException(
-                "Los planes no pertenecen al proveedor de la promocion",
-                null,
-                    Map.of(
-                            "idProveedor", proveedor.getId(),
-                            "idsPlanes", request.getIdsPlanes()
-                    )
-            );
-        }
-
-        Set<Long> idsPlanes = planes.stream().map(Plan::getId).collect(java.util.stream.Collectors.toSet());
-        boolean existeReglaActiva = repository.listarActivas(null, null, null).stream()
-                .anyMatch(promocion -> esMismoAlcance(promocion, proveedor, request.getIdZona(), idsPlanes)
-                        && promocion.getReglaComercial().equalsIgnoreCase(request.getReglaComercial()));
-        if (existeReglaActiva) {
-            Map<String, Object> details = new HashMap<>();
-            details.put("reglaComercial", request.getReglaComercial());
-            details.put("idProveedor", proveedor == null ? null : proveedor.getId());
-            details.put("idZona", request.getIdZona());
-            details.put("idsPlanes", request.getIdsPlanes() == null ? List.of() : request.getIdsPlanes());
-            throw new BadRequestException(
-                    "Ya existe una promocion interna activa con la misma regla comercial y alcance",
-                    null,
-                    details
-            );
+        for (Zona zona : zonas) {
+            if (zona.getProveedor() != null && !proveedor.getId().equals(zona.getProveedor().getId())) {
+                throw new BadRequestException("La zona no pertenece al proveedor de la promocion", null,
+                        Map.of("idProveedor", proveedor.getId(), "idZona", zona.getId()));
+            }
         }
     }
 
-    private boolean esMismoAlcance(PromocionComercial promocion, Proveedor proveedor, Long idZona, Set<Long> idsPlanes) {
-        Long proveedorActual = promocion.getProveedor() == null ? null : promocion.getProveedor().getId();
-        Long proveedorNuevo = proveedor == null ? null : proveedor.getId();
-        Long zonaActual = promocion.getZona() == null ? null : promocion.getZona().getId();
-        Set<Long> planesActuales = promocion.getPlanes().stream()
-                .map(Plan::getId)
-                .collect(java.util.stream.Collectors.toSet());
+    private void aplicarCashbackPeriodos(PromocionComercial promocion, List<CashbackPeriodoRequest> periodos) {
+        promocion.getCashbackPeriodos().clear();
+        if (promocion.getId() != null) {
+            entityManager.flush();
+        }
+        if (periodos == null || periodos.isEmpty()) return;
 
-        return java.util.Objects.equals(proveedorActual, proveedorNuevo)
-                && java.util.Objects.equals(zonaActual, idZona)
-                && planesActuales.equals(idsPlanes);
+        Integer maxPeriodo = promocion.getProveedor() != null
+                ? promocion.getProveedor().getMesesPermanencia()
+                : null;
+
+        Set<Integer> periodosVistos = new HashSet<>();
+        for (CashbackPeriodoRequest p : periodos) {
+            if (!periodosVistos.add(p.getNumeroPeriodo())) {
+                throw new BadRequestException("No se puede repetir el mismo periodo de cashback", null,
+                        Map.of("numeroPeriodo", p.getNumeroPeriodo()));
+            }
+            if (maxPeriodo != null && p.getNumeroPeriodo() > maxPeriodo) {
+                throw new BadRequestException(
+                        "El periodo de cashback excede los meses de permanencia del proveedor (" + maxPeriodo + ")",
+                        null,
+                        Map.of("numeroPeriodo", p.getNumeroPeriodo(), "mesesPermanencia", maxPeriodo));
+            }
+            promocion.getCashbackPeriodos().add(PromocionCashbackPeriodo.builder()
+                    .promocionComercial(promocion)
+                    .numeroPeriodo(p.getNumeroPeriodo())
+                    .monto(p.getMonto())
+                    .build());
+        }
     }
 
     private PromocionComercialResponse toResponse(PromocionComercial entity) {
         return PromocionComercialResponse.builder()
                 .id(entity.getId())
                 .reglaComercial(entity.getReglaComercial())
+                .etapa(entity.getEtapa())
                 .idProveedor(entity.getProveedor() == null ? null : entity.getProveedor().getId())
                 .nombreProveedor(entity.getProveedor() == null ? null : entity.getProveedor().getNombre())
-                .idZona(entity.getZona() == null ? null : entity.getZona().getId())
-                .nombreZona(entity.getZona() == null ? null : entity.getZona().getNombre())
+                .idsZonas(entity.getZonas().stream().map(Zona::getId).sorted().toList())
+                .nombresZonas(entity.getZonas().stream().map(Zona::getNombre).sorted(String.CASE_INSENSITIVE_ORDER).toList())
                 .idsPlanes(entity.getPlanes().stream().map(Plan::getId).sorted().toList())
                 .nombresPlanes(entity.getPlanes().stream().map(Plan::getNombre).sorted(String.CASE_INSENSITIVE_ORDER).toList())
+                .cashbackPeriodos(entity.getCashbackPeriodos().stream()
+                        .map(cp -> CashbackPeriodoResponse.builder()
+                                .numeroPeriodo(cp.getNumeroPeriodo())
+                                .monto(cp.getMonto())
+                                .build())
+                        .sorted(Comparator.comparing(CashbackPeriodoResponse::getNumeroPeriodo))
+                        .toList())
                 .activo(entity.getActivo())
                 .createdAt(entity.getCreatedAt())
                 .build();

@@ -12,6 +12,7 @@ import java.time.LocalDate;
  */
 public record BaseLeadExcelRow(
         Long id,
+        String lead,
         String documento,
         String nombreTitular,
         String nombrePlan,
@@ -20,5 +21,9 @@ public record BaseLeadExcelRow(
         BigDecimal precio,
         LocalDate fechaInstalacion,
         String ubigeoDomicilio,
-        String asesorPreventa
+        String asesorPreventa,
+        String direccion,
+        String latitud,
+        String longitud,
+        String comentario
 ) {}

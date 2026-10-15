@@ -372,6 +372,62 @@ label,
   width: 8%;
 }
 
+.promotion-filter-bar {
+  align-items: end;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+}
+
+.promotion-actions {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.cashback-section {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cashback-header {
+  align-items: center;
+  color: #475569;
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.cashback-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.cashback-row {
+  align-items: end;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr auto;
+}
+
+.cashback-row__inputs {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.cashback-summary {
+  color: var(--role-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.text-muted {
+  color: var(--role-muted);
+}
+
 .dialog-actions {
   justify-content: flex-end;
   margin-top: 1rem;
@@ -445,6 +501,9 @@ label,
   .plan-dialog .p-select,
   .zone-dialog .p-inputtext,
   .zone-dialog .p-select,
+  .promotion-dialog .p-inputtext,
+  .promotion-dialog .p-select,
+  .promotion-dialog .p-multiselect,
   .filter-grid .p-inputtext {
     width: 100%;
   }
@@ -475,6 +534,14 @@ label,
   .plan-dialog {
     width: min(72rem, 96vw);
   }
+
+  .promotion-dialog {
+    width: min(52rem, 94vw);
+  }
+
+  .promotion-filter-bar .p-select {
+    width: 100%;
+  }
 }
 
 @media (max-width: 760px) {
@@ -491,6 +558,7 @@ label,
   .form-grid,
   .form-grid--three,
   .filter-grid,
+  .promotion-filter-bar,
   .plan-catalog-toolbar,
   .plan-additional-item,
   .plan-additional-item__controls,

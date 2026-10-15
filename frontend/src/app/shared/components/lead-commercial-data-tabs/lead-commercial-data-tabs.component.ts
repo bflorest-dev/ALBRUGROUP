@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, signal } from '@angular/core';
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
@@ -11,6 +11,9 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import {
   AdicionalResponse,
+  PlanOfertaFilterChange,
+  PlanOfertaFilterState,
+  PlanOfertaServiceComposition,
   PlanResponse,
   PromocionComercialResponse,
   UbigeoItem
@@ -40,6 +43,7 @@ type ParentescoOption = { label: string; value: string };
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    FormsModule,
     ButtonModule,
     CheckboxModule,
     DateFieldComponent,
@@ -73,6 +77,17 @@ export class LeadCommercialDataTabsComponent implements OnChanges {
   @Input() providerOptions: LeadCommercialProviderOption[] = [];
   @Input() selectedProviderId: number | null = null;
   @Input() planOptions: Array<Partial<PlanResponse> & { id: number; nombre: string }> = [];
+  @Input() showPlanFilters = false;
+  @Input() planOfertaFilters: PlanOfertaFilterState = {
+    tienePrecioPromocional: true,
+    tieneVelocidadPromocional: false,
+    tienePromocionInterna: true,
+    tipoServicio: null
+  };
+  @Input() planOfertaLoading = false;
+  @Input() planOfertaError: string | null = null;
+  @Input() planOfertaZoneLabel: string | null = null;
+  @Input() planOfertaZoneAvailable = false;
   @Input() promocionOptions: Array<Partial<PromocionComercialResponse> & { id: number; reglaComercial: string }> = [];
   @Input() adicionales: AdicionalResponse[] = [];
   @Input() selectedAdditionals: LeadCommercialAdditionalSelection[] = [];
@@ -135,6 +150,10 @@ export class LeadCommercialDataTabsComponent implements OnChanges {
     this.additionalOptionsVisible.update((visible) => !visible);
   }
 
+  protected changePlanOfertaFilter(key: PlanOfertaFilterChange['key'], value: PlanOfertaFilterChange['value']): void {
+    this.planOfertaFilterChange.emit({ key, value });
+  }
+
   protected onActiveTabValueChange(tab: LeadCommercialDataTab): void {
     if (tab !== 'oferta' && this.selectedAdditionals.length === 0) {
       this.additionalOptionsVisible.set(false);
@@ -154,6 +173,7 @@ export class LeadCommercialDataTabsComponent implements OnChanges {
   @Output() distritoDomicilioChange = new EventEmitter<void>();
   @Output() ofertaProviderChange = new EventEmitter<number>();
   @Output() planChange = new EventEmitter<void>();
+  @Output() planOfertaFilterChange = new EventEmitter<PlanOfertaFilterChange>();
   @Output() incrementarAdicional = new EventEmitter<AdicionalResponse>();
   @Output() disminuirAdicional = new EventEmitter<AdicionalResponse>();
 
@@ -165,6 +185,12 @@ export class LeadCommercialDataTabsComponent implements OnChanges {
     { label: 'Hermano(a)', value: 'HERMANO_A' },
     { label: 'Tio(a)', value: 'TIO_A' },
     { label: 'Conocido', value: 'CONOCIDO' }
+  ];
+  protected readonly planOfertaServiceOptions: { label: string; value: PlanOfertaServiceComposition | null }[] = [
+    { label: 'Todos', value: null },
+    { label: 'Internet', value: 'INTERNET' },
+    { label: 'Internet + TV', value: 'INTERNET_TV' },
+    { label: 'Internet + TV + teléfono', value: 'INTERNET_TV_TELEFONIA' }
   ];
 
   private readonly viaSelectOptionsCache = new WeakMap<readonly string[], { label: string; value: string }[]>();

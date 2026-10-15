@@ -59,9 +59,9 @@ public class BaseLeadsExportService {
     private static final int MAX_EXCEL_ROWS = 100_000;
 
     private static final String[] EXCEL_HEADERS = {
-            "Asesor preventa", "N° documento", "Nombre del titular",
+            "N° de LEAD", "Asesor preventa", "N° documento", "Nombre del titular",
             "Plan", "Velocidad regular", "Precio regular", "Fecha de instalación",
-            "Departamento", "Provincia", "Distrito"
+            "Departamento", "Provincia", "Distrito", "Dirección", "Coordenadas", "Comentario"
     };
 
     private final LeadRepository leadRepository;
@@ -170,6 +170,7 @@ public class BaseLeadsExportService {
                 // columnas se toca solo esta lista (y la cabecera): el filtro de fila vacia y la
                 // escritura por tipo son genericos y se adaptan solos.
                 Object[] valores = {
+                        d.lead(),
                         d.asesorPreventa(),
                         d.documento(),
                         d.nombreTitular(),
@@ -179,11 +180,16 @@ public class BaseLeadsExportService {
                         d.fechaInstalacion(),
                         ubic == null ? null : ubic[0],
                         ubic == null ? null : ubic[1],
-                        ubic == null ? null : ubic[2]
+                        ubic == null ? null : ubic[2],
+                        d.direccion(),
+                        formatCoordenadas(d),
+                        d.comentario()
                 };
 
-                // Un lead que no tiene NINGUNO de los campos exportados no aporta una fila.
-                if (esFilaVacia(valores)) continue;
+                // El N de LEAD (columna 0) cuenta como dato: todo lead de la bandeja tiene numero,
+                // asi que el Excel queda a la par del conteo de la bandeja. Solo se descartaria una
+                // fila sin absolutamente ningun valor (caso que en la practica no ocurre).
+                if (esFilaVacia(valores, 0)) continue;
 
                 Row row = sheet.createRow(rowIdx++);
                 for (int c = 0; c < valores.length; c++) {
@@ -223,10 +229,12 @@ public class BaseLeadsExportService {
         return d.unidad() == null ? String.valueOf(d.velocidad()) : d.velocidad() + " " + d.unidad().name();
     }
 
-    // Fila vacia = todos los valores exportados son null o cadena en blanco. Generico: cubre
-    // cualquier columna futura sin cambios, porque opera sobre la lista de valores de la fila.
-    private boolean esFilaVacia(Object[] valores) {
-        for (Object v : valores) {
+    // Fila vacia = desde `desde` en adelante todos los valores son null o cadena en blanco.
+    // Generico: cubre cualquier columna futura sin cambios. `desde` permite excluir columnas
+    // identificadoras (p.ej. el N de LEAD) que siempre existen y no indican que haya datos reales.
+    private boolean esFilaVacia(Object[] valores, int desde) {
+        for (int i = desde; i < valores.length; i++) {
+            Object v = valores[i];
             if (v == null) continue;
             if (v instanceof String s) {
                 if (!s.isBlank()) return false;
@@ -235,6 +243,15 @@ public class BaseLeadsExportService {
             }
         }
         return true;
+    }
+
+    // "lat, long" en una sola celda; omite el par si ambos faltan, o muestra el que exista.
+    private String formatCoordenadas(BaseLeadExcelRow d) {
+        String lat = d.latitud() == null || d.latitud().isBlank() ? null : d.latitud().trim();
+        String lon = d.longitud() == null || d.longitud().isBlank() ? null : d.longitud().trim();
+        if (lat == null && lon == null) return null;
+        if (lat != null && lon != null) return lat + ", " + lon;
+        return lat != null ? lat : lon;
     }
 
     // Escritura por tipo: texto, numero (BigDecimal) o fecha (LocalDate). Ignora null/blank para no

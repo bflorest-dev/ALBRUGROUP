@@ -22,6 +22,9 @@ import {
   AdicionalResponse,
   EventoResponse,
   LeadDetalleResponse,
+  PlanOfertaFilterChange,
+  PlanOfertaFilterState,
+  PlanOfertaServiceComposition,
   PlanResponse,
   PromocionComercialResponse,
   SubtipificacionResponse,
@@ -36,6 +39,11 @@ type VentaDrawerTab = 'datos' | 'direccion' | 'plan' | 'historial';
 type EditableSection = 'identidad' | 'contacto' | 'proveedor' | 'ubicacion' | 'detalle-direccion' | 'geolocalizacion' | null;
 type ProviderOption = { id: number; nombre: string };
 type AdditionalSelection = { idAdicional: number; nombre: string; precioUnitario?: number | null; cantidad: number };
+type IncludedAdditional = {
+  idAdicional?: number | null;
+  nombreAdicional?: string | null;
+  cantidadIncluida?: number | null;
+};
 type HistoryGroup = { key: string; label: string; events: EventoResponse[] };
 
 @Component({
@@ -72,7 +80,20 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   @Input() provinciasDomicilio: UbigeoItem[] = [];
   @Input() distritosDomicilio: UbigeoItem[] = [];
   @Input() providerOptions: ProviderOption[] = [];
+  @Input() providerLocked = false;
   @Input() planOptions: Array<Partial<PlanResponse> & { id: number; nombre: string }> = [];
+  @Input() currentPlanId: number | null = null;
+  @Input() showPlanFilters = false;
+  @Input() planOfertaFilters: PlanOfertaFilterState = {
+    tienePrecioPromocional: true,
+    tieneVelocidadPromocional: false,
+    tienePromocionInterna: true,
+    tipoServicio: null
+  };
+  @Input() planOfertaLoading = false;
+  @Input() planOfertaError: string | null = null;
+  @Input() planOfertaZoneLabel: string | null = null;
+  @Input() planOfertaZoneAvailable = false;
   @Input() promocionOptions: Array<Partial<PromocionComercialResponse> & { id: number; reglaComercial: string }> = [];
   @Input() adicionales: AdicionalResponse[] = [];
   @Input() selectedAdditionals: AdditionalSelection[] = [];
@@ -103,6 +124,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   @Output() distritoDomicilioChange = new EventEmitter<void>();
   @Output() ofertaProviderChange = new EventEmitter<number>();
   @Output() planChange = new EventEmitter<void>();
+  @Output() planOfertaFilterChange = new EventEmitter<PlanOfertaFilterChange>();
   @Output() incrementarAdicional = new EventEmitter<AdicionalResponse>();
   @Output() disminuirAdicional = new EventEmitter<AdicionalResponse>();
   @Output() tipificacionSelected = new EventEmitter<string | null>();
@@ -119,6 +141,12 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   protected readonly sectionSaving = signal(false);
   protected readonly tecnologiaOptions: Tecnologia[] = ['HFC', 'FTTH', 'HIBRIDA'];
   protected readonly providerCopyState = signal<'idle' | 'success' | 'error'>('idle');
+  protected readonly planOfertaServiceOptions: { label: string; value: PlanOfertaServiceComposition | null }[] = [
+    { label: 'Todos', value: null },
+    { label: 'Internet', value: 'INTERNET' },
+    { label: 'Internet + TV', value: 'INTERNET_TV' },
+    { label: 'Internet + TV + teléfono', value: 'INTERNET_TV_TELEFONIA' }
+  ];
 
   private sectionSnapshot: Record<string, unknown> | null = null;
   private planSnapshot: Record<string, unknown> | null = null;
@@ -407,12 +435,21 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
 
   protected providerLabel(): string {
     if (this.planEditing()) {
-      return this.display(this.selectedPlan()?.nombreProveedor, 'Proveedor');
+      return this.display(
+        this.selectedPlan()?.nombreProveedor
+          ?? this.detail?.nombreProveedorPlan
+          ?? this.detail?.nombreProveedorEquipo,
+        'Proveedor'
+      );
     }
     return this.display(
       this.detail?.nombreProveedorPlan ?? this.detail?.nombreProveedorCampana ?? this.detail?.nombreProveedorEquipo,
       'Proveedor'
     );
+  }
+
+  protected changePlanOfertaFilter(key: PlanOfertaFilterChange['key'], value: PlanOfertaFilterChange['value']): void {
+    this.planOfertaFilterChange.emit({ key, value });
   }
 
   protected documentLabel(): string {
@@ -589,6 +626,10 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   protected availableAdditionals(): AdicionalResponse[] {
     const selected = new Set(this.selectedAdditionals.map((item) => item.idAdicional));
     return this.adicionales.filter((item) => !selected.has(item.id));
+  }
+
+  protected includedAdditionals(): IncludedAdditional[] {
+    return this.detail?.plan?.adicionalesIncluidos ?? [];
   }
 
   protected historyGroups(): HistoryGroup[] {

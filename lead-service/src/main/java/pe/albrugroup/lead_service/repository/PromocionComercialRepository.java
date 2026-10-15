@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import pe.albrugroup.lead_service.entity.PromocionComercial;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,15 +17,18 @@ public interface PromocionComercialRepository extends JpaRepository<PromocionCom
             select distinct p
             from PromocionComercial p
             left join p.planes plan
+            left join p.zonas zona
             where p.activo = true
               and (:idProveedor is null or p.proveedor is null or p.proveedor.id = :idProveedor)
-              and (:idZona is null or p.zona is null or p.zona.id = :idZona)
-              and (:idPlan is null or plan.id is null or plan.id = :idPlan)
+              and (:idZona is null or p.zonas IS EMPTY or zona.id = :idZona)
+              and (:idPlan is null or p.planes IS EMPTY or plan.id = :idPlan)
+              and (:etapa is null or p.etapa = :etapa)
             order by p.reglaComercial asc
             """)
     List<PromocionComercial> listarActivas(
             @Param("idProveedor") Long idProveedor,
             @Param("idZona") Long idZona,
-            @Param("idPlan") Long idPlan
+            @Param("idPlan") Long idPlan,
+            @Param("etapa") Etapa etapa
     );
 }

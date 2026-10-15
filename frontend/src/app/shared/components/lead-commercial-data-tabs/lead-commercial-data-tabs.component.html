@@ -430,10 +430,23 @@
         <p-message [severity]="offerNoticeSeverity" styleClass="oferta-note" [text]="offerNoticeText" />
       }
 
-      <form class="form-grid" [formGroup]="ofertaForm">
+      <form class="form-grid oferta-form-grid" [formGroup]="ofertaForm">
+        <header class="plan-tab-header wide">
+          <div>
+            <h3>Encuentra la oferta correcta</h3>
+            <p>Selecciona un proveedor y afina la búsqueda según lo que necesita el lead.</p>
+          </div>
+          @if (planOfertaZoneAvailable) {
+            <span class="plan-tab-header__context">
+              <i class="pi pi-map-marker" aria-hidden="true"></i>
+              {{ planOfertaZoneLabel || 'Zona identificada' }}
+            </span>
+          }
+        </header>
+
         <div class="offer-provider wide">
           <label>
-            <span>Proveedor</span>
+            <span class="plan-section-label">Proveedor</span>
             @if (providerOptions.length) {
               <p-selectbutton
                 formControlName="idProveedor"
@@ -458,8 +471,116 @@
           </label>
         </div>
 
-        <label class="wide">
-          <span>Plan</span>
+        @if (showPlanFilters) {
+          <section class="plan-filters wide" aria-label="Filtros de planes">
+            <div class="plan-filters__header">
+              <div>
+                <h4>Ajusta la búsqueda</h4>
+                <small>Los checks empiezan activos; apágalos para no filtrar por ese criterio.</small>
+              </div>
+              @if (planOfertaZoneAvailable) {
+                <span class="plan-filters__zone">
+                  <i class="pi pi-map-marker" aria-hidden="true"></i>
+                  {{ planOfertaZoneLabel || 'Zona identificada' }}
+                </span>
+              } @else if (selectedProviderId) {
+                <span class="plan-filters__zone plan-filters__zone--pending">
+                  <i class="pi pi-info-circle" aria-hidden="true"></i>
+                  Completa la dirección para resolver la zona
+               </span>
+              }
+            </div>
+            <div class="plan-filters__toggles">
+              <label
+                class="plan-filter-toggle"
+                [class.plan-filter-toggle--active]="planOfertaFilters.tienePrecioPromocional"
+                for="advisor-plan-price-promo"
+              >
+                <p-checkbox
+                  inputId="advisor-plan-price-promo"
+                  [ngModel]="planOfertaFilters.tienePrecioPromocional"
+                  [ngModelOptions]="{ standalone: true }"
+                  [binary]="true"
+                  [disabled]="offerLocked || readonly || !selectedProviderId || !planOfertaZoneAvailable"
+                  (ngModelChange)="changePlanOfertaFilter('tienePrecioPromocional', $event)"
+                />
+                <span>
+                  <strong>Precio promocional</strong>
+                  <small>Solo planes con descuento</small>
+                </span>
+              </label>
+              <label
+                class="plan-filter-toggle"
+                [class.plan-filter-toggle--active]="planOfertaFilters.tieneVelocidadPromocional"
+                for="advisor-plan-speed-promo"
+              >
+                <p-checkbox
+                  inputId="advisor-plan-speed-promo"
+                  [ngModel]="planOfertaFilters.tieneVelocidadPromocional"
+                  [ngModelOptions]="{ standalone: true }"
+                  [binary]="true"
+                  [disabled]="offerLocked || readonly || !selectedProviderId || !planOfertaZoneAvailable"
+                  (ngModelChange)="changePlanOfertaFilter('tieneVelocidadPromocional', $event)"
+                />
+                <span>
+                  <strong>Velocidad promocional</strong>
+                  <small>Solo con megas promocionales</small>
+                </span>
+              </label>
+              <label
+                class="plan-filter-toggle"
+                [class.plan-filter-toggle--active]="planOfertaFilters.tienePromocionInterna"
+                for="advisor-plan-internal-promo"
+              >
+                <p-checkbox
+                  inputId="advisor-plan-internal-promo"
+                  [ngModel]="planOfertaFilters.tienePromocionInterna"
+                  [ngModelOptions]="{ standalone: true }"
+                  [binary]="true"
+                  [disabled]="offerLocked || readonly || !selectedProviderId || !planOfertaZoneAvailable"
+                  (ngModelChange)="changePlanOfertaFilter('tienePromocionInterna', $event)"
+                />
+                <span>
+                  <strong>Promoción interna</strong>
+                  <small>Solo planes con campaña activa</small>
+                </span>
+              </label>
+            </div>
+            <div class="plan-filter-service">
+              <div>
+                <strong>Servicios incluidos</strong>
+                <small>Elige la composición que quieres ofrecer</small>
+              </div>
+              <p-selectbutton
+                [ngModel]="planOfertaFilters.tipoServicio"
+                [ngModelOptions]="{ standalone: true }"
+                [options]="planOfertaServiceOptions"
+                optionLabel="label"
+                optionValue="value"
+                [allowEmpty]="false"
+                styleClass="plan-service-select"
+                [disabled]="offerLocked || readonly || !selectedProviderId || !planOfertaZoneAvailable"
+                (ngModelChange)="changePlanOfertaFilter('tipoServicio', $event)"
+              />
+            </div>
+            @if (planOfertaLoading) {
+              <small class="plan-filters__message"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Consultando planes para esta combinación.</small>
+            } @else if (planOfertaError) {
+              <small class="plan-filters__message plan-filters__message--error">{{ planOfertaError }}</small>
+            }
+          </section>
+        }
+
+        <section class="plan-selection wide" aria-label="Selección de plan">
+          <div class="plan-selection__header">
+            <div>
+              <span class="plan-section-label">Plan disponible</span>
+              <small>Los resultados corresponden al proveedor y la zona seleccionados.</small>
+            </div>
+            @if (showPlanFilters && !planOfertaLoading) {
+              <span class="plan-selection__count">{{ planOptions.length > 0 ? planOptions.length - 1 : 0 }} resultados</span>
+            }
+          </div>
           <p-select
             formControlName="idPlan"
             [options]="planOptions"
@@ -467,6 +588,7 @@
             optionValue="id"
             placeholder="Seleccionar plan"
             appendTo="body"
+            [loading]="planOfertaLoading"
             [disabled]="offerLocked || readonly || !selectedProviderId"
             (onChange)="planChange.emit()"
           >
@@ -512,7 +634,13 @@
               }
             </ng-template>
           </p-select>
-        </label>
+          @if (showPlanFilters && !planOfertaLoading && !planOfertaError && planOfertaZoneAvailable && planOptions.length <= 1) {
+            <div class="plan-selection__empty" role="status">
+              <i class="pi pi-search" aria-hidden="true"></i>
+              <span>No encontramos planes para esta combinación de proveedor, zona y filtros. Ajusta los checks o cambia los servicios.</span>
+            </div>
+          }
+        </section>
         @if (mostrarDatosClaro && tecnologiaControl && esFullClaroControl) {
           <label class="offer-field offer-field--half">
             <span>

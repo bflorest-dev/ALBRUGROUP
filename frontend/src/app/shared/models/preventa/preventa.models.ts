@@ -524,6 +524,8 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   subtipificacionActual?: string | null;
   nombreAsesorMeritoPreventa?: string | null;
   nombreAsesorMeritoVenta?: string | null;
+  idZona?: number | null;
+  nombreZona?: string | null;
   urbanizacion?: string | null;
   numero?: string | null;
   manzana?: string | null;
@@ -594,7 +596,7 @@ export interface LeadPromocionDetalleResponse {
   id?: number | null;
   reglaComercial?: string | null;
   nombreProveedor?: string | null;
-  nombreZona?: string | null;
+  nombresZonas?: string[] | null;
 }
 
 export interface LeadAdicionalDetalleResponse {
@@ -1096,15 +1098,51 @@ export interface PlanResponse {
   vigenciaHasta?: string | null;
 }
 
+export type PlanOfertaServiceComposition =
+  | 'INTERNET'
+  | 'INTERNET_TV'
+  | 'INTERNET_TELEFONIA'
+  | 'INTERNET_TV_TELEFONIA'
+  | 'TV'
+  | 'TELEFONIA'
+  | 'TV_TELEFONIA';
+
+export type PlanOfertaFilterKey =
+  | 'tienePrecioPromocional'
+  | 'tieneVelocidadPromocional'
+  | 'tienePromocionInterna'
+  | 'tipoServicio';
+
+export type PlanOfertaFilterValue = boolean | PlanOfertaServiceComposition | null;
+
+export interface PlanOfertaFilterState {
+  tienePrecioPromocional: boolean;
+  tieneVelocidadPromocional: boolean;
+  tienePromocionInterna: boolean;
+  tipoServicio: PlanOfertaServiceComposition | null;
+}
+
+export interface PlanOfertaFilterChange {
+  key: PlanOfertaFilterKey;
+  value: PlanOfertaFilterValue;
+}
+
+export interface PlanOfertaFilters extends Partial<PlanOfertaFilterState> {
+  idProveedor: number;
+  idZona: number;
+}
+
 export interface PromocionComercialResponse {
   id: number;
   reglaComercial: string;
+  etapa?: string;
   idProveedor?: number;
   nombreProveedor?: string;
-  idZona?: number | null;
-  nombreZona?: string | null;
+  idsZonas?: number[];
+  nombresZonas?: string[];
   idsPlanes?: number[];
   nombresPlanes?: string[];
+  cashbackPeriodos?: { numeroPeriodo: number; monto: number }[];
 }
 
 export interface AdicionalResponse {

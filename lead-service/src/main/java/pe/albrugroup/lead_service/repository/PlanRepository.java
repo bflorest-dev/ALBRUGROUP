@@ -75,9 +75,10 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
                         and exists (
                             select 1
                             from PromocionComercial promocion
+                            left join promocion.zonas promoZona
                             where promocion.activo = true
                               and (promocion.proveedor is null or promocion.proveedor.id = :idProveedor)
-                              and (promocion.zona is null or promocion.zona.id = :idZona)
+                              and (promocion.zonas is empty or promoZona.id = :idZona)
                               and (promocion.planes is empty or p member of promocion.planes)
                         )
                     )
@@ -86,9 +87,10 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
                         and not exists (
                             select 1
                             from PromocionComercial promocion
+                            left join promocion.zonas promoZona
                             where promocion.activo = true
                               and (promocion.proveedor is null or promocion.proveedor.id = :idProveedor)
-                              and (promocion.zona is null or promocion.zona.id = :idZona)
+                              and (promocion.zonas is empty or promoZona.id = :idZona)
                               and (promocion.planes is empty or p member of promocion.planes)
                         )
                     )

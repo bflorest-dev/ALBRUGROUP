@@ -552,13 +552,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected readonly adicionalesSeleccionadosView = computed(() => {
     const catalogo = new Map(this.adicionales().map((adicional) => [adicional.id, adicional]));
+    const detalle = new Map((this.detail()?.adicionales ?? []).map((adicional) => [adicional.idAdicional, adicional]));
     return this.adicionalesSeleccionados().map((item) => {
       const adicional = catalogo.get(item.idAdicional);
+      const detalleItem = detalle.get(item.idAdicional);
       return {
         idAdicional: item.idAdicional,
         cantidad: item.cantidad,
-        nombre: adicional?.nombre ?? `Adicional #${item.idAdicional}`,
-        precioUnitario: adicional?.precioUnitario ?? null
+        nombre: adicional?.nombre ?? detalleItem?.nombreAdicional ?? `Adicional #${item.idAdicional}`,
+        precioUnitario: adicional?.precioUnitario ?? detalleItem?.precioUnitario ?? null
       };
     });
   });
@@ -3429,7 +3431,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       idPlan,
       idPromocionInterna: detail.idPromocionInterna ?? 0
     });
-    this.adicionalesSeleccionados.set([]);
+    this.adicionalesSeleccionados.set((detail.adicionales ?? [])
+      .filter((item) => (item.idAdicional ?? 0) > 0 && (item.cantidad ?? 0) > 0)
+      .map((item) => ({ idAdicional: item.idAdicional!, cantidad: item.cantidad! })));
     this.adicionalesDirty.set(false);
     const codigoTipificacion = sourceRow?.codigoTipificacion ?? '';
     const codigoSubtipificacion = sourceRow?.codigoSubtipificacion ?? '';
