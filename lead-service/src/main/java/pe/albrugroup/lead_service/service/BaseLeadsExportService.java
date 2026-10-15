@@ -167,10 +167,12 @@ public class BaseLeadsExportService {
                 String[] ubic = d.ubigeoDomicilio() == null ? null : ubicacionPorUbigeo.get(d.ubigeoDomicilio());
 
                 // El orden de estos valores debe coincidir con EXCEL_HEADERS. Al agregar/quitar
-                // columnas se toca solo esta lista (y la cabecera): el filtro de fila vacia y la
-                // escritura por tipo son genericos y se adaptan solos.
+                // columnas se toca solo esta lista (y la cabecera): la escritura por tipo es
+                // generica y se adapta sola.
+                // Identificador = telefono (l.lead); si es un lead de redes sin telefono, el @usuario.
+                String identificador = d.lead() != null && !d.lead().isBlank() ? d.lead() : d.usermeta();
                 Object[] valores = {
-                        d.lead(),
+                        identificador,
                         d.asesorPreventa(),
                         d.documento(),
                         d.nombreTitular(),
@@ -186,11 +188,8 @@ public class BaseLeadsExportService {
                         d.comentario()
                 };
 
-                // El N de LEAD (columna 0) cuenta como dato: todo lead de la bandeja tiene numero,
-                // asi que el Excel queda a la par del conteo de la bandeja. Solo se descartaria una
-                // fila sin absolutamente ningun valor (caso que en la practica no ocurre).
-                if (esFilaVacia(valores, 0)) continue;
-
+                // Una fila por lead seleccionado: el Excel refleja exactamente la bandeja (mismo
+                // filtro, mismo conteo). No se descartan filas aunque un lead tenga pocos datos.
                 Row row = sheet.createRow(rowIdx++);
                 for (int c = 0; c < valores.length; c++) {
                     escribirCelda(row, c, valores[c], dateStyle);
@@ -227,22 +226,6 @@ public class BaseLeadsExportService {
             return null;
         }
         return d.unidad() == null ? String.valueOf(d.velocidad()) : d.velocidad() + " " + d.unidad().name();
-    }
-
-    // Fila vacia = desde `desde` en adelante todos los valores son null o cadena en blanco.
-    // Generico: cubre cualquier columna futura sin cambios. `desde` permite excluir columnas
-    // identificadoras (p.ej. el N de LEAD) que siempre existen y no indican que haya datos reales.
-    private boolean esFilaVacia(Object[] valores, int desde) {
-        for (int i = desde; i < valores.length; i++) {
-            Object v = valores[i];
-            if (v == null) continue;
-            if (v instanceof String s) {
-                if (!s.isBlank()) return false;
-            } else {
-                return false;
-            }
-        }
-        return true;
     }
 
     // "lat, long" en una sola celda; omite el par si ambos faltan, o muestra el que exista.

@@ -13,6 +13,7 @@ import java.time.LocalDate;
 public record BaseLeadExcelRow(
         Long id,
         String lead,
+        String usermeta,
         String documento,
         String nombreTitular,
         String nombrePlan,
