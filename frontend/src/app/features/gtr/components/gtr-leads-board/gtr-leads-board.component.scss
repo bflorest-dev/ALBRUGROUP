@@ -1,8 +1,54 @@
 @use '../gtr-board-shared';
 
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
 :host ::ng-deep .gtr-board {
   border: 1px solid var(--app-border-soft);
   box-shadow: var(--app-shadow-soft);
+}
+
+:host ::ng-deep .gtr-board--platform {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+:host ::ng-deep .gtr-board--platform .p-card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+:host ::ng-deep .gtr-board--platform .p-card-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+:host ::ng-deep .gtr-board--platform .gtr-table .p-datatable-table-container,
+:host ::ng-deep .gtr-board--platform .gtr-table .p-datatable-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
 }
 
 :host ::ng-deep .gtr-board--platform .gtr-table th,
@@ -264,6 +310,25 @@
 }
 
 @media (max-width: 900px) {
+  :host {
+    flex: none;
+    height: auto;
+  }
+
+  :host ::ng-deep .gtr-board--platform {
+    flex: none;
+    height: auto;
+  }
+
+  :host ::ng-deep .gtr-board--platform .p-card-body,
+  :host ::ng-deep .gtr-board--platform .p-card-content {
+    min-height: auto;
+  }
+
+  :host ::ng-deep .gtr-board--platform .gtr-table {
+    height: auto;
+  }
+
   .board-toolbar {
     align-items: flex-start;
     flex-direction: column;
