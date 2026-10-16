@@ -17,6 +17,8 @@ import {
   CatalogoResponse,
   EventoResponse,
   LeadDetalleResponse,
+  LeadPromocionDetalleResponse,
+  PromocionComercialResponse,
   SubtipificacionResponse,
   TipificacionResponse
 } from '../../../shared/models/preventa/preventa.models';
@@ -262,6 +264,19 @@ export class PostventaWorkspaceFacade {
   readonly paquetes = this._paquetes.asReadonly();
   readonly credenciales = this._credenciales.asReadonly();
   readonly marcas = this._marcas.asReadonly();
+
+  // --- Promociones por etapa ---
+  private readonly _promosPreventaDisponibles = signal<PromocionComercialResponse[]>([]);
+  private readonly _promosPvDisponibles = signal<PromocionComercialResponse[]>([]);
+  readonly promosPreventaDisponibles = this._promosPreventaDisponibles.asReadonly();
+  readonly promosPvDisponibles = this._promosPvDisponibles.asReadonly();
+
+  readonly promoPreventa = computed<LeadPromocionDetalleResponse | null>(() =>
+    this._detail()?.promocionesInternas?.find(p => p.etapa === 'PREVENTA') ?? null
+  );
+  readonly promoPostventa = computed<LeadPromocionDetalleResponse | null>(() =>
+    this._detail()?.promocionesInternas?.find(p => p.etapa === 'POSTVENTA') ?? null
+  );
 
   // Periodo elegido en la tab Facturacion. Por defecto el vigente; permite navegar el historico.
   private readonly _selectedPeriodoId = signal<number | null>(null);
@@ -710,6 +725,17 @@ export class PostventaWorkspaceFacade {
       this._encuestas.set(encuestas.content);
       this._resumenEncuestas.set(resumen);
       this._pagos.set(pagos.content);
+
+      if (!consultaOnly) {
+        const idProv = detail.idProveedorEquipo ?? null;
+        const idZona = detail.idZona ?? null;
+        const [promosPreventa, promosPostventa] = await Promise.all([
+          firstValueFrom(this.service.listarPromociones('PREVENTA', idProv, idZona)),
+          firstValueFrom(this.service.listarPromociones('POSTVENTA', idProv, idZona))
+        ]);
+        this._promosPreventaDisponibles.set(promosPreventa);
+        this._promosPvDisponibles.set(promosPostventa);
+      }
       this._selectedPeriodoId.set(this.activePeriodo()?.id ?? null);
     } catch (error) {
       this.notify('error', this.errorMessage(error, 'No se pudo cargar la gestion del lead.'));
@@ -771,6 +797,22 @@ export class PostventaWorkspaceFacade {
       () => this.service.cambiarCorteLead(lead.idLead, request),
       'Corte actualizado correctamente.',
       'No se pudo cambiar el corte.'
+    );
+  }
+
+  async asignarPromocion(idPromocion: number | null, etapa: 'PREVENTA' | 'POSTVENTA'): Promise<boolean> {
+    if (this._consultaOnly()) {
+      this.notify('warn', 'Este lead esta abierto en modo consulta.');
+      return false;
+    }
+    const lead = this._selectedLead();
+    if (!lead) return false;
+    const msg = etapa === 'PREVENTA' ? 'Promocion de preventa actualizada.' : 'Oferta de retencion actualizada.';
+    const failMsg = etapa === 'PREVENTA' ? 'No se pudo actualizar la promocion.' : 'No se pudo actualizar la oferta de retencion.';
+    return this.run(
+      () => this.service.asignarPromocionPostventa(lead.idLead, idPromocion, etapa),
+      msg,
+      failMsg
     );
   }
 
@@ -997,6 +1039,8 @@ export class PostventaWorkspaceFacade {
     this._paquetes.set([]);
     this._credenciales.set([]);
     this._selectedPeriodoId.set(null);
+    this._promosPreventaDisponibles.set([]);
+    this._promosPvDisponibles.set([]);
     this._gestionModificada.set(false);
     this._medioContacto.set(null);
     this._consultaOnly.set(false);

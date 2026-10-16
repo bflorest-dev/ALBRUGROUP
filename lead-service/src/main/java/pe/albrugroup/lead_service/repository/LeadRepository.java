@@ -2572,7 +2572,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN FETCH pa.adicional
             LEFT JOIN FETCH l.promocionInterna
             LEFT JOIN FETCH l.promocionInterna.proveedor
-            LEFT JOIN FETCH l.promocionInterna.zona
+            LEFT JOIN FETCH l.promocionesInternas pi
+            LEFT JOIN FETCH pi.proveedor
             LEFT JOIN FETCH l.adicionales la
             LEFT JOIN FETCH la.adicional
             WHERE l.id = :idLead
@@ -2605,7 +2606,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN FETCH pa.adicional
             LEFT JOIN FETCH l.promocionInterna
             LEFT JOIN FETCH l.promocionInterna.proveedor
-            LEFT JOIN FETCH l.promocionInterna.zona
+            LEFT JOIN FETCH l.promocionesInternas pi2
+            LEFT JOIN FETCH pi2.proveedor
             LEFT JOIN FETCH l.adicionales la
             LEFT JOIN FETCH la.adicional
             WHERE l.id = :idLead
@@ -2636,7 +2638,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN FETCH pa.adicional
             LEFT JOIN FETCH l.promocionInterna
             LEFT JOIN FETCH l.promocionInterna.proveedor
-            LEFT JOIN FETCH l.promocionInterna.zona
+            LEFT JOIN FETCH l.promocionesInternas pi3
+            LEFT JOIN FETCH pi3.proveedor
             LEFT JOIN FETCH l.adicionales la
             LEFT JOIN FETCH la.adicional
             WHERE l.id = :idLead

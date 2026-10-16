@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, effect, inject, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
+import { FormsModule } from '@angular/forms';
 import { PhoneActionButtonComponent } from '../../../../shared/components/phone-action-button/phone-action-button.component';
 import { PostventaWorkspaceFacade } from '../../facades/postventa-workspace.facade';
 import { display, semColor as semColorFn, semLabel as semLabelFn } from '../../models/postventa.vm';
@@ -15,7 +17,9 @@ import { LeadPostventaBandejaResponse } from '../../services/postventa-lead.serv
   selector: 'app-postventa-gestion-drawer',
   imports: [
     ButtonModule,
+    SelectModule,
     SkeletonModule,
+    FormsModule,
     PhoneActionButtonComponent,
     PostventaPlataformaPanelComponent,
     PostventaFacturacionPanelComponent,
@@ -34,6 +38,10 @@ export class PostventaGestionDrawerComponent {
   protected readonly editingCorte = signal(false);
   protected readonly corteMes = signal('');
   protected readonly corteNumero = signal(1);
+  protected readonly editingPromoPreventa = signal(false);
+  protected readonly editingPromoPostventa = signal(false);
+  protected readonly selectedPromoPreventaId = signal<number | null>(null);
+  protected readonly selectedPromoPostventaId = signal<number | null>(null);
   protected readonly skeletonRows = Array.from({ length: 6 });
   private readonly destroyRef = inject(DestroyRef);
   private handledLeadId = -1;
@@ -45,6 +53,8 @@ export class PostventaGestionDrawerComponent {
       this.handledLeadId = lead.idLead;
       this.activeTab.set(this.facade.consultaOnly() ? 'factura' : 'plataforma');
       this.editingCorte.set(false);
+      this.editingPromoPreventa.set(false);
+      this.editingPromoPostventa.set(false);
       if (lead.mesCorteBase) {
         this.corteMes.set(lead.mesCorteBase.slice(0, 7));
         this.corteNumero.set(lead.numeroCorteBase ?? 1);
@@ -103,5 +113,31 @@ export class PostventaGestionDrawerComponent {
       numeroCorteBase: this.corteNumero()
     });
     if (ok) this.editingCorte.set(false);
+  }
+
+  protected toggleEditPromoPreventa(): void {
+    const opening = !this.editingPromoPreventa();
+    this.editingPromoPreventa.set(opening);
+    if (opening) {
+      this.selectedPromoPreventaId.set(this.facade.promoPreventa()?.id ?? null);
+    }
+  }
+
+  protected toggleEditPromoPostventa(): void {
+    const opening = !this.editingPromoPostventa();
+    this.editingPromoPostventa.set(opening);
+    if (opening) {
+      this.selectedPromoPostventaId.set(this.facade.promoPostventa()?.id ?? null);
+    }
+  }
+
+  protected async guardarPromoPreventa(): Promise<void> {
+    const ok = await this.facade.asignarPromocion(this.selectedPromoPreventaId(), 'PREVENTA');
+    if (ok) this.editingPromoPreventa.set(false);
+  }
+
+  protected async guardarPromoPostventa(): Promise<void> {
+    const ok = await this.facade.asignarPromocion(this.selectedPromoPostventaId(), 'POSTVENTA');
+    if (ok) this.editingPromoPostventa.set(false);
   }
 }

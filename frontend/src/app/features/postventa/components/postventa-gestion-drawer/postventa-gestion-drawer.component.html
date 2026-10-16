@@ -75,6 +75,56 @@
                 <dt><i class="pi pi-dollar" aria-hidden="true"></i> Precio</dt>
                 <dd class="postventa-v2__mono">{{ formatPrice(facade.detail()?.precioPlan ?? lead.montoPlanSnapshot) }}</dd>
               </div>
+              <!-- Promocion Preventa -->
+              <div class="postventa-v2__corte-row">
+                <div>
+                  <dt><i class="pi pi-tag" aria-hidden="true"></i> Promocion Preventa</dt>
+                  <dd>{{ facade.promoPreventa()?.reglaComercial ?? '—' }}</dd>
+                </div>
+                @if (!facade.consultaOnly()) {
+                  <button class="postventa-v2__corte-edit" type="button" aria-label="Cambiar promocion preventa" (click)="toggleEditPromoPreventa()">
+                    <i [class]="editingPromoPreventa() ? 'pi pi-times' : 'pi pi-pencil'" aria-hidden="true"></i>
+                  </button>
+                }
+              </div>
+              @if (editingPromoPreventa()) {
+                <div class="postventa-v2__promo-form">
+                  <select [ngModel]="selectedPromoPreventaId()" (ngModelChange)="selectedPromoPreventaId.set($event)">
+                    <option [ngValue]="null">Sin promocion</option>
+                    @for (p of facade.promosPreventaDisponibles(); track p.id) {
+                      <option [ngValue]="p.id">{{ p.reglaComercial }}</option>
+                    }
+                  </select>
+                  <button class="postventa-v2__corte-save" type="button" [disabled]="facade.saving()" (click)="guardarPromoPreventa()">
+                    <i class="pi pi-check" aria-hidden="true"></i>
+                  </button>
+                </div>
+              }
+              <!-- Oferta Retencion -->
+              <div class="postventa-v2__corte-row">
+                <div>
+                  <dt><i class="pi pi-shield" aria-hidden="true"></i> Oferta Retencion</dt>
+                  <dd>{{ facade.promoPostventa()?.reglaComercial ?? '—' }}</dd>
+                </div>
+                @if (!facade.consultaOnly()) {
+                  <button class="postventa-v2__corte-edit" type="button" aria-label="Cambiar oferta retencion" (click)="toggleEditPromoPostventa()">
+                    <i [class]="editingPromoPostventa() ? 'pi pi-times' : 'pi pi-pencil'" aria-hidden="true"></i>
+                  </button>
+                }
+              </div>
+              @if (editingPromoPostventa()) {
+                <div class="postventa-v2__promo-form">
+                  <select [ngModel]="selectedPromoPostventaId()" (ngModelChange)="selectedPromoPostventaId.set($event)">
+                    <option [ngValue]="null">Sin oferta</option>
+                    @for (p of facade.promosPvDisponibles(); track p.id) {
+                      <option [ngValue]="p.id">{{ p.reglaComercial }}</option>
+                    }
+                  </select>
+                  <button class="postventa-v2__corte-save" type="button" [disabled]="facade.saving()" (click)="guardarPromoPostventa()">
+                    <i class="pi pi-check" aria-hidden="true"></i>
+                  </button>
+                </div>
+              }
               <!-- Semaforos -->
               <div class="postventa-v2__semaforos">
                 <div class="postventa-v2__semaforo">

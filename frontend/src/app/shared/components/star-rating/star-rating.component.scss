@@ -1,11 +1,16 @@
 :host {
-  display: inline-block;
+  display: block;
+  width: 100%;
 }
 
 .star-rating {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
+  width: 100%;
+  min-height: 3.5rem;
 }
 
 .star-rating--disabled {
@@ -15,16 +20,17 @@
 
 .stars {
   display: inline-flex;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .star {
   position: relative;
   display: inline-block;
-  width: 1.75rem;
-  height: 1.75rem;
-  line-height: 1.75rem;
-  font-size: 1.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  line-height: 2.75rem;
+  font-size: 2.75rem;
 }
 
 // Estrella base (vacia) detras.
@@ -37,6 +43,11 @@
   position: absolute;
   inset: 0;
   display: block;
+}
+
+.star .pi {
+  font-size: inherit;
+  line-height: 1;
 }
 
 // Capa de relleno amarilla, recortada por ancho (0 / 50 / 100 %).
@@ -61,6 +72,13 @@
   cursor: pointer;
 }
 
+.star__zone:focus-visible {
+  z-index: 1;
+  outline: 2px solid var(--app-primary, #2563eb);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
 .star__zone--left {
   left: 0;
 }
@@ -75,8 +93,19 @@
 }
 
 .star-rating__score {
+  align-self: center;
   color: var(--role-muted);
   font-size: 0.85rem;
   font-weight: 600;
-  min-width: 4.5rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 40rem) {
+  .star-rating {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .star-rating__score { align-self: center; }
 }

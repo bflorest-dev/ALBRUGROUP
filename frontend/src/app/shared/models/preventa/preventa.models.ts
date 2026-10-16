@@ -557,6 +557,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   tipoFechaRelevante?: TipoFechaRelevanteVenta | string | null;
   plan?: LeadPlanDetalleResponse | null;
   promocionInterna?: LeadPromocionDetalleResponse | null;
+  promocionesInternas?: LeadPromocionDetalleResponse[] | null;
   // Config de campos de captura resuelta por el backend: por cada campo configurable, si se muestra
   // y si es obligatorio para cerrar la venta.
   camposConfig?: CampoConfigItem[] | null;
@@ -592,11 +593,18 @@ export interface LeadPlanDetalleResponse {
   }> | null;
 }
 
+export interface LeadPromocionCashbackPeriodoResponse {
+  numeroPeriodo?: number | null;
+  monto?: number | null;
+}
+
 export interface LeadPromocionDetalleResponse {
   id?: number | null;
   reglaComercial?: string | null;
+  etapa?: string | null;
   nombreProveedor?: string | null;
   nombresZonas?: string[] | null;
+  cashbackPeriodos?: LeadPromocionCashbackPeriodoResponse[] | null;
 }
 
 export interface LeadAdicionalDetalleResponse {

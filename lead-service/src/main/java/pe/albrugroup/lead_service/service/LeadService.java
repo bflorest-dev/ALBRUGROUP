@@ -62,6 +62,7 @@ import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandi
 import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPlanDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPromocionDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.CashbackPeriodoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
@@ -2587,6 +2588,16 @@ public class LeadService {
         lead.setPromocionInterna(promocionInterna);
         lead.setNombrePromocionInternaSnapshot(promocionInterna == null ? null : promocionInterna.getReglaComercial());
 
+        if (promocionInterna != null) {
+            lead.getPromocionesInternas().removeIf(p -> p.getEtapa() == promocionInterna.getEtapa());
+            lead.getPromocionesInternas().add(promocionInterna);
+        } else {
+            Etapa etapaLead = lead.getEtapa();
+            if (etapaLead != null) {
+                lead.getPromocionesInternas().removeIf(p -> p.getEtapa() == etapaLead);
+            }
+        }
+
         normalizarDatosEspecificosProveedor(lead);
 
         reemplazarAdicionales(lead, request.getAdicionales());
@@ -4248,6 +4259,34 @@ public class LeadService {
         registrarContactoInterno(lead);
     }
 
+    @Transactional
+    public void asignarPromocionPostventa(Long idLead, Long idPromocion, Etapa etapaPromo) {
+        Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.POSTVENTA);
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        Etapa etapaObjetivo = etapaPromo != null ? etapaPromo : Etapa.POSTVENTA;
+
+        if (idPromocion == null) {
+            lead.getPromocionesInternas().removeIf(p -> p.getEtapa() == etapaObjetivo);
+        } else {
+            PromocionComercial promo = promocionComercialRepository.findByIdAndActivoTrue(idPromocion)
+                    .orElseThrow(() -> new NotFoundException(PromocionComercial.class, idPromocion));
+            if (promo.getEtapa() != etapaObjetivo) {
+                throw new BadRequestException("La promocion seleccionada no es de etapa " + etapaObjetivo);
+            }
+            if (promo.getProveedor() != null && lead.getProveedor() != null
+                    && !promo.getProveedor().getId().equals(lead.getProveedor().getId())) {
+                throw new BadRequestException("La promocion no pertenece al proveedor del lead");
+            }
+            validarPromocionAplicaAZonaLead(promo, lead);
+            lead.getPromocionesInternas().removeIf(p -> p.getEtapa() == etapaObjetivo);
+            lead.getPromocionesInternas().add(promo);
+        }
+
+        moverAEnGestionSiAplica(lead);
+        Lead savedLead = leadRepository.save(lead);
+        notificarCambioLead("OFERTA_COMERCIAL_ACTUALIZADA", savedLead, null, idAsesorAnterior);
+    }
+
     private void registrarContactoInterno(Lead lead) {
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         validarEstadoParaContacto(lead);
@@ -5535,6 +5574,10 @@ public class LeadService {
                 .toList();
         LeadPlanDetalleResponse plan = toLeadPlanDetalleResponse(lead.getPlan());
         LeadPromocionDetalleResponse promocionInterna = toLeadPromocionDetalleResponse(lead.getPromocionInterna());
+        List<LeadPromocionDetalleResponse> promocionesInternas = lead.getPromocionesInternas().stream()
+                .map(this::toLeadPromocionDetalleResponse)
+                .sorted(java.util.Comparator.comparing(p -> p.getEtapa() == null ? "" : p.getEtapa().name()))
+                .toList();
         LeadEtapaResumen resumenVenta = leadEtapaResumenRepository.findByIdLeadAndEtapa(lead.getId(), Etapa.VENTA).orElse(null);
         LeadEtapaResumen resumenPreventa = leadEtapaResumenRepository.findByIdLeadAndEtapa(lead.getId(), Etapa.PREVENTA).orElse(null);
         LeadSeguimiento seguimiento = leadSeguimientoRepository.findByIdLead(lead.getId()).orElse(null);
@@ -5654,6 +5697,7 @@ public class LeadService {
                 fechaRelevante.tipo(),
                 plan,
                 promocionInterna,
+                promocionesInternas,
                 adicionales,
                 totalAsignaciones,
                 lead.getEtapa(),
@@ -5856,17 +5900,25 @@ public class LeadService {
         );
     }
 
-    private LeadPromocionDetalleResponse toLeadPromocionDetalleResponse(PromocionComercial promocionInterna) {
-        if (promocionInterna == null) {
+    private LeadPromocionDetalleResponse toLeadPromocionDetalleResponse(PromocionComercial promo) {
+        if (promo == null) {
             return null;
         }
 
-        return new LeadPromocionDetalleResponse(
-                promocionInterna.getId(),
-                promocionInterna.getReglaComercial(),
-                promocionInterna.getProveedor() == null ? null : promocionInterna.getProveedor().getNombre(),
-                promocionInterna.getZonas().stream().map(Zona::getNombre).sorted(String.CASE_INSENSITIVE_ORDER).toList()
-        );
+        return LeadPromocionDetalleResponse.builder()
+                .id(promo.getId())
+                .reglaComercial(promo.getReglaComercial())
+                .etapa(promo.getEtapa())
+                .nombreProveedor(promo.getProveedor() == null ? null : promo.getProveedor().getNombre())
+                .nombresZonas(promo.getZonas().stream().map(Zona::getNombre).sorted(String.CASE_INSENSITIVE_ORDER).toList())
+                .cashbackPeriodos(promo.getCashbackPeriodos().stream()
+                        .map(cp -> CashbackPeriodoResponse.builder()
+                                .numeroPeriodo(cp.getNumeroPeriodo())
+                                .monto(cp.getMonto())
+                                .build())
+                        .sorted(java.util.Comparator.comparing(CashbackPeriodoResponse::getNumeroPeriodo))
+                        .toList())
+                .build();
     }
 
     private <T> void aplicarTotalesAsignacion(

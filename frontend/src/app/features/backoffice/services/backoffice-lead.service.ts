@@ -418,7 +418,7 @@ export class BackofficeLeadService {
   }
 
   listarPromociones(filters: { idProveedor?: number; idZona?: number; idPlan?: number }): Observable<PromocionComercialResponse[]> {
-    let params = new HttpParams();
+    let params = new HttpParams().set('etapa', 'POSTVENTA');
     if (filters.idProveedor) {
       params = params.set('idProveedor', filters.idProveedor);
     }

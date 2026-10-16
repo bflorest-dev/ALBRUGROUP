@@ -54,11 +54,14 @@ public class ResumenFinancieroDiaService {
         Instant ahora = Instant.now();
 
         for (LocalDate dia = desde; !dia.isAfter(hasta); dia = dia.plusDays(1)) {
+            Map<String, BigDecimal> cashbackPorEtapa = cashbackPorEtapa(idProveedor, dia);
             ResumenFinancieroDia resumen = ResumenFinancieroDia.builder()
                     .fecha(dia)
                     .proveedor(proveedor)
                     .ctaBancaria(resumenRepository.ctaBancaria(idProveedor, dia))
                     .ctaPublicitaria(resumenRepository.ctaPublicitaria(idProveedor, dia))
+                    .cashbackPreventa(cashbackPorEtapa.getOrDefault("PREVENTA", BigDecimal.ZERO))
+                    .cashbackPostventa(cashbackPorEtapa.getOrDefault("POSTVENTA", BigDecimal.ZERO))
                     .calculadoAt(ahora)
                     .build();
 
@@ -123,8 +126,20 @@ public class ResumenFinancieroDiaService {
                 r.getFecha(),
                 r.getCtaBancaria(),
                 r.getCtaPublicitaria(),
+                r.getCashbackPreventa(),
+                r.getCashbackPostventa(),
                 r.getCalculadoAt(),
                 zonas
         );
+    }
+
+    private Map<String, BigDecimal> cashbackPorEtapa(Long idProveedor, LocalDate fecha) {
+        Map<String, BigDecimal> montos = new HashMap<>();
+        for (Object[] row : resumenRepository.cashbackPorEtapa(idProveedor, fecha)) {
+            String etapa = String.valueOf(row[0]);
+            BigDecimal monto = row[1] instanceof BigDecimal value ? value : BigDecimal.ZERO;
+            montos.put(etapa, monto);
+        }
+        return montos;
     }
 }

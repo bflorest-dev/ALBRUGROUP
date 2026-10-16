@@ -20,6 +20,7 @@ import pe.albrugroup.lead_service.entity.enums.EstadoCredencialesPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPagoPeriodoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoServicioPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.request.LeadPromocionPostventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionPostventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTomaVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
@@ -119,6 +120,15 @@ public class PostventaController {
     ) {
         var eventos = eventoService.listarPorLeadAsignado(idLead, Etapa.POSTVENTA, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(eventos);
+    }
+
+    @PatchMapping("/{idLead}/promocion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")
+    public ResponseEntity<Void> asignarPromocionPostventa(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadPromocionPostventaRequest request
+    ) {
+        leadService.asignarPromocionPostventa(idLead, request.getIdPromocion(), request.getEtapa());
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{idLead}/tipificacion") @PreAuthorize("hasAuthority('TYPIFY_LEADS')")

@@ -29,7 +29,7 @@ interface TableRow {
   format: 'integer' | 'currency' | 'percentage';
   isTotal: boolean;
   isSection: boolean;
-  block: 'ing' | 'inst' | 'redes' | 'cf' | 'roi';
+  block: 'ing' | 'inst' | 'redes' | 'cashback' | 'cf' | 'roi';
 }
 
 @Component({
@@ -149,6 +149,21 @@ export class DashboardFinancieroStageComponent implements OnInit {
       rows.push({ label: 'CTA publicitaria', monthTotal: sumRow(values), values, format: 'currency', isTotal: false, isSection: false, block: 'redes' });
     }
 
+    // CASHBACK PROMOCIONAL
+    rows.push({ label: 'CASHBACK PROMOCIONAL', monthTotal: 0, values: [], format: 'currency', isTotal: false, isSection: true, block: 'cashback' });
+    {
+      const values = dias.map(d => d.cashbackPreventa ?? 0);
+      rows.push({ label: 'Preventa', monthTotal: sumRow(values), values, format: 'currency', isTotal: false, isSection: false, block: 'cashback' });
+    }
+    {
+      const values = dias.map(d => d.cashbackPostventa ?? 0);
+      rows.push({ label: 'Postventa', monthTotal: sumRow(values), values, format: 'currency', isTotal: false, isSection: false, block: 'cashback' });
+    }
+    {
+      const values = dias.map(d => (d.cashbackPreventa ?? 0) + (d.cashbackPostventa ?? 0));
+      rows.push({ label: 'Total cashback', monthTotal: sumRow(values), values, format: 'currency', isTotal: true, isSection: false, block: 'cashback' });
+    }
+
     // CARGO FIJO
     rows.push({ label: 'CARGO FIJO', monthTotal: 0, values: [], format: 'currency', isTotal: false, isSection: true, block: 'cf' });
     for (const zona of zonas) {
@@ -165,13 +180,16 @@ export class DashboardFinancieroStageComponent implements OnInit {
     {
       const totalCfValues = dias.map((_, i) => sumZones(i, 'cfInstaladas'));
       const ctaBancariaValues = dias.map(d => d.ctaBancaria);
+      const cashbackValues = dias.map(d => (d.cashbackPreventa ?? 0) + (d.cashbackPostventa ?? 0));
       const values = totalCfValues.map((cf, i) => {
-        const cta = ctaBancariaValues[i];
-        return cta > 0 ? (cf - cta) / cta : 0;
+        const costoTotal = ctaBancariaValues[i] + cashbackValues[i];
+        return costoTotal > 0 ? (cf - costoTotal) / costoTotal : 0;
       });
       const totalCfMes = totalCfValues.reduce((s, v) => s + v, 0);
       const totalCtaMes = ctaBancariaValues.reduce((s, v) => s + v, 0);
-      const monthTotal = totalCtaMes > 0 ? (totalCfMes - totalCtaMes) / totalCtaMes : 0;
+      const totalCashbackMes = cashbackValues.reduce((s, v) => s + v, 0);
+      const costoTotalMes = totalCtaMes + totalCashbackMes;
+      const monthTotal = costoTotalMes > 0 ? (totalCfMes - costoTotalMes) / costoTotalMes : 0;
       rows.push({ label: 'ROI instaladas', monthTotal, values, format: 'percentage', isTotal: true, isSection: false, block: 'roi' });
     }
 
@@ -209,7 +227,9 @@ export class DashboardFinancieroStageComponent implements OnInit {
     const dias = this.data();
     const totalCf = dias.reduce((s, d) => s + d.zonas.reduce((zs, z) => zs + z.cfInstaladas, 0), 0);
     const totalCta = dias.reduce((s, d) => s + d.ctaBancaria, 0);
-    return totalCta > 0 ? (totalCf - totalCta) / totalCta : 0;
+    const totalCashback = dias.reduce((s, d) => s + (d.cashbackPreventa ?? 0) + (d.cashbackPostventa ?? 0), 0);
+    const costoTotal = totalCta + totalCashback;
+    return costoTotal > 0 ? (totalCf - costoTotal) / costoTotal : 0;
   });
 
   protected readonly periodoLabel = computed(() => {

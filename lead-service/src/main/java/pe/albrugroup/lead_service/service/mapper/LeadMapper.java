@@ -43,6 +43,7 @@ public interface LeadMapper {
     @Mapping(target = "precioPlanSnapshot", ignore = true)
     @Mapping(target = "promocionInterna", ignore = true)
     @Mapping(target = "nombrePromocionInternaSnapshot", ignore = true)
+    @Mapping(target = "promocionesInternas", ignore = true)
     @Mapping(target = "adicionales", ignore = true)
     @Mapping(target = "precioAdicionalesSnapshot", ignore = true)
     @Mapping(target = "precioFinal", ignore = true)

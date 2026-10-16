@@ -9,6 +9,8 @@ public record ResumenFinancieroDiaResponse(
         LocalDate fecha,
         BigDecimal ctaBancaria,
         BigDecimal ctaPublicitaria,
+        BigDecimal cashbackPreventa,
+        BigDecimal cashbackPostventa,
         Instant calculadoAt,
         List<ZonaResumen> zonas
 ) {

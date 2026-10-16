@@ -7,7 +7,8 @@ import {
   EventoResponse,
   LeadDetalleResponse,
   LeadPage,
-  PageQuery
+  PageQuery,
+  PromocionComercialResponse
 } from '../../../shared/models/preventa/preventa.models';
 
 export type EstadoClientePostventa = 'ACTIVO' | 'SUSPENDIDO' | 'BAJA';
@@ -377,6 +378,21 @@ export class PostventaLeadService {
 
   registrarPago(idLead: number, request: PagoPostventaRequest): Observable<PagoPostventaResponse> {
     return this.http.post<PagoPostventaResponse>(`${this.leadUrl}/postventa/leads/${idLead}/pagos`, request);
+  }
+
+  listarPromociones(etapa: 'PREVENTA' | 'POSTVENTA', idProveedor?: number | null, idZona?: number | null): Observable<PromocionComercialResponse[]> {
+    let params = new HttpParams().set('etapa', etapa);
+    if (idProveedor) {
+      params = params.set('idProveedor', idProveedor);
+    }
+    if (idZona) {
+      params = params.set('idZona', idZona);
+    }
+    return this.http.get<PromocionComercialResponse[]>(`${this.leadUrl}/promociones`, { params });
+  }
+
+  asignarPromocionPostventa(idLead: number, idPromocion: number | null, etapa: 'PREVENTA' | 'POSTVENTA' = 'POSTVENTA'): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/postventa/${idLead}/promocion`, { idPromocion, etapa });
   }
 
   private pageParams(query: PostventaBandejaQuery): HttpParams {

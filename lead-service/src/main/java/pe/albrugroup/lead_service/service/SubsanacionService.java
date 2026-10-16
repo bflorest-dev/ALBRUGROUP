@@ -712,6 +712,7 @@ public class SubsanacionService {
                 "nombreProveedorSnapshot", l.getNombreProveedorSnapshot(), "precioPlanSnapshot", l.getPrecioPlanSnapshot(),
                 "idPromocionInterna", l.getPromocionInterna() == null ? null : l.getPromocionInterna().getId(),
                 "nombrePromocionInternaSnapshot", l.getNombrePromocionInternaSnapshot(),
+                "idsPromocionesInternas", l.getPromocionesInternas().stream().map(PromocionComercial::getId).sorted().toList(),
                 "idPlataformaDigitalOfrecida", l.getPlataformaDigitalOfrecida() == null
                         ? null : l.getPlataformaDigitalOfrecida().getId(),
                 "adicionales", adicionales, "precioAdicionalesSnapshot", l.getPrecioAdicionalesSnapshot(),

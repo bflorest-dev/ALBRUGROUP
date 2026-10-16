@@ -47,6 +47,14 @@ public class ResumenFinancieroDia {
     @Builder.Default
     private BigDecimal ctaPublicitaria = BigDecimal.ZERO;
 
+    @Column(nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal cashbackPreventa = BigDecimal.ZERO;
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal cashbackPostventa = BigDecimal.ZERO;
+
     @Column(nullable = false)
     private Instant calculadoAt;
 

@@ -106,6 +106,7 @@ public class LeadDetalleResponse {
     private TipoFechaRelevanteVenta tipoFechaRelevante;
     private LeadPlanDetalleResponse plan;
     private LeadPromocionDetalleResponse promocionInterna;
+    private List<LeadPromocionDetalleResponse> promocionesInternas;
     private List<LeadAdicionalDetalleResponse> adicionales;
     private long totalAsignaciones;
     // Etapa real del lead y bandera de atención: si no está en PREVENTA, el frontend muestra los

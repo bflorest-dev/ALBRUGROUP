@@ -20,6 +20,8 @@ export interface ResumenFinancieroDia {
   fecha: string;
   ctaBancaria: number;
   ctaPublicitaria: number;
+  cashbackPreventa: number;
+  cashbackPostventa: number;
   calculadoAt: string;
   zonas: ZonaResumen[];
 }

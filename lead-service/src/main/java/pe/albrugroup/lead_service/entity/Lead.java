@@ -154,6 +154,14 @@ public class Lead {
 
     private String nombrePromocionInternaSnapshot;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "lead_promocion_comercial",
+            joinColumns = @JoinColumn(name = "id_lead"),
+            inverseJoinColumns = @JoinColumn(name = "id_promocion_comercial")
+    )
+    private Set<PromocionComercial> promocionesInternas = new HashSet<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_plataforma_digital_ofrecida")
     private Plataforma plataformaDigitalOfrecida;

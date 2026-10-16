@@ -509,7 +509,7 @@ export class PreventaLeadService {
   }
 
   listarPromociones(filters: { idProveedor?: number; idZona?: number; idPlan?: number }): Observable<PromocionComercialResponse[]> {
-    let params = new HttpParams();
+    let params = new HttpParams().set('etapa', 'PREVENTA');
     if (filters.idProveedor) {
       params = params.set('idProveedor', filters.idProveedor);
     }

@@ -52,6 +52,25 @@ public interface ResumenFinancieroDiaRepository extends JpaRepository<ResumenFin
     List<Object[]> instaladasPorZona(Long idProveedor, LocalDate fecha);
 
     @Query(nativeQuery = true, value = """
+            SELECT p.etapa AS etapa,
+                   COALESCE(SUM(cp.monto), 0) AS monto
+            FROM lead l
+            JOIN lead_promocion_comercial lpc ON lpc.id_lead = l.id
+            JOIN promocion_comercial p ON p.id = lpc.id_promocion_comercial
+            JOIN promocion_cashback_periodo cp ON cp.id_promocion_comercial = p.id
+            WHERE l.id_proveedor = :idProveedor
+              AND p.etapa IN ('PREVENTA', 'POSTVENTA')
+              AND EXISTS (
+                  SELECT 1
+                  FROM lead_seguimiento ls
+                  WHERE ls.id_lead = l.id
+                    AND ls.fecha_instalacion = :fecha
+              )
+            GROUP BY p.etapa
+            """)
+    List<Object[]> cashbackPorEtapa(Long idProveedor, LocalDate fecha);
+
+    @Query(nativeQuery = true, value = """
             SELECT COALESCE(SUM(r.monto), 0)
             FROM recarga_cuenta_publicitaria r
             JOIN cuenta_publicitaria cp ON cp.id = r.id_cuenta_publicitaria
