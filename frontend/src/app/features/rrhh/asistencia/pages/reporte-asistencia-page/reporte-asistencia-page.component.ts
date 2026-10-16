@@ -22,6 +22,7 @@ export class ReporteAsistenciaPageComponent {
   protected readonly mes = signal(new Date().getMonth() + 1);
   protected readonly loading = signal(false);
   protected readonly filas = signal<FilaReporteAsistencia[]>([]);
+  protected readonly hoveredCol = signal<number | null>(null);
 
   protected readonly diasDelMes = computed(() => {
     const d = new Date(this.anio(), this.mes(), 0).getDate();

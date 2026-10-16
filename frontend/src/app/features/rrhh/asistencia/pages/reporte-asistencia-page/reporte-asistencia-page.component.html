@@ -28,6 +28,16 @@
     </div>
   </header>
 
+  <!-- Leyenda -->
+  @if (!loading() && filas().length) {
+    <div class="ra-legend">
+      <span class="ra-legend-item"><span class="ra-legend-dot st-p"></span>Presente</span>
+      <span class="ra-legend-item"><span class="ra-legend-dot st-t"></span>Tardanza</span>
+      <span class="ra-legend-item"><span class="ra-legend-dot st-f"></span>Falta</span>
+      <span class="ra-legend-item"><span class="ra-legend-dot st-d"></span>Descanso</span>
+    </div>
+  }
+
   <!-- Loading -->
   @if (loading()) {
     <div class="ra-loading">
@@ -39,17 +49,19 @@
   <!-- Grilla -->
   @if (!loading() && filas().length) {
     <div class="ra-grid-wrapper">
-      <table class="ra-grid">
+      <table class="ra-grid" (mouseleave)="hoveredCol.set(null)">
         <thead>
           <tr>
-            <th class="ra-th-fixed ra-th-name">Empleado</th>
-            <th class="ra-th-fixed ra-th-doc">Documento</th>
+            <th class="ra-th-fixed ra-th-name ra-sticky ra-sticky--name">Empleado</th>
+            <th class="ra-th-fixed ra-th-doc ra-sticky ra-sticky--doc">Documento</th>
             <th class="ra-th-fixed ra-th-meta">Rol</th>
             <th class="ra-th-fixed ra-th-meta">Modalidad</th>
             <th class="ra-th-fixed ra-th-meta">Ingreso</th>
             <th class="ra-th-fixed ra-th-meta">Baja</th>
             @for (dia of diasDelMes(); track dia) {
-              <th class="ra-th-dia" [class.ra-dom]="diasSemana()[dia - 1] === 'D'">
+              <th class="ra-th-dia"
+                  [class.ra-dom]="diasSemana()[dia - 1] === 'D'"
+                  [class.ra-col-hover]="hoveredCol() === dia">
                 <span class="ra-dia-num mono">{{ dia }}</span>
                 <span class="ra-dia-letra">{{ diasSemana()[dia - 1] }}</span>
               </th>
@@ -62,21 +74,27 @@
         <tbody>
           @for (fila of filas(); track fila.empleado.idEmpleado) {
             <tr>
-              <td class="ra-td-name">{{ fila.empleado.nombreCompleto }}</td>
-              <td class="ra-td-doc mono">{{ fila.empleado.numeroDocumento }}</td>
+              <td class="ra-td-name ra-sticky ra-sticky--name">{{ fila.empleado.nombreCompleto }}</td>
+              <td class="ra-td-doc mono ra-sticky ra-sticky--doc">{{ fila.empleado.numeroDocumento }}</td>
               <td class="ra-td-meta">{{ fila.empleado.rolPrincipal ?? '-' }}</td>
               <td class="ra-td-meta">{{ formatModalidad(fila.empleado.modalidad) }}</td>
               <td class="ra-td-meta mono">{{ formatFecha(fila.empleado.fechaIngreso) }}</td>
               <td class="ra-td-meta mono">{{ formatFecha(fila.empleado.fechaBaja) }}</td>
               @for (dia of diasDelMes(); track dia) {
                 @let estado = fila.resumen?.estadosDiarios?.[dia - 1] ?? null;
-                <td class="ra-td-dia" [class]="estadoClase(estado)" [class.ra-dom]="diasSemana()[dia - 1] === 'D'">
+                <td class="ra-td-dia"
+                    [class]="estadoClase(estado)"
+                    [class.ra-dom]="diasSemana()[dia - 1] === 'D'"
+                    [class.ra-col-hover]="hoveredCol() === dia"
+                    (mouseenter)="hoveredCol.set(dia)">
                   {{ estadoLetra(estado) }}
                 </td>
               }
               <td class="ra-td-total mono">{{ fila.empleado.diasConsiderados }}</td>
-              <td class="ra-td-total mono st-t-text">{{ contarEstado(fila, 'tardanza') || '' }}</td>
-              <td class="ra-td-total mono st-f-text">{{ contarEstado(fila, 'falta') || '' }}</td>
+              @let tardanzas = contarEstado(fila, 'tardanza');
+              @let faltas = contarEstado(fila, 'falta');
+              <td class="ra-td-total mono" [class.ra-total-warn]="tardanzas > 0">{{ tardanzas || '' }}</td>
+              <td class="ra-td-total mono" [class.ra-total-danger]="faltas > 0">{{ faltas || '' }}</td>
             </tr>
           }
         </tbody>
