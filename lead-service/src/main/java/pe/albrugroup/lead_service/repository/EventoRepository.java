@@ -2120,6 +2120,59 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fin") Instant fin
     );
 
+    @Query(value = """
+            SELECT COUNT(*)
+            FROM evento e
+            JOIN lead l ON l.id = e.id_lead
+            WHERE e.accion = 'TIPIFICACION'
+              AND e.etapa = 'PREVENTA'
+              AND e.created_at >= :inicio
+              AND e.created_at < :fin
+              AND (e.tipificacion IS NULL OR BTRIM(e.tipificacion) = '')
+              AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
+            """, nativeQuery = true)
+    long contarTipificacionesIncompletasPorHora(
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query(value = """
+            WITH tipificaciones_hora AS (
+                SELECT DISTINCT ON (
+                    e.id_lead,
+                    DATE_PART('hour', TIMEZONE('America/Lima', e.created_at))
+                )
+                    DATE_PART('hour', TIMEZONE('America/Lima', e.created_at))::int AS hora,
+                    BTRIM(e.tipificacion) AS tipificacion
+                FROM evento e
+                JOIN lead l ON l.id = e.id_lead
+                WHERE e.accion = 'TIPIFICACION'
+                  AND e.etapa = 'PREVENTA'
+                  AND e.created_at >= :inicio
+                  AND e.created_at < :fin
+                  AND e.tipificacion IS NOT NULL
+                  AND BTRIM(e.tipificacion) <> ''
+                  AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
+                ORDER BY
+                    e.id_lead,
+                    DATE_PART('hour', TIMEZONE('America/Lima', e.created_at)),
+                    e.created_at DESC,
+                    e.id DESC
+            )
+            SELECT hora, tipificacion, COUNT(*) AS cantidad
+            FROM tipificaciones_hora
+            GROUP BY hora, tipificacion
+            ORDER BY hora ASC, tipificacion ASC
+            """, nativeQuery = true)
+    List<Object[]> resumirTipificacionesPorHora(
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
     // --- Estado leads del día: fuente de verdad = eventos TIPIFICACION del rango ---
 
     @Query(value = """

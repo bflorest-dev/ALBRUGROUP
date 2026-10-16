@@ -102,6 +102,8 @@ import pe.albrugroup.lead_service.entity.response.ResumenIngresosGestionResponse
 import pe.albrugroup.lead_service.entity.response.ResumenRankingAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenRankingResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenSubtipCampanaCeldaResponse;
+import pe.albrugroup.lead_service.entity.response.TipificacionPorHoraSegmentoResponse;
+import pe.albrugroup.lead_service.entity.response.TipificacionesPorHoraResponse;
 import pe.albrugroup.lead_service.entity.Tipificacion;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasProveedorResumenResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasResumenResponse;
@@ -6666,6 +6668,52 @@ public class LeadService {
                 construirGestionSubtipCampana(idEquipo, modo, campo, desde, hasta);
 
         return new ResumenDiarioResponse(ingresosGestion, ranking, estadoLeads, gestionCampana);
+    }
+
+    /**
+     * Desglose por hora de eventos TIPIFICACION de PREVENTA. Cada lead aporta como máximo una fila
+     * por hora: la tipificación más reciente de esa hora, con el id del evento como desempate.
+     */
+    public List<TipificacionesPorHoraResponse> obtenerTipificacionesPorHora(Long idEquipo, LocalDate dia) {
+        LocalDate diaResuelto = OperationalDateTime.resolveDate(dia);
+        OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(diaResuelto);
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+
+        long incompletas = eventoRepository.contarTipificacionesIncompletasPorHora(
+                rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+        if (incompletas > 0) {
+            throw new BadRequestException(
+                    "No se pudo generar el desglose porque existe un registro de tipificación incompleto.");
+        }
+
+        Map<Integer, List<TipificacionPorHoraSegmentoResponse>> segmentosPorHora = new LinkedHashMap<>();
+        for (Object[] fila : eventoRepository.resumirTipificacionesPorHora(
+                rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids())) {
+            int hora = ((Number) fila[0]).intValue();
+            String codigo = ((String) fila[1]).trim();
+            long cantidad = ((Number) fila[2]).longValue();
+            segmentosPorHora.computeIfAbsent(hora, ignored -> new ArrayList<>())
+                    .add(new TipificacionPorHoraSegmentoResponse(codigo, cantidad, 0));
+        }
+
+        return segmentosPorHora.entrySet().stream()
+                .map(entrada -> {
+                    long total = entrada.getValue().stream()
+                            .mapToLong(TipificacionPorHoraSegmentoResponse::cantidad)
+                            .sum();
+                    List<TipificacionPorHoraSegmentoResponse> segmentos = entrada.getValue().stream()
+                            .map(segmento -> new TipificacionPorHoraSegmentoResponse(
+                                    segmento.codigoTipificacion(),
+                                    segmento.cantidad(),
+                                    calcularPorcentajeHora(segmento.cantidad(), total)))
+                            .toList();
+                    return new TipificacionesPorHoraResponse(entrada.getKey(), total, segmentos);
+                })
+                .toList();
+    }
+
+    private double calcularPorcentajeHora(long cantidad, long total) {
+        return total > 0 ? Math.round((cantidad * 10000.0) / total) / 100.0 : 0.0;
     }
 
     /**

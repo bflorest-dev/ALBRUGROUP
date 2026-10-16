@@ -1,15 +1,27 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
+import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { TooltipModule } from 'primeng/tooltip';
 import { MetricsPeriodo } from '../../../../shared/components/period-selector/period-selector.component';
 import { localToday, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { GestionCampoTipi, GestionModo } from '../../services/admin-gestion-campana.service';
-import { EstadoLeadDetalle, PreventaDetalle, RankingAsesorDetalle, ResumenDiarioService } from '../../services/resumen-diario.service';
+import {
+  EstadoLeadDetalle,
+  PreventaDetalle,
+  RankingAsesorDetalle,
+  ResumenDiarioService,
+  TipificacionesPorHora
+} from '../../services/resumen-diario.service';
+import { colorRampa } from '../../models/tipificacion-ramp';
 import { ResumenAsesorVista, ResumenDiarioFacade, ResumenEstadoFila } from '../../facades/resumen-diario.facade';
 import { LeadFichaDetalleDialogComponent } from '../lead-ficha-detalle-dialog/lead-ficha-detalle-dialog.component';
+import {
+  ResumenTipificacionesHoraDialogComponent,
+  TipificacionesPorHoraFilaVista
+} from '../resumen-tipificaciones-hora-dialog/resumen-tipificaciones-hora-dialog.component';
 
 /**
  * Panel RESUMEN DIARIO del DASHBOARD de PREVENTA: las 4 tablas del reporte diario como un poster
@@ -18,7 +30,15 @@ import { LeadFichaDetalleDialogComponent } from '../lead-ficha-detalle-dialog/le
  */
 @Component({
   selector: 'app-resumen-diario-panel',
-  imports: [DecimalPipe, DialogModule, MessageModule, TooltipModule, LeadFichaDetalleDialogComponent],
+  imports: [
+    ButtonModule,
+    DecimalPipe,
+    DialogModule,
+    MessageModule,
+    ResumenTipificacionesHoraDialogComponent,
+    TooltipModule,
+    LeadFichaDetalleDialogComponent
+  ],
   providers: [ResumenDiarioFacade],
   templateUrl: './resumen-diario-panel.component.html',
   styleUrl: './resumen-diario-panel.component.scss',
@@ -52,6 +72,11 @@ export class ResumenDiarioPanelComponent implements OnInit {
   protected readonly estadoDetalleError = signal(false);
   protected readonly estadoDetalle = signal<EstadoLeadDetalle[]>([]);
   protected readonly estadoDetalleFila = signal<ResumenEstadoFila | null>(null);
+
+  protected readonly tipificacionesHoraVisible = signal(false);
+  protected readonly tipificacionesHoraLoading = signal(false);
+  protected readonly tipificacionesHoraError = signal(false);
+  private readonly tipificacionesHora = signal<TipificacionesPorHora[]>([]);
 
   private readonly fichaDialog = viewChild<LeadFichaDetalleDialogComponent>('fichaDialog');
 
@@ -129,6 +154,57 @@ export class ResumenDiarioPanelComponent implements OnInit {
     const c = this.estadoCampo();
     return c === 'PRIMERA' ? 'Primera' : c === 'MAYOR' ? 'Mayor' : 'Última';
   });
+
+  protected readonly puedeAbrirTipificacionesHora = computed(
+    () => this.facade.periodo() === 'dia' && !!this.dia() && (!this.hasta() || this.hasta() === this.dia())
+  );
+
+  protected readonly tipificacionesHoraAyuda = computed(() =>
+    this.puedeAbrirTipificacionesHora()
+      ? 'Muestra la última tipificación registrada por lead en cada hora.'
+      : 'Disponible para un solo día.'
+  );
+
+  protected readonly tipificacionesHoraEquipo = computed(
+    () => this.facade.equipoInfo()?.nombre ?? 'Todos los equipos'
+  );
+
+  protected readonly tipificacionesHoraFecha = computed(() => {
+    const dia = this.dia();
+    return dia ? this.fechaLarga(dia) : 'Hoy';
+  });
+
+  protected readonly tipificacionesHoraFilas = computed<TipificacionesPorHoraFilaVista[]>(() =>
+    this.tipificacionesHora().map((fila) => {
+      const tipificacionesOrdenadas = fila.tipificaciones.slice().sort((a, b) => {
+        const ordenA = this.facade.tipificacionOrden(a.codigoTipificacion) ?? Number.MAX_SAFE_INTEGER;
+        const ordenB = this.facade.tipificacionOrden(b.codigoTipificacion) ?? Number.MAX_SAFE_INTEGER;
+        return ordenA - ordenB || a.codigoTipificacion.localeCompare(b.codigoTipificacion);
+      });
+
+      return {
+        hora: fila.hora,
+        horaLabel: this.horaLabel(fila.hora),
+        total: fila.total,
+        ariaLabel: `${this.horaLabel(fila.hora)}: ${tipificacionesOrdenadas
+          .map((segmento) => `${this.tipificacionNombre(segmento.codigoTipificacion)} ${segmento.cantidad}`)
+          .join(', ')}`,
+        tipificaciones: tipificacionesOrdenadas.map((segmento) => {
+          const label = this.tipificacionNombre(segmento.codigoTipificacion);
+          const cantidadLabel = segmento.cantidad === 1 ? 'lead' : 'leads';
+          return {
+            codigoTipificacion: segmento.codigoTipificacion,
+            label,
+            orden: this.facade.tipificacionOrden(segmento.codigoTipificacion),
+            cantidad: segmento.cantidad,
+            porcentaje: segmento.porcentaje,
+            color: colorRampa(this.facade.tipificacionOrden(segmento.codigoTipificacion) ?? -1, true),
+            tooltip: `${label}: ${segmento.cantidad} ${cantidadLabel} · ${segmento.porcentaje}%`
+          };
+        })
+      };
+    })
+  );
 
   protected readonly fechaLabel = computed(() => {
     const periodo = this.periodo();
@@ -231,6 +307,41 @@ export class ResumenDiarioPanelComponent implements OnInit {
       this.detalleError.set(true);
     } finally {
       this.detalleLoading.set(false);
+    }
+  }
+
+  protected async abrirTipificacionesHora(): Promise<void> {
+    if (!this.puedeAbrirTipificacionesHora()) {
+      return;
+    }
+    this.tipificacionesHoraVisible.set(true);
+    await this.cargarTipificacionesHora();
+  }
+
+  protected async recargarTipificacionesHora(): Promise<void> {
+    if (!this.tipificacionesHoraVisible() || !this.puedeAbrirTipificacionesHora()) {
+      return;
+    }
+    await this.cargarTipificacionesHora();
+  }
+
+  private async cargarTipificacionesHora(): Promise<void> {
+    const dia = this.dia();
+    if (!dia) {
+      return;
+    }
+    this.tipificacionesHoraLoading.set(true);
+    this.tipificacionesHoraError.set(false);
+    this.tipificacionesHora.set([]);
+    try {
+      const filas = await firstValueFrom(
+        this.detalleService.obtenerTipificacionesPorHora(this.idEquipo(), dia)
+      );
+      this.tipificacionesHora.set(filas);
+    } catch {
+      this.tipificacionesHoraError.set(true);
+    } finally {
+      this.tipificacionesHoraLoading.set(false);
     }
   }
 
@@ -346,6 +457,20 @@ export class ResumenDiarioPanelComponent implements OnInit {
 
   protected horaParte(iso: string | null): string {
     return this.hora(iso);
+  }
+
+  private horaLabel(hora: number): string {
+    const horaDoce = hora % 12 || 12;
+    const meridiano = hora < 12 ? 'AM' : 'PM';
+    return `${String(horaDoce).padStart(2, '0')} ${meridiano}`;
+  }
+
+  private tipificacionNombre(codigo: string | null): string {
+    return (codigo ?? '')
+      .trim()
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .toUpperCase();
   }
 
   protected tipificacionPrincipal(codigo: string | null): string {

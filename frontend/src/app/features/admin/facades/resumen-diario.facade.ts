@@ -251,6 +251,24 @@ export class ResumenDiarioFacade implements OnDestroy {
     });
   });
 
+  /** Orden del catálogo usado para mantener los colores de tipificación estables entre vistas. */
+  tipificacionOrden(codigo: string | null): number | null {
+    if (!codigo || codigo === SIN_TIPIFICAR_CODIGO) {
+      return codigo === SIN_TIPIFICAR_CODIGO ? 0 : null;
+    }
+    return this.ordenPorCodigo().get(codigo) ?? null;
+  }
+
+  /** Etiqueta de usuario reutilizada por el resumen y sus desgloses. */
+  tipificacionLabel(codigo: string | null): string {
+    if (!codigo || codigo === SIN_TIPIFICAR_CODIGO) {
+      return SIN_TIPIFICAR_LABEL;
+    }
+    const orden = this.ordenPorCodigo().get(codigo);
+    const nombre = this.capitalizar(codigo);
+    return orden != null ? `${orden} - ${nombre}` : nombre;
+  }
+
   /** Mayor cantidad de la tabla 3, para escalar las mini-barras (mínimo 1 para no dividir por cero). */
   readonly maxEstadoCantidad = computed<number>(() =>
     Math.max(1, ...this.estadoLeads().map((fila) => fila.cantidad))

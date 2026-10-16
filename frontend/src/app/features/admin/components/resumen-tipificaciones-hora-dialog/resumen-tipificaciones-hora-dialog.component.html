@@ -1,0 +1,126 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  [closeOnEscape]="true"
+  appendTo="body"
+  [style]="dialogStyle"
+  styleClass="resumen-horas-dialog"
+>
+  <ng-template pTemplate="header">
+    <div class="hourly-dialog__head">
+      <div class="hourly-dialog__title-row">
+        <span class="hourly-dialog__title">Tipificaciones por hora</span>
+      </div>
+      <div class="hourly-dialog__subtitle">
+        @if (!loading() && !error()) {
+          <span class="hourly-dialog__badge">{{ filas().length }} horas</span>
+        }
+        <span class="hourly-dialog__dot" aria-hidden="true"></span>
+        <strong>{{ equipo() }}</strong>
+        <span aria-hidden="true">·</span>
+        <span>{{ fecha() }}</span>
+      </div>
+    </div>
+  </ng-template>
+
+  @if (error()) {
+    <div class="hourly-dialog__state hourly-dialog__state--error">
+      <p-message
+        severity="error"
+        text="No pudimos cargar las tipificaciones por hora. Intenta nuevamente."
+        styleClass="hourly-dialog__message"
+      />
+      <button
+        pButton
+        type="button"
+        label="Intentar de nuevo"
+        icon="pi pi-refresh"
+        severity="secondary"
+        [outlined]="true"
+        (click)="retry.emit()"
+      ></button>
+    </div>
+  } @else if (loading()) {
+    <div class="hourly-dialog__rows" aria-label="Cargando tipificaciones por hora">
+      @for (row of skeletonRows; track row) {
+        <div class="hourly-dialog__skeleton">
+          <p-skeleton width="5.5rem" height="1.1rem" />
+          <p-skeleton height="1.1rem" />
+          <p-skeleton width="4rem" height="1.1rem" />
+        </div>
+      }
+    </div>
+  } @else if (!filas().length) {
+    <div class="hourly-dialog__state">
+      <i class="pi pi-clock" aria-hidden="true"></i>
+      <p>No hay tipificaciones registradas en el día seleccionado.</p>
+    </div>
+  } @else {
+    <div class="hourly-dialog__body">
+      @if (legend().length) {
+      <div class="hourly-dialog__legend" aria-label="Tipificaciones incluidas">
+        <span class="hourly-dialog__legend-title">Tipificaciones</span>
+        <div class="hourly-dialog__legend-items">
+          @for (segmento of legend(); track segmento.codigoTipificacion) {
+              <span class="hourly-dialog__legend-item">
+                <i [style.background]="segmento.color" aria-hidden="true"></i>
+                <span>{{ segmento.label }}</span>
+              </span>
+            }
+        </div>
+        </div>
+      }
+
+      <div class="hourly-dialog__rows" role="list" aria-label="Resumen de tipificaciones por hora">
+        @for (fila of filas(); track fila.hora) {
+          <article class="hourly-row" role="listitem">
+            <div class="hourly-row__meta">
+              <strong>{{ fila.horaLabel }}</strong>
+              <span><b>{{ fila.total }}</b> {{ fila.total === 1 ? 'lead' : 'leads' }}</span>
+            </div>
+
+            <div class="hourly-row__content">
+              <div
+                class="hourly-row__bar"
+                role="img"
+                [attr.aria-label]="fila.ariaLabel"
+              >
+                @for (segmento of fila.tipificaciones; track segmento.codigoTipificacion) {
+                  <span
+                    class="hourly-row__segment"
+                    [style.width.%]="segmento.porcentaje"
+                    [style.background]="segmento.color"
+                    [pTooltip]="segmento.tooltip"
+                    tooltipPosition="top"
+                    [attr.aria-label]="segmento.tooltip"
+                  ></span>
+                }
+              </div>
+
+              <div class="hourly-row__breakdown">
+                @for (segmento of fila.tipificaciones; track segmento.codigoTipificacion) {
+                  <span
+                    class="hourly-row__item"
+                    tabindex="0"
+                    role="img"
+                    [pTooltip]="segmento.tooltip"
+                    tooltipEvent="focus"
+                    tooltipPosition="top"
+                    [title]="segmento.tooltip"
+                    [attr.aria-label]="segmento.tooltip"
+                  >
+                    <i [style.background]="segmento.color" aria-hidden="true"></i>
+                    <span>{{ segmento.label }}</span>
+                  </span>
+                }
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    </div>
+  }
+</p-dialog>

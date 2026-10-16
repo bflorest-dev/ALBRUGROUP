@@ -84,6 +84,20 @@
       }
     </section>
 
+    <div class="hourly-action">
+      <button
+        pButton
+        type="button"
+        label="Desglose por horas"
+        icon="pi pi-clock"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="!puedeAbrirTipificacionesHora()"
+        (click)="abrirTipificacionesHora()"
+      ></button>
+      <span class="hourly-action__hint">{{ tipificacionesHoraAyuda() }}</span>
+    </div>
+
     <section class="grid3">
       <div class="panel">
         <div class="panel-head">
@@ -192,6 +206,17 @@
     </div>
   </article>
 }
+
+<app-resumen-tipificaciones-hora-dialog
+  [visible]="tipificacionesHoraVisible()"
+  [loading]="tipificacionesHoraLoading()"
+  [error]="tipificacionesHoraError()"
+  [equipo]="tipificacionesHoraEquipo()"
+  [fecha]="tipificacionesHoraFecha()"
+  [filas]="tipificacionesHoraFilas()"
+  (visibleChange)="tipificacionesHoraVisible.set($event)"
+  (retry)="recargarTipificacionesHora()"
+/>
 
 <p-dialog
   [(visible)]="detalleVisible"

@@ -92,6 +92,20 @@ export interface ResumenDiarioResponse {
   gestionCampana: ResumenSubtipCampanaCelda[];
 }
 
+/** Fila del desglose horario: solo horas con al menos una tipificación válida. */
+export interface TipificacionesPorHora {
+  hora: number;
+  total: number;
+  tipificaciones: TipificacionPorHoraSegmento[];
+}
+
+/** Segmento de una fila horaria, agrupado por la última tipificación del lead en esa hora. */
+export interface TipificacionPorHoraSegmento {
+  codigoTipificacion: string;
+  cantidad: number;
+  porcentaje: number;
+}
+
 /**
  * Lo que se cachea de un resumen ya consultado: el payload + el equipo resuelto (nombre/color) para
  * poder pintar el header de inmediato. Vive en el servicio root, así sobrevive a la destrucción del
@@ -141,6 +155,24 @@ export class ResumenDiarioService {
       params = params.set('hasta', hasta);
     }
     return this.http.get<ResumenDiarioResponse>(`${this.leadsUrl}/preventa/resumen-diario`, { params });
+  }
+
+  /**
+   * Desglose de tipificaciones por hora para un único día operativo. No depende de modo ni campo:
+   * cada lead cuenta una vez por hora, usando su última tipificación de esa hora.
+   */
+  obtenerTipificacionesPorHora(
+    idEquipo: number | null,
+    dia: string
+  ): Observable<TipificacionesPorHora[]> {
+    let params = new HttpParams().set('dia', dia);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<TipificacionesPorHora[]>(
+      `${this.leadsUrl}/preventa/resumen-diario/tipificaciones-por-hora`,
+      { params }
+    );
   }
 
   /**

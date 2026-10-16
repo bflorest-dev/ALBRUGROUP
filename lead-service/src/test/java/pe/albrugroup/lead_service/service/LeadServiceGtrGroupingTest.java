@@ -19,6 +19,7 @@ import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
+import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
@@ -45,6 +46,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -1199,6 +1201,51 @@ class LeadServiceGtrGroupingTest {
                 null,
                 request
         )).hasMessage("Campo de ordenamiento no permitido: lead");
+    }
+
+    @Test
+    void construyeDesglosePorHoraConPorcentajesPorFila() {
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(eventoRepository.contarTipificacionesIncompletasPorHora(
+                any(Instant.class), any(Instant.class), anyBoolean(), anyCollection()))
+                .thenReturn(0L);
+        when(eventoRepository.resumirTipificacionesPorHora(
+                any(Instant.class), any(Instant.class), anyBoolean(), anyCollection()))
+                .thenReturn(List.of(
+                        new Object[]{9, "SIN_CONTACTO", 2L},
+                        new Object[]{9, "PREVENTA", 1L},
+                        new Object[]{11, "SIN_CONTACTO", 1L}
+                ));
+
+        var resultado = leadService.obtenerTipificacionesPorHora(
+                null, LocalDate.of(2026, 10, 15));
+
+        assertThat(resultado).hasSize(2);
+        assertThat(resultado.get(0).hora()).isEqualTo(9);
+        assertThat(resultado.get(0).total()).isEqualTo(3);
+        assertThat(resultado.get(0).tipificaciones()).extracting(
+                segmento -> segmento.codigoTipificacion())
+                .containsExactly("SIN_CONTACTO", "PREVENTA");
+        assertThat(resultado.get(0).tipificaciones().get(0).porcentaje()).isEqualTo(66.67);
+        assertThat(resultado.get(1).hora()).isEqualTo(11);
+        assertThat(resultado.get(1).total()).isEqualTo(1);
+        assertThat(resultado.get(1).tipificaciones().get(0).porcentaje()).isEqualTo(100.0);
+    }
+
+    @Test
+    void rechazaDesgloseCuandoHayTipificacionIncompleta() {
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(eventoRepository.contarTipificacionesIncompletasPorHora(
+                any(Instant.class), any(Instant.class), anyBoolean(), anyCollection()))
+                .thenReturn(1L);
+
+        assertThatThrownBy(() -> leadService.obtenerTipificacionesPorHora(
+                null, LocalDate.of(2026, 10, 15)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("No se pudo generar el desglose porque existe un registro de tipificación incompleto.");
+
+        verify(eventoRepository, never()).resumirTipificacionesPorHora(
+                any(Instant.class), any(Instant.class), anyBoolean(), anyCollection());
     }
 
     private LeadGtrAgrupacionProjection group(

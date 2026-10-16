@@ -373,6 +373,39 @@ button.stat.clickable:focus-visible {
   background: var(--rest);
 }
 
+/* Acción secundaria del resumen: no compite con los KPIs y deja claro que analiza un solo día. */
+.hourly-action {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 0 0 16px;
+  padding: 0 2px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hourly-action__hint {
+  color: var(--faint);
+  font-size: 12px;
+}
+
+:host ::ng-deep .hourly-action .p-button {
+  min-height: 2.4rem;
+  border-color: var(--line);
+  color: var(--ink);
+  background: transparent;
+}
+
+:host ::ng-deep .hourly-action .p-button:not(:disabled):hover {
+  border-color: var(--win);
+  color: var(--win);
+  background: var(--win-soft);
+}
+
+:host ::ng-deep .hourly-action .p-button:disabled {
+  opacity: 0.45;
+}
+
 /* 3-panel grid */
 .grid3 {
   display: grid;

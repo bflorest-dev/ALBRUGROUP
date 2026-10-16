@@ -303,6 +303,16 @@ public class PreventaController {
         return ResponseEntity.ok(leadService.obtenerResumenDiario(idEquipo, modo, campo, rango.desde(), rango.hasta()));
     }
 
+    // 2.5.1. DESGLOSE HORARIO: eventos TIPIFICACION de PREVENTA del día seleccionado
+    @GetMapping("/resumen-diario/tipificaciones-por-hora")
+    @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<List<TipificacionesPorHoraResponse>> obtenerTipificacionesPorHora(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dia,
+            @RequestParam(required = false) Long idEquipo
+    ) {
+        return ResponseEntity.ok(leadService.obtenerTipificacionesPorHora(idEquipo, dia));
+    }
+
     // 2.6. Detalle de preventas detrás de un card del RESUMEN (modo = Ingresos/Gestión del día)
     @GetMapping("/resumen-diario/preventas-detalle") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
     public ResponseEntity<List<PreventaDetalleResponse>> obtenerPreventasDetalle(
