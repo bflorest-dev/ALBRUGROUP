@@ -1,0 +1,94 @@
+<div class="reporteAsistencia" [attr.data-theme]="theme()">
+  <h2 class="sr-only">Reporte mensual de asistencia</h2>
+
+  <!-- Header -->
+  <header class="ra-header">
+    <div class="ra-title-row">
+      <h1>Asistencia</h1>
+      <div class="ra-actions">
+        <button class="ra-btn ra-btn--ghost" (click)="recalcular()" [disabled]="loading()" title="Recalcular">
+          <i class="pi pi-refresh"></i>
+        </button>
+        <button class="ra-btn ra-btn--ghost" (click)="toggleTheme()" title="Cambiar tema">
+          <i class="pi" [class.pi-moon]="theme() === 'light'" [class.pi-sun]="theme() === 'dark'"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="ra-controls">
+      <button class="ra-btn ra-btn--ghost" (click)="cambiarMes(-1)" title="Mes anterior">
+        <i class="pi pi-chevron-left"></i>
+      </button>
+      <span class="ra-periodo mono">
+        {{ meses[mes() - 1].label }} {{ anio() }}
+      </span>
+      <button class="ra-btn ra-btn--ghost" (click)="cambiarMes(1)" title="Mes siguiente">
+        <i class="pi pi-chevron-right"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="ra-loading">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Cargando reporte...</span>
+    </div>
+  }
+
+  <!-- Grilla -->
+  @if (!loading() && filas().length) {
+    <div class="ra-grid-wrapper">
+      <table class="ra-grid">
+        <thead>
+          <tr>
+            <th class="ra-th-fixed ra-th-name">Empleado</th>
+            <th class="ra-th-fixed ra-th-doc">Documento</th>
+            <th class="ra-th-fixed ra-th-meta">Rol</th>
+            <th class="ra-th-fixed ra-th-meta">Modalidad</th>
+            <th class="ra-th-fixed ra-th-meta">Ingreso</th>
+            <th class="ra-th-fixed ra-th-meta">Baja</th>
+            @for (dia of diasDelMes(); track dia) {
+              <th class="ra-th-dia" [class.ra-dom]="diasSemana()[dia - 1] === 'D'">
+                <span class="ra-dia-num mono">{{ dia }}</span>
+                <span class="ra-dia-letra">{{ diasSemana()[dia - 1] }}</span>
+              </th>
+            }
+            <th class="ra-th-total">Días</th>
+            <th class="ra-th-total">T</th>
+            <th class="ra-th-total">F</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (fila of filas(); track fila.empleado.idEmpleado) {
+            <tr>
+              <td class="ra-td-name">{{ fila.empleado.nombreCompleto }}</td>
+              <td class="ra-td-doc mono">{{ fila.empleado.numeroDocumento }}</td>
+              <td class="ra-td-meta">{{ fila.empleado.rolPrincipal ?? '-' }}</td>
+              <td class="ra-td-meta">{{ formatModalidad(fila.empleado.modalidad) }}</td>
+              <td class="ra-td-meta mono">{{ formatFecha(fila.empleado.fechaIngreso) }}</td>
+              <td class="ra-td-meta mono">{{ formatFecha(fila.empleado.fechaBaja) }}</td>
+              @for (dia of diasDelMes(); track dia) {
+                @let estado = fila.resumen?.estadosDiarios?.[dia - 1] ?? null;
+                <td class="ra-td-dia" [class]="estadoClase(estado)" [class.ra-dom]="diasSemana()[dia - 1] === 'D'">
+                  {{ estadoLetra(estado) }}
+                </td>
+              }
+              <td class="ra-td-total mono">{{ fila.empleado.diasConsiderados }}</td>
+              <td class="ra-td-total mono st-t-text">{{ contarEstado(fila, 'tardanza') || '' }}</td>
+              <td class="ra-td-total mono st-f-text">{{ contarEstado(fila, 'falta') || '' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Vacío -->
+  @if (!loading() && !filas().length) {
+    <div class="ra-empty">
+      <i class="pi pi-calendar-times"></i>
+      <span>No se encontraron empleados con contrato en este periodo.</span>
+    </div>
+  }
+</div>

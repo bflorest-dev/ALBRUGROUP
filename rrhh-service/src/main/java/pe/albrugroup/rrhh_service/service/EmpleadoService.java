@@ -16,9 +16,12 @@ import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.PageRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
+import pe.albrugroup.rrhh_service.entity.Contrato;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoReporteAsistenciaResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
+import pe.albrugroup.rrhh_service.integration.auth.dto.UsuarioResponse;
 import pe.albrugroup.rrhh_service.exception.ConflictException;
 import pe.albrugroup.rrhh_service.exception.EmpleadoInactivoException;
 import pe.albrugroup.rrhh_service.exception.NotFoundException;
@@ -34,8 +37,13 @@ import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service @Transactional
@@ -311,6 +319,76 @@ public class EmpleadoService implements IEmpleado {
                         puestosRecruitment
                 )
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmpleadoReporteAsistenciaResponse> listarEmpleadosReporteAsistencia(int anio, int mes, String authHeader) {
+        YearMonth periodo = YearMonth.of(anio, mes);
+        LocalDate desde = periodo.atDay(1);
+        LocalDate hasta = periodo.atEndOfMonth();
+
+        Set<PuestoTrabajo> puestosExcluidos = EnumSet.of(PuestoTrabajo.OJT, PuestoTrabajo.FREELANCE);
+        Set<Long> empleadosSistema = Set.of(950001L, 950007L);
+
+        List<Contrato> contratos = contratoRepository.findContratosSolapadosConPeriodo(desde, hasta);
+
+        Map<Long, List<Contrato>> porEmpleado = new LinkedHashMap<>();
+        for (Contrato c : contratos) {
+            PuestoTrabajo puesto = c.getPuestoTrabajo();
+            if (puesto != null && puestosExcluidos.contains(puesto)) continue;
+            Long idEmp = c.getEmpleado().getId();
+            if (empleadosSistema.contains(idEmp)) continue;
+            porEmpleado.computeIfAbsent(idEmp, k -> new ArrayList<>()).add(c);
+        }
+
+        List<EmpleadoReporteAsistenciaResponse> resultado = new ArrayList<>();
+
+        for (var entry : porEmpleado.entrySet()) {
+            Long idEmp = entry.getKey();
+            List<Contrato> contratosEmp = entry.getValue();
+            Contrato ultimoContrato = contratosEmp.get(contratosEmp.size() - 1);
+            Empleado emp = ultimoContrato.getEmpleado();
+
+            // Rango cubierto: union de todos los contratos intersectados con el mes
+            LocalDate inicioCobertura = desde;
+            LocalDate finCobertura = hasta;
+            LocalDate primerInicio = contratosEmp.get(0).getFechaInicio();
+            if (primerInicio != null && primerInicio.isAfter(desde)) {
+                inicioCobertura = primerInicio;
+            }
+            LocalDate ultimoFin = ultimoContrato.getFechaFin();
+            if (ultimoFin != null && ultimoFin.isBefore(hasta)) {
+                finCobertura = ultimoFin;
+            }
+            int diasConsiderados = (int) ChronoUnit.DAYS.between(inicioCobertura, finCobertura) + 1;
+
+            LocalDate fechaIngreso = contratoRepository.findPrimerInicioContratoByEmpleadoId(idEmp).orElse(null);
+            LocalDate fechaBaja = (ultimoFin != null && emp.getEstadoOperativo() == EstadoOperativo.INACTIVO)
+                    ? ultimoFin : null;
+
+            String rolPrincipal = null;
+            try {
+                UsuarioResponse usuario = authServiceClient.getUsuarioPorEmpleadoId(authHeader, idEmp);
+                if (usuario != null) {
+                    rolPrincipal = usuario.getRolPrincipal();
+                }
+            } catch (Exception ignored) {
+            }
+
+            resultado.add(EmpleadoReporteAsistenciaResponse.builder()
+                    .idEmpleado(idEmp)
+                    .nombreCompleto(emp.getNombres() + " " + emp.getApellidos())
+                    .numeroDocumento(emp.getNumeroDocumento())
+                    .rolPrincipal(rolPrincipal)
+                    .modalidad(ultimoContrato.getModalidad() != null ? ultimoContrato.getModalidad().name() : null)
+                    .fechaIngreso(fechaIngreso)
+                    .fechaBaja(fechaBaja)
+                    .diasConsiderados(Math.max(diasConsiderados, 0))
+                    .build());
+        }
+
+        return resultado;
     }
 
     private void programarBajaPostCommit(String authHeader, Long idEmpleado) {

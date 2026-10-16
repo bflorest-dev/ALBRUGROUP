@@ -91,7 +91,7 @@ class ResumenMensualServiceTest {
         JornadaEfectivaResolver resolver = new JornadaEfectivaResolver(
                 horarioRepository, excepcionRepository, ajusteRepository, diaNoLaborableRepository, clock);
         service = new ResumenMensualService(resumenRepository, asistenciaRepository, ajusteRepository,
-                horarioRepository, resolver, parametroResolver);
+                horarioRepository, resolver, parametroResolver, new com.fasterxml.jackson.databind.ObjectMapper());
     }
 
     @AfterEach

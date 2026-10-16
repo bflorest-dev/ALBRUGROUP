@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,6 +28,7 @@ import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoUbicacion
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosFinancierosRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosPersonalesRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.RegistrarEmpleadoRequest;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoReporteAsistenciaResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
@@ -221,5 +224,17 @@ public class EmpleadoController {
                                                                         @PathVariable @Positive Long id) {
         var empleado = empleadoService.actualizarContactoCorporativo(id, request);
         return ResponseEntity.ok(empleado);
+    }
+
+    @Operation(summary = "Reporte de asistencia mensual",
+            description = "Devuelve metadata de empleados con contrato vigente en el periodo para cruzar con el resumen de schedule-service.")
+    @GetMapping("/reporte-asistencia")
+    @PreAuthorize("hasAuthority('READ_ASISTENCIAS_CUMPLIMIENTO')")
+    public ResponseEntity<List<EmpleadoReporteAsistenciaResponse>> listarEmpleadosReporteAsistencia(
+            @RequestParam @Min(2000) Integer anio,
+            @RequestParam @Min(1) @Max(12) Integer mes,
+            @RequestHeader(value = "Authorization", required = false) String authHeader
+    ) {
+        return ResponseEntity.ok(empleadoService.listarEmpleadosReporteAsistencia(anio, mes, authHeader));
     }
 }

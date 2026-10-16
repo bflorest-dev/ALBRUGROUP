@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Resumen mensual CERRADO de un empleado: hechos balanceados (sin dinero). Es el artefacto de
@@ -39,4 +40,5 @@ public class ResumenMensualResponse {
     private Integer minutosExtra;
     private Integer minutosCompensados;
     private Integer cantidadTardanzas;
+    private List<String> estadosDiarios;
 }

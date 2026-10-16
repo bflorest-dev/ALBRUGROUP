@@ -50,6 +50,9 @@ public class ResumenAsistenciaMensual {
     private Integer minutosCompensados;
     private Integer cantidadTardanzas;
 
+    @Column(columnDefinition = "TEXT")
+    private String estadosDiarios;
+
     @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;

@@ -20,10 +20,14 @@ import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.HorarioRepository;
 import pe.albrugroup.schedule_service.repository.ResumenAsistenciaMensualRepository;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,6 +49,7 @@ public class ResumenMensualService {
     private final HorarioRepository horarioRepository;
     private final JornadaEfectivaResolver jornadaResolver;
     private final ParametroAsistenciaResolver parametroResolver;
+    private final ObjectMapper objectMapper;
 
     /**
      * Resumen cerrado de (empleado, anio, mes). Mes en curso/futuro -> excepcion. Mes pasado con
@@ -88,6 +93,41 @@ public class ResumenMensualService {
         }
     }
 
+    /**
+     * Resumen bulk para el reporte de asistencia mensual (grilla). Mes pasado: lee/materializa
+     * el snapshot persistido. Mes actual: calcula en vivo sin persistir.
+     */
+    @Transactional
+    public List<ResumenMensualResponse> obtenerBulk(List<Long> idEmpleados, int anio, int mes) {
+        YearMonth periodo = YearMonth.of(anio, mes);
+        boolean mesPasado = periodo.isBefore(OperationalDateTime.currentMonth());
+
+        return idEmpleados.stream().map(id -> {
+            if (mesPasado) {
+                ResumenAsistenciaMensual r = resumenRepository.findByIdEmpleadoAndAnioAndMes(id, anio, mes)
+                        .orElseGet(() -> materializar(id, periodo));
+                return toResponse(r);
+            }
+            return toResponse(calcular(id, periodo));
+        }).toList();
+    }
+
+    /**
+     * Recalcula en bulk (borra snapshots existentes y recomputa). Solo meses pasados.
+     */
+    @Transactional
+    public List<ResumenMensualResponse> recalcularBulk(List<Long> idEmpleados, int anio, int mes) {
+        YearMonth periodo = YearMonth.of(anio, mes);
+        if (!periodo.isBefore(OperationalDateTime.currentMonth())) {
+            throw new BadRequestException("Solo se puede recalcular un mes ya cerrado (pasado)");
+        }
+        return idEmpleados.stream().map(id -> {
+            resumenRepository.deleteByIdEmpleadoAndAnioAndMes(id, anio, mes);
+            resumenRepository.flush();
+            return toResponse(materializar(id, periodo));
+        }).toList();
+    }
+
     private ResumenAsistenciaMensual calcular(Long idEmpleado, YearMonth periodo) {
         LocalDate desde = periodo.atDay(1);
         LocalDate hasta = periodo.atEndOfMonth();
@@ -103,13 +143,16 @@ public class ResumenMensualService {
 
         int diasLaborables = 0, diasPresente = 0, diasTardanza = 0, diasCompensable = 0, diasJustificada = 0, diasFalta = 0;
         int minutosObjetivo = 0, minutosTrabajados = 0, minutosExtra = 0, sumaBalance = 0, sumaCompensados = 0;
+        List<String> estados = new ArrayList<>(hasta.getDayOfMonth());
 
         for (LocalDate fecha = desde; !fecha.isAfter(hasta); fecha = fecha.plusDays(1)) {
             boolean laborable = jornadaResolver.resolverSiExiste(idEmpleado, fecha)
                     .map(j -> Boolean.TRUE.equals(j.getLaborableBase()))
                     .orElse(false);
             if (!laborable) {
-                continue; // NO_LABORABLE: no cuenta como falta ni afecta balance.
+                boolean tieneHorario = jornadaResolver.resolverSiExiste(idEmpleado, fecha).isPresent();
+                estados.add(tieneHorario ? "NL" : null);
+                continue;
             }
             diasLaborables++;
             Asistencia asistencia = asistenciasPorFecha.get(fecha);
@@ -120,25 +163,28 @@ public class ResumenMensualService {
             if (asistencia == null || asistencia.getFechaHoraIngreso() == null
                     || asistencia.getFechaHoraSalida() == null) {
                 diasFalta++;
-                continue; // FALTA: sin marca de ingreso O sin marca de salida (OFFLINE manual).
+                estados.add("F");
+                continue;
             }
             minutosTrabajados += safe(asistencia.getMinutosTrabajados());
             minutosExtra += safe(asistencia.getMinutosExtra());
             sumaCompensados += safe(asistencia.getMinutosCompensados());
-            sumaBalance += safe(asistencia.getMinutosBalance()); // cada dia <= 0
+            sumaBalance += safe(asistencia.getMinutosBalance());
 
-            switch (clasificar(asistencia, ajustesPorFecha.get(fecha), tolerancia)) {
+            EstadoDia estadoDia = clasificar(asistencia, ajustesPorFecha.get(fecha), tolerancia);
+            switch (estadoDia) {
                 case PRESENTE -> diasPresente++;
                 case TARDANZA -> diasTardanza++;
                 case TARDANZA_COMPENSABLE -> { diasTardanza++; diasCompensable++; }
                 case TARDANZA_JUSTIFICADA -> { diasTardanza++; diasJustificada++; }
                 case FALTA, NO_LABORABLE -> { /* no alcanzable aqui */ }
             }
+            estados.add(estadoDia.name().charAt(0) == 'T' && estadoDia != EstadoDia.TARDANZA
+                    ? (estadoDia == EstadoDia.TARDANZA_COMPENSABLE ? "TC" : "TJ")
+                    : estadoDia.name().substring(0, 1));
         }
 
-        // Compensacion (3.4.b): el tiempo trabajado en tramos COMPENSACION neutraliza el deficit del
-        // mes, TOPADO al deficit (el exceso se ignora, no da positivo ni pasa a horas extra).
-        int deficitBruto = -sumaBalance; // sumaBalance <= 0
+        int deficitBruto = -sumaBalance;
         int minutosCompensados = Math.min(sumaCompensados, deficitBruto);
         int balanceFinal = Math.min(sumaBalance + minutosCompensados, 0);
 
@@ -147,7 +193,7 @@ public class ResumenMensualService {
                 .anio(periodo.getYear())
                 .mes(periodo.getMonthValue())
                 .fechaCierre(OperationalDateTime.now())
-                .cerradoPor(null) // cierre automatico perezoso (no explicito)
+                .cerradoPor(null)
                 .diasLaborables(diasLaborables)
                 .diasPresente(diasPresente)
                 .diasTardanza(diasTardanza)
@@ -160,7 +206,26 @@ public class ResumenMensualService {
                 .minutosExtra(minutosExtra)
                 .minutosCompensados(minutosCompensados)
                 .cantidadTardanzas(diasTardanza)
+                .estadosDiarios(serializarEstados(estados))
                 .build();
+    }
+
+    private String serializarEstados(List<String> estados) {
+        try {
+            return objectMapper.writeValueAsString(estados);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error serializando estadosDiarios", e);
+        }
+    }
+
+    private List<String> deserializarEstados(String json) {
+        if (json == null) return List.of();
+        try {
+            return objectMapper.readValue(json,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+        } catch (JsonProcessingException e) {
+            return List.of();
+        }
     }
 
     /**
@@ -248,6 +313,7 @@ public class ResumenMensualService {
                 .minutosExtra(r.getMinutosExtra())
                 .minutosCompensados(r.getMinutosCompensados())
                 .cantidadTardanzas(r.getCantidadTardanzas())
+                .estadosDiarios(deserializarEstados(r.getEstadosDiarios()))
                 .build();
     }
 }

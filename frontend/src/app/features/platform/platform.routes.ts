@@ -42,7 +42,7 @@ import { GtrWorkspacePageComponent } from '../gtr/pages/gtr-workspace-page/gtr-w
 import { PostventaWorkspacePageComponent } from '../postventa/pages/postventa-workspace-page/postventa-workspace-page.component';
 import { PostulantesBoardPageComponent } from '../recruiter/pages/postulantes-board-page/postulantes-board-page.component';
 import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-page/training-groups-page.component';
-import { RrhhAsistenciaPageComponent } from '../rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component';
+import { ReporteAsistenciaPageComponent } from '../rrhh/asistencia/pages/reporte-asistencia-page/reporte-asistencia-page.component';
 import { RrhhPersonalPageComponent } from '../rrhh/pages/rrhh-personal-page/rrhh-personal-page.component';
 import { TrainerWorkspacePageComponent } from '../trainer/pages/trainer-workspace-page/trainer-workspace-page.component';
 import { FreelancePageComponent } from '../freelance/pages/freelance-page/freelance-page.component';
@@ -177,7 +177,7 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'admin/asistencia',
-    component: RrhhAsistenciaPageComponent,
+    component: ReporteAsistenciaPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR']
@@ -331,7 +331,7 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'rrhh/asistencia',
-    component: RrhhAsistenciaPageComponent,
+    component: ReporteAsistenciaPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['RRHH']

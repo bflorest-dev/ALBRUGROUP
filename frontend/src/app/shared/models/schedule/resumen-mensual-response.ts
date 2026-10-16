@@ -22,4 +22,5 @@ export interface ResumenMensualResponse {
   minutosExtra: number;
   minutosCompensados: number;
   cantidadTardanzas: number;
+  estadosDiarios: (string | null)[] | null;
 }
