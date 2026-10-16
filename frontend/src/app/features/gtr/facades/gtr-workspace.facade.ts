@@ -44,6 +44,7 @@ import {
   LeadIntakeRetroactivoRequest,
   NumeroLlamadaResponse,
   LeadOfertaComercialRequest,
+  MasivoFechaMode,
   MasivoLeadFilters,
   PageQuery,
   PlanResponse,
@@ -605,10 +606,11 @@ export class GtrWorkspaceFacade {
   readonly masivoFiltersForm = this.fb.group({
     idEquipo: [0],
     campoTipificacion: ['ULTIMA' as CampoTipificacion],
+    modoFecha: ['GESTIONADOS' as MasivoFechaMode],
     tipificaciones: [[] as string[]],
     subtipificaciones: [[] as string[]],
-    fechaDesde: [''],
-    fechaHasta: ['']
+    fechaDesde: [this.today],
+    fechaHasta: [this.today]
   });
 
   readonly etapaOptions: SelectOption<Etapa | ''>[] = [
@@ -1062,13 +1064,29 @@ export class GtrWorkspaceFacade {
     { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
     { label: this.historicosTipificacionColumnLabel(), value: this.historicosTipificacionGroupMode() },
     { label: 'Estado', value: 'ESTADO' },
-    { label: 'Ingreso', value: 'INGRESO' }
+    { label: 'Última actividad', value: 'INGRESO' }
   ]);
   readonly historicosCampoTipificacionOptions: SelectOption<CampoTipificacion>[] = [
     { label: 'Mayor', value: 'MAYOR' },
     { label: 'Última', value: 'ULTIMA' },
     { label: 'Primera', value: 'PRIMERA' }
   ];
+  readonly historicosModoFechaOptions: SelectOption<MasivoFechaMode>[] = [
+    { label: 'Gestionados', value: 'GESTIONADOS' },
+    { label: 'Registrados', value: 'REGISTRADOS' }
+  ];
+  readonly historicosModoFecha = signal<MasivoFechaMode>('GESTIONADOS');
+  readonly historicosFechaDesdeLabel = computed(() =>
+    this.historicosModoFecha() === 'REGISTRADOS' ? 'Registrados desde' : 'Desde'
+  );
+  readonly historicosFechaHastaLabel = computed(() =>
+    this.historicosModoFecha() === 'REGISTRADOS' ? 'Registrados hasta' : 'Hasta'
+  );
+  readonly historicosFechaHelper = computed(() =>
+    this.historicosModoFecha() === 'REGISTRADOS'
+      ? 'Cada lead aparece una sola vez, aunque tenga varios registros en el período.'
+      : null
+  );
   readonly historicosEquipoOptions = computed<SelectOption<number>[]>(() =>
     this.equipos()
       .filter((equipo) => equipo.activo)
@@ -1077,7 +1095,7 @@ export class GtrWorkspaceFacade {
   );
   readonly showHistoricosEquipoSelector = computed(() => this.adminEquipoId() === null && this.historicosEquipoOptions().length > 1);
   readonly historicosSortOptions = computed<Array<{ label: string; value: GtrHistoricosSortField }>>(() => [
-    { label: 'Ingreso', value: 'lastEntryAt' },
+    { label: 'Última actividad', value: 'lastEntryAt' },
     { label: this.historicosTipificacionColumnLabel(), value: 'codigoTipificacion' },
     { label: 'Estado', value: 'estado' },
     { label: 'Asesor', value: 'nombreAsesorAsignado' }
@@ -3243,6 +3261,11 @@ export class GtrWorkspaceFacade {
       this.errorMessage.set('Selecciona un equipo para buscar historicos.');
       return;
     }
+    if (this.historicosModoFecha() === 'REGISTRADOS'
+        && !this.masivoFiltersForm.controls.fechaDesde.value) {
+      this.errorMessage.set('Indica desde qué fecha quieres buscar los leads registrados.');
+      return;
+    }
     this.clearMessages();
     this.masivoSearched.set(true);
     this.masivoPageNumber.set(0);
@@ -3274,12 +3297,14 @@ export class GtrWorkspaceFacade {
     this.masivoFiltersForm.reset({
       idEquipo: this.defaultHistoricosEquipoId(),
       campoTipificacion: 'ULTIMA',
+      modoFecha: 'GESTIONADOS',
       tipificaciones: [],
       subtipificaciones: [],
-      fechaDesde: '',
-      fechaHasta: ''
+      fechaDesde: this.today,
+      fechaHasta: this.today
     });
     this.masivoRows.set([]);
+    this.historicosModoFecha.set('GESTIONADOS');
     this.masivoTotalElements.set(0);
     this.masivoTotalPages.set(0);
     this.masivoPageNumber.set(0);
@@ -4353,7 +4378,7 @@ export class GtrWorkspaceFacade {
         .map((tipificacion) => ({
           codigo: tipificacion.codigo,
           descripcion: tipificacion.descripcion,
-          label: `${tipificacion.codigo} || ${tipificacion.descripcion}`,
+          label: tipificacion.codigo,
           orden: tipificacion.orden,
           value: tipificacion.codigo
         }))
@@ -4366,7 +4391,7 @@ export class GtrWorkspaceFacade {
             codigo: subtipificacion.codigo,
             descripcion: subtipificacion.descripcion,
             codigoTipificacion: tipificacion.codigo,
-            label: `${subtipificacion.codigo} || ${subtipificacion.descripcion}`,
+            label: subtipificacion.codigo,
             orden: subtipificacion.orden,
             value: subtipificacion.codigo
           }))
@@ -4965,6 +4990,7 @@ export class GtrWorkspaceFacade {
       codigosTipificacion: raw.tipificaciones.length ? raw.tipificaciones : undefined,
       codigosSubtipificacion: raw.subtipificaciones.length ? raw.subtipificaciones : undefined,
       campoTipificacion: raw.campoTipificacion,
+      modoFecha: raw.modoFecha,
       fechaDesde: raw.fechaDesde || undefined,
       fechaHasta: raw.fechaHasta || undefined
     };
@@ -5003,6 +5029,7 @@ export class GtrWorkspaceFacade {
     return {
       idEquipo: raw.idEquipo,
       campoTipificacion: raw.campoTipificacion,
+      modoFecha: raw.modoFecha,
       tipificaciones: [...raw.tipificaciones],
       subtipificaciones: [...raw.subtipificaciones],
       fechaDesde: raw.fechaDesde,
@@ -5016,14 +5043,19 @@ export class GtrWorkspaceFacade {
       return;
     }
 
+    const fechaDesde = state.filters.fechaDesde || this.today;
+    const fechaHasta = state.filters.fechaHasta || fechaDesde;
+
     this.masivoFiltersForm.reset({
       idEquipo: state.filters.idEquipo ?? this.defaultHistoricosEquipoId(),
       campoTipificacion: state.filters.campoTipificacion ?? 'ULTIMA',
+      modoFecha: state.filters.modoFecha ?? 'GESTIONADOS',
       tipificaciones: state.filters.tipificaciones,
       subtipificaciones: state.filters.subtipificaciones,
-      fechaDesde: state.filters.fechaDesde,
-      fechaHasta: state.filters.fechaHasta
+      fechaDesde,
+      fechaHasta
     });
+    this.historicosModoFecha.set(state.filters.modoFecha ?? 'GESTIONADOS');
     this.selectedMasivoTipificacionCodes.set(new Set(state.filters.tipificaciones));
     this.subtipificacionFilter.set('');
     this.masivoRows.set(state.rows);

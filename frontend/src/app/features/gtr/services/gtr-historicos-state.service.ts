@@ -1,9 +1,14 @@
 import { Injectable } from '@angular/core';
-import { CampoTipificacion, LeadGtrResponse } from '../../../shared/models/preventa/preventa.models';
+import {
+  CampoTipificacion,
+  LeadGtrResponse,
+  MasivoFechaMode
+} from '../../../shared/models/preventa/preventa.models';
 
 export type GtrHistoricosFiltersFormValue = {
   idEquipo: number;
   campoTipificacion: CampoTipificacion;
+  modoFecha: MasivoFechaMode;
   tipificaciones: string[];
   subtipificaciones: string[];
   fechaDesde: string;

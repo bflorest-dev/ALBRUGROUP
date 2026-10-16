@@ -1,4 +1,5 @@
-<section class="gtr-page">
+<section class="gtr-page" [class.gtr-page--historicos]="facade.section() === 'historicos'">
+  <div class="gtr-page__main">
   <p-card styleClass="gtr-hero">
     <div class="gtr-hero__content">
       <div>
@@ -126,6 +127,7 @@
   @if (facade.section() === 'ranking') {
     <app-ranking-view />
   }
+  </div>
 
   <app-gtr-advisors-drawer />
 

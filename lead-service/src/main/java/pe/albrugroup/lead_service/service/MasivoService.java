@@ -8,6 +8,7 @@ import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
+import pe.albrugroup.lead_service.entity.enums.ModoFechaMasivo;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionItemResponse;
@@ -60,6 +61,7 @@ public class MasivoService {
             List<String> codigosTipificacion,
             List<String> codigosSubtipificacion,
             CampoTipificacion campoTipificacion,
+            ModoFechaMasivo modoFecha,
             LocalDate fechaDesde,
             LocalDate fechaHasta,
             TipoGrupoGtr tipoGrupo,
@@ -72,6 +74,8 @@ public class MasivoService {
             PageRequest pageRequest
     ) {
         CampoTipificacion campoResuelto = resolverCampoTipificacion(campoTipificacion);
+        ModoFechaMasivo modoFechaResuelto = resolverModoFecha(modoFecha);
+        validarModoFecha(modoFechaResuelto, fechaDesde);
         TipoGrupoGtr tipoTipificacionGrupo = tipoGrupoTipificacion(campoResuelto);
         FiltrosMasivo filtros = prepararFiltros(
                 null, Etapa.PREVENTA, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
@@ -102,6 +106,7 @@ public class MasivoService {
                 filtros.fechaDesdeParam(),
                 filtros.filtrarFechaHasta(),
                 filtros.fechaHastaParam(),
+                modoFechaResuelto == ModoFechaMasivo.REGISTRADOS,
                 Etapa.PREVENTA,
                 campoResuelto == CampoTipificacion.PRIMERA,
                 campoResuelto == CampoTipificacion.MAYOR,
@@ -141,16 +146,19 @@ public class MasivoService {
             List<String> codigosTipificacion,
             List<String> codigosSubtipificacion,
             CampoTipificacion campoTipificacion,
+            ModoFechaMasivo modoFecha,
             LocalDate fechaDesde,
             LocalDate fechaHasta,
             Long idEquipo
     ) {
         CampoTipificacion campoResuelto = resolverCampoTipificacion(campoTipificacion);
+        ModoFechaMasivo modoFechaResuelto = resolverModoFecha(modoFecha);
+        validarModoFecha(modoFechaResuelto, fechaDesde);
         FiltrosMasivo filtros = prepararFiltros(
                 null, Etapa.PREVENTA, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
         EquipoScope equipos = resolverEquiposActuales(idEquipo);
         List<LeadGtrAgrupacionItemResponse> tipificaciones = mapearAgrupacionesTipificacion(
-                agruparPorCampoTipificacion(campoResuelto, filtros, equipos)
+                agruparPorCampoTipificacion(campoResuelto, filtros, equipos, modoFechaResuelto == ModoFechaMasivo.REGISTRADOS)
         );
         return new LeadGtrAgrupacionesResponse(
                 List.of(),
@@ -173,6 +181,7 @@ public class MasivoService {
                                 filtros.fechaDesdeParam(),
                                 filtros.filtrarFechaHasta(),
                                 filtros.fechaHastaParam(),
+                                modoFechaResuelto == ModoFechaMasivo.REGISTRADOS,
                                 Etapa.PREVENTA,
                                 campoResuelto == CampoTipificacion.PRIMERA,
                                 campoResuelto == CampoTipificacion.MAYOR,
@@ -200,6 +209,7 @@ public class MasivoService {
                                 filtros.fechaDesdeParam(),
                                 filtros.filtrarFechaHasta(),
                                 filtros.fechaHastaParam(),
+                                modoFechaResuelto == ModoFechaMasivo.REGISTRADOS,
                                 Etapa.PREVENTA.name(),
                                 campoResuelto == CampoTipificacion.PRIMERA,
                                 campoResuelto == CampoTipificacion.MAYOR,
@@ -215,6 +225,16 @@ public class MasivoService {
         return campoTipificacion == null ? CampoTipificacion.ULTIMA : campoTipificacion;
     }
 
+    private ModoFechaMasivo resolverModoFecha(ModoFechaMasivo modoFecha) {
+        return modoFecha == null ? ModoFechaMasivo.GESTIONADOS : modoFecha;
+    }
+
+    private void validarModoFecha(ModoFechaMasivo modoFecha, LocalDate fechaDesde) {
+        if (modoFecha == ModoFechaMasivo.REGISTRADOS && fechaDesde == null) {
+            throw new BadRequestException("Debes indicar desde que fecha quieres buscar los leads registrados");
+        }
+    }
+
     private TipoGrupoGtr tipoGrupoTipificacion(CampoTipificacion campoTipificacion) {
         return switch (campoTipificacion) {
             case PRIMERA -> TipoGrupoGtr.PRIMERA_TIPIFICACION;
@@ -226,7 +246,8 @@ public class MasivoService {
     private List<LeadGtrAgrupacionProjection> agruparPorCampoTipificacion(
             CampoTipificacion campoTipificacion,
             FiltrosMasivo filtros,
-            EquipoScope equipos
+            EquipoScope equipos,
+            boolean filtrarRegistros
     ) {
         return switch (campoTipificacion) {
             case PRIMERA -> leadRepository.agruparLeadsMasivoPorPrimeraTipificacion(
@@ -245,6 +266,7 @@ public class MasivoService {
                     filtros.fechaDesdeParam(),
                     filtros.filtrarFechaHasta(),
                     filtros.fechaHastaParam(),
+                    filtrarRegistros,
                     Etapa.PREVENTA
             );
             case MAYOR -> leadRepository.agruparLeadsMasivoPorMayorTipificacion(
@@ -263,6 +285,7 @@ public class MasivoService {
                     filtros.fechaDesdeParam(),
                     filtros.filtrarFechaHasta(),
                     filtros.fechaHastaParam(),
+                    filtrarRegistros,
                     Etapa.PREVENTA
             );
             case ULTIMA -> leadRepository.agruparLeadsMasivoPorUltimaTipificacion(
@@ -281,6 +304,7 @@ public class MasivoService {
                     filtros.fechaDesdeParam(),
                     filtros.filtrarFechaHasta(),
                     filtros.fechaHastaParam(),
+                    filtrarRegistros,
                     Etapa.PREVENTA
             );
         };

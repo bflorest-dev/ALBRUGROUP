@@ -651,6 +651,9 @@ export class PreventaLeadService {
     if (filters.campoTipificacion) {
       params = params.set('campoTipificacion', filters.campoTipificacion);
     }
+    if (filters.modoFecha) {
+      params = params.set('modoFecha', filters.modoFecha);
+    }
     if (filters.fechaDesde) {
       params = params.set('fechaDesde', filters.fechaDesde);
     }

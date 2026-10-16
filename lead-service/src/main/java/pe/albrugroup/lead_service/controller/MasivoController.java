@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
+import pe.albrugroup.lead_service.entity.enums.ModoFechaMasivo;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
@@ -39,6 +40,7 @@ public class MasivoController {
             @RequestParam(required = false) List<String> codigosTipificacion,
             @RequestParam(required = false) List<String> codigosSubtipificacion,
             @RequestParam(defaultValue = "ULTIMA") CampoTipificacion campoTipificacion,
+            @RequestParam(defaultValue = "GESTIONADOS") ModoFechaMasivo modoFecha,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
             @RequestParam(required = false) TipoGrupoGtr tipoGrupo,
@@ -56,6 +58,7 @@ public class MasivoController {
                 codigosTipificacion,
                 codigosSubtipificacion,
                 campoTipificacion,
+                modoFecha,
                 fechaDesde,
                 fechaHasta,
                 tipoGrupo,
@@ -77,6 +80,7 @@ public class MasivoController {
             @RequestParam(required = false) List<String> codigosTipificacion,
             @RequestParam(required = false) List<String> codigosSubtipificacion,
             @RequestParam(defaultValue = "ULTIMA") CampoTipificacion campoTipificacion,
+            @RequestParam(defaultValue = "GESTIONADOS") ModoFechaMasivo modoFecha,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
             @RequestParam(required = false) Long idEquipo
@@ -87,6 +91,7 @@ public class MasivoController {
                 codigosTipificacion,
                 codigosSubtipificacion,
                 campoTipificacion,
+                modoFecha,
                 fechaDesde,
                 fechaHasta,
                 idEquipo

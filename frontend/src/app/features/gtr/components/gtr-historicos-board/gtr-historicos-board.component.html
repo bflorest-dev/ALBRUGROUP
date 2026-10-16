@@ -1,49 +1,65 @@
-<p-card styleClass="gtr-board">
+<p-card styleClass="gtr-board gtr-historicos-board">
   <ng-template #title>
     <span class="board-title">
       Leads masivos
       <p-tag severity="info" [value]="facade.display(facade.masivoTotalElements())" />
     </span>
   </ng-template>
-  <ng-template #subtitle>Consulta por parametros operativos.</ng-template>
+  <ng-template #subtitle>Consulta leads por período y tipificación.</ng-template>
 
   <form
     class="form-grid"
     [formGroup]="facade.masivoFiltersForm"
     (ngSubmit)="facade.buscarMasivos()"
   >
-    <app-date-field label="Desde" formControlName="fechaDesde" />
-    <app-date-field label="Hasta" formControlName="fechaHasta" />
-    @if (facade.showHistoricosEquipoSelector()) {
-      <label>
-        <span>Equipo</span>
-        <p-select
-          formControlName="idEquipo"
-          [options]="facade.historicosEquipoOptions()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Selecciona equipo"
-          appendTo="body"
+    <div class="historicos-filter-row">
+      <label class="historicos-period-field">
+        <span>Periodo</span>
+        <app-period-selector
+          [periodo]="'dia'"
+          [dia]="facade.masivoFiltersForm.controls.fechaDesde.value || null"
+          [hasta]="facade.masivoFiltersForm.controls.fechaHasta.value || null"
+          (rangoChange)="onHistoricosRangeChange($event)"
         />
       </label>
-    }
-    <label class="historicos-mode">
-      <span>Tipo de tipificación</span>
-      <p-selectButton
-        [options]="facade.historicosCampoTipificacionOptions"
-        optionLabel="label"
-        optionValue="value"
-        [allowEmpty]="false"
-        [ngModel]="facade.masivoFiltersForm.controls.campoTipificacion.value"
-        [ngModelOptions]="{ standalone: true }"
-        (onChange)="onCampoTipificacionChange($any($event.value))"
-      />
-    </label>
-    <div
-      class="filter-action-row"
-      style="align-items: end; display: grid; gap: 0.85rem; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(11.8rem, auto)"
-    >
-      <label>
+      <label class="historicos-date-mode">
+        <span>Mostrar leads</span>
+        <p-selectButton
+          [options]="facade.historicosModoFechaOptions"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="facade.historicosModoFecha()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onModoFechaChange($any($event.value))"
+        />
+      </label>
+      <label class="historicos-mode">
+        <span>Tipo de tipificación</span>
+        <p-selectButton
+          [options]="facade.historicosCampoTipificacionOptions"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="facade.masivoFiltersForm.controls.campoTipificacion.value"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onCampoTipificacionChange($any($event.value))"
+        />
+      </label>
+      @if (facade.showHistoricosEquipoSelector()) {
+        <label class="historicos-team-field">
+          <span>Equipo</span>
+          <p-select
+            formControlName="idEquipo"
+            [options]="facade.historicosEquipoOptions()"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Selecciona equipo"
+            appendTo="body"
+          />
+        </label>
+      }
+      <label class="historicos-multiselect-field">
         <span>Tipificaciones</span>
         <p-multiselect
           formControlName="tipificaciones"
@@ -62,13 +78,11 @@
           <ng-template #item let-tipificacion>
             <div class="catalog-option">
               <strong>{{ tipificacion.codigo }}</strong>
-              <span>||</span>
-              <span>{{ tipificacion.descripcion }}</span>
             </div>
           </ng-template>
         </p-multiselect>
       </label>
-      <label>
+      <label class="historicos-multiselect-field">
         <span>Subtipificaciones</span>
         <p-multiselect
           formControlName="subtipificaciones"
@@ -82,7 +96,7 @@
           [filter]="true"
           filterBy="label,codigo,descripcion"
           appendTo="body"
-          emptyMessage="Selecciona una tipificacion o busca por codigo."
+          emptyMessage="Selecciona una tipificación o busca por código."
           (onChange)="facade.onMasivoSubtipificacionesChange()"
           (onFilter)="facade.onMasivoSubtipificacionesFilter($event.filter)"
           (onPanelHide)="facade.clearMasivoSubtipificacionesFilter()"
@@ -90,8 +104,6 @@
           <ng-template #item let-subtipificacion>
             <div class="catalog-option">
               <strong>{{ subtipificacion.codigo }}</strong>
-              <span>||</span>
-              <span>{{ subtipificacion.descripcion }}</span>
             </div>
           </ng-template>
         </p-multiselect>
@@ -100,9 +112,12 @@
         <button
           pButton
           type="button"
-          label="Limpiar"
+          icon="pi pi-filter-slash"
           severity="secondary"
-          style="flex: 1 1 0"
+          [text]="true"
+          class="historicos-clear-button"
+          aria-label="Limpiar filtros"
+          title="Limpiar filtros"
           [disabled]="!facade.canMutateOperationalData()"
           (click)="facade.clearMasivoFilters()"
         ></button>
@@ -117,14 +132,17 @@
         ></button>
       </div>
     </div>
+    @if (facade.historicosFechaHelper(); as helper) {
+      <small class="historicos-date-helper">{{ helper }}</small>
+    }
   </form>
 
-  <div class="board-toolbar" style="border-top: 1px solid var(--app-border-soft); padding-top: 0.9rem">
+  <div class="board-toolbar">
     <button
       pButton
       type="button"
       icon="pi pi-user-plus"
-      [label]="'Asignar seleccion (' + facade.selectedCount() + ')'"
+      [label]="'Asignar selección (' + facade.selectedCount() + ')'"
       severity="secondary"
       [disabled]="facade.isSaving() || facade.selectedCount() === 0 || !facade.canMutateOperationalData()"
       (click)="facade.openAssignment()"
@@ -134,24 +152,12 @@
       pButton
       type="button"
       icon="pi pi-copy"
-      [label]="'Copiar numeros (' + facade.selectedCount() + ')'"
+      [label]="'Copiar números (' + facade.selectedCount() + ')'"
       severity="secondary"
       [outlined]="true"
       [disabled]="facade.selectedCount() === 0"
       (click)="facade.copySelectedLeadNumbers()"
     ></button>
-
-    <label class="page-size-select" style="align-items: center; display: inline-flex; gap: 0.45rem;">
-      <span>Filas</span>
-      <p-select
-        [options]="facade.historicosPageSizeOptions"
-        [ngModel]="facade.historicosPageSize()"
-        [ngModelOptions]="{ standalone: true }"
-        style="min-width: 6.4rem; width: 6.4rem;"
-        appendTo="body"
-        (onChange)="facade.changeMasivoPage(0, $any($event.value))"
-      />
-    </label>
 
     <button
       pButton
@@ -242,16 +248,17 @@
     </p-popover>
   </div>
 
-  <p-table
-    [value]="facade.masivoRows()"
-    dataKey="id"
-    [loading]="facade.canDisplayOperationalData() && facade.isLoadingMasivos()"
-    [rowHover]="true"
-    [scrollable]="true"
-    scrollHeight="flex"
-    [tableStyle]="{ 'min-width': '100%', width: '100%' }"
-    styleClass="p-datatable-sm gtr-table"
-  >
+  <div class="historicos-table-shell">
+    <p-table
+      [value]="facade.masivoRows()"
+      dataKey="id"
+      [loading]="facade.canDisplayOperationalData() && facade.isLoadingMasivos()"
+      [rowHover]="true"
+      [scrollable]="true"
+      scrollHeight="flex"
+      [tableStyle]="{ 'min-width': '100%', width: '100%' }"
+      styleClass="p-datatable-sm gtr-table historicos-table"
+    >
     <ng-template #header>
       <tr>
         <th class="col-check">
@@ -300,11 +307,11 @@
             type="button"
             class="sort-header"
             [class.sort-header--active]="facade.historicosSortActive('lastEntryAt')"
-            [attr.aria-label]="facade.historicosSortLabel('lastEntryAt', 'ingreso')"
-            [title]="facade.historicosSortLabel('lastEntryAt', 'ingreso')"
+            [attr.aria-label]="facade.historicosSortLabel('lastEntryAt', 'última actividad')"
+            [title]="facade.historicosSortLabel('lastEntryAt', 'última actividad')"
             (click)="facade.changeHistoricosColumnSort('lastEntryAt')"
           >
-            <span>Ingreso</span>
+            <span>Última actividad</span>
             <i [class]="facade.historicosSortIcon('lastEntryAt')" aria-hidden="true"></i>
           </button>
         </th>
@@ -421,20 +428,39 @@
         <td colspan="10" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
           {{
             !facade.canDisplayOperationalData()
-              ? 'Marca ONLINE para activar esta bandeja.'
+              ? 'Activa tu estado operativo para consultar esta bandeja.'
               : facade.masivoSearched()
               ? 'No se encontraron leads con esos filtros.'
-              : 'Indica filtros y ejecuta la busqueda.'
+              : 'Indica los filtros y ejecuta la búsqueda.'
           }}
         </td>
       </tr>
     </ng-template>
-  </p-table>
+    </p-table>
+  </div>
 
+</p-card>
+
+<footer class="historicos-table-footer">
   <p-paginator
     [first]="facade.masivoPageNumber() * facade.historicosPageSize()"
     [rows]="facade.historicosPageSize()"
     [totalRecords]="facade.masivoTotalElements()"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="{first} - {last} de {totalRecords}"
+    styleClass="historicos-paginator"
     (onPageChange)="facade.changeMasivoPage($event.page ?? 0, $event.rows ?? facade.historicosPageSize())"
   />
-</p-card>
+  <label class="historicos-page-size">
+    <span>Filas</span>
+    <p-select
+      styleClass="historicos-page-size__control"
+      [options]="facade.historicosPageSizeOptions"
+      [ngModel]="facade.historicosPageSize()"
+      [ngModelOptions]="{ standalone: true }"
+      ariaLabel="Filas por página"
+      appendTo="body"
+      (onChange)="facade.changeMasivoPage(0, $any($event.value))"
+    />
+  </label>
+</footer>

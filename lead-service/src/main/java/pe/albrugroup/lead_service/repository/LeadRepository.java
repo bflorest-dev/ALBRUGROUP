@@ -687,8 +687,18 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarTipificaciones = false OR r.primeraCodigoTipificacion IN :codigosTipificacion)
               AND (:filtrarSubtipificaciones = false OR r.primeraCodigoSubtipificacion IN :codigosSubtipificacion)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-              AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
-              AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
+              AND (
+                    (:filtrarRegistros = true AND EXISTS (
+                        SELECT 1 FROM Evento registro
+                        WHERE registro.idLead = l.id
+                          AND registro.accion = 'REGISTRO'
+                          AND (:filtrarFechaDesde = false OR registro.createdAt >= :fechaDesde)
+                          AND (:filtrarFechaHasta = false OR registro.createdAt < :fechaHasta)
+                    ))
+                    OR (:filtrarRegistros = false
+                        AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
+                        AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta))
+              )
             GROUP BY r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparLeadsMasivoPorPrimeraTipificacion(
@@ -707,6 +717,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaDesde") Instant fechaDesde,
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
             @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarRegistros") boolean filtrarRegistros,
             @Param("etapaResumen") Etapa etapaResumen
     );
 
@@ -726,8 +737,18 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarTipificaciones = false OR r.mayorRangoCodigoTipificacion IN :codigosTipificacion)
               AND (:filtrarSubtipificaciones = false OR r.mayorRangoCodigoSubtipificacion IN :codigosSubtipificacion)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-              AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
-              AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
+              AND (
+                    (:filtrarRegistros = true AND EXISTS (
+                        SELECT 1 FROM Evento registro
+                        WHERE registro.idLead = l.id
+                          AND registro.accion = 'REGISTRO'
+                          AND (:filtrarFechaDesde = false OR registro.createdAt >= :fechaDesde)
+                          AND (:filtrarFechaHasta = false OR registro.createdAt < :fechaHasta)
+                    ))
+                    OR (:filtrarRegistros = false
+                        AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
+                        AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta))
+              )
             GROUP BY r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparLeadsMasivoPorMayorTipificacion(
@@ -746,6 +767,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaDesde") Instant fechaDesde,
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
             @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarRegistros") boolean filtrarRegistros,
             @Param("etapaResumen") Etapa etapaResumen
     );
 
@@ -2719,8 +2741,19 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:usarUltimaTipificacion = true AND r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion)
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-              AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
-              AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
+              AND (
+                    (:filtrarRegistros = true AND EXISTS (
+                        SELECT 1
+                        FROM Evento registro
+                        WHERE registro.idLead = l.id
+                          AND registro.accion = 'REGISTRO'
+                          AND (:filtrarFechaDesde = false OR registro.createdAt >= :fechaDesde)
+                          AND (:filtrarFechaHasta = false OR registro.createdAt < :fechaHasta)
+                    ))
+                    OR (:filtrarRegistros = false
+                        AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
+                        AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta))
+              )
               AND (
                     :filtrarEstadoGrupo = false
                     OR (:sinValorGrupo = true AND l.estado IS NULL)
@@ -2850,6 +2883,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaDesde") Instant fechaDesde,
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
             @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarRegistros") boolean filtrarRegistros,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("usarPrimeraTipificacion") boolean usarPrimeraTipificacion,
             @Param("usarMayorTipificacion") boolean usarMayorTipificacion,
@@ -2900,8 +2934,18 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:usarUltimaTipificacion = true AND r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion)
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-              AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
-              AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
+              AND (
+                    (:filtrarRegistros = true AND EXISTS (
+                        SELECT 1 FROM Evento registro
+                        WHERE registro.idLead = l.id
+                          AND registro.accion = 'REGISTRO'
+                          AND (:filtrarFechaDesde = false OR registro.createdAt >= :fechaDesde)
+                          AND (:filtrarFechaHasta = false OR registro.createdAt < :fechaHasta)
+                    ))
+                    OR (:filtrarRegistros = false
+                        AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
+                        AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta))
+              )
             GROUP BY l.estado
             """)
     List<LeadGtrAgrupacionProjection> agruparLeadsMasivoPorEstado(
@@ -2920,6 +2964,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaDesde") Instant fechaDesde,
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
             @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarRegistros") boolean filtrarRegistros,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("usarPrimeraTipificacion") boolean usarPrimeraTipificacion,
             @Param("usarMayorTipificacion") boolean usarMayorTipificacion,
@@ -2942,8 +2987,18 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarTipificaciones = false OR r.ultimaCodigoTipificacion IN :codigosTipificacion)
               AND (:filtrarSubtipificaciones = false OR r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-              AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
-              AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
+              AND (
+                    (:filtrarRegistros = true AND EXISTS (
+                        SELECT 1 FROM Evento registro
+                        WHERE registro.idLead = l.id
+                          AND registro.accion = 'REGISTRO'
+                          AND (:filtrarFechaDesde = false OR registro.createdAt >= :fechaDesde)
+                          AND (:filtrarFechaHasta = false OR registro.createdAt < :fechaHasta)
+                    ))
+                    OR (:filtrarRegistros = false
+                        AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
+                        AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta))
+              )
             GROUP BY r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparLeadsMasivoPorUltimaTipificacion(
@@ -2962,6 +3017,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaDesde") Instant fechaDesde,
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
             @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarRegistros") boolean filtrarRegistros,
             @Param("etapaResumen") Etapa etapaResumen
     );
 
@@ -2991,8 +3047,18 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:usarUltimaTipificacion = true AND r.ultima_codigo_subtipificacion IN (:codigosSubtipificacion))
               )
               AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
-              AND (:filtrarFechaDesde = false OR l.last_entry_at >= :fechaDesde)
-              AND (:filtrarFechaHasta = false OR l.last_entry_at < :fechaHasta)
+              AND (
+                    (:filtrarRegistros = true AND EXISTS (
+                        SELECT 1 FROM evento registro
+                        WHERE registro.id_lead = l.id
+                          AND registro.accion = 'REGISTRO'
+                          AND (:filtrarFechaDesde = false OR registro.created_at >= :fechaDesde)
+                          AND (:filtrarFechaHasta = false OR registro.created_at < :fechaHasta)
+                    ))
+                    OR (:filtrarRegistros = false
+                        AND (:filtrarFechaDesde = false OR l.last_entry_at >= :fechaDesde)
+                        AND (:filtrarFechaHasta = false OR l.last_entry_at < :fechaHasta))
+              )
             GROUP BY to_char(l.last_entry_at AT TIME ZONE 'America/Lima', 'YYYY-MM-DD')
             """, nativeQuery = true)
     List<LeadGtrAgrupacionProjection> agruparLeadsMasivoPorIngreso(
@@ -3011,6 +3077,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaDesde") Instant fechaDesde,
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
             @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarRegistros") boolean filtrarRegistros,
             @Param("etapaResumen") String etapaResumen,
             @Param("usarPrimeraTipificacion") boolean usarPrimeraTipificacion,
             @Param("usarMayorTipificacion") boolean usarMayorTipificacion,

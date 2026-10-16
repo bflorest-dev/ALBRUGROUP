@@ -1,9 +1,42 @@
 @use '../gtr-board-shared';
 
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+:host ::ng-deep .gtr-historicos-board {
+  border: 1px solid var(--app-border-soft);
+  box-shadow: var(--app-shadow-soft);
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+:host ::ng-deep .gtr-historicos-board .p-card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+:host ::ng-deep .gtr-historicos-board .p-card-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
 .form-grid {
   display: grid;
-  gap: 0.85rem;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  flex: 0 0 auto;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 label {
@@ -14,9 +47,53 @@ label {
   gap: 0.35rem;
 }
 
-.form-grid > app-date-field,
+.historicos-period-field app-period-selector {
+  display: inline-block;
+  min-width: 14rem;
+  max-width: 20rem;
+}
+
+.historicos-period-field {
+  flex: 0 0 auto;
+}
+
+.historicos-filter-row {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.historicos-filter-row > label {
+  min-width: 0;
+}
+
+.historicos-date-mode,
 .historicos-mode {
-  grid-column: span 4;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.historicos-multiselect-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.historicos-filter-row .dialog-actions {
+  flex: 0 0 auto;
+}
+
+.historicos-team-field {
+  flex: 0 1 12rem;
+  min-width: 10rem;
+}
+
+.historicos-date-helper {
+  color: var(--app-text-muted);
+  display: block;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  margin-top: -0.15rem;
 }
 
 .dialog-actions {
@@ -24,19 +101,84 @@ label {
   display: flex;
   gap: 0.65rem;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .board-toolbar {
   align-items: center;
+  border-top: 1px solid var(--app-border-soft);
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
   justify-content: flex-end;
-  margin: 1rem 0 0.9rem;
+  margin: 0.9rem 0 0.75rem;
+  padding-top: 0.85rem;
 }
 
 .board-toolbar > button:first-child {
   margin-right: auto;
+}
+
+.historicos-table-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:host ::ng-deep .historicos-table {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+:host ::ng-deep .historicos-table .p-datatable-table-container,
+:host ::ng-deep .historicos-table .p-datatable-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+.historicos-table-footer {
+  align-items: center;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.55rem;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  min-height: 3.35rem;
+  padding: 0.35rem 8rem 0.35rem 0.75rem;
+  position: relative;
+}
+
+:host ::ng-deep .historicos-paginator {
+  border: 0;
+  border-radius: 0;
+  min-width: 0;
+  justify-content: center;
+  padding: 0;
+  width: 100%;
+}
+
+.historicos-page-size {
+  align-items: center;
+  color: var(--app-text-muted);
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 700;
+  gap: 0.45rem;
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+:host ::ng-deep .historicos-page-size__control {
+  min-width: 6.4rem;
+  width: 6.4rem;
 }
 
 .gtr-organize-panel {
@@ -68,30 +210,25 @@ label {
   opacity: 1;
 }
 
-:host ::ng-deep .p-select,
-:host ::ng-deep .p-multiselect,
-:host ::ng-deep .p-inputtext,
-:host ::ng-deep .p-selectbutton {
+:host ::ng-deep .form-grid .p-select,
+:host ::ng-deep .form-grid .p-multiselect,
+:host ::ng-deep .form-grid .p-inputtext,
+:host ::ng-deep .gtr-organize-panel .p-select {
   width: 100%;
 }
 
-:host ::ng-deep .historicos-mode .p-selectbutton {
-  background: var(--app-surface-soft);
-  border: 1px solid var(--app-border-soft);
-  border-radius: 0.45rem;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding: 0.2rem;
+:host ::ng-deep .historicos-filter-row .p-selectbutton {
+  max-width: 100%;
+  width: fit-content;
 }
 
-:host ::ng-deep .historicos-mode .p-togglebutton,
-:host ::ng-deep .historicos-mode .p-selectbutton .p-button {
+:host ::ng-deep .historicos-filter-row .p-togglebutton {
+  flex: 0 0 auto;
   min-width: 0;
-  width: 100%;
+  width: auto;
 }
 
-:host ::ng-deep .historicos-mode .p-togglebutton-content,
-:host ::ng-deep .historicos-mode .p-button-label {
+:host ::ng-deep .historicos-filter-row .p-togglebutton-label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -123,17 +260,8 @@ label {
 }
 
 .catalog-option {
-  align-items: baseline;
-  display: flex;
-  gap: 0.4rem;
+  display: block;
   min-width: 0;
-}
-
-.catalog-option span:last-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 :host ::ng-deep .gtr-table :is(th, td):nth-child(1) {
@@ -182,15 +310,38 @@ label {
   }
 }
 
-@media (max-width: 900px) {
-  .form-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (min-width: 1440px) {
+  .historicos-filter-row {
+    flex-wrap: nowrap;
   }
 
-  .form-grid > app-date-field,
+  .historicos-multiselect-field {
+    max-width: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .historicos-filter-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .historicos-period-field app-period-selector,
+  .historicos-date-mode,
   .historicos-mode,
-  .filter-action-row {
-    grid-column: 1 / -1;
+  .historicos-multiselect-field,
+  .historicos-team-field,
+  .historicos-filter-row .dialog-actions {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .historicos-filter-row .p-selectbutton {
+    width: 100%;
   }
 
   .board-toolbar {
@@ -200,5 +351,41 @@ label {
 
   .board-toolbar > button:first-child {
     margin-right: 0;
+  }
+
+  :host {
+    height: auto;
+  }
+
+  :host {
+    display: block;
+  }
+
+  :host ::ng-deep .gtr-historicos-board {
+    flex: none;
+    height: auto;
+  }
+
+  :host ::ng-deep .gtr-historicos-board .p-card-body,
+  :host ::ng-deep .gtr-historicos-board .p-card-content {
+    min-height: auto;
+  }
+
+  .historicos-table-shell {
+    min-height: 24rem;
+  }
+
+  .historicos-table-footer {
+    display: grid;
+    gap: 0.35rem;
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+    padding: 0.45rem 0.65rem;
+  }
+
+  .historicos-page-size {
+    justify-self: end;
+    position: static;
+    transform: none;
   }
 }

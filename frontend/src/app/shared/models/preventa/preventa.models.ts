@@ -113,6 +113,8 @@ export type LeadGtrGroupType =
 export type LeadGtrGroupMode = 'SIN_AGRUPAR' | LeadGtrGroupType;
 export type CampoTipificacion = 'PRIMERA' | 'MAYOR' | 'ULTIMA';
 
+export type MasivoFechaMode = 'GESTIONADOS' | 'REGISTRADOS';
+
 export interface LeadGtrGroupItemResponse {
   idGrupo?: number | null;
   codigoTipificacion?: string | null;
@@ -198,6 +200,7 @@ export interface MasivoLeadFilters {
   codigosTipificacion?: string[];
   codigosSubtipificacion?: string[];
   campoTipificacion?: CampoTipificacion;
+  modoFecha?: MasivoFechaMode;
   fechaDesde?: string;
   fechaHasta?: string;
   tipoGrupo?: LeadGtrGroupType;

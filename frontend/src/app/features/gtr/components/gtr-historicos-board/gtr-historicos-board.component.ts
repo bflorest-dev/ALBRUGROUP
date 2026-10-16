@@ -10,8 +10,12 @@ import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
-import { CampoTipificacion } from '../../../../shared/models/preventa/preventa.models';
+import { PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
+import { MetricsRango } from '../../../../shared/utils/metrics-period';
+import {
+  CampoTipificacion,
+  MasivoFechaMode
+} from '../../../../shared/models/preventa/preventa.models';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-lead-select-control.component';
 
@@ -31,7 +35,7 @@ import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-le
     SelectButtonModule,
     TableModule,
     TagModule,
-    DateFieldComponent,
+    PeriodSelectorComponent,
     GtrLeadSelectControlComponent
   ],
   templateUrl: './gtr-historicos-board.component.html',
@@ -66,6 +70,18 @@ export class GtrHistoricosBoardComponent {
   protected onCampoTipificacionChange(value: CampoTipificacion): void {
     this.facade.masivoFiltersForm.controls.campoTipificacion.setValue(value);
     this.facade.syncHistoricosCampoTipificacion();
+  }
+
+  protected onModoFechaChange(value: MasivoFechaMode): void {
+    this.facade.masivoFiltersForm.controls.modoFecha.setValue(value);
+    this.facade.historicosModoFecha.set(value);
+  }
+
+  protected onHistoricosRangeChange(range: MetricsRango): void {
+    this.facade.masivoFiltersForm.patchValue({
+      fechaDesde: range.desde,
+      fechaHasta: range.hasta
+    });
   }
 
   protected onGroupChange(value: unknown): void {
