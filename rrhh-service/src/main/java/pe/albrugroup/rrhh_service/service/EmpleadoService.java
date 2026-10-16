@@ -376,6 +376,8 @@ public class EmpleadoService implements IEmpleado {
             } catch (Exception ignored) {
             }
 
+            if (rolPrincipal != null && Set.of("FREELANCE", "OJT").contains(rolPrincipal)) continue;
+
             resultado.add(EmpleadoReporteAsistenciaResponse.builder()
                     .idEmpleado(idEmp)
                     .nombreCompleto(emp.getNombres() + " " + emp.getApellidos())
