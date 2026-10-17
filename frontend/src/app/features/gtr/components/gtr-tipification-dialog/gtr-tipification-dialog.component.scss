@@ -38,6 +38,7 @@ app-lead-commercial-data-tabs {
   align-items: center;
   background: #ffffff;
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   justify-content: space-between;
   padding: .95rem 1rem;
@@ -71,6 +72,14 @@ h2 {
   object-fit: contain;
 }
 
+.tipify-workspace__contact-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin-left: auto;
+}
+
 .tipification-bar {
   align-items: end;
   background: var(--app-surface-soft);
@@ -78,7 +87,7 @@ h2 {
   border-radius: 8px;
   display: grid;
   gap: .75rem;
-  grid-template-columns: minmax(17rem, 1.15fr) minmax(17rem, 1.15fr) minmax(10rem, .55fr);
+  grid-template-columns: minmax(15rem, 1.15fr) minmax(15rem, 1.15fr) minmax(10rem, .55fr) minmax(10rem, .7fr);
   padding: .85rem;
 }
 
@@ -219,6 +228,12 @@ h2 {
   .tipify-workspace__head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .tipify-workspace__contact-actions,
+  .tipify-workspace__tags {
+    margin-left: 0;
+    justify-content: flex-start;
   }
 
   .tipification-bar {

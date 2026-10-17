@@ -13,8 +13,8 @@
     <section class="tipify-workspace">
       <header class="tipify-workspace__head">
         <div>
-          <span class="tipify-workspace__eyebrow">Tipificacion del lead</span>
-          <h2>{{ facade.leadIdentity(lead) }}</h2>
+          <span class="tipify-workspace__eyebrow">Gestión del lead</span>
+          <h2>Lead | {{ facade.leadIdentity(lead) }}</h2>
         </div>
 
         <div class="tipify-workspace__tags">
@@ -26,6 +26,26 @@
             <p-tag severity="warn" value="Cambios sin guardar" />
           }
         </div>
+        <div class="tipify-workspace__contact-actions" aria-label="Acciones de contacto">
+          <app-phone-action-button
+            [idLead]="lead.id"
+            [prefijo]="lead.prefijo"
+            [lead]="lead.lead"
+            size="small"
+            [disabled]="!facade.canMutateOperationalData()"
+            (callError)="facade.showCallError($event)"
+          />
+          <button
+            pButton
+            type="button"
+            icon="pi pi-whatsapp"
+            label="Chat"
+            size="small"
+            severity="secondary"
+            [disabled]="!facade.hasLeadChat(lead) || !facade.canMutateOperationalData()"
+            (click)="facade.openWhatsAppChat(lead)"
+          ></button>
+        </div>
       </header>
 
       @if (facade.successMessage()) {
@@ -33,6 +53,12 @@
       }
       @if (facade.errorMessage()) {
         <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
+      }
+      @if (lead.atencionOtraEtapa) {
+        <p-message
+          severity="info"
+          text="Este contacto ya tiene un trámite en curso en otra etapa. Sus datos son de solo lectura. Si quiere un nuevo servicio, crea una nueva oportunidad; tipificar este lead es opcional."
+        />
       }
 
       <form id="gtr-tipification-form" class="tipification-bar" [formGroup]="facade.tipificacionForm" (ngSubmit)="facade.tipificarLeadGtr()">
@@ -155,6 +181,13 @@
         [providerOptions]="facade.ofertaProviderOptions()"
         [selectedProviderId]="facade.selectedOfertaProviderId()"
         [planOptions]="facade.planOptions()"
+        [showPlanFilters]="true"
+        [planOfertaFilters]="facade.planOfertaFilters()"
+        [planOfertaLoading]="facade.planOfertaLoading()"
+        [planOfertaError]="facade.planOfertaError()"
+        [planOfertaZoneFallback]="facade.planOfertaZoneFallback()"
+        [planOfertaZoneLabel]="facade.planOfertaZoneLabel()"
+        [planOfertaZoneAvailable]="facade.planOfertaZoneAvailable()"
         [promocionOptions]="facade.promocionOptions()"
         [adicionales]="facade.adicionales()"
         [selectedAdditionals]="facade.selectedOfertaAdditionals()"
@@ -168,7 +201,9 @@
         [esZonaPintadaControl]="facade.direccionForm.controls.esZonaPintada"
         [mostrarDatosClaro]="facade.mostrarDatosClaro()"
         [mostrarDatosWin]="facade.mostrarDatosWin()"
+        [parentescoEnDatosProveedor]="true"
         [requiereTecnologiaClaro]="facade.requiereTecnologiaClaro()"
+        [readonly]="!!lead.atencionOtraEtapa"
         (activeTabChange)="facade.setActiveDataTab($event)"
         (tipoDocumentoChange)="facade.onTipoDocumentoChanged()"
         (departamentoDomicilioChange)="facade.onDepartamentoDomicilioChanged()"
@@ -176,6 +211,7 @@
         (distritoDomicilioChange)="facade.onDistritoDomicilioChanged()"
         (ofertaProviderChange)="facade.onOfertaProviderChanged($event)"
         (planChange)="facade.onPlanChanged()"
+        (planOfertaFilterChange)="facade.onPlanOfertaFilterChanged($event)"
         (incrementarAdicional)="facade.incrementarAdicional($event)"
         (disminuirAdicional)="facade.disminuirAdicional($event)"
       />
@@ -189,6 +225,16 @@
           severity="secondary"
           [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
           (click)="facade.limpiarTabActiva()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-plus"
+          label="Nueva oportunidad"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+          (click)="facade.crearOportunidadAdicionalGtr()"
         ></button>
         <button
           pButton

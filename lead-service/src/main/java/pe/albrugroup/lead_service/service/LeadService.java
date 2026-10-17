@@ -2824,20 +2824,25 @@ public class LeadService {
         lead.setPlataformaDigitalOfrecida(plataforma);
     }
 
-    // Cierra la atención GTR de un lead en otra etapa cuando el asesor no lo tipifica (p. ej. solo
-    // creó nuevas oportunidades). Libera al asesor sin registrar tipificación ni alterar la gestión.
+    // Libera la atención GTR cuando el asesor abandona el lead sin tipificarlo (por ejemplo,
+    // después de crear nuevas oportunidades). El lead vuelve a quedar disponible según su etapa.
     @Transactional
     public void cerrarAtencion(Long idLead) {
         Lead lead = obtenerLeadAsignadoDelAsesor(idLead);
-        if (lead.getEtapa() == Etapa.PREVENTA) {
-            throw new BadRequestException("Este lead está en PREVENTA; debe tipificarse, no cerrarse como atención");
-        }
+        liberarAtencionGtr(lead);
+    }
+
+    private void liberarAtencionGtr(Lead lead) {
         Etapa etapaLead = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         lead.setRequiereAtencionGtr(false);
         lead.setIdAsesorAsignado(null);
         lead.setNombreAsesorAsignado(null);
-        lead.setEstado(EstadoSeguimiento.GESTIONADO);
+        lead.setEstado(
+                etapaLead == Etapa.PREVENTA && lead.getIdTipificacion() == null
+                        ? EstadoSeguimiento.NUEVO
+                        : EstadoSeguimiento.GESTIONADO
+        );
         lead.setEsDerivado(false);
         Lead savedLead = leadRepository.save(lead);
         notificarCambioLead("ATENCION_CERRADA", savedLead, etapaLead, idAsesorAnterior, true);
@@ -6062,6 +6067,25 @@ public class LeadService {
         // lead que sigue en otra etapa (atención GTR). Sin restricciones de documento/plan/dirección:
         // la responsabilidad de crear una nueva oportunidad es del asesor y se evalúa en su llamada.
         Lead original = obtenerLeadAsignadoDelAsesor(idLead);
+
+        return crearOportunidadAdicionalInterna(original);
+    }
+
+    /**
+     * Crea una oportunidad desde GTR y libera la atención del lead original en la misma transacción.
+     * El flujo del asesor de ventas conserva su comportamiento independiente.
+     */
+    @Transactional
+    public Long crearOportunidadAdicionalGtr(Long idLead) {
+        Lead original = obtenerLeadAsignadoDelAsesor(idLead);
+        validarLeadDentroAlcanceGtr(original);
+
+        Long idNuevaOportunidad = crearOportunidadAdicionalInterna(original);
+        liberarAtencionGtr(original);
+        return idNuevaOportunidad;
+    }
+
+    private Long crearOportunidadAdicionalInterna(Lead original) {
 
         Lead nueva = leadMapper.toNuevoLead(
                 original.getPrefijo(), original.getLead(), original.getUsermeta(), original.getOrigen(),

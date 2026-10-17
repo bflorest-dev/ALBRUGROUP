@@ -580,6 +580,12 @@ public class PreventaController {
     public ResponseEntity<Long> crearOportunidadAdicional(@PathVariable Long idLead) {
         return ResponseEntity.status(HttpStatus.CREATED).body(leadService.crearOportunidadAdicional(idLead));
     }
+    // MULTI-TITULAR GTR. Crea la nueva oportunidad y libera la original de forma atómica.
+    @PostMapping("/gtr/{idLead}/oportunidad-adicional")
+    @PreAuthorize("hasAuthority('READ_LEADS_GTR') and hasAuthority('UPDATE_LEADS_ASESOR')")
+    public ResponseEntity<Long> crearOportunidadAdicionalGtr(@PathVariable Long idLead) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(leadService.crearOportunidadAdicionalGtr(idLead));
+    }
     // MULTI-TITULAR. Listar las oportunidades del contacto (para el selector del asesor y la lupa GTR).
     @GetMapping("/{idLead}/oportunidades-contacto")
     @PreAuthorize("hasAnyAuthority('READ_LEADS_ASESOR','READ_LEADS_GTR')")

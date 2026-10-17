@@ -90,6 +90,11 @@ export class PreventaLeadService {
     return this.http.post<number>(`${this.leadUrl}/preventa/${idLead}/oportunidad-adicional`, {});
   }
 
+  // GTR: crea otra oportunidad y libera la actual dentro de la misma transacción.
+  crearOportunidadAdicionalGtr(idLead: number): Observable<number> {
+    return this.http.post<number>(`${this.leadUrl}/preventa/gtr/${idLead}/oportunidad-adicional`, {});
+  }
+
   // Multi-titular: oportunidades del contacto (para el selector del asesor y la lupa del GTR).
   listarOportunidadesContacto(idLead: number): Observable<OportunidadHermana[]> {
     return this.http.get<OportunidadHermana[]>(`${this.leadUrl}/preventa/${idLead}/oportunidades-contacto`);

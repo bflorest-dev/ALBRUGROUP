@@ -47,6 +47,9 @@ import {
   MasivoFechaMode,
   MasivoLeadFilters,
   PageQuery,
+  PlanOfertaFilterChange,
+  PlanOfertaFilterState,
+  PlanOfertaFilters,
   PlanResponse,
   PlataformaDigitalResponse,
   PromocionComercialResponse,
@@ -215,6 +218,12 @@ const PERU_LEAD_PATTERN = /^9\d{8}$/;
 const INTERNATIONAL_LEAD_PATTERN = /^\d{6,15}$/;
 const USERMETA_PATTERN = /^@?[A-Za-z0-9._-]+$/;
 const RESTRICT_RETROACTIVE_INTAKE_BY_TIME = true;
+const DEFAULT_PLAN_OFERTA_FILTERS: PlanOfertaFilterState = {
+  tienePrecioPromocional: true,
+  tieneVelocidadPromocional: false,
+  tienePromocionInterna: true,
+  tipoServicio: null
+};
 
 @Injectable()
 export class GtrWorkspaceFacade {
@@ -271,6 +280,8 @@ export class GtrWorkspaceFacade {
   private initializeInFlight = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
   private lastMasivoSearchFiltersKey: string | null = null;
+  private planOfertaLoadSequence = 0;
+  private planOfertaZoneProviderId: number | null = null;
   private readonly formSubscription = new Subscription();
   private readonly operationalGate = this.operationalGateService.createGate('gtr-workspace');
 
@@ -400,6 +411,10 @@ export class GtrWorkspaceFacade {
   readonly selectedTipificacionCode = signal('');
   readonly selectedSubtipificacionCode = signal('');
   readonly planes = signal<PlanResponse[]>([]);
+  readonly planOfertaFilters = signal<PlanOfertaFilterState>({ ...DEFAULT_PLAN_OFERTA_FILTERS });
+  readonly planOfertaLoading = signal(false);
+  readonly planOfertaError = signal<string | null>(null);
+  readonly planOfertaZoneFallback = signal(false);
   readonly promociones = signal<PromocionComercialResponse[]>([]);
   readonly adicionales = signal<AdicionalResponse[]>([]);
   readonly selectedOfertaProviderId = signal<number | null>(null);
@@ -663,6 +678,17 @@ export class GtrWorkspaceFacade {
   );
   readonly ofertaProviderOptions = computed<OfertaProviderOption[]>(() => {
     const providersById = new Map<number, OfertaProviderOption>();
+    for (const proveedor of this.typifyDetail()?.proveedoresEquipo ?? []) {
+      if (proveedor.id) {
+        providersById.set(proveedor.id, {
+          id: proveedor.id,
+          nombre: proveedor.nombre ?? `Proveedor ${proveedor.id}`
+        });
+      }
+    }
+    if (providersById.size) {
+      return [...providersById.values()].sort((left, right) => left.nombre.localeCompare(right.nombre));
+    }
     for (const plan of this.planes()) {
       if (plan.idProveedor) {
         providersById.set(plan.idProveedor, {
@@ -672,6 +698,11 @@ export class GtrWorkspaceFacade {
       }
     }
     return [...providersById.values()].sort((left, right) => left.nombre.localeCompare(right.nombre));
+  });
+  readonly planOfertaZoneLabel = computed(() => this.typifyDetail()?.nombreZona ?? this.typifyDetail()?.plan?.nombreZona ?? null);
+  readonly planOfertaZoneAvailable = computed(() => {
+    const idZona = this.typifyDetail()?.idZona;
+    return typeof idZona === 'number' && idZona > 0;
   });
   readonly planOptions = computed(() => {
     const idProveedor = this.selectedOfertaProviderId();
@@ -1796,6 +1827,38 @@ export class GtrWorkspaceFacade {
     }
   }
 
+  async crearOportunidadAdicionalGtr(): Promise<void> {
+    const detail = this.typifyDetail();
+    if (!detail || !this.ensureCanMutate()) {
+      return;
+    }
+
+    if (!detail.atencionOtraEtapa && this.hasUnsavedDataChanges()) {
+      const canProceed = await this.guardarAntesDeTipificar(detail, false);
+      if (!canProceed) {
+        return;
+      }
+    }
+
+    this.isSaving.set(true);
+    this.clearMessages();
+    let idNuevaOportunidad: number;
+    try {
+      idNuevaOportunidad = await firstValueFrom(this.preventaService.crearOportunidadAdicionalGtr(detail.id));
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo crear la nueva oportunidad.'));
+      return;
+    } finally {
+      this.isSaving.set(false);
+    }
+
+    await this.openTipification(idNuevaOportunidad);
+    if (this.typifyDetail()?.id === idNuevaOportunidad) {
+      this.successMessage.set('Nueva oportunidad creada. El lead anterior quedó disponible.');
+    }
+    await this.reconcile();
+  }
+
   closeTipificationDialog(): void {
     this.typifyDetail.set(null);
     this.activeDialog.set('snapshot');
@@ -2368,8 +2431,16 @@ export class GtrWorkspaceFacade {
     this.ofertaForm.markAsDirty();
     this.limpiarDatosClarosSiNoCorresponde();
     if (idProveedor) {
-      await this.refreshProviderAdditionals(idProveedor);
+      await Promise.all([this.refreshProviderAdditionals(idProveedor), this.refreshPlanesOferta()]);
     }
+  }
+
+  async onPlanOfertaFilterChanged(change: PlanOfertaFilterChange): Promise<void> {
+    this.planOfertaFilters.update((current) => ({
+      ...current,
+      [change.key]: change.value
+    }));
+    await this.refreshPlanesOferta();
   }
 
   incrementarAdicional(adicional: AdicionalResponse): void {
@@ -2433,9 +2504,12 @@ export class GtrWorkspaceFacade {
     this.direccionForm.controls.ubigeoDomicilio.markAsDirty();
   }
 
-  setActiveDataTab(value: string | number | undefined): void {
+  async setActiveDataTab(value: string | number | undefined): Promise<void> {
     if (value === 'datos' || value === 'direccion' || value === 'oferta') {
       this.activeDataTab.set(value);
+      if (value === 'oferta') {
+        await this.refreshPlanesOferta();
+      }
     }
   }
 
@@ -4400,17 +4474,129 @@ export class GtrWorkspaceFacade {
     );
   }
 
-  private async refreshOfferCatalogs(idPlan: number): Promise<void> {
+  private async refreshOfferCatalogs(idPlan: number, idProveedorBase?: number | null): Promise<void> {
     const plan = this.planes().find((item) => item.id === idPlan);
-    const idProveedor = plan?.idProveedor ?? null;
+    const idProveedor = plan?.idProveedor ?? idProveedorBase ?? this.selectedOfertaProviderId() ?? null;
+    const idZona = this.typifyDetail()?.idZona;
     this.selectedOfertaProviderId.set(idProveedor);
     this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
     const [promociones, adicionales] = await Promise.all([
-      firstValueFrom(this.preventaService.listarPromociones(idPlan ? { idPlan } : {})),
-      idProveedor ? firstValueFrom(this.preventaService.listarAdicionales(idProveedor)) : Promise.resolve([])
+      firstValueFrom(this.preventaService.listarPromociones({
+        ...(idProveedor ? { idProveedor } : {}),
+        ...(idZona ? { idZona } : {}),
+        ...(idPlan ? { idPlan } : {})
+      })),
+      idProveedor ? firstValueFrom(this.preventaService.listarAdicionales(idProveedor)) : Promise.resolve([]),
+      this.refreshPlanesOferta()
     ]);
     this.promociones.set(promociones);
     this.adicionales.set(adicionales);
+  }
+
+  private async refreshPlanesOferta(): Promise<void> {
+    const sequence = ++this.planOfertaLoadSequence;
+    const detail = this.typifyDetail();
+    const idProveedor = this.selectedOfertaProviderId();
+
+    this.planOfertaLoading.set(true);
+    this.planOfertaError.set(null);
+    this.planOfertaZoneFallback.set(false);
+
+    try {
+      const zoneResolution = await this.ensurePlanOfertaZone(detail);
+      if (sequence !== this.planOfertaLoadSequence) {
+        return;
+      }
+      const idZona = this.typifyDetail()?.idZona ?? null;
+      if (!idProveedor || zoneResolution === 'BLOCKED') {
+        this.planes.set([]);
+        return;
+      }
+
+      const uiFilters = this.planOfertaFilters();
+      const filters: PlanOfertaFilters = {
+        idProveedor,
+        idZona,
+        tipoServicio: uiFilters.tipoServicio
+      };
+      if (uiFilters.tienePrecioPromocional) {
+        filters.tienePrecioPromocional = true;
+      }
+      if (uiFilters.tieneVelocidadPromocional) {
+        filters.tieneVelocidadPromocional = true;
+      }
+      if (uiFilters.tienePromocionInterna) {
+        filters.tienePromocionInterna = true;
+      }
+
+      let planes = await firstValueFrom(
+        this.preventaService.listarPlanesOferta({
+          ...filters,
+          ignorarZona: zoneResolution === 'FALLBACK'
+        })
+      );
+      let usedZoneFallback = zoneResolution === 'FALLBACK';
+      if (!planes.length && idZona && zoneResolution === 'READY') {
+        planes = await firstValueFrom(
+          this.preventaService.listarPlanesOferta({
+            ...filters,
+            ignorarZona: true
+          })
+        );
+        usedZoneFallback = true;
+      }
+      if (sequence === this.planOfertaLoadSequence) {
+        this.planOfertaZoneFallback.set(usedZoneFallback);
+        this.planes.set(planes);
+      }
+    } catch (error) {
+      if (sequence === this.planOfertaLoadSequence) {
+        this.planes.set([]);
+        this.planOfertaError.set(this.getErrorMessage(error, 'No pudimos consultar los planes para esta zona.'));
+      }
+    } finally {
+      if (sequence === this.planOfertaLoadSequence) {
+        this.planOfertaLoading.set(false);
+      }
+    }
+  }
+
+  private async ensurePlanOfertaZone(detail: LeadDetalleResponse | null): Promise<'READY' | 'FALLBACK' | 'BLOCKED'> {
+    const currentUbigeo = String(this.direccionForm.controls.ubigeoDomicilio.value ?? '').trim();
+    const savedUbigeo = String(detail?.ubigeoDomicilio ?? '').trim();
+    const idProveedor = this.selectedOfertaProviderId();
+
+    if (!detail || !idProveedor) {
+      return 'BLOCKED';
+    }
+    // Los leads de otra etapa se visualizan en solo lectura: no se debe modificar su dirección solo
+    // para resolver la cobertura de un catálogo que el GTR no puede guardar en ese contexto.
+    if (detail.atencionOtraEtapa) {
+      return detail.idZona ? 'READY' : 'FALLBACK';
+    }
+    if (!currentUbigeo) {
+      this.planOfertaError.set('Completa el ubigeo del domicilio para consultar planes disponibles.');
+      return 'BLOCKED';
+    }
+    if (detail.idZona && currentUbigeo === savedUbigeo && this.planOfertaZoneProviderId === idProveedor) {
+      return 'READY';
+    }
+
+    try {
+      await firstValueFrom(this.preventaService.actualizarDireccion(detail.id, this.getDireccionRequest()));
+      const refreshedDetail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(detail.id));
+      this.typifyDetail.set(refreshedDetail);
+      this.direccionForm.markAsPristine();
+      if (refreshedDetail.idZona) {
+        this.planOfertaZoneProviderId = idProveedor;
+        return 'READY';
+      }
+      this.planOfertaError.set(null);
+      return 'FALLBACK';
+    } catch (error) {
+      this.planOfertaError.set(this.getErrorMessage(error, 'No pudimos actualizar la dirección para resolver la zona.'));
+      return 'BLOCKED';
+    }
   }
 
   private async refreshPlanPromotions(idPlan: number): Promise<void> {
@@ -4506,14 +4692,27 @@ export class GtrWorkspaceFacade {
 
   private patchOfertaForm(detail: LeadDetalleResponse): void {
     const idPlan = detail.idPlan ?? 0;
-    const idProveedor = this.planes().find((plan) => plan.id === idPlan)?.idProveedor ?? null;
+    const idProveedor = this.resolveProveedorOfertaInicial(detail);
     this.selectedOfertaProviderId.set(idProveedor);
+    this.planOfertaZoneProviderId = null;
+    this.planOfertaFilters.set({ ...DEFAULT_PLAN_OFERTA_FILTERS });
+    this.planOfertaError.set(null);
+    this.planOfertaZoneFallback.set(false);
     this.selectedOfertaAdditionals.set([]);
     this.ofertaForm.patchValue({
       idProveedor: idProveedor ?? 0,
       idPlan,
       idPromocionInterna: detail.idPromocionInterna ?? 0
     });
+  }
+
+  private resolveProveedorOfertaInicial(detail: LeadDetalleResponse): number | null {
+    const proveedorFallback = detail.proveedoresEquipo?.find((proveedor) => proveedor.fallbackLeadSinCampana)?.id;
+    const planProviderName = detail.nombreProveedorPlan?.trim().toUpperCase();
+    const providerFromPlan = planProviderName
+      ? detail.proveedoresEquipo?.find((proveedor) => proveedor.nombre?.trim().toUpperCase() === planProviderName)?.id
+      : null;
+    return providerFromPlan ?? proveedorFallback ?? detail.idProveedorEquipo ?? null;
   }
 
   private markTypifyFormsPristine(): void {
@@ -4527,6 +4726,9 @@ export class GtrWorkspaceFacade {
     this.typifyDetail.set(null);
     this.selectedTipificacionCode.set('');
     this.selectedOfertaProviderId.set(null);
+    this.planOfertaFilters.set({ ...DEFAULT_PLAN_OFERTA_FILTERS });
+    this.planOfertaError.set(null);
+    this.planOfertaZoneFallback.set(false);
     this.selectedOfertaAdditionals.set([]);
     this.promociones.set([]);
     this.adicionales.set([]);
