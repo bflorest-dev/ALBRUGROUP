@@ -36,6 +36,12 @@
       <div><strong>No puedes registrar ventas todavía</strong><span>{{ teamError() }} Tu historial permanece disponible.</span></div>
     </aside>
   }
+  @if (providerSetupMessage()) {
+    <aside class="team-warning" role="status">
+      <i class="ti ti-alert-circle" aria-hidden="true"></i>
+      <div><strong>Registro no disponible</strong><span>{{ providerSetupMessage() }}</span></div>
+    </aside>
+  }
   @if (error()) { <div class="error-banner" role="alert">{{ error() }}</div> }
 
   <article class="funnel-card" [class.loading]="loading()">
@@ -70,7 +76,7 @@
     </article>
 
     <article class="panel providers">
-      <header><h2>Rendimiento por proveedor</h2></header>
+      <header><h2>Rendimiento</h2></header>
       <div class="provider-table-wrap">
         <table>
           <thead><tr><th>Proveedor</th><th>Reg.</th><th>Sub.</th><th>Inst.</th><th>Ret.</th></tr></thead>

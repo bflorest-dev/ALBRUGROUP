@@ -8,12 +8,12 @@ import { CampoCaptura, Tecnologia, UbigeoItem } from '../../../../shared/models/
 import {
   coordenadaValidator,
   documentoValidator,
+  extraerParCoordenadas,
   limpiarCoordenada,
   limpiarDocumento,
   limpiarNombrePersona,
   limpiarPrefijo,
   limpiarTelefonoPorPrefijo,
-  limpiarUsermeta,
   prefijoValidator,
   soloDigitos,
   telefonoValidator
@@ -26,6 +26,12 @@ import {
   FreelanceVentaResponse
 } from '../../models/freelance.models';
 import { FreelanceService } from '../../services/freelance.service';
+import {
+  FreelanceDrawerDraft,
+  clearFreelanceDrawerDraft,
+  readFreelanceDrawerDraft,
+  saveFreelanceDrawerDraft
+} from '../../utils/freelance-drawer-draft';
 
 type DrawerMode = 'crear' | 'corregir';
 
@@ -52,6 +58,8 @@ export class FreelanceVentaDrawerComponent {
   readonly saving = signal(false);
   readonly checkingIdentity = signal(false);
   readonly error = signal<string | null>(null);
+  readonly coordinatePasteMessage = signal<string | null>(null);
+  readonly draftRestored = signal(false);
   readonly discardConfirmationOpen = signal(false);
   readonly maxDocumentoTitular = signal(8);
   readonly maxCelularLength = signal(9);
@@ -67,7 +75,6 @@ export class FreelanceVentaDrawerComponent {
   readonly form = this.fb.group({
     prefijo: ['51', [Validators.required, prefijoValidator()]],
     lead: ['', Validators.required],
-    usermeta: ['', [Validators.maxLength(80), Validators.pattern(/^[A-Za-z0-9._-]*$/)]],
     tipoDocumento: ['DNI', Validators.required],
     numeroDocumentoTitularServicio: ['', Validators.required],
     nombreTitularServicio: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(160), Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$/)]],
@@ -131,10 +138,12 @@ export class FreelanceVentaDrawerComponent {
 
   private lastLoadKey = '';
   private departamentosPromise: Promise<UbigeoItem[]> | null = null;
+  private draftPersistenceEnabled = false;
 
   constructor() {
     this.configureCoreValidators();
     this.configureNormalizers();
+    this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.persistDraft());
     effect(() => {
       if (!this.visible()) {
         this.lastLoadKey = '';
@@ -156,17 +165,46 @@ export class FreelanceVentaDrawerComponent {
       return;
     }
     this.step.update((value) => Math.min(3, value + 1));
+    this.persistDraft();
   }
 
   previous(): void {
     this.step.update((value) => Math.max(0, value - 1));
+    this.persistDraft();
+  }
+
+  async pasteCoordinatesFromClipboard(): Promise<void> {
+    this.coordinatePasteMessage.set(null);
+    if (!navigator.clipboard?.readText) {
+      this.coordinatePasteMessage.set('No pudimos acceder al portapapeles. Revisa el permiso e intenta nuevamente.');
+      return;
+    }
+
+    try {
+      const coordinates = extraerParCoordenadas(await navigator.clipboard.readText());
+      if (!coordinates) {
+        this.coordinatePasteMessage.set('Copia las coordenadas en formato latitud, longitud.');
+        return;
+      }
+
+      this.form.patchValue({ latitud: coordinates[0], longitud: coordinates[1] });
+      this.form.controls.latitud.markAsDirty();
+      this.form.controls.longitud.markAsDirty();
+      this.form.controls.latitud.updateValueAndValidity({ emitEvent: false });
+      this.form.controls.longitud.updateValueAndValidity({ emitEvent: false });
+    } catch {
+      this.coordinatePasteMessage.set('No pudimos acceder al portapapeles. Revisa el permiso e intenta nuevamente.');
+    }
   }
 
   goToCompletedStep(target: number): void {
-    if (target <= this.step()) this.step.set(target);
+    if (target <= this.step()) {
+      this.step.set(target);
+      this.persistDraft();
+    }
   }
 
-  selectProvider(value: string): void {
+  private applyProvider(value: string): void {
     const id = value ? Number(value) : null;
     const providerChanged = this.selectedProvider() !== id;
     this.selectedProvider.set(id);
@@ -303,10 +341,10 @@ export class FreelanceVentaDrawerComponent {
           ...common,
           prefijo: `+${v.prefijo!}`,
           lead: v.lead!,
-          usermeta: this.nullIfBlank(v.usermeta)
         } as FreelanceVentaCrearRequest);
     request$.pipe(finalize(() => this.saving.set(false))).subscribe({
       next: (response) => {
+        clearFreelanceDrawerDraft();
         this.resetFormState();
         this.lastLoadKey = '';
         this.saved.emit(response);
@@ -330,16 +368,20 @@ export class FreelanceVentaDrawerComponent {
   }
 
   private load(): void {
+    this.draftPersistenceEnabled = false;
+    this.draftRestored.set(false);
     this.resetFormState();
+    const draft = this.matchingDraft();
     this.loading.set(true);
     void this.ensureDepartments();
     this.service.opciones().pipe(finalize(() => this.loading.set(false))).subscribe({
       next: (options) => {
         this.opciones.set(options);
         if (this.mode() === 'corregir' && this.idLead()) {
-          this.loadCorrection(this.idLead()!);
-        } else if (options.proveedores.length === 1) {
-          this.selectProvider(String(options.proveedores[0].id));
+          this.loadCorrection(this.idLead()!, draft);
+        } else {
+          if (options.proveedores.length === 1) this.applyProvider(String(options.proveedores[0].id));
+          this.restoreDraft(draft);
         }
       },
       error: (error) => this.error.set(error?.error?.message ?? 'No se pudieron cargar las opciones del equipo.')
@@ -349,6 +391,8 @@ export class FreelanceVentaDrawerComponent {
   private resetFormState(): void {
     this.step.set(0);
     this.error.set(null);
+    this.draftRestored.set(false);
+    this.coordinatePasteMessage.set(null);
     this.discardConfirmationOpen.set(false);
     this.preparacion.set(null);
     this.selectedProvider.set(null);
@@ -358,7 +402,6 @@ export class FreelanceVentaDrawerComponent {
     this.distritosDomicilio.set([]);
     this.form.controls.prefijo.enable({ emitEvent: false });
     this.form.controls.lead.enable({ emitEvent: false });
-    this.form.controls.usermeta.enable({ emitEvent: false });
     this.form.reset({
       prefijo: '51', tipoDocumento: 'DNI', parentesco: '', tecnologia: '',
       esFullClaro: false, esJalaCobertura: false, esZonaPintada: false,
@@ -366,7 +409,7 @@ export class FreelanceVentaDrawerComponent {
     });
   }
 
-  private loadCorrection(idLead: number): void {
+  private loadCorrection(idLead: number, draft: FreelanceDrawerDraft | null): void {
     this.loading.set(true);
     this.service.preparar(idLead).pipe(finalize(() => this.loading.set(false))).subscribe({
       next: (preparation) => {
@@ -376,7 +419,7 @@ export class FreelanceVentaDrawerComponent {
         this.selectedProvider.set(plan?.idProveedor ?? null);
         this.form.controls.idProveedor.setValue(plan?.idProveedor ?? null);
         this.form.patchValue({
-          prefijo: limpiarPrefijo(d.prefijo ?? '51'), lead: d.lead ?? '', usermeta: d.usermeta ?? '',
+          prefijo: limpiarPrefijo(d.prefijo ?? '51'), lead: d.lead ?? '',
           tipoDocumento: d.tipoDocumento ?? 'DNI', numeroDocumentoTitularServicio: d.numeroDocumentoTitularServicio ?? '',
           nombreTitularServicio: d.nombreTitular ?? '', celularRegistro: d.celularRegistro ?? '',
           celularReferencia: d.celularReferencia ?? '', celularGrabacion: d.celularGrabacion ?? '', correo: d.correo ?? '',
@@ -397,16 +440,16 @@ export class FreelanceVentaDrawerComponent {
         this.applyConfiguredValidators();
         this.form.controls.prefijo.disable();
         this.form.controls.lead.disable();
-        this.form.controls.usermeta.disable();
-        void this.resolveStoredUbigeo('nacimiento', d.ubigeoNacimiento ?? '');
-        void this.resolveStoredUbigeo('domicilio', d.ubigeoDomicilio ?? '');
+        this.restoreDraft(draft);
+        void this.resolveStoredUbigeo('nacimiento', this.form.controls.ubigeoNacimiento.value ?? '');
+        void this.resolveStoredUbigeo('domicilio', this.form.controls.ubigeoDomicilio.value ?? '');
       },
       error: (error) => this.error.set(error?.error?.message ?? 'No se pudo preparar la corrección.')
     });
   }
 
   private stepControls(step: number): string[] {
-    if (step === 0) return ['prefijo', 'lead', 'usermeta'];
+    if (step === 0) return ['prefijo', 'lead'];
     if (step === 1) {
       const controls = ['idProveedor', 'tipoDocumento', 'numeroDocumentoTitularServicio', 'nombreTitularServicio',
         'celularRegistro', 'celularReferencia', 'celularGrabacion', 'correo', 'fechaNacimiento',
@@ -488,7 +531,6 @@ export class FreelanceVentaDrawerComponent {
     });
     this.normalizeControl(this.form.controls.lead,
       (value) => limpiarTelefonoPorPrefijo(value, this.form.controls.prefijo.value));
-    this.normalizeControl(this.form.controls.usermeta, limpiarUsermeta);
     this.normalizeControl(this.form.controls.numeroDocumentoTitularServicio, limpiarDocumento);
     this.normalizeControl(this.form.controls.numeroDocumentoTitularCelularRegistro, (value) => soloDigitos(value, 12));
     for (const name of ['celularRegistro', 'celularReferencia', 'celularGrabacion'] as const) {
@@ -516,6 +558,49 @@ export class FreelanceVentaDrawerComponent {
 
   private normalizarCoordenadaPayload(value: string | null | undefined): string {
     return (this.nullIfBlank(value) ?? '').replace(',', '.');
+  }
+
+  private matchingDraft(): FreelanceDrawerDraft | null {
+    const draft = readFreelanceDrawerDraft();
+    if (!draft || draft.mode !== this.mode() || (draft.idLead ?? null) !== (this.idLead() ?? null)) return null;
+    return draft;
+  }
+
+  private restoreDraft(draft: FreelanceDrawerDraft | null): void {
+    if (draft) {
+      for (const [name, value] of Object.entries(draft.form)) {
+        const control = this.form.get(name);
+        if (control) control.setValue(value, { emitEvent: false });
+      }
+      this.form.updateValueAndValidity({ emitEvent: false });
+      this.form.markAsDirty();
+      this.step.set(draft.step);
+      this.draftRestored.set(true);
+      void this.restoreUbigeoOptions();
+    }
+    this.draftPersistenceEnabled = true;
+    this.persistDraft();
+  }
+
+  private persistDraft(): void {
+    if (!this.draftPersistenceEnabled || !this.visible()) return;
+    saveFreelanceDrawerDraft({
+      mode: this.mode(),
+      idLead: this.idLead(),
+      step: this.step(),
+      form: this.form.getRawValue() as Record<string, unknown>
+    });
+  }
+
+  private async restoreUbigeoOptions(): Promise<void> {
+    const nacimientoDepartamento = this.form.controls.idDepartamentoNacimiento.value;
+    const nacimientoProvincia = this.form.controls.idProvinciaNacimiento.value;
+    const domicilioDepartamento = this.form.controls.idDepartamentoDomicilio.value;
+    const domicilioProvincia = this.form.controls.idProvinciaDomicilio.value;
+    if (nacimientoDepartamento) this.provinciasNacimiento.set(await firstValueFrom(this.service.listarProvincias(nacimientoDepartamento)));
+    if (nacimientoProvincia) this.distritosNacimiento.set(await firstValueFrom(this.service.listarDistritos(nacimientoProvincia)));
+    if (domicilioDepartamento) this.provinciasDomicilio.set(await firstValueFrom(this.service.listarProvincias(domicilioDepartamento)));
+    if (domicilioProvincia) this.distritosDomicilio.set(await firstValueFrom(this.service.listarDistritos(domicilioProvincia)));
   }
 
   private async resolveStoredUbigeo(type: 'nacimiento' | 'domicilio', code: string): Promise<void> {
@@ -556,15 +641,16 @@ export class FreelanceVentaDrawerComponent {
     const value = this.form.getRawValue();
     this.checkingIdentity.set(true);
     this.error.set(null);
-    this.service.validarIdentidad(`+${value.prefijo!}`, value.lead!, this.nullIfBlank(value.usermeta))
+    this.service.validarIdentidad(`+${value.prefijo!}`, value.lead!)
       .pipe(finalize(() => this.checkingIdentity.set(false)))
       .subscribe({
         next: (availability) => {
-          if (!availability.telefonoDisponible || !availability.usermetaDisponible) {
-            this.error.set(availability.mensaje ?? 'La identidad ya se encuentra registrada.');
+          if (!availability.telefonoDisponible) {
+            this.error.set(availability.mensaje ?? 'El número del lead ya se encuentra registrado.');
             return;
           }
           this.step.set(1);
+          this.persistDraft();
         },
         error: (error) => this.error.set(error?.error?.message ?? 'No se pudo validar la identidad.')
       });

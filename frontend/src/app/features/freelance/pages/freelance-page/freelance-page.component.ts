@@ -17,6 +17,7 @@ import {
   FreelanceSeguimientoDetalle
 } from '../../models/freelance.models';
 import { FreelanceService } from '../../services/freelance.service';
+import { clearFreelanceDrawerDraft, readFreelanceDrawerDraft } from '../../utils/freelance-drawer-draft';
 
 const EMPTY_DATA: FreelanceSeguimiento = {
   contadores: { registradas: 0, subidas: 0, instaladas: 0, retornadas: 0 },
@@ -53,7 +54,15 @@ export class FreelancePageComponent {
   readonly drawerOpen = signal(false);
   readonly correctionLeadId = signal<number | null>(null);
 
-  readonly canCreate = computed(() => !!this.options() && !this.teamError());
+  readonly canCreate = computed(() => {
+    const providerCount = this.options()?.proveedores.length ?? 0;
+    return providerCount === 1 && !this.teamError();
+  });
+  readonly providerSetupMessage = computed(() => {
+    const options = this.options();
+    if (!options || this.teamError() || options.proveedores.length === 1) return null;
+    return 'Tu cuenta todavía no está configurada para registrar ventas. Solicita que te asignen un proveedor.';
+  });
   readonly range = computed(() => {
     const range = resolveMetricsRange(this.period(), this.day(), this.until());
     return { desde: range.desde ?? localToday(), hasta: range.hasta ?? localToday() };
@@ -72,6 +81,7 @@ export class FreelancePageComponent {
   readonly conversionInstalled = computed(() => this.percent(this.data().contadores.instaladas, this.data().contadores.subidas));
 
   constructor() {
+    this.restoreDrawerDraft();
     this.loadOptions();
     this.reload();
     merge(
@@ -104,21 +114,27 @@ export class FreelancePageComponent {
 
   openCreate(): void {
     if (!this.canCreate()) return;
+    const draft = readFreelanceDrawerDraft();
+    if (draft && (draft.mode !== 'crear' || draft.idLead !== null)) clearFreelanceDrawerDraft();
     this.correctionLeadId.set(null);
     this.drawerOpen.set(true);
   }
 
   openCorrection(row: FreelanceSeguimientoDetalle): void {
     if (!row.puedeCorregir) return;
+    const draft = readFreelanceDrawerDraft();
+    if (draft && (draft.mode !== 'corregir' || draft.idLead !== row.idLead)) clearFreelanceDrawerDraft();
     this.correctionLeadId.set(row.idLead);
     this.drawerOpen.set(true);
   }
 
   closeDrawer(): void {
+    clearFreelanceDrawerDraft();
     this.drawerOpen.set(false);
   }
 
   saved(): void {
+    clearFreelanceDrawerDraft();
     this.drawerOpen.set(false);
     this.loadOptions();
     this.reload();
@@ -155,6 +171,16 @@ export class FreelancePageComponent {
         this.teamError.set(error?.error?.message ?? 'Debes pertenecer a un equipo operativo para registrar ventas.');
       }
     });
+  }
+
+  private restoreDrawerDraft(): void {
+    const draft = readFreelanceDrawerDraft();
+    if (!draft || (draft.mode === 'corregir' && draft.idLead === null)) {
+      if (draft) clearFreelanceDrawerDraft();
+      return;
+    }
+    this.correctionLeadId.set(draft.mode === 'corregir' ? draft.idLead : null);
+    this.drawerOpen.set(true);
   }
 
   private reload(showLoading = true): void {

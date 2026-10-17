@@ -39,16 +39,19 @@
           <div class="form-error" role="alert"><i class="ti ti-alert-circle"></i>{{ error() }}</div>
         }
 
+        @if (draftRestored()) {
+          <div class="draft-note" role="status"><i class="ti ti-refresh" aria-hidden="true"></i><span>Recuperamos tu avance y continuamos desde este paso.</span></div>
+        }
+
         @if (step() === 0) {
           <section class="form-section">
             <div class="section-copy">
               <h3>Identidad del contacto</h3>
-              <p>El teléfono identifica la oportunidad y no podrá cambiar después del registro.</p>
+              <p>Ingresa el prefijo y el número del lead para comenzar.</p>
             </div>
             <div class="fields identity-grid">
               <label><span>Prefijo</span><span class="prefix-input"><b aria-hidden="true">+</b><input formControlName="prefijo" inputmode="numeric" maxlength="3" placeholder="51" [class.invalid]="invalid('prefijo')"></span></label>
               <label class="wide"><span>Teléfono</span><input formControlName="lead" inputmode="numeric" maxlength="12" placeholder="999888777" [class.invalid]="invalid('lead')"></label>
-              <label class="full"><span>Usermeta <small>opcional, sin @</small></span><input formControlName="usermeta" placeholder="usuario.meta" [class.invalid]="invalid('usermeta')"></label>
             </div>
           </section>
         }
@@ -58,14 +61,6 @@
             <div class="section-copy">
               <h3>Expediente completo</h3>
               <p>Datos del titular, contacto y dirección donde se instalará el servicio.</p>
-            </div>
-            <div class="fields two-columns provider-first">
-              <label><span>Proveedor</span>
-                <select formControlName="idProveedor" (change)="selectProvider($any($event.target).value)" [class.invalid]="invalid('idProveedor')">
-                  <option value="">Selecciona</option>
-                  @for (provider of providers(); track provider.id) { <option [value]="provider.id">{{ provider.nombre }}</option> }
-                </select>
-              </label>
             </div>
             <h4>Titular y contacto</h4>
             <div class="fields two-columns">
@@ -117,7 +112,17 @@
               <label class="full"><span>Dirección</span><input formControlName="direccion" placeholder="Av. Principal 123" [class.invalid]="invalid('direccion')"></label>
               <label class="full"><span>Referencia</span><input formControlName="referencia" placeholder="Frente al parque" [class.invalid]="invalid('referencia')"></label>
               <label><span>Latitud</span><input formControlName="latitud" inputmode="decimal" placeholder="-12.011912014367258" [class.invalid]="invalid('latitud')"></label>
-              <label><span>Longitud</span><input formControlName="longitud" inputmode="decimal" placeholder="-77.12235645202007" [class.invalid]="invalid('longitud')"></label>
+              <label class="coordinate-field">
+                <span class="coordinate-label">
+                  <span>Longitud</span>
+                  <button class="paste-coordinates" type="button" (click)="pasteCoordinatesFromClipboard()" aria-label="Pegar coordenadas desde el portapapeles">
+                    <i class="ti ti-clipboard" aria-hidden="true"></i>
+                    <span>Pegar coordenadas</span>
+                  </button>
+                </span>
+                <input formControlName="longitud" aria-label="Longitud" inputmode="decimal" placeholder="-77.12235645202007" [class.invalid]="invalid('longitud')">
+                @if (coordinatePasteMessage()) { <small class="coordinate-paste-message" role="alert">{{ coordinatePasteMessage() }}</small> }
+              </label>
               @for (field of [
                 ['urbanizacion','Urbanización'], ['numero','Número'], ['manzana','Manzana'], ['lote','Lote'],
                 ['nombreEdificio','Edificio'], ['nombreCondominio','Condominio'], ['piso','Piso'], ['interior','Interior']
@@ -211,7 +216,7 @@
         <i class="ti ti-alert-triangle" aria-hidden="true"></i>
         <div class="discard-copy">
           <h3 id="discard-title">¿Descartar los datos ingresados?</h3>
-          <p id="discard-description">La información de esta venta todavía no se ha guardado. Si sales ahora, tendrás que ingresarla nuevamente.</p>
+          <p id="discard-description">La información todavía no se ha guardado. Si descartas este avance, tendrás que ingresarla nuevamente.</p>
         </div>
         <div class="discard-actions">
           <button type="button" class="secondary danger" (click)="discardAndClose()">Descartar y salir</button>
