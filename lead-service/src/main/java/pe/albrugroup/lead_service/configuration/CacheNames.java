@@ -17,6 +17,8 @@ public final class CacheNames {
     public static final String UBIGEO_DEPARTAMENTOS = "catalogo:ubigeo:departamentos";
     public static final String UBIGEO_PROVINCIAS = "catalogo:ubigeo:provincias";
     public static final String UBIGEO_DISTRITOS = "catalogo:ubigeo:distritos";
+    public static final String TIPOS_DOMICILIO = "catalogo:tipos-domicilio";
+    public static final String TIPOS_URBANIZACION = "catalogo:tipos-urbanizacion";
 
     private CacheNames() {
     }

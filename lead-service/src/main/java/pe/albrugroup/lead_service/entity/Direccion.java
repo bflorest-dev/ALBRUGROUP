@@ -2,7 +2,7 @@ package pe.albrugroup.lead_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
+import pe.albrugroup.lead_service.entity.enums.TipoUrbanizacion;
 import pe.albrugroup.lead_service.entity.enums.TipoVia;
 
 @Entity @Getter @Setter @Builder
@@ -14,8 +14,9 @@ public class Direccion {
     private Long id;
 
     @Column(length = 6)
-    private String ubigeoDomicilio; // UPDATE
-    @Enumerated(EnumType.STRING)
+    private String ubigeoDomicilio;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tipo_domicilio")
     private TipoDomicilio tipoDomicilio;
     @Enumerated(EnumType.STRING)
     private TipoVia tipoVia;
@@ -29,6 +30,9 @@ public class Direccion {
     private String longitud;
 
     // SITUACIONALES
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
+    private TipoUrbanizacion tipoUrbanizacion;
     private String urbanizacion;
     private String numero;
     private String manzana;

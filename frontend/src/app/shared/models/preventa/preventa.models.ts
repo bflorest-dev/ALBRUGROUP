@@ -512,13 +512,16 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   departamentoDomicilio?: string | null;
   provinciaDomicilio?: string | null;
   distritoDomicilio?: string | null;
-  tipoDomicilio?: string | null;
+  idTipoDomicilio?: number | null;
+  nombreTipoDomicilio?: string | null;
+  esVertical?: boolean | null;
   tipoVia?: string | null;
   via?: string | null;
   direccion?: string | null;
   referencia?: string | null;
   latitud?: string | null;
   longitud?: string | null;
+  tipoUrbanizacion?: string | null;
   sec?: string | null;
   sot?: string | null;
   customerId?: string | null;
@@ -875,16 +878,34 @@ export interface OportunidadHermana {
   lastEntryAt?: string | null;
 }
 
+export interface TipoDomicilioOption {
+  id: number;
+  nombre: string;
+  esVertical: boolean;
+}
+
+export type TipoUrbanizacion =
+  | 'URBANIZACION'
+  | 'ASENTAMIENTO_HUMANO'
+  | 'ASOCIACION'
+  | 'PUEBLO_JOVEN'
+  | 'COOPERATIVA'
+  | 'CONJUNTO_HABITACIONAL'
+  | 'ASOCIACION_PROVIVIENDA'
+  | 'AGRUPACION_DE_VIVIENDA'
+  | 'RESIDENCIAL';
+
 export interface LeadDireccionRequest {
   ubigeoDomicilio: string;
   idProveedor?: number | null;
-  tipoDomicilio?: string | null;
+  idTipoDomicilio?: number | null;
   tipoVia?: string | null;
   via?: string | null;
   direccion: string;
   referencia?: string | null;
   latitud?: string | null;
   longitud?: string | null;
+  tipoUrbanizacion?: TipoUrbanizacion | string | null;
   urbanizacion?: string | null;
   numero?: string | null;
   manzana?: string | null;

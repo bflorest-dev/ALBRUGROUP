@@ -13,10 +13,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { finalize, firstValueFrom } from 'rxjs';
+import { DireccionCatalogoService } from '../../../../core/services/direccion-catalogo.service';
 import { EquiposNavService } from '../../../../core/services/equipos-nav.service';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { OrigenResponse } from '../../../admin/services/base-leads.service';
-import { CampoConfigItem, UbigeoItem } from '../../../../shared/models/preventa/preventa.models';
+import { CampoConfigItem, TipoDomicilioOption, UbigeoItem } from '../../../../shared/models/preventa/preventa.models';
 import {
   SubsanacionImpacto,
   SubsanacionModo,
@@ -69,7 +70,7 @@ const LABELS: Record<string, string> = {
   parentesco: 'Parentesco',
   ubigeoNacimiento: 'Ubicación de nacimiento',
   ubigeoDomicilio: 'Ubicación del domicilio',
-  tipoDomicilio: 'Tipo de domicilio',
+  idTipoDomicilio: 'Tipo de domicilio',
   direccion: 'Dirección',
   referencia: 'Referencia',
   latitud: 'Latitud',
@@ -103,6 +104,7 @@ export class SubsanacionDrawerComponent implements OnInit {
 
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(SubsanacionService);
+  private readonly direccionCatalogoService = inject(DireccionCatalogoService);
   private readonly equiposNav = inject(EquiposNavService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -144,7 +146,8 @@ export class SubsanacionDrawerComponent implements OnInit {
   readonly pasos = ['Identidad', 'Contexto', 'Expediente', 'Flujo ideal', 'Revisión'];
   readonly tiposDocumento = ['DNI', 'CE', 'RUC'];
   readonly parentescos = ['TITULAR', 'MADRE', 'PADRE', 'HERMANO_A', 'TIO_A', 'CONOCIDO'];
-  readonly tiposDomicilio = ['HOGAR', 'MULTIFAMILIAR', 'CONDOMINIO_EDIFICIO', 'CONDOMINIO_EDIFICIO_NO_HABILITADO'];
+  readonly tiposDomicilio = signal<TipoDomicilioOption[]>([]);
+  readonly tiposUrbanizacion = signal<string[]>([]);
   readonly tiposVia = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
   readonly origenes = signal<OrigenResponse[]>([]);
 
@@ -188,7 +191,8 @@ export class SubsanacionDrawerComponent implements OnInit {
     idDepartamentoDomicilio: [null as number | null, Validators.required],
     idProvinciaDomicilio: [null as number | null, Validators.required],
     idDistritoDomicilio: [null as number | null, Validators.required],
-    tipoDomicilio: ['', Validators.required],
+    idTipoDomicilio: [null as number | null, Validators.required],
+    tipoUrbanizacion: [''],
     tipoVia: [''],
     via: [''],
     direccion: ['', Validators.required],
@@ -336,6 +340,7 @@ export class SubsanacionDrawerComponent implements OnInit {
     this.comercialForm.patchValue({ idCampana: null, idPlan: null });
     const proveedor = this.comercialForm.controls.idProveedor.value;
     if (proveedor) this.cargarCampos(proveedor);
+    this.refreshDireccionCatalogos(proveedor);
     this.cargarOpciones();
   }
 
@@ -591,7 +596,7 @@ export class SubsanacionDrawerComponent implements OnInit {
     }, { emitEvent: false });
     this.direccionForm.reset({
       ubigeoDomicilio: d.ubigeoDomicilio ?? '', idDepartamentoDomicilio: null, idProvinciaDomicilio: null,
-      idDistritoDomicilio: null, tipoDomicilio: d.tipoDomicilio ?? '', tipoVia: d.tipoVia ?? '',
+      idDistritoDomicilio: null, idTipoDomicilio: d.idTipoDomicilio ?? null, tipoUrbanizacion: d.tipoUrbanizacion ?? '', tipoVia: d.tipoVia ?? '',
       via: d.via ?? '', direccion: d.direccion ?? '', referencia: d.referencia ?? '', latitud: d.latitud ?? '',
       longitud: d.longitud ?? '', urbanizacion: d.urbanizacion ?? '', numero: d.numero ?? '', manzana: d.manzana ?? '',
       lote: d.lote ?? '', nombreEdificio: d.nombreEdificio ?? '', nombreCondominio: d.nombreCondominio ?? '',
@@ -606,6 +611,7 @@ export class SubsanacionDrawerComponent implements OnInit {
     }, { emitEvent: false });
     this.formVersion.update((value) => value + 1);
     this.validarFechasCliente();
+    this.refreshDireccionCatalogos(prep.idProveedor ?? null);
   }
 
   private cargarOpciones(preservar = false): void {
@@ -806,7 +812,7 @@ export class SubsanacionDrawerComponent implements OnInit {
     this.direccionForm.controls.idDepartamentoDomicilio.setValidators([Validators.required]);
     this.direccionForm.controls.idProvinciaDomicilio.setValidators([Validators.required]);
     this.direccionForm.controls.idDistritoDomicilio.setValidators([Validators.required]);
-    this.direccionForm.controls.tipoDomicilio.setValidators([Validators.required]);
+    this.direccionForm.controls.idTipoDomicilio.setValidators([Validators.required]);
     this.direccionForm.controls.direccion.setValidators([Validators.required]);
     this.direccionForm.controls.referencia.setValidators([Validators.required]);
     this.direccionForm.controls.latitud.setValidators([coordenadaValidator('latitud')]);
@@ -1044,7 +1050,7 @@ export class SubsanacionDrawerComponent implements OnInit {
       idDepartamentoDomicilio: 'Departamento del domicilio',
       idProvinciaDomicilio: 'Provincia del domicilio',
       idDistritoDomicilio: 'Distrito del domicilio',
-      tipoDomicilio: 'Tipo de domicilio',
+      idTipoDomicilio: 'Tipo de domicilio',
       tipoVia: 'Tipo de vía',
       via: 'Vía',
       direccion: 'Dirección',
@@ -1140,7 +1146,7 @@ export class SubsanacionDrawerComponent implements OnInit {
         nombreTitularCelularRegistro: this.nulo(datos.nombreTitularCelularRegistro)
       },
       direccion: {
-        ubigeoDomicilio: direccion.ubigeoDomicilio ?? '', tipoDomicilio: this.nulo(direccion.tipoDomicilio),
+        ubigeoDomicilio: direccion.ubigeoDomicilio ?? '', idTipoDomicilio: direccion.idTipoDomicilio ?? null, tipoUrbanizacion: this.nulo(direccion.tipoUrbanizacion),
         tipoVia: this.nulo(direccion.tipoVia), via: this.nulo(direccion.via), direccion: direccion.direccion ?? '',
         referencia: this.nulo(direccion.referencia), latitud: this.coordenadaApi(direccion.latitud), longitud: this.coordenadaApi(direccion.longitud),
         urbanizacion: this.nulo(direccion.urbanizacion), numero: this.nulo(direccion.numero), manzana: this.nulo(direccion.manzana),
@@ -1251,6 +1257,21 @@ export class SubsanacionDrawerComponent implements OnInit {
     const date = new Date();
     date.setMonth(date.getMonth() + meses);
     return date;
+  }
+
+  private refreshDireccionCatalogos(idProveedor: number | null): void {
+    if (idProveedor) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposDomicilio(idProveedor))
+        .then((tipos) => this.tiposDomicilio.set(tipos))
+        .catch(() => this.tiposDomicilio.set([]));
+    } else {
+      this.tiposDomicilio.set([]);
+    }
+    if (!this.tiposUrbanizacion().length) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposUrbanizacion())
+        .then((tipos) => this.tiposUrbanizacion.set(tipos))
+        .catch(() => {});
+    }
   }
 
   private isoLocal(date: Date): string {

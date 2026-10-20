@@ -16,6 +16,7 @@ import {
   PlanOfertaServiceComposition,
   PlanResponse,
   PromocionComercialResponse,
+  TipoDomicilioOption,
   UbigeoItem
 } from '../../models/preventa/preventa.models';
 import { normalizePersonNameFinal, normalizePersonNameInput } from '../../utils/person-name';
@@ -67,8 +68,9 @@ export class LeadCommercialDataTabsComponent implements OnChanges {
   @Input() layoutMode: LeadCommercialDataTabsLayoutMode = 'default';
   @Input() showHistorialTab = false;
   @Input() tipoDocumentoOptions: string[] = [];
-  @Input() tipoDomicilioOptions: string[] = [];
+  @Input() tipoDomicilioOptions: TipoDomicilioOption[] = [];
   @Input() tipoViaOptions: string[] = [];
+  @Input() tipoUrbanizacionOptions: string[] = [];
   @Input() departamentos: UbigeoItem[] = [];
   @Input() provinciasDomicilio: UbigeoItem[] = [];
   @Input() distritosDomicilio: UbigeoItem[] = [];

@@ -30,6 +30,7 @@ import {
   SubtipificacionResponse,
   Tecnologia,
   TipificacionResponse,
+  TipoDomicilioOption,
   UbigeoItem
 } from '../../models/preventa/preventa.models';
 import { PhoneActionButtonComponent } from '../phone-action-button/phone-action-button.component';
@@ -74,8 +75,9 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   @Input({ required: true }) tipificacionForm!: FormGroup;
   @Input() camposVisibles: ReadonlySet<string> = new Set<string>();
   @Input() tipoDocumentoOptions: string[] = [];
-  @Input() tipoDomicilioOptions: string[] = [];
+  @Input() tipoDomicilioOptions: TipoDomicilioOption[] = [];
   @Input() tipoViaOptions: string[] = [];
+  @Input() tipoUrbanizacionOptions: string[] = [];
   @Input() departamentos: UbigeoItem[] = [];
   @Input() provinciasDomicilio: UbigeoItem[] = [];
   @Input() distritosDomicilio: UbigeoItem[] = [];
@@ -422,6 +424,13 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
     const copied = this.document.execCommand('copy');
     textarea.remove();
     return copied;
+  }
+
+  protected tipoDomicilioNombre(): string {
+    const id = this.direccionForm.get('idTipoDomicilio')?.value;
+    if (!id) return this.display(this.detail?.nombreTipoDomicilio);
+    return this.tipoDomicilioOptions.find(o => o.id === id)?.nombre
+      ?? this.display(this.detail?.nombreTipoDomicilio);
   }
 
   protected booleanDisplay(value: unknown): string {

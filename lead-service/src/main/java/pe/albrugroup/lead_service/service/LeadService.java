@@ -142,6 +142,7 @@ import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.PlataformaRepository;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
+import pe.albrugroup.lead_service.repository.TipoDomicilioRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
 import pe.albrugroup.lead_service.repository.ZonaReglaRepository;
 import pe.albrugroup.lead_service.service.mapper.LeadMapper;
@@ -217,6 +218,7 @@ public class LeadService {
     private final FreelanceVentaOrigenRepository freelanceVentaOrigenRepository;
     private final FreelanceVentaReenvioRepository freelanceVentaReenvioRepository;
     private final ProveedorRepository proveedorRepository;
+    private final TipoDomicilioRepository tipoDomicilioRepository;
     private final OrigenRepository origenRepository;
     private final LeadSeguimientoService leadSeguimientoService;
     private final ZonaService zonaService;
@@ -2535,6 +2537,15 @@ public class LeadService {
     private Lead actualizarDireccionInterno(Lead lead, LeadDireccionRequest request) {
         Direccion direccion = lead.getDireccion() == null ? new Direccion() : lead.getDireccion();
         leadMapper.updateDireccion(request, direccion);
+
+        if (request.getIdTipoDomicilio() != null) {
+            pe.albrugroup.lead_service.entity.TipoDomicilio td = tipoDomicilioRepository.findById(request.getIdTipoDomicilio())
+                    .orElseThrow(() -> new NotFoundException(pe.albrugroup.lead_service.entity.TipoDomicilio.class, request.getIdTipoDomicilio()));
+            direccion.setTipoDomicilio(td);
+        } else {
+            direccion.setTipoDomicilio(null);
+        }
+
         aplicarDatosEspecificosProveedor(lead, request.getTecnologia(), request.getEsFullClaro(),
                 request.getEsJalaCobertura(), request.getEsZonaPintada());
 
@@ -5659,13 +5670,16 @@ public class LeadService {
                 departamentoDomicilio,
                 provinciaDomicilio,
                 distritoDomicilio,
-                direccion == null ? null : direccion.getTipoDomicilio(),
+                direccion == null || direccion.getTipoDomicilio() == null ? null : direccion.getTipoDomicilio().getId(),
+                direccion == null || direccion.getTipoDomicilio() == null ? null : direccion.getTipoDomicilio().getNombre(),
+                direccion == null || direccion.getTipoDomicilio() == null ? null : direccion.getTipoDomicilio().isEsVertical(),
                 direccion == null ? null : direccion.getTipoVia(),
                 direccion == null ? null : direccion.getVia(),
                 direccion == null ? lead.getDireccionSnapshot() : direccion.getDireccion(),
                 direccion == null ? null : direccion.getReferencia(),
                 direccion == null ? null : direccion.getLatitud(),
                 direccion == null ? null : direccion.getLongitud(),
+                direccion == null ? null : direccion.getTipoUrbanizacion(),
                 direccion == null ? null : direccion.getUrbanizacion(),
                 direccion == null ? null : direccion.getNumero(),
                 direccion == null ? null : direccion.getManzana(),
@@ -6390,7 +6404,7 @@ public class LeadService {
 
         validarTextoObligatorio(direccion.getUbigeoDomicilio(), "Falta ubigeoDomicilio");
         if (direccion.getTipoDomicilio() == null) {
-            throw new BadRequestException("Falta tipoDomicilio");
+            throw new BadRequestException("Falta idTipoDomicilio");
         }
         // tipoVia y via son opcionales: una direccion puede no tener via (opcion "Sin Via" en la UI).
         validarTextoObligatorio(direccion.getDireccion(), "Falta direccion");

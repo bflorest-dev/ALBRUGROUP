@@ -18,7 +18,6 @@ type AccionMeta = { cls: string; label: string };
 const THEME_KEY = 'bitacora-theme';
 
 const TIPO_DOCUMENTO = ['DNI', 'CE', 'RUC'];
-const TIPO_DOMICILIO = ['HOGAR', 'MULTIFAMILIAR', 'CONDOMINIO_EDIFICIO', 'CONDOMINIO_EDIFICIO_NO_HABILITADO'];
 const TIPO_VIA = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
@@ -75,9 +74,6 @@ export class BitacoraPageComponent implements OnInit {
 
   protected readonly tipoDocumentoOpts = computed(() =>
     this.mergeCurrent(TIPO_DOCUMENTO, this.f.valorOriginal('datos', 'tipoDocumento'))
-  );
-  protected readonly tipoDomicilioOpts = computed(() =>
-    this.mergeCurrent(TIPO_DOMICILIO, this.f.valorOriginal('direccion', 'tipoDomicilio'))
   );
   protected readonly tipoViaOpts = computed(() =>
     this.mergeCurrent(TIPO_VIA, this.f.valorOriginal('direccion', 'tipoVia'))

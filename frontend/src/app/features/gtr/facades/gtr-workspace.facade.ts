@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Inject, Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, NonNullableFormBuilder, Validators } from '@angular/forms';
 import { Subscription, firstValueFrom } from 'rxjs';
+import { DireccionCatalogoService } from '../../../core/services/direccion-catalogo.service';
 import {
   AsesorGtrPresenceResponse,
   ConnectedUserResponse,
@@ -54,6 +55,7 @@ import {
   PlataformaDigitalResponse,
   PromocionComercialResponse,
   Tecnologia,
+  TipoDomicilioOption,
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import { LeadCommercialDataTab } from '../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
@@ -267,6 +269,7 @@ export class GtrWorkspaceFacade {
   private readonly presenceService = inject(PresenceService);
   private readonly presenceRealtimeService = inject(PresenceRealtimeService);
   private readonly historicosStateService = inject(GtrHistoricosStateService);
+  private readonly direccionCatalogoService = inject(DireccionCatalogoService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
   private attendanceRefreshId: number | null = null;
@@ -582,7 +585,8 @@ export class GtrWorkspaceFacade {
     idProvinciaDomicilio: [0, [Validators.required, Validators.min(1)]],
     idDistritoDomicilio: [0, [Validators.required, Validators.min(1)]],
     ubigeoDomicilio: ['', [Validators.required]],
-    tipoDomicilio: [''],
+    idTipoDomicilio: [null as number | null],
+    tipoUrbanizacion: [''],
     tipoVia: [''],
     via: [''],
     direccion: ['', [Validators.required]],
@@ -635,12 +639,8 @@ export class GtrWorkspaceFacade {
     { label: 'Postventa', value: 'POSTVENTA' }
   ];
   readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
-  readonly tipoDomicilioOptions = [
-    'HOGAR',
-    'MULTIFAMILIAR',
-    'CONDOMINIO_EDIFICIO',
-    'CONDOMINIO_EDIFICIO_NO_HABILITADO'
-  ];
+  readonly tipoDomicilioOptions = signal<TipoDomicilioOption[]>([]);
+  readonly tipoUrbanizacionOptions = signal<string[]>([]);
   readonly tipoViaOptions = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
   readonly providerOptions = computed<SelectOption<number>[]>(() => {
     const providers = new Map<number, string>();
@@ -2430,6 +2430,7 @@ export class GtrWorkspaceFacade {
     this.adicionales.set([]);
     this.ofertaForm.markAsDirty();
     this.limpiarDatosClarosSiNoCorresponde();
+    this.refreshDireccionCatalogos(idProveedor || null);
     if (idProveedor) {
       await Promise.all([this.refreshProviderAdditionals(idProveedor), this.refreshPlanesOferta()]);
     }
@@ -4479,6 +4480,7 @@ export class GtrWorkspaceFacade {
     const idProveedor = plan?.idProveedor ?? idProveedorBase ?? this.selectedOfertaProviderId() ?? null;
     const idZona = this.typifyDetail()?.idZona;
     this.selectedOfertaProviderId.set(idProveedor);
+    this.refreshDireccionCatalogos(idProveedor);
     this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
     const [promociones, adicionales] = await Promise.all([
       firstValueFrom(this.preventaService.listarPromociones({
@@ -4668,7 +4670,8 @@ export class GtrWorkspaceFacade {
       idProvinciaDomicilio: 0,
       idDistritoDomicilio: 0,
       ubigeoDomicilio: detail.ubigeoDomicilio ?? '',
-      tipoDomicilio: detail.tipoDomicilio ?? '',
+      idTipoDomicilio: detail.idTipoDomicilio ?? null,
+      tipoUrbanizacion: detail.tipoUrbanizacion ?? '',
       tipoVia: detail.tipoVia ?? '',
       via: detail.via ?? '',
       direccion: detail.direccion ?? '',
@@ -4746,6 +4749,21 @@ export class GtrWorkspaceFacade {
       esFullClaro: false
     });
     this.markTypifyFormsPristine();
+  }
+
+  private refreshDireccionCatalogos(idProveedor: number | null): void {
+    if (idProveedor) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposDomicilio(idProveedor))
+        .then((tipos) => this.tipoDomicilioOptions.set(tipos))
+        .catch(() => this.tipoDomicilioOptions.set([]));
+    } else {
+      this.tipoDomicilioOptions.set([]);
+    }
+    if (!this.tipoUrbanizacionOptions().length) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposUrbanizacion())
+        .then((tipos) => this.tipoUrbanizacionOptions.set(tipos))
+        .catch(() => {});
+    }
   }
 
   private async guardarAntesDeTipificar(detail: LeadDetalleResponse, forceFullSave = false): Promise<boolean> {
@@ -4867,7 +4885,8 @@ export class GtrWorkspaceFacade {
     const raw = this.direccionForm.getRawValue();
     return this.cleanObject({
       ubigeoDomicilio: raw.ubigeoDomicilio,
-      tipoDomicilio: raw.tipoDomicilio,
+      idTipoDomicilio: raw.idTipoDomicilio,
+      tipoUrbanizacion: raw.tipoUrbanizacion || null,
       tipoVia: raw.tipoVia,
       via: raw.via,
       direccion: raw.direccion,
@@ -4917,7 +4936,7 @@ export class GtrWorkspaceFacade {
     }
 
     add('direccion', 'Distrito', a.ubigeoDomicilio.value);
-    add('direccion', 'Tipo de Domicilio', a.tipoDomicilio.value);
+    add('direccion', 'Tipo de Domicilio', a.idTipoDomicilio.value);
     add('direccion', 'Direccion', a.direccion.value);
     add('direccion', 'Referencia', a.referencia.value);
     add('direccion', 'Piso', a.piso.value);

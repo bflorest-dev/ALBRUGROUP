@@ -236,13 +236,14 @@
                   </div>
                 }
               </div>
-              <label class="field"><span>Tipo de domicilio</span><select formControlName="tipoDomicilio"><option value="">Selecciona</option>@for (item of tiposDomicilio; track item) { <option [value]="item">{{ item }}</option> }</select></label>
+              <label class="field"><span>Tipo de domicilio</span><select formControlName="idTipoDomicilio"><option [ngValue]="null">Selecciona</option>@for (item of tiposDomicilio(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
               <label class="field"><span>Tipo de vía <small>opcional</small></span><select formControlName="tipoVia"><option value="">Sin vía</option>@for (item of tiposVia; track item) { <option [value]="item">{{ item }}</option> }</select></label>
               <label class="field"><span>Vía</span><input formControlName="via" /></label>
               <label class="field span2"><span>Dirección</span><input formControlName="direccion" /></label>
               <label class="field span2"><span>Referencia</span><input formControlName="referencia" /></label>
               <label class="field"><span>Latitud</span><input class="mono" formControlName="latitud" inputmode="decimal" maxlength="24" (paste)="pegarCoordenadas($event, 'latitud')" /></label>
               <label class="field"><span>Longitud</span><input class="mono" formControlName="longitud" inputmode="decimal" maxlength="24" (paste)="pegarCoordenadas($event, 'longitud')" /></label>
+              <label class="field"><span>Tipo de urbanización</span><select formControlName="tipoUrbanizacion"><option value="">—</option>@for (item of tiposUrbanizacion(); track item) { <option [value]="item">{{ item }}</option> }</select></label>
               <label class="field"><span>Urbanización</span><input formControlName="urbanizacion" /></label>
               <label class="field"><span>Número</span><input formControlName="numero" /></label>
               <label class="field"><span>Manzana</span><input formControlName="manzana" /></label>

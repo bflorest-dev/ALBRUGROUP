@@ -16,6 +16,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DireccionCatalogoService } from '../../../../core/services/direccion-catalogo.service';
 import { CurrentUserProviderScopeService } from '../../../../core/services/current-user-provider-scope.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
@@ -40,6 +41,7 @@ import {
   PlanOfertaFilterState,
   PlanOfertaFilters,
   TipificacionResponse,
+  TipoDomicilioOption,
   UbigeoItem,
   PlanResponse,
   PromocionComercialResponse
@@ -89,6 +91,7 @@ const DEFAULT_PLAN_OFERTA_FILTERS: PlanOfertaFilterState = {
 })
 export class BackofficeGeneralBoardPageComponent implements OnInit {
   private readonly leadService = inject(BackofficeLeadService);
+  private readonly direccionCatalogoService = inject(DireccionCatalogoService);
   private readonly providerScope = inject(CurrentUserProviderScopeService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly sessionService = inject(SessionService);
@@ -184,7 +187,8 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   private planOfertaLoadSequence = 0;
 
   protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
-  protected readonly tipoDomicilioOptions = ['HOGAR', 'MULTIFAMILIAR', 'CONDOMINIO_EDIFICIO', 'CONDOMINIO_EDIFICIO_NO_HABILITADO'];
+  protected readonly tipoDomicilioOptions = signal<TipoDomicilioOption[]>([]);
+  protected readonly tipoUrbanizacionOptions = signal<string[]>([]);
   protected readonly tipoViaOptions = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
   protected readonly camposVisibles = computed<ReadonlySet<string>>(
     () => new Set((this.detail()?.camposConfig ?? []).filter((campo) => campo.visible).map((campo) => campo.campo))
@@ -290,7 +294,8 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     idProvinciaDomicilio: [0],
     idDistritoDomicilio: [0],
     ubigeoDomicilio: [''],
-    tipoDomicilio: [''],
+    idTipoDomicilio: [null as number | null],
+    tipoUrbanizacion: [''],
     tipoVia: [''],
     via: [''],
     direccion: [''],
@@ -760,6 +765,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     const providerId = this.resolveLeadProviderId(lead);
     this.selectedOfertaProviderId.set(providerId);
     this.ofertaForm.controls.idProveedor.setValue(providerId ?? 0, { emitEvent: false });
+    this.refreshDireccionCatalogos(providerId);
     const [catalogResult] = await Promise.allSettled([
       firstValueFrom(this.leadService.getCatalogoTipificaciones(idLead)),
       this.refreshPlanOfertaCatalog(lead)
@@ -920,10 +926,26 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     if (!this.canMutateDrawer() || this.offerLocked()) return;
     this.selectedOfertaProviderId.set(idProveedor || null);
     this.ofertaForm.patchValue({ idProveedor: idProveedor || 0, idPlan: 0, idPromocionInterna: 0 });
+    this.refreshDireccionCatalogos(idProveedor || null);
     this.adicionalesSeleccionados.set([]);
     this.promociones.set([]);
     this.adicionales.set(idProveedor ? await firstValueFrom(this.leadService.listarAdicionales(idProveedor)) : []);
     this.ofertaForm.markAsDirty();
+  }
+
+  private refreshDireccionCatalogos(idProveedor: number | null): void {
+    if (idProveedor) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposDomicilio(idProveedor))
+        .then((tipos) => this.tipoDomicilioOptions.set(tipos))
+        .catch(() => this.tipoDomicilioOptions.set([]));
+    } else {
+      this.tipoDomicilioOptions.set([]);
+    }
+    if (!this.tipoUrbanizacionOptions().length) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposUrbanizacion())
+        .then((tipos) => this.tipoUrbanizacionOptions.set(tipos))
+        .catch(() => {});
+    }
   }
 
   protected async onPlanChanged(): Promise<void> {
@@ -1038,7 +1060,8 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
       }
       const request: LeadDireccionRequest = {
         ubigeoDomicilio: raw.ubigeoDomicilio,
-        tipoDomicilio: raw.tipoDomicilio || null,
+        idTipoDomicilio: raw.idTipoDomicilio || null,
+        tipoUrbanizacion: raw.tipoUrbanizacion || null,
         tipoVia: raw.tipoVia || null,
         via: raw.via?.trim() || null,
         direccion: raw.direccion.trim(),
@@ -1307,7 +1330,8 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
       idProvinciaDomicilio: 0,
       idDistritoDomicilio: 0,
       ubigeoDomicilio: d.ubigeoDomicilio ?? '',
-      tipoDomicilio: d.tipoDomicilio ?? '',
+      idTipoDomicilio: d.idTipoDomicilio ?? null,
+      tipoUrbanizacion: d.tipoUrbanizacion ?? '',
       tipoVia: d.tipoVia ?? '',
       via: d.via ?? '',
       direccion: d.direccion ?? '',

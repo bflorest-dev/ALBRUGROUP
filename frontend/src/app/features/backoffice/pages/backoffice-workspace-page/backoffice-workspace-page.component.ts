@@ -25,6 +25,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { SessionService } from '../../../../core/services/session.service';
 import { PresenceService } from '../../../../core/services/presence.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
+import { DireccionCatalogoService } from '../../../../core/services/direccion-catalogo.service';
 import { CurrentUserProviderScopeService } from '../../../../core/services/current-user-provider-scope.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
 import { LeadPlanSummaryComponent } from '../../../../shared/components/lead-plan-summary/lead-plan-summary.component';
@@ -51,6 +52,7 @@ import {
   PageQuery,
   PlanResponse,
   PromocionComercialResponse,
+  TipoDomicilioOption,
   UbigeoItem
 } from '../../../../shared/models/preventa/preventa.models';
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
@@ -138,6 +140,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly sessionService = inject(SessionService);
   private readonly presenceService = inject(PresenceService);
   private readonly leadService = inject(BackofficeLeadService);
+  private readonly direccionCatalogoService = inject(DireccionCatalogoService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
@@ -284,12 +287,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly skeletonRows = Array.from({ length: 8 });
   protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
-  protected readonly tipoDomicilioOptions = [
-    'HOGAR',
-    'MULTIFAMILIAR',
-    'CONDOMINIO_EDIFICIO',
-    'CONDOMINIO_EDIFICIO_NO_HABILITADO'
-  ];
+  protected readonly tipoDomicilioOptions = signal<TipoDomicilioOption[]>([]);
+  protected readonly tipoUrbanizacionOptions = signal<string[]>([]);
   protected readonly tipoViaOptions = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
   protected readonly groupingModeOptions: Array<{ label: string; value: BackofficeGroupMode }> = [
     { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
@@ -403,7 +402,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     idProvinciaDomicilio: [0, [Validators.required, Validators.min(1)]],
     idDistritoDomicilio: [0, [Validators.required, Validators.min(1)]],
     ubigeoDomicilio: ['', [Validators.required]],
-    tipoDomicilio: [''],
+    idTipoDomicilio: [null as number | null],
+    tipoUrbanizacion: [''],
     tipoVia: [''],
     via: [''],
     direccion: ['', [Validators.required]],
@@ -1497,6 +1497,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.adicionales.set([]);
     this.adicionalesDirty.set(true);
     this.ofertaForm.markAsDirty();
+    this.refreshDireccionCatalogos(idProveedor || null);
     if (idProveedor) {
       await this.refreshProviderAdditionals(idProveedor);
     }
@@ -3030,6 +3031,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const idProveedor = plan?.idProveedor ?? null;
     this.selectedOfertaProviderId.set(idProveedor);
     this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
+    this.refreshDireccionCatalogos(idProveedor);
     const [promociones, adicionales] = await Promise.all([
       firstValueFrom(this.leadService.listarPromociones(idPlan ? { idPlan } : {})),
       idProveedor ? firstValueFrom(this.leadService.listarAdicionales(idProveedor)) : Promise.resolve([])
@@ -3400,7 +3402,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       idProvinciaDomicilio: 0,
       idDistritoDomicilio: 0,
       ubigeoDomicilio: detail.ubigeoDomicilio ?? '',
-      tipoDomicilio: detail.tipoDomicilio ?? '',
+      idTipoDomicilio: detail.idTipoDomicilio ?? null,
+      tipoUrbanizacion: detail.tipoUrbanizacion ?? '',
       tipoVia: detail.tipoVia ?? '',
       via: detail.via ?? '',
       direccion: detail.direccion ?? '',
@@ -3803,11 +3806,27 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
+  private refreshDireccionCatalogos(idProveedor: number | null): void {
+    if (idProveedor) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposDomicilio(idProveedor))
+        .then((tipos) => this.tipoDomicilioOptions.set(tipos))
+        .catch(() => this.tipoDomicilioOptions.set([]));
+    } else {
+      this.tipoDomicilioOptions.set([]);
+    }
+    if (!this.tipoUrbanizacionOptions().length) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposUrbanizacion())
+        .then((tipos) => this.tipoUrbanizacionOptions.set(tipos))
+        .catch(() => {});
+    }
+  }
+
   private getDireccionRequest() {
     const raw = this.direccionForm.getRawValue();
     return this.cleanObject({
       ubigeoDomicilio: raw.ubigeoDomicilio,
-      tipoDomicilio: raw.tipoDomicilio,
+      idTipoDomicilio: raw.idTipoDomicilio,
+      tipoUrbanizacion: raw.tipoUrbanizacion || null,
       tipoVia: raw.tipoVia,
       via: raw.via,
       direccion: raw.direccion,

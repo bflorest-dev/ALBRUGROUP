@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { finalize, firstValueFrom } from 'rxjs';
+import { DireccionCatalogoService } from '../../../core/services/direccion-catalogo.service';
 import { EquiposNavService } from '../../../core/services/equipos-nav.service';
 import {
   EventoResponse,
@@ -12,6 +13,7 @@ import {
   LeadOfertaComercialRequest,
   PageQuery,
   PlanResponse,
+  TipoDomicilioOption,
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import {
@@ -63,7 +65,8 @@ const DATOS_LABELS: Record<string, string> = {
 
 const DIRECCION_LABELS: Record<string, string> = {
   ubigeoDomicilio: 'Ubigeo domicilio',
-  tipoDomicilio: 'Tipo de domicilio',
+  idTipoDomicilio: 'Tipo de domicilio',
+  tipoUrbanizacion: 'Tipo de urbanización',
   tipoVia: 'Tipo de vía',
   via: 'Vía',
   direccion: 'Dirección',
@@ -97,6 +100,7 @@ export class BitacoraFacade {
   private readonly service = inject(BitacoraService);
   private readonly fb = inject(FormBuilder);
   private readonly equiposNav = inject(EquiposNavService);
+  private readonly direccionCatalogoService = inject(DireccionCatalogoService);
   private readonly destroyRef = inject(DestroyRef);
 
   // ── Búsqueda ──────────────────────────────────────────
@@ -168,7 +172,8 @@ export class BitacoraFacade {
     idDepartamentoDomicilio: [null as number | null],
     idProvinciaDomicilio: [null as number | null],
     idDistritoDomicilio: [null as number | null],
-    tipoDomicilio: [''],
+    idTipoDomicilio: [null as number | null],
+    tipoUrbanizacion: [''],
     tipoVia: [''],
     via: [''],
     direccion: [''],
@@ -214,6 +219,8 @@ export class BitacoraFacade {
     const idPlan = this.ofertaForm.controls['idPlan'].value;
     return this.planesDisponibles().find((plan) => plan.id === idPlan) ?? null;
   });
+  readonly tipoDomicilioOptions = signal<TipoDomicilioOption[]>([]);
+  readonly tipoUrbanizacionOptions = signal<string[]>([]);
   readonly departamentos = signal<UbigeoItem[]>([]);
   readonly provinciasNacimiento = signal<UbigeoItem[]>([]);
   readonly distritosNacimiento = signal<UbigeoItem[]>([]);
@@ -468,6 +475,7 @@ export class BitacoraFacade {
           void this.cargarDepartamentos();
           void this.resolverUbigeoGuardado(detalle.ubigeoNacimiento, 'nacimiento');
           void this.resolverUbigeoGuardado(detalle.ubigeoDomicilio, 'domicilio');
+          this.refreshDireccionCatalogos(detalle.idProveedorEquipo ?? null);
         },
         error: () => this.error.set('No se pudo cargar el expediente.')
       });
@@ -818,7 +826,8 @@ export class BitacoraFacade {
       idDepartamentoDomicilio: null,
       idProvinciaDomicilio: null,
       idDistritoDomicilio: null,
-      tipoDomicilio: detalle.tipoDomicilio ?? '',
+      idTipoDomicilio: detalle.idTipoDomicilio ?? null,
+      tipoUrbanizacion: detalle.tipoUrbanizacion ?? '',
       tipoVia: detalle.tipoVia ?? '',
       via: detalle.via ?? '',
       direccion: detalle.direccion ?? '',
@@ -882,7 +891,8 @@ export class BitacoraFacade {
     const raw = this.direccionForm.getRawValue();
     return {
       ubigeoDomicilio: raw.ubigeoDomicilio ?? '',
-      tipoDomicilio: raw.tipoDomicilio || null,
+      idTipoDomicilio: raw.idTipoDomicilio || null,
+      tipoUrbanizacion: raw.tipoUrbanizacion || null,
       tipoVia: raw.tipoVia || null,
       via: raw.via || null,
       direccion: raw.direccion ?? '',
@@ -938,6 +948,21 @@ export class BitacoraFacade {
           this.errorPlanes.set('No se pudo cargar el catálogo de planes. Inténtalo nuevamente.');
         }
       });
+  }
+
+  private refreshDireccionCatalogos(idProveedor: number | null): void {
+    if (idProveedor) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposDomicilio(idProveedor))
+        .then((tipos) => this.tipoDomicilioOptions.set(tipos))
+        .catch(() => this.tipoDomicilioOptions.set([]));
+    } else {
+      this.tipoDomicilioOptions.set([]);
+    }
+    if (!this.tipoUrbanizacionOptions().length) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposUrbanizacion())
+        .then((tipos) => this.tipoUrbanizacionOptions.set(tipos))
+        .catch(() => {});
+    }
   }
 
   private cargarDepartamentos(): Promise<UbigeoItem[]> {

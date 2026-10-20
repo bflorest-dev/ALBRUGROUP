@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
-import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
+import pe.albrugroup.lead_service.entity.enums.TipoUrbanizacion;
 import pe.albrugroup.lead_service.entity.enums.TipoVia;
 import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 
@@ -15,7 +15,7 @@ public class LeadDireccionRequest {
     @NotBlank(message = "ubigeoDomicilio es obligatorio")
     private String ubigeoDomicilio;
     private Long idProveedor;
-    private TipoDomicilio tipoDomicilio;
+    private Long idTipoDomicilio;
     private TipoVia tipoVia;
     private String via;
 
@@ -27,6 +27,7 @@ public class LeadDireccionRequest {
 
     @Pattern(regexp = "-?\\d{1,3}([\\.,]\\d+)?", message = "longitud no tiene un formato valido")
     private String longitud;
+    private TipoUrbanizacion tipoUrbanizacion;
     private String urbanizacion;
     private String numero;
     private String manzana;

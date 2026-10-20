@@ -10,7 +10,7 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.Parentesco;
 import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
-import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
+import pe.albrugroup.lead_service.entity.enums.TipoUrbanizacion;
 import pe.albrugroup.lead_service.entity.enums.TipoVia;
 import pe.albrugroup.lead_service.entity.enums.TipoFechaRelevanteVenta;
 
@@ -61,13 +61,16 @@ public class LeadDetalleResponse {
     private String departamentoDomicilio;
     private String provinciaDomicilio;
     private String distritoDomicilio;
-    private TipoDomicilio tipoDomicilio;
+    private Long idTipoDomicilio;
+    private String nombreTipoDomicilio;
+    private Boolean esVertical;
     private TipoVia tipoVia;
     private String via;
     private String direccion;
     private String referencia;
     private String latitud;
     private String longitud;
+    private TipoUrbanizacion tipoUrbanizacion;
     private String urbanizacion;
     private String numero;
     private String manzana;

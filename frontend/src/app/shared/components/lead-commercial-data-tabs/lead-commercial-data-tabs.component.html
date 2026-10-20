@@ -277,7 +277,7 @@
         }
         <label class="address-field address-field--home-type">
           <span>Tipo de Domicilio</span>
-          <p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" placeholder="Seleccionar" appendTo="body" [disabled]="readonly" />
+          <p-select formControlName="idTipoDomicilio" [options]="tipoDomicilioOptions" optionLabel="nombre" optionValue="id" placeholder="Seleccionar" appendTo="body" [disabled]="readonly" />
         </label>
         <label class="address-field address-field--street-type">
           <span>Tipo de Via</span>
@@ -346,6 +346,10 @@
           <input pInputText type="text" formControlName="referencia" [readonly]="readonly" />
         </label>
         <div class="address-detail-grid wide">
+          <label class="address-detail-grid__urbanization-type">
+            <span>Tipo de Urbanizacion</span>
+            <p-select formControlName="tipoUrbanizacion" [options]="tipoUrbanizacionOptions" placeholder="Seleccionar" appendTo="body" [disabled]="readonly" />
+          </label>
           <label class="address-detail-grid__urbanization">
             <span>Urbanizacion</span>
             <input pInputText type="text" formControlName="urbanizacion" [readonly]="readonly" />

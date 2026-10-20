@@ -327,11 +327,11 @@
                 @if (d.distritoDomicilio) { <span class="hint">{{ d.distritoDomicilio }}, {{ d.provinciaDomicilio }} · {{ d.departamentoDomicilio }}</span> }
                 @if (f.cargandoUbigeoDomicilio() || f.errorUbigeoDomicilio()) { <span class="hint">{{ f.cargandoUbigeoDomicilio() ? 'Cargando ubicación…' : f.errorUbigeoDomicilio() }}</span> }
               </div>
-              <div class="field" [class.dirty]="f.campoModificado('direccion','tipoDomicilio')">
+              <div class="field" [class.dirty]="f.campoModificado('direccion','idTipoDomicilio')">
                 <label>Tipo de domicilio</label>
-                <select formControlName="tipoDomicilio">
-                  <option value="">—</option>
-                  @for (opt of tipoDomicilioOpts(); track opt) { <option [value]="opt">{{ opt }}</option> }
+                <select formControlName="idTipoDomicilio">
+                  <option [ngValue]="null">—</option>
+                  @for (opt of f.tipoDomicilioOptions(); track opt.id) { <option [ngValue]="opt.id">{{ opt.nombre }}</option> }
                 </select>
               </div>
               <div class="field" [class.dirty]="f.campoModificado('direccion','tipoVia')">
@@ -355,6 +355,7 @@
               <div class="field" [class.dirty]="f.campoModificado('direccion','lote')"><label>Lote</label><input class="mono" formControlName="lote" /></div>
               <div class="field" [class.dirty]="f.campoModificado('direccion','interior')"><label>Interior</label><input class="mono" formControlName="interior" /></div>
               <div class="field" [class.dirty]="f.campoModificado('direccion','piso')"><label>Piso</label><input class="mono" formControlName="piso" /></div>
+              <div class="field" [class.dirty]="f.campoModificado('direccion','tipoUrbanizacion')"><label>Tipo de urbanización</label><select formControlName="tipoUrbanizacion"><option value="">—</option>@for (opt of f.tipoUrbanizacionOptions(); track opt) { <option [value]="opt">{{ opt }}</option> }</select></div>
               <div class="field" [class.dirty]="f.campoModificado('direccion','urbanizacion')"><label>Urbanización</label><input formControlName="urbanizacion" /></div>
               <div class="field col2" [class.dirty]="f.campoModificado('direccion','referencia')"><label>Referencia</label><input formControlName="referencia" /></div>
               <div class="field" [class.dirty]="f.campoModificado('direccion','nombreEdificio')"><label>Edificio</label><input formControlName="nombreEdificio" /></div>

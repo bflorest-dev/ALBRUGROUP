@@ -4,7 +4,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize, firstValueFrom } from 'rxjs';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
-import { CampoCaptura, Tecnologia, UbigeoItem } from '../../../../shared/models/preventa/preventa.models';
+import { DireccionCatalogoService } from '../../../../core/services/direccion-catalogo.service';
+import { CampoCaptura, Tecnologia, TipoDomicilioOption, UbigeoItem } from '../../../../shared/models/preventa/preventa.models';
 import {
   coordenadaValidator,
   documentoValidator,
@@ -52,6 +53,7 @@ export class FreelanceVentaDrawerComponent {
 
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(FreelanceService);
+  private readonly direccionCatalogoService = inject(DireccionCatalogoService);
   private readonly destroyRef = inject(DestroyRef);
   readonly step = signal(0);
   readonly loading = signal(false);
@@ -71,6 +73,8 @@ export class FreelanceVentaDrawerComponent {
   readonly distritosNacimiento = signal<UbigeoItem[]>([]);
   readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
   readonly distritosDomicilio = signal<UbigeoItem[]>([]);
+  readonly tipoDomicilioOptions = signal<TipoDomicilioOption[]>([]);
+  readonly tipoUrbanizacionOptions = signal<string[]>([]);
 
   readonly form = this.fb.group({
     prefijo: ['51', [Validators.required, prefijoValidator()]],
@@ -100,8 +104,9 @@ export class FreelanceVentaDrawerComponent {
     idDepartamentoDomicilio: [null as number | null, Validators.required],
     idProvinciaDomicilio: [null as number | null, Validators.required],
     idDistritoDomicilio: [null as number | null, Validators.required],
-    tipoDomicilio: ['HOGAR', Validators.required],
-    tipoVia: ['CALLE'],
+    idTipoDomicilio: [null as number | null, Validators.required],
+    tipoUrbanizacion: [''],
+    tipoVia: [null as string | null],
     via: [''],
     direccion: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(250)]],
     referencia: ['', [Validators.required, Validators.maxLength(250)]],
@@ -211,6 +216,7 @@ export class FreelanceVentaDrawerComponent {
     this.form.controls.idProveedor.setValue(id);
     if (providerChanged) {
       this.form.patchValue({ tecnologia: '', esFullClaro: false, esJalaCobertura: false, esZonaPintada: false }, { emitEvent: false });
+      this.refreshDireccionCatalogos(id);
     }
     if (!this.isWin()) this.form.controls.parentesco.setValue('', { emitEvent: false });
     const plan = this.opciones()?.planes.find((item) => item.id === this.form.controls.idPlan.value);
@@ -311,7 +317,8 @@ export class FreelanceVentaDrawerComponent {
       },
       direccion: {
         ubigeoDomicilio: v.ubigeoDomicilio!,
-        tipoDomicilio: this.nullIfBlank(v.tipoDomicilio),
+        idTipoDomicilio: v.idTipoDomicilio,
+        tipoUrbanizacion: this.nullIfBlank(v.tipoUrbanizacion),
         tipoVia: this.nullIfBlank(v.tipoVia),
         via: this.nullIfBlank(v.via),
         direccion: v.direccion!,
@@ -405,7 +412,7 @@ export class FreelanceVentaDrawerComponent {
     this.form.reset({
       prefijo: '51', tipoDocumento: 'DNI', parentesco: '', tecnologia: '',
       esFullClaro: false, esJalaCobertura: false, esZonaPintada: false,
-      tipoDomicilio: 'HOGAR', tipoVia: 'CALLE'
+      idTipoDomicilio: null, tipoUrbanizacion: '', tipoVia: null
     });
   }
 
@@ -418,6 +425,7 @@ export class FreelanceVentaDrawerComponent {
         const plan = this.opciones()?.planes.find((item) => item.id === d.idPlan);
         this.selectedProvider.set(plan?.idProveedor ?? null);
         this.form.controls.idProveedor.setValue(plan?.idProveedor ?? null);
+        this.refreshDireccionCatalogos(plan?.idProveedor ?? null);
         this.form.patchValue({
           prefijo: limpiarPrefijo(d.prefijo ?? '51'), lead: d.lead ?? '',
           tipoDocumento: d.tipoDocumento ?? 'DNI', numeroDocumentoTitularServicio: d.numeroDocumentoTitularServicio ?? '',
@@ -431,12 +439,13 @@ export class FreelanceVentaDrawerComponent {
           esFullClaro: this.isClaro() && Boolean(d.esFullClaro),
           esJalaCobertura: this.isWin() && Boolean(d.esJalaCobertura),
           esZonaPintada: this.isWin() && Boolean(d.esZonaPintada),
-          tipoDomicilio: d.tipoDomicilio ?? 'HOGAR', tipoVia: d.tipoVia ?? 'CALLE', via: d.via ?? '',
+          idTipoDomicilio: d.idTipoDomicilio ?? null, tipoUrbanizacion: d.tipoUrbanizacion ?? '', tipoVia: d.tipoVia ?? null, via: d.via ?? '',
           direccion: d.direccion ?? '', referencia: d.referencia ?? '', latitud: d.latitud ?? '', longitud: d.longitud ?? '',
           urbanizacion: d.urbanizacion ?? '', numero: d.numero ?? '', manzana: d.manzana ?? '', lote: d.lote ?? '',
           nombreEdificio: d.nombreEdificio ?? '', nombreCondominio: d.nombreCondominio ?? '', plano: d.plano ?? '',
           piso: d.piso ?? '', interior: d.interior ?? '', idPlan: d.idPlan ?? null
         });
+        if (!d.tipoVia) this.form.controls.via.setValue('', { emitEvent: false });
         this.applyConfiguredValidators();
         this.form.controls.prefijo.disable();
         this.form.controls.lead.disable();
@@ -454,7 +463,7 @@ export class FreelanceVentaDrawerComponent {
       const controls = ['idProveedor', 'tipoDocumento', 'numeroDocumentoTitularServicio', 'nombreTitularServicio',
         'celularRegistro', 'celularReferencia', 'celularGrabacion', 'correo', 'fechaNacimiento',
         'idDepartamentoDomicilio', 'idProvinciaDomicilio', 'idDistritoDomicilio',
-        'tipoDomicilio', 'direccion', 'referencia', 'latitud', 'longitud'];
+        'idTipoDomicilio', 'direccion', 'referencia', 'latitud', 'longitud'];
       const configured: Record<CampoCaptura, string> = {
         NOMBRE_MADRE: 'nombreMadre', NOMBRE_PADRE: 'nombrePadre',
         DOC_TITULAR_CELULAR: 'numeroDocumentoTitularCelularRegistro',
@@ -540,6 +549,9 @@ export class FreelanceVentaDrawerComponent {
     for (const name of ['nombreTitularServicio', 'nombreTitularCelularRegistro', 'nombreMadre', 'nombrePadre'] as const) {
       this.normalizeControl(this.form.controls[name], limpiarNombrePersona);
     }
+    this.form.controls.tipoVia.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
+      if (!value) this.form.controls.via.setValue('', { emitEvent: false });
+    });
     this.normalizeControl(this.form.controls.latitud, limpiarCoordenada);
     this.normalizeControl(this.form.controls.longitud, limpiarCoordenada);
   }
@@ -654,5 +666,20 @@ export class FreelanceVentaDrawerComponent {
         },
         error: (error) => this.error.set(error?.error?.message ?? 'No se pudo validar la identidad.')
       });
+  }
+
+  private refreshDireccionCatalogos(idProveedor: number | null): void {
+    if (idProveedor) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposDomicilio(idProveedor))
+        .then((tipos) => this.tipoDomicilioOptions.set(tipos))
+        .catch(() => this.tipoDomicilioOptions.set([]));
+    } else {
+      this.tipoDomicilioOptions.set([]);
+    }
+    if (!this.tipoUrbanizacionOptions().length) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposUrbanizacion())
+        .then((tipos) => this.tipoUrbanizacionOptions.set(tipos))
+        .catch(() => {});
+    }
   }
 }

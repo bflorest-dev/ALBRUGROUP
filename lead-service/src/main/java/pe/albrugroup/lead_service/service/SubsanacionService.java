@@ -741,9 +741,12 @@ public class SubsanacionService {
 
     private Map<String, Object> snapshotDireccion(Direccion d) {
         if (d == null) return null;
-        return mapOf("id", d.getId(), "ubigeoDomicilio", d.getUbigeoDomicilio(), "tipoDomicilio", d.getTipoDomicilio(),
+        return mapOf("id", d.getId(), "ubigeoDomicilio", d.getUbigeoDomicilio(),
+                "idTipoDomicilio", d.getTipoDomicilio() == null ? null : d.getTipoDomicilio().getId(),
+                "nombreTipoDomicilio", d.getTipoDomicilio() == null ? null : d.getTipoDomicilio().getNombre(),
                 "tipoVia", d.getTipoVia(), "via", d.getVia(), "direccion", d.getDireccion(), "referencia", d.getReferencia(),
-                "latitud", d.getLatitud(), "longitud", d.getLongitud(), "urbanizacion", d.getUrbanizacion(),
+                "latitud", d.getLatitud(), "longitud", d.getLongitud(),
+                "tipoUrbanizacion", d.getTipoUrbanizacion(), "urbanizacion", d.getUrbanizacion(),
                 "numero", d.getNumero(), "manzana", d.getManzana(), "lote", d.getLote(), "nombreEdificio", d.getNombreEdificio(),
                 "nombreCondominio", d.getNombreCondominio(), "plano", d.getPlano(), "piso", d.getPiso(), "interior", d.getInterior());
     }

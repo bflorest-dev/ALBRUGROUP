@@ -2,6 +2,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, Validators } from '@angular/forms';
 import { Observable, Subscription, firstValueFrom } from 'rxjs';
 import { AttendanceFacade } from '../../../core/facades/attendance.facade';
+import { DireccionCatalogoService } from '../../../core/services/direccion-catalogo.service';
 import { AsesorVentasWorkspaceStateService } from '../../../core/services/asesor-ventas-workspace-state.service';
 import { BrowserSessionService } from '../../../core/services/browser-session.service';
 import { OperationalGateService } from '../../../core/services/operational-gate.service';
@@ -29,6 +30,7 @@ import {
   PromocionComercialResponse,
   SubtipificacionResponse,
   Tecnologia,
+  TipoDomicilioOption,
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import { buildTelUrl, buildWhatsAppUrl, formatLeadIdentity } from '../../../shared/utils/phone-link';
@@ -120,6 +122,7 @@ export class AsesorVentasWorkspaceFacade {
   private readonly sessionService = inject(SessionService);
   private readonly workspaceState = inject(AsesorVentasWorkspaceStateService);
   private readonly preventaService = inject(PreventaLeadService);
+  private readonly direccionCatalogoService = inject(DireccionCatalogoService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
@@ -207,12 +210,8 @@ export class AsesorVentasWorkspaceFacade {
     }).format(new Date())
   );
   readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
-  readonly tipoDomicilioOptions = [
-    'HOGAR',
-    'MULTIFAMILIAR',
-    'CONDOMINIO_EDIFICIO',
-    'CONDOMINIO_EDIFICIO_NO_HABILITADO'
-  ];
+  readonly tipoDomicilioOptions = signal<TipoDomicilioOption[]>([]);
+  readonly tipoUrbanizacionOptions = signal<string[]>([]);
   readonly tipoViaOptions = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
   readonly tecnologiaOptions: Tecnologia[] = ['HFC', 'FTTH', 'HIBRIDA'];
 
@@ -238,7 +237,8 @@ export class AsesorVentasWorkspaceFacade {
     idProvinciaDomicilio: [0],
     idDistritoDomicilio: [0],
     ubigeoDomicilio: [''],
-    tipoDomicilio: [''],
+    idTipoDomicilio: [null as number | null],
+    tipoUrbanizacion: [''],
     tipoVia: [''],
     via: [''],
     direccion: [''],
@@ -1111,7 +1111,7 @@ export class AsesorVentasWorkspaceFacade {
       ic.idProvinciaDomicilio.dirty ||
       ic.idDistritoDomicilio.dirty ||
       ic.ubigeoDomicilio.dirty ||
-      ic.tipoDomicilio.dirty ||
+      ic.idTipoDomicilio.dirty ||
       ic.tipoVia.dirty ||
       ic.via.dirty ||
       ic.referencia.dirty ||
@@ -1188,6 +1188,7 @@ export class AsesorVentasWorkspaceFacade {
     this.adicionales.set([]);
     this.ofertaForm.markAsDirty();
     await this.cargarCatalogoProveedorActual();
+    this.refreshDireccionCatalogos(idProveedor || null);
     if (idProveedor) {
       try {
         await Promise.all([
@@ -1660,12 +1661,28 @@ export class AsesorVentasWorkspaceFacade {
     await this.cargarCatalogoDelLead(detail.id, this.selectedOfertaProviderId());
   }
 
+  private refreshDireccionCatalogos(idProveedor: number | null): void {
+    if (idProveedor) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposDomicilio(idProveedor))
+        .then((tipos) => this.tipoDomicilioOptions.set(tipos))
+        .catch(() => this.tipoDomicilioOptions.set([]));
+    } else {
+      this.tipoDomicilioOptions.set([]);
+    }
+    if (!this.tipoUrbanizacionOptions().length) {
+      firstValueFrom(this.direccionCatalogoService.listarTiposUrbanizacion())
+        .then((tipos) => this.tipoUrbanizacionOptions.set(tipos))
+        .catch(() => {});
+    }
+  }
+
   private async refreshOfferCatalogs(idPlan: number, idProveedorBase?: number | null): Promise<void> {
     const plan = this.planes().find((item) => item.id === idPlan);
     const idProveedor = plan?.idProveedor ?? idProveedorBase ?? this.selectedOfertaProviderId() ?? null;
     const idZona = this.detail()?.idZona;
     this.selectedOfertaProviderId.set(idProveedor);
     this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
+    this.refreshDireccionCatalogos(idProveedor);
     const [promociones, adicionales] = await Promise.all([
       firstValueFrom(this.preventaService.listarPromociones({
         ...(idProveedor ? { idProveedor } : {}),
@@ -1867,7 +1884,8 @@ export class AsesorVentasWorkspaceFacade {
       idProvinciaDomicilio: 0,
       idDistritoDomicilio: 0,
       ubigeoDomicilio: detail.ubigeoDomicilio ?? '',
-      tipoDomicilio: detail.tipoDomicilio ?? '',
+      idTipoDomicilio: detail.idTipoDomicilio ?? null,
+      tipoUrbanizacion: detail.tipoUrbanizacion ?? '',
       tipoVia: detail.tipoVia ?? '',
       via: detail.via ?? '',
       direccion: detail.direccion ?? '',
@@ -2215,7 +2233,8 @@ export class AsesorVentasWorkspaceFacade {
     return this.cleanObject({
       ubigeoDomicilio: raw.ubigeoDomicilio,
       idProveedor: this.selectedOfertaProviderId(),
-      tipoDomicilio: raw.tipoDomicilio,
+      idTipoDomicilio: raw.idTipoDomicilio,
+      tipoUrbanizacion: raw.tipoUrbanizacion || null,
       tipoVia: raw.tipoVia,
       via: raw.via,
       direccion: raw.direccion,
@@ -2261,7 +2280,7 @@ export class AsesorVentasWorkspaceFacade {
     }
 
     add('direccion', 'Distrito', a.ubigeoDomicilio.value);
-    add('direccion', 'Tipo de Domicilio', a.tipoDomicilio.value);
+    add('direccion', 'Tipo de Domicilio', a.idTipoDomicilio.value);
     // tipoVia y via son opcionales (opcion "Sin Via"); no se exigen para cerrar la preventa.
     add('direccion', 'Direccion', a.direccion.value);
     add('direccion', 'Referencia', a.referencia.value);

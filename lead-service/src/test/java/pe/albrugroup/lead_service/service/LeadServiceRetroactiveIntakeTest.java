@@ -30,7 +30,7 @@ import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.Parentesco;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
-import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
+import pe.albrugroup.lead_service.entity.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoNumeroLlamada;
 import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.request.LeadIdentidadRequest;
@@ -1245,7 +1245,7 @@ class LeadServiceRetroactiveIntakeTest {
                         .build())
                 .direccion(Direccion.builder()
                         .ubigeoDomicilio("150101")
-                        .tipoDomicilio(TipoDomicilio.HOGAR)
+                        .tipoDomicilio(TipoDomicilio.builder().id(1L).nombre("MULTIFAMILIAR").esVertical(false).build())
                         .direccion("Av Lima 123")
                         .referencia("Frente al parque")
                         .build())
