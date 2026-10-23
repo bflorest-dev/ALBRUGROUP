@@ -260,6 +260,30 @@ describe('AsesorVentasWorkspaceFacade', () => {
     });
   });
 
+  it('exige celular a registrar sin exigir parentesco al cerrar CLARO', () => {
+    facade.detail.set({
+      id: 25202,
+      atencionOtraEtapa: false,
+      proveedoresEquipo: [{ id: 2, nombre: 'CLARO' }]
+    } as never);
+    facade.selectedOfertaProviderId.set(2);
+
+    const checklist = facade.preventaCompletaChecklist();
+    expect(checklist.find((item) => item.campo === 'Celular a registrar')).toMatchObject({ completo: false });
+    expect(checklist.some((item) => item.campo === 'Parentesco')).toBe(false);
+  });
+
+  it('conserva parentesco en el checklist de WIN', () => {
+    facade.detail.set({
+      id: 25203,
+      atencionOtraEtapa: false,
+      proveedoresEquipo: [{ id: 1, nombre: 'WIN' }]
+    } as never);
+    facade.selectedOfertaProviderId.set(1);
+
+    expect(facade.preventaCompletaChecklist().find((item) => item.campo === 'Parentesco')).toMatchObject({ completo: false });
+  });
+
   it('usa la matriz de campos del proveedor elegido en oferta comercial', async () => {
     preventaService['listarCamposCapturaProveedor'].mockReturnValue(of([
       { campo: 'DOC_TITULAR_CELULAR', tab: 'DATOS', descripcion: 'Documento del titular del celular', visible: true, requerido: true },

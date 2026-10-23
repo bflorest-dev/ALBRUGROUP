@@ -163,7 +163,8 @@
                   } @else if (facade.esProveedorClaroSeleccionado()) {
                     <label><span>Celular de grabación</span><input formControlName="celularGrabacion" inputmode="numeric" maxlength="9" [readonly]="isReadOnly()" (input)="setDigits('celularGrabacion', $any($event.target).value, 9)" /></label>
                     <label><span>Celular de referencia</span><input formControlName="celularReferencia" inputmode="numeric" maxlength="9" [readonly]="isReadOnly()" (input)="setDigits('celularReferencia', $any($event.target).value, 9)" /></label>
-                    <label class="span-2"><span>Correo</span><input type="email" formControlName="correo" [readonly]="isReadOnly()" /></label>
+                    <label><span>Celular a registrar</span><input formControlName="celularRegistro" inputmode="numeric" maxlength="9" [readonly]="isReadOnly()" (input)="setDigits('celularRegistro', $any($event.target).value, 9)" /></label>
+                    <label><span>Correo</span><input type="email" formControlName="correo" [readonly]="isReadOnly()" /></label>
                     <label class="span-2"><span>Nombre de la madre</span><input formControlName="nombreMadre" [readonly]="isReadOnly()" (input)="normalizeName('nombreMadre', $any($event.target).value)" (blur)="normalizeName('nombreMadre', $any($event.target).value, true)" /></label>
                     <label class="span-2"><span>Nombre del padre</span><input formControlName="nombrePadre" [readonly]="isReadOnly()" (input)="normalizeName('nombrePadre', $any($event.target).value)" (blur)="normalizeName('nombrePadre', $any($event.target).value, true)" /></label>
                   }

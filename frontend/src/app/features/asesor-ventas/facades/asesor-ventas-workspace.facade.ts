@@ -2324,7 +2324,9 @@ export class AsesorVentasWorkspaceFacade {
     add('datos', 'Celular a registrar', d.celularRegistro.value);
     add('datos', 'Correo', d.correo.value);
     add('datos', 'Fecha de nacimiento', d.fechaNacimiento.value);
-    add('datos', 'Parentesco', d.parentesco.value);
+    if (this.esProveedorWinSeleccionado()) {
+      add('datos', 'Parentesco', d.parentesco.value);
+    }
 
     for (const campo of this.camposConfig()) {
       if (!campo.visible || !campo.requerido) continue;
