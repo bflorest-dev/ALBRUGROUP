@@ -22,7 +22,12 @@ import { SessionService } from '../../../../core/services/session.service';
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { TipificationPaletteByCode, TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { TreeSelectComponent, TreeSelectGroup, TreeSelectSelection } from '../../../../shared/components/tree-select/tree-select.component';
-import { VentaDrawerMode, VentaDrawerV2Component } from '../../../../shared/components/venta-drawer-v2/venta-drawer-v2.component';
+import {
+  VentaDrawerMode,
+  VentaDrawerV2Component,
+  VentaPostventaConfirmation,
+  VentaPostventaConfirmationAction
+} from '../../../../shared/components/venta-drawer-v2/venta-drawer-v2.component';
 import { MetricsRango } from '../../../../shared/utils/metrics-period';
 import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
 import {
@@ -172,9 +177,11 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
   protected readonly distritosDomicilio = signal<UbigeoItem[]>([]);
   protected readonly isSaving = signal(false);
+  protected readonly postventaConfirmation = signal<VentaPostventaConfirmation | null>(null);
   protected readonly closePending = signal(false);
   protected readonly releaseError = signal<string | null>(null);
   protected readonly actionMessage = signal<string | null>(null);
+  protected readonly tipificationMessage = signal<string | null>(null);
   protected readonly openingLead = signal(false);
   protected readonly assignmentConflict = signal<{
     row: LeadBandejaVentaResponse;
@@ -185,6 +192,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   private selectedLeadId = signal<number | null>(null);
   private failedDetailRow = signal<LeadBandejaVentaResponse | null>(null);
   private planOfertaLoadSequence = 0;
+  private pendingPostventaConfirmation: ((confirmed: boolean) => void) | null = null;
 
   protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
   protected readonly tipoDomicilioOptions = signal<TipoDomicilioOption[]>([]);
@@ -697,6 +705,7 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     this.assignmentHeld = false;
     this.releaseError.set(null);
     this.actionMessage.set(null);
+    this.tipificationMessage.set(null);
     this.catalogo.set(null);
     this.eventos.set([]);
     this.historialError.set(null);
@@ -1146,26 +1155,26 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected async tipificar(): Promise<void> {
     const detail = this.detail();
     if (!detail || !this.canMutateDrawer()) return;
+    this.tipificationMessage.set(null);
     if (!this.catalogo()) {
-      this.actionMessage.set('No se pudo cargar el catálogo de tipificaciones de VENTA.');
+      this.tipificationMessage.set('No se pudo cargar el catálogo de tipificaciones de VENTA.');
       return;
     }
     const raw = this.tipificacionForm.getRawValue();
     if (!raw.codigoTipificacion || !raw.codigoSubtipificacion) {
-      this.actionMessage.set('Selecciona tipificación y subtipificación.');
+      this.tipificationMessage.set('Selecciona tipificación y subtipificación.');
       return;
     }
-    if ((this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty) && !(await this.saveChanges())) return;
     if (this.requiresInstallDate() && !raw.fechaInstalacion) {
-      this.actionMessage.set('La fecha de instalación es obligatoria para pasar a POSTVENTA.');
+      this.tipificationMessage.set('La fecha de instalación es obligatoria para pasar a POSTVENTA.');
       return;
     }
     if (this.requiresInstallDate() && raw.fechaInstalacion && raw.fechaInstalacion > this.today()) {
-      this.actionMessage.set('La fecha de instalación no puede ser futura.');
+      this.tipificationMessage.set('La fecha de instalación no puede ser futura.');
       return;
     }
     if (this.requiresProgramming() && (!raw.fechaProgramacion || !raw.horaProgramada)) {
-      this.actionMessage.set('Ingresa fecha y hora de programación.');
+      this.tipificationMessage.set('Ingresa fecha y hora de programación.');
       return;
     }
     if (this.requiresProgramming()) {
@@ -1173,18 +1182,18 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
       this.tipificacionForm.controls.horaProgramada.setValue(raw.horaProgramada, { emitEvent: false });
     }
     if (this.requiresRejectionDate() && !raw.fechaRechazo) {
-      this.actionMessage.set('Ingresa la fecha de rechazo.');
+      this.tipificationMessage.set('Ingresa la fecha de rechazo.');
       return;
     }
     const sec = String(raw.sec ?? '').replace(/\D/g, '');
     const sot = String(raw.sot ?? '').replace(/\D/g, '');
     const customerId = String(raw.customerId ?? '').replace(/\D/g, '');
     if (this.requiresSecSot() && (this.requiresCustomerId() ? sot.length !== 8 : sec.length !== 9 || sot.length !== 8)) {
-      this.actionMessage.set(this.requiresCustomerId() ? 'Ingresa SOT de 8 dígitos.' : 'Ingresa SEC de 9 dígitos y SOT de 8 dígitos.');
+      this.tipificationMessage.set(this.requiresCustomerId() ? 'Ingresa SOT de 8 dígitos.' : 'Ingresa SEC de 9 dígitos y SOT de 8 dígitos.');
       return;
     }
     if (this.requiresCustomerId() && customerId.length !== 8) {
-      this.actionMessage.set('Ingresa Customer ID de 8 dígitos.');
+      this.tipificationMessage.set('Ingresa Customer ID de 8 dígitos.');
       return;
     }
     const request: LeadTipificacionVentaRequest = {
@@ -1199,8 +1208,10 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
       sot: this.requiresSecSot() ? sot : null,
       customerId: this.requiresCustomerId() ? customerId : null
     };
-    this.isSaving.set(true);
     this.actionMessage.set(null);
+    if (!(await this.confirmPostventaTipification(request))) return;
+    if ((this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty) && !(await this.saveChanges())) return;
+    this.isSaving.set(true);
     try {
       await firstValueFrom(this.leadService.tipificarLead(detail.id, request));
       this.tipificacionForm.markAsPristine();
@@ -1208,10 +1219,61 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
       this.isSaving.set(false);
       await this.requestCloseDrawer();
     } catch (error) {
-      this.actionMessage.set(this.resolveDetailLoadError(error));
+      this.tipificationMessage.set(this.resolveDetailLoadError(error));
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  private async confirmPostventaTipification(request: LeadTipificacionVentaRequest): Promise<boolean> {
+    const detail = this.detail();
+    const subtipificacion = this.selectedSubtipificacion();
+    if (!detail || subtipificacion?.etapaCambio?.trim().toUpperCase() !== 'POSTVENTA') return true;
+
+    const fechaInstalacion = this.formatConfirmationDate(request.fechaInstalacion);
+    const fechaAnterior = Boolean(request.fechaInstalacion && request.fechaInstalacion < this.today());
+    const lead = detail.lead ?? String(detail.id);
+    const cliente = detail.nombreTitular?.trim() || 'No disponible';
+    const documento = `${detail.tipoDocumento ?? 'Documento'} · ${detail.numeroDocumentoTitularServicio ?? detail.numeroDocumento ?? 'No disponible'}`;
+    const confirmation: VentaPostventaConfirmation = {
+      step: 'review',
+      lead,
+      cliente,
+      documento,
+      fechaInstalacion,
+      tipificacion: `${this.selectedTipificacionCode()} / ${subtipificacion.descripcion}`,
+      advertenciaFechaAnterior: fechaAnterior
+    };
+    const revisado = await this.openPostventaConfirmation(confirmation);
+    if (!revisado) return false;
+    return this.openPostventaConfirmation({ ...confirmation, step: 'final' });
+  }
+
+  private formatConfirmationDate(value?: string | null): string {
+    if (!value) return 'No indicada';
+    const [year, month, day] = value.split('-');
+    return year && month && day ? `${day}/${month}/${year}` : value;
+  }
+
+  protected resolvePostventaConfirmation(action: VentaPostventaConfirmationAction): void {
+    const confirmation = this.postventaConfirmation();
+    const resolve = this.pendingPostventaConfirmation;
+    if (!confirmation || !resolve) return;
+    this.pendingPostventaConfirmation = null;
+    if (action === 'continue' && confirmation.step === 'review') {
+      this.postventaConfirmation.set({ ...confirmation, step: 'final' });
+      resolve(true);
+      return;
+    }
+    this.postventaConfirmation.set(null);
+    resolve(action === 'confirm');
+  }
+
+  private openPostventaConfirmation(confirmation: VentaPostventaConfirmation): Promise<boolean> {
+    this.postventaConfirmation.set(confirmation);
+    return new Promise<boolean>((resolve) => {
+      this.pendingPostventaConfirmation = resolve;
+    });
   }
 
   protected async registrarContacto(): Promise<void> {

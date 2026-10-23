@@ -106,6 +106,7 @@
                 optionLabel="label"
                 optionValue="value"
                 appendTo="body"
+                placeholder="Seleccione"
                 (onChange)="onModoRegistroChange($event.value)"
               />
             </label>
@@ -117,14 +118,16 @@
               </label>
               <label>
                 <span>Quien paga</span>
-                <p-select formControlName="aportante" [options]="aportanteOptions" optionLabel="label" optionValue="value" appendTo="body" [showClear]="true" />
+                <p-select formControlName="aportante" [options]="aportanteOptions" optionLabel="label" optionValue="value" appendTo="body" [showClear]="true" (onChange)="onAportanteChange()" />
               </label>
             }
 
-            <label>
-              <span>Monto</span>
-              <p-inputNumber formControlName="monto" mode="currency" currency="PEN" locale="es-PE" [min]="0" />
-            </label>
+            @if (mostrarPago() && !montoOculto()) {
+              <label>
+                <span>Monto</span>
+                <p-inputNumber formControlName="monto" mode="currency" currency="PEN" locale="es-PE" [min]="0" />
+              </label>
+            }
 
             @if (mostrarPago()) {
               <label>

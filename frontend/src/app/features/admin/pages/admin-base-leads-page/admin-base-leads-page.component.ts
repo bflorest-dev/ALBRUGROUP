@@ -25,6 +25,10 @@ export class AdminBaseLeadsPageComponent implements OnInit {
     { label: 'Encriptado (.alb)', value: 'ALB' },
     { label: 'Excel (.xlsx)', value: 'EXCEL' }
   ];
+  private readonly corteMonthFormatter = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    timeZone: 'UTC'
+  });
 
   ngOnInit(): void {
     this.facade.init();
@@ -93,5 +97,31 @@ export class AdminBaseLeadsPageComponent implements OnInit {
     const lon = row.longitud?.trim();
     if (lat && lon) return `${lat}, ${lon}`;
     return lat || lon || '—';
+  }
+
+  protected corteFila(row: { mesCorteBase: string | null; numeroCorteBase: number | null }): string {
+    if (!row.mesCorteBase || row.numeroCorteBase == null) {
+      return '—';
+    }
+    const mes = new Date(`${row.mesCorteBase.slice(0, 10)}T00:00:00Z`);
+    if (Number.isNaN(mes.getTime())) {
+      return '—';
+    }
+    return `${this.corteMonthFormatter.format(mes).toUpperCase()} ${row.numeroCorteBase}`;
+  }
+
+  protected estadoFila(row: { estadoClientePostventa: string | null }): string {
+    switch (row.estadoClientePostventa) {
+      case 'SUSPENDIDO':
+        return 'Suspendido';
+      case 'BAJA':
+        return 'Baja';
+      default:
+        return 'Activo';
+    }
+  }
+
+  protected estadoClase(row: { estadoClientePostventa: string | null }): string {
+    return (row.estadoClientePostventa ?? 'ACTIVO').toLowerCase();
   }
 }

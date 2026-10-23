@@ -1,0 +1,303 @@
+@if (facade.detailDialogOpen()) {
+  <div class="preventa-v2" role="presentation">
+    <div class="preventa-v2__backdrop" aria-hidden="true"></div>
+
+    @if (facade.detail(); as lead) {
+      <section class="preventa-v2__stage" [class.is-win]="facade.esProveedorWinSeleccionado()" [class.is-claro]="facade.esProveedorClaroSeleccionado()" role="dialog" aria-modal="true" aria-labelledby="preventa-v2-title">
+        <aside class="preventa-v2__context">
+          <header class="preventa-v2__context-head">
+            <div class="preventa-v2__lead-line">
+              <span>PREVENTA</span>
+            </div>
+            <button class="preventa-v2__minimize" type="button" aria-label="Minimizar gestión" title="Minimizar gestión" [disabled]="facade.isSaving()" (click)="facade.minimizeDetail()">
+              <i class="pi pi-times" aria-hidden="true"></i>
+            </button>
+          </header>
+
+          <div class="preventa-v2__identity">
+            <div class="preventa-v2__identity-facts">
+              <h2 id="preventa-v2-title">{{ lead.lead || lead.usermeta || 'Sin número de origen' }}</h2>
+              <span class="preventa-v2__provider-name" [class]="providerTone()">{{ providerName() }}</span>
+              <span class="preventa-v2__state" [class.is-managing]="lead.estadoSeguimiento === 'EN_GESTION'">
+                <i aria-hidden="true"></i>{{ lead.estadoSeguimiento === 'EN_GESTION' ? 'En gestión' : display(lead.estadoSeguimiento, 'Sin estado') }}
+              </span>
+            </div>
+            <div class="preventa-v2__contact-name"><i class="pi pi-user" aria-hidden="true"></i><span>{{ customerName() }}</span></div>
+          </div>
+
+          @if (facade.atencionOtraEtapa()) {
+            <div class="preventa-v2__notice is-info">
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              <span>Este lead pertenece a otra etapa. Puedes registrar el contacto o abrir una oportunidad nueva; sus datos se mantienen en solo lectura.</span>
+            </div>
+          }
+
+          <div class="preventa-v2__quick-actions">
+            <app-phone-action-button
+              [idLead]="lead.id"
+              [prefijo]="lead.prefijo"
+              [lead]="lead.lead"
+              label="Llamar"
+              [buttonWidth]="'100%'"
+              [disabled]="!facade.canMutateOperationalData()"
+              [loading]="facade.isSaving()"
+              (callStarted)="facade.registrarLlamadaOperativa()"
+              (callError)="facade.showCallError($event)"
+            />
+            <button class="preventa-v2__chat" type="button" [disabled]="!facade.hasLeadChat(lead) || facade.isSaving()" (click)="facade.registrarChat()">
+              <i class="pi pi-whatsapp" aria-hidden="true"></i><span>WhatsApp</span>
+            </button>
+          </div>
+
+          <div class="preventa-v2__simple" [class.is-readonly]="isReadOnly()">
+            <div class="preventa-v2__simple-head">
+              <div><strong>Datos básicos</strong><small>Se guardan al tipificar</small></div>
+              @if (!fullMode()) {
+                <button type="button" (click)="openFullMode()"><span>Completar más datos</span><i class="pi pi-arrow-right" aria-hidden="true"></i></button>
+              }
+            </div>
+
+            @if (facade.canShowIdentityCompletion(lead)) {
+              <div class="preventa-v2__identity-phone">
+                @if (facade.identidadEditorOpen()) {
+                  <app-phone-number-field
+                    label="Número de contacto"
+                    [prefixControl]="facade.identidadForm.controls.prefijo"
+                    [numberControl]="facade.identidadForm.controls.lead"
+                    [numberMaxLength]="facade.identidadNumberMaxLength()"
+                    numberPlaceholder="Número de contacto"
+                    [numberInvalidMessage]="facade.identidadErrorMessage() ?? ''"
+                    (focusout)="facade.normalizeIdentidadLeadNumber(facade.identidadForm.controls.lead.value)"
+                  />
+                  <button type="button" class="icon-button" aria-label="Cancelar número de contacto" (click)="facade.cancelIdentidadEditor()"><i class="pi pi-times" aria-hidden="true"></i></button>
+                } @else {
+                  <button type="button" class="preventa-v2__add-phone" (click)="facade.openIdentidadEditor()"><i class="pi pi-plus" aria-hidden="true"></i> Agregar número de contacto</button>
+                }
+              </div>
+            }
+
+            <form [formGroup]="facade.datosForm">
+              <label>
+                <span>Tipo de documento</span>
+                <select formControlName="tipoDocumento" [disabled]="isReadOnly()" (change)="onDocumentTypeChange()">
+                  <option value="">Selecciona</option>
+                  @for (option of facade.tipoDocumentoOptions; track option) { <option [value]="option">{{ option }}</option> }
+                </select>
+              </label>
+              <label>
+                <span>Número de documento</span>
+                <input formControlName="numeroDocumentoTitularServicio" inputmode="numeric" [maxlength]="documentMaxLength()" [readonly]="isReadOnly()" (input)="setDigits('numeroDocumentoTitularServicio', $any($event.target).value, documentMaxLength())" />
+              </label>
+            </form>
+
+            <form [formGroup]="facade.direccionForm">
+              <label class="is-wide">
+                <span>Dirección de instalación</span>
+                <input formControlName="direccion" autocomplete="street-address" [readonly]="isReadOnly()" />
+              </label>
+            </form>
+          </div>
+
+          <label class="preventa-v2__comment" [class.is-open]="facade.showComment()" [formGroup]="facade.tipificacionForm">
+            <span><i class="pi pi-comment" aria-hidden="true"></i> Comentario de la gestión</span>
+            <input formControlName="comentario" [readonly]="isReadOnly()" placeholder="Se registrará solo al tipificar" (focus)="!facade.showComment() && toggleComment()" />
+          </label>
+
+          @if (facade.atencionOtraEtapa()) {
+            <button class="preventa-v2__new-from-other-stage" type="button" [disabled]="facade.isSaving()" (click)="createOpportunityFromOtherStage()">
+              <i class="pi pi-plus" aria-hidden="true"></i> Crear nueva oportunidad
+            </button>
+          }
+        </aside>
+
+        <main class="preventa-v2__workbench" [class.is-simple]="!fullMode()" [class.is-readonly]="isReadOnly()">
+          <header class="preventa-v2__workbench-head">
+            <div>
+              <span>Gestión en curso</span>
+              <h3>{{ fullMode() ? 'Información ampliada' : 'Captura rápida' }}</h3>
+            </div>
+            <div class="preventa-v2__head-actions">
+              @if (facade.hasUnsavedModalChanges()) { <span class="preventa-v2__saving-state">Cambios pendientes</span> }
+              @if (fullMode()) { <button type="button" (click)="collapseToSimple()">Volver a vista simple</button> }
+            </div>
+          </header>
+
+          <div class="preventa-v2__sections">
+            @if (!fullMode()) {
+              <section class="preventa-v2__simple-guide" aria-label="Guía para la captura rápida">
+                <h4>Adapta la captura a la conversación.</h4>
+                <p>Si aún no se concreta una oportunidad, registra los datos básicos y tipifica. Si el cliente quiere avanzar con una preventa, completa los datos que confirme.</p>
+                <button type="button" (click)="openFullMode()"><span>Abrir captura completa</span><i class="pi pi-arrow-right" aria-hidden="true"></i></button>
+              </section>
+            }
+            <section class="preventa-v2__section" [class.is-open]="isSectionOpen('personal')">
+              <button class="preventa-v2__section-trigger" type="button" [attr.aria-expanded]="isSectionOpen('personal')" (click)="toggleSection('personal')">
+                <span class="preventa-v2__section-index">01</span>
+                <span><strong>Datos personales</strong><small>Identidad, contacto y datos que complementan el titular.</small></span>
+                <i [class]="isSectionOpen('personal') ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" aria-hidden="true"></i>
+              </button>
+              @if (isSectionOpen('personal')) {
+                <form class="preventa-v2__form-grid" [formGroup]="facade.datosForm">
+                  <label class="span-2"><span>Nombre del titular</span><input formControlName="nombreTitularServicio" [readonly]="isReadOnly()" (input)="normalizeName('nombreTitularServicio', $any($event.target).value)" (blur)="normalizeName('nombreTitularServicio', $any($event.target).value, true)" /></label>
+                  <label><span>Fecha de nacimiento</span><input type="date" formControlName="fechaNacimiento" [readonly]="isReadOnly()" /></label>
+                  <label><span>Edad</span><input [value]="calculatedAge()" placeholder="—" disabled aria-label="Edad calculada" /></label>
+                  <div class="preventa-v2__birth-location span-4">
+                    <strong>Lugar de nacimiento</strong>
+                    <div>
+                      <label><span>Departamento</span><select [value]="birthDepartmentId()" [disabled]="isReadOnly() || birthLocationLoading()" (change)="selectBirthDepartment($any($event.target).value)"><option value="0">Selecciona</option>@for (item of facade.departamentos(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
+                      <label><span>Provincia</span><select [value]="birthProvinceId()" [disabled]="isReadOnly() || birthLocationLoading() || !birthDepartmentId()" (change)="selectBirthProvince($any($event.target).value)"><option value="0">Selecciona</option>@for (item of birthProvinces(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
+                      <label><span>Distrito</span><select [value]="birthDistrictId()" [disabled]="isReadOnly() || birthLocationLoading() || !birthProvinceId()" (change)="selectBirthDistrict($any($event.target).value)"><option value="0">Selecciona</option>@for (item of birthDistricts(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
+                    </div>
+                    <input type="hidden" formControlName="ubigeoNacimiento" />
+                    @if (birthLocationLoading()) { <small role="status">Cargando ubicación de nacimiento...</small> }
+                    @if (birthLocationError()) { <small class="preventa-v2__birth-error" role="status">{{ birthLocationError() }}</small> }
+                  </div>
+                  @if (facade.esProveedorWinSeleccionado()) {
+                    <label><span>Celular de grabación</span><input formControlName="celularGrabacion" inputmode="numeric" maxlength="9" [readonly]="isReadOnly()" (input)="setDigits('celularGrabacion', $any($event.target).value, 9)" /></label>
+                    <label><span>Celular de referencia</span><input formControlName="celularReferencia" inputmode="numeric" maxlength="9" [readonly]="isReadOnly()" (input)="setDigits('celularReferencia', $any($event.target).value, 9)" /></label>
+                    <label><span>Celular a registrar</span><input formControlName="celularRegistro" inputmode="numeric" maxlength="9" [readonly]="isReadOnly()" (input)="setDigits('celularRegistro', $any($event.target).value, 9)" /></label>
+                    <label><span>Correo</span><input type="email" formControlName="correo" [readonly]="isReadOnly()" /></label>
+                    <label><span>Documento del titular del celular</span><input formControlName="numeroDocumentoTitularCelularRegistro" inputmode="numeric" maxlength="8" [readonly]="isReadOnly()" (input)="setDigits('numeroDocumentoTitularCelularRegistro', $any($event.target).value, 8)" /></label>
+                    <label class="span-2"><span>Nombre del titular del celular</span><input formControlName="nombreTitularCelularRegistro" [readonly]="isReadOnly()" (input)="normalizeName('nombreTitularCelularRegistro', $any($event.target).value)" (blur)="normalizeName('nombreTitularCelularRegistro', $any($event.target).value, true)" /></label>
+                    <label><span>Parentesco</span><select formControlName="parentesco" [disabled]="isReadOnly()"><option value="">Selecciona</option><option value="TITULAR">Titular</option><option value="MADRE">Madre</option><option value="PADRE">Padre</option><option value="HERMANO_A">Hermano(a)</option><option value="TIO_A">Tío(a)</option><option value="CONOCIDO">Conocido</option></select></label>
+                  } @else if (facade.esProveedorClaroSeleccionado()) {
+                    <label><span>Celular de grabación</span><input formControlName="celularGrabacion" inputmode="numeric" maxlength="9" [readonly]="isReadOnly()" (input)="setDigits('celularGrabacion', $any($event.target).value, 9)" /></label>
+                    <label><span>Celular de referencia</span><input formControlName="celularReferencia" inputmode="numeric" maxlength="9" [readonly]="isReadOnly()" (input)="setDigits('celularReferencia', $any($event.target).value, 9)" /></label>
+                    <label class="span-2"><span>Correo</span><input type="email" formControlName="correo" [readonly]="isReadOnly()" /></label>
+                    <label class="span-2"><span>Nombre de la madre</span><input formControlName="nombreMadre" [readonly]="isReadOnly()" (input)="normalizeName('nombreMadre', $any($event.target).value)" (blur)="normalizeName('nombreMadre', $any($event.target).value, true)" /></label>
+                    <label class="span-2"><span>Nombre del padre</span><input formControlName="nombrePadre" [readonly]="isReadOnly()" (input)="normalizeName('nombrePadre', $any($event.target).value)" (blur)="normalizeName('nombrePadre', $any($event.target).value, true)" /></label>
+                  }
+                </form>
+              }
+            </section>
+
+            <section class="preventa-v2__section" [class.is-open]="isSectionOpen('address')">
+              <button class="preventa-v2__section-trigger" type="button" [attr.aria-expanded]="isSectionOpen('address')" (click)="toggleSection('address')">
+                <span class="preventa-v2__section-index">02</span>
+                <span><strong>Dirección de instalación</strong><small>Ubigeo, referencias y precisión para la instalación.</small></span>
+                <i [class]="isSectionOpen('address') ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" aria-hidden="true"></i>
+              </button>
+              @if (isSectionOpen('address')) {
+                <form class="preventa-v2__form-grid" [formGroup]="facade.direccionForm">
+                  <label><span>Departamento</span><select formControlName="idDepartamentoDomicilio" [disabled]="isReadOnly()" (change)="onDepartmentChange()"><option [ngValue]="0">Selecciona</option>@for (item of facade.departamentos(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+                  <label><span>Provincia</span><select formControlName="idProvinciaDomicilio" [disabled]="isReadOnly()" (change)="onProvinceChange()"><option [ngValue]="0">Selecciona</option>@for (item of facade.provinciasDomicilio(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+                  <label><span>Distrito</span><select formControlName="idDistritoDomicilio" [disabled]="isReadOnly()" (change)="onDistrictChange()"><option [ngValue]="0">Selecciona</option>@for (item of facade.distritosDomicilio(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+                  <label><span>Tipo de domicilio</span><select formControlName="idTipoDomicilio" [disabled]="isReadOnly()"><option [ngValue]="null">Selecciona</option>@for (item of facade.tipoDomicilioOptions(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+                  <label><span>Tipo de vía</span><select formControlName="tipoVia" [disabled]="isReadOnly()"><option value="">Sin vía</option>@for (item of facade.tipoViaOptions; track item) { <option [value]="item">{{ item }}</option> }</select></label>
+                  @if (facade.direccionForm.controls.tipoVia.value) { <label><span>Nombre de la vía</span><input formControlName="via" [readonly]="isReadOnly()" /></label> }
+                  <label class="span-2"><span>Referencia</span><input formControlName="referencia" [readonly]="isReadOnly()" /></label>
+                  <div class="preventa-v2__coordinates span-4">
+                    <div><span>Coordenadas</span><small>Solo ubicaciones dentro del Perú.</small></div>
+                    <label><span>Latitud</span><input formControlName="latitud" inputmode="decimal" [readonly]="isReadOnly()" /></label>
+                    <label><span>Longitud</span><input formControlName="longitud" inputmode="decimal" [readonly]="isReadOnly()" /></label>
+                    @if (!isReadOnly()) { <button type="button" (click)="pasteCoordinates()"><i class="pi pi-clipboard" aria-hidden="true"></i> Pegar coordenadas</button> }
+                    @let maps = mapsUrl();
+                    <a [href]="maps" [attr.aria-disabled]="!maps" [attr.tabindex]="maps ? 0 : -1" target="_blank" rel="noopener noreferrer"><i class="pi pi-map-marker" aria-hidden="true"></i><span>Ver en Maps</span></a>
+                    @if (coordinateMessage()) { <small class="preventa-v2__coordinate-message">{{ coordinateMessage() }}</small> }
+                  </div>
+                  <label class="span-2"><span>Tipo de urbanización</span><select formControlName="tipoUrbanizacion" [disabled]="isReadOnly()"><option value="">Selecciona</option>@for (item of facade.tipoUrbanizacionOptions(); track item) { <option [value]="item">{{ item }}</option> }</select></label>
+                  <label class="span-2"><span>Urbanización</span><input formControlName="urbanizacion" [readonly]="isReadOnly()" /></label>
+                  <label><span>Número</span><input formControlName="numero" inputmode="numeric" maxlength="10" [readonly]="isReadOnly()" (input)="setDigits('numero', $any($event.target).value, 10)" /></label>
+                  <label><span>Manzana</span><input formControlName="manzana" [readonly]="isReadOnly()" /></label>
+                  <label><span>Lote</span><input formControlName="lote" [readonly]="isReadOnly()" /></label>
+                  @if (fieldVisible('PLANO')) { <label><span>Plano</span><input formControlName="plano" [readonly]="isReadOnly()" /></label> }
+                  <label><span>Edificio</span><input formControlName="nombreEdificio" [readonly]="isReadOnly()" /></label>
+                  <label><span>Condominio</span><input formControlName="nombreCondominio" [readonly]="isReadOnly()" /></label>
+                  <label><span>Piso</span><input formControlName="piso" [readonly]="isReadOnly()" /></label>
+                  <label><span>Interior</span><input formControlName="interior" [readonly]="isReadOnly()" /></label>
+                  @if (facade.mostrarDatosWin()) {
+                    <div class="preventa-v2__checks-stack"><label class="preventa-v2__check"><input type="checkbox" formControlName="esJalaCobertura" [disabled]="isReadOnly()" /> Jala cobertura</label><label class="preventa-v2__check"><input type="checkbox" formControlName="esZonaPintada" [disabled]="isReadOnly()" /> Zona pintada</label></div>
+                  }
+                </form>
+              }
+            </section>
+
+            <section class="preventa-v2__section" [class.is-open]="isSectionOpen('offer')">
+              <button class="preventa-v2__section-trigger" type="button" [attr.aria-expanded]="isSectionOpen('offer')" (click)="toggleSection('offer')">
+                <span class="preventa-v2__section-index">03</span>
+                <span><strong>Plan y servicio</strong><small>El plan guía los campos que necesita esta gestión.</small></span>
+                <i [class]="isSectionOpen('offer') ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" aria-hidden="true"></i>
+              </button>
+              @if (isSectionOpen('offer')) {
+                <form class="preventa-v2__form-grid" [formGroup]="facade.ofertaForm">
+                  <label class="span-4"><span>Compañía</span><select formControlName="idProveedor" [disabled]="isReadOnly()" (change)="selectProvider()"><option [ngValue]="0">Selecciona</option>@for (item of facade.ofertaProviderOptions(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+                  <div class="preventa-v2__plan-filters span-4">
+                    <div class="preventa-v2__plan-filters-head"><div><strong>Ajusta la búsqueda</strong><small>Activa solo los criterios que necesitas para encontrar el plan.</small></div><span class="preventa-v2__zone-state">@if (facade.planOfertaZoneFallback()) { Sin filtro de zona · confirma cobertura } @else if (facade.planOfertaZoneAvailable()) { {{ facade.planOfertaZoneLabel() || 'Zona identificada' }} } @else { Completa la dirección para resolver la zona }</span></div>
+                    <div class="preventa-v2__plan-filter-toggles">
+                      <label><input type="checkbox" [checked]="facade.planOfertaFilters().tienePrecioPromocional" [disabled]="isReadOnly() || !facade.selectedOfertaProviderId()" (change)="changePlanFilter('tienePrecioPromocional', $any($event.target).checked)" /><span><strong>Precio promocional</strong><small>Planes con descuento</small></span></label>
+                      <label><input type="checkbox" [checked]="facade.planOfertaFilters().tieneVelocidadPromocional" [disabled]="isReadOnly() || !facade.selectedOfertaProviderId()" (change)="changePlanFilter('tieneVelocidadPromocional', $any($event.target).checked)" /><span><strong>Velocidad promocional</strong><small>Megas promocionales</small></span></label>
+                      <label><input type="checkbox" [checked]="facade.planOfertaFilters().tienePromocionInterna" [disabled]="isReadOnly() || !facade.selectedOfertaProviderId()" (change)="changePlanFilter('tienePromocionInterna', $any($event.target).checked)" /><span><strong>Promoción interna</strong><small>Campaña activa</small></span></label>
+                    </div>
+                    <div class="preventa-v2__service-filter"><span>Servicios incluidos</span><div role="group" aria-label="Servicios incluidos">@for (option of planServiceOptions; track option.label) { <button type="button" [class.is-active]="facade.planOfertaFilters().tipoServicio === option.value" [attr.aria-pressed]="facade.planOfertaFilters().tipoServicio === option.value" [disabled]="isReadOnly() || !facade.selectedOfertaProviderId()" (click)="changePlanFilter('tipoServicio', option.value)">{{ option.label }}</button> }</div></div>
+                  </div>
+                  <div class="span-4 preventa-v2__plan-choice">
+                    <div class="preventa-v2__plan-choice-head"><strong>Plan disponible</strong><small>{{ facade.planOptions().length - 1 }} resultados</small></div>
+                    <button class="preventa-v2__plan-trigger" type="button" aria-haspopup="dialog" [attr.aria-expanded]="planPickerOpen()" aria-controls="preventa-v2-plan-picker" [disabled]="isReadOnly() || facade.planOfertaLoading() || !facade.selectedOfertaProviderId()" (click)="togglePlanPicker()">
+                      @if (selectedPlan(); as plan) {
+                        <span class="preventa-v2__plan-trigger-content"><strong>{{ plan.nombre }}</strong><small>@if (plan.velocidadPromocional != null) { {{ plan.velocidadPromocional }} {{ plan.internetUnidad || 'Mbps' }} promo · } @if (plan.internetVelocidad != null) { {{ plan.internetVelocidad }} {{ plan.internetUnidad || 'Mbps' }} regular · } {{ formatPlanPrice(plan.precioPromocional ?? plan.precio) }}@if (plan.precioPromocional != null) {  promo }</small></span>
+                      } @else {
+                        <span class="preventa-v2__plan-trigger-content"><strong>Sin plan</strong><small>Abre para comparar velocidad, precio y servicios incluidos</small></span>
+                      }
+                      <i [class]="planPickerOpen() ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" aria-hidden="true"></i>
+                    </button>
+                    @if (planPickerOpen()) {
+                      <div class="preventa-v2__plan-picker" id="preventa-v2-plan-picker" role="dialog" aria-label="Elegir plan disponible">
+                        <label class="preventa-v2__plan-search-wrap"><span>Buscar plan</span><input class="preventa-v2__plan-search" type="search" [value]="planSearch()" (input)="planSearch.set($any($event.target).value)" placeholder="Nombre, velocidad o servicio" autocomplete="off" /></label>
+                        <div class="preventa-v2__plan-results">
+                          <button class="preventa-v2__plan-none" type="button" [class.is-selected]="!facade.ofertaForm.controls.idPlan.value" (click)="selectPlan(0)">Sin plan <span>No asociar un plan por ahora</span></button>
+                          @for (plan of visiblePlans(); track plan.id) {
+                            <button class="preventa-v2__plan-result" type="button" [class.is-selected]="facade.ofertaForm.controls.idPlan.value === plan.id" (click)="selectPlan(plan.id)">
+                              <span class="preventa-v2__plan-result-head"><strong>{{ plan.nombre }}</strong><span class="preventa-v2__plan-result-price">@if (plan.precioPromocional != null) { <b>{{ formatPlanPrice(plan.precioPromocional) }}</b><small>promo @if (plan.mesesPromocionPrecio) { · {{ plan.mesesPromocionPrecio }} meses }</small> } @else { <b>{{ formatPlanPrice(plan.precio) }}</b><small>regular</small> }</span></span>
+                              <span class="preventa-v2__plan-result-metrics"><span><em>Velocidad</em> <b>Promo:</b> {{ plan.velocidadPromocional != null ? plan.velocidadPromocional + ' ' + (plan.internetUnidad || 'Mbps') : '—' }}@if (plan.mesesPromocionVelocidad) { · {{ plan.mesesPromocionVelocidad }} meses } <i aria-hidden="true">|</i> <b>Regular:</b> {{ plan.internetVelocidad != null ? plan.internetVelocidad + ' ' + (plan.internetUnidad || 'Mbps') : '—' }}</span><span><em>Precio</em> <b>Promo:</b> {{ plan.precioPromocional != null ? formatPlanPrice(plan.precioPromocional) : '—' }} <i aria-hidden="true">|</i> <b>Regular:</b> {{ formatPlanPrice(plan.precio) }}</span></span>
+                              <span class="preventa-v2__plan-result-services"><em>Incluye</em>@if (plan.internetVelocidad != null || plan.velocidadPromocional != null) { <span>Internet</span> }@if (plan.televisionNombre || plan.televisionCanales) { <span>TV @if (plan.televisionNombre) { · {{ plan.televisionNombre }} }@if (plan.televisionCanales) { · {{ plan.televisionCanales }} canales }</span> }@if (plan.telefonoDescripcion || plan.telefonoMinutos) { <span>Telefonía @if (plan.telefonoDescripcion) { · {{ plan.telefonoDescripcion }} }@if (plan.telefonoMinutos) { · {{ plan.telefonoMinutos }} min }</span> }@if (plan.internetVelocidad == null && plan.velocidadPromocional == null && !plan.televisionNombre && !plan.televisionCanales && !plan.telefonoDescripcion && !plan.telefonoMinutos) { <span>Detalle no disponible</span> }</span>
+                            </button>
+                          } @empty { <p class="preventa-v2__plan-empty">No hay planes que coincidan con la búsqueda. Prueba otro nombre o quita un filtro.</p> }
+                        </div>
+                      </div>
+                    }
+                    <small class="preventa-v2__plan-zone-note">@if (facade.planOfertaLoading()) { Consultando planes... } @else if (facade.planOfertaZoneFallback()) { Mostrando planes de la compañía sin filtro de zona; confirma cobertura antes de cerrar. } @else if (facade.planOfertaZoneLabel()) { Zona: {{ facade.planOfertaZoneLabel() }} }</small>
+                  </div>
+                  @if (facade.planOfertaError()) { <p class="preventa-v2__offer-error span-4">{{ facade.planOfertaError() }}</p> }
+                  @if (facade.mostrarDatosClaro()) {
+                    <div class="preventa-v2__offer-technology span-4"><label><span>Tecnología</span><select [formControl]="facade.tipificacionForm.controls.tecnologia" [disabled]="isReadOnly()"><option value="">Selecciona</option>@for (item of facade.tecnologiaOptions; track item) { <option [value]="item">{{ item }}</option> }</select></label><label class="preventa-v2__offer-check"><input type="checkbox" [formControl]="facade.tipificacionForm.controls.esFullClaro" [disabled]="isReadOnly()" /><span>Es Full Claro</span></label></div>
+                  }
+                  <label class="span-2"><span>Promoción</span><select formControlName="idPromocionInterna" [disabled]="isReadOnly()">@for (item of facade.promocionOptions(); track item.id) { <option [ngValue]="item.id">{{ item.reglaComercial }}</option> }</select></label>
+                  @if (facade.plataformasDigitales().length) { <label class="span-2"><span>Plataforma digital</span><select [formControl]="facade.tipificacionForm.controls.idPlataformaDigitalOfrecida" [disabled]="isReadOnly()"><option [ngValue]="null">Sin plataforma</option>@for (item of facade.plataformasDigitales(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label> }
+                </form>
+                <section class="preventa-v2__additionals">
+                  <div class="preventa-v2__additionals-head"><div><strong>Adicionales <small>Opcional</small></strong><span>@if (facade.selectedOfertaAdditionals().length) { {{ facade.selectedOfertaAdditionals().length }} seleccionados · S/ {{ facade.ofertaAdditionalsTotal() }} } @else { No agregados al servicio }</span></div><button type="button" [attr.aria-expanded]="additionalsExpanded()" [disabled]="isReadOnly() || !facade.adicionales().length" (click)="toggleAdditionals()"><i [class]="additionalsExpanded() ? 'pi pi-chevron-up' : 'pi pi-plus-circle'" aria-hidden="true"></i>{{ additionalsExpanded() ? 'Ocultar opciones' : 'Incluir adicionales' }}</button></div>
+                  @if (additionalsExpanded()) { @for (item of facade.adicionales(); track item.id) {
+                    <div class="preventa-v2__additional">
+                      <span><strong>{{ item.nombre }}</strong><small>S/ {{ item.precioUnitario }}</small></span>
+                      <div>
+                        <button type="button" [attr.aria-label]="'Quitar ' + item.nombre" [disabled]="isReadOnly() || facade.adicionalCantidad(item.id) === 0" (click)="facade.disminuirAdicional(item)"><i class="pi pi-minus" aria-hidden="true"></i></button>
+                        <strong>{{ facade.adicionalCantidad(item.id) }}</strong>
+                        <button type="button" [attr.aria-label]="'Agregar ' + item.nombre" [disabled]="isReadOnly()" (click)="facade.incrementarAdicional(item)"><i class="pi pi-plus" aria-hidden="true"></i></button>
+                      </div>
+                    </div>
+                  } @empty { <p>No hay adicionales disponibles para esta compañía.</p> } }
+                </section>
+              }
+            </section>
+          </div>
+        </main>
+
+        <footer class="preventa-v2__command-bar" [formGroup]="facade.tipificacionForm">
+          @if (activeMessage(); as message) {
+            <div class="pv2-toast" [class.error]="message.kind === 'error'" [class.warning]="message.kind === 'warning'" [attr.role]="message.kind === 'error' ? 'alert' : 'status'">
+              <i [class]="message.icon" aria-hidden="true"></i><span>{{ message.text }}</span>
+            </div>
+          }
+          <div class="preventa-v2__command-label"><span>Resultado de gestión</span><strong>Define el desenlace</strong></div>
+          <label><span>Tipificación</span><select formControlName="codigoTipificacion" [disabled]="facade.isSaving() || isReadOnly()"><option value="">Selecciona</option>@for (item of facade.tipificaciones(); track item.codigo) { <option [value]="item.codigo">{{ item.codigo }} — {{ item.descripcion }}</option> }</select></label>
+          <label><span>Subtipificación</span><select formControlName="codigoSubtipificacion" [disabled]="facade.isSaving() || !facade.selectedTipificacionCode() || isReadOnly()"><option value="">Selecciona</option>@for (item of facade.subtipificaciones(); track item.codigo) { <option [value]="item.codigo" [disabled]="item.disabled">{{ item.codigo }} — {{ item.descripcion }}</option> }</select></label>
+          @if (requiresHour()) { <label class="preventa-v2__time"><span>Hora de agendamiento</span><input type="time" formControlName="horaProgramada" [readonly]="isReadOnly()" /></label> }
+          @if (!facade.atencionOtraEtapa()) {
+            <button class="preventa-v2__next-opportunity" type="button" [class.is-active]="createNextOpportunity()" [disabled]="facade.isSaving()" (click)="toggleNextOpportunity()"><i class="pi pi-plus-circle" aria-hidden="true"></i><span>Al cerrar, crear otra oportunidad</span></button>
+          }
+          <button class="preventa-v2__submit" type="button" [disabled]="facade.isSaving() || !facade.canMutateOperationalData()" (click)="submitTipification()"><i class="pi pi-check" aria-hidden="true"></i>{{ facade.isSaving() ? 'Guardando...' : 'Registrar tipificación' }}</button>
+        </footer>
+      </section>
+    }
+  </div>
+}

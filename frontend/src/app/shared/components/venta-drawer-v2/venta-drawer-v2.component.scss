@@ -147,7 +147,34 @@
 .venta-v2__state { display: flex; justify-content: center; align-items: center; gap: .6rem; min-height: 15rem; color: var(--venta-muted); font-size: .82rem; }
 
 .venta-v2__dock { padding: .65rem .8rem .7rem; background: #fff; border-top: 1px solid var(--venta-line); box-shadow: 0 -.6rem 1.5rem rgba(15,31,51,.055); }
+.venta-v2__tipification-message { display: flex; align-items: flex-start; gap: .55rem; margin: 0 0 .65rem; padding: .68rem .78rem; color: #8c3025; background: #fff4f2; border: 1px solid #e3b0a7; border-radius: .38rem; font-size: .78rem; font-weight: 650; line-height: 1.35; }
+.venta-v2__tipification-message i { flex: 0 0 auto; margin-top: .08rem; color: #b34a3d; font-size: .9rem; }
 .venta-v2__comment-button { display: inline-flex; align-items: center; gap: .48rem; height: 2.45rem; padding: 0 .68rem; border: 1px solid var(--venta-line); border-radius: .35rem; color: var(--venta-muted); background: #fff; font: inherit; font-size: .76rem; }
+
+.venta-v2__confirmation-layer { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; padding: 1.5rem; background: rgba(243,246,248,.78); backdrop-filter: blur(2px); }
+.venta-v2__confirmation { width: min(100%, 34rem); padding: 1.35rem; color: var(--venta-ink); background: #fff; border: 1px solid var(--venta-line); border-radius: .55rem; box-shadow: 0 1.2rem 3rem rgba(15,31,51,.18); }
+.venta-v2__confirmation-head { display: grid; grid-template-columns: 2.35rem minmax(0,1fr); gap: .75rem; align-items: start; padding-bottom: 1rem; border-bottom: 1px solid var(--venta-line); }
+.venta-v2__confirmation-icon { display: grid; place-items: center; width: 2.35rem; height: 2.35rem; color: var(--venta-accent); background: color-mix(in srgb, var(--venta-accent) 10%, white); border-radius: .38rem; font-size: 1rem; }
+.venta-v2__confirmation-icon.is-warning { color: #a36a1c; background: #fff6e7; }
+.venta-v2__confirmation-eyebrow { display: block; color: var(--venta-accent); font-size: .66rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.venta-v2__confirmation h3 { margin: .22rem 0 .22rem; font-size: 1.05rem; line-height: 1.2; }
+.venta-v2__confirmation-head p { margin: 0; color: var(--venta-muted); font-size: .76rem; line-height: 1.4; }
+.venta-v2__confirmation-data { margin: 1rem 0 0; }
+.venta-v2__confirmation-data div { display: grid; grid-template-columns: 9.5rem minmax(0,1fr); gap: .8rem; padding: .58rem 0; border-bottom: 1px solid #edf1f4; }
+.venta-v2__confirmation-data div:last-child { border-bottom: 0; }
+.venta-v2__confirmation-data dt { color: var(--venta-muted); font-size: .72rem; }
+.venta-v2__confirmation-data dd { margin: 0; font-size: .79rem; font-weight: 700; overflow-wrap: anywhere; }
+.venta-v2__confirmation-warning { display: flex; align-items: flex-start; gap: .52rem; margin-top: .85rem; padding: .7rem .75rem; color: #805217; background: #fff8ed; border: 1px solid #ebc98f; border-radius: .35rem; font-size: .75rem; line-height: 1.35; }
+.venta-v2__confirmation-warning i { margin-top: .08rem; }
+.venta-v2__confirmation-final { display: grid; gap: .28rem; margin-top: 1rem; padding: .85rem .9rem; background: #f5f8fa; border: 1px solid var(--venta-line); border-radius: .35rem; }
+.venta-v2__confirmation-final strong { font-size: .82rem; }
+.venta-v2__confirmation-final span { color: var(--venta-muted); font-size: .74rem; }
+.venta-v2__confirmation-actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1.1rem; }
+.venta-v2__confirmation-actions button { min-height: 2.25rem; padding: 0 .8rem; border: 1px solid var(--venta-line); border-radius: .32rem; font: inherit; font-size: .75rem; font-weight: 700; cursor: pointer; }
+.venta-v2__confirmation-secondary { color: var(--venta-ink); background: #fff; }
+.venta-v2__confirmation-primary { color: #fff; background: var(--venta-accent); border-color: var(--venta-accent) !important; }
+.venta-v2__confirmation-actions button:hover { filter: brightness(.97); }
+.venta-v2__confirmation-actions button:focus-visible { outline: 2px solid var(--venta-accent); outline-offset: 2px; }
 
 :host ::ng-deep .venta-v2 :is(.p-select, .p-inputtext, .p-datepicker) { width: 100%; min-height: 2.4rem; border-radius: .32rem; font-size: .8rem; }
 :host ::ng-deep .venta-v2 .p-datepicker-input { width: 100%; }
@@ -176,6 +203,15 @@
   .venta-v2__plan-editor { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .venta-v2__plan-filters-head { flex-direction: column; }
   .venta-v2__plan-filter-toggles { grid-template-columns: 1fr; }
+  .venta-v2__confirmation-layer { padding: 1rem; }
+  .venta-v2__confirmation-data div { grid-template-columns: 8.5rem minmax(0,1fr); }
+}
+
+@media (max-width: 34rem) {
+  .venta-v2__confirmation { padding: 1rem; }
+  .venta-v2__confirmation-data div { grid-template-columns: 1fr; gap: .18rem; }
+  .venta-v2__confirmation-actions { flex-direction: column-reverse; }
+  .venta-v2__confirmation-actions button { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

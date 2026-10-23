@@ -43,6 +43,7 @@ import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.request.LeadSnapshotsRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionPostventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
+import pe.albrugroup.lead_service.entity.request.PreventaTipificacionV2Request;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTomaGestionGtrRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
@@ -95,6 +96,7 @@ import pe.albrugroup.lead_service.entity.response.GtrSubtipificacionRankingRespo
 import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasEquipoResponse;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.PreventaDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.PreventaGestionV2Response;
 import pe.albrugroup.lead_service.entity.response.ResumenAsesorResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenEstadoLeadDetalleResponse;
@@ -2752,6 +2754,76 @@ public class LeadService {
                 request.getHoraProgramada()
         );
         notificarCambioLead("TIPIFICACION", savedLead, etapaActual, idAsesorAnterior);
+    }
+
+    /**
+     * Comando V2 para encadenar gestiones del mismo contacto. La oportunidad siguiente solo nace
+     * después de que la actual pasó efectivamente a VENTA; cualquier error revierte ambas cosas.
+     */
+    @Transactional
+    public PreventaGestionV2Response tipificarLeadV2(Long idLead, PreventaTipificacionV2Request request) {
+        Lead original = obtenerLeadAsignadoDelAsesor(idLead);
+        boolean encadenar = Boolean.TRUE.equals(request.getCrearNuevaOportunidad());
+        if (!encadenar) {
+            tipificarLead(idLead, request);
+            return new PreventaGestionV2Response(idLead, null);
+        }
+        if (original.getEtapa() != Etapa.PREVENTA) {
+            throw new ConflictException("Solo una PREVENTA puede encadenar otra oportunidad al cerrarse");
+        }
+
+        validarNuevaOportunidadV2(original, true);
+        tipificarLead(idLead, request);
+
+        Lead tipificado = leadRepository.buscarPorIdConBloqueo(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        if (tipificado.getEtapa() != Etapa.VENTA) {
+            throw new ConflictException("La nueva oportunidad solo se crea cuando la PREVENTA pasa a VENTA");
+        }
+
+        Long idNuevaOportunidad = crearOportunidadAdicionalInterna(tipificado);
+        return new PreventaGestionV2Response(tipificado.getId(), idNuevaOportunidad);
+    }
+
+    /**
+     * Comando V2 para una comunicación sobre un lead de otra etapa. Nunca tipifica ni modifica su
+     * etapa: crea una PREVENTA vacía y libera la asignación temporal dentro de la misma transacción.
+     */
+    @Transactional
+    public PreventaGestionV2Response crearOportunidadV2(Long idLead) {
+        Lead original = obtenerLeadAsignadoDelAsesor(idLead);
+        if (original.getEtapa() == Etapa.PREVENTA) {
+            throw new ConflictException("Retoma la PREVENTA existente; no se puede crear otra oportunidad del mismo proveedor");
+        }
+
+        validarNuevaOportunidadV2(original, false);
+        Long idNuevaOportunidad = crearOportunidadAdicionalInterna(original);
+        liberarAtencionGtr(original);
+        return new PreventaGestionV2Response(null, idNuevaOportunidad);
+    }
+
+    /**
+     * La exclusividad se evalúa por Contacto + proveedorOrigen, no por el proveedor del plan. Así
+     * una PREVENTA de origen A no bloquea una oportunidad independiente de origen B.
+     */
+    private void validarNuevaOportunidadV2(Lead original, boolean excluirOriginalPreventa) {
+        if (original.getContacto() == null) {
+            throw new ConflictException("No se puede crear una oportunidad sin un contacto asociado");
+        }
+        if (original.getProveedorOrigen() == null) {
+            throw new ConflictException("No se puede crear una oportunidad sin proveedor de origen");
+        }
+
+        boolean existePreventaDelMismoProveedor = leadRepository
+                .findByContactoIdForOpportunityV2Lock(original.getContacto().getId())
+                .stream()
+                .anyMatch(lead -> lead.getEtapa() == Etapa.PREVENTA
+                        && lead.getProveedorOrigen() != null
+                        && lead.getProveedorOrigen().getId().equals(original.getProveedorOrigen().getId())
+                        && (!excluirOriginalPreventa || !lead.getId().equals(original.getId())));
+        if (existePreventaDelMismoProveedor) {
+            throw new ConflictException("El contacto ya tiene una PREVENTA activa para este proveedor de origen");
+        }
     }
 
     // Tipificación informativa de un lead que sigue gestionándose en otra etapa (atención GTR).

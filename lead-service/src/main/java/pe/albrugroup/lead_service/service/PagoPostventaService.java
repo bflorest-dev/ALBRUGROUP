@@ -29,6 +29,7 @@ import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
 import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
 import pe.albrugroup.lead_service.service.mapper.PagoPostventaMapper;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -60,6 +61,7 @@ public class PagoPostventaService {
         pago.setLead(lead);
         pago.setPeriodoFacturacionPostventa(periodo);
         pago.setCondicion(resolverCondicion(pago.getCondicion()));
+        aplicarMontoSegunCondicion(pago, periodo);
         pago.setEstado(resolverEstadoPago(pago));
         aplicarEstadoCliente(lead, pago);
         return mapper.toResponse(pagoRepository.save(pago));
@@ -81,6 +83,7 @@ public class PagoPostventaService {
         normalizarModoPagoActualizado(request, pago);
         validarFechas(pago.getPeriodoFacturacionPostventa(), pago.getFechaPago(), pago.getFechaCompromisoPago());
         pago.setCondicion(resolverCondicion(pago.getCondicion()));
+        aplicarMontoSegunCondicion(pago, pago.getPeriodoFacturacionPostventa());
         pago.setEstado(resolverEstadoPago(pago));
         aplicarEstadoCliente(pago.getLead(), pago);
         return mapper.toResponse(pagoRepository.save(pago));
@@ -198,14 +201,9 @@ public class PagoPostventaService {
 
     private void validarCondicionPago(PagoPostventa pago) {
         CondicionPagoPostventa condicion = resolverCondicion(pago.getCondicion());
-        if ((condicion == CondicionPagoPostventa.REINTEGRO
-                || condicion == CondicionPagoPostventa.CASHBACK_POSTVENTA)
+        if (condicion != CondicionPagoPostventa.NORMAL
                 && pago.getAportante() != AportantePago.EMPRESA) {
             throw new BadRequestException("La condicion " + condicion + " se registra como pago de EMPRESA");
-        }
-        if (condicion == CondicionPagoPostventa.CASHBACK_ASESOR_VENTAS
-                && pago.getAportante() != AportantePago.CLIENTE) {
-            throw new BadRequestException("La condicion CASHBACK_ASESOR_VENTAS se registra como pago de CLIENTE");
         }
     }
 
@@ -231,7 +229,11 @@ public class PagoPostventaService {
         if (lead == null) {
             return;
         }
-        // La suspensión por pago (empresa/comprometido) también sella fecha_suspension vía el helper central.
+        CondicionPagoPostventa condicion = resolverCondicion(pago.getCondicion());
+        if (condicion == CondicionPagoPostventa.CASHBACK_ASESOR_VENTAS
+                || condicion == CondicionPagoPostventa.CASHBACK_POSTVENTA) {
+            return;
+        }
         Instant ahora = OperationalDateTime.now();
         if (pago.getEstado() == EstadoPagoPostventa.PAGADO_EMPRESA
                 || pago.getEstado() == EstadoPagoPostventa.COMPROMETIDO) {
@@ -240,6 +242,24 @@ public class PagoPostventaService {
         }
         if (pago.getEstado() == EstadoPagoPostventa.PAGADO_CLIENTE) {
             leadSeguimientoService.marcarEstadoClientePostventa(lead, EstadoClientePostventa.ACTIVO, ahora);
+        }
+    }
+
+    private void aplicarMontoSegunCondicion(PagoPostventa pago, PeriodoFacturacionPostventa periodo) {
+        CondicionPagoPostventa condicion = resolverCondicion(pago.getCondicion());
+        if (pago.getFechaPago() == null) {
+            return;
+        }
+        if (condicion == CondicionPagoPostventa.NORMAL && pago.getAportante() == AportantePago.CLIENTE) {
+            pago.setMonto(null);
+            return;
+        }
+        if (condicion == CondicionPagoPostventa.NORMAL && pago.getAportante() == AportantePago.EMPRESA) {
+            pago.setMonto(periodo.getMontoFacturado());
+            return;
+        }
+        if (pago.getMonto() == null || pago.getMonto().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("monto es obligatorio y debe ser mayor a 0 para la condicion " + condicion);
         }
     }
 

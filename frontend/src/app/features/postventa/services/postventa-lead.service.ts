@@ -225,7 +225,7 @@ export interface PagoPostventaRequest {
   idPeriodoFacturacion?: number | null;
   aportante?: AportantePago | string | null;
   condicion?: CondicionPagoPostventa | string | null;
-  monto: number;
+  monto?: number | null;
   fechaPago?: string | null;
   fechaCompromisoPago?: string | null;
   numeroOperacion?: string | null;

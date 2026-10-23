@@ -36,6 +36,17 @@ import {
 import { PhoneActionButtonComponent } from '../phone-action-button/phone-action-button.component';
 
 export type VentaDrawerMode = 'gestion' | 'consulta';
+export type VentaPostventaConfirmationStep = 'review' | 'final';
+export type VentaPostventaConfirmationAction = 'continue' | 'confirm' | 'cancel';
+export interface VentaPostventaConfirmation {
+  step: VentaPostventaConfirmationStep;
+  lead: string;
+  cliente: string;
+  documento: string;
+  fechaInstalacion: string;
+  tipificacion: string;
+  advertenciaFechaAnterior: boolean;
+}
 type VentaDrawerTab = 'datos' | 'direccion' | 'plan' | 'historial';
 type EditableSection = 'identidad' | 'contacto' | 'proveedor' | 'ubicacion' | 'detalle-direccion' | 'geolocalizacion' | null;
 type ProviderOption = { id: number; nombre: string };
@@ -111,6 +122,8 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   @Input() requiresCustomerId = false;
   @Input() canMutate = true;
   @Input() saving = false;
+  @Input() postventaConfirmation: VentaPostventaConfirmation | null = null;
+  @Input() tipificationMessage: string | null = null;
   @Input() eventos: EventoResponse[] = [];
   @Input() historyLoading = false;
   @Input() historyError: string | null = null;
@@ -132,6 +145,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   @Output() tipificacionSelected = new EventEmitter<string | null>();
   @Output() subtipificacionSelected = new EventEmitter<string | null>();
   @Output() tipifyRequested = new EventEmitter<void>();
+  @Output() postventaConfirmationAction = new EventEmitter<VentaPostventaConfirmationAction>();
   @Output() retryHistory = new EventEmitter<void>();
 
   protected readonly activeTab = signal<VentaDrawerTab>('datos');

@@ -509,8 +509,10 @@
   [requiresSecSot]="requiresSecSot()"
   [requiresCustomerId]="requiresCustomerId()"
   [canMutate]="canMutateDrawer()"
-  [saving]="isSaving() || closePending()"
-  [eventos]="eventos()"
+   [saving]="isSaving() || closePending()"
+   [postventaConfirmation]="postventaConfirmation()"
+   [tipificationMessage]="tipificationMessage()"
+   [eventos]="eventos()"
   [historyLoading]="historialLoading()"
   [historyError]="historialError()"
   [saveChanges]="drawerMode() === 'gestion' ? saveDrawerChanges : null"
@@ -529,6 +531,7 @@
   (tipificacionSelected)="onTipificacionSelected($event)"
   (subtipificacionSelected)="onSubtipificacionSelected($event)"
   (tipifyRequested)="tipificar()"
+  (postventaConfirmationAction)="resolvePostventaConfirmation($event)"
   (retryHistory)="retryHistorial()"
 />
 

@@ -56,6 +56,7 @@ import {
   PageQuery,
   PlanOfertaFilters,
   PlanResponse,
+  PreventaGestionV2Response,
   PlataformaDigitalResponse,
   PromocionComercialResponse,
   UbigeoItem,
@@ -457,6 +458,16 @@ export class PreventaLeadService {
 
   tipificarLead(idLead: number, request: LeadTipificacionRequest): Observable<void> {
     return this.http.post<void>(`${this.leadUrl}/preventa/${idLead}/tipificacion`, request);
+  }
+
+  /** V2: tipifica y, si corresponde, crea la siguiente oportunidad dentro de una misma transacción. */
+  tipificarLeadV2(idLead: number, request: LeadTipificacionRequest & { crearNuevaOportunidad: boolean }): Observable<PreventaGestionV2Response> {
+    return this.http.post<PreventaGestionV2Response>(`${this.leadUrl}/preventa/v2/${idLead}/tipificacion`, request);
+  }
+
+  /** V2: desde una atención de otra etapa libera el original y abre una oportunidad PREVENTA vacía. */
+  crearOportunidadV2(idLead: number): Observable<PreventaGestionV2Response> {
+    return this.http.post<PreventaGestionV2Response>(`${this.leadUrl}/preventa/v2/${idLead}/oportunidad`, {});
   }
 
   // Catálogo para tipificar un lead concreto: el backend resuelve el proveedor efectivo.

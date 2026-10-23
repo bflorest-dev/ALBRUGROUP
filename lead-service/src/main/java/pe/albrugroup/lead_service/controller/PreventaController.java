@@ -616,4 +616,19 @@ public class PreventaController {
         leadService.tipificarLead(idLead, request);
         return ResponseEntity.noContent().build();
     }
+
+    /** V2: transición a VENTA y oportunidad encadenada, sin modificar el contrato legacy. */
+    @PostMapping("/v2/{idLead}/tipificacion") @PreAuthorize("hasAuthority('TYPIFY_LEADS')")
+    public ResponseEntity<PreventaGestionV2Response> tipificarLeadV2(
+            @PathVariable Long idLead,
+            @Valid @RequestBody PreventaTipificacionV2Request request
+    ) {
+        return ResponseEntity.ok(leadService.tipificarLeadV2(idLead, request));
+    }
+
+    /** V2: una atención temporal de otra etapa se libera y entrega una PREVENTA vacía al asesor. */
+    @PostMapping("/v2/{idLead}/oportunidad") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
+    public ResponseEntity<PreventaGestionV2Response> crearOportunidadV2(@PathVariable Long idLead) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(leadService.crearOportunidadV2(idLead));
+    }
 }

@@ -18,6 +18,7 @@ import pe.albrugroup.lead_service.entity.Distrito;
 import pe.albrugroup.lead_service.entity.Origen;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.AnclaFechaBaseLeads;
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.VistaBaseLeads;
 import pe.albrugroup.lead_service.entity.request.BaseLeadsExportFilter;
@@ -41,6 +42,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -63,6 +65,14 @@ public class BaseLeadsExportService {
             "Plan", "Velocidad regular", "Precio regular", "Fecha de instalación",
             "Departamento", "Provincia", "Distrito", "Dirección", "Coordenadas", "Comentario"
     };
+
+    private static final String[] INSTALADOS_EXCEL_HEADERS = {
+            "N° de LEAD", "Asesor preventa", "N° documento", "Nombre del titular",
+            "Plan", "Velocidad regular", "Precio regular", "Fecha de instalación", "Corte",
+            "Estado actual", "Departamento", "Provincia", "Distrito", "Dirección", "Coordenadas", "Comentario"
+    };
+
+    private static final DateTimeFormatter MONTH_FMT = DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH);
 
     private final LeadRepository leadRepository;
     private final OrigenRepository origenRepository;
@@ -153,10 +163,13 @@ public class BaseLeadsExportService {
             CellStyle dateStyle = workbook.createCellStyle();
             dateStyle.setDataFormat(workbook.getCreationHelper().createDataFormat().getFormat("dd/mm/yyyy"));
 
+            boolean instalados = filter.getVista() == VistaBaseLeads.INSTALADOS;
+            String[] headers = instalados ? INSTALADOS_EXCEL_HEADERS : EXCEL_HEADERS;
+
             Row header = sheet.createRow(0);
-            for (int c = 0; c < EXCEL_HEADERS.length; c++) {
+            for (int c = 0; c < headers.length; c++) {
                 Cell cell = header.createCell(c);
-                cell.setCellValue(EXCEL_HEADERS[c]);
+                cell.setCellValue(headers[c]);
                 cell.setCellStyle(headerStyle);
             }
 
@@ -171,22 +184,41 @@ public class BaseLeadsExportService {
                 // generica y se adapta sola.
                 // Identificador = telefono (l.lead); si es un lead de redes sin telefono, el @usuario.
                 String identificador = d.lead() != null && !d.lead().isBlank() ? d.lead() : d.usermeta();
-                Object[] valores = {
-                        identificador,
-                        d.asesorPreventa(),
-                        d.documento(),
-                        d.nombreTitular(),
-                        d.nombrePlan(),
-                        formatVelocidad(d),
-                        d.precio(),
-                        d.fechaInstalacion(),
-                        ubic == null ? null : ubic[0],
-                        ubic == null ? null : ubic[1],
-                        ubic == null ? null : ubic[2],
-                        d.direccion(),
-                        formatCoordenadas(d),
-                        d.comentario()
-                };
+                Object[] valores = instalados
+                        ? new Object[]{
+                                identificador,
+                                d.asesorPreventa(),
+                                d.documento(),
+                                d.nombreTitular(),
+                                d.nombrePlan(),
+                                formatVelocidad(d),
+                                d.precio(),
+                                d.fechaInstalacion(),
+                                formatCorte(d),
+                                formatEstadoActual(d),
+                                ubic == null ? null : ubic[0],
+                                ubic == null ? null : ubic[1],
+                                ubic == null ? null : ubic[2],
+                                d.direccion(),
+                                formatCoordenadas(d),
+                                d.comentario()
+                        }
+                        : new Object[]{
+                                identificador,
+                                d.asesorPreventa(),
+                                d.documento(),
+                                d.nombreTitular(),
+                                d.nombrePlan(),
+                                formatVelocidad(d),
+                                d.precio(),
+                                d.fechaInstalacion(),
+                                ubic == null ? null : ubic[0],
+                                ubic == null ? null : ubic[1],
+                                ubic == null ? null : ubic[2],
+                                d.direccion(),
+                                formatCoordenadas(d),
+                                d.comentario()
+                        };
 
                 // Una fila por lead seleccionado: el Excel refleja exactamente la bandeja (mismo
                 // filtro, mismo conteo). No se descartan filas aunque un lead tenga pocos datos.
@@ -226,6 +258,23 @@ public class BaseLeadsExportService {
             return null;
         }
         return d.unidad() == null ? String.valueOf(d.velocidad()) : d.velocidad() + " " + d.unidad().name();
+    }
+
+    private String formatCorte(BaseLeadExcelRow d) {
+        if (d.mesCorteBase() == null || d.numeroCorteBase() == null) {
+            return null;
+        }
+        return MONTH_FMT.format(d.mesCorteBase()).toUpperCase(Locale.ROOT)
+                + " " + d.numeroCorteBase();
+    }
+
+    private String formatEstadoActual(BaseLeadExcelRow d) {
+        EstadoClientePostventa estado = d.estadoClientePostventa();
+        return switch (estado == null ? EstadoClientePostventa.ACTIVO : estado) {
+            case ACTIVO -> "Activo";
+            case SUSPENDIDO -> "Suspendido";
+            case BAJA -> "Baja";
+        };
     }
 
     // "lat, long" en una sola celda; omite el par si ambos faltan, o muestra el que exista.

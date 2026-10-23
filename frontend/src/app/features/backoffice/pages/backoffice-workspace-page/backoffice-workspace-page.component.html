@@ -956,6 +956,8 @@
       [requiresCustomerId]="requiresCustomerId()"
       [canMutate]="canMutateOperationalData()"
       [saving]="isSaving()"
+      [postventaConfirmation]="postventaConfirmation()"
+      [tipificationMessage]="tipificationMessage()"
       [eventos]="eventos()"
       [historyLoading]="historialLoading()"
       [historyError]="historialError()"
@@ -975,6 +977,7 @@
       (tipificacionSelected)="onTipificacionSelected($event)"
       (subtipificacionSelected)="onSubtipificacionSelected($event)"
       (tipifyRequested)="tipificar()"
+      (postventaConfirmationAction)="resolvePostventaConfirmation($event)"
       (retryHistory)="retryHistorial()"
   />
   <p-drawer

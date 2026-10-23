@@ -289,46 +289,60 @@
 
   <!-- Tabla -->
   @if (facade.rows().length || facade.isLoading()) {
-    <section class="directory">
-      <div class="table-head">
-        <span>Prefijo</span>
-        <span>Lead</span>
-        <span>Nombre</span>
-        <span>Documento</span>
-        <span>Etapa</span>
-        <span>Tipificacion</span>
-        <span>Subtipificacion</span>
-        <span>Proveedor</span>
-        <span>Proveedor origen</span>
-        <span>{{ fechaColumna() }}</span>
-        <span>Direccion</span>
-        <span>Coordenadas</span>
-        <span>Comentario</span>
+    <section class="directory" [class.directory--instalados]="facade.isInstalados()">
+      <div class="directory-scroll" tabindex="0" aria-label="Tabla de leads desplazable horizontalmente">
+        <div class="table-head">
+          <span>Prefijo</span>
+          <span>Lead</span>
+          <span>Nombre</span>
+          <span>Documento</span>
+          <span>Etapa</span>
+          <span>Tipificacion</span>
+          <span>Subtipificacion</span>
+          <span>Proveedor</span>
+          <span>Proveedor origen</span>
+          <span>{{ fechaColumna() }}</span>
+          @if (facade.isInstalados()) {
+            <span>Corte</span>
+            <span>Estado actual</span>
+          }
+          <span>Direccion</span>
+          <span>Coordenadas</span>
+          <span>Comentario</span>
+        </div>
+        @if (facade.isLoading()) {
+          <div class="loading-state"><span class="spinner"></span></div>
+        } @else {
+          @for (row of facade.rows(); track $index) {
+            <div class="data-row">
+              <span class="mono">{{ row.prefijo }}</span>
+              <span class="mono">{{ row.lead }}</span>
+              <span class="cell-truncate">{{ row.nombre }}</span>
+              <span class="mono">{{ row.documento }}</span>
+              <span>{{ row.etapa }}</span>
+              <span>{{ row.codigoTipificacion }}</span>
+              <span>{{ row.codigoSubtipificacion }}</span>
+              <span>{{ row.nombreProveedor || '—' }}</span>
+              <span>{{ row.nombreProveedorOrigen || '—' }}</span>
+              <span class="mono">{{ fechaFila(row) | slice:0:10 }}</span>
+              @if (facade.isInstalados()) {
+                <span class="mono">{{ corteFila(row) }}</span>
+                <span>
+                  <span class="status-pill" [class.status-pill--suspendido]="estadoClase(row) === 'suspendido'" [class.status-pill--baja]="estadoClase(row) === 'baja'">
+                    {{ estadoFila(row) }}
+                  </span>
+                </span>
+              }
+              <span class="cell-truncate" [title]="row.direccion || ''">{{ row.direccion || '—' }}</span>
+              <span class="mono">{{ coordenadas(row) }}</span>
+              <span class="cell-truncate" [title]="row.comentario || ''">{{ row.comentario || '—' }}</span>
+            </div>
+          }
+          @if (!facade.rows().length) {
+            <div class="empty-state">Sin resultados</div>
+          }
+        }
       </div>
-      @if (facade.isLoading()) {
-        <div class="loading-state"><span class="spinner"></span></div>
-      } @else {
-        @for (row of facade.rows(); track $index) {
-          <div class="data-row">
-            <span class="mono">{{ row.prefijo }}</span>
-            <span class="mono">{{ row.lead }}</span>
-            <span class="cell-truncate">{{ row.nombre }}</span>
-            <span class="mono">{{ row.documento }}</span>
-            <span>{{ row.etapa }}</span>
-            <span>{{ row.codigoTipificacion }}</span>
-            <span>{{ row.codigoSubtipificacion }}</span>
-            <span>{{ row.nombreProveedor || '—' }}</span>
-            <span>{{ row.nombreProveedorOrigen || '—' }}</span>
-            <span class="mono">{{ fechaFila(row) | slice:0:10 }}</span>
-            <span class="cell-truncate" [title]="row.direccion || ''">{{ row.direccion || '—' }}</span>
-            <span class="mono">{{ coordenadas(row) }}</span>
-            <span class="cell-truncate" [title]="row.comentario || ''">{{ row.comentario || '—' }}</span>
-          </div>
-        }
-        @if (!facade.rows().length) {
-          <div class="empty-state">Sin resultados</div>
-        }
-      }
     </section>
 
     <!-- Paginacion nativa -->

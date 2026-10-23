@@ -59,6 +59,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Optional<Lead> findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(Long idContacto, Etapa etapa);
     // Oportunidades del mismo contacto (acotadas al equipo por @Filter): para multi-titular.
     List<Lead> findByContactoIdOrderByLastEntryAtDescIdDesc(Long idContacto);
+
+    /** Serializa los comandos V2 que crean oportunidades para el mismo contacto. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT l FROM Lead l WHERE l.contacto.id = :idContacto ORDER BY l.id")
+    List<Lead> findByContactoIdForOpportunityV2Lock(@Param("idContacto") Long idContacto);
     Optional<Lead> findFirstByLeadOrderByLastEntryAtDescIdDesc(String lead);
     Optional<Lead> findFirstByLeadAndIdEquipoInOrderByLastEntryAtDescIdDesc(String lead, Collection<Long> idEquipos);
 
@@ -3625,6 +3630,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 r.fechaIngresoEtapa,
                 r.primeraTipificacionAt,
                 seg.fechaInstalacion,
+                cal.mesCorteBase,
+                cal.numeroCorteBase,
+                l.estadoClientePostventa,
                 dir.latitud,
                 dir.longitud,
                 l.comentario
@@ -3635,6 +3643,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.proveedor p
             LEFT JOIN l.proveedorOrigen po
             LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
+            LEFT JOIN CalendarioFacturacionPostventa cal ON cal.lead.id = l.id AND cal.activo = true
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             WHERE l.etapa = :etapa
               AND (:filtrarProveedorOrigen = false OR po.id = :idProveedorOrigen)
@@ -3675,6 +3684,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 r.fechaIngresoEtapa,
                 r.ultimaTipificacionAt,
                 seg.fechaInstalacion,
+                cal.mesCorteBase,
+                cal.numeroCorteBase,
+                l.estadoClientePostventa,
                 dir.latitud,
                 dir.longitud,
                 l.comentario
@@ -3685,6 +3697,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.proveedor p
             LEFT JOIN l.proveedorOrigen po
             LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
+            LEFT JOIN CalendarioFacturacionPostventa cal ON cal.lead.id = l.id AND cal.activo = true
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             WHERE l.etapa = :etapa
               AND (:filtrarProveedorOrigen = false OR po.id = :idProveedorOrigen)
@@ -3725,6 +3738,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 r.fechaIngresoEtapa,
                 r.mayorRangoAt,
                 seg.fechaInstalacion,
+                cal.mesCorteBase,
+                cal.numeroCorteBase,
+                l.estadoClientePostventa,
                 dir.latitud,
                 dir.longitud,
                 l.comentario
@@ -3735,6 +3751,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.proveedor p
             LEFT JOIN l.proveedorOrigen po
             LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
+            LEFT JOIN CalendarioFacturacionPostventa cal ON cal.lead.id = l.id AND cal.activo = true
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
             WHERE l.etapa = :etapa
               AND (:filtrarProveedorOrigen = false OR po.id = :idProveedorOrigen)
@@ -3775,12 +3792,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lastEntryAt,
                 l.updatedAt,
                 seg.fechaInstalacion,
+                cal.mesCorteBase,
+                cal.numeroCorteBase,
+                l.estadoClientePostventa,
                 dir.latitud,
                 dir.longitud,
                 l.comentario
             )
             FROM Lead l
             JOIN LeadSeguimiento seg ON seg.idLead = l.id
+            LEFT JOIN CalendarioFacturacionPostventa cal ON cal.lead.id = l.id AND cal.activo = true
             LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.direccion dir
             LEFT JOIN l.proveedor p
@@ -3813,6 +3834,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 net.unidad,
                 pl.precio,
                 seg.fechaInstalacion,
+                cal.mesCorteBase,
+                cal.numeroCorteBase,
+                l.estadoClientePostventa,
                 dir.ubigeoDomicilio,
                 rp.nombreAsesorMerito,
                 COALESCE(dir.direccion, l.direccionSnapshot),
@@ -3826,6 +3850,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.plan pl
             LEFT JOIN pl.internet net
             LEFT JOIN LeadSeguimiento seg ON seg.idLead = l.id
+            LEFT JOIN CalendarioFacturacionPostventa cal ON cal.lead.id = l.id AND cal.activo = true
             LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
             WHERE l.id IN :ids
             """)

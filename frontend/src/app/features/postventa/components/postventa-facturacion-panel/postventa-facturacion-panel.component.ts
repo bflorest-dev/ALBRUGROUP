@@ -12,7 +12,7 @@ import { PostventaWorkspaceFacade } from '../../facades/postventa-workspace.faca
 import { AportantePago, CondicionPagoPostventa } from '../../services/postventa-lead.service';
 import { EstadoBadge, SelectOption, display, estadoBadge } from '../../models/postventa.vm';
 
-type ModoRegistroPago = 'PAGO' | 'COMPROMISO';
+type ModoRegistroPago = 'PAGO' | 'COMPROMISO' | null;
 
 /** Facturacion del periodo vigente: confirmar factura, registrar pago y cerrar periodo. */
 @Component({
@@ -56,7 +56,7 @@ export class PostventaFacturacionPanelComponent {
   });
 
   protected readonly pagoForm = this.fb.group({
-    modoRegistro: ['PAGO' as ModoRegistroPago],
+    modoRegistro: [null as ModoRegistroPago],
     aportante: [null as AportantePago | null],
     condicion: ['NORMAL' as CondicionPagoPostventa],
     monto: [null as number | null, [Validators.min(0.01)]],
@@ -82,16 +82,30 @@ export class PostventaFacturacionPanelComponent {
         fechaVencimientoConfirmado: vencimiento,
         montoFacturado: monto
       });
-      this.pagoForm.reset({
-        modoRegistro: 'PAGO',
-        aportante: null,
-        condicion: 'NORMAL',
-        monto,
-        fechaPago: '',
-        fechaCompromisoPago: '',
-        numeroOperacion: ''
-      });
+      const cashback = this.resolverCashbackPreventa(periodo.numeroPeriodo);
+      if (cashback) {
+        this.pagoForm.reset({
+          modoRegistro: 'PAGO' as ModoRegistroPago,
+          aportante: 'EMPRESA' as AportantePago,
+          condicion: 'CASHBACK_ASESOR_VENTAS' as CondicionPagoPostventa,
+          monto: cashback.monto ?? null,
+          fechaPago: '',
+          fechaCompromisoPago: '',
+          numeroOperacion: ''
+        });
+      } else {
+        this.pagoForm.reset({
+          modoRegistro: null,
+          aportante: null,
+          condicion: 'NORMAL',
+          monto: null,
+          fechaPago: '',
+          fechaCompromisoPago: '',
+          numeroOperacion: ''
+        });
+      }
       this.actualizarEstadoAportante();
+      this.actualizarEstadoMonto();
     });
     this.facade.registerBeforeTipificarTask('facturacion', () => this.guardarPendientesAntesDeTipificar());
   }
@@ -143,10 +157,11 @@ export class PostventaFacturacionPanelComponent {
     }
     const esPago = raw.modoRegistro === 'PAGO';
     const aportante = esPago ? this.resolverAportantePago() : null;
+    const montoValue = this.pagoForm.controls.monto.value;
     const ok = await this.facade.registrarPago({
       aportante,
       condicion: esPago ? raw.condicion : null,
-      monto: raw.monto!,
+      monto: montoValue,
       fechaPago: esPago ? raw.fechaPago || null : null,
       fechaCompromisoPago: esPago ? null : raw.fechaCompromisoPago || null,
       numeroOperacion: esPago && aportante === 'EMPRESA' ? raw.numeroOperacion || null : null,
@@ -154,27 +169,33 @@ export class PostventaFacturacionPanelComponent {
     });
     if (ok) {
       this.pagoForm.patchValue({
-        modoRegistro: 'PAGO',
+        modoRegistro: null,
         aportante: null,
         condicion: 'NORMAL',
         fechaPago: '',
         fechaCompromisoPago: '',
         numeroOperacion: ''
       });
+      this.pagoForm.controls.monto.setValue(null);
       this.pagoForm.markAsPristine();
+      this.actualizarEstadoMonto();
     }
     return ok;
   }
 
   protected pagoIncompleto(): boolean {
     const raw = this.pagoForm.getRawValue();
-    if (!raw.monto) {
+    if (!raw.modoRegistro) {
       return true;
     }
     if (raw.modoRegistro === 'COMPROMISO') {
       return !this.facturaVencida() || !raw.fechaCompromisoPago;
     }
     const aportante = this.resolverAportantePago();
+    const montoRequerido = !(raw.condicion === 'NORMAL' && aportante === 'CLIENTE');
+    if (montoRequerido && !raw.monto) {
+      return true;
+    }
     return !raw.fechaPago
       || !aportante
       || (aportante === 'EMPRESA' && !raw.numeroOperacion?.trim());
@@ -201,24 +222,33 @@ export class PostventaFacturacionPanelComponent {
       this.pagoForm.patchValue({
         aportante: null,
         condicion: 'NORMAL',
+        monto: null,
         fechaPago: '',
         numeroOperacion: ''
       });
       this.actualizarEstadoAportante();
+      this.actualizarEstadoMonto();
       return;
     }
     this.pagoForm.patchValue({ fechaCompromisoPago: '' });
     this.actualizarEstadoAportante();
+    this.actualizarEstadoMonto();
   }
 
   protected onCondicionChange(condicion: CondicionPagoPostventa): void {
+    const aportante = this.resolverAportantePorCondicion(condicion);
     this.pagoForm.patchValue({
-      aportante: this.resolverAportantePorCondicion(condicion),
-      numeroOperacion: this.resolverAportantePorCondicion(condicion) === 'EMPRESA'
+      aportante,
+      numeroOperacion: aportante === 'EMPRESA'
         ? this.pagoForm.controls.numeroOperacion.value
         : ''
     });
     this.actualizarEstadoAportante();
+    this.actualizarEstadoMonto();
+  }
+
+  protected onAportanteChange(): void {
+    this.actualizarEstadoMonto();
   }
 
   protected facturaVencida(): boolean {
@@ -239,11 +269,8 @@ export class PostventaFacturacionPanelComponent {
   }
 
   private resolverAportantePorCondicion(condicion: CondicionPagoPostventa): AportantePago | null {
-    if (condicion === 'REINTEGRO' || condicion === 'CASHBACK_POSTVENTA') {
+    if (condicion !== 'NORMAL') {
       return 'EMPRESA';
-    }
-    if (condicion === 'CASHBACK_ASESOR_VENTAS') {
-      return 'CLIENTE';
     }
     return this.pagoForm.controls.aportante.value;
   }
@@ -258,6 +285,53 @@ export class PostventaFacturacionPanelComponent {
     if (!debeBloquearse && control.disabled) {
       control.enable({ emitEvent: false });
     }
+  }
+
+  private actualizarEstadoMonto(): void {
+    const condicion = this.pagoForm.controls.condicion.value;
+    const aportante = this.resolverAportantePago();
+    const montoCtrl = this.pagoForm.controls.monto;
+
+    if (condicion === 'NORMAL' && aportante === 'CLIENTE') {
+      montoCtrl.setValue(null, { emitEvent: false });
+      montoCtrl.disable({ emitEvent: false });
+      return;
+    }
+
+    if (condicion === 'NORMAL' && aportante === 'EMPRESA') {
+      const periodo = this.facade.selectedPeriodo();
+      montoCtrl.setValue(periodo?.montoFacturado ?? null, { emitEvent: false });
+      montoCtrl.disable({ emitEvent: false });
+      return;
+    }
+
+    if (condicion === 'CASHBACK_ASESOR_VENTAS') {
+      const periodo = this.facade.selectedPeriodo();
+      const cashback = this.resolverCashbackPreventa(periodo?.numeroPeriodo);
+      if (cashback) {
+        montoCtrl.setValue(cashback.monto, { emitEvent: false });
+        montoCtrl.disable({ emitEvent: false });
+        return;
+      }
+    }
+
+    if (montoCtrl.disabled) {
+      montoCtrl.enable({ emitEvent: false });
+    }
+  }
+
+  protected montoOculto(): boolean {
+    const condicion = this.pagoForm.controls.condicion.value;
+    const aportante = this.resolverAportantePago();
+    return condicion === 'NORMAL' && aportante === 'CLIENTE';
+  }
+
+  private resolverCashbackPreventa(numeroPeriodo: number | null | undefined): { monto: number | null } | null {
+    if (numeroPeriodo == null) return null;
+    const promo = this.facade.promoPreventa();
+    if (!promo?.cashbackPeriodos?.length) return null;
+    const match = promo.cashbackPeriodos.find(cb => cb.numeroPeriodo === numeroPeriodo);
+    return match ? { monto: match.monto ?? null } : null;
   }
 
   private todayIso(): string {
@@ -280,11 +354,12 @@ export class PostventaFacturacionPanelComponent {
   private pagoTieneDatos(): boolean {
     const raw = this.pagoForm.getRawValue();
     return Boolean(
-      raw.fechaPago
-      || raw.fechaCompromisoPago
-      || raw.numeroOperacion
-      || raw.aportante
-      || raw.condicion !== 'NORMAL'
+      raw.modoRegistro
+      && (raw.fechaPago
+        || raw.fechaCompromisoPago
+        || raw.numeroOperacion
+        || raw.aportante
+        || raw.condicion !== 'NORMAL')
     );
   }
 }

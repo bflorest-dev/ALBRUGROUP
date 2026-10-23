@@ -1,7 +1,7 @@
 package pe.albrugroup.lead_service.entity.request;
 
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+
 import lombok.Getter;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.AportantePago;
@@ -18,9 +18,6 @@ public class PagoPostventaRequest {
 
     private AportantePago aportante;
     private CondicionPagoPostventa condicion;
-
-    @NotNull(message = "monto es obligatorio")
-    @DecimalMin(value = "0.01", message = "monto debe ser mayor a 0")
     private BigDecimal monto;
 
     private LocalDate fechaPago;

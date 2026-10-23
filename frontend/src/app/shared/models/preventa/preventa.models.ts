@@ -575,6 +575,12 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   esZonaPintada?: boolean | null;
 }
 
+/** Resultado de una operación transaccional exclusiva del Drawer PREVENTA V2. */
+export interface PreventaGestionV2Response {
+  idLeadTipificado?: number | null;
+  idNuevaOportunidad?: number | null;
+}
+
 export interface LeadPlanDetalleResponse {
   id?: number | null;
   nombre?: string | null;

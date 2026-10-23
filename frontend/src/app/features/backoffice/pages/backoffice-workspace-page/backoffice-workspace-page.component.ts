@@ -29,7 +29,11 @@ import { DireccionCatalogoService } from '../../../../core/services/direccion-ca
 import { CurrentUserProviderScopeService } from '../../../../core/services/current-user-provider-scope.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
 import { LeadPlanSummaryComponent } from '../../../../shared/components/lead-plan-summary/lead-plan-summary.component';
-import { VentaDrawerV2Component } from '../../../../shared/components/venta-drawer-v2/venta-drawer-v2.component';
+import {
+  VentaDrawerV2Component,
+  VentaPostventaConfirmation,
+  VentaPostventaConfirmationAction
+} from '../../../../shared/components/venta-drawer-v2/venta-drawer-v2.component';
 import { SectionHeaderComponent } from '../../../../shared/components/section-header/section-header.component';
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { MetricsRango, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
@@ -163,6 +167,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private lastAttendanceStatus: EstadoAsistencia | null = null;
   private detailHadOperationalAction = false;
   private readonly operationalGate = this.operationalGateService.createGate('backoffice-workspace');
+  private pendingPostventaConfirmation: ((confirmed: boolean) => void) | null = null;
 
   protected readonly pageSize = 12;
   protected readonly section = signal<BackofficeSection>('plataforma');
@@ -170,6 +175,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly isLoading = signal(false);
   protected readonly isReconciling = signal(false);
   protected readonly isSaving = signal(false);
+  protected readonly postventaConfirmation = signal<VentaPostventaConfirmation | null>(null);
+  protected readonly tipificationMessage = signal<string | null>(null);
   protected readonly leadActionId = signal<number | null>(null);
   protected readonly plataformaRows = signal<VisualLeadVenta[]>([]);
   protected readonly programadosRows = signal<VisualLeadVenta[]>([]);
@@ -1394,28 +1401,22 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!this.ensureCanMutate()) {
       return;
     }
+    this.tipificationMessage.set(null);
     if (!this.catalogo()) {
-      this.notify('error', 'No se pudo cargar el catalogo de tipificaciones de VENTA.');
+      this.tipificationMessage.set('No se pudo cargar el catalogo de tipificaciones de VENTA.');
       return;
     }
     const detail = this.detail();
     if (!detail || this.tipificacionForm.invalid) {
-      this.notify('warn', 'Selecciona tipificacion y subtipificacion.');
+      this.tipificationMessage.set('Selecciona tipificacion y subtipificacion.');
       return;
     }
-    if (this.hasUnsavedDataChanges()) {
-      const saved = await this.performSave(detail, { notifyEmpty: false, notifySuccess: false });
-      if (!saved) {
-        this.notify('warn', 'Corrige los datos pendientes para poder tipificar.');
-        return;
-      }
-    }
     if (this.requiresInstallDate() && !this.tipificacionForm.controls.fechaInstalacion.value) {
-      this.notify('warn', 'La fecha de instalacion es obligatoria para pasar a POSTVENTA.');
+      this.tipificationMessage.set('La fecha de instalacion es obligatoria para pasar a POSTVENTA.');
       return;
     }
     if (this.requiresInstallDate() && this.tipificacionForm.controls.fechaInstalacion.invalid) {
-      this.notify('warn', 'La fecha de instalacion no puede ser futura.');
+      this.tipificationMessage.set('La fecha de instalacion no puede ser futura.');
       return;
     }
     // TEMPORAL: regularizacion de leads antiguos. Descomentar al cerrar la regularizacion.
@@ -1426,7 +1427,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (this.requiresProgramming()) {
       this.normalizeScheduledTime();
       if (!this.tipificacionForm.controls.fechaProgramacion.value || !this.tipificacionForm.controls.horaProgramada.value) {
-        this.notify('warn', 'Ingresa fecha y hora de programacion.');
+        this.tipificationMessage.set('Ingresa fecha y hora de programacion.');
         return;
       }
       // TEMPORAL: regularizacion de leads antiguos. Descomentar al cerrar la regularizacion.
@@ -1436,7 +1437,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       // )) return;
     }
     if (this.requiresRejectionDate() && !this.tipificacionForm.controls.fechaRechazo.value) {
-      this.notify('warn', 'Ingresa la fecha de rechazo.');
+      this.tipificationMessage.set('Ingresa la fecha de rechazo.');
       return;
     }
     const raw = this.tipificacionForm.getRawValue();
@@ -1446,34 +1447,98 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       const sec = this.resolveSecForTipification(raw.sec, detail.sec);
       const sot = this.resolveSotForTipification(raw.sot, detail.sot);
       if ((requiresCustomerId ? !sot : (!sec || !sot))) {
-        this.notify('warn', requiresCustomerId ? 'Ingresa SOT de 8 digitos.' : 'Ingresa SEC de 9 digitos y SOT de 8 digitos.');
+        this.tipificationMessage.set(requiresCustomerId ? 'Ingresa SOT de 8 digitos.' : 'Ingresa SEC de 9 digitos y SOT de 8 digitos.');
         return;
       }
     }
     if (requiresCustomerId && !/^\d{8}$/.test(raw.customerId ?? '')) {
-      this.notify('warn', 'Ingresa Customer ID de 8 digitos.');
+      this.tipificationMessage.set('Ingresa Customer ID de 8 digitos.');
       return;
     }
+    const request = {
+      codigoTipificacion: raw.codigoTipificacion,
+      codigoSubtipificacion: raw.codigoSubtipificacion,
+      comentario: (raw.comentario ?? '').trim() !== this.loadedComentario() ? (raw.comentario || null) : null,
+      fechaInstalacion: this.requiresInstallDate() ? raw.fechaInstalacion || null : null,
+      fechaProgramacion: this.requiresProgramming() ? raw.fechaProgramacion || null : null,
+      fechaRechazo: this.requiresRejectionDate() ? raw.fechaRechazo || null : null,
+      horaProgramada: this.requiresProgramming() ? raw.horaProgramada || null : null,
+      sec: requiresSecSot && !requiresCustomerId ? this.resolveSecForTipification(raw.sec, detail.sec) : null,
+      sot: requiresSecSot ? this.resolveSotForTipification(raw.sot, detail.sot) : null,
+      customerId: requiresCustomerId ? raw.customerId || null : null
+    };
+    if (!(await this.confirmPostventaTipification(request))) return;
+    if (this.hasUnsavedDataChanges()) {
+      const saved = await this.performSave(detail, { notifyEmpty: false, notifySuccess: false });
+      if (!saved) {
+        this.notify('warn', 'Corrige los datos pendientes para poder tipificar.');
+        return;
+      }
+    }
     await this.saveAction(
-      () =>
-        this.leadService.tipificarLead(detail.id, {
-          codigoTipificacion: raw.codigoTipificacion,
-          codigoSubtipificacion: raw.codigoSubtipificacion,
-          comentario: (raw.comentario ?? '').trim() !== this.loadedComentario() ? (raw.comentario || null) : null,
-          fechaInstalacion: this.requiresInstallDate() ? raw.fechaInstalacion || null : null,
-          fechaProgramacion: this.requiresProgramming() ? raw.fechaProgramacion || null : null,
-          fechaRechazo: this.requiresRejectionDate() ? raw.fechaRechazo || null : null,
-          horaProgramada: this.requiresProgramming() ? raw.horaProgramada || null : null,
-          sec: requiresSecSot && !requiresCustomerId ? this.resolveSecForTipification(raw.sec, detail.sec) : null,
-          sot: requiresSecSot ? this.resolveSotForTipification(raw.sot, detail.sot) : null,
-          customerId: requiresCustomerId ? raw.customerId || null : null
-        }),
+      () => this.leadService.tipificarLead(detail.id, request),
       'Lead tipificado.',
       async () => {
         this.closeDetail();
         await this.reconcile(detail.id);
-      }
+      },
+      this.tipificationMessage
     );
+  }
+
+  private async confirmPostventaTipification(request: {
+    codigoTipificacion: string;
+    codigoSubtipificacion: string;
+    fechaInstalacion?: string | null;
+  }): Promise<boolean> {
+    const detail = this.detail();
+    const subtipificacion = this.selectedSubtipificacion();
+    if (!detail || subtipificacion?.etapaCambio?.trim().toUpperCase() !== 'POSTVENTA') return true;
+
+    const fechaInstalacion = this.formatConfirmationDate(request.fechaInstalacion);
+    const fechaAnterior = Boolean(request.fechaInstalacion && request.fechaInstalacion < this.todayLocalDate());
+    const lead = detail.lead ?? String(detail.id);
+    const cliente = detail.nombreTitular?.trim() || 'No disponible';
+    const documento = `${detail.tipoDocumento ?? 'Documento'} · ${detail.numeroDocumentoTitularServicio ?? detail.numeroDocumento ?? 'No disponible'}`;
+    const confirmation: VentaPostventaConfirmation = {
+      step: 'review',
+      lead,
+      cliente,
+      documento,
+      fechaInstalacion,
+      tipificacion: `${this.selectedTipificacionCode()} / ${subtipificacion.descripcion}`,
+      advertenciaFechaAnterior: fechaAnterior
+    };
+    const revisado = await this.openPostventaConfirmation(confirmation);
+    if (!revisado) return false;
+    return this.openPostventaConfirmation({ ...confirmation, step: 'final' });
+  }
+
+  private formatConfirmationDate(value?: string | null): string {
+    if (!value) return 'No indicada';
+    const [year, month, day] = value.split('-');
+    return year && month && day ? `${day}/${month}/${year}` : value;
+  }
+
+  protected resolvePostventaConfirmation(action: VentaPostventaConfirmationAction): void {
+    const confirmation = this.postventaConfirmation();
+    const resolve = this.pendingPostventaConfirmation;
+    if (!confirmation || !resolve) return;
+    this.pendingPostventaConfirmation = null;
+    if (action === 'continue' && confirmation.step === 'review') {
+      this.postventaConfirmation.set({ ...confirmation, step: 'final' });
+      resolve(true);
+      return;
+    }
+    this.postventaConfirmation.set(null);
+    resolve(action === 'confirm');
+  }
+
+  private openPostventaConfirmation(confirmation: VentaPostventaConfirmation): Promise<boolean> {
+    this.postventaConfirmation.set(confirmation);
+    return new Promise<boolean>((resolve) => {
+      this.pendingPostventaConfirmation = resolve;
+    });
   }
 
   protected async onPlanChanged(): Promise<void> {
@@ -3664,6 +3729,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.detail.set(null);
     this.resetHistorialState();
     this.selectedLeadId.set(null);
+    this.tipificationMessage.set(null);
     this.selectedTipificacionCode.set('');
     this.selectedSubtipificacionCode.set('');
     this.selectedOfertaProviderId.set(null);
@@ -3731,7 +3797,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return this.ofertaForm.dirty || this.adicionalesDirty();
   }
 
-  private async saveAction(action: () => import('rxjs').Observable<void>, successMessage: string, afterSuccess: () => Promise<void>): Promise<void> {
+  private async saveAction(action: () => import('rxjs').Observable<void>, successMessage: string, afterSuccess: () => Promise<void>, inlineError?: { set(value: string | null): void }): Promise<void> {
     if (!this.ensureCanMutate()) {
       return;
     }
@@ -3743,7 +3809,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.notify('success', successMessage);
       await afterSuccess();
     } catch (error) {
-      this.notify('error', this.getErrorMessage(error, 'No se pudo completar la operacion.'));
+      const message = this.getErrorMessage(error, 'No se pudo completar la operacion.');
+      if (inlineError) inlineError.set(message);
+      else this.notify('error', message);
       await this.reconcile();
     } finally {
       this.isSaving.set(false);

@@ -1,5 +1,7 @@
 package pe.albrugroup.lead_service.entity.response;
 
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
+
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -19,6 +21,9 @@ public record BaseLeadPreviewResponse(
         Instant fechaIngresoEtapa,
         Instant fechaTipificacion,
         LocalDate fechaInstalacion,
+        LocalDate mesCorteBase,
+        Integer numeroCorteBase,
+        EstadoClientePostventa estadoClientePostventa,
         String latitud,
         String longitud,
         String comentario

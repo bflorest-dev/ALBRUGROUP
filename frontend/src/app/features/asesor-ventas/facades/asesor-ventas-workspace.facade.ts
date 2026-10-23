@@ -1,6 +1,6 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, Validators } from '@angular/forms';
-import { Observable, Subscription, firstValueFrom } from 'rxjs';
+import { Observable, Subscription, firstValueFrom, map, tap } from 'rxjs';
 import { AttendanceFacade } from '../../../core/facades/attendance.facade';
 import { DireccionCatalogoService } from '../../../core/services/direccion-catalogo.service';
 import { AsesorVentasWorkspaceStateService } from '../../../core/services/asesor-ventas-workspace-state.service';
@@ -346,7 +346,7 @@ export class AsesorVentasWorkspaceFacade {
     return [{ id: 0, nombre: 'Sin plan' }, ...providerPlans];
   });
   readonly promocionOptions = computed(() => [
-    { id: 0, reglaComercial: 'Sin promocion' },
+    { id: 0, reglaComercial: 'Sin promoción' },
     ...this.promociones()
   ]);
   readonly ofertaAdditionalsTotal = computed(() =>
@@ -892,7 +892,7 @@ export class AsesorVentasWorkspaceFacade {
     );
   }
 
-  async tipificar(): Promise<void> {
+  async tipificar(crearNuevaOportunidad = false): Promise<void> {
     if (!this.canFinishManagedLead()) {
       this.errorMessage.set('Marca ONLINE para realizar esta accion.');
       return;
@@ -964,11 +964,25 @@ export class AsesorVentasWorkspaceFacade {
       }
     }
 
+    let idNuevaOportunidad: number | null = null;
     await this.saveAction(
-      () => this.preventaService.tipificarLead(detail.id, tipificacionPayload),
+      () => crearNuevaOportunidad
+        ? this.preventaService.tipificarLeadV2(detail.id, { ...tipificacionPayload, crearNuevaOportunidad: true }).pipe(
+            tap((response) => { idNuevaOportunidad = response.idNuevaOportunidad ?? null; }),
+            map(() => void 0)
+          )
+        : this.preventaService.tipificarLead(detail.id, tipificacionPayload),
       'Lead tipificado.',
       async () => {
         this.tipificadasEnSesion.update((s) => new Set(s).add(detail.id));
+        if (idNuevaOportunidad) {
+          this.oportunidadesActivasSesion.add(idNuevaOportunidad);
+          this.oportunidadesCreadasSesion.add(idNuevaOportunidad);
+          await this.cambiarOportunidad(idNuevaOportunidad);
+          this.mostrarExito('Preventa cerrada. Continúa con la nueva oportunidad del mismo contacto.');
+          await this.reconcile(detail.id);
+          return;
+        }
         // Multi-titular: si el contacto tiene otra oportunidad aún no tipificada en esta sesión,
         // avanzar a ella en la misma comunicación en vez de cerrar el modal.
         // Solo se obliga a continuar con las oportunidades ACTIVAS de la sesión (las creadas por el
@@ -995,6 +1009,36 @@ export class AsesorVentasWorkspaceFacade {
         await this.reconcile(detail.id);
       }
     );
+  }
+
+  /**
+   * V2: solo para un lead invocado temporalmente desde otra etapa. El backend libera el original y
+   * crea la oportunidad PREVENTA vacía en una operación atómica; no reutiliza la operación legacy.
+   */
+  async crearOportunidadV2(): Promise<void> {
+    const detail = this.detail();
+    if (!detail || !detail.atencionOtraEtapa) {
+      this.errorMessage.set('La nueva oportunidad inmediata solo aplica a un lead que proviene de otra etapa.');
+      return;
+    }
+    this.isSaving.set(true);
+    this.clearMessages();
+    try {
+      const response = await firstValueFrom(this.preventaService.crearOportunidadV2(detail.id));
+      const idNuevaOportunidad = response.idNuevaOportunidad;
+      if (!idNuevaOportunidad) {
+        throw new Error('La operación no devolvió la nueva oportunidad.');
+      }
+      this.atencionLeadId.set(null);
+      this.oportunidadesActivasSesion = new Set([idNuevaOportunidad]);
+      this.oportunidadesCreadasSesion = new Set([idNuevaOportunidad]);
+      await this.cambiarOportunidad(idNuevaOportunidad);
+      this.mostrarExito('Nueva oportunidad creada y asignada para continuar la gestión.');
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo crear la nueva oportunidad.'));
+    } finally {
+      this.isSaving.set(false);
+    }
   }
 
   private async guardarAntesDeTipificar(detail: LeadDetalleResponse, forceFullSave = false): Promise<boolean> {
@@ -1207,6 +1251,16 @@ export class AsesorVentasWorkspaceFacade {
       ...current,
       [change.key]: change.value
     }));
+    await this.refreshPlanesOferta();
+  }
+
+  async initializePlanOfertaFiltersV2(): Promise<void> {
+    this.planOfertaFilters.set({
+      tienePrecioPromocional: false,
+      tieneVelocidadPromocional: false,
+      tienePromocionInterna: false,
+      tipoServicio: null
+    });
     await this.refreshPlanesOferta();
   }
 

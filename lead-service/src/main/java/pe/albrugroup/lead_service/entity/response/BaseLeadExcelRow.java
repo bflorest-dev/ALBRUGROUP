@@ -1,5 +1,6 @@
 package pe.albrugroup.lead_service.entity.response;
 
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.Unidad;
 
 import java.math.BigDecimal;
@@ -21,6 +22,9 @@ public record BaseLeadExcelRow(
         Unidad unidad,
         BigDecimal precio,
         LocalDate fechaInstalacion,
+        LocalDate mesCorteBase,
+        Integer numeroCorteBase,
+        EstadoClientePostventa estadoClientePostventa,
         String ubigeoDomicilio,
         String asesorPreventa,
         String direccion,

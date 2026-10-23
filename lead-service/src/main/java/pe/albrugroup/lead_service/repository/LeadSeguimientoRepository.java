@@ -5,7 +5,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.LeadSeguimiento;
+import pe.albrugroup.lead_service.entity.enums.CondicionPagoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoPagoPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.time.LocalDate;
@@ -29,6 +31,13 @@ public interface LeadSeguimientoRepository extends JpaRepository<LeadSeguimiento
               AND l.etapa = :etapaPostventa
               AND l.estadoClientePostventa = :estadoActivo
               AND r.idAsesorMerito IS NOT NULL
+              AND NOT EXISTS (
+                  SELECT 1 FROM PagoPostventa p
+                  JOIN p.periodoFacturacionPostventa pf
+                  WHERE p.lead = l
+                    AND pf.numeroPeriodo = 1
+                    AND (p.estado = :estadoPagadoEmpresa OR p.condicion = :condicionCashbackPostventa)
+              )
             GROUP BY r.idAsesorMerito
             """)
     List<Object[]> contarVentasValidasParaBilling(
@@ -36,6 +45,8 @@ public interface LeadSeguimientoRepository extends JpaRepository<LeadSeguimiento
             @Param("hasta") LocalDate hasta,
             @Param("etapaPreventa") Etapa etapaPreventa,
             @Param("etapaPostventa") Etapa etapaPostventa,
-            @Param("estadoActivo") EstadoClientePostventa estadoActivo
+            @Param("estadoActivo") EstadoClientePostventa estadoActivo,
+            @Param("estadoPagadoEmpresa") EstadoPagoPostventa estadoPagadoEmpresa,
+            @Param("condicionCashbackPostventa") CondicionPagoPostventa condicionCashbackPostventa
     );
 }

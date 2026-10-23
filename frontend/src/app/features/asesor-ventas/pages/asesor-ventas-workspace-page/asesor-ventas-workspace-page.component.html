@@ -43,5 +43,9 @@
 
   <app-asesor-board />
 
-  <app-lead-management-dialog />
+  @if (usePreventaDrawerV2) {
+    <app-preventa-drawer-v2 />
+  } @else {
+    <app-lead-management-dialog />
+  }
 </section>
