@@ -7,7 +7,11 @@ import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.entity.response.GestionMensualFilaResponse;
 import pe.albrugroup.lead_service.entity.response.GestionMensualPostventaResponse;
+import pe.albrugroup.lead_service.entity.response.GestionCohorteFilaResponse;
+import pe.albrugroup.lead_service.entity.response.GestionCohortePostventaResponse;
+import pe.albrugroup.lead_service.entity.response.VentanaDecisionPostventaResponse;
 import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
+import pe.albrugroup.lead_service.repository.projection.GestionCohorteCorteProjection;
 import pe.albrugroup.lead_service.repository.projection.GestionMensualCorteProjection;
 
 import java.time.LocalDate;
@@ -48,6 +52,40 @@ public class GestionMensualPostventaService {
                 .build();
     }
 
+    public GestionCohortePostventaResponse obtenerGestionPorCohorte(
+            LocalDate mesCohorteParam,
+            String proveedorParam
+    ) {
+        String proveedor = resolverProveedor(proveedorParam);
+        LocalDate hoy = OperationalDateTime.today();
+        LocalDate ultimaMesCohorte = periodoRepository.ultimaMesCohorte(proveedor);
+        LocalDate mesCohorte = resolverMesCohorte(mesCohorteParam, ultimaMesCohorte, hoy);
+        VentanaDecision ventana = resolverVentanaDecision(hoy);
+
+        List<GestionCohorteFilaResponse> filas = periodoRepository
+                .gestionPorCohorte(mesCohorte, proveedor).stream()
+                .map(this::toFilaCohorte)
+                .toList();
+        List<GestionCohorteFilaResponse> filasVentana = periodoRepository
+                .gestionPorVencimiento(ventana.fechaVencimientoObjetivo(), proveedor).stream()
+                .map(this::toFilaCohorte)
+                .toList();
+
+        return GestionCohortePostventaResponse.builder()
+                .mesCohorte(mesCohorte)
+                .ultimaMesCohorte(ultimaMesCohorte)
+                .fechaOperacion(hoy)
+                .proveedor(proveedor)
+                .filas(filas)
+                .ventanaDecision(VentanaDecisionPostventaResponse.builder()
+                        .fechaVencimientoObjetivo(ventana.fechaVencimientoObjetivo())
+                        .fechaLimite(ventana.fechaLimite())
+                        .vencimientoOcurrido(!hoy.isBefore(ventana.fechaVencimientoObjetivo()))
+                        .filas(filasVentana)
+                        .build())
+                .build();
+    }
+
     /**
      * Resuelve el mes de gestion vigente. Si se pide uno explicito, se usa ese; si no, se deriva de la
      * fecha operativa con la regla del dia 15 (>= 15 -> mes actual; antes -> mes anterior).
@@ -78,6 +116,42 @@ public class GestionMensualPostventaService {
                 .impagos(p.getImpagos())
                 .bajas(p.getBajas())
                 .build();
+    }
+
+    private GestionCohorteFilaResponse toFilaCohorte(GestionCohorteCorteProjection p) {
+        return GestionCohorteFilaResponse.builder()
+                .mesCorteBase(p.getMesCorteBase())
+                .numeroCorteBase(p.getNumeroCorteBase())
+                .numeroFactura(p.getNumeroFactura())
+                .fechaVencimiento(p.getFechaVencimiento())
+                .total(p.getTotal())
+                .pagadoCliente(p.getPagadoCliente())
+                .pagadoEmpresa(p.getPagadoEmpresa())
+                .impagos(p.getImpagos())
+                .bajas(p.getBajas())
+                .build();
+    }
+
+    static LocalDate resolverMesCohorte(LocalDate mesCohorteParam, LocalDate ultimaMesCohorte, LocalDate hoy) {
+        if (mesCohorteParam != null) {
+            return YearMonth.from(mesCohorteParam).atDay(1);
+        }
+        if (ultimaMesCohorte != null) {
+            return YearMonth.from(ultimaMesCohorte).atDay(1);
+        }
+        return YearMonth.from(hoy).atDay(1);
+    }
+
+    static VentanaDecision resolverVentanaDecision(LocalDate hoy) {
+        YearMonth mesVencimiento = hoy.getDayOfMonth() <= DIA_CAMBIO_GESTION
+                ? YearMonth.from(hoy).minusMonths(1)
+                : YearMonth.from(hoy);
+        LocalDate fechaVencimiento = mesVencimiento.atDay(Math.min(28, mesVencimiento.lengthOfMonth()));
+        LocalDate fechaLimite = mesVencimiento.plusMonths(1).atDay(DIA_CAMBIO_GESTION);
+        return new VentanaDecision(fechaVencimiento, fechaLimite);
+    }
+
+    record VentanaDecision(LocalDate fechaVencimientoObjetivo, LocalDate fechaLimite) {
     }
 
     /**

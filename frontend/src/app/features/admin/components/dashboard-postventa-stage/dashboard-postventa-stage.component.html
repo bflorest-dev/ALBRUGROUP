@@ -1,9 +1,41 @@
 <section class="pv-shell" data-theme="dark">
-  <app-page-header
-    eyebrow="Dashboard"
-    title="Postventa"
-    description="Gestión mensual de facturación de la etapa de postventa (WIN)."
-  />
+  <header class="pv-topbar">
+    <div class="pv-heading">
+      <span class="pv-heading__label" aria-hidden="true"><i></i>DASHBOARD</span>
+      <h1>Postventa</h1>
+      <p>Facturación y seguimiento operativo de clientes.</p>
+    </div>
 
-  <app-gestion-mensual-postventa-panel />
+    <div class="pv-controls">
+      <div class="pv-mode" role="group" aria-label="Modo de análisis">
+        <button type="button" [class.is-active]="mode() === 'mensual'" [attr.aria-pressed]="mode() === 'mensual'" (click)="mode.set('mensual')">
+          Gestión mensual
+        </button>
+        <button type="button" [class.is-active]="mode() === 'cohorte'" [attr.aria-pressed]="mode() === 'cohorte'" (click)="mode.set('cohorte')">
+          Cohortes y umbrales
+        </button>
+      </div>
+
+      <div class="pv-period">
+        <button type="button" class="pv-period__nav" (click)="mesAnterior()" [disabled]="isLoading()" [attr.aria-label]="periodoLabel() + ' anterior'">
+          <i class="pi pi-chevron-left" aria-hidden="true"></i>
+        </button>
+        <div class="pv-period__value">
+          <span>{{ periodoLabel() }}</span>
+          <strong>{{ mesLabel() || '—' }}</strong>
+        </div>
+        <button type="button" class="pv-period__nav" (click)="mesSiguiente()" [disabled]="isLoading() || !canGoNext()" [attr.aria-label]="periodoLabel() + ' siguiente'">
+          <i class="pi pi-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <span class="pv-provider">{{ proveedor() }}</span>
+    </div>
+  </header>
+
+  @if (mode() === 'mensual') {
+    <app-gestion-mensual-postventa-panel />
+  } @else {
+    <app-gestion-cohorte-postventa-panel />
+  }
 </section>

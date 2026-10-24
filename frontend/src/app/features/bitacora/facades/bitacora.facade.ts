@@ -143,6 +143,10 @@ export class BitacoraFacade {
   readonly confirmandoEliminacion = signal(false);
   readonly procesandoEliminacion = signal(false);
 
+  // Recálculo de resúmenes de etapa desde eventos.
+  readonly recalculandoResumenes = signal(false);
+  readonly recalculoOk = signal(false);
+
   readonly identidadForm: FormGroup = this.fb.group({
     prefijo: [''],
     lead: [''],
@@ -459,6 +463,7 @@ export class BitacoraFacade {
     this.cargandoDetalle.set(true);
     this.detalle.set(null);
     this.guardadoOk.set(false);
+    this.recalculoOk.set(false);
     this.error.set(null);
     this.modoReestructurar.set('none');
     this.reestructuraMsg.set(null);
@@ -657,6 +662,21 @@ export class BitacoraFacade {
           this.limpiarStaged();
         },
         error: () => this.error.set('No se pudo eliminar el Lead integralmente. Verifica los permisos e inténtalo de nuevo.')
+      });
+  }
+
+  recalcularResumenes(): void {
+    const idLead = this.detalle()?.id;
+    if (!idLead || this.recalculandoResumenes()) return;
+    this.recalculandoResumenes.set(true);
+    this.recalculoOk.set(false);
+    this.error.set(null);
+    this.service
+      .recalcularResumenes(idLead)
+      .pipe(finalize(() => this.recalculandoResumenes.set(false)))
+      .subscribe({
+        next: () => this.recalculoOk.set(true),
+        error: () => this.error.set('No se pudieron recalcular los resúmenes. Verifica los permisos e inténtalo de nuevo.')
       });
   }
 

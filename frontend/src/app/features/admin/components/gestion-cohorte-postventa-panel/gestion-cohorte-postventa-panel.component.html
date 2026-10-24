@@ -1,0 +1,139 @@
+@if (facade.errorMessage()) {
+  <p-message severity="error" [text]="facade.errorMessage()!" styleClass="gc-message" />
+}
+
+<section class="gc-thresholds" aria-labelledby="gc-threshold-title">
+  <div>
+    <h3 id="gc-threshold-title">Umbrales de simulación</h3>
+    <p>Los conteos provienen del sistema. Estos límites son temporales y se restablecen al recargar la página.</p>
+  </div>
+  <div class="gc-thresholds__fields">
+    @for (recibo of facade.recibos(); track recibo.numeroFactura) {
+      <label>
+        <span>Recibo {{ recibo.numeroFactura }}</span>
+        <span class="gc-input-wrap">
+          <input type="number" min="0" max="100" step="0.1" [value]="recibo.umbralMaximo"
+            (input)="facade.actualizarUmbral(recibo.numeroFactura, $any($event.target).value)" />
+          <span>%</span>
+        </span>
+      </label>
+    }
+    <button type="button" class="gc-reset" (click)="facade.restablecerUmbrales()">Restablecer</button>
+  </div>
+</section>
+
+<div class="gc-analysis">
+  <div class="gc-table-wrap">
+    <table class="gc-table">
+    <thead>
+      <tr>
+        <th rowspan="2">Recibo</th>
+        <th colspan="4">Corte 1</th>
+        <th colspan="4">Corte 2</th>
+        <th colspan="6">Consolidado de la cohorte</th>
+      </tr>
+      <tr>
+        <th>Total</th><th>Pagados</th><th>Impagos</th><th>Bajas</th>
+        <th>Total</th><th>Pagados</th><th>Impagos</th><th>Bajas</th>
+        <th>Total</th><th>Pagados</th><th>Impagos</th><th>Bajas</th><th>Umbral de bajas</th><th>Máx. bajas</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (recibo of facade.recibos(); track recibo.numeroFactura) {
+        <tr>
+          <th scope="row">{{ recibo.numeroFactura }}</th>
+          <td>{{ recibo.corte1.total | number }}</td>
+          <td class="gc-paid">{{ recibo.corte1.pagados | number }}</td>
+          <td class="gc-unpaid">{{ recibo.corte1.impagos | number }} <small>{{ recibo.corte1.pctImpagos | number: '1.1-1' }}%</small></td>
+          <td class="gc-down">{{ recibo.corte1.bajas | number }} <small>{{ recibo.corte1.pctBajas | number: '1.1-1' }}%</small></td>
+          <td>{{ recibo.corte2.total | number }}</td>
+          <td class="gc-paid">{{ recibo.corte2.pagados | number }}</td>
+          <td class="gc-unpaid">{{ recibo.corte2.impagos | number }} <small>{{ recibo.corte2.pctImpagos | number: '1.1-1' }}%</small></td>
+          <td class="gc-down">{{ recibo.corte2.bajas | number }} <small>{{ recibo.corte2.pctBajas | number: '1.1-1' }}%</small></td>
+          <td class="gc-total">{{ recibo.total.total | number }}</td>
+          <td class="gc-paid">{{ recibo.total.pagados | number }}</td>
+          <td class="gc-unpaid">{{ recibo.total.impagos | number }}</td>
+          <td class="gc-down">{{ recibo.total.bajas | number }}</td>
+          <td>
+            @if (recibo.total.total > 0) {
+              <span class="gc-threshold" [class.gc-threshold--ok]="recibo.cumple">
+                {{ recibo.umbralActual | number: '1.2-2' }}%
+              </span>
+              <small>máx. {{ recibo.umbralMaximo | number: '1.1-1' }}%</small>
+            } @else {
+              —
+            }
+          </td>
+          <td class="gc-tolerance">
+            @if (recibo.total.total > 0) {
+              <strong>{{ recibo.toleranciaMaximaBajas | number }}</strong>
+              <small>bajas como máximo</small>
+            } @else {
+              —
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+    </table>
+  </div>
+
+  @if (facade.cohorteParticipaEnVentana()) {
+    <aside class="gc-window" aria-labelledby="gc-window-title">
+      <div class="gc-window__heading">
+        <div>
+          <h3 id="gc-window-title">Decisión del próximo 15</h3>
+          @if (facade.fechaVencimientoObjetivo()) {
+            <p>Esta cohorte participa en facturas con vencimiento {{ facade.fechaVencimientoObjetivoLabel() }}.</p>
+          }
+        </div>
+        <span class="gc-window__state" [class.gc-window__state--upcoming]="!facade.vencimientoOcurrido()">
+          {{ facade.vencimientoOcurrido() ? 'Ventana activa' : 'Próxima ventana' }}
+        </span>
+      </div>
+
+      <p class="gc-window__explanation">Decisión hasta {{ facade.fechaLimiteLabel() }}. La proyección reúne todas las cohortes con ese vencimiento y considera cada impago como una posible baja.</p>
+
+      <div class="gc-decision-table-wrap">
+        <table class="gc-decision-table">
+          <thead>
+            <tr>
+              <th>Recibo</th>
+              <th>Grupos incluidos</th>
+              <th>Clientes</th>
+              <th>Impagos</th>
+              <th>Bajas</th>
+              <th>Riesgo proyectado</th>
+              <th>Recomendación</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of facade.recomendaciones(); track item.numeroFactura) {
+              <tr [class.gc-decision-table__row--ok]="item.cumple">
+                <th scope="row">Recibo {{ item.numeroFactura }}</th>
+                <td class="gc-decision-table__groups">{{ item.grupos.join(' + ') }}</td>
+                <td>{{ item.total | number }}</td>
+                <td class="gc-unpaid">{{ item.impagos | number }}</td>
+                <td class="gc-down">{{ item.bajas | number }}</td>
+                <td><strong>{{ item.umbralActual | number: '1.2-2' }}%</strong></td>
+                <td class="gc-decision-table__action">
+                  @if (item.cumple) {
+                    Ya está debajo del {{ item.umbralMaximo | number: '1.1-1' }}%.
+                  } @else if (item.alcanzable) {
+                    Convertir al menos <strong>{{ item.conversionesNecesarias }}</strong> de {{ item.impagos }} impagos en activos.
+                  } @else {
+                    <span class="gc-decision-table__danger">Aun convirtiendo los {{ item.impagos }} impagos, las bajas no permiten alcanzar el {{ item.umbralMaximo | number: '1.1-1' }}%.</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </aside>
+  }
+</div>
+
+@if (!facade.isLoading() && facade.recibos()[0].total.total === 0 && facade.recibos()[1].total.total === 0 && facade.recibos()[2].total.total === 0) {
+  <p class="gc-empty">No hay recibos registrados para esta cohorte.</p>
+}

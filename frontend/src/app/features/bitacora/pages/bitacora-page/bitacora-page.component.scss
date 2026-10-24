@@ -175,9 +175,19 @@ table.records {
 .integrity {
   margin: 14px 22px 0; display: flex; gap: 11px; align-items: flex-start; background: var(--signal-wash);
   border: 1px solid var(--signal-line); border-radius: 9px; padding: 11px 13px;
-  svg { width: 17px; height: 17px; color: var(--signal); flex-shrink: 0; margin-top: 1px; }
+  > svg { width: 17px; height: 17px; color: var(--signal); flex-shrink: 0; margin-top: 1px; }
+  .integrity-copy { flex: 1; }
   .t { font-size: 12.5px; font-weight: 700; color: var(--signal); }
   .di { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+  .integrity-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+  .rebuild-action, .recalc-action {
+    border: 1px solid var(--signal-line); background: transparent; color: var(--signal);
+    font-size: 11.5px; font-weight: 600; padding: 5px 10px; border-radius: 7px; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 5px; transition: .13s;
+    svg { width: 13px; height: 13px; flex-shrink: 0; }
+    &:hover:not(:disabled) { background: var(--signal-wash); border-color: var(--signal); }
+    &:disabled { opacity: .55; cursor: not-allowed; }
+  }
 }
 .tabs {
   display: flex; gap: 2px; padding: 14px 22px 0; border-bottom: 1px solid var(--line);

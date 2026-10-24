@@ -20,6 +20,7 @@ import pe.albrugroup.lead_service.entity.request.PeriodoFacturacionFacturaReques
 import pe.albrugroup.lead_service.entity.response.CambioCorteLeadResponse;
 import pe.albrugroup.lead_service.entity.response.CorreccionCorteFacturacionResponse;
 import pe.albrugroup.lead_service.entity.response.GestionMensualPostventaResponse;
+import pe.albrugroup.lead_service.entity.response.GestionCohortePostventaResponse;
 import pe.albrugroup.lead_service.entity.response.PeriodoFacturacionPostventaResponse;
 import pe.albrugroup.lead_service.service.FacturacionPostventaService;
 import pe.albrugroup.lead_service.service.GestionMensualPostventaService;
@@ -51,6 +52,16 @@ public class PostventaFacturacionController {
             @RequestParam(required = false, defaultValue = "WIN") String proveedor
     ) {
         var gestion = gestionMensualPostventaService.obtenerGestionMensual(mesGestion, proveedor);
+        return ResponseEntity.status(HttpStatus.OK).body(gestion);
+    }
+
+    @GetMapping("/facturacion/gestion-por-cohorte")
+    @PreAuthorize("hasAuthority('READ_POSTVENTA_GESTION_MENSUAL')")
+    public ResponseEntity<GestionCohortePostventaResponse> obtenerGestionPorCohorte(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate mesCohorte,
+            @RequestParam(required = false, defaultValue = "WIN") String proveedor
+    ) {
+        var gestion = gestionMensualPostventaService.obtenerGestionPorCohorte(mesCohorte, proveedor);
         return ResponseEntity.status(HttpStatus.OK).body(gestion);
     }
 

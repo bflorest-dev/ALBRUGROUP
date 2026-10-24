@@ -84,6 +84,10 @@ export class BitacoraService {
     return this.http.delete<void>(`${this.leadUrl}/preventa/${idLead}`);
   }
 
+  recalcularResumenes(idLead: number): Observable<void> {
+    return this.http.post<void>(`${API_CONSTANTS.gatewayBaseUrl}/leads/lead-etapa-resumen-backfill/${idLead}`, {});
+  }
+
   listarDepartamentos(): Observable<UbigeoItem[]> {
     return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos`);
   }

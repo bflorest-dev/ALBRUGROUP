@@ -169,7 +169,24 @@
           <div class="t">Corrección de expediente</div>
           <div class="di">Estás editando con visibilidad total. Al guardar, el lead quedará marcado con un evento de corrección permanente.</div>
         </div>
-        <button type="button" class="rebuild-action" (click)="abrirSubsanacionExistente()">Reconstruir flujo histórico</button>
+        <div class="integrity-actions">
+          <button type="button" class="rebuild-action" (click)="abrirSubsanacionExistente()">Reconstruir flujo histórico</button>
+          <button
+            type="button"
+            class="recalc-action"
+            [disabled]="f.recalculandoResumenes()"
+            (click)="f.recalcularResumenes()"
+            title="Reconstruye primera, última y máxima tipificación de cada etapa desde los eventos actuales."
+          >
+            @if (f.recalculandoResumenes()) {
+              <span class="spin"></span> Recalculando…
+            } @else if (f.recalculoOk()) {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg> Resúmenes actualizados
+            } @else {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9 9 0 0 0-6.36 2.64M3 12a9 9 0 0 0 9 9 9 9 0 0 0 6.36-2.64"/><path d="M3 3v6h6M21 21v-6h-6"/></svg> Recalcular resúmenes
+            }
+          </button>
+        </div>
       </div>
 
       @if (f.cluster()?.idContacto) {

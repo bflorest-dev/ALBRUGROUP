@@ -49,4 +49,28 @@ class GestionMensualPostventaServiceTest {
         assertThat(GestionMensualPostventaService.construirEtiqueta(LocalDate.of(2026, 4, 1), 2, 3))
                 .isEqualTo("Abril · Corte 2 · Recibo 3");
     }
+
+    @Test
+    void despuesDelDia15LaVentanaUsaElVencimientoDelMismoMes() {
+        var ventana = GestionMensualPostventaService.resolverVentanaDecision(LocalDate.of(2026, 10, 23));
+
+        assertThat(ventana.fechaVencimientoObjetivo()).isEqualTo(LocalDate.of(2026, 10, 28));
+        assertThat(ventana.fechaLimite()).isEqualTo(LocalDate.of(2026, 11, 15));
+    }
+
+    @Test
+    void hastaElDia15LaVentanaSigueElVencimientoDelMesAnterior() {
+        var ventana = GestionMensualPostventaService.resolverVentanaDecision(LocalDate.of(2026, 11, 15));
+
+        assertThat(ventana.fechaVencimientoObjetivo()).isEqualTo(LocalDate.of(2026, 10, 28));
+        assertThat(ventana.fechaLimite()).isEqualTo(LocalDate.of(2026, 11, 15));
+    }
+
+    @Test
+    void despuesDelLimiteAbreLaSiguienteVentana() {
+        var ventana = GestionMensualPostventaService.resolverVentanaDecision(LocalDate.of(2026, 11, 16));
+
+        assertThat(ventana.fechaVencimientoObjetivo()).isEqualTo(LocalDate.of(2026, 11, 28));
+        assertThat(ventana.fechaLimite()).isEqualTo(LocalDate.of(2026, 12, 15));
+    }
 }

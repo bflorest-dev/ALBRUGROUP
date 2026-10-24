@@ -1,9 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
-import { TooltipModule } from 'primeng/tooltip';
-import { SectionHeaderComponent } from '../../../../shared/components/section-header/section-header.component';
 import { AdminGestionMensualFacade } from '../../facades/admin-gestion-mensual.facade';
 
 /**
@@ -14,8 +11,7 @@ import { AdminGestionMensualFacade } from '../../facades/admin-gestion-mensual.f
  */
 @Component({
   selector: 'app-gestion-mensual-postventa-panel',
-  imports: [DecimalPipe, ButtonModule, MessageModule, TooltipModule, SectionHeaderComponent],
-  providers: [AdminGestionMensualFacade],
+  imports: [DecimalPipe, MessageModule],
   templateUrl: './gestion-mensual-postventa-panel.component.html',
   styleUrl: './gestion-mensual-postventa-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
