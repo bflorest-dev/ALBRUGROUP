@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,13 +18,18 @@ import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.request.CerrarPeriodoFacturacionRequest;
 import pe.albrugroup.lead_service.entity.request.CorregirCorteFacturacionRequest;
 import pe.albrugroup.lead_service.entity.request.PeriodoFacturacionFacturaRequest;
+import pe.albrugroup.lead_service.entity.request.PageRequest;
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.response.CambioCorteLeadResponse;
 import pe.albrugroup.lead_service.entity.response.CorreccionCorteFacturacionResponse;
 import pe.albrugroup.lead_service.entity.response.GestionMensualPostventaResponse;
 import pe.albrugroup.lead_service.entity.response.GestionCohortePostventaResponse;
 import pe.albrugroup.lead_service.entity.response.PeriodoFacturacionPostventaResponse;
+import pe.albrugroup.lead_service.entity.response.DetalleMetricaPostventaResponse;
+import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.service.FacturacionPostventaService;
 import pe.albrugroup.lead_service.service.GestionMensualPostventaService;
+import pe.albrugroup.lead_service.service.DetalleMetricaPostventaService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -36,6 +42,7 @@ public class PostventaFacturacionController {
 
     private final FacturacionPostventaService facturacionPostventaService;
     private final GestionMensualPostventaService gestionMensualPostventaService;
+    private final DetalleMetricaPostventaService detalleMetricaPostventaService;
 
     @GetMapping("/leads/{idLead}/periodos") @PreAuthorize("hasAuthority('READ_POSTVENTA_FACTURACION')")
     public ResponseEntity<List<PeriodoFacturacionPostventaResponse>> listarPeriodosPorLead(
@@ -63,6 +70,29 @@ public class PostventaFacturacionController {
     ) {
         var gestion = gestionMensualPostventaService.obtenerGestionPorCohorte(mesCohorte, proveedor);
         return ResponseEntity.status(HttpStatus.OK).body(gestion);
+    }
+
+    @GetMapping("/facturacion/detalle-metrica")
+    @PreAuthorize("hasAuthority('READ_POSTVENTA_GESTION_MENSUAL')")
+    public ResponseEntity<PageResponse<DetalleMetricaPostventaResponse>> listarDetalleMetrica(
+            @RequestParam String modo,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate mesReferencia,
+            @RequestParam(required = false, defaultValue = "WIN") String proveedor,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate mesCorteBase,
+            @RequestParam(required = false) Integer numeroCorte,
+            @RequestParam(required = false) Integer numeroRecibo,
+            @RequestParam String categoria,
+            @RequestParam(required = false) EstadoClientePostventa estadoPostventa,
+            @RequestParam(required = false) String tipificacion,
+            @RequestParam(required = false) String subtipificacion,
+            @RequestParam(required = false) String buscar,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var detalle = detalleMetricaPostventaService.listar(
+                modo, mesReferencia, proveedor, mesCorteBase, numeroCorte, numeroRecibo, categoria,
+                estadoPostventa, tipificacion, subtipificacion, buscar, pageRequest
+        );
+        return ResponseEntity.status(HttpStatus.OK).body(detalle);
     }
 
     @GetMapping("/periodos/{idPeriodo}") @PreAuthorize("hasAuthority('READ_POSTVENTA_FACTURACION')")

@@ -51,6 +51,10 @@ export class AdminGestionMensualFacade {
   readonly isLoading = this._loading.asReadonly();
   readonly errorMessage = this._error.asReadonly();
   readonly proveedor = computed(() => this._response()?.proveedor ?? 'WIN');
+  readonly mesIso = computed(() => {
+    const mes = this._mes();
+    return mes ? paramDe(mes) : null;
+  });
 
   readonly mesLabel = computed(() => {
     const m = this._mes();

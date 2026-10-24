@@ -1,0 +1,153 @@
+@if (contexto; as ctx) {
+  <div class="md-backdrop" data-theme="dark" (mousedown)="onBackdrop($event)">
+    <aside class="md-drawer" role="dialog" aria-modal="true" aria-labelledby="md-title">
+      <header class="md-header">
+        <div>
+          <div class="md-header__meta">
+            <span [class]="'md-category md-category--' + ctx.categoria.toLowerCase()">{{ ctx.categoria }}</span>
+            <span>{{ totalElements() | number }} casos</span>
+          </div>
+          <h2 id="md-title">{{ ctx.titulo }}</h2>
+          <p>{{ ctx.descripcion }}</p>
+        </div>
+        <button type="button" class="md-close" aria-label="Cerrar detalle" (click)="cerrar.emit()">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <section class="md-filters" aria-label="Filtros del detalle">
+        <label class="md-search">
+          <span>Buscar lead, documento o cliente</span>
+          <input #buscarInput type="search" [value]="buscar()" (input)="buscar.set(buscarInput.value)" (keydown.enter)="aplicarFiltros()" placeholder="Escribe para buscar" />
+        </label>
+        <label>
+          <span>Estado postventa</span>
+          <select #estadoSelect [value]="estado()" (change)="estado.set(estadoSelect.value); aplicarFiltros()">
+            <option value="">Todos</option>
+            <option value="ACTIVO">Activo</option>
+            <option value="BAJA">Baja</option>
+            <option value="SUSPENDIDO">Suspendido</option>
+          </select>
+        </label>
+        <label>
+          <span>Tipificación</span>
+          <input #tipificacionInput [value]="tipificacion()" (input)="tipificacion.set(tipificacionInput.value)" (keydown.enter)="aplicarFiltros()" placeholder="Código exacto" />
+        </label>
+        <label>
+          <span>Subtipificación</span>
+          <input #subtipificacionInput [value]="subtipificacion()" (input)="subtipificacion.set(subtipificacionInput.value)" (keydown.enter)="aplicarFiltros()" placeholder="Código exacto" />
+        </label>
+        <label>
+          <span>Ordenar fecha</span>
+          <select #sortSelect [value]="sortBy()" (change)="sortBy.set($any(sortSelect.value)); aplicarFiltros()">
+            <option value="ultimaGestion">Última gestión</option>
+            <option value="fechaInstalacion">Instalación</option>
+          </select>
+        </label>
+        <label>
+          <span>Dirección</span>
+          <select #directionSelect [value]="direction()" (change)="direction.set($any(directionSelect.value)); aplicarFiltros()">
+            <option value="desc">Más reciente</option>
+            <option value="asc">Más antigua</option>
+          </select>
+        </label>
+        <label>
+          <span>Agrupar esta página</span>
+          <select #groupSelect [value]="agrupacion()" (change)="agrupacion.set($any(groupSelect.value))">
+            <option value="ninguna">Sin agrupar</option>
+            <option value="estado">Estado</option>
+            <option value="tipificacion">Tipificación</option>
+            <option value="subtipificacion">Subtipificación</option>
+            <option value="asesor">Asesor postventa</option>
+            <option value="corte">Corte</option>
+          </select>
+        </label>
+        <div class="md-filter-actions">
+          <button type="button" class="md-apply" (click)="aplicarFiltros()">Aplicar</button>
+          <button type="button" class="md-clear" (click)="limpiarFiltros()">Limpiar</button>
+        </div>
+      </section>
+
+      <div class="md-content" aria-live="polite">
+        @if (cargando()) {
+          <div class="md-loading" aria-label="Cargando casos">
+            @for (item of [1, 2, 3, 4]; track item) { <span></span> }
+          </div>
+        } @else if (error()) {
+          <div class="md-feedback md-feedback--error">
+            <p>{{ error() }}</p>
+            <button type="button" (click)="aplicarFiltros()">Reintentar</button>
+          </div>
+        } @else if (filas().length === 0) {
+          <div class="md-feedback">
+            <strong>No encontramos casos con estos filtros.</strong>
+            <p>Prueba limpiando la tipificación, subtipificación o el estado seleccionado.</p>
+            <button type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
+          </div>
+        } @else {
+          <div class="md-table-wrap">
+            <table class="md-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Instalación</th>
+                  <th>Situación actual</th>
+                  <th>Última gestión</th>
+                  <th>Oferta</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (grupo of grupos(); track grupo.etiqueta) {
+                  @if (grupo.etiqueta) {
+                    <tr class="md-group"><th colspan="5">{{ grupo.etiqueta }}</th></tr>
+                  }
+                  @for (fila of grupo.filas; track fila.idLead + '-' + fila.numeroRecibo) {
+                    <tr>
+                      <td>
+                        <strong>{{ fila.nombreCliente || 'Cliente sin nombre' }}</strong>
+                        <span>Lead {{ fila.numeroLead || fila.idLead }}</span>
+                        <span>Doc. {{ fila.numeroDocumento || 'Sin registro' }}</span>
+                      </td>
+                      <td>
+                        <strong>{{ fila.fechaInstalacion ? (fila.fechaInstalacion | date: 'dd/MM/yyyy':'UTC') : 'Sin fecha de instalación' }}</strong>
+                        <span [attr.aria-label]="referenciaFacturacionAccesible(fila)">{{ referenciaFacturacion(fila) }}</span>
+                        <span class="md-period" [class.md-period--risk]="fila.estadoPeriodo === 'ABIERTO' || fila.estadoPeriodo.includes('BAJA')">{{ periodoLabel(fila.estadoPeriodo) }}</span>
+                      </td>
+                      <td>
+                        <span [class]="'md-state md-state--' + fila.estadoPostventa.toLowerCase()">{{ estadoLabel(fila.estadoPostventa) }}</span>
+                        <strong>{{ estadoLabel(fila.tipificacion) }}</strong>
+                        <span>{{ estadoLabel(fila.subtipificacion) }}</span>
+                      </td>
+                      <td>
+                        <strong>{{ fila.ultimaGestion ? (fila.ultimaGestion | date: 'dd/MM/yyyy HH:mm') : 'Sin gestión registrada' }}</strong>
+                        <span>{{ fila.asesorPostventa || 'Sin asesor postventa' }}</span>
+                      </td>
+                      <td>
+                        <strong>{{ fila.proveedor }} · {{ fila.plan || 'Plan sin registro' }}</strong>
+                        <span>{{ fila.cargoFijo != null ? 'S/ ' + (fila.cargoFijo | number: '1.2-2') : 'Cargo fijo sin registro' }}</span>
+                        <span>{{ fila.velocidadRegular != null ? fila.velocidadRegular + ' ' + (fila.unidadVelocidad || '') : 'Velocidad sin registro' }}</span>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+      <footer class="md-footer">
+        <span>Mostrando {{ desde() }}–{{ hasta() }} de {{ totalElements() }}</span>
+        <div>
+          <button type="button" (click)="cambiarPagina(-1)" [disabled]="page() === 0 || cargando()" aria-label="Página anterior">
+            <i class="pi pi-chevron-left" aria-hidden="true"></i>
+          </button>
+          <strong>Página {{ totalPages() === 0 ? 0 : page() + 1 }} de {{ totalPages() }}</strong>
+          <button type="button" (click)="cambiarPagina(1)" [disabled]="page() + 1 >= totalPages() || cargando()" aria-label="Página siguiente">
+            <i class="pi pi-chevron-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      </footer>
+    </aside>
+  </div>
+}

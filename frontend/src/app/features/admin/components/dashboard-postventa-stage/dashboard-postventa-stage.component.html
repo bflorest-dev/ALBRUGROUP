@@ -34,8 +34,13 @@
   </header>
 
   @if (mode() === 'mensual') {
-    <app-gestion-mensual-postventa-panel />
+    <app-gestion-mensual-postventa-panel (verDetalle)="detalleSeleccionado.set($event)" />
   } @else {
-    <app-gestion-cohorte-postventa-panel />
+    <app-gestion-cohorte-postventa-panel (verDetalle)="detalleSeleccionado.set($event)" />
   }
 </section>
+
+<app-postventa-metric-detail-drawer
+  [contexto]="detalleSeleccionado()"
+  (cerrar)="detalleSeleccionado.set(null)"
+/>

@@ -62,6 +62,10 @@ export class AdminGestionCohorteFacade {
   readonly isLoading = this._loading.asReadonly();
   readonly errorMessage = this._error.asReadonly();
   readonly proveedor = computed(() => this._response()?.proveedor ?? 'WIN');
+  readonly mesIso = computed(() => {
+    const mes = this._mes();
+    return mes ? paramDe(mes) : null;
+  });
   readonly umbrales = this._umbrales.asReadonly();
 
   readonly mesLabel = computed(() => {

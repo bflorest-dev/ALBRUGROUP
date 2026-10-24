@@ -67,6 +67,22 @@
   &--bajas .gm-kpi__value {
     color: var(--gm-bajas);
   }
+
+  &__action {
+    width: 100%;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 160ms ease, background-color 160ms ease;
+  }
+
+  &__action:hover:not(:disabled) {
+    border-color: var(--app-text-muted);
+    background: color-mix(in srgb, var(--app-surface-soft) 88%, var(--app-text) 4%);
+  }
+
+  &__action:disabled { cursor: default; }
 }
 
 /* ---- Table ---- */
@@ -162,6 +178,25 @@ th.gm-col-baj {
     color: var(--gm-bajas);
   }
 }
+
+.gm-metric {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: -0.45rem;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.45rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: color-mix(in srgb, var(--app-surface-soft) 82%, var(--app-text) 6%); }
+  &:disabled { cursor: default; }
+}
+
+.gm-metric:focus-visible,
+.gm-kpi__action:focus-visible { outline: 2px solid var(--app-focus, #60a5fa); outline-offset: 2px; }
 
 // Porcentaje y desglose: información secundaria, deliberadamente más chica y tenue.
 .gm-pct {

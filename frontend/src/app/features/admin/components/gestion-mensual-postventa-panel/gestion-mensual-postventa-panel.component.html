@@ -4,26 +4,26 @@
 
 @if (facade.totales(); as tot) {
   <div class="gm-kpis">
-    <div class="gm-kpi">
+    <button type="button" class="gm-kpi gm-kpi__action" (click)="abrirDetalle('TOTAL', tot.total)" [disabled]="tot.total === 0" aria-label="Ver detalle del total gestionado">
       <span class="gm-kpi__label">Total gestionado</span>
       <span class="gm-kpi__value">{{ tot.total | number }}</span>
       <span class="gm-kpi__sub">{{ facade.filas().length }} grupos de corte</span>
-    </div>
-    <div class="gm-kpi gm-kpi--pagados">
+    </button>
+    <button type="button" class="gm-kpi gm-kpi--pagados gm-kpi__action" (click)="abrirDetalle('PAGADOS', tot.pagados)" [disabled]="tot.pagados === 0" aria-label="Ver detalle de pagados">
       <span class="gm-kpi__label">Pagados</span>
       <span class="gm-kpi__value">{{ tot.pctPagados | number: '1.1-1' }}%</span>
       <span class="gm-kpi__sub">{{ tot.pagados | number }} recibos con pago</span>
-    </div>
-    <div class="gm-kpi gm-kpi--impagos">
+    </button>
+    <button type="button" class="gm-kpi gm-kpi--impagos gm-kpi__action" (click)="abrirDetalle('IMPAGOS', tot.impagos)" [disabled]="tot.impagos === 0" aria-label="Ver detalle de impagos">
       <span class="gm-kpi__label">Impagos</span>
       <span class="gm-kpi__value">{{ tot.pctImpagos | number: '1.1-1' }}%</span>
       <span class="gm-kpi__sub">{{ tot.impagos | number }} recibos abiertos</span>
-    </div>
-    <div class="gm-kpi gm-kpi--bajas">
+    </button>
+    <button type="button" class="gm-kpi gm-kpi--bajas gm-kpi__action" (click)="abrirDetalle('BAJAS', tot.bajas)" [disabled]="tot.bajas === 0" aria-label="Ver detalle de bajas">
       <span class="gm-kpi__label">Bajas</span>
       <span class="gm-kpi__value">{{ tot.pctBajas | number: '1.1-1' }}%</span>
       <span class="gm-kpi__sub">{{ tot.bajas | number }} recibos de baja</span>
-    </div>
+    </button>
   </div>
 
   <div class="gm-table-wrap">
@@ -44,18 +44,18 @@
             <td class="gm-col-grupo">
               <span class="gm-grupo-name">{{ fila.etiqueta }}</span>
             </td>
-            <td><span class="gm-num gm-num--total">{{ fila.total | number }}</span></td>
+            <td><button type="button" class="gm-metric" (click)="abrirDetalle('TOTAL', fila.total, fila)" [disabled]="fila.total === 0" [attr.aria-label]="'Ver ' + fila.total + ' casos totales de ' + fila.etiqueta"><span class="gm-num gm-num--total">{{ fila.total | number }}</span></button></td>
             <td>
-              <span class="gm-num gm-num--pag">{{ fila.pagados | number }}</span>
+              <button type="button" class="gm-metric" (click)="abrirDetalle('PAGADOS', fila.pagados, fila)" [disabled]="fila.pagados === 0" [attr.aria-label]="'Ver ' + fila.pagados + ' pagados de ' + fila.etiqueta"><span class="gm-num gm-num--pag">{{ fila.pagados | number }}</span></button>
               <span class="gm-pct">{{ fila.pctPagados | number: '1.1-1' }}%</span>
               <span class="gm-split">cliente {{ fila.pagadoCliente | number }} · empresa {{ fila.pagadoEmpresa | number }}</span>
             </td>
             <td>
-              <span class="gm-num gm-num--imp">{{ fila.impagos | number }}</span>
+              <button type="button" class="gm-metric" (click)="abrirDetalle('IMPAGOS', fila.impagos, fila)" [disabled]="fila.impagos === 0" [attr.aria-label]="'Ver ' + fila.impagos + ' impagos de ' + fila.etiqueta"><span class="gm-num gm-num--imp">{{ fila.impagos | number }}</span></button>
               <span class="gm-pct">{{ fila.pctImpagos | number: '1.1-1' }}%</span>
             </td>
             <td>
-              <span class="gm-num gm-num--baj">{{ fila.bajas | number }}</span>
+              <button type="button" class="gm-metric" (click)="abrirDetalle('BAJAS', fila.bajas, fila)" [disabled]="fila.bajas === 0" [attr.aria-label]="'Ver ' + fila.bajas + ' bajas de ' + fila.etiqueta"><span class="gm-num gm-num--baj">{{ fila.bajas | number }}</span></button>
               <span class="gm-pct">{{ fila.pctBajas | number: '1.1-1' }}%</span>
             </td>
             <td class="gm-col-dist">
@@ -81,17 +81,17 @@
       <tfoot>
         <tr>
           <td class="gm-col-grupo">Total {{ facade.mesLabel() }}</td>
-          <td><span class="gm-num gm-num--total">{{ tot.total | number }}</span></td>
+          <td><button type="button" class="gm-metric" (click)="abrirDetalle('TOTAL', tot.total)" [disabled]="tot.total === 0"><span class="gm-num gm-num--total">{{ tot.total | number }}</span></button></td>
           <td>
-            <span class="gm-num gm-num--pag">{{ tot.pagados | number }}</span>
+            <button type="button" class="gm-metric" (click)="abrirDetalle('PAGADOS', tot.pagados)" [disabled]="tot.pagados === 0"><span class="gm-num gm-num--pag">{{ tot.pagados | number }}</span></button>
             <span class="gm-pct">{{ tot.pctPagados | number: '1.1-1' }}%</span>
           </td>
           <td>
-            <span class="gm-num gm-num--imp">{{ tot.impagos | number }}</span>
+            <button type="button" class="gm-metric" (click)="abrirDetalle('IMPAGOS', tot.impagos)" [disabled]="tot.impagos === 0"><span class="gm-num gm-num--imp">{{ tot.impagos | number }}</span></button>
             <span class="gm-pct">{{ tot.pctImpagos | number: '1.1-1' }}%</span>
           </td>
           <td>
-            <span class="gm-num gm-num--baj">{{ tot.bajas | number }}</span>
+            <button type="button" class="gm-metric" (click)="abrirDetalle('BAJAS', tot.bajas)" [disabled]="tot.bajas === 0"><span class="gm-num gm-num--baj">{{ tot.bajas | number }}</span></button>
             <span class="gm-pct">{{ tot.pctBajas | number: '1.1-1' }}%</span>
           </td>
           <td class="gm-col-dist">

@@ -3,6 +3,8 @@ import { GestionMensualPostventaPanelComponent } from '../../components/gestion-
 import { GestionCohortePostventaPanelComponent } from '../../components/gestion-cohorte-postventa-panel/gestion-cohorte-postventa-panel.component';
 import { AdminGestionMensualFacade } from '../../facades/admin-gestion-mensual.facade';
 import { AdminGestionCohorteFacade } from '../../facades/admin-gestion-cohorte.facade';
+import { PostventaMetricDetailDrawerComponent } from '../postventa-metric-detail-drawer/postventa-metric-detail-drawer.component';
+import { MetricaPostventaContexto } from '../../services/admin-postventa-metric-detail.service';
 
 /**
  * Sub-tab "Postventa" del Dashboard del ADMIN. A modo de prueba A/B con el admin, esta pantalla usa
@@ -12,7 +14,7 @@ import { AdminGestionCohorteFacade } from '../../facades/admin-gestion-cohorte.f
  */
 @Component({
   selector: 'app-dashboard-postventa-stage',
-  imports: [GestionMensualPostventaPanelComponent, GestionCohortePostventaPanelComponent],
+  imports: [GestionMensualPostventaPanelComponent, GestionCohortePostventaPanelComponent, PostventaMetricDetailDrawerComponent],
   providers: [AdminGestionMensualFacade, AdminGestionCohorteFacade],
   templateUrl: './dashboard-postventa-stage.component.html',
   styleUrl: './dashboard-postventa-stage.component.scss',
@@ -20,6 +22,7 @@ import { AdminGestionCohorteFacade } from '../../facades/admin-gestion-cohorte.f
 })
 export class DashboardPostventaStageComponent {
   protected readonly mode = signal<'mensual' | 'cohorte'>('mensual');
+  protected readonly detalleSeleccionado = signal<MetricaPostventaContexto | null>(null);
   protected readonly mensualFacade = inject(AdminGestionMensualFacade);
   protected readonly cohorteFacade = inject(AdminGestionCohorteFacade);
 

@@ -160,6 +160,24 @@
 .gc-total { font-weight: 800; }
 .gc-tolerance strong { color: var(--app-text); font-size: 1.25rem; }
 
+.gc-metric {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: -0.45rem;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.45rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: color-mix(in srgb, var(--app-surface) 78%, var(--app-text) 7%); }
+  &:focus-visible { outline: 2px solid var(--app-focus, #60a5fa); outline-offset: 2px; }
+  &:disabled { cursor: default; }
+}
+
 .gc-threshold {
   display: inline-block;
   color: var(--gc-down);

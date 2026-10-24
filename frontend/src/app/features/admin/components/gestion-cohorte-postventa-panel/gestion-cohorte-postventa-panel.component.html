@@ -42,18 +42,18 @@
       @for (recibo of facade.recibos(); track recibo.numeroFactura) {
         <tr>
           <th scope="row">{{ recibo.numeroFactura }}</th>
-          <td>{{ recibo.corte1.total | number }}</td>
-          <td class="gc-paid">{{ recibo.corte1.pagados | number }}</td>
-          <td class="gc-unpaid">{{ recibo.corte1.impagos | number }} <small>{{ recibo.corte1.pctImpagos | number: '1.1-1' }}%</small></td>
-          <td class="gc-down">{{ recibo.corte1.bajas | number }} <small>{{ recibo.corte1.pctBajas | number: '1.1-1' }}%</small></td>
-          <td>{{ recibo.corte2.total | number }}</td>
-          <td class="gc-paid">{{ recibo.corte2.pagados | number }}</td>
-          <td class="gc-unpaid">{{ recibo.corte2.impagos | number }} <small>{{ recibo.corte2.pctImpagos | number: '1.1-1' }}%</small></td>
-          <td class="gc-down">{{ recibo.corte2.bajas | number }} <small>{{ recibo.corte2.pctBajas | number: '1.1-1' }}%</small></td>
-          <td class="gc-total">{{ recibo.total.total | number }}</td>
-          <td class="gc-paid">{{ recibo.total.pagados | number }}</td>
-          <td class="gc-unpaid">{{ recibo.total.impagos | number }}</td>
-          <td class="gc-down">{{ recibo.total.bajas | number }}</td>
+          <td><button type="button" class="gc-metric" (click)="abrirDetalle('TOTAL', recibo.corte1.total, recibo.numeroFactura, 1)" [disabled]="recibo.corte1.total === 0">{{ recibo.corte1.total | number }}</button></td>
+          <td class="gc-paid"><button type="button" class="gc-metric" (click)="abrirDetalle('PAGADOS', recibo.corte1.pagados, recibo.numeroFactura, 1)" [disabled]="recibo.corte1.pagados === 0">{{ recibo.corte1.pagados | number }}</button></td>
+          <td class="gc-unpaid"><button type="button" class="gc-metric" (click)="abrirDetalle('IMPAGOS', recibo.corte1.impagos, recibo.numeroFactura, 1)" [disabled]="recibo.corte1.impagos === 0">{{ recibo.corte1.impagos | number }}</button><small>{{ recibo.corte1.pctImpagos | number: '1.1-1' }}%</small></td>
+          <td class="gc-down"><button type="button" class="gc-metric" (click)="abrirDetalle('BAJAS', recibo.corte1.bajas, recibo.numeroFactura, 1)" [disabled]="recibo.corte1.bajas === 0">{{ recibo.corte1.bajas | number }}</button><small>{{ recibo.corte1.pctBajas | number: '1.1-1' }}%</small></td>
+          <td><button type="button" class="gc-metric" (click)="abrirDetalle('TOTAL', recibo.corte2.total, recibo.numeroFactura, 2)" [disabled]="recibo.corte2.total === 0">{{ recibo.corte2.total | number }}</button></td>
+          <td class="gc-paid"><button type="button" class="gc-metric" (click)="abrirDetalle('PAGADOS', recibo.corte2.pagados, recibo.numeroFactura, 2)" [disabled]="recibo.corte2.pagados === 0">{{ recibo.corte2.pagados | number }}</button></td>
+          <td class="gc-unpaid"><button type="button" class="gc-metric" (click)="abrirDetalle('IMPAGOS', recibo.corte2.impagos, recibo.numeroFactura, 2)" [disabled]="recibo.corte2.impagos === 0">{{ recibo.corte2.impagos | number }}</button><small>{{ recibo.corte2.pctImpagos | number: '1.1-1' }}%</small></td>
+          <td class="gc-down"><button type="button" class="gc-metric" (click)="abrirDetalle('BAJAS', recibo.corte2.bajas, recibo.numeroFactura, 2)" [disabled]="recibo.corte2.bajas === 0">{{ recibo.corte2.bajas | number }}</button><small>{{ recibo.corte2.pctBajas | number: '1.1-1' }}%</small></td>
+          <td class="gc-total"><button type="button" class="gc-metric" (click)="abrirDetalle('TOTAL', recibo.total.total, recibo.numeroFactura)" [disabled]="recibo.total.total === 0">{{ recibo.total.total | number }}</button></td>
+          <td class="gc-paid"><button type="button" class="gc-metric" (click)="abrirDetalle('PAGADOS', recibo.total.pagados, recibo.numeroFactura)" [disabled]="recibo.total.pagados === 0">{{ recibo.total.pagados | number }}</button></td>
+          <td class="gc-unpaid"><button type="button" class="gc-metric" (click)="abrirDetalle('IMPAGOS', recibo.total.impagos, recibo.numeroFactura)" [disabled]="recibo.total.impagos === 0">{{ recibo.total.impagos | number }}</button></td>
+          <td class="gc-down"><button type="button" class="gc-metric" (click)="abrirDetalle('BAJAS', recibo.total.bajas, recibo.numeroFactura)" [disabled]="recibo.total.bajas === 0">{{ recibo.total.bajas | number }}</button></td>
           <td>
             @if (recibo.total.total > 0) {
               <span class="gc-threshold" [class.gc-threshold--ok]="recibo.cumple">

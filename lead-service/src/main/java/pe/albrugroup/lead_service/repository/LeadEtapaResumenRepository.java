@@ -62,6 +62,8 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
 
     List<LeadEtapaResumen> findByIdLead(Long idLead);
 
+    List<LeadEtapaResumen> findByIdLeadInAndEtapa(Collection<Long> leadIds, Etapa etapa);
+
     @Query("""
             SELECT r.idLead, COALESCE(r.totalAsignaciones, 0)
             FROM LeadEtapaResumen r
