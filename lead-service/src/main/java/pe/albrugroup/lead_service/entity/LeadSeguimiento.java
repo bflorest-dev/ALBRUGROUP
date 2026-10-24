@@ -42,6 +42,7 @@ public class LeadSeguimiento {
     // desde el flujo de facturación/pagos (no desde la matriz de tipificaciones).
     private Instant fechaSuspension;
     private Instant fechaBaja;
+    private Boolean fueMorosoPrimerPeriodo;
 
     @UpdateTimestamp 
     private Instant updatedAt;

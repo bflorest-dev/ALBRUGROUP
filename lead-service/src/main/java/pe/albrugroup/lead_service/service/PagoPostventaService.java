@@ -238,6 +238,12 @@ public class PagoPostventaService {
         if (pago.getEstado() == EstadoPagoPostventa.PAGADO_EMPRESA
                 || pago.getEstado() == EstadoPagoPostventa.COMPROMETIDO) {
             leadSeguimientoService.marcarEstadoClientePostventa(lead, EstadoClientePostventa.SUSPENDIDO, ahora);
+            if (pago.getEstado() == EstadoPagoPostventa.PAGADO_EMPRESA) {
+                PeriodoFacturacionPostventa periodo = pago.getPeriodoFacturacionPostventa();
+                if (periodo != null && periodo.getNumeroPeriodo() != null && periodo.getNumeroPeriodo() == 1) {
+                    leadSeguimientoService.marcarFueMorosoPrimerPeriodo(lead.getId());
+                }
+            }
             return;
         }
         if (pago.getEstado() == EstadoPagoPostventa.PAGADO_CLIENTE) {
