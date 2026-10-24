@@ -2,6 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   EventEmitter,
   HostListener,
   Input,
@@ -10,6 +11,10 @@ import {
   inject,
   signal
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { switchMap } from 'rxjs';
+import { TipificacionResponse } from '../../../../shared/models/preventa/preventa.models';
+import { AdminTipificacionService } from '../../services/admin-tipificacion.service';
 import {
   AdminPostventaMetricDetailService,
   DetalleMetricaPostventa,
@@ -29,7 +34,10 @@ const MESES_COMPLETOS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 
 })
 export class PostventaMetricDetailDrawerComponent {
   private readonly service = inject(AdminPostventaMetricDetailService);
+  private readonly tipificacionService = inject(AdminTipificacionService);
+  private readonly destroyRef = inject(DestroyRef);
   private _contexto: MetricaPostventaContexto | null = null;
+  private catalogoProveedor = '';
 
   @Input()
   set contexto(value: MetricaPostventaContexto | null) {
@@ -37,6 +45,7 @@ export class PostventaMetricDetailDrawerComponent {
     this._contexto = value;
     if (value && cambio) {
       this.reiniciarYCargar();
+      this.cargarCatalogo(value.proveedor);
     }
   }
   get contexto(): MetricaPostventaContexto | null { return this._contexto; }
@@ -54,6 +63,13 @@ export class PostventaMetricDetailDrawerComponent {
   protected readonly estado = signal('');
   protected readonly tipificacion = signal('');
   protected readonly subtipificacion = signal('');
+  protected readonly tipificacionesCatalogo = signal<TipificacionResponse[]>([]);
+  protected readonly cargandoCatalogo = signal(false);
+  protected readonly errorCatalogo = signal(false);
+  protected readonly subtipificacionesCatalogo = computed(() => {
+    const tipificacion = this.tipificacionesCatalogo().find((item) => item.codigo === this.tipificacion());
+    return [...(tipificacion?.subtipificaciones ?? [])].sort((a, b) => a.orden - b.orden);
+  });
   protected readonly sortBy = signal<'fechaInstalacion' | 'ultimaGestion'>('ultimaGestion');
   protected readonly direction = signal<'asc' | 'desc'>('desc');
   protected readonly agrupacion = signal<Agrupacion>('ninguna');
@@ -82,6 +98,12 @@ export class PostventaMetricDetailDrawerComponent {
     this.agrupacion.set('ninguna');
     this.page.set(0);
     this.cargar();
+  }
+
+  protected seleccionarTipificacion(codigo: string): void {
+    this.tipificacion.set(codigo);
+    this.subtipificacion.set('');
+    this.aplicarFiltros();
   }
 
   protected cambiarPagina(delta: number): void {
@@ -164,6 +186,32 @@ export class PostventaMetricDetailDrawerComponent {
       }
     });
   }
+
+  private cargarCatalogo(proveedor: string): void {
+    if (this.catalogoProveedor === proveedor && this.tipificacionesCatalogo().length > 0) return;
+    this.catalogoProveedor = proveedor;
+    this.tipificacionesCatalogo.set([]);
+    this.cargandoCatalogo.set(true);
+    this.errorCatalogo.set(false);
+
+    this.tipificacionService.listarProveedores().pipe(
+      switchMap((proveedores) => {
+        const proveedorCatalogo = proveedores.find((item) => normalizar(item.nombre) === normalizar(proveedor));
+        if (!proveedorCatalogo) throw new Error('Proveedor sin matriz de tipificaciones');
+        return this.tipificacionService.getCatalogo('POSTVENTA', proveedorCatalogo.id, false);
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: (catalogo) => {
+        this.tipificacionesCatalogo.set([...catalogo.tipificaciones].sort((a, b) => a.orden - b.orden));
+        this.cargandoCatalogo.set(false);
+      },
+      error: () => {
+        this.errorCatalogo.set(true);
+        this.cargandoCatalogo.set(false);
+      }
+    });
+  }
 }
 
 function agrupar(filas: DetalleMetricaPostventa[], criterio: Agrupacion): Array<{ etiqueta: string | null; filas: DetalleMetricaPostventa[] }> {
@@ -183,4 +231,8 @@ function agrupar(filas: DetalleMetricaPostventa[], criterio: Agrupacion): Array<
 function etiqueta(valor: string | null): string {
   if (!valor) return 'Sin registro';
   return valor.toLowerCase().replaceAll('_', ' ').replace(/^./, (letra) => letra.toUpperCase());
+}
+
+function normalizar(valor: string): string {
+  return valor.trim().toUpperCase();
 }

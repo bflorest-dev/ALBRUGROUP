@@ -31,11 +31,21 @@
         </label>
         <label>
           <span>Tipificación</span>
-          <input #tipificacionInput [value]="tipificacion()" (input)="tipificacion.set(tipificacionInput.value)" (keydown.enter)="aplicarFiltros()" placeholder="Código exacto" />
+          <select #tipificacionSelect [value]="tipificacion()" (change)="seleccionarTipificacion(tipificacionSelect.value)" [disabled]="cargandoCatalogo() || errorCatalogo()">
+            <option value="">{{ cargandoCatalogo() ? 'Cargando matriz…' : errorCatalogo() ? 'Matriz no disponible' : 'Todas' }}</option>
+            @for (item of tipificacionesCatalogo(); track item.id) {
+              <option [value]="item.codigo">{{ item.descripcion }}</option>
+            }
+          </select>
         </label>
         <label>
           <span>Subtipificación</span>
-          <input #subtipificacionInput [value]="subtipificacion()" (input)="subtipificacion.set(subtipificacionInput.value)" (keydown.enter)="aplicarFiltros()" placeholder="Código exacto" />
+          <select #subtipificacionSelect [value]="subtipificacion()" (change)="subtipificacion.set(subtipificacionSelect.value); aplicarFiltros()" [disabled]="!tipificacion() || cargandoCatalogo() || errorCatalogo()">
+            <option value="">{{ tipificacion() ? 'Todas' : 'Selecciona una tipificación' }}</option>
+            @for (item of subtipificacionesCatalogo(); track item.id) {
+              <option [value]="item.codigo">{{ item.descripcion }}</option>
+            }
+          </select>
         </label>
         <label>
           <span>Ordenar fecha</span>
