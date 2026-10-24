@@ -65,12 +65,15 @@ public final class VentaMetricaSpec {
             case SIN_INGRESAR -> {
                 p.put("codigoSinIngresar", SIN_INGRESAR);
                 p.put("fin", ctx.fin());
+                // El detalle de sin ingresar representa leads que aún están en VENTA. Mantener el filtro
+                // aquí evita incluir resúmenes históricos de leads que ya avanzaron de etapa.
+                w = "l.etapa = :etapaVenta AND ";
                 if (dia) {
                     p.put("inicio", ctx.inicio());
-                    w = "rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin "
+                    w += "rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin "
                             + "AND (rv.ultimaCodigoTipificacion IS NULL OR rv.ultimaCodigoTipificacion = :codigoSinIngresar)";
                 } else {
-                    w = "rv.fechaIngresoEtapa < :fin "
+                    w += "rv.fechaIngresoEtapa < :fin "
                             + "AND (rv.ultimaCodigoTipificacion IS NULL OR rv.ultimaCodigoTipificacion = :codigoSinIngresar)";
                 }
             }
