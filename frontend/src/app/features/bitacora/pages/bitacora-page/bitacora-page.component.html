@@ -170,10 +170,10 @@
           <div class="di">Estás editando con visibilidad total. Al guardar, el lead quedará marcado con un evento de corrección permanente.</div>
         </div>
         <div class="integrity-actions">
-          <button type="button" class="rebuild-action" (click)="abrirSubsanacionExistente()">Reconstruir flujo histórico</button>
+          <button type="button" class="mini-btn" (click)="abrirSubsanacionExistente()">Reconstruir flujo histórico</button>
           <button
             type="button"
-            class="recalc-action"
+            class="mini-btn"
             [disabled]="f.recalculandoResumenes()"
             (click)="f.recalcularResumenes()"
             title="Reconstruye primera, última y máxima tipificación de cada etapa desde los eventos actuales."
