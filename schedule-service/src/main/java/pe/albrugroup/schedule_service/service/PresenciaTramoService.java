@@ -135,6 +135,59 @@ public class PresenciaTramoService {
     }
 
     /**
+     * Sustituye el cierre automatico de la presencia por el cierre manual informado por un administrador.
+     * Solo se modifica el tramo final relacionado con la salida; los tramos anteriores permanecen intactos.
+     */
+    @Transactional
+    public void registrarCierreManual(Long idEmpleado, LocalDate fecha,
+                                      LocalDateTime salidaAnterior, LocalDateTime salidaManual) {
+        List<PresenciaTramo> tramos = presenciaTramoRepository
+                .findByIdEmpleadoAndFechaOrderByInicioAsc(idEmpleado, fecha);
+
+        PresenciaTramo objetivo = null;
+        for (int index = tramos.size() - 1; index >= 0; index--) {
+            PresenciaTramo tramo = tramos.get(index);
+            boolean cierreAutomatico = tramo.getOrigenFin() == OrigenPresencia.INACTIVIDAD
+                    || tramo.getOrigenFin() == OrigenPresencia.AUTO_CIERRE;
+            boolean coincideSalidaAnterior = salidaAnterior != null
+                    && salidaAnterior.equals(tramo.getFin());
+            if (cierreAutomatico && coincideSalidaAnterior) {
+                objetivo = tramo;
+                break;
+            }
+        }
+
+        if (objetivo == null) {
+            for (int index = tramos.size() - 1; index >= 0; index--) {
+                PresenciaTramo tramo = tramos.get(index);
+                if (tramo.getFin() == null) {
+                    objetivo = tramo;
+                    break;
+                }
+            }
+        }
+
+        if (objetivo == null) {
+            for (int index = tramos.size() - 1; index >= 0; index--) {
+                PresenciaTramo tramo = tramos.get(index);
+                if (tramo.getOrigenFin() == OrigenPresencia.INACTIVIDAD
+                        || tramo.getOrigenFin() == OrigenPresencia.AUTO_CIERRE) {
+                    objetivo = tramo;
+                    break;
+                }
+            }
+        }
+
+        if (objetivo == null) {
+            return;
+        }
+
+        objetivo.setFin(salidaManual);
+        objetivo.setOrigenFin(OrigenPresencia.CIERRE_MANUAL);
+        presenciaTramoRepository.save(objetivo);
+    }
+
+    /**
      * Minutos de la ventana [windowStart, windowEnd] efectivamente CUBIERTOS por tramos de presencia
      * (modelo de cobertura, no de brecha): solo cuenta el tiempo realmente conectado. Un tramo abierto
      * (fin == null) se considera cubierto hasta el fin de la ventana. Fail-open lo decide el llamador

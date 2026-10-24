@@ -602,8 +602,9 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     );
 
     // Q7b — GESTIÓN GENERAL · sin ingresar (acumulado): leads que al cierre siguen sin ingresarse — última
-    // nula (nunca gestionado) o el literal 'SIN INGRESAR'. Se ancla en fechaIngresoEtapa < :fin (no en
-    // ultimaTipificacionAt, que es NULL para la última nula). Va aparte de Q7 por ese anclaje distinto.
+    // nula (nunca gestionado) o el literal 'SIN INGRESAR' — y que actualmente siguen en la etapa consultada.
+    // Se ancla en fechaIngresoEtapa < :fin (no en ultimaTipificacionAt, que es NULL para la última nula).
+    // Va aparte de Q7 por ese anclaje distinto.
     @Query("""
             SELECT COUNT(DISTINCT l.id)
             FROM Lead l
@@ -611,6 +612,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN l.plan pl
             JOIN pl.proveedor pr
             WHERE pr.id = :idProveedor
+              AND l.etapa = :etapa
               AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion = :codigoSinIngresar)
               AND r.fechaIngresoEtapa < :fin
             """)

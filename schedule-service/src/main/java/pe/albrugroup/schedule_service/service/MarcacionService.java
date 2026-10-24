@@ -934,13 +934,14 @@ public class MarcacionService {
                     || item.salida().toLocalDate().isAfter(fecha.plusDays(1)))) {
                 throw new BadRequestException("La salida debe corresponder al día de la asistencia");
             }
+            if (item.salida() != null
+                    && fecha.equals(OperationalDateTime.today())
+                    && item.salida().isAfter(OperationalDateTime.nowLocalDateTime())) {
+                throw new BadRequestException("La hora de salida no puede estar en el futuro");
+            }
 
             LocalDateTime ingresoActual = objetivo.ingreso();
             LocalDateTime salidaActual = objetivo.salida();
-            if (item.tipoRegistro() == TipoRegistroMarcacion.PRINCIPAL
-                    && salidaActual == null && item.salida() != null) {
-                throw new BadRequestException("La jornada sigue abierta; solo puedes corregir su hora de entrada");
-            }
             LocalDateTime ingreso = item.entrada() != null ? item.entrada() : ingresoActual;
             LocalDateTime salida = item.salida() != null ? item.salida() : salidaActual;
             validarIntervalo(ingreso, salida);
@@ -953,6 +954,9 @@ public class MarcacionService {
         }
 
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
+        LocalDateTime salidaPrincipalAnterior = asistencia.getFechaHoraSalida();
+        boolean salidaPrincipalForzada = Boolean.TRUE.equals(asistencia.getSalidaForzada());
+        boolean cierreManual = false;
         for (MarcacionPatchRequest item : request.marcaciones()) {
             MarcacionObjetivo objetivo = objetivos.get(clave(item.tipoRegistro(), item.idRegistro()));
             MarcacionValores valores = cambios.get(clave(item.tipoRegistro(), item.idRegistro()));
@@ -963,14 +967,25 @@ public class MarcacionService {
             } else {
                 asistencia.setFechaHoraIngreso(valores.ingreso());
                 asistencia.setFechaHoraSalida(valores.salida());
-                if (item.salida() != null) asistencia.setSalidaForzada(false);
+                if (item.salida() != null) {
+                    cierreManual = salidaPrincipalAnterior == null || salidaPrincipalForzada;
+                    asistencia.setSalidaForzada(false);
+                    if (cierreManual) {
+                        asistencia.setEstadoActual(EstadoAsistencia.OFFLINE);
+                    }
+                }
             }
         }
 
+        if (cierreManual) {
+            presenciaTramoService.registrarCierreManual(idEmpleado, fecha,
+                    salidaPrincipalAnterior, asistencia.getFechaHoraSalida());
+        }
         recalcularMinutos(asistencia);
         asistenciaTramoRepository.saveAll(archivados);
         asistenciaRepository.save(asistencia);
-        publicar("ASISTENCIA_MARCACION_CORREGIDA", "CORRECCION_ADMINISTRATIVA",
+        publicar("ASISTENCIA_MARCACION_CORREGIDA",
+                cierreManual ? "CORRECCION_SALIDA_MANUAL" : "CORRECCION_ADMINISTRATIVA",
                 idEmpleado, fecha, estadoAnterior);
         return getReporteDia(idEmpleado, fecha);
     }

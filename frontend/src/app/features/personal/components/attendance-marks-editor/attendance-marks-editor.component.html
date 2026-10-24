@@ -32,7 +32,6 @@
             <input
               type="time"
               [value]="draft.salida"
-              [disabled]="draft.source.abierta === true"
               [attr.aria-label]="'Salida de ' + markLabel(draft.source)"
               (input)="setTime(index, 'salida', $any($event.target).value)"
             />

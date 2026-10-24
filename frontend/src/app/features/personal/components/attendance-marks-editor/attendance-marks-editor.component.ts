@@ -75,7 +75,7 @@ export class AttendanceMarksEditorComponent {
         tipoRegistro: draft.source.tipoRegistro,
         idRegistro: draft.source.idRegistro,
         entrada: this.timestamp(draft.source.entradaReal, draft.entrada, report.fecha),
-        salida: draft.source.abierta ? null : this.timestamp(draft.source.salidaReal, draft.salida, report.fecha)
+        salida: this.timestamp(draft.source.salidaReal, draft.salida, report.fecha)
       }))
     });
   }
@@ -90,7 +90,7 @@ export class AttendanceMarksEditorComponent {
       .map((draft) => ({
         draft,
         entrada: this.timestamp(draft.source.entradaReal, draft.entrada, this.reporte()?.fecha ?? ''),
-        salida: draft.source.abierta ? null : this.timestamp(draft.source.salidaReal, draft.salida, this.reporte()?.fecha ?? '')
+        salida: this.timestamp(draft.source.salidaReal, draft.salida, this.reporte()?.fecha ?? '')
       }))
       .sort((a, b) => (a.entrada ?? '').localeCompare(b.entrada ?? ''));
 
@@ -119,7 +119,7 @@ export class AttendanceMarksEditorComponent {
 
   private hasChanges(draft: DraftMarcacion): boolean {
     return draft.entrada !== this.time(draft.source.entradaReal)
-      || (!draft.source.abierta && draft.salida !== this.time(draft.source.salidaReal));
+      || draft.salida !== this.time(draft.source.salidaReal);
   }
 
   private timestamp(original: string | null, time: string, fallbackDate: string): string | null {
