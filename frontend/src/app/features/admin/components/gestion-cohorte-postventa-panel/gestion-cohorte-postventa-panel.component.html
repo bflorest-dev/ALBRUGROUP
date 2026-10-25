@@ -35,7 +35,7 @@
       <tr>
         <th>Total</th><th>Pagados</th><th>Impagos</th><th>Bajas</th>
         <th>Total</th><th>Pagados</th><th>Impagos</th><th>Bajas</th>
-        <th>Total</th><th>Pagados</th><th>Impagos</th><th>Bajas</th><th>Umbral de bajas</th><th>Máx. bajas</th>
+        <th>Total</th><th>Pagados</th><th>Impagos</th><th>Bajas</th><th>Umbral de bajas</th><th>Bajas máximas</th>
       </tr>
     </thead>
     <tbody>
@@ -67,7 +67,6 @@
           <td class="gc-tolerance">
             @if (recibo.total.total > 0) {
               <strong>{{ recibo.toleranciaMaximaBajas | number }}</strong>
-              <small>bajas como máximo</small>
             } @else {
               —
             }
@@ -109,23 +108,29 @@
           </thead>
           <tbody>
             @for (item of facade.recomendaciones(); track item.numeroFactura) {
-              <tr [class.gc-decision-table__row--ok]="item.cumple">
-                <th scope="row">Recibo {{ item.numeroFactura }}</th>
-                <td class="gc-decision-table__groups">{{ item.grupos.join(' + ') }}</td>
-                <td>{{ item.total | number }}</td>
-                <td class="gc-unpaid">{{ item.impagos | number }}</td>
-                <td class="gc-down">{{ item.bajas | number }}</td>
-                <td><strong>{{ item.umbralActual | number: '1.2-2' }}%</strong></td>
-                <td class="gc-decision-table__action">
-                  @if (item.cumple) {
-                    Ya está debajo del {{ item.umbralMaximo | number: '1.1-1' }}%.
-                  } @else if (item.alcanzable) {
-                    Convertir al menos <strong>{{ item.conversionesNecesarias }}</strong> de {{ item.impagos }} impagos en activos.
-                  } @else {
-                    <span class="gc-decision-table__danger">Aun convirtiendo los {{ item.impagos }} impagos, las bajas no permiten alcanzar el {{ item.umbralMaximo | number: '1.1-1' }}%.</span>
+              @for (grupo of item.grupos; track grupo.mesCorteBase + '-' + grupo.numeroCorte; let primero = $first) {
+                <tr class="gc-decision-table__cut-row" [class.gc-decision-table__row--ok]="item.cumple" [class.gc-decision-table__cut-row--first]="primero">
+                  @if (primero) {
+                    <th scope="rowgroup" [attr.rowspan]="item.grupos.length">Recibo {{ item.numeroFactura }}</th>
                   }
-                </td>
-              </tr>
+                  <td class="gc-decision-table__groups"><strong>{{ grupo.etiqueta }}</strong></td>
+                  <td><button type="button" class="gc-decision-metric" (click)="abrirDetalleVentana('TOTAL', grupo.total, grupo)" [disabled]="grupo.total === 0" [attr.aria-label]="'Ver ' + grupo.total + ' clientes de ' + grupo.etiqueta">{{ grupo.total | number }}</button></td>
+                  <td class="gc-unpaid"><button type="button" class="gc-decision-metric" (click)="abrirDetalleVentana('IMPAGOS', grupo.impagos, grupo)" [disabled]="grupo.impagos === 0" [attr.aria-label]="'Ver ' + grupo.impagos + ' impagos de ' + grupo.etiqueta">{{ grupo.impagos | number }}</button></td>
+                  <td class="gc-down gc-decision-table__losses"><button type="button" class="gc-decision-metric" (click)="abrirDetalleVentana('BAJAS', grupo.bajas, grupo)" [disabled]="grupo.bajas === 0" [attr.aria-label]="'Ver ' + grupo.bajas + ' bajas de ' + grupo.etiqueta">{{ grupo.bajas | number }}</button></td>
+                  @if (primero) {
+                    <td class="gc-decision-table__risk" [attr.rowspan]="item.grupos.length"><strong>{{ item.umbralActual | number: '1.2-2' }}%</strong></td>
+                    <td class="gc-decision-table__action" [attr.rowspan]="item.grupos.length">
+                      @if (item.cumple) {
+                        Ya está debajo del {{ item.umbralMaximo | number: '1.1-1' }}%.
+                      } @else if (item.alcanzable) {
+                        Convertir al menos <strong>{{ item.conversionesNecesarias }}</strong> de {{ item.impagos }} impagos en activos.
+                      } @else {
+                        <span class="gc-decision-table__danger">Aun convirtiendo los {{ item.impagos }} impagos, las bajas no permiten alcanzar el {{ item.umbralMaximo | number: '1.1-1' }}%.</span>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
             }
           </tbody>
         </table>

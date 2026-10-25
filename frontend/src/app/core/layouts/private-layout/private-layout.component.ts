@@ -293,7 +293,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
         { label: 'Cobranza', route: '/app/admin/dashboard/cobranza', icon: 'pi pi-wallet', exact: true },
         { label: 'Cuota Semanal', route: '/app/admin/revision-semanal', icon: 'pi pi-calendar-clock', exact: true },
         { label: 'Funnel', route: '/app/admin/dashboard/funnel', icon: 'pi pi-filter', exact: true },
-        { label: 'Proyeccion De Ventas', route: '/app/admin/dashboard/financiero', icon: 'pi pi-chart-line', exact: true }
+        { label: 'Proyeccion De Ventas', route: '/app/admin/dashboard/financiero', icon: 'pi pi-chart-line', exact: true },
+        { label: 'Comisiones', route: '/app/admin/dashboard/comisiones', icon: 'pi pi-dollar', exact: true }
       ];
 
       const plataformasChildren = buildAdminPlatformsNavigation(this.equiposNav.activeTeams());

@@ -66,10 +66,10 @@ public class GestionMensualPostventaService {
                 .gestionPorCohorte(mesCohorte, proveedor).stream()
                 .map(this::toFilaCohorte)
                 .toList();
-        List<GestionCohorteFilaResponse> filasVentana = periodoRepository
-                .gestionPorVencimiento(ventana.fechaVencimientoObjetivo(), proveedor).stream()
-                .map(this::toFilaCohorte)
-                .toList();
+        List<GestionCohorteFilaResponse> filasVentana = obtenerFilasVentana(
+                ventana.fechaVencimientoObjetivo(),
+                proveedor
+        );
 
         return GestionCohortePostventaResponse.builder()
                 .mesCohorte(mesCohorte)
@@ -130,6 +130,29 @@ public class GestionMensualPostventaService {
                 .impagos(p.getImpagos())
                 .bajas(p.getBajas())
                 .build();
+    }
+
+    /**
+     * La ventana del proximo 15 usa exactamente los grupos de la gestion mensual cuyo recibo toca
+     * en el mes del vencimiento objetivo. No se usan las fechas persistidas de cada periodo porque
+     * datos historicos inconsistentes podrian duplicar un corte bajo un numero de recibo incorrecto.
+     */
+    List<GestionCohorteFilaResponse> obtenerFilasVentana(LocalDate fechaVencimientoObjetivo, String proveedor) {
+        YearMonth mesVencimiento = YearMonth.from(fechaVencimientoObjetivo);
+        int anioMes = mesVencimiento.getYear() * 12 + mesVencimiento.getMonthValue();
+        return periodoRepository.gestionMensualPorCorte(anioMes, proveedor).stream()
+                .map(p -> GestionCohorteFilaResponse.builder()
+                        .mesCorteBase(p.getMesCorteBase())
+                        .numeroCorteBase(p.getNumeroCorteBase())
+                        .numeroFactura(p.getNumeroFactura())
+                        .fechaVencimiento(fechaVencimientoObjetivo)
+                        .total(p.getTotal())
+                        .pagadoCliente(p.getPagadoCliente())
+                        .pagadoEmpresa(p.getPagadoEmpresa())
+                        .impagos(p.getImpagos())
+                        .bajas(p.getBajas())
+                        .build())
+                .toList();
     }
 
     static LocalDate resolverMesCohorte(LocalDate mesCohorteParam, LocalDate ultimaMesCohorte, LocalDate hoy) {

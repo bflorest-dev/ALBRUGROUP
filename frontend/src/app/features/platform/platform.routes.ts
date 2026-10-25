@@ -18,6 +18,7 @@ import { DashboardPostventaStageComponent } from '../admin/components/dashboard-
 import { DashboardPreventaStageComponent } from '../admin/components/dashboard-preventa-stage/dashboard-preventa-stage.component';
 import { DashboardFunnelStageComponent } from '../admin/components/dashboard-funnel-stage/dashboard-funnel-stage.component';
 import { DashboardVentaStageComponent } from '../admin/components/dashboard-venta-stage/dashboard-venta-stage.component';
+import { ComisionVentaStageComponent } from '../admin/components/comision-venta-stage/comision-venta-stage.component';
 import { AdminBaseLeadsPageComponent } from '../admin/pages/admin-base-leads-page/admin-base-leads-page.component';
 import { AdminDataOpsPageComponent } from '../admin/pages/admin-data-ops-page/admin-data-ops-page.component';
 import {
@@ -119,6 +120,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin/dashboard/financiero',
     component: DashboardFinancieroStageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+    }
+  },
+  {
+    path: 'admin/dashboard/comisiones',
+    component: ComisionVentaStageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],
