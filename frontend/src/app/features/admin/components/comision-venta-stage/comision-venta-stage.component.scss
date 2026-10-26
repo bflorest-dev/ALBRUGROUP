@@ -15,7 +15,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem 2rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--app-border-soft);
   flex-wrap: wrap;
@@ -137,6 +137,42 @@
   }
 }
 
+// ── Selector segmentado ──
+.cv-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--app-card);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.6rem;
+  padding: 0.25rem;
+  margin-bottom: 1.5rem;
+
+  &__item {
+    padding: 0.45rem 1.1rem;
+    border: none;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: var(--app-text-muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+
+    &:hover:not(.active) {
+      background: var(--app-hover);
+      color: var(--app-text);
+    }
+
+    &.active {
+      background: var(--role-secondary, #4caf50);
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+}
+
 .cv-loading {
   display: flex;
   align-items: center;
@@ -158,6 +194,14 @@
   font-size: 0.88rem;
 }
 
+.cv-empty-state {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--app-text-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
 // ── Corte block ──
 .cv-corte {
   margin-bottom: 2rem;
@@ -171,26 +215,24 @@
   }
 
   &--total {
-    margin-top: 2.5rem;
-    padding-top: 1.5rem;
-    border-top: 2px solid var(--app-border-soft);
+    padding-top: 0.25rem;
   }
 }
 
 // ── Table ──
 .cv-table-wrap {
   overflow-x: auto;
-  border-radius: 0.5rem;
+  border-radius: 0.6rem;
   border: 1px solid var(--app-border-soft);
 }
 
 .cv-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
 
   th, td {
-    padding: 0.55rem 0.75rem;
+    padding: 0.75rem 1rem;
     white-space: nowrap;
     border-bottom: 1px solid var(--app-border-soft);
   }
@@ -199,30 +241,45 @@
     background: var(--app-card);
     color: var(--app-text-muted);
     font-size: 0.72rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     position: sticky;
     top: 0;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
   }
 
   tbody tr:hover {
     background: var(--app-hover);
   }
 
+  // Empleados que NO cumplen cuota: atenuados
   tbody tr.no-cuota {
     opacity: 0.45;
   }
+
+  // Empleados que SÍ cumplen cuota: resaltado de fila
+  tbody tr.si-cuota {
+    background: rgba(76, 175, 80, 0.07);
+
+    &:hover {
+      background: rgba(76, 175, 80, 0.13);
+    }
+  }
 }
 
-.col-nombre { text-align: left; min-width: 14rem; }
-.col-num    { text-align: center; }
-.col-money  { text-align: right; }
-.col-pct    { text-align: center; }
+.col-nombre { text-align: left; min-width: 14rem; font-weight: 500; }
+.col-num    { text-align: center; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.col-money  { text-align: right; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.col-pct    { text-align: center; font-size: 0.95rem; }
 
 .highlight {
   color: var(--role-secondary, #4caf50);
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1rem;
 }
 
 .cv-empty {
@@ -234,10 +291,23 @@
 
 .cv-table--total {
   .col-nombre { min-width: 18rem; }
+  font-size: 0.92rem;
+
+  td, th {
+    padding: 0.9rem 1.1rem;
+  }
+
+  .col-money {
+    font-size: 1rem;
+  }
+
+  .highlight {
+    font-size: 1.05rem;
+  }
 }
 
 tfoot td {
   border-top: 2px solid var(--app-border-soft);
   border-bottom: none;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }

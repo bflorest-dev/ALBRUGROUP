@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import {
   AdminComisionVentaFacade,
@@ -14,6 +14,8 @@ const MODALIDAD_LABELS: Record<Modalidad, string> = {
   FULL_TIME: 'Full Time',
   SUPER_FULL: 'Super Full'
 };
+
+type TabId = 'totales' | string;
 
 @Component({
   selector: 'app-comision-venta-stage',
@@ -34,10 +36,32 @@ export class ComisionVentaStageComponent implements OnInit {
   protected readonly errorMessage = this.facade.errorMessage;
   protected readonly config = this.facade.config;
 
+  protected readonly activeTab = signal<TabId>('totales');
+
+  protected readonly tabs = computed(() => {
+    const result: { id: TabId; label: string }[] = [
+      { id: 'totales', label: 'Comisiones' }
+    ];
+    for (const c of this.cortes()) {
+      result.push({ id: c.etiqueta, label: c.etiqueta });
+    }
+    return result;
+  });
+
+  protected readonly activeCorte = computed(() => {
+    const id = this.activeTab();
+    if (id === 'totales') return null;
+    return this.cortes().find(c => c.etiqueta === id) ?? null;
+  });
+
   protected readonly totalGeneral = computed(() => {
     const t = this.totales();
     return t.reduce((sum, a) => sum + a.comisionFinal, 0);
   });
+
+  protected readonly totalesFiltrados = computed(() =>
+    this.totales().filter(a => a.comisionFinal > 0)
+  );
 
   ngOnInit(): void {
     this.facade.start();
@@ -47,6 +71,8 @@ export class ComisionVentaStageComponent implements OnInit {
   protected mesSiguiente(): void { this.facade.mesSiguiente(); }
   protected recargar(): void { this.facade.recargar(); }
   protected resetConfig(): void { this.facade.resetConfig(); }
+
+  protected selectTab(id: TabId): void { this.activeTab.set(id); }
 
   protected modalidadLabel(m: Modalidad | null): string {
     return m ? MODALIDAD_LABELS[m] : '—';

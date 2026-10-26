@@ -23,10 +23,6 @@
       <button type="button" class="cv-btn cv-btn--refresh" (click)="recargar()" [disabled]="isLoading()">
         <i class="pi pi-refresh" aria-hidden="true"></i> Recalcular
       </button>
-
-      <button type="button" class="cv-btn cv-btn--reset" (click)="resetConfig()">
-        <i class="pi pi-undo" aria-hidden="true"></i> Restablecer
-      </button>
     </div>
   </header>
 
@@ -38,15 +34,66 @@
   } @else if (errorMessage()) {
     <div class="cv-error">{{ errorMessage() }}</div>
   } @else {
-    <!-- Tablas por corte -->
-    @for (corte of cortes(); track corte.etiqueta) {
+    <!-- Selector segmentado -->
+    <nav class="cv-tabs" role="tablist">
+      @for (tab of tabs(); track tab.id) {
+        <button
+          type="button"
+          role="tab"
+          class="cv-tabs__item"
+          [class.active]="activeTab() === tab.id"
+          (click)="selectTab(tab.id)"
+          [attr.aria-selected]="activeTab() === tab.id">
+          {{ tab.label }}
+        </button>
+      }
+    </nav>
+
+    <!-- Vista: Comisiones (tabla resumen) -->
+    @if (activeTab() === 'totales') {
+      @if (totalesFiltrados().length) {
+        <div class="cv-corte cv-corte--total">
+          <div class="cv-table-wrap">
+            <table class="cv-table cv-table--total">
+              <thead>
+                <tr>
+                  <th class="col-nombre">Asesor</th>
+                  <th class="col-money">Comisión Bruta</th>
+                  <th class="col-money">Comisión a Pagar</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (a of totalesFiltrados(); track a.idAsesor) {
+                  <tr>
+                    <td class="col-nombre">{{ a.nombreAsesor }}</td>
+                    <td class="col-money">S/ {{ a.comisionBruta | number:'1.2-2' }}</td>
+                    <td class="col-money highlight">S/ {{ a.comisionFinal | number:'1.2-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td class="col-nombre"><strong>TOTAL</strong></td>
+                  <td class="col-money"></td>
+                  <td class="col-money highlight"><strong>S/ {{ totalGeneral() | number:'1.2-2' }}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      } @else {
+        <div class="cv-empty-state">Sin comisiones a pagar este período.</div>
+      }
+    }
+
+    <!-- Vista: Corte específico -->
+    @if (activeCorte(); as corte) {
       <div class="cv-corte">
-        <h2 class="cv-corte__title">{{ corte.etiqueta }}</h2>
         <div class="cv-table-wrap">
           <table class="cv-table">
             <thead>
               <tr>
-                <th class="col-nombre">Asesores</th>
+                <th class="col-nombre">Asesor</th>
                 <th class="col-num">Modalidad</th>
                 <th class="col-num">Ventas Totales</th>
                 <th class="col-num">Factor</th>
@@ -61,7 +108,7 @@
             </thead>
             <tbody>
               @for (a of corte.asesores; track a.idAsesor) {
-                <tr [class.no-cuota]="!a.cumpleCuota">
+                <tr [class.no-cuota]="!a.cumpleCuota" [class.si-cuota]="a.cumpleCuota">
                   <td class="col-nombre">{{ a.nombreAsesor }}</td>
                   <td class="col-num">{{ modalidadLabel(a.modalidad) }}</td>
                   <td class="col-num">{{ a.ventasTotales }}</td>
@@ -78,40 +125,6 @@
                 <tr><td colspan="11" class="cv-empty">Sin ventas válidas en este corte</td></tr>
               }
             </tbody>
-          </table>
-        </div>
-      </div>
-    }
-
-    <!-- Total comisión a pagar -->
-    @if (totales().length) {
-      <div class="cv-corte cv-corte--total">
-        <h2 class="cv-corte__title">Total Comisión a Pagar</h2>
-        <div class="cv-table-wrap">
-          <table class="cv-table cv-table--total">
-            <thead>
-              <tr>
-                <th class="col-nombre">Asesores</th>
-                <th class="col-money">Comisión</th>
-                <th class="col-money">Comisión a Pagar</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (a of totales(); track a.idAsesor) {
-                <tr>
-                  <td class="col-nombre">{{ a.nombreAsesor }}</td>
-                  <td class="col-money">S/ {{ a.comisionBruta | number:'1.2-2' }}</td>
-                  <td class="col-money highlight">S/ {{ a.comisionFinal | number:'1.2-2' }}</td>
-                </tr>
-              }
-            </tbody>
-            <tfoot>
-              <tr>
-                <td class="col-nombre"><strong>TOTAL</strong></td>
-                <td class="col-money"></td>
-                <td class="col-money highlight"><strong>S/ {{ totalGeneral() | number:'1.2-2' }}</strong></td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       </div>
