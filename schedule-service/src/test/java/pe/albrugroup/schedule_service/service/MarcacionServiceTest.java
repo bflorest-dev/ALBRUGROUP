@@ -69,6 +69,7 @@ class MarcacionServiceTest {
     @Mock AjusteJornadaRepository ajusteRepository;
     @Mock pe.albrugroup.schedule_service.repository.DiaNoLaborableRepository diaNoLaborableRepository;
     @Mock ParametroAsistenciaResolver parametroAsistenciaResolver;
+    @Mock ResumenMensualService resumenMensualService;
     @Mock CurrentUser currentUser;
     @Mock PresenciaTramoService presenciaTramoService;
     @Mock AttendanceRealtimeNotifier notifier;
@@ -738,6 +739,7 @@ class MarcacionServiceTest {
 
         assertThat(asistencia.getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(8, 15)));
         assertThat(asistencia.getFechaHoraSalida()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(17, 30)));
+        verify(resumenMensualService).recalcularSiCorresponde(EMP, DIA);
     }
 
     @Test
@@ -854,7 +856,7 @@ class MarcacionServiceTest {
                 horarioRepository, excepcionRepository, ajusteRepository, diaNoLaborableRepository, clock);
         service = new MarcacionService(asistenciaRepository, asistenciaTramoRepository, ajusteRepository,
                 sesionEstadoRepository, resolver, parametroAsistenciaResolver, horarioRepository,
-                presenciaTramoService, currentUser, notifier);
+                presenciaTramoService, resumenMensualService, currentUser, notifier);
     }
 
     /** Reconfigura el horario base (sin almuerzo) y re-stubea los repos de horario para esa jornada. */

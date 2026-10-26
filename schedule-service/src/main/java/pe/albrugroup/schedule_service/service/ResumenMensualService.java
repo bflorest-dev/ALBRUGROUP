@@ -81,6 +81,18 @@ public class ResumenMensualService {
         return toResponse(materializar(idEmpleado, periodo));
     }
 
+    /**
+     * Recalcula el snapshot únicamente cuando una corrección afecta un mes ya cerrado. El mes en curso
+     * no materializa resumen mensual: sus consumidores consultan el cálculo en vivo.
+     */
+    @Transactional
+    public void recalcularSiCorresponde(Long idEmpleado, LocalDate fecha) {
+        YearMonth periodo = YearMonth.from(fecha);
+        if (periodo.isBefore(OperationalDateTime.currentMonth())) {
+            recalcular(idEmpleado, periodo.getYear(), periodo.getMonthValue());
+        }
+    }
+
     private ResumenAsistenciaMensual materializar(Long idEmpleado, YearMonth periodo) {
         ResumenAsistenciaMensual calculado = calcular(idEmpleado, periodo);
         try {

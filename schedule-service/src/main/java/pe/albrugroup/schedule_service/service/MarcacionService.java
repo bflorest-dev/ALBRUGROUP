@@ -77,6 +77,7 @@ public class MarcacionService {
     private final ParametroAsistenciaResolver parametroAsistenciaResolver;
     private final HorarioRepository horarioRepository;
     private final PresenciaTramoService presenciaTramoService;
+    private final ResumenMensualService resumenMensualService;
     private final CurrentUser currentUser;
     private final AttendanceRealtimeNotifier attendanceRealtimeNotifier;
 
@@ -984,6 +985,9 @@ public class MarcacionService {
         recalcularMinutos(asistencia);
         asistenciaTramoRepository.saveAll(archivados);
         asistenciaRepository.save(asistencia);
+        // Mantiene sincronizado el snapshot que consumen los dashboards para meses ya cerrados.
+        // En el mes actual el resumen se calcula en vivo y este método no persiste nada.
+        resumenMensualService.recalcularSiCorresponde(idEmpleado, fecha);
         publicar("ASISTENCIA_MARCACION_CORREGIDA",
                 cierreManual ? "CORRECCION_SALIDA_MANUAL" : "CORRECCION_ADMINISTRATIVA",
                 idEmpleado, fecha, estadoAnterior);

@@ -212,6 +212,24 @@ class ResumenMensualServiceTest {
     }
 
     @Test
+    void recalcularSiCorrespondeIgnoraElMesEnCurso() {
+        service.recalcularSiCorresponde(EMP, LocalDate.of(ANIO, 8, 10));
+
+        verify(resumenRepository, never()).deleteByIdEmpleadoAndAnioAndMes(anyLong(), anyInt(), anyInt());
+        verify(resumenRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void recalcularSiCorrespondeReconstruyeUnMesPasado() {
+        stubJulio();
+
+        service.recalcularSiCorresponde(EMP, LocalDate.of(ANIO, JULIO, 10));
+
+        verify(resumenRepository).deleteByIdEmpleadoAndAnioAndMes(EMP, ANIO, JULIO);
+        verify(resumenRepository).saveAndFlush(any());
+    }
+
+    @Test
     void diaConExtraContiguoAncladaAlBaseEsPresenteYSumaExtra() {
         // Asistencia de un dia con extra-antes contiguo ya resuelta por el motor: anclada al base (entrada
         // 13:00), marca 12:22, 24 min a minutosExtra, balance 0. El resumen debe leerla como PRESENTE (la
