@@ -67,13 +67,13 @@
     <div class="finance-metric-ledger">
       <div class="finance-ledger-row">
         <div class="finance-ledger-label"><span>Periodo</span><strong>{{ periodTitle(period) }}</strong></div>
-        <div class="finance-metric finance-metric--reported"><span>Leads reportados</span><strong>{{ count(period?.leadsReportados) }}</strong></div>
-        <div class="finance-metric finance-metric--real"><span>Leads ingresados</span><strong>{{ count(period?.leadsReales) }}</strong></div>
+        <div class="finance-metric finance-metric--reported"><span>Leads Meta</span><strong>{{ count(period?.leadsReportados) }}</strong></div>
+        <div class="finance-metric finance-metric--real"><span>Leads Reales</span><strong>{{ count(period?.leadsReales) }}</strong></div>
         <div class="finance-metric"><span>Preventas</span><strong>{{ count(period?.cantidadPreventas) }}</strong><small>Costo {{ moneyPer(period?.costoTotal, period?.cantidadPreventas) }}</small></div>
         <div class="finance-metric"><span>Ventas</span><strong>{{ count(period?.cantidadVentas) }}</strong><small>Costo {{ moneyPer(period?.costoTotal, period?.cantidadVentas) }}</small></div>
-        <div class="finance-metric"><span>Costo total</span><strong>{{ facade.money(period?.costoTotal ?? 0) }}</strong></div>
-        <div class="finance-metric finance-metric--conversion"><span>Conversión reportada</span><strong>{{ percent(period?.cantidadPreventas, period?.leadsReportados) }} / {{ percent(period?.cantidadVentas, period?.leadsReportados) }}</strong><small>Preventa / venta</small></div>
-        <div class="finance-metric finance-metric--conversion"><span>Conversión ingresada</span><strong>{{ percent(period?.cantidadPreventas, period?.leadsReales) }} / {{ percent(period?.cantidadVentas, period?.leadsReales) }}</strong><small>Preventa / venta</small></div>
+        <div class="finance-metric"><span>Gasto Total</span><strong>{{ facade.money(period?.costoTotal ?? 0) }}</strong></div>
+        <div class="finance-metric finance-metric--conversion"><span>Conversion Meta</span><strong>{{ percent(period?.cantidadPreventas, period?.leadsReportados) }} / {{ percent(period?.cantidadVentas, period?.leadsReportados) }}</strong><small>Preventa / venta</small></div>
+        <div class="finance-metric finance-metric--conversion"><span>Conversion Real</span><strong>{{ percent(period?.cantidadPreventas, period?.leadsReales) }} / {{ percent(period?.cantidadVentas, period?.leadsReales) }}</strong><small>Preventa / venta</small></div>
         <div class="finance-metric finance-metric--last">
           <span>Último reporte</span>
           <strong class="finance-date-stack"><span>{{ facade.reportDate(period?.ultimoReportedAt) }}</span><span>{{ facade.reportTime(period?.ultimoReportedAt) }}</span></strong>
@@ -81,13 +81,13 @@
       </div>
       <div class="finance-ledger-row finance-ledger-row--monthly">
         <div class="finance-ledger-label"><span>Mes actual</span><strong>{{ monthlyTitle(monthly) }}</strong></div>
-        <div class="finance-metric finance-metric--reported"><span>Leads reportados</span><strong>{{ count(monthly?.leadsReportados) }}</strong></div>
-        <div class="finance-metric finance-metric--real"><span>Leads ingresados</span><strong>{{ count(monthly?.leadsReales) }}</strong></div>
+        <div class="finance-metric finance-metric--reported"><span>Leads Meta</span><strong>{{ count(monthly?.leadsReportados) }}</strong></div>
+        <div class="finance-metric finance-metric--real"><span>Leads Reales</span><strong>{{ count(monthly?.leadsReales) }}</strong></div>
         <div class="finance-metric"><span>Preventas</span><strong>{{ count(monthly?.cantidadPreventas) }}</strong><small>Costo {{ moneyPer(monthly?.costoTotal, monthly?.cantidadPreventas) }}</small></div>
         <div class="finance-metric"><span>Ventas</span><strong>{{ count(monthly?.cantidadVentas) }}</strong><small>Costo {{ moneyPer(monthly?.costoTotal, monthly?.cantidadVentas) }}</small></div>
-        <div class="finance-metric"><span>Costo total</span><strong>{{ facade.money(monthly?.costoTotal ?? 0) }}</strong></div>
-        <div class="finance-metric finance-metric--conversion"><span>Conversión reportada</span><strong>{{ percent(monthly?.cantidadPreventas, monthly?.leadsReportados) }} / {{ percent(monthly?.cantidadVentas, monthly?.leadsReportados) }}</strong><small>Preventa / venta</small></div>
-        <div class="finance-metric finance-metric--conversion"><span>Conversión ingresada</span><strong>{{ percent(monthly?.cantidadPreventas, monthly?.leadsReales) }} / {{ percent(monthly?.cantidadVentas, monthly?.leadsReales) }}</strong><small>Preventa / venta</small></div>
+        <div class="finance-metric"><span>Gasto Total</span><strong>{{ facade.money(monthly?.costoTotal ?? 0) }}</strong></div>
+        <div class="finance-metric finance-metric--conversion"><span>Conversion Meta</span><strong>{{ percent(monthly?.cantidadPreventas, monthly?.leadsReportados) }} / {{ percent(monthly?.cantidadVentas, monthly?.leadsReportados) }}</strong><small>Preventa / venta</small></div>
+        <div class="finance-metric finance-metric--conversion"><span>Conversion Real</span><strong>{{ percent(monthly?.cantidadPreventas, monthly?.leadsReales) }} / {{ percent(monthly?.cantidadVentas, monthly?.leadsReales) }}</strong><small>Preventa / venta</small></div>
         <div class="finance-metric finance-metric--last">
           <span>Último reporte</span>
           <strong class="finance-date-stack"><span>{{ facade.reportDate(monthly?.ultimoReportedAt) }}</span><span>{{ facade.reportTime(monthly?.ultimoReportedAt) }}</span></strong>
@@ -118,8 +118,8 @@
             <th rowspan="2">Gasto total</th>
             <th rowspan="2">Costo por preventa</th>
             <th rowspan="2">Costo por venta</th>
-            <th colspan="4" class="finance-band finance-band--reported">Estado Reportado</th>
-            <th colspan="4" class="finance-band finance-band--real">Estado Registrado</th>
+            <th colspan="4" class="finance-band finance-band--reported">Estado Meta</th>
+            <th colspan="4" class="finance-band finance-band--real">Estado Real</th>
             <th rowspan="2">Preventas</th>
             <th rowspan="2">Ventas</th>
             <th rowspan="2">Último reporte</th>
