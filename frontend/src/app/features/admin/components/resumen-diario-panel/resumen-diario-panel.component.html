@@ -283,7 +283,15 @@
                   —
                 }
               </td>
-              <td>{{ asesorCorto(row.nombreAsesor) }}</td>
+              <td class="asesor-cell">
+                <span
+                  class="asesor-txt"
+                  [pTooltip]="row.nombreAsesor || 'Asesor no identificado'"
+                  tooltipPosition="top"
+                >
+                  {{ asesorCorto(row.nombreAsesor) }}
+                </span>
+              </td>
               <td class="n">{{ hora(row.tipificadoAt) }}</td>
               <td>{{ row.nombreCampana || 'Sin campaña' }}</td>
             </tr>
@@ -373,14 +381,30 @@
                   </span>
                 </button>
               </td>
-              <td>{{ asesorCorto(row.nombreAsesorMayorTipificacion) }}</td>
+              <td class="asesor-cell">
+                <span
+                  class="asesor-txt"
+                  [pTooltip]="row.nombreAsesorMayorTipificacion || 'Asesor no identificado'"
+                  tooltipPosition="top"
+                >
+                  {{ asesorCorto(row.nombreAsesorMayorTipificacion) }}
+                </span>
+              </td>
               <td>
                 <span class="stack-cell time-stack">
                   <span class="stack-secondary">{{ fechaParte(row.fechaMayorTipificacionAt) }}</span>
                   <span class="stack-main">{{ horaParte(row.fechaMayorTipificacionAt) }}</span>
                 </span>
               </td>
-              <td>{{ asesorCorto(row.nombreAsesorUltimaTipificacion) }}</td>
+              <td class="asesor-cell">
+                <span
+                  class="asesor-txt"
+                  [pTooltip]="row.nombreAsesorUltimaTipificacion || 'Asesor no identificado'"
+                  tooltipPosition="top"
+                >
+                  {{ asesorCorto(row.nombreAsesorUltimaTipificacion) }}
+                </span>
+              </td>
               <td>
                 <span class="stack-cell time-stack">
                   <span class="stack-secondary">{{ fechaParte(row.fechaUltimaGestionAt) }}</span>

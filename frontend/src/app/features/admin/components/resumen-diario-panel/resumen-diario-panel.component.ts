@@ -486,12 +486,22 @@ export class ResumenDiarioPanelComponent implements OnInit {
     return row.preventa;
   }
 
-  /** Nombre del asesor recortado a las dos primeras palabras (nombre + primer apellido/segundo nombre). */
+  /**
+   * Etiqueta compacta del asesor: primer nombre + apellido final.
+   *
+   * El endpoint entrega el nombre completo concatenado, sin separar nombres y apellidos. El apellido
+   * final es la señal más estable para diferenciar asesores con el mismo primer nombre; el tooltip de
+   * la tabla conserva el nombre completo.
+   */
   protected asesorCorto(nombre: string | null): string {
-    if (!nombre) {
+    const partes = nombre?.trim().split(/\s+/).filter(Boolean) ?? [];
+    if (!partes.length) {
       return '—';
     }
-    return nombre.trim().split(/\s+/).slice(0, 2).join(' ');
+    if (partes.length === 1) {
+      return partes[0];
+    }
+    return `${partes[0]} ${partes[partes.length - 1]}`;
   }
 
   private capitalizarCodigo(codigo: string | null): string {
