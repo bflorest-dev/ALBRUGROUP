@@ -9,6 +9,7 @@ const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
+const MESES_CORTOS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
 
 const UMBRALES_INICIALES: Record<number, number> = { 1: 4.5, 2: 3.5, 3: 2.5 };
 const RECIBOS_WIN = [1, 2, 3];
@@ -36,7 +37,7 @@ export interface ReciboCohorteVM {
 
 export interface RecomendacionConversionVM {
   numeroFactura: number;
-  grupos: string[];
+  grupos: GrupoDecisionVM[];
   total: number;
   impagos: number;
   bajas: number;
@@ -46,6 +47,16 @@ export interface RecomendacionConversionVM {
   conversionesNecesarias: number;
   alcanzable: boolean;
   cumple: boolean;
+}
+
+export interface GrupoDecisionVM {
+  mesCorteBase: string;
+  numeroCorte: number;
+  numeroRecibo: number;
+  etiqueta: string;
+  total: number;
+  impagos: number;
+  bajas: number;
 }
 
 @Injectable()
@@ -128,7 +139,9 @@ export class AdminGestionCohorteFacade {
       const conversionesNecesarias = Math.max(0, casosDesfavorables - maximoPermitido);
       return {
         numeroFactura,
-        grupos: filasRecibo.map((fila) => etiquetaGrupo(fila)),
+        grupos: [...filasRecibo]
+          .sort((a, b) => b.mesCorteBase.localeCompare(a.mesCorteBase))
+          .map((fila) => grupoDecision(fila)),
         total: conteos.total,
         impagos: conteos.impagos,
         bajas: conteos.bajas,
@@ -227,9 +240,17 @@ function porcentaje(valor: number, total: number): number {
   return total === 0 ? 0 : valor * 100 / total;
 }
 
-function etiquetaGrupo(fila: GestionCohorteFila): string {
+function grupoDecision(fila: GestionCohorteFila): GrupoDecisionVM {
   const mes = parseMes(fila.mesCorteBase);
-  return `${MESES[mes.mes - 1]} · Corte ${fila.numeroCorteBase}`;
+  return {
+    mesCorteBase: fila.mesCorteBase,
+    numeroCorte: fila.numeroCorteBase,
+    numeroRecibo: fila.numeroFactura,
+    etiqueta: `${MESES_CORTOS[mes.mes - 1]} ${fila.numeroCorteBase}`,
+    total: fila.total,
+    impagos: fila.impagos,
+    bajas: fila.bajas
+  };
 }
 
 function orden(mes: { anio: number; mes: number }): number {

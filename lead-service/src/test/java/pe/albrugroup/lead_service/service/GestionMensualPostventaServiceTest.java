@@ -1,11 +1,16 @@
 package pe.albrugroup.lead_service.service;
 
 import org.junit.jupiter.api.Test;
+import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class GestionMensualPostventaServiceTest {
 
@@ -72,5 +77,16 @@ class GestionMensualPostventaServiceTest {
 
         assertThat(ventana.fechaVencimientoObjetivo()).isEqualTo(LocalDate.of(2026, 11, 28));
         assertThat(ventana.fechaLimite()).isEqualTo(LocalDate.of(2026, 12, 15));
+    }
+
+    @Test
+    void ventanaUsaLosMismosGruposDeLaGestionMensualDelMesDeVencimiento() {
+        PeriodoFacturacionPostventaRepository repository = mock(PeriodoFacturacionPostventaRepository.class);
+        when(repository.gestionMensualPorCorte(2026 * 12 + 10, "WIN")).thenReturn(List.of());
+        GestionMensualPostventaService service = new GestionMensualPostventaService(repository, mock(ProveedorScopeService.class));
+
+        assertThat(service.obtenerFilasVentana(LocalDate.of(2026, 10, 28), "WIN")).isEmpty();
+
+        verify(repository).gestionMensualPorCorte(2026 * 12 + 10, "WIN");
     }
 }

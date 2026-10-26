@@ -85,33 +85,6 @@ public interface PeriodoFacturacionPostventaRepository extends JpaRepository<Per
             @Param("proveedor") String proveedor
     );
 
-    @Query(value = """
-            SELECT c.mes_corte_base AS "mesCorteBase",
-                   c.numero_corte_base AS "numeroCorteBase",
-                   p.numero_periodo AS "numeroFactura",
-                   COALESCE(p.fecha_vencimiento_confirmado, p.fecha_vencimiento_estimado) AS "fechaVencimiento",
-                   COUNT(*) AS "total",
-                   COUNT(*) FILTER (WHERE p.estado = 'CERRADO_PAGO_CLIENTE') AS "pagadoCliente",
-                   COUNT(*) FILTER (WHERE p.estado = 'CERRADO_PAGO_EMPRESA') AS "pagadoEmpresa",
-                   COUNT(*) FILTER (WHERE p.estado = 'ABIERTO') AS "impagos",
-                   COUNT(*) FILTER (WHERE p.estado IN ('CERRADO_BAJA', 'CERRADO_BAJA_ADEUDO')) AS "bajas"
-            FROM calendario_facturacion_postventa c
-            JOIN periodo_facturacion_postventa p ON p.id_calendario_facturacion = c.id
-            WHERE c.proveedor_snapshot = :proveedor
-              AND c.activo = true
-              AND COALESCE(p.fecha_vencimiento_confirmado, p.fecha_vencimiento_estimado) = :fechaVencimiento
-              AND p.numero_periodo BETWEEN 1 AND COALESCE(c.meses_permanencia_snapshot, 3)
-            GROUP BY c.mes_corte_base,
-                     c.numero_corte_base,
-                     p.numero_periodo,
-                     COALESCE(p.fecha_vencimiento_confirmado, p.fecha_vencimiento_estimado)
-            ORDER BY p.numero_periodo, c.mes_corte_base, c.numero_corte_base
-            """, nativeQuery = true)
-    List<GestionCohorteCorteProjection> gestionPorVencimiento(
-            @Param("fechaVencimiento") LocalDate fechaVencimiento,
-            @Param("proveedor") String proveedor
-    );
-
     @EntityGraph(attributePaths = {
             "lead", "lead.datosPreventa", "lead.plan", "lead.plan.internet", "calendarioFacturacionPostventa"
     })

@@ -1,0 +1,120 @@
+<section class="cv-shell" data-theme="dark">
+  <header class="cv-topbar">
+    <div class="cv-heading">
+      <span class="cv-heading__label" aria-hidden="true"><i></i>COMISIONES</span>
+      <h1>Comisiones de Venta</h1>
+      <p>Cálculo mensual de comisiones por ventas válidas.</p>
+    </div>
+
+    <div class="cv-controls">
+      <div class="cv-period">
+        <button type="button" class="cv-period__nav" (click)="mesAnterior()" [disabled]="isLoading()" aria-label="Mes anterior">
+          <i class="pi pi-chevron-left" aria-hidden="true"></i>
+        </button>
+        <div class="cv-period__value">
+          <span>Comisión</span>
+          <strong>{{ mesLabel() || '—' }}</strong>
+        </div>
+        <button type="button" class="cv-period__nav" (click)="mesSiguiente()" [disabled]="isLoading() || !canGoNext()" aria-label="Mes siguiente">
+          <i class="pi pi-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <button type="button" class="cv-btn cv-btn--refresh" (click)="recargar()" [disabled]="isLoading()">
+        <i class="pi pi-refresh" aria-hidden="true"></i> Recalcular
+      </button>
+
+      <button type="button" class="cv-btn cv-btn--reset" (click)="resetConfig()">
+        <i class="pi pi-undo" aria-hidden="true"></i> Restablecer
+      </button>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <div class="cv-loading">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Calculando comisiones...</span>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="cv-error">{{ errorMessage() }}</div>
+  } @else {
+    <!-- Tablas por corte -->
+    @for (corte of cortes(); track corte.etiqueta) {
+      <div class="cv-corte">
+        <h2 class="cv-corte__title">{{ corte.etiqueta }}</h2>
+        <div class="cv-table-wrap">
+          <table class="cv-table">
+            <thead>
+              <tr>
+                <th class="col-nombre">Asesores</th>
+                <th class="col-num">Modalidad</th>
+                <th class="col-num">Ventas Totales</th>
+                <th class="col-num">Factor</th>
+                <th class="col-num">Ventas Lima</th>
+                <th class="col-money">Comisión</th>
+                <th class="col-num">Faltas</th>
+                <th class="col-pct">% Dscto Faltas</th>
+                <th class="col-num">Tardanzas (min)</th>
+                <th class="col-pct">% Dscto Tard.</th>
+                <th class="col-money">Comisión a Pagar</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of corte.asesores; track a.idAsesor) {
+                <tr [class.no-cuota]="!a.cumpleCuota">
+                  <td class="col-nombre">{{ a.nombreAsesor }}</td>
+                  <td class="col-num">{{ modalidadLabel(a.modalidad) }}</td>
+                  <td class="col-num">{{ a.ventasTotales }}</td>
+                  <td class="col-num">{{ a.factor }}</td>
+                  <td class="col-num">{{ a.ventasLima }}</td>
+                  <td class="col-money">S/ {{ a.comisionBruta | number:'1.2-2' }}</td>
+                  <td class="col-num">{{ a.faltas || '' }}</td>
+                  <td class="col-pct">{{ a.pctDsctoFaltas ? (a.pctDsctoFaltas + '%') : '' }}</td>
+                  <td class="col-num">{{ a.minutosDesbalance ? formatMinutos(a.minutosDesbalance) : '' }}</td>
+                  <td class="col-pct">{{ a.pctDsctoTardanzas ? (a.pctDsctoTardanzas + '%') : '' }}</td>
+                  <td class="col-money highlight">S/ {{ a.comisionFinal | number:'1.2-2' }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="11" class="cv-empty">Sin ventas válidas en este corte</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Total comisión a pagar -->
+    @if (totales().length) {
+      <div class="cv-corte cv-corte--total">
+        <h2 class="cv-corte__title">Total Comisión a Pagar</h2>
+        <div class="cv-table-wrap">
+          <table class="cv-table cv-table--total">
+            <thead>
+              <tr>
+                <th class="col-nombre">Asesores</th>
+                <th class="col-money">Comisión</th>
+                <th class="col-money">Comisión a Pagar</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of totales(); track a.idAsesor) {
+                <tr>
+                  <td class="col-nombre">{{ a.nombreAsesor }}</td>
+                  <td class="col-money">S/ {{ a.comisionBruta | number:'1.2-2' }}</td>
+                  <td class="col-money highlight">S/ {{ a.comisionFinal | number:'1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td class="col-nombre"><strong>TOTAL</strong></td>
+                <td class="col-money"></td>
+                <td class="col-money highlight"><strong>S/ {{ totalGeneral() | number:'1.2-2' }}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    }
+  }
+</section>

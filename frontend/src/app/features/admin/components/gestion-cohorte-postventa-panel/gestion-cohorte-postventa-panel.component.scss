@@ -207,10 +207,32 @@
   thead th { background: var(--app-surface); color: var(--app-text-muted); font-size: 0.74rem; letter-spacing: 0.04em; text-transform: uppercase; }
   tbody th { color: var(--app-text); font-size: 1rem; white-space: nowrap; }
   tbody td { color: var(--app-text); font-size: 0.95rem; }
-  &__groups { max-width: 24rem; color: var(--app-text-muted) !important; text-align: left !important; }
+  &__groups { color: var(--app-text-muted) !important; text-align: left !important; }
+  &__groups strong { color: var(--app-text); font-size: 0.86rem; letter-spacing: 0.025em; }
+  &__losses { border-right: 0 !important; }
+  &__risk { border-left: 1px solid var(--app-border-soft); }
   &__action { min-width: 21rem; color: var(--gc-unpaid) !important; text-align: left !important; }
   &__danger { color: var(--gc-down); }
   &__row--ok .gc-decision-table__action { color: var(--gc-ok) !important; }
+  &__cut-row td { padding-block: 0.52rem; }
+  &__cut-row--first td:not([rowspan]) { border-bottom-color: transparent; }
+}
+
+.gc-decision-metric {
+  min-width: 2.5rem;
+  min-height: 2.1rem;
+  border: 0;
+  border-radius: 7px;
+  padding: 0.3rem 0.45rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: color-mix(in srgb, var(--app-surface) 78%, var(--app-text) 7%); }
+  &:focus-visible { outline: 2px solid var(--app-focus, #60a5fa); outline-offset: 2px; }
+  &:disabled { cursor: default; }
 }
 
 @media (max-width: 900px) {
