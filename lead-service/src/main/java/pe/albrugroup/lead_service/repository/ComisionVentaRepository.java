@@ -18,7 +18,19 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
                    cf.numero_corte_base    AS "numeroCorteBase",
                    ler.id_asesor_merito    AS "idAsesor",
                    ler.nombre_asesor_merito AS "nombreAsesor",
-                   COUNT(*)                AS "ventasTotales",
+                   (SELECT COUNT(*)
+                    FROM lead l2
+                    JOIN calendario_facturacion_postventa cf2 ON cf2.id_lead = l2.id
+                    JOIN lead_seguimiento ls2 ON ls2.id_lead = l2.id
+                    JOIN lead_etapa_resumen ler2 ON ler2.id_lead = l2.id AND ler2.etapa = 'PREVENTA'
+                    WHERE l2.etapa = 'POSTVENTA'
+                      AND l2.estado_cliente_postventa = 'ACTIVO'
+                      AND (ls2.fue_moroso_primer_periodo IS NULL OR ls2.fue_moroso_primer_periodo = false)
+                      AND cf2.proveedor_snapshot = :proveedor
+                      AND cf2.activo = true
+                      AND cf2.mes_corte_base = cf.mes_corte_base
+                      AND ler2.id_asesor_merito = ler.id_asesor_merito
+                   ) AS "ventasTotales",
                    COUNT(*) FILTER (WHERE z.nombre LIKE 'LIMA%') AS "ventasLima"
             FROM lead l
             JOIN calendario_facturacion_postventa cf ON cf.id_lead = l.id
