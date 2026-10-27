@@ -355,14 +355,6 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
-    path: 'rrhh/planillas',
-    component: AdminBillingPageComponent,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['RRHH']
-    }
-  },
-  {
     path: 'reclutador',
     pathMatch: 'full',
     redirectTo: 'reclutador/grupos-capacitacion'

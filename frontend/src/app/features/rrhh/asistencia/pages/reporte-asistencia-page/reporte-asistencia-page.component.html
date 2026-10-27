@@ -40,9 +40,46 @@
 
   <!-- Loading -->
   @if (loading()) {
-    <div class="ra-loading">
-      <i class="pi pi-spin pi-spinner"></i>
-      <span>Cargando reporte...</span>
+    <div class="ra-loading" role="status" aria-live="polite">
+      <span class="sr-only">Cargando reporte de asistencia…</span>
+      <div class="ra-grid-wrapper ra-grid-wrapper--loading" aria-hidden="true">
+        <table class="ra-grid ra-grid--skeleton">
+          <thead>
+            <tr>
+              <th class="ra-th-fixed ra-th-name"><span class="ra-skeleton-line ra-skeleton-line--wide"></span></th>
+              <th class="ra-th-fixed ra-th-doc"><span class="ra-skeleton-line"></span></th>
+              <th class="ra-th-fixed ra-th-meta"><span class="ra-skeleton-line"></span></th>
+              <th class="ra-th-fixed ra-th-meta"><span class="ra-skeleton-line"></span></th>
+              <th class="ra-th-fixed ra-th-meta"><span class="ra-skeleton-line"></span></th>
+              <th class="ra-th-fixed ra-th-meta"><span class="ra-skeleton-line"></span></th>
+              @for (dia of diasDelMes(); track dia) {
+                <th class="ra-th-dia"><span class="ra-skeleton-dot"></span></th>
+              }
+              <th class="ra-th-total"><span class="ra-skeleton-line"></span></th>
+              <th class="ra-th-total"><span class="ra-skeleton-line"></span></th>
+              <th class="ra-th-total"><span class="ra-skeleton-line"></span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of [0, 1, 2, 3, 4, 5, 6]; track row) {
+              <tr>
+                <td class="ra-td-name"><span class="ra-skeleton-line ra-skeleton-line--wide"></span></td>
+                <td class="ra-td-doc"><span class="ra-skeleton-line"></span></td>
+                <td class="ra-td-meta"><span class="ra-skeleton-line"></span></td>
+                <td class="ra-td-meta"><span class="ra-skeleton-line"></span></td>
+                <td class="ra-td-meta"><span class="ra-skeleton-line"></span></td>
+                <td class="ra-td-meta"><span class="ra-skeleton-line"></span></td>
+                @for (dia of diasDelMes(); track dia) {
+                  <td class="ra-td-dia"><span class="ra-skeleton-dot"></span></td>
+                }
+                <td class="ra-td-total"><span class="ra-skeleton-line"></span></td>
+                <td class="ra-td-total"><span class="ra-skeleton-line"></span></td>
+                <td class="ra-td-total"><span class="ra-skeleton-line"></span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
   }
 

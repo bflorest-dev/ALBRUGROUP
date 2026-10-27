@@ -1,0 +1,41 @@
+-- RRHH necesita consultar las asignaciones de proveedores de BACKOFFICE y POSTVENTA
+-- para construir el ámbito por proveedor del directorio PERSONAL y su drawer.
+
+DO $$
+BEGIN
+    IF (SELECT COUNT(*) FROM roles WHERE nombre = 'RRHH') <> 1 THEN
+        RAISE EXCEPTION 'Se esperaba exactamente un rol RRHH para asignar READ_USUARIO_PROVEEDORES';
+    END IF;
+
+    IF (SELECT COUNT(*)
+        FROM permisos
+        WHERE nombre = 'READ_USUARIO_PROVEEDORES'
+          AND recurso = 'USUARIO_PROVEEDOR'
+          AND accion = 'READ') <> 1 THEN
+        RAISE EXCEPTION 'No existe exactamente un permiso READ_USUARIO_PROVEEDORES con recurso USUARIO_PROVEEDOR y accion READ';
+    END IF;
+END $$;
+
+INSERT INTO rol_permiso (rol_id, permiso_id)
+SELECT r.id, p.id
+FROM roles r
+CROSS JOIN permisos p
+WHERE r.nombre = 'RRHH'
+  AND p.nombre = 'READ_USUARIO_PROVEEDORES'
+ON CONFLICT (rol_id, permiso_id) DO NOTHING;
+
+DO $$
+BEGIN
+    IF (
+        SELECT COUNT(*)
+        FROM rol_permiso rp
+        JOIN roles r ON r.id = rp.rol_id
+        JOIN permisos p ON p.id = rp.permiso_id
+        WHERE r.nombre = 'RRHH'
+          AND p.nombre = 'READ_USUARIO_PROVEEDORES'
+          AND p.recurso = 'USUARIO_PROVEEDOR'
+          AND p.accion = 'READ'
+    ) <> 1 THEN
+        RAISE EXCEPTION 'READ_USUARIO_PROVEEDORES no quedo asignado exactamente una vez al rol RRHH';
+    END IF;
+END $$;

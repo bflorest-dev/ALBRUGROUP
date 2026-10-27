@@ -338,8 +338,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     if (activeRole === 'RRHH') {
       return [
         { label: 'Asistencia', route: '/app/rrhh/asistencia', icon: 'pi pi-clock', exact: true },
-        { label: 'Personal', route: '/app/personal', icon: 'pi pi-users', exact: true },
-        { label: 'Planillas', route: '/app/rrhh/planillas', icon: 'pi pi-receipt', exact: true }
+        { label: 'Personal', route: '/app/personal', icon: 'pi pi-users', exact: true }
       ];
     }
 

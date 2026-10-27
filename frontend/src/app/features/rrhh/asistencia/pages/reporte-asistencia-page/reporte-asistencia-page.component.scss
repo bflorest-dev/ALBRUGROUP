@@ -144,12 +144,69 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 64px 16px;
   color: var(--ink-3);
   font-size: 14px;
 }
 
 .ra-empty i { font-size: 24px; }
+
+.ra-loading {
+  display: block;
+  min-height: 240px;
+}
+
+.ra-grid-wrapper--loading {
+  overflow: hidden;
+  opacity: .86;
+}
+
+.ra-grid--skeleton {
+  pointer-events: none;
+
+  th, td {
+    height: 32px;
+  }
+
+  thead th {
+    height: 38px;
+  }
+}
+
+.ra-skeleton-line,
+.ra-skeleton-dot {
+  display: inline-block;
+  background: linear-gradient(100deg, var(--panel-2) 25%, var(--line-strong) 42%, var(--panel-2) 60%);
+  background-size: 240% 100%;
+  animation: ra-skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+.ra-skeleton-line {
+  width: 42px;
+  height: 9px;
+  border-radius: 3px;
+}
+
+.ra-skeleton-line--wide {
+  width: 112px;
+}
+
+.ra-skeleton-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+@keyframes ra-skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ra-skeleton-line,
+  .ra-skeleton-dot {
+    animation: none;
+  }
+}
 
 // Grid
 .ra-grid-wrapper {

@@ -298,6 +298,7 @@ public class DataLoader {
                 getPermiso("READ_EVENTOS"),
                 getPermiso("READ_ROLES"),
                 getPermiso("READ_USUARIO_PROVEEDORES"),
+                getPermiso("READ_PROVEEDORES"),
                 getPermiso("CREATE_EQUIPOS"),
                 getPermiso("READ_EQUIPOS"),
                 getPermiso("UPDATE_EQUIPOS"),
@@ -314,7 +315,8 @@ public class DataLoader {
                 getPermiso("UPDATE_ASISTENCIAS"),
                 getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("AJUSTAR_JORNADA_JUSTIFICADA"),
-                getPermiso("PROGRAMAR_COMPENSACION")
+                getPermiso("PROGRAMAR_COMPENSACION"),
+                getPermiso("VER_TODOS_LOS_EQUIPOS")
 
         );
         saveRol("RRHH", "Recursos Humanos - Gestion de personal", rrhhPermisos);
