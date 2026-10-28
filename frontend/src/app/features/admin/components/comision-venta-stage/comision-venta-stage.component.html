@@ -117,7 +117,7 @@
                 <th class="col-num">Modalidad</th>
                 <th class="col-num">Ventas Totales</th>
                 <th class="col-num">Factor</th>
-                <th class="col-num">Ventas Lima</th>
+                <th class="col-num">Ventas Válidas</th>
                 <th class="col-money">Comisión</th>
                 <th class="col-num">Faltas</th>
                 <th class="col-pct">% Dscto Faltas</th>
@@ -133,7 +133,7 @@
                   <td class="col-num">{{ modalidadLabel(a.modalidad) }}</td>
                   <td class="col-num">{{ a.ventasTotales }}</td>
                   <td class="col-num">{{ a.factor }}</td>
-                  <td class="col-num">{{ a.ventasLima }}</td>
+                  <td class="col-num">{{ a.ventasValidas }}</td>
                   <td class="col-money">S/ {{ a.comisionBruta | number:'1.2-2' }}</td>
                   <td class="col-num">{{ a.faltas || '' }}</td>
                   <td class="col-pct">{{ a.pctDsctoFaltas ? (a.pctDsctoFaltas + '%') : '' }}</td>

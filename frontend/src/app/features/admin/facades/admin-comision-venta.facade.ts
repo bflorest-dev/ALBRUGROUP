@@ -29,7 +29,7 @@ export interface AsesorCorteVM {
   idAsesor: number;
   nombreAsesor: string;
   ventasTotales: number;
-  ventasLima: number;
+  ventasValidas: number;
   modalidad: Modalidad | null;
   factor: number;
   comisionBruta: number;
@@ -133,10 +133,11 @@ export class AdminComisionVentaFacade {
     const mapAsesor = (
       a: { idAsesor: number; nombreAsesor: string; ventasTotales: number; ventasLima: number },
       anioAsistencia: number,
-      mesAsistencia: number
+      mesAsistencia: number,
+      proveedor: 'WIN' | 'CLARO'
     ): AsesorCorteVM => {
       const key = `${a.idAsesor}_${anioAsistencia}_${mesAsistencia}`;
-      return calcularComisionAsesor(a, modalidades.get(key) ?? null, asistencia.get(key) ?? null, cfg);
+      return calcularComisionAsesor(a, modalidades.get(key) ?? null, asistencia.get(key) ?? null, cfg, proveedor);
     };
 
     return respWin.cortes.map(corteWin => {
@@ -149,8 +150,8 @@ export class AdminComisionVentaFacade {
         etiqueta: corteWin.etiqueta,
         mesAsistencia: corteWin.mesAsistencia,
         anioAsistencia: corteWin.anioAsistencia,
-        asesoresWin: corteWin.asesores.map(a => mapAsesor(a, corteWin.anioAsistencia, corteWin.mesAsistencia)),
-        asesoresClaro: (corteClaro?.asesores ?? []).map(a => mapAsesor(a, corteWin.anioAsistencia, corteWin.mesAsistencia)),
+        asesoresWin: corteWin.asesores.map(a => mapAsesor(a, corteWin.anioAsistencia, corteWin.mesAsistencia, 'WIN')),
+        asesoresClaro: (corteClaro?.asesores ?? []).map(a => mapAsesor(a, corteWin.anioAsistencia, corteWin.mesAsistencia, 'CLARO')),
       };
     });
   });
@@ -285,14 +286,17 @@ function calcularComisionAsesor(
   a: { idAsesor: number; nombreAsesor: string; ventasTotales: number; ventasLima: number },
   modalidad: Modalidad | null,
   resumen: ResumenMensualResponse | null,
-  cfg: ComisionConfig
+  cfg: ComisionConfig,
+  proveedor: 'WIN' | 'CLARO'
 ): AsesorCorteVM {
   const faltas = resumen?.diasFalta ?? 0;
   const minutosTardanza = resumen?.minutosTardanza ?? 0;
+  // WIN: solo ventas Lima; CLARO: todas las zonas cuentan
+  const ventasValidas = proveedor === 'WIN' ? a.ventasLima : a.ventasTotales;
 
   if (!modalidad) {
     return {
-      ...a, modalidad: null, factor: 0, comisionBruta: 0,
+      ...a, ventasValidas, modalidad: null, factor: 0, comisionBruta: 0,
       faltas, pctDsctoFaltas: 0, minutosTardanza, pctDsctoTardanzas: 0,
       comisionFinal: 0, cumpleCuota: false
     };
@@ -301,7 +305,7 @@ function calcularComisionAsesor(
   const modCfg = cfg.modalidades[modalidad];
   const cumpleCuota = a.ventasTotales >= modCfg.cuota;
   const factor = cumpleCuota ? resolverFactor(a.ventasTotales, modCfg.tiers) : 0;
-  const comisionBruta = a.ventasLima * factor;
+  const comisionBruta = ventasValidas * factor;
 
   const pctDsctoFaltas = resolverDescuentoFaltas(faltas, cfg.penalidadFaltas);
   const pctDsctoTardanzas = resolverDescuentoTardanzas(minutosTardanza, cfg.penalidadTardanzas);
@@ -310,7 +314,7 @@ function calcularComisionAsesor(
   const comisionFinal = Math.max(comisionBruta - descuento, 0);
 
   return {
-    ...a, modalidad, factor, comisionBruta,
+    ...a, ventasValidas, modalidad, factor, comisionBruta,
     faltas, pctDsctoFaltas, minutosTardanza, pctDsctoTardanzas,
     comisionFinal, cumpleCuota
   };
