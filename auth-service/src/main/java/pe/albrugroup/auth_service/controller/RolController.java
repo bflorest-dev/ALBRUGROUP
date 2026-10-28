@@ -50,6 +50,12 @@ public class RolController {
         return ResponseEntity.ok(rolService.listarUsuarios(buscar, activo, rol, sinRol, page, size));
     }
 
+    @GetMapping("/usuarios/empleado-ids")
+    @PreAuthorize("hasAnyAuthority('READ_ROLES','READ_PERSONAL_RECRUITMENT')")
+    public ResponseEntity<List<Long>> listarEmpleadoIdsPorRol(@RequestParam String rol) {
+        return ResponseEntity.ok(rolService.listarEmpleadoIdsPorRol(rol));
+    }
+
     @GetMapping("/usuarios/{empleadoId}/roles")
     @PreAuthorize("hasAuthority('READ_ROLES')")
     public ResponseEntity<RolesUsuarioResponse> obtenerRoles(@PathVariable @Positive Long empleadoId) {

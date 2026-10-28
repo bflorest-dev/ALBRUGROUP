@@ -65,6 +65,12 @@ public class RolService {
     }
 
     @Transactional(readOnly = true)
+    public List<Long> listarEmpleadoIdsPorRol(String rol) {
+        String nombre = normalizarRol(rol);
+        return usuarioRepository.findActiveEmpleadoIdsByRole(nombre);
+    }
+
+    @Transactional(readOnly = true)
     public Page<AccesoUsuarioResponse> listarUsuarios(
             String buscar, Boolean activo, String rol, Boolean sinRol, int page, int size) {
         int pageSize = Math.min(Math.max(size, 1), 100);

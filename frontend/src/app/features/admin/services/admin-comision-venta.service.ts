@@ -8,6 +8,7 @@ export interface ComisionVentaAsesor {
   idAsesor: number;
   nombreAsesor: string;
   ventasTotales: number;
+  ventasCorte: number;
   ventasLima: number;
 }
 

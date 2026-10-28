@@ -12,6 +12,8 @@ import pe.albrugroup.rrhh_service.exception.AuthServiceException;
 import pe.albrugroup.rrhh_service.integration.auth.dto.RegistrarUsuarioRequest;
 import pe.albrugroup.rrhh_service.integration.auth.dto.UsuarioResponse;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 public class AuthServiceClient {
@@ -42,6 +44,21 @@ public class AuthServiceClient {
             if (e.getRawStatusCode() == 404) {
                 return null;
             }
+            throw AuthServiceException.from(e);
+        }
+    }
+
+    public List<Long> listarEmpleadoIdsPorRol(String authHeader, String rol) {
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders(authHeader));
+        try {
+            return authRestTemplate.exchange(
+                    "/autorizacion/usuarios/empleado-ids?rol={rol}",
+                    org.springframework.http.HttpMethod.GET,
+                    entity,
+                    new org.springframework.core.ParameterizedTypeReference<List<Long>>() {},
+                    rol
+            ).getBody();
+        } catch (RestClientResponseException e) {
             throw AuthServiceException.from(e);
         }
     }

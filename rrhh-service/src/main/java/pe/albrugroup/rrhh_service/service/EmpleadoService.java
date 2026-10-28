@@ -276,6 +276,18 @@ public class EmpleadoService implements IEmpleado {
 
     @Override
     @Transactional(readOnly = true)
+    public List<EmpleadoRolResponse> listarCapacitadores(String authHeader) {
+        List<Long> ids = authServiceClient.listarEmpleadoIdsPorRol(authHeader, "CAPACITADOR");
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return empleadoRolMapper.toResponseList(
+                contratoRepository.findEmpleadosActivosByIds(EstadoOperativo.ACTIVO, LocalDate.now(), ids)
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<EmpleadoRolResponse> listarEmpleadosAsistencia(LocalDate desde, LocalDate hasta,
                                                                 List<CategoriaPersonal> categoriasPersonal,
                                                                 List<PuestoTrabajo> puestosTrabajo,

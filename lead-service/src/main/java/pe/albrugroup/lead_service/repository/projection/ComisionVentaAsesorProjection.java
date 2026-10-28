@@ -9,5 +9,6 @@ public interface ComisionVentaAsesorProjection {
     Long getIdAsesor();
     String getNombreAsesor();
     long getVentasTotales();
+    long getVentasCorte();
     long getVentasLima();
 }

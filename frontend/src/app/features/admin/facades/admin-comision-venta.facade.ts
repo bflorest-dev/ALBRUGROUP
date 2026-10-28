@@ -131,7 +131,7 @@ export class AdminComisionVentaFacade {
     const cfg = this.config();
 
     const mapAsesor = (
-      a: { idAsesor: number; nombreAsesor: string; ventasTotales: number; ventasLima: number },
+      a: { idAsesor: number; nombreAsesor: string; ventasTotales: number; ventasCorte: number; ventasLima: number },
       anioAsistencia: number,
       mesAsistencia: number,
       proveedor: 'WIN' | 'CLARO'
@@ -283,7 +283,7 @@ export class AdminComisionVentaFacade {
 // ── Cálculos puros ──
 
 function calcularComisionAsesor(
-  a: { idAsesor: number; nombreAsesor: string; ventasTotales: number; ventasLima: number },
+  a: { idAsesor: number; nombreAsesor: string; ventasTotales: number; ventasCorte: number; ventasLima: number },
   modalidad: Modalidad | null,
   resumen: ResumenMensualResponse | null,
   cfg: ComisionConfig,
@@ -291,8 +291,8 @@ function calcularComisionAsesor(
 ): AsesorCorteVM {
   const faltas = resumen?.diasFalta ?? 0;
   const minutosTardanza = resumen?.minutosTardanza ?? 0;
-  // WIN: solo ventas Lima; CLARO: todas las zonas cuentan
-  const ventasValidas = proveedor === 'WIN' ? a.ventasLima : a.ventasTotales;
+  // WIN: solo ventas Lima del corte; CLARO: todas las zonas del corte
+  const ventasValidas = proveedor === 'WIN' ? a.ventasLima : a.ventasCorte;
 
   if (!modalidad) {
     return {

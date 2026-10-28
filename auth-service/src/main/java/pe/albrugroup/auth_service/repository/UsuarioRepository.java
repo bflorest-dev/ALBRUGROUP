@@ -23,6 +23,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByEmpleadoId(Long empleadoId);
     Optional<Usuario> findByUsernameAndEmailAndDni(String username, String email, String dni);
     List<Usuario> findDistinctByRolesNombreAndActivoTrue(String rolNombre);
+
+    @Query("select distinct u.empleadoId from Usuario u join u.roles r where r.nombre = :rol and u.activo = true and u.empleadoId is not null")
+    List<Long> findActiveEmpleadoIdsByRole(@Param("rol") String rol);
     List<Usuario> findDistinctByEquiposIdAndActivoTrue(Long equipoId);
     List<Usuario> findDistinctByEquiposIdAndActivoTrueOrderByNombreCompletoAsc(Long equipoId);
     List<Usuario> findByEquiposId(Long equipoId);

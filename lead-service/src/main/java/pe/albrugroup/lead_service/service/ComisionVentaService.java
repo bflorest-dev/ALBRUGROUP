@@ -35,9 +35,6 @@ public class ComisionVentaService {
         String proveedor = (proveedorParam == null || proveedorParam.isBlank())
                 ? PROVEEDOR_POR_DEFECTO
                 : proveedorParam.trim().toUpperCase(ES);
-        // Sin fecha límite: usar sentinela futura para no excluir a nadie por morosidad.
-        LocalDate limite = fechaLimiteMorosidad != null ? fechaLimiteMorosidad : LocalDate.of(9999, 12, 31);
-
         // Corte A: (M-2) Corte 2,  Corte B: (M-1) Corte 1
         YearMonth mesA = mesComision.minusMonths(2);
         YearMonth mesB = mesComision.minusMonths(1);
@@ -47,7 +44,7 @@ public class ComisionVentaService {
         int numCorte2 = 1;
 
         List<ComisionVentaAsesorProjection> rows = comisionRepository.ventasPorCorteYAsesor(
-                proveedor, limite, mesCorte1, numCorte1, mesCorte2, numCorte2);
+                proveedor, fechaLimiteMorosidad, mesCorte1, numCorte1, mesCorte2, numCorte2);
 
         Map<String, List<ComisionVentaAsesorProjection>> porCorte = new LinkedHashMap<>();
         for (ComisionVentaAsesorProjection row : rows) {
@@ -77,6 +74,7 @@ public class ComisionVentaService {
                         .idAsesor(r.getIdAsesor())
                         .nombreAsesor(r.getNombreAsesor())
                         .ventasTotales((int) r.getVentasTotales())
+                        .ventasCorte((int) r.getVentasCorte())
                         .ventasLima((int) r.getVentasLima())
                         .build())
                 .toList();

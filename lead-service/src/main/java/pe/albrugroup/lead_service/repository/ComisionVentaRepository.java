@@ -21,32 +21,21 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
                    (SELECT COUNT(*)
                     FROM lead l2
                     JOIN calendario_facturacion_postventa cf2 ON cf2.id_lead = l2.id
-                    JOIN lead_seguimiento ls2 ON ls2.id_lead = l2.id
                     JOIN lead_etapa_resumen ler2 ON ler2.id_lead = l2.id AND ler2.etapa = 'PREVENTA'
-                    WHERE l2.etapa = 'POSTVENTA'
-                      AND l2.estado_cliente_postventa = 'ACTIVO'
-                      AND NOT EXISTS (
-                          SELECT 1
-                          FROM pago_postventa pp_s
-                          JOIN periodo_facturacion_postventa pf_s ON pf_s.id = pp_s.id_periodo_facturacion
-                          WHERE pp_s.id_lead = l2.id
-                            AND pf_s.numero_periodo = 1
-                            AND pp_s.fecha_pago IS NOT NULL
-                            AND pp_s.fecha_pago > :fechaLimiteMorosidad
-                      )
+                    WHERE l2.etapa IN ('POSTVENTA', 'COBRANZA')
                       AND cf2.proveedor_snapshot = :proveedor
                       AND cf2.activo = true
                       AND cf2.mes_corte_base = cf.mes_corte_base
                       AND ler2.id_asesor_merito = ler.id_asesor_merito
                    ) AS "ventasTotales",
+                   COUNT(*) AS "ventasCorte",
                    COUNT(*) FILTER (WHERE z.nombre LIKE 'LIMA%') AS "ventasLima"
             FROM lead l
             JOIN calendario_facturacion_postventa cf ON cf.id_lead = l.id
             JOIN lead_seguimiento ls ON ls.id_lead = l.id
             JOIN lead_etapa_resumen ler ON ler.id_lead = l.id AND ler.etapa = 'PREVENTA'
             LEFT JOIN zona z ON z.id = l.id_zona
-            WHERE l.etapa = 'POSTVENTA'
-              AND l.estado_cliente_postventa = 'ACTIVO'
+            WHERE l.etapa IN ('POSTVENTA', 'COBRANZA')
               AND NOT EXISTS (
                   SELECT 1
                   FROM pago_postventa pp_m
@@ -54,7 +43,10 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
                   WHERE pp_m.id_lead = l.id
                     AND pf_m.numero_periodo = 1
                     AND pp_m.fecha_pago IS NOT NULL
-                    AND pp_m.fecha_pago > :fechaLimiteMorosidad
+                    AND pp_m.fecha_pago > COALESCE(
+                            CAST(:fechaLimiteMorosidad AS date),
+                            COALESCE(pf_m.fecha_vencimiento_confirmado, pf_m.fecha_vencimiento_estimado) + INTERVAL '7 days'
+                        )
               )
               AND cf.proveedor_snapshot = :proveedor
               AND cf.activo = true

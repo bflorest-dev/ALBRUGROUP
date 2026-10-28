@@ -20,8 +20,7 @@ export class RecruiterTrainingGroupsService {
   constructor(private readonly http: HttpClient) {}
 
   listarCapacitadores(): Observable<EmpleadoRolResponse[]> {
-    const params = new HttpParams().set('puestosTrabajo', 'CAPACITADOR');
-    return this.http.get<EmpleadoRolResponse[]>(`${this.rrhhUrl}/empleados/light`, { params });
+    return this.http.get<EmpleadoRolResponse[]>(`${this.rrhhUrl}/empleados/capacitadores`);
   }
 
   listarGrupos(

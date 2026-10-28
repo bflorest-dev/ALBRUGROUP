@@ -26,6 +26,7 @@ public record ComisionVentaResponse(
             Long idAsesor,
             String nombreAsesor,
             int ventasTotales,
+            int ventasCorte,
             int ventasLima
     ) {}
 }

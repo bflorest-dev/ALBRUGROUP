@@ -128,6 +128,18 @@ public class EmpleadoController {
     }
 
     @Operation(
+            summary = "Listar capacitadores por rol de acceso",
+            description = "Devuelve empleados activos con contrato vigente cuyo usuario tiene asignado el rol CAPACITADOR."
+    )
+    @GetMapping("/capacitadores")
+    @PreAuthorize("hasAuthority('READ_PERSONAL_RECRUITMENT')")
+    public ResponseEntity<List<EmpleadoRolResponse>> listarCapacitadores(
+            @RequestHeader(value = org.springframework.http.HttpHeaders.AUTHORIZATION, required = false) String authHeader
+    ) {
+        return ResponseEntity.ok(empleadoService.listarCapacitadores(authHeader));
+    }
+
+    @Operation(
             summary = "Listar empleados para asistencia por periodo",
             description = "Devuelve empleados con contrato que se solapa con el rango consultado, incluyendo bajas históricas. " +
                     "La prioridad de filtros es IDs, categoria contractual y puesto legado."

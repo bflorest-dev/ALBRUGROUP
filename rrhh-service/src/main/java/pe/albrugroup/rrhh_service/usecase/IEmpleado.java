@@ -35,6 +35,7 @@ public interface IEmpleado {
     List<EmpleadoRolResponse> listarEmpleadosLight(List<CategoriaPersonal> categoriasPersonal,
                                                    List<PuestoTrabajo> puestosTrabajo,
                                                    List<Long> empleadoIds);
+    List<EmpleadoRolResponse> listarCapacitadores(String authHeader);
     List<EmpleadoRolResponse> listarEmpleadosAsistencia(LocalDate desde, LocalDate hasta,
                                                          List<CategoriaPersonal> categoriasPersonal,
                                                          List<PuestoTrabajo> puestosTrabajo,
