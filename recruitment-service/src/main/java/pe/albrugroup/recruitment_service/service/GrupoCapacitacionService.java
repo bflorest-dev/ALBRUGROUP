@@ -48,6 +48,7 @@ public class GrupoCapacitacionService {
     private final EventoService eventoService;
     private final PaginationService paginationService;
     private final PostulacionRealtimeNotifier postulacionRealtimeNotifier;
+    private final GrupoCapacitacionRealtimeNotifier grupoCapacitacionRealtimeNotifier;
 
     public GrupoCapacitacionResponse crearGrupo(GrupoCapacitacionRequest request) {
         validarCodigoGrupoUnico(request.getCodigo());
@@ -56,7 +57,13 @@ public class GrupoCapacitacionService {
         grupo.setFechaFin(calcularFechaFin(request.getFechaInicio()));
         grupo.setEstado(EstadoGrupoCapacitacion.ABIERTO);
 
-        return grupoCapacitacionMapper.toResponse(grupoCapacitacionRepository.save(grupo));
+        GrupoCapacitacion grupoGuardado = grupoCapacitacionRepository.save(grupo);
+        grupoCapacitacionRealtimeNotifier.publishAfterCommit(
+                "REGISTRO_GRUPO_CAPACITACION",
+                "CAPACITACION",
+                grupoGuardado
+        );
+        return grupoCapacitacionMapper.toResponse(grupoGuardado);
     }
 
     @Transactional(readOnly = true)
@@ -120,7 +127,12 @@ public class GrupoCapacitacionService {
                 estadoAnterior,
                 estadoBandejaAnterior,
                 grupo.getId(),
-                postulacion.getOfertaLaboral().getPuestoObjetivo()
+                postulacion.getPuestoObjetivo()
+        );
+        grupoCapacitacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_GRUPO_CAPACITACION",
+                "CAPACITACION",
+                grupo
         );
 
         return grupoCapacitacionMapper.toResponse(detalleGuardado);
@@ -171,7 +183,12 @@ public class GrupoCapacitacionService {
                 estadoAnterior,
                 estadoBandejaAnterior,
                 detalleGuardado.getGrupoCapacitacion().getId(),
-                postulacion.getOfertaLaboral().getPuestoObjetivo()
+                postulacion.getPuestoObjetivo()
+        );
+        grupoCapacitacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_GRUPO_CAPACITACION",
+                "CAPACITACION",
+                detalleGuardado.getGrupoCapacitacion()
         );
         return grupoCapacitacionMapper.toResponse(detalleGuardado);
     }
@@ -235,7 +252,7 @@ public class GrupoCapacitacionService {
             throw new BadRequestException("Solo se pueden agregar postulaciones que esten en la etapa de capacitacion");
         }
 
-        if (postulacion.getOfertaLaboral().getPuestoObjetivo() != PuestoObjetivo.ASESOR_VENTAS) {
+        if (postulacion.getPuestoObjetivo() != PuestoObjetivo.ASESOR_VENTAS) {
             throw new BadRequestException("Solo se pueden agregar postulaciones del puesto objetivo ASESOR_VENTAS");
         }
     }

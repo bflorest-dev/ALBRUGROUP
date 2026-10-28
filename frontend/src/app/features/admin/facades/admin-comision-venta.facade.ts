@@ -61,10 +61,10 @@ export interface TotalAsesorVM {
 function configPorDefecto(): ComisionConfig {
   return {
     modalidades: {
-      PART_TIME:  { cuota: 30, tiers: [{ desde: 30, hasta: 40, factor: 5 }, { desde: 41, hasta: 50, factor: 8 }, { desde: 51, hasta: 60, factor: 10 }, { desde: 61, hasta: null, factor: 15 }] },
-      SEMI_FULL:  { cuota: 40, tiers: [{ desde: 40, hasta: 50, factor: 5 }, { desde: 51, hasta: 60, factor: 8 }, { desde: 61, hasta: 70, factor: 10 }, { desde: 71, hasta: null, factor: 15 }] },
-      FULL_TIME:  { cuota: 60, tiers: [{ desde: 60, hasta: 70, factor: 5 }, { desde: 71, hasta: 80, factor: 8 }, { desde: 81, hasta: 90, factor: 10 }, { desde: 91, hasta: null, factor: 15 }] },
-      SUPER_FULL: { cuota: 80, tiers: [{ desde: 80, hasta: 90, factor: 5 }, { desde: 91, hasta: 100, factor: 8 }, { desde: 101, hasta: 110, factor: 10 }, { desde: 111, hasta: null, factor: 15 }] }
+      PART_TIME:  { cuota: 30, tiers: [{ desde: 30, hasta: 40, factor: 5 }, { desde: 41, hasta: 50, factor: 7 }, { desde: 51, hasta: 60, factor: 10 }, { desde: 61, hasta: null, factor: 15 }] },
+      SEMI_FULL:  { cuota: 40, tiers: [{ desde: 40, hasta: 50, factor: 5 }, { desde: 51, hasta: 60, factor: 7 }, { desde: 61, hasta: 70, factor: 10 }, { desde: 71, hasta: null, factor: 15 }] },
+      FULL_TIME:  { cuota: 60, tiers: [{ desde: 60, hasta: 70, factor: 5 }, { desde: 71, hasta: 80, factor: 7 }, { desde: 81, hasta: 90, factor: 10 }, { desde: 91, hasta: null, factor: 15 }] },
+      SUPER_FULL: { cuota: 80, tiers: [{ desde: 80, hasta: 90, factor: 5 }, { desde: 91, hasta: 100, factor: 7 }, { desde: 101, hasta: 110, factor: 10 }, { desde: 111, hasta: null, factor: 15 }] }
     },
     penalidadFaltas: [
       { faltas: 1, descuento: 10 },
@@ -101,6 +101,7 @@ export class AdminComisionVentaFacade {
   private readonly _loading = signal(false);
   private readonly _error = signal<string | null>(null);
 
+  readonly fechaLimiteMorosidad = signal<string | null>(null);
   readonly config = signal<ComisionConfig>(configPorDefecto());
 
   readonly isLoading = this._loading.asReadonly();
@@ -163,6 +164,10 @@ export class AdminComisionVentaFacade {
     return [...map.values()].sort((a, b) => b.comisionFinal - a.comisionFinal);
   });
 
+  setFechaLimiteMorosidad(fecha: string | null): void {
+    this.fechaLimiteMorosidad.set(fecha);
+  }
+
   resetConfig(): void {
     this.config.set(configPorDefecto());
   }
@@ -196,7 +201,7 @@ export class AdminComisionVentaFacade {
     this._loading.set(true);
     this._error.set(null);
 
-    this.service.obtenerVentasPorCorte(mesComision).pipe(
+    this.service.obtenerVentasPorCorte(mesComision, 'WIN', this.fechaLimiteMorosidad()).pipe(
       switchMap(resp => {
         this._response.set(resp);
         this._mes.set(parseMes(resp.mesComision));

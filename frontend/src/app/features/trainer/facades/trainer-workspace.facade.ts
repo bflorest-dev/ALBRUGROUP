@@ -31,6 +31,7 @@ export class TrainerWorkspaceFacade {
     idTipificacion: [0, [Validators.required, Validators.min(1)]],
     idSubtipificacion: [0, [Validators.required, Validators.min(1)]],
     modalidadContacto: [''],
+    fechaHoraGestion: [''],
     observacion: ['']
   });
   readonly ojtFiltersForm = this.formBuilder.nonNullable.group({
@@ -121,6 +122,18 @@ export class TrainerWorkspaceFacade {
 
   async initialize(): Promise<void> {
     await Promise.all([this.loadCatalogo(), this.loadGroups(), this.loadTrainingBoard(), this.loadOjtUsers()]);
+  }
+
+  async refreshRealtime(): Promise<void> {
+    const selectedGroupId = this.selectedGroup()?.id;
+    const selectedPostulacionId = this.selectedPostulacion()?.id;
+
+    await Promise.all([
+      this.loadGroups(),
+      this.loadTrainingBoard(this.currentTrainingPage()),
+      selectedGroupId ? this.openGroup(selectedGroupId) : Promise.resolve(),
+      selectedPostulacionId ? this.loadEvents(selectedPostulacionId) : Promise.resolve()
+    ]);
   }
 
   setSection(section: TrainerSection): void {
@@ -299,6 +312,12 @@ export class TrainerWorkspaceFacade {
       return;
     }
 
+    const raw = this.typifyForm.getRawValue();
+    if (raw.modalidadContacto && !raw.fechaHoraGestion) {
+      this.typifyErrorMessage.set('Indica la fecha y hora de gestion para el contacto.');
+      return;
+    }
+
     this.isTypifying.set(true);
     this.typifyErrorMessage.set('');
     this.typifySuccessMessage.set('');
@@ -330,6 +349,7 @@ export class TrainerWorkspaceFacade {
       idSubtipificacion: Number(raw.idSubtipificacion),
       idGrupoCapacitacion: null,
       modalidadContacto: raw.modalidadContacto || null,
+      fechaHoraGestion: raw.fechaHoraGestion || null,
       observacion: raw.observacion.trim() || null
     };
   }
@@ -341,6 +361,7 @@ export class TrainerWorkspaceFacade {
       idTipificacion: 0,
       idSubtipificacion: 0,
       modalidadContacto: '',
+      fechaHoraGestion: '',
       observacion: ''
     });
   }

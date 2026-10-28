@@ -1,0 +1,184 @@
+<section class="recruiter-operational" aria-labelledby="recruiter-operational-title">
+  <header class="workspace-header">
+    <div class="workspace-header__copy">
+      <span class="workspace-header__live"><span aria-hidden="true"></span> Reclutamiento en vivo</span>
+      <h1 id="recruiter-operational-title">Gestión de postulaciones</h1>
+      <p>Una sola bandeja para contactar, tipificar y hacer avanzar cada postulación.</p>
+    </div>
+    <div class="workspace-header__actions">
+      <span class="sync-status"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizado {{ dateTime(facade.lastSync().toISOString()) }}</span>
+      <button type="button" class="button button--ghost" (click)="facade.refresh()" [disabled]="facade.listLoading() || facade.catalogLoading()">
+        <i class="ti ti-refresh" aria-hidden="true"></i>
+        {{ facade.listLoading() ? 'Actualizando…' : 'Actualizar bandeja' }}
+      </button>
+    </div>
+  </header>
+
+  <div class="summary-grid" aria-label="Resumen de la bandeja">
+    <article class="summary-card summary-card--total">
+      <span class="summary-card__label">Postulaciones visibles</span>
+      <strong>{{ facade.summaryLoading() ? '—' : facade.summary().total }}</strong>
+      <span class="summary-card__hint">Etapa de postulación</span>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__label">Por revisar</span>
+      <strong>{{ facade.summaryLoading() ? '—' : facade.summary().postulante }}</strong>
+      <span class="summary-card__hint">Primer contacto pendiente</span>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__label">Sin contacto</span>
+      <strong>{{ facade.summaryLoading() ? '—' : facade.summary().sinContacto }}</strong>
+      <span class="summary-card__hint">Requieren seguimiento</span>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__label">En gestión</span>
+      <strong>{{ facade.summaryLoading() ? '—' : facade.summary().enGestion }}</strong>
+      <span class="summary-card__hint">Proceso activo</span>
+    </article>
+    <article class="summary-card summary-card--accent">
+      <span class="summary-card__label">Por resolver</span>
+      <strong>{{ facade.summaryLoading() ? '—' : facade.summary().noInteresado + facade.summary().rechazado }}</strong>
+      <span class="summary-card__hint">No interesados y rechazados</span>
+    </article>
+  </div>
+
+  <section class="board" aria-labelledby="board-title">
+    <div class="board__toolbar">
+      <div>
+        <h2 id="board-title">Bandeja única</h2>
+        <p>{{ facade.filteredRows().length }} registros en pantalla · Los cambios se sincronizan en tiempo real.</p>
+      </div>
+      <div class="board__filters" role="search" aria-label="Filtrar postulaciones">
+        <label class="field field--search">
+          <span>Buscar postulante</span>
+          <i class="ti ti-search" aria-hidden="true"></i>
+          <input type="search" placeholder="Nombre, documento o celular" [value]="facade.searchTerm()" (input)="facade.setSearchTerm($any($event.target).value)" />
+        </label>
+        <label class="field field--compact">
+          <span>Estado</span>
+          <select [value]="facade.estadoFilter()" (change)="facade.setEstadoFilter($any($event.target).value)">
+            <option value="">Todos los estados</option>
+            <option value="POSTULANTE">Por revisar</option>
+            <option value="SIN_CONTACTO">Sin contacto</option>
+            <option value="EN_GESTION">En gestión</option>
+            <option value="NO_INTERESADO">No interesado</option>
+            <option value="RECHAZADO">Rechazado</option>
+          </select>
+        </label>
+        <label class="field field--compact">
+          <span>Tipificación</span>
+          <select [value]="facade.tipificacionFilter()" (change)="facade.setTipificacionFilter($any($event.target).value)">
+            <option value="0">Todas las tipificaciones</option>
+            @for (tipificacion of facade.tipificaciones(); track tipificacion.id) {
+              <option [value]="tipificacion.id">{{ tipificacion.codigo }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </div>
+
+    @if (facade.listError()) {
+      <div class="inline-notice inline-notice--error" role="alert">
+        <i class="ti ti-alert-circle" aria-hidden="true"></i>
+        <span>{{ facade.listError() }}</span>
+        <button type="button" class="button button--ghost button--small" (click)="facade.load()">Reintentar carga</button>
+      </div>
+    }
+
+    <div class="table-frame" [class.table-frame--loading]="facade.listLoading()">
+      @if (facade.listLoading()) {
+        <div class="table-loading" role="status" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Sincronizando la bandeja…</span></div>
+      }
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Postulante</th>
+              <th scope="col">Contacto</th>
+              <th scope="col">Objetivo</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Última gestión</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of facade.filteredRows(); track row.id) {
+              <tr class="data-row" (dblclick)="facade.openDetail(row)">
+                <td data-label="Postulante">
+                  <button type="button" class="person-cell" (click)="facade.openDetail(row)">
+                    <span class="person-cell__avatar">{{ initials(row.postulante.nombres, row.postulante.apellidos) }}</span>
+                    <span><strong>{{ row.postulante.nombres }} {{ row.postulante.apellidos }}</strong><small>{{ row.postulante.tipoDocumento }} {{ row.postulante.documento }}</small></span>
+                  </button>
+                </td>
+                <td data-label="Contacto">
+                  <span class="contact-cell"><i class="ti ti-device-mobile" aria-hidden="true"></i>{{ row.postulante.celular }}</span>
+                  <small class="muted-line">Llamadas: {{ row.postulante.numeroExclusivoLlamadas || 'usa celular' }}</small>
+                </td>
+                <td data-label="Objetivo"><strong>{{ label(row.puestoObjetivo) }}</strong><small class="muted-line">{{ row.negocio ? label(row.negocio) : 'Negocio pendiente' }}</small></td>
+                <td data-label="Estado"><span class="status-badge" [class]="'status-badge status-badge--' + rowStatusClass(row.estadoBandeja)">{{ label(row.estadoBandeja) }}</span></td>
+                <td data-label="Última gestión"><span class="date-cell">{{ date(row.updatedAt) }}</span><small class="muted-line">Postulación {{ date(row.fechaPostulacion) }}</small></td>
+                <td class="row-action"><button type="button" class="button button--ghost button--small" (click)="facade.openDetail(row)">Gestionar <i class="ti ti-arrow-up-right" aria-hidden="true"></i></button></td>
+              </tr>
+            } @empty {
+              @if (!facade.listLoading()) {
+                <tr><td colspan="6"><div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i><strong>No hay postulaciones con estos filtros</strong><span>Ajusta el estado o la tipificación para continuar la gestión.</span></div></td></tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-footer"><span>{{ facade.filteredRows().length }} registros cargados</span><span class="table-footer__hint"><i class="ti ti-bolt" aria-hidden="true"></i> Bandeja compartida</span></footer>
+    </div>
+  </section>
+</section>
+
+@if (facade.drawer() === 'detail' && facade.selectedPostulacion(); as selected) {
+  <div class="drawer-layer" role="presentation">
+    <button type="button" class="drawer-backdrop" aria-label="Cerrar ficha" (click)="facade.closeDrawer()"></button>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <div class="drawer__top">
+        <header class="drawer__header">
+          <div><span class="drawer__eyebrow">Ficha de gestión · #{{ selected.id }}</span><h2 id="drawer-title">{{ selected.postulante.nombres }} {{ selected.postulante.apellidos }}</h2><p>Gestiona el siguiente paso y deja cada decisión registrada.</p></div>
+          <button type="button" class="icon-button" aria-label="Cerrar ficha" (click)="facade.closeDrawer()"><i class="ti ti-x" aria-hidden="true"></i></button>
+        </header>
+
+        <div class="drawer__top-content">
+          <div class="detail-identity"><span class="person-cell__avatar person-cell__avatar--large">{{ initials(selected.postulante.nombres, selected.postulante.apellidos) }}</span><div><h3>{{ selected.postulante.tipoDocumento }} {{ selected.postulante.documento }}</h3><p>{{ label(selected.puestoObjetivo) }} · {{ label(selected.estadoBandeja) }}</p></div><span class="status-badge" [class]="'status-badge status-badge--' + rowStatusClass(selected.estadoBandeja)">{{ label(selected.estadoBandeja) }}</span></div>
+
+          <section class="contact-actions" aria-labelledby="contact-actions-title">
+            <div class="section-heading"><div><h3 id="contact-actions-title">Contactar postulante</h3><p>Registra el evento y abre el canal externo.</p></div><span class="section-heading__signal"><i class="ti ti-activity" aria-hidden="true"></i> Trazable</span></div>
+            <div class="contact-actions__buttons">
+              <button type="button" class="button button--primary contact-action" [disabled]="facade.actionState() === 'loading'" (click)="facade.contact('LLAMADA')"><i class="ti ti-phone-call" aria-hidden="true"></i>{{ facade.contactButtonLabel('LLAMADA') }}</button>
+              <button type="button" class="button button--ghost contact-action" [disabled]="facade.actionState() === 'loading'" (click)="facade.contact('WHATSAPP')"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i>{{ facade.contactButtonLabel('WHATSAPP') }}</button>
+            </div>
+          </section>
+
+          @if (facade.actionMessage()) { <div class="inline-notice inline-notice--success" role="status"><i class="ti ti-circle-check" aria-hidden="true"></i>{{ facade.actionMessage() }}</div> }
+          @if (facade.actionError()) { <div class="inline-notice inline-notice--error" role="alert"><i class="ti ti-alert-circle" aria-hidden="true"></i>{{ facade.actionError() }}</div> }
+        </div>
+      </div>
+
+      <div class="drawer__body">
+        <div class="detail-grid"><div><span>Celular</span><strong>{{ selected.postulante.celular }}</strong></div><div><span>Número de llamadas</span><strong>{{ selected.postulante.numeroExclusivoLlamadas || 'Usa celular' }}</strong></div><div><span>Negocio</span><strong>{{ selected.negocio ? label(selected.negocio) : 'Pendiente' }}</strong></div><div><span>Oferta laboral</span><strong>{{ selected.ofertaLaboral?.codigo || 'Sin asociar' }}</strong></div><div><span>Fecha de postulación</span><strong>{{ date(selected.fechaPostulacion) }}</strong></div><div><span>Etapa</span><strong>{{ label(selected.etapa) }}</strong></div></div>
+
+        <section class="assignment-section" aria-labelledby="assignment-title"><div class="section-heading"><div><h3 id="assignment-title">Asignar capacitación</h3><p>Cuando corresponda, asigna la postulación a un grupo abierto.</p></div></div><div class="action-grid"><label class="field field--wide"><span>Grupo de capacitación</span><select #groupSelect><option value="">Seleccionar grupo abierto</option>@for (group of facade.groups(); track group.id) {<option [value]="group.id">{{ group.codigo }} · {{ group.fechaInicio }}</option>}</select><button type="button" class="button button--ghost button--small" [disabled]="!groupSelect.value || facade.actionState() === 'loading'" (click)="facade.assignGroup(+groupSelect.value)">Asignar grupo</button></label></div></section>
+
+        <section class="events-section" aria-labelledby="events-title"><div class="section-heading"><div><h3 id="events-title">Trazabilidad</h3><p>Eventos de esta postulación.</p></div><span class="section-heading__count">{{ facade.eventos().length }}</span></div>@if (facade.eventsLoading()) {<div class="history-loading"><span class="spinner" aria-hidden="true"></span>Cargando historial…</div>} @else if (facade.eventsError()) {<div class="inline-notice inline-notice--error"><span>{{ facade.eventsError() }}</span></div>} @else if (facade.eventos().length) {<div class="events-list">@for (evento of facade.eventos(); track evento.id) {<article class="event-row"><span class="event-row__icon"><i [class]="facade.eventIcon(evento.accion)" aria-hidden="true"></i></span><div><strong>{{ label(evento.accion) }}</strong><p>{{ evento.subtipificacion || evento.tipificacion || evento.observacion || 'Evento registrado en el flujo.' }} @if (evento.modalidadContacto) { · {{ label(evento.modalidadContacto) }} }</p></div><time>{{ dateTime(evento.fechaHoraGestion || evento.createdAt) }}</time></article>}</div>} @else {<p class="empty-copy">Aún no hay eventos registrados.</p>}</section>
+      </div>
+
+      <footer class="drawer__footer drawer__footer--management">
+        <div class="section-heading"><div><span class="drawer__eyebrow">Resolución final</span><h3 id="management-title">Tipificar postulación</h3><p>Define el resultado y el siguiente paso del proceso.</p></div><span class="section-heading__signal"><i class="ti ti-checklist" aria-hidden="true"></i> Acción principal</span></div>
+        @if (facade.catalogError()) { <div class="inline-notice inline-notice--error"><span>{{ facade.catalogError() }}</span></div> }
+        <form class="form-grid" [formGroup]="form">
+          <label class="field"><span>Tipificación <em>*</em></span><select formControlName="idTipificacion" (change)="facade.resetSubtipificacion()"><option [value]="0">Seleccionar tipificación</option>@for (tipificacion of facade.tipificaciones(); track tipificacion.id) {<option [value]="tipificacion.id">{{ tipificacion.codigo }}</option>}</select><small>Filtra el resultado de esta gestión.</small></label>
+          <label class="field"><span>Subtipificación <em>*</em></span><select formControlName="idSubtipificacion"><option [value]="0">Seleccionar subtipificación</option>@for (subtipificacion of facade.getSubtipificaciones(+$any(form.controls.idTipificacion.value)); track subtipificacion.id) {<option [value]="subtipificacion.id">{{ subtipificacion.codigo }}</option>}</select><small>Define el próximo paso del proceso.</small></label>
+          @if (facade.requiresTrainingGroupAssignment()) {<label class="field field--wide"><span>Grupo de capacitación <em>*</em></span><select formControlName="idGrupoCapacitacion"><option [value]="0">Seleccionar grupo abierto</option>@for (group of facade.groups(); track group.id) {<option [value]="group.id">{{ group.codigo }} · {{ label(group.turno) }} · {{ group.fechaInicio }}</option>}</select><small>Obligatorio para avanzar a capacitación.</small></label>}
+          <label class="field"><span>Modalidad</span><select formControlName="modalidadContacto"><option value="">No aplica</option><option value="LLAMADA">Llamada</option><option value="WHATSAPP">WhatsApp</option><option value="MEET">Meet</option><option value="PRESENCIAL">Presencial</option></select><small>Indica cómo ocurrió o quedó programada la gestión.</small></label>
+          @if (form.controls.modalidadContacto.value) {<label class="field"><span>Fecha y hora de gestión</span><input type="datetime-local" formControlName="fechaHoraGestion" /><small>La fecha y hora son obligatorias para la modalidad.</small></label>}
+          <label class="field field--wide"><span>Observación</span><textarea rows="2" formControlName="observacion" placeholder="Resume el contexto y el próximo paso"></textarea><small>Deja información útil para cualquier reclutador de la bandeja compartida.</small></label>
+        </form>
+        <div class="drawer__footer-actions"><span class="footer-hint">La bandeja es compartida: cada resolución queda disponible para el siguiente reclutador.</span><div><button type="button" class="button button--ghost" (click)="facade.closeDrawer()">Cerrar ficha</button><button type="button" class="button button--primary action-submit" [disabled]="facade.actionState() === 'loading'" (click)="facade.submitTypification()"><i class="ti ti-device-floppy" aria-hidden="true"></i>{{ saveLabel() }}</button></div></div>
+      </footer>
+    </aside>
+  </div>
+}

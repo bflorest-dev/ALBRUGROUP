@@ -35,6 +35,7 @@ export class ComisionVentaStageComponent implements OnInit {
   protected readonly canGoNext = this.facade.canGoNext;
   protected readonly errorMessage = this.facade.errorMessage;
   protected readonly config = this.facade.config;
+  protected readonly fechaLimiteMorosidad = this.facade.fechaLimiteMorosidad;
 
   protected readonly activeTab = signal<TabId>('totales');
 
@@ -71,6 +72,11 @@ export class ComisionVentaStageComponent implements OnInit {
   protected mesSiguiente(): void { this.facade.mesSiguiente(); }
   protected recargar(): void { this.facade.recargar(); }
   protected resetConfig(): void { this.facade.resetConfig(); }
+
+  protected onFechaLimiteCambio(event: Event): void {
+    const valor = (event.target as HTMLInputElement).value;
+    this.facade.setFechaLimiteMorosidad(valor || null);
+  }
 
   protected selectTab(id: TabId): void { this.activeTab.set(id); }
 

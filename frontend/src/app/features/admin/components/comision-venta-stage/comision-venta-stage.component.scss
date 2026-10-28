@@ -60,9 +60,38 @@
 
 .cv-controls {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.cv-fecha-limite {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  &__label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--app-text-muted);
+  }
+
+  &__input {
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--app-border-soft);
+    border-radius: 0.4rem;
+    background: var(--app-card);
+    color: var(--app-text);
+    font-size: 0.82rem;
+    cursor: pointer;
+
+    &:focus { outline: 1px solid var(--role-secondary, #4caf50); }
+    &:disabled { opacity: 0.4; cursor: default; }
+
+    // Estilo del picker en dark mode
+    color-scheme: dark;
+  }
 }
 
 .cv-period {

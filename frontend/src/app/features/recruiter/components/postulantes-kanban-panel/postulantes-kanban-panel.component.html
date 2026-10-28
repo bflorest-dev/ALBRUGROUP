@@ -45,12 +45,12 @@
               <div class="card-meta">
                 <span><i class="ti ti-phone" aria-hidden="true"></i>{{ postulacion.postulante.celular }}</span>
                 <span><i class="ti ti-cake" aria-hidden="true"></i>{{ getAge(postulacion.postulante.fechaNacimiento) }} años</span>
-                <span><i class="ti ti-briefcase" aria-hidden="true"></i>{{ toLabel(postulacion.ofertaLaboral.puestoObjetivo) }}</span>
-                <span><i class="ti ti-building-store" aria-hidden="true"></i>{{ toLabel(postulacion.ofertaLaboral.negocio) }}</span>
+                <span><i class="ti ti-briefcase" aria-hidden="true"></i>{{ toLabel(postulacion.ofertaLaboral?.puestoObjetivo || postulacion.puestoObjetivo) }}</span>
+                <span><i class="ti ti-building-store" aria-hidden="true"></i>{{ toLabel(postulacion.ofertaLaboral?.negocio || postulacion.negocio) }}</span>
               </div>
 
               <div class="card-footer">
-                <span>{{ postulacion.ofertaLaboral.codigo }}</span>
+                <span>{{ postulacion.ofertaLaboral?.codigo || 'Sin asociar' }}</span>
                 <strong>{{ toLabel(postulacion.origen) }}</strong>
               </div>
             </article>

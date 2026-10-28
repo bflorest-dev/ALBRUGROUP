@@ -198,7 +198,7 @@ export class AdminEmployabilityFacade {
     { initialValue: { status: 'idle' } }
   );
 
-  readonly negocioOptions = ['FIBRA_MIXTO', 'CLARO'];
+  readonly negocioOptions = ['WIN', 'CLARO'];
   readonly puestoObjetivoOptions = [
     'RRHH',
     'RECLUTADOR',
@@ -218,12 +218,12 @@ export class AdminEmployabilityFacade {
     'ASESOR_POSTVENTA'
   ];
   readonly modalidadOptions = ['PART_TIME', 'FULL_TIME', 'SEMI_FULL', 'SUPER_FULL'];
-  readonly horarioOptions = ['MORNING', 'AFTERNOON'];
+  readonly horarioOptions = ['MORNING', 'AFTERNOON', 'NIGHT'];
   readonly estadoOptions = ['ACTIVO', 'CANCELADO', 'CERRADO', 'COMPLETADO'];
 
   readonly createOfferForm = this.formBuilder.nonNullable.group({
     codigo: ['', [Validators.required]],
-    negocio: ['FIBRA_MIXTO', [Validators.required]],
+    negocio: ['WIN', [Validators.required]],
     puestoObjetivo: ['RECLUTADOR', [Validators.required]],
     modalidad: ['FULL_TIME', [Validators.required]],
     horario: ['MORNING', [Validators.required]],
@@ -252,7 +252,7 @@ export class AdminEmployabilityFacade {
   readonly isCreatingOffer = computed(() => this.createOfferState().status === 'loading');
   readonly offers = computed(() => this.offersPage()?.content ?? []);
   readonly currentPage = computed(() => this.offersPage()?.page ?? 0);
-  readonly totalPages = computed(() => this.offersPage()?.totalPages ?? 1);
+  readonly totalPages = computed(() => Math.max(this.offersPage()?.totalPages ?? 1, 1));
 
   constructor() {
     effect(() => {
@@ -293,7 +293,7 @@ export class AdminEmployabilityFacade {
           this.insertOfferIntoList(state.oferta);
           this.createOfferForm.reset({
             codigo: '',
-            negocio: 'FIBRA_MIXTO',
+            negocio: 'WIN',
             puestoObjetivo: 'RECLUTADOR',
             modalidad: 'FULL_TIME',
             horario: 'MORNING',

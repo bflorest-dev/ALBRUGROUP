@@ -3,5 +3,6 @@ export interface TipificarPostulacionRequest {
   idSubtipificacion: number;
   idGrupoCapacitacion?: number | null;
   modalidadContacto: string | null;
+  fechaHoraGestion: string | null;
   observacion: string | null;
 }

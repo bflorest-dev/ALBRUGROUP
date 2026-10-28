@@ -5,7 +5,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import pe.albrugroup.recruitment_service.configuration.CurrentUser;
+import pe.albrugroup.recruitment_service.entity.Evento;
 import pe.albrugroup.recruitment_service.entity.GrupoCapacitacionDetalle;
 import pe.albrugroup.recruitment_service.entity.OfertaLaboral;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
@@ -21,11 +24,16 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.ActualizarClasificacionPostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.AsignarOfertaPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.RegistrarContactoPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PageResponse;
+import pe.albrugroup.recruitment_service.entity.response.PostulacionHistorialResponse;
+import pe.albrugroup.recruitment_service.entity.response.PostulanteHistorialResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.exception.BadRequestException;
 import pe.albrugroup.recruitment_service.exception.ConflictException;
@@ -33,12 +41,15 @@ import pe.albrugroup.recruitment_service.exception.NotFoundException;
 import pe.albrugroup.recruitment_service.repository.GrupoCapacitacionDetalleRepository;
 import pe.albrugroup.recruitment_service.repository.OfertaLaboralRepository;
 import pe.albrugroup.recruitment_service.repository.PostulacionRepository;
+import pe.albrugroup.recruitment_service.repository.PostulanteRepository;
 import pe.albrugroup.recruitment_service.repository.SubtipificacionRepository;
 import pe.albrugroup.recruitment_service.repository.TipificacionRepository;
 import pe.albrugroup.recruitment_service.service.mapper.PostulacionMapper;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -47,11 +58,12 @@ import java.util.Set;
 public class PostulacionService {
 
     private static final Set<String> POSTULACION_SORT_FIELDS = Set.of(
-            "id", "createdAt", "updatedAt", "etapa", "estado", "estadoBandeja", "origen"
+            "id", "createdAt", "updatedAt", "fechaPostulacion", "etapa", "estado", "estadoBandeja", "origen"
     );
 
     private final PostulacionRepository postulacionRepository;
     private final OfertaLaboralRepository ofertaLaboralRepository;
+    private final PostulanteRepository postulanteRepository;
     private final PostulanteService postulanteService;
     private final EventoService eventoService;
     private final PostulacionMapper postulacionMapper;
@@ -64,7 +76,7 @@ public class PostulacionService {
     private final PostulacionRealtimeNotifier postulacionRealtimeNotifier;
 
     public PostulacionResponse registrarPostulacion(PostulacionRequest request) {
-        OfertaLaboral ofertaLaboral = obtenerOfertaActiva(request.getIdOfertaLaboral());
+        OfertaLaboral ofertaLaboral = obtenerOfertaActivaOpcional(request.getIdOfertaLaboral());
         Postulante postulante = postulanteService.crearOActualizar(request.getPostulante());
 
         Postulacion postulacion = Postulacion.builder()
@@ -72,10 +84,16 @@ public class PostulacionService {
                 .ofertaLaboral(ofertaLaboral)
                 .idEmpleadoRegistrador(currentUser.empleadoID())
                 .origen(request.getOrigen())
+                .puestoObjetivo(request.getPuestoObjetivo())
+                .negocio(request.getNegocio())
+                .modalidad(request.getModalidad())
+                .horario(request.getHorario())
+                .fechaPostulacion(request.getFechaPostulacion())
                 .etapa(Etapa.RECLUTAMIENTO)
                 .estado(EstadoPostulacion.EN_PROCESO)
                 .estadoBandeja(EstadoBandejaPostulacion.POSTULANTE)
                 .build();
+        validarClasificacionCompatibleConOferta(postulacion, ofertaLaboral);
 
         Postulacion postulacionGuardada = postulacionRepository.save(postulacion);
         eventoService.registrarEvento(
@@ -117,13 +135,15 @@ public class PostulacionService {
                 context.subtipificacion(),
                 request.getIdGrupoCapacitacion()
         );
+        validarFechaHoraGestion(request.getModalidadContacto(), request.getFechaHoraGestion());
 
         Postulacion postulacionGuardada = aplicarTipificacion(
                 context.postulacion(),
                 context.tipificacion(),
                 context.subtipificacion(),
                 request.getModalidadContacto(),
-                request.getObservacion()
+                request.getObservacion(),
+                request.getFechaHoraGestion()
         );
 
         postulacionRealtimeNotifier.publishAfterCommit(
@@ -134,7 +154,7 @@ public class PostulacionService {
                 estadoAnterior,
                 estadoBandejaAnterior,
                 null,
-                context.postulacion().getOfertaLaboral().getPuestoObjetivo()
+                context.postulacion().getPuestoObjetivo()
         );
 
         if (requiereAsignacionGrupo) {
@@ -152,14 +172,22 @@ public class PostulacionService {
     public PostulacionResponse editarPostulacion(Long idPostulacion, PostulacionRequest request) {
         Postulacion postulacion = postulacionRepository.findById(idPostulacion)
                 .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
-        PuestoObjetivo puestoObjetivoAnterior = postulacion.getOfertaLaboral().getPuestoObjetivo();
+        PuestoObjetivo puestoObjetivoAnterior = postulacion.getPuestoObjetivo();
 
-        OfertaLaboral ofertaLaboral = obtenerOfertaActiva(request.getIdOfertaLaboral());
+        OfertaLaboral ofertaLaboral = request.getIdOfertaLaboral() == null
+                ? postulacion.getOfertaLaboral()
+                : obtenerOfertaActiva(request.getIdOfertaLaboral());
         Postulante postulante = postulanteService.crearOActualizar(request.getPostulante());
 
         postulacion.setPostulante(postulante);
         postulacion.setOfertaLaboral(ofertaLaboral);
         postulacion.setOrigen(request.getOrigen());
+        postulacion.setPuestoObjetivo(request.getPuestoObjetivo());
+        postulacion.setNegocio(request.getNegocio());
+        postulacion.setModalidad(request.getModalidad());
+        postulacion.setHorario(request.getHorario());
+        postulacion.setFechaPostulacion(request.getFechaPostulacion());
+        validarClasificacionCompatibleConOferta(postulacion, ofertaLaboral);
 
         Postulacion postulacionGuardada = postulacionRepository.save(postulacion);
         eventoService.registrarEvento(
@@ -185,6 +213,156 @@ public class PostulacionService {
         );
 
         return postulacionMapper.toResponse(postulacionGuardada);
+    }
+
+    public PostulacionResponse actualizarClasificacion(
+            Long idPostulacion,
+            ActualizarClasificacionPostulacionRequest request
+    ) {
+        Postulacion postulacion = postulacionRepository.findById(idPostulacion)
+                .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+
+        PuestoObjetivo puestoObjetivoAnterior = postulacion.getPuestoObjetivo();
+        postulacion.setPuestoObjetivo(request.getPuestoObjetivo());
+        postulacion.setNegocio(request.getNegocio());
+        postulacion.setModalidad(request.getModalidad());
+        postulacion.setHorario(request.getHorario());
+        validarClasificacionCompatibleConOferta(postulacion, postulacion.getOfertaLaboral());
+
+        Postulacion postulacionGuardada = postulacionRepository.save(postulacion);
+        eventoService.registrarEvento(
+                postulacionGuardada,
+                Accion.ACTUALIZACION_POSTULACION,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "Clasificacion actualizada"
+        );
+
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_POSTULACION",
+                "CLASIFICACION",
+                postulacionGuardada,
+                postulacionGuardada.getEtapa(),
+                postulacionGuardada.getEstado(),
+                postulacionGuardada.getEstadoBandeja(),
+                null,
+                puestoObjetivoAnterior
+        );
+
+        return mapearPostulacionResponse(postulacionGuardada);
+    }
+
+    public PostulacionResponse asignarOferta(
+            Long idPostulacion,
+            AsignarOfertaPostulacionRequest request
+    ) {
+        Postulacion postulacion = postulacionRepository.findById(idPostulacion)
+                .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+        OfertaLaboral ofertaLaboral = obtenerOfertaActiva(request.getIdOfertaLaboral());
+
+        if (postulacion.getPuestoObjetivo() != ofertaLaboral.getPuestoObjetivo()) {
+            throw new BadRequestException("La oferta no es compatible con el puesto objetivo de la postulacion");
+        }
+
+        if (postulacion.getNegocio() != null && postulacion.getNegocio() != ofertaLaboral.getNegocio()) {
+            throw new BadRequestException("La oferta no es compatible con el negocio de la postulacion");
+        }
+        if (postulacion.getModalidad() != null && postulacion.getModalidad() != ofertaLaboral.getModalidad()) {
+            throw new BadRequestException("La oferta no es compatible con la modalidad de la postulacion");
+        }
+        if (postulacion.getHorario() != null && postulacion.getHorario() != ofertaLaboral.getHorario()) {
+            throw new BadRequestException("La oferta no es compatible con el horario de la postulacion");
+        }
+
+        postulacion.setOfertaLaboral(ofertaLaboral);
+        if (postulacion.getNegocio() == null) {
+            postulacion.setNegocio(ofertaLaboral.getNegocio());
+        }
+        if (postulacion.getModalidad() == null) {
+            postulacion.setModalidad(ofertaLaboral.getModalidad());
+        }
+        if (postulacion.getHorario() == null) {
+            postulacion.setHorario(ofertaLaboral.getHorario());
+        }
+
+        Postulacion postulacionGuardada = postulacionRepository.save(postulacion);
+        eventoService.registrarEvento(
+                postulacionGuardada,
+                Accion.ASIGNACION_OFERTA_LABORAL,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "Oferta laboral asociada " + ofertaLaboral.getCodigo()
+        );
+
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "ASIGNACION_OFERTA_LABORAL",
+                "OFERTA_LABORAL",
+                postulacionGuardada,
+                postulacionGuardada.getEtapa(),
+                postulacionGuardada.getEstado(),
+                postulacionGuardada.getEstadoBandeja(),
+                null,
+                postulacionGuardada.getPuestoObjetivo()
+        );
+
+        return mapearPostulacionResponse(postulacionGuardada);
+    }
+
+    public void registrarContacto(Long idPostulacion, RegistrarContactoPostulacionRequest request) {
+        Postulacion postulacion = postulacionRepository.findById(idPostulacion)
+                .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+        Etapa etapaAnterior = postulacion.getEtapa();
+        EstadoPostulacion estadoAnterior = postulacion.getEstado();
+        EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
+
+        eventoService.registrarEvento(
+                postulacion,
+                Accion.CONTACTO,
+                request.getModalidadContacto(),
+                null,
+                null,
+                null,
+                null,
+                request.getObservacion(),
+                request.getFechaHoraGestion()
+        );
+
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "CONTACTO",
+                "CONTACTO",
+                postulacion,
+                etapaAnterior,
+                estadoAnterior,
+                estadoBandejaAnterior,
+                null,
+                postulacion.getPuestoObjetivo()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PostulanteHistorialResponse obtenerHistorialPostulante(Long idPostulante) {
+        Postulante postulante = postulanteRepository.findById(idPostulante)
+                .orElseThrow(() -> new NotFoundException(Postulante.class, idPostulante));
+
+        List<PostulacionHistorialResponse> postulaciones = postulacionRepository
+                .findByPostulanteIdOrderByFechaPostulacionDescIdDesc(idPostulante)
+                .stream()
+                .map(postulacion -> PostulacionHistorialResponse.builder()
+                        .postulacion(mapearPostulacionResponse(postulacion))
+                        .eventos(eventoService.listarTodosPorPostulacion(postulacion.getId()))
+                        .build())
+                .toList();
+
+        return PostulanteHistorialResponse.builder()
+                .postulante(postulacionMapper.toResponse(postulante))
+                .postulaciones(postulaciones)
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -214,13 +392,25 @@ public class PostulacionService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<PostulacionResponse> listarBandejaSupervisor(
+            Etapa etapa,
+            EstadoPostulacion estado,
+            EstadoBandejaPostulacion estadoBandeja,
+            PageRequest pageRequest
+    ) {
+        return listarPostulaciones(etapa, estado, estadoBandeja, pageRequest);
+    }
+
+    @Transactional(readOnly = true)
     public PageResponse<PostulacionResponse> listarBandejaReclutamiento(
             EstadoBandejaPostulacion estadoBandeja,
+            Long idTipificacion,
             PageRequest pageRequest
     ) {
         Instant limiteReciente = Instant.now().minus(1, ChronoUnit.DAYS);
         Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.RECLUTAMIENTO))
                 .and(conEstadoBandeja(estadoBandeja))
+                .and(conTipificacion(idTipificacion))
                 .and(enProcesoOReciente(limiteReciente));
 
         Page<PostulacionResponse> postulaciones = postulacionRepository.findAll(
@@ -298,7 +488,7 @@ public class PostulacionService {
                 estadoAnterior,
                 estadoBandejaAnterior,
                 detalle.getGrupoCapacitacion().getId(),
-                postulacionGuardada.getOfertaLaboral().getPuestoObjetivo()
+                postulacionGuardada.getPuestoObjetivo()
         );
 
         return mapearPostulacionResponse(postulacionGuardada);
@@ -313,6 +503,29 @@ public class PostulacionService {
         }
 
         return ofertaLaboral;
+    }
+
+    private OfertaLaboral obtenerOfertaActivaOpcional(Long idOfertaLaboral) {
+        return idOfertaLaboral == null ? null : obtenerOfertaActiva(idOfertaLaboral);
+    }
+
+    private void validarClasificacionCompatibleConOferta(Postulacion postulacion, OfertaLaboral ofertaLaboral) {
+        if (ofertaLaboral == null) {
+            return;
+        }
+
+        if (postulacion.getPuestoObjetivo() != ofertaLaboral.getPuestoObjetivo()) {
+            throw new BadRequestException("La oferta no es compatible con el puesto objetivo de la postulacion");
+        }
+        if (postulacion.getNegocio() != null && postulacion.getNegocio() != ofertaLaboral.getNegocio()) {
+            throw new BadRequestException("La oferta no es compatible con el negocio de la postulacion");
+        }
+        if (postulacion.getModalidad() != null && postulacion.getModalidad() != ofertaLaboral.getModalidad()) {
+            throw new BadRequestException("La oferta no es compatible con la modalidad de la postulacion");
+        }
+        if (postulacion.getHorario() != null && postulacion.getHorario() != ofertaLaboral.getHorario()) {
+            throw new BadRequestException("La oferta no es compatible con el horario de la postulacion");
+        }
     }
 
     private void validarTipificacionActiva(Tipificacion tipificacion) {
@@ -353,7 +566,7 @@ public class PostulacionService {
             return;
         }
 
-        PuestoObjetivo puestoObjetivo = postulacion.getOfertaLaboral().getPuestoObjetivo();
+        PuestoObjetivo puestoObjetivo = postulacion.getPuestoObjetivo();
         if (puestoObjetivo != PuestoObjetivo.ASESOR_VENTAS
                 || subtipificacion.getAlcance() != AlcanceSubtipificacion.ASESOR_VENTAS) {
             throw new BadRequestException("La subtipificacion no aplica al puesto objetivo de la postulacion");
@@ -385,7 +598,8 @@ public class PostulacionService {
             Tipificacion tipificacion,
             Subtipificacion subtipificacion,
             pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto modalidadContacto,
-            String observacion
+            String observacion,
+            LocalDateTime fechaHoraGestion
     ) {
         aplicarCambiosDeSubtipificacion(postulacion, subtipificacion);
         sincronizarDetalleGrupoCapacitacion(postulacion, tipificacion);
@@ -399,7 +613,8 @@ public class PostulacionService {
                 subtipificacion.getId(),
                 tipificacion.getCodigo(),
                 subtipificacion.getCodigo(),
-                observacion
+                observacion,
+                fechaHoraGestion
         );
         return postulacionGuardada;
     }
@@ -420,7 +635,6 @@ public class PostulacionService {
 
     private boolean requiereAsignacionGrupoEnTipificacionEspecial(Postulacion postulacion, Subtipificacion subtipificacion) {
         return postulacion.getEtapa() == Etapa.RECLUTAMIENTO
-                && postulacion.getOfertaLaboral().getPuestoObjetivo() == PuestoObjetivo.ASESOR_VENTAS
                 && subtipificacion.getEtapaDestino() == Etapa.CAPACITACION;
     }
 
@@ -433,13 +647,30 @@ public class PostulacionService {
 
         if (requiereAsignacion && idGrupoCapacitacion == null) {
             throw new BadRequestException(
-                    "Las postulaciones ASESOR_VENTAS que pasan a CAPACITACION deben enviarse con idGrupoCapacitacion"
+                    "Las postulaciones que pasan a CAPACITACION deben enviarse con idGrupoCapacitacion"
             );
         }
 
         if (!requiereAsignacion && idGrupoCapacitacion != null) {
             throw new BadRequestException(
-                    "idGrupoCapacitacion solo se permite cuando una postulacion ASESOR_VENTAS pasa de RECLUTAMIENTO a CAPACITACION"
+                    "idGrupoCapacitacion solo se permite cuando una postulacion pasa de RECLUTAMIENTO a CAPACITACION"
+            );
+        }
+    }
+
+    private void validarFechaHoraGestion(
+            pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto modalidadContacto,
+            LocalDateTime fechaHoraGestion
+    ) {
+        if (modalidadContacto != null && fechaHoraGestion == null) {
+            throw new BadRequestException(
+                    "La fecha y hora de gestion son obligatorias cuando se registra una modalidad de contacto"
+            );
+        }
+
+        if (modalidadContacto == null && fechaHoraGestion != null) {
+            throw new BadRequestException(
+                    "No se puede registrar fecha y hora de gestion sin una modalidad de contacto"
             );
         }
     }
@@ -506,10 +737,27 @@ public class PostulacionService {
         return (root, query, builder) -> estadoBandeja == null ? null : builder.equal(root.get("estadoBandeja"), estadoBandeja);
     }
 
+    private Specification<Postulacion> conTipificacion(Long idTipificacion) {
+        return (root, query, builder) -> {
+            if (idTipificacion == null) {
+                return null;
+            }
+
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<Evento> eventoRoot = subquery.from(Evento.class);
+            subquery.select(eventoRoot.get("id"));
+            subquery.where(
+                    builder.equal(eventoRoot.get("postulacion"), root),
+                    builder.equal(eventoRoot.get("idTipificacion"), idTipificacion)
+            );
+            return builder.exists(subquery);
+        };
+    }
+
     private Specification<Postulacion> conPuestoObjetivo(PuestoObjetivo puestoObjetivo) {
         return (root, query, builder) -> puestoObjetivo == null
                 ? null
-                : builder.equal(root.get("ofertaLaboral").get("puestoObjetivo"), puestoObjetivo);
+                : builder.equal(root.get("puestoObjetivo"), puestoObjetivo);
     }
 
     private Specification<Postulacion> enProcesoOReciente(Instant limiteReciente) {

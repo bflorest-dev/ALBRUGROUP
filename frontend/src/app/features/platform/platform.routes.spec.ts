@@ -38,4 +38,10 @@ describe('rutas ADMIN de plataformas', () => {
     expect(PLATFORM_ROUTES.some((route) => route.path?.includes('admin/plataformas/equipos/:idEquipo/gtr'))).toBe(false);
     expect(PLATFORM_ROUTES.some((route) => route.path?.includes('admin/plataformas/equipos/:idEquipo/backoffice'))).toBe(false);
   });
+
+  it('expone una entrada inicial exclusiva para SUPERVISOR_RECLUTAMIENTO', () => {
+    const route = PLATFORM_ROUTES.find((item) => item.path === 'reclutamiento/inicio');
+
+    expect(route?.data?.['roles']).toEqual(['SUPERVISOR_RECLUTAMIENTO']);
+  });
 });

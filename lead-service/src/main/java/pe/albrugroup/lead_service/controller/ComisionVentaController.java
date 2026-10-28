@@ -26,8 +26,9 @@ public class ComisionVentaController {
     @PreAuthorize("hasAuthority('READ_POSTVENTA_GESTION_MENSUAL')")
     public ResponseEntity<ComisionVentaResponse> obtenerVentasPorCorte(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate mesComision,
-            @RequestParam(required = false, defaultValue = "WIN") String proveedor
+            @RequestParam(required = false, defaultValue = "WIN") String proveedor,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaLimiteMorosidad
     ) {
-        return ResponseEntity.ok(comisionVentaService.calcularVentasPorCorte(mesComision, proveedor));
+        return ResponseEntity.ok(comisionVentaService.calcularVentasPorCorte(mesComision, proveedor, fechaLimiteMorosidad));
     }
 }

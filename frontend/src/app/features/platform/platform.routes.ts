@@ -42,6 +42,7 @@ import { DailyLeadsPageComponent } from '../daily-leads/pages/daily-leads-page/d
 import { GtrWorkspacePageComponent } from '../gtr/pages/gtr-workspace-page/gtr-workspace-page.component';
 import { PostventaWorkspacePageComponent } from '../postventa/pages/postventa-workspace-page/postventa-workspace-page.component';
 import { PostulantesBoardPageComponent } from '../recruiter/pages/postulantes-board-page/postulantes-board-page.component';
+import { OperationalInboxPageComponent } from '../recruiter/pages/operational-inbox-page/operational-inbox-page.component';
 import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-page/training-groups-page.component';
 import { ReporteAsistenciaPageComponent } from '../rrhh/asistencia/pages/reporte-asistencia-page/reporte-asistencia-page.component';
 import { RrhhPersonalPageComponent } from '../rrhh/pages/rrhh-personal-page/rrhh-personal-page.component';
@@ -50,6 +51,7 @@ import { FreelancePageComponent } from '../freelance/pages/freelance-page/freela
 import { RoleHomeRedirectComponent } from './pages/role-home-redirect/role-home-redirect.component';
 import { RolePlatformPageComponent } from './pages/role-platform-page/role-platform-page.component';
 import { PersonalWorkspacePageComponent } from '../personal/pages/personal-workspace-page/personal-workspace-page.component';
+import { RecruitmentSupervisorHomePageComponent } from '../recruitment-supervisor/pages/recruitment-supervisor-home-page/recruitment-supervisor-home-page.component';
 
 export const PLATFORM_ROUTES: Routes = [
   {
@@ -368,6 +370,14 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'reclutador/bandeja-operativa',
+    component: OperationalInboxPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['RECLUTADOR']
+    }
+  },
+  {
     path: 'reclutador/postulantes',
     component: PostulantesBoardPageComponent,
     canActivate: [roleGuard],
@@ -382,6 +392,19 @@ export const PLATFORM_ROUTES: Routes = [
     data: {
       roles: ['RECLUTADOR'],
       title: 'RECLUTADOR Platform'
+    }
+  },
+  {
+    path: 'reclutamiento',
+    pathMatch: 'full',
+    redirectTo: 'reclutamiento/inicio'
+  },
+  {
+    path: 'reclutamiento/inicio',
+    component: RecruitmentSupervisorHomePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['SUPERVISOR_RECLUTAMIENTO']
     }
   },
   {

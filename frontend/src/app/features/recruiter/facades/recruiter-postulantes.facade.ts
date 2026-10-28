@@ -77,8 +77,6 @@ const EMPTY_PAGE: PageResponse<PostulacionResponse> = {
 
 @Injectable()
 export class RecruiterPostulantesFacade {
-  private readonly asesorVentasTrainingTipificacionId = 5;
-  private readonly asesorVentasTrainingSubtipificacionId = 22;
   private readonly requestTimeoutMs = 15000;
   private readonly formBuilder = inject(FormBuilder);
   private readonly postulantesService = inject(RecruiterPostulantesService);
@@ -105,6 +103,7 @@ export class RecruiterPostulantesFacade {
 
   private readonly detailRequest = signal<DetailRequest | null>(null);
   private readonly typifyRequest = signal<TypifyRequest | null>(null);
+  private readonly trainingGroupsRefresh = signal(0);
 
   private readonly columnStates = {
     POSTULANTE: this.createColumnState('POSTULANTE'),
@@ -213,20 +212,25 @@ export class RecruiterPostulantesFacade {
     idSubtipificacion: [0, [Validators.required, Validators.min(1)]],
     idGrupoCapacitacion: [0],
     modalidadContacto: [''],
+    fechaHoraGestion: [''],
     observacion: ['']
   });
 
   readonly trainingGroupsState = toSignal(
-    this.postulantesService.listarGruposCapacitacionAbiertos().pipe(
-      timeout(this.requestTimeoutMs),
-      map((page) => ({ status: 'success' as const, groups: page.content })),
-      startWith({ status: 'loading' as const, groups: [] as GrupoCapacitacionResponse[] }),
-      catchError((error: HttpErrorResponse) =>
-        of({
-          status: 'error' as const,
-          groups: [] as GrupoCapacitacionResponse[],
-          message: this.getErrorMessage(error, 'No fue posible cargar grupos de capacitacion.')
-        })
+    toObservable(this.trainingGroupsRefresh).pipe(
+      switchMap(() =>
+        this.postulantesService.listarGruposCapacitacionAbiertos().pipe(
+          timeout(this.requestTimeoutMs),
+          map((page) => ({ status: 'success' as const, groups: page.content })),
+          startWith({ status: 'loading' as const, groups: [] as GrupoCapacitacionResponse[] }),
+          catchError((error: HttpErrorResponse) =>
+            of({
+              status: 'error' as const,
+              groups: [] as GrupoCapacitacionResponse[],
+              message: this.getErrorMessage(error, 'No fue posible cargar grupos de capacitacion.')
+            })
+          )
+        )
       )
     ),
     { initialValue: { status: 'loading' as const, groups: [] as GrupoCapacitacionResponse[] } }
@@ -356,6 +360,19 @@ export class RecruiterPostulantesFacade {
     this.columns.forEach((column) => this.loadColumn(column.key, 0, silent));
   }
 
+  handleRealtime(): void {
+    this.refreshAllColumns(true);
+    this.refreshTrainingGroups();
+    const selected = this.selectedPostulacion();
+    if (selected) {
+      this.openDetail(selected);
+    }
+  }
+
+  refreshTrainingGroups(): void {
+    this.trainingGroupsRefresh.update((value) => value + 1);
+  }
+
   openDetail(postulacion: PostulacionResponse): void {
     this.typifyErrorMessage.set('');
     this.typifySuccessMessage.set('');
@@ -393,6 +410,12 @@ export class RecruiterPostulantesFacade {
       return;
     }
 
+    const raw = this.typifyForm.getRawValue();
+    if (raw.modalidadContacto && !raw.fechaHoraGestion) {
+      this.typifyErrorMessage.set('Indica la fecha y hora de gestion para el contacto.');
+      return;
+    }
+
     this.typifyErrorMessage.set('');
     this.typifySuccessMessage.set('');
     this.typifyRequest.set({
@@ -408,6 +431,7 @@ export class RecruiterPostulantesFacade {
       idSubtipificacion: 0,
       idGrupoCapacitacion: 0,
       modalidadContacto: '',
+      fechaHoraGestion: '',
       observacion: ''
     });
   }
@@ -420,16 +444,16 @@ export class RecruiterPostulantesFacade {
   requiresTrainingGroupAssignment(): boolean {
     const postulacion = this.selectedPostulacion();
 
-    if (!postulacion || postulacion.ofertaLaboral.puestoObjetivo !== 'ASESOR_VENTAS') {
+    if (!postulacion || postulacion.etapa !== 'RECLUTAMIENTO') {
       return false;
     }
 
     const raw = this.typifyForm.getRawValue();
-
-    return (
-      Number(raw.idTipificacion) === this.asesorVentasTrainingTipificacionId &&
-      Number(raw.idSubtipificacion) === this.asesorVentasTrainingSubtipificacionId
-    );
+    return this.getSubtipificaciones(Number(raw.idTipificacion))
+      .some((subtipificacion) =>
+        subtipificacion.id === Number(raw.idSubtipificacion) &&
+        subtipificacion.etapaDestino === 'CAPACITACION'
+      );
   }
 
   getSubtipificaciones(idTipificacion: number): SubtipificacionResponse[] {
@@ -508,6 +532,7 @@ export class RecruiterPostulantesFacade {
       idSubtipificacion: Number(raw.idSubtipificacion),
       idGrupoCapacitacion: withTrainingGroup ? Number(raw.idGrupoCapacitacion) : null,
       modalidadContacto: raw.modalidadContacto || null,
+      fechaHoraGestion: raw.fechaHoraGestion || null,
       observacion: raw.observacion.trim() || null
     };
   }

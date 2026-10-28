@@ -9,8 +9,8 @@ import { PostulacionRealtimeEvent } from '../../shared/models/recruitment/postul
 export class RecruitmentRealtimeService {
   private readonly tokenService = inject(TokenService);
 
-  watchTopic(topic: string): Observable<PostulacionRealtimeEvent> {
-    return new Observable<PostulacionRealtimeEvent>((subscriber) => {
+  watchTopic<T = PostulacionRealtimeEvent>(topic: string): Observable<T> {
+    return new Observable<T>((subscriber) => {
       let subscription: StompSubscription | null = null;
       const client = new Client({
         brokerURL: `${this.wsBaseUrl()}/recruitment/ws/postulaciones`,
@@ -30,7 +30,7 @@ export class RecruitmentRealtimeService {
       client.onConnect = () => {
         subscription = client.subscribe(topic, (message: IMessage) => {
           try {
-            subscriber.next(JSON.parse(message.body) as PostulacionRealtimeEvent);
+            subscriber.next(JSON.parse(message.body) as T);
           } catch (error) {
             subscriber.error(error);
           }

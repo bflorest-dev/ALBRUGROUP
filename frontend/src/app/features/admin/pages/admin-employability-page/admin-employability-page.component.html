@@ -1,40 +1,55 @@
-<section class="employability-page">
-  <header class="hero">
-    <div>
-      <p-tag value="Administrador" severity="info" />
-      <h2>Empleabilidad</h2>
-      <p>Gestiona ofertas laborales, ampliaciones y estados desde recruitment.</p>
+<section class="employability-page" aria-labelledby="employability-title">
+  <header class="workspace-header">
+    <div class="workspace-header__copy">
+      <span class="workspace-header__live"><span aria-hidden="true"></span> Operación en vivo</span>
+      <h1 id="employability-title">Ofertas laborales</h1>
+      <p>Define la demanda que alimenta el flujo de Reclutamiento.</p>
     </div>
-    <button
-      pButton
-      type="button"
-      icon="pi pi-plus"
-      label="Nueva oferta"
-      (click)="facade.toggleCreateForm()"
-    ></button>
+    <div class="workspace-header__actions">
+      <span class="sync-status"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizado {{ syncTime() }}</span>
+      <button
+        type="button"
+        class="button button--ghost"
+        [disabled]="facade.isLoadingOffers()"
+        (click)="refresh()"
+      >
+        <i class="ti ti-refresh" aria-hidden="true"></i>
+        {{ facade.isLoadingOffers() ? 'Actualizando…' : 'Actualizar' }}
+      </button>
+      <button type="button" class="button button--primary" (click)="facade.toggleCreateForm()">
+        <i class="ti ti-briefcase-2" aria-hidden="true"></i>
+        Registrar oferta
+      </button>
+    </div>
   </header>
 
-  <p-dialog
-    header="Registrar oferta laboral"
-    [visible]="facade.showCreateForm()"
-    (visibleChange)="!$event && facade.toggleCreateForm()"
-    [modal]="true"
-    [draggable]="false"
-    [resizable]="false"
-    [style]="{ width: 'min(52rem, 92vw)' }"
-  >
-    <app-offer-registration-panel
-      [createOfferForm]="facade.createOfferForm"
-      [negocioOptions]="facade.negocioOptions"
-      [puestoObjetivoOptions]="facade.puestoObjetivoOptions"
-      [modalidadOptions]="facade.modalidadOptions"
-      [horarioOptions]="facade.horarioOptions"
-      [createErrorMessage]="facade.createErrorMessage()"
-      [isCreatingOffer]="facade.isCreatingOffer()"
-      (cancel)="facade.toggleCreateForm()"
-      (save)="facade.submitCreateOffer()"
-    />
-  </p-dialog>
+  <div class="summary-grid" aria-label="Resumen de ofertas laborales">
+    <article class="summary-card summary-card--total">
+      <span class="summary-card__label">Ofertas registradas</span>
+      <strong>{{ facade.offersPage()?.totalElements ?? 0 }}</strong>
+      <span class="summary-card__hint">Demanda total del sistema</span>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__label">Activas</span>
+      <strong>{{ countByEstado('ACTIVO') }}</strong>
+      <span class="summary-card__hint">En la página actual</span>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__label">Cerradas</span>
+      <strong>{{ countByEstado('CERRADO') }}</strong>
+      <span class="summary-card__hint">Sin nuevas asignaciones</span>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__label">Completadas</span>
+      <strong>{{ countByEstado('COMPLETADO') }}</strong>
+      <span class="summary-card__hint">Proceso concluido</span>
+    </article>
+    <article class="summary-card summary-card--accent">
+      <span class="summary-card__label">Ampliaciones</span>
+      <strong>{{ expansionCount() }}</strong>
+      <span class="summary-card__hint">Registradas en esta vista</span>
+    </article>
+  </div>
 
   <app-offer-list-panel
     [offers]="facade.offers()"
@@ -51,7 +66,6 @@
     [statusErrorByOfferId]="facade.statusErrorByOfferId()"
     [statusLoadingByOfferId]="facade.statusLoadingByOfferId()"
     (estadoFilter)="facade.applyEstadoFilter($event)"
-    (reload)="facade.loadOffers()"
     (pageChange)="facade.loadOffers($event)"
     (toggleExpansion)="facade.toggleExpansionForm($event)"
     (submitExpansion)="facade.submitExpansion($event)"
@@ -59,3 +73,35 @@
     (updateEstado)="facade.updateEstado($event)"
   />
 </section>
+
+@if (facade.showCreateForm()) {
+  <div class="drawer-layer" role="presentation">
+    <button type="button" class="drawer-backdrop" aria-label="Cerrar registro" (click)="facade.toggleCreateForm()"></button>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="offer-drawer-title">
+      <header class="drawer__header">
+        <div>
+          <span class="drawer__eyebrow">Nueva demanda</span>
+          <h2 id="offer-drawer-title">Registrar oferta laboral</h2>
+          <p>Define el objetivo y la capacidad inicial que recibirá el equipo de Reclutamiento.</p>
+        </div>
+        <button type="button" class="icon-button" aria-label="Cerrar registro" (click)="facade.toggleCreateForm()">
+          <i class="ti ti-x" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <div class="drawer__body">
+        <app-offer-registration-panel
+          [createOfferForm]="facade.createOfferForm"
+          [negocioOptions]="facade.negocioOptions"
+          [puestoObjetivoOptions]="facade.puestoObjetivoOptions"
+          [modalidadOptions]="facade.modalidadOptions"
+          [horarioOptions]="facade.horarioOptions"
+          [createErrorMessage]="facade.createErrorMessage()"
+          [isCreatingOffer]="facade.isCreatingOffer()"
+          (cancel)="facade.toggleCreateForm()"
+          (save)="facade.submitCreateOffer()"
+        />
+      </div>
+    </aside>
+  </div>
+}

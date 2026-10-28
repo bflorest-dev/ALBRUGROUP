@@ -20,6 +20,18 @@
         </button>
       </div>
 
+      <div class="cv-fecha-limite">
+        <label for="fechaLimiteMorosidad" class="cv-fecha-limite__label">Límite morosidad</label>
+        <input
+          type="date"
+          id="fechaLimiteMorosidad"
+          class="cv-fecha-limite__input"
+          [value]="fechaLimiteMorosidad() ?? ''"
+          (change)="onFechaLimiteCambio($event)"
+          [disabled]="isLoading()"
+        />
+      </div>
+
       <button type="button" class="cv-btn cv-btn--refresh" (click)="recargar()" [disabled]="isLoading()">
         <i class="pi pi-refresh" aria-hidden="true"></i> Recalcular
       </button>

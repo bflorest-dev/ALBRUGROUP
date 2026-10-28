@@ -109,6 +109,10 @@ export class OfferListPanelComponent {
     return this.expandedOfferId === offerId;
   }
 
+  protected displayTotalPages(): number {
+    return Math.max(this.totalPages, 1);
+  }
+
   protected emitStatusDraftChange(offerId: number, event: Event): void {
     const estado = (event.target as HTMLSelectElement).value;
     this.statusDraftChange.emit({ offerId, estado });

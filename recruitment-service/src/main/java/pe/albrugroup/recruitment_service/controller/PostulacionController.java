@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -20,8 +21,11 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.ActualizarClasificacionPostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.AsignarOfertaPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.RegistrarContactoPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PageResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
@@ -50,6 +54,34 @@ public class PostulacionController {
         return ResponseEntity.ok(postulacionService.editarPostulacion(idPostulacion, request));
     }
 
+    @PatchMapping("/{idPostulacion}/clasificacion")
+    @PreAuthorize("hasAuthority('UPDATE_CLASIFICACION_POSTULACIONES')")
+    public ResponseEntity<PostulacionResponse> actualizarClasificacion(
+            @PathVariable @Positive Long idPostulacion,
+            @Valid @RequestBody ActualizarClasificacionPostulacionRequest request
+    ) {
+        return ResponseEntity.ok(postulacionService.actualizarClasificacion(idPostulacion, request));
+    }
+
+    @PatchMapping("/{idPostulacion}/oferta")
+    @PreAuthorize("hasAuthority('ASSIGN_OFERTA_POSTULACION')")
+    public ResponseEntity<PostulacionResponse> asignarOferta(
+            @PathVariable @Positive Long idPostulacion,
+            @Valid @RequestBody AsignarOfertaPostulacionRequest request
+    ) {
+        return ResponseEntity.ok(postulacionService.asignarOferta(idPostulacion, request));
+    }
+
+    @PostMapping("/{idPostulacion}/contactos")
+    @PreAuthorize("hasAuthority('CREATE_CONTACTO_POSTULACION')")
+    public ResponseEntity<Void> registrarContacto(
+            @PathVariable @Positive Long idPostulacion,
+            @Valid @RequestBody RegistrarContactoPostulacionRequest request
+    ) {
+        postulacionService.registrarContacto(idPostulacion, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{idPostulacion}/tipificacion")
     @PreAuthorize("hasAuthority('TYPIFY_POSTULACIONES')")
     public ResponseEntity<PostulacionResponse> tipificarPostulacion(
@@ -57,6 +89,17 @@ public class PostulacionController {
             @Valid @RequestBody TipificarPostulacionRequest request
     ) {
         return ResponseEntity.ok(postulacionService.tipificarPostulacion(idPostulacion, request));
+    }
+
+    @GetMapping("/bandeja/supervisor")
+    @PreAuthorize("hasAuthority('READ_POSTULACIONES_SUPERVISOR')")
+    public ResponseEntity<PageResponse<PostulacionResponse>> listarBandejaSupervisor(
+            @RequestParam(required = false) Etapa etapa,
+            @RequestParam(required = false) EstadoPostulacion estado,
+            @RequestParam(required = false) EstadoBandejaPostulacion estadoBandeja,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        return ResponseEntity.ok(postulacionService.listarBandejaSupervisor(etapa, estado, estadoBandeja, pageRequest));
     }
 
     @GetMapping("/{idPostulacion}")
@@ -80,9 +123,10 @@ public class PostulacionController {
     @PreAuthorize("hasAuthority('READ_POSTULACIONES_RECLUTAMIENTO')")
     public ResponseEntity<PageResponse<PostulacionResponse>> listarBandejaReclutamiento(
             @RequestParam(required = false) EstadoBandejaPostulacion estadoBandeja,
+            @RequestParam(required = false) Long idTipificacion,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        return ResponseEntity.ok(postulacionService.listarBandejaReclutamiento(estadoBandeja, pageRequest));
+        return ResponseEntity.ok(postulacionService.listarBandejaReclutamiento(estadoBandeja, idTipificacion, pageRequest));
     }
 
     @GetMapping("/bandeja/capacitacion")

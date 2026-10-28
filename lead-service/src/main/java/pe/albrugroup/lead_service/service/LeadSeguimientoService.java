@@ -87,14 +87,6 @@ public class LeadSeguimientoService {
         leadSeguimientoRepository.save(seg);
     }
 
-    public void marcarFueMorosoPrimerPeriodo(Long idLead) {
-        LeadSeguimiento seg = obtenerOCrear(idLead);
-        if (!Boolean.TRUE.equals(seg.getFueMorosoPrimerPeriodo())) {
-            seg.setFueMorosoPrimerPeriodo(true);
-            leadSeguimientoRepository.save(seg);
-        }
-    }
-
     /**
      * Subsanación: el admin recrea un lead histórico indicando su fecha de instalación. Para estos leads,
      * registroCrm = grabación = instalación = esa misma fecha (los dos primeros como Instant a medianoche).

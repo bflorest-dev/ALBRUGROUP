@@ -4,5 +4,6 @@ export interface PostulanteRequest {
   tipoDocumento: string;
   documento: string;
   celular: string;
+  numeroExclusivoLlamadas?: string | null;
   fechaNacimiento: string;
 }

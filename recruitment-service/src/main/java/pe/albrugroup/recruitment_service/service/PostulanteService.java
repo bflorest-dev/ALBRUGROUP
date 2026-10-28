@@ -32,6 +32,9 @@ public class PostulanteService {
         postulante.setTipoDocumento(request.getTipoDocumento());
         postulante.setDocumento(request.getDocumento());
         postulante.setCelular(request.getCelular());
+        if (request.getNumeroExclusivoLlamadas() != null) {
+            postulante.setNumeroExclusivoLlamadas(request.getNumeroExclusivoLlamadas());
+        }
         postulante.setFechaNacimiento(request.getFechaNacimiento());
         if (postulante.getListaNegra() == null) {
             postulante.setListaNegra(Boolean.FALSE);

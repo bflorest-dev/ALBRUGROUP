@@ -197,7 +197,7 @@ export class RecruiterTrainingGroupsFacade {
   );
 
   readonly estadoOptions = ['ABIERTO', 'EN_CURSO', 'CERRADO', 'ANULADO'];
-  readonly turnoOptions = ['MORNING', 'AFTERNOON'];
+  readonly turnoOptions = ['MORNING', 'AFTERNOON', 'NIGHT'];
   readonly salaOptions = ['SALA_FIBRA', 'SALA_CLARO'];
   readonly estadoCapacitacionOptions = [
     'ASIGNADO',
@@ -377,6 +377,14 @@ export class RecruiterTrainingGroupsFacade {
       estado: this.selectedEstado(),
       silent
     });
+  }
+
+  handleRealtime(): void {
+    this.loadGroups(this.currentPage(), true);
+    const selected = this.selectedGroup();
+    if (selected) {
+      this.openDetail(selected.id);
+    }
   }
 
   applyEstadoFilter(value: string): void {

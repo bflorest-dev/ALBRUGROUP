@@ -45,7 +45,7 @@ public class PostulacionRealtimeNotifier {
                 .estadoBandeja(postulacion.getEstadoBandeja())
                 .estadoBandejaAnterior(estadoBandejaAnterior)
                 .idGrupoCapacitacion(idGrupoCapacitacion)
-                .puestoObjetivo(postulacion.getOfertaLaboral().getPuestoObjetivo())
+                .puestoObjetivo(postulacion.getPuestoObjetivo())
                 .occurredAt(Instant.now())
                 .build();
 

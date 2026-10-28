@@ -1,0 +1,255 @@
+<section class="recruitment-supervisor-home" aria-labelledby="recruitment-supervisor-home-title">
+  <header class="workspace-header">
+    <div class="workspace-header__copy">
+      <span class="workspace-header__live"><span aria-hidden="true"></span> Operación en vivo</span>
+      <h1 id="recruitment-supervisor-home-title">Bandeja de postulantes</h1>
+      <p>Registra, corrige y organiza postulantes sin interrumpir el flujo de reclutamiento.</p>
+    </div>
+    <div class="workspace-header__actions">
+      <span class="sync-status"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizado {{ dateTime(lastSync().toISOString()) }}</span>
+      <button type="button" class="button button--ghost" (click)="facade.refresh()" [disabled]="facade.listLoading() || facade.summaryLoading()">
+        <i class="ti ti-refresh" aria-hidden="true"></i>
+        {{ facade.listLoading() ? 'Actualizando…' : 'Actualizar' }}
+      </button>
+      <button type="button" class="button button--primary" (click)="facade.openRegister()">
+        <i class="ti ti-user-plus" aria-hidden="true"></i>
+        Registrar postulante
+      </button>
+    </div>
+  </header>
+
+  <div class="summary-grid" aria-label="Resumen de postulantes">
+    <article class="summary-card summary-card--total">
+      <span class="summary-card__label">Total registrados</span>
+      <strong>{{ facade.summaryLoading() || facade.summaryError() ? '—' : facade.summary().total }}</strong>
+      <span class="summary-card__hint">Todos los historiales</span>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__label">Por revisar</span>
+      <strong>{{ facade.summaryLoading() || facade.summaryError() ? '—' : facade.summary().postulantes }}</strong>
+      <span class="summary-card__hint">Sin gestión operativa</span>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__label">Sin contacto</span>
+      <strong>{{ facade.summaryLoading() || facade.summaryError() ? '—' : facade.summary().sinContacto }}</strong>
+      <span class="summary-card__hint">Pendientes de reclutador</span>
+    </article>
+    <article class="summary-card">
+      <span class="summary-card__label">En gestión</span>
+      <strong>{{ facade.summaryLoading() || facade.summaryError() ? '—' : facade.summary().enGestion }}</strong>
+      <span class="summary-card__hint">Seguimiento activo</span>
+    </article>
+    <article class="summary-card summary-card--accent">
+      <span class="summary-card__label">Capacitación</span>
+      <strong>{{ facade.summaryLoading() || facade.summaryError() ? '—' : facade.summary().capacitacion }}</strong>
+      <span class="summary-card__hint">Asignados a un grupo</span>
+    </article>
+  </div>
+
+  <section class="board" aria-labelledby="board-title">
+    <div class="board__toolbar">
+      <div>
+        <h2 id="board-title">Postulantes en proceso</h2>
+        <p>{{ facade.listError() ? 'Datos no disponibles · Revisa el estado del servicio.' : facade.totalElements() + ' registros · La información se actualiza cuando ocurre un cambio.' }}</p>
+      </div>
+      <div class="board__filters" role="search" aria-label="Filtrar postulantes">
+        <label class="field field--search">
+          <span>Buscar postulante</span>
+          <i class="ti ti-search" aria-hidden="true"></i>
+          <input type="search" placeholder="Nombre, documento o celular" [value]="facade.searchTerm()" (input)="facade.setSearchTerm($any($event.target).value)" />
+        </label>
+        <label class="field field--compact">
+          <span>Etapa</span>
+          <select [value]="facade.etapaFilter()" (change)="facade.setEtapaFilter($any($event.target).value)">
+            <option value="">Todas las etapas</option>
+            <option value="RECLUTAMIENTO">Postulación</option>
+            <option value="CAPACITACION">Capacitación</option>
+            <option value="CONTRATACION">Contratación</option>
+          </select>
+        </label>
+        <label class="field field--compact">
+          <span>Estado</span>
+          <select [value]="facade.estadoBandejaFilter()" (change)="facade.setEstadoBandejaFilter($any($event.target).value)">
+            <option value="">Todos los estados</option>
+            <option value="POSTULANTE">Por revisar</option>
+            <option value="SIN_CONTACTO">Sin contacto</option>
+            <option value="EN_GESTION">En gestión</option>
+            <option value="CAPACITACION">Capacitación</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="board__notices">
+      @if (facade.summaryError() && !facade.listError()) {
+        <div class="inline-notice inline-notice--warning" role="status">
+          <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+          <span>{{ facade.summaryError() }}</span>
+        </div>
+      }
+      @if (facade.listError()) {
+        <div class="inline-notice inline-notice--error" role="alert">
+          <i class="ti ti-alert-circle" aria-hidden="true"></i>
+          <span>{{ facade.listError() }}</span>
+          <button type="button" class="button button--ghost button--small" (click)="facade.load()">Reintentar carga</button>
+        </div>
+      }
+    </div>
+
+    <div class="table-frame" [class.table-frame--loading]="facade.listLoading()">
+      @if (facade.listLoading()) {
+        <div class="table-loading" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Sincronizando la bandeja…</span>
+        </div>
+      }
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Postulante</th>
+              <th scope="col">Contacto</th>
+              <th scope="col">Objetivo</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Oferta</th>
+              <th scope="col">Actualización</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of facade.filteredRows(); track row.id) {
+              <tr class="data-row" (dblclick)="openDetail(row)">
+                <td data-label="Postulante">
+                  <button type="button" class="person-cell" (click)="openDetail(row)">
+                    <span class="person-cell__avatar">{{ row.postulante.nombres.charAt(0) }}{{ row.postulante.apellidos.charAt(0) }}</span>
+                    <span>
+                      <strong>{{ row.postulante.nombres }} {{ row.postulante.apellidos }}</strong>
+                      <small>{{ row.postulante.tipoDocumento }} {{ row.postulante.documento }}</small>
+                    </span>
+                  </button>
+                </td>
+                <td data-label="Contacto">
+                  <span class="contact-cell"><i class="ti ti-device-mobile" aria-hidden="true"></i>{{ row.postulante.celular }}</span>
+                  <small class="muted-line">{{ row.postulante.numeroExclusivoLlamadas || 'Sin número de llamadas' }}</small>
+                </td>
+                <td data-label="Objetivo">
+                  <strong>{{ label(row.puestoObjetivo) }}</strong>
+                  <small class="muted-line">{{ row.negocio ? label(row.negocio) : 'Negocio pendiente' }}</small>
+                </td>
+                <td data-label="Estado"><span class="status-badge" [class]="'status-badge status-badge--' + rowStatusClass(row.estadoBandeja)">{{ label(row.estadoBandeja) }}</span></td>
+                <td data-label="Oferta">
+                  <span class="offer-cell">{{ row.ofertaLaboral?.codigo || 'Sin asociar' }}</span>
+                  <small class="muted-line">{{ row.ofertaLaboral?.puestoObjetivo || 'Disponible para asignar' }}</small>
+                </td>
+                <td data-label="Actualización"><span class="date-cell">{{ date(row.updatedAt) }}</span><small class="muted-line">Registro {{ date(row.fechaPostulacion) }}</small></td>
+                <td class="row-action"><button type="button" class="button button--ghost button--small" (click)="openDetail(row)">Abrir ficha <i class="ti ti-arrow-up-right" aria-hidden="true"></i></button></td>
+              </tr>
+            } @empty {
+              @if (!facade.listLoading()) {
+                <tr><td colspan="7"><div class="empty-state"><i class="ti ti-users" aria-hidden="true"></i><strong>No hay postulantes para mostrar</strong><span>Registra el primer postulante o ajusta los filtros de esta bandeja.</span><button type="button" class="button button--primary button--small" (click)="facade.openRegister()">Registrar postulante</button></div></td></tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-footer">
+        <span>Página {{ facade.pageNumber() + 1 }} de {{ facade.totalPages() }}</span>
+        <div class="table-footer__actions">
+          <button type="button" class="button button--ghost button--small" [disabled]="facade.pageNumber() === 0 || facade.listLoading()" (click)="facade.previousPage()"><i class="ti ti-chevron-left" aria-hidden="true"></i> Anterior</button>
+          <button type="button" class="button button--ghost button--small" [disabled]="facade.pageNumber() + 1 >= facade.totalPages() || facade.listLoading()" (click)="facade.nextPage()">Siguiente <i class="ti ti-chevron-right" aria-hidden="true"></i></button>
+        </div>
+      </footer>
+    </div>
+  </section>
+</section>
+
+@if (facade.drawer() !== 'none') {
+  <div class="drawer-layer" role="presentation">
+    <button type="button" class="drawer-backdrop" aria-label="Cerrar ficha" (click)="facade.closeDrawer()"></button>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <header class="drawer__header">
+        <div>
+          <span class="drawer__eyebrow">{{ facade.drawer() === 'register' ? 'Nuevo registro' : 'Ficha de postulante' }}</span>
+          <h2 id="drawer-title">{{ facade.drawer() === 'register' ? 'Registrar postulante' : facade.drawer() === 'edit' ? 'Editar datos' : 'Detalle y trazabilidad' }}</h2>
+          <p>{{ facade.drawer() === 'register' ? 'Guarda los datos disponibles y deja lo operativo para el reclutador.' : 'Consulta el contexto completo y realiza correcciones administrativas.' }}</p>
+        </div>
+        <button type="button" class="icon-button" aria-label="Cerrar ficha" (click)="facade.closeDrawer()"><i class="ti ti-x" aria-hidden="true"></i></button>
+      </header>
+
+      <div class="drawer__body">
+        @if (facade.drawer() === 'register' || facade.drawer() === 'edit') {
+          <form id="candidate-form" class="candidate-form" [formGroup]="form" (ngSubmit)="facade.save()" novalidate>
+            <div class="form-section">
+              <div class="form-section__heading"><span>01</span><div><h3>Identidad y contacto</h3><p>Datos mínimos para identificar y volver a contactar.</p></div></div>
+              <div class="form-grid">
+                <label class="field" [class.field--invalid]="isInvalid('nombres')"><span>Nombres <em>*</em></span><input formControlName="nombres" placeholder="Nombres completos" [attr.aria-invalid]="isInvalid('nombres')" /><small>Escribe los nombres tal como figuran en el documento.</small>@if (isInvalid('nombres')) {<strong class="field-error">Ingresa los nombres.</strong>}</label>
+                <label class="field" [class.field--invalid]="isInvalid('apellidos')"><span>Apellidos <em>*</em></span><input formControlName="apellidos" placeholder="Apellidos completos" [attr.aria-invalid]="isInvalid('apellidos')" /><small>Permite encontrar rápidamente al postulante.</small>@if (isInvalid('apellidos')) {<strong class="field-error">Ingresa los apellidos.</strong>}</label>
+                <label class="field" [class.field--invalid]="isInvalid('tipoDocumento')"><span>Tipo de documento <em>*</em></span><select formControlName="tipoDocumento"><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></select><small>Selecciona el tipo que usarás para identificarlo.</small></label>
+                <label class="field" [class.field--invalid]="isInvalid('documento')"><span>Número de documento <em>*</em></span><input formControlName="documento" placeholder="8 dígitos" inputmode="numeric" [attr.aria-invalid]="isInvalid('documento')" /><small>Debe ser único dentro del registro.</small>@if (isInvalid('documento')) {<strong class="field-error">Ingresa el documento.</strong>}</label>
+                <label class="field" [class.field--invalid]="isInvalid('celular')"><span>Celular <em>*</em></span><input formControlName="celular" placeholder="9 dígitos" inputmode="tel" [attr.aria-invalid]="isInvalid('celular')" /><small>Número principal para contacto.</small>@if (isInvalid('celular')) {<strong class="field-error">Ingresa el celular.</strong>}</label>
+                <label class="field"><span>Número exclusivo de llamadas</span><input formControlName="numeroExclusivoLlamadas" placeholder="9 dígitos (opcional)" inputmode="tel" /><small>Úsalo si las llamadas salen desde un número distinto.</small></label>
+                <label class="field" [class.field--invalid]="isInvalid('fechaNacimiento')"><span>Fecha de nacimiento <em>*</em></span><input formControlName="fechaNacimiento" type="date" [attr.aria-invalid]="isInvalid('fechaNacimiento')" /><small>Ayuda a validar los datos del postulante.</small>@if (isInvalid('fechaNacimiento')) {<strong class="field-error">Selecciona la fecha.</strong>}</label>
+                <label class="field" [class.field--invalid]="isInvalid('origen')"><span>Origen <em>*</em></span><select formControlName="origen"><option value="COMPUTRABAJO">Computrabajo</option><option value="INDEED">Indeed</option><option value="TIKTOK">TikTok</option><option value="FACEBOOK">Facebook</option><option value="LINKEDIN">LinkedIn</option><option value="REFERIDO">Referido</option></select><small>Registra de dónde llegó el postulante.</small></label>
+              </div>
+            </div>
+            <div class="form-section">
+              <div class="form-section__heading"><span>02</span><div><h3>Postulación inicial</h3><p>Define el objetivo sin exigir una oferta laboral.</p></div></div>
+              <div class="form-grid">
+                <label class="field" [class.field--invalid]="isInvalid('puestoObjetivo')"><span>Puesto objetivo <em>*</em></span><select formControlName="puestoObjetivo">@for (option of puestoObjetivoOptions; track option.value) {<option [value]="option.value">{{ option.label }}</option>}</select><small>El 95% de los registros esperados corresponde a Asesor de ventas.</small></label>
+                <label class="field"><span>Negocio</span><select formControlName="negocio"><option value="">Pendiente de definir</option><option value="WIN">WIN</option><option value="CLARO">Claro</option></select><small>Puede completarse luego con información de la oferta.</small></label>
+                <label class="field"><span>Modalidad</span><select formControlName="modalidad"><option value="">Pendiente de definir</option><option value="PART_TIME">Part time</option><option value="FULL_TIME">Full time</option><option value="SEMI_FULL">Semi full</option><option value="SUPER_FULL">Super full</option></select><small>Dato operativo que puede completar el reclutador.</small></label>
+                <label class="field"><span>Horario</span><select formControlName="horario"><option value="">Pendiente de definir</option><option value="MORNING">Mañana</option><option value="AFTERNOON">Tarde</option><option value="NIGHT">Noche</option></select><small>Dato operativo que puede completar el reclutador.</small></label>
+                <label class="field" [class.field--invalid]="isInvalid('fechaPostulacion')"><span>Fecha de postulación <em>*</em></span><input formControlName="fechaPostulacion" type="date" [attr.aria-invalid]="isInvalid('fechaPostulacion')" /><small>Fecha manual informada para el inicio de esta postulación.</small></label>
+                <label class="field"><span>Oferta laboral</span><select formControlName="idOfertaLaboral"><option [ngValue]="0">Sin asociar por ahora</option>@for (offer of facade.offers(); track offer.id) {<option [ngValue]="offer.id">{{ offer.codigo }} · {{ offer.puestoObjetivo }}</option>}</select><small>La asociación puede realizarse después, sin detener el registro.</small></label>
+              </div>
+            </div>
+          </form>
+        } @else if (facade.selectedPostulacion(); as selected) {
+          <div class="detail-view">
+            <div class="detail-identity">
+              <span class="person-cell__avatar person-cell__avatar--large">{{ selected.postulante.nombres.charAt(0) }}{{ selected.postulante.apellidos.charAt(0) }}</span>
+              <div><h3>{{ selected.postulante.nombres }} {{ selected.postulante.apellidos }}</h3><p>{{ selected.postulante.tipoDocumento }} {{ selected.postulante.documento }} · Registrado {{ date(selected.createdAt) }}</p></div>
+              <span class="status-badge" [class]="'status-badge status-badge--' + rowStatusClass(selected.estadoBandeja)">{{ label(selected.estadoBandeja) }}</span>
+            </div>
+            @if (facade.actionMessage()) {<div class="inline-notice inline-notice--success" role="status"><i class="ti ti-circle-check" aria-hidden="true"></i>{{ facade.actionMessage() }}</div>}
+            @if (facade.actionError()) {<div class="inline-notice inline-notice--error" role="alert"><i class="ti ti-alert-circle" aria-hidden="true"></i>{{ facade.actionError() }}</div>}
+            <div class="detail-grid">
+              <div><span>Celular</span><strong>{{ selected.postulante.celular }}</strong></div>
+              <div><span>Línea de llamadas</span><strong>{{ selected.postulante.numeroExclusivoLlamadas || 'No registrado' }}</strong></div>
+              <div><span>Puesto objetivo</span><strong>{{ label(selected.puestoObjetivo) }}</strong></div>
+              <div><span>Negocio</span><strong>{{ selected.negocio ? label(selected.negocio) : 'Pendiente' }}</strong></div>
+              <div><span>Modalidad</span><strong>{{ selected.modalidad ? label(selected.modalidad) : 'Pendiente' }}</strong></div>
+              <div><span>Horario</span><strong>{{ selected.horario || 'Pendiente' }}</strong></div>
+              <div><span>Fecha de postulación</span><strong>{{ date(selected.fechaPostulacion) }}</strong></div>
+              <div><span>Oferta laboral</span><strong>{{ selected.ofertaLaboral?.codigo || 'Sin asociar' }}</strong></div>
+            </div>
+            <div class="detail-actions">
+              <div class="detail-actions__heading"><h3>Acciones administrativas</h3><span>Sin tipificar ni contactar desde este rol.</span></div>
+              <div class="action-grid">
+                <label class="field"><span>Asociar oferta</span><select #offerSelect><option value="">Selecciona una oferta</option>@for (offer of facade.offers(); track offer.id) {<option [value]="offer.id">{{ offer.codigo }} · {{ offer.puestoObjetivo }}</option>}</select><small>Disponible para corregir la asignación.</small><button type="button" class="button button--ghost button--small" [disabled]="!offerSelect.value || facade.actionState() === 'loading'" (click)="facade.associateOffer(+offerSelect.value)">{{ facade.actionState() === 'loading' ? 'Procesando…' : 'Asociar oferta' }}</button></label>
+                <label class="field"><span>Asignar capacitación</span><select #groupSelect><option value="">Selecciona un grupo abierto</option>@for (group of facade.groups(); track group.id) {<option [value]="group.id">{{ group.codigo }} · {{ group.turno }}</option>}</select><small>Asigna solo cuando el proceso ya esté listo.</small><button type="button" class="button button--ghost button--small" [disabled]="!groupSelect.value || facade.actionState() === 'loading'" (click)="facade.assignGroup(+groupSelect.value)">{{ facade.actionState() === 'loading' ? 'Procesando…' : 'Asignar grupo' }}</button></label>
+              </div>
+            </div>
+            <div class="history-section">
+              <div class="detail-actions__heading"><h3>Historial de postulaciones</h3><span>Eventos asociados a cada postulación.</span></div>
+              @if (facade.historyLoading()) {<div class="history-loading"><span class="spinner" aria-hidden="true"></span> Cargando trazabilidad…</div>}
+              @if (facade.historyError()) {<div class="inline-notice inline-notice--error"><span>{{ facade.historyError() }}</span><button type="button" class="button button--ghost button--small" (click)="facade.retryHistory()">Reintentar historial</button></div>}
+              @for (historyItem of facade.history(); track historyItem.postulacion.id) {
+                <article class="history-item"><div class="history-item__heading"><strong>{{ label(historyItem.postulacion.puestoObjetivo) }}</strong><span>{{ label(historyItem.postulacion.estadoBandeja) }} · {{ date(historyItem.postulacion.fechaPostulacion) }}</span></div>@for (event of historyItem.eventos; track event.id) {<div class="event-row"><span class="event-row__icon"><i [class]="eventIcon(event.accion)" aria-hidden="true"></i></span><div><strong>{{ label(event.accion) }}</strong><p>{{ event.observacion || 'Evento registrado en el flujo.' }}</p></div><time>{{ dateTime(event.createdAt) }}</time></div>}</article>
+              } @empty { @if (!facade.historyLoading()) {<p class="empty-copy">Aún no hay eventos registrados para este historial.</p>} }
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (facade.drawer() === 'register' || facade.drawer() === 'edit') {
+        <footer class="drawer__footer">
+          @if (facade.catalogError()) {<span class="footer-hint footer-hint--error">{{ facade.catalogError() }}</span>} @else {<span class="footer-hint">Los datos operativos quedan disponibles para el reclutador.</span>}
+          <div class="drawer__footer-actions"><button type="button" class="button button--ghost" (click)="facade.closeDrawer()">Cancelar</button><button type="submit" class="button button--primary" [disabled]="facade.actionState() === 'loading'" form="candidate-form">{{ saveLabel() }}</button></div>
+        </footer>
+      } @else {
+        <footer class="drawer__footer"><span class="footer-hint">Última actualización: {{ dateTime(facade.selectedPostulacion()?.updatedAt) }}</span><div class="drawer__footer-actions"><button type="button" class="button button--ghost" (click)="facade.openEdit()"><i class="ti ti-pencil" aria-hidden="true"></i> Editar datos</button><button type="button" class="button button--primary" (click)="facade.closeDrawer()">Cerrar ficha</button></div></footer>
+      }
+    </aside>
+  </div>
+}

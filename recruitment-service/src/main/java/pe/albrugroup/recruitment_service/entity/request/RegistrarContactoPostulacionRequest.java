@@ -1,0 +1,27 @@
+package pe.albrugroup.recruitment_service.entity.request;
+
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto;
+
+import java.time.LocalDateTime;
+
+@Builder
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class RegistrarContactoPostulacionRequest {
+
+    @NotNull
+    private ModalidadContacto modalidadContacto;
+
+    @NotNull
+    private LocalDateTime fechaHoraGestion;
+
+    private String observacion;
+}

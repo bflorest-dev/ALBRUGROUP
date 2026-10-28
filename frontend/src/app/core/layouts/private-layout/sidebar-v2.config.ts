@@ -151,6 +151,16 @@ const ROLE_CONFIGS: Record<string, SidebarV2RoleConfig> = {
       }
     ]
   },
+  SUPERVISOR_RECLUTAMIENTO: {
+    domains: [
+      {
+        id: 'recruitment',
+        label: 'Reclutamiento',
+        description: 'Registro e historial de postulantes',
+        icon: 'ti ti-user-plus'
+      }
+    ]
+  },
   CAPACITADOR: {
     domains: [
       {

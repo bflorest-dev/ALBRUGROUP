@@ -4,4 +4,5 @@ export interface SubtipificacionResponse {
   descripcion: string;
   orden: number;
   alcance: string;
+  etapaDestino: string | null;
 }

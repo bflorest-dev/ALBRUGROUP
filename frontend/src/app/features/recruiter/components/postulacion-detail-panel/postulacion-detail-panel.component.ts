@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { EventoResponse } from '../../../../shared/models/recruitment/evento-response';
@@ -9,7 +8,7 @@ import { TipificacionResponse } from '../../../../shared/models/recruitment/tipi
 
 @Component({
   selector: 'app-postulacion-detail-panel',
-  imports: [DatePipe, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './postulacion-detail-panel.component.html',
   styleUrl: './postulacion-detail-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -103,6 +102,17 @@ export class PostulacionDetailPanelComponent {
     }
 
     return evento.observacion ?? 'Sin detalle adicional.';
+  }
+
+  protected toDateTime(value: string | null | undefined): string {
+    if (!value) return 'Sin fecha de gestión';
+    return new Date(value).toLocaleString('es-PE', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   protected toLabel(value: string | null | undefined): string {

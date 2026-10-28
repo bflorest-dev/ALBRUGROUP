@@ -10,5 +10,6 @@ export interface EventoResponse {
   tipificacion: string | null;
   subtipificacion: string | null;
   observacion: string | null;
+  fechaHoraGestion: string | null;
   createdAt: string;
 }

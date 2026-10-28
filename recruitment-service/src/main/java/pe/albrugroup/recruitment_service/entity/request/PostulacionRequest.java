@@ -9,6 +9,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.recruitment_service.entity.enums.Origen;
+import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
+import pe.albrugroup.recruitment_service.entity.enums.Modalidad;
+import pe.albrugroup.recruitment_service.entity.enums.TurnoHorario;
+
+import java.time.LocalDate;
 
 @Builder
 @Getter
@@ -17,7 +23,12 @@ import pe.albrugroup.recruitment_service.entity.enums.Origen;
 @NoArgsConstructor
 public class PostulacionRequest {
 
-    @NotNull @Positive private Long idOfertaLaboral;
+    @Positive private Long idOfertaLaboral;
     @NotNull private Origen origen;
+    @NotNull private PuestoObjetivo puestoObjetivo;
+    private Negocio negocio;
+    private Modalidad modalidad;
+    private TurnoHorario horario;
+    @NotNull private LocalDate fechaPostulacion;
     @NotNull @Valid private PostulanteRequest postulante;
 }

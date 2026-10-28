@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto;
 
+import java.time.LocalDateTime;
+
 @Builder @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
 public class TipificarPostulacionRequest {
@@ -17,5 +19,6 @@ public class TipificarPostulacionRequest {
     @NotNull @Positive private Long idSubtipificacion;
     @Positive private Long idGrupoCapacitacion;
     private ModalidadContacto modalidadContacto;
+    private LocalDateTime fechaHoraGestion;
     private String observacion;
 }

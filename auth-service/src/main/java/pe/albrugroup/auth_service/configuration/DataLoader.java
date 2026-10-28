@@ -57,12 +57,17 @@ public class DataLoader {
         // RECRUITMENT-SERVICE - POSTULACIONES
         savePermiso("CREATE_POSTULACIONES", "Puede registrar postulaciones nuevas", "POSTULACION", "CREATE");
         savePermiso("UPDATE_POSTULACIONES", "Puede editar y actualizar postulaciones", "POSTULACION", "UPDATE");
+        savePermiso("UPDATE_CLASIFICACION_POSTULACIONES", "Puede completar la clasificacion de postulaciones", "POSTULACION", "UPDATE_CLASSIFICATION");
         savePermiso("TYPIFY_POSTULACIONES", "Puede tipificar postulaciones", "POSTULACION", "TYPIFY");
         savePermiso("READ_POSTULACION", "Puede ver el detalle de una postulacion", "POSTULACION", "READ");
         savePermiso("READ_POSTULACIONES", "Puede listar postulaciones", "POSTULACION", "READ");
+        savePermiso("READ_POSTULACIONES_SUPERVISOR", "Puede consultar el estado general de postulaciones como supervisor de reclutamiento", "POSTULACION", "READ_SUPERVISOR");
         savePermiso("READ_POSTULACIONES_RECLUTAMIENTO", "Puede ver la bandeja de postulaciones en reclutamiento", "POSTULACION", "READ");
         savePermiso("READ_POSTULACIONES_CAPACITACION", "Puede ver la bandeja de postulaciones en capacitacion", "POSTULACION", "READ");
         savePermiso("CONFIRM_CONTRATACION_POSTULACIONES", "Puede confirmar la contratacion de postulaciones", "POSTULACION", "CONFIRM");
+        savePermiso("CREATE_CONTACTO_POSTULACION", "Puede registrar intentos de contacto de postulaciones", "POSTULACION", "CONTACT");
+        savePermiso("ASSIGN_OFERTA_POSTULACION", "Puede asociar una oferta laboral a una postulacion", "POSTULACION", "ASSIGN_OFFER");
+        savePermiso("READ_HISTORIAL_POSTULANTES", "Puede consultar el historial de postulaciones de un postulante", "POSTULANTE", "READ_HISTORY");
 
         // RECRUITMENT-SERVICE - OFERTAS LABORALES
         savePermiso("CREATE_OFERTAS_LABORALES", "Puede registrar ofertas laborales", "OFERTA_LABORAL", "CREATE");
@@ -274,10 +279,7 @@ public class DataLoader {
                 getPermiso("READ_POSTULACIONES_CAPACITACION"),
                 getPermiso("CONFIRM_CONTRATACION_POSTULACIONES"),
 
-                getPermiso("CREATE_OFERTAS_LABORALES"),
-                getPermiso("UPDATE_OFERTAS_LABORALES"),
                 getPermiso("READ_OFERTAS_LABORALES"),
-                getPermiso("UPDATE_ESTADO_OFERTAS_LABORALES"),
                 getPermiso("READ_OFERTAS_LABORALES_ACTIVAS"),
 
                 getPermiso("READ_EVENTOS_RECRUITMENT"),
@@ -326,10 +328,16 @@ public class DataLoader {
         Set<Permiso> reclutadorPermisos = Set.of(
 
                 getPermiso("TYPIFY_POSTULACIONES"),
+                getPermiso("UPDATE_CLASIFICACION_POSTULACIONES"),
                 getPermiso("READ_TIPIFICACIONES_RECLUTAMIENTO"),
 
                 getPermiso("READ_POSTULACIONES_RECLUTAMIENTO"),
                 getPermiso("READ_POSTULACION"),
+                getPermiso("READ_HISTORIAL_POSTULANTES"),
+                getPermiso("UPDATE_POSTULACIONES"),
+                getPermiso("CREATE_CONTACTO_POSTULACION"),
+
+                getPermiso("READ_OFERTAS_LABORALES_ACTIVAS"),
 
                 getPermiso("READ_EMPLEADOS"),
                 getPermiso("READ_PERSONAL_RECRUITMENT"),
@@ -345,11 +353,28 @@ public class DataLoader {
         );
         saveRol("RECLUTADOR", "Recursos Humanos - Contacto con postulantes", reclutadorPermisos);
 
+        // SUPERVISOR RECLUTAMIENTO
+        Set<Permiso> supervisorReclutamientoPermisos = Set.of(
+                getPermiso("CREATE_POSTULACIONES"),
+                getPermiso("READ_POSTULACIONES_SUPERVISOR"),
+                getPermiso("READ_POSTULACION"),
+                getPermiso("READ_HISTORIAL_POSTULANTES"),
+                getPermiso("UPDATE_POSTULACIONES"),
+                getPermiso("READ_OFERTAS_LABORALES_ACTIVAS"),
+                getPermiso("ASSIGN_OFERTA_POSTULACION"),
+                getPermiso("READ_GRUPOS_CAPACITACION"),
+                getPermiso("ASSIGN_GRUPOS_CAPACITACION"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("UPDATE_ASISTENCIAS")
+        );
+        saveRol("SUPERVISOR_RECLUTAMIENTO", "Reclutamiento - Registro e historial de postulantes", supervisorReclutamientoPermisos);
+
         // CAPACITADOR
         Set<Permiso> capacitadorPermisos = Set.of(
 
                 getPermiso("READ_GRUPOS_CAPACITACION"),
                 getPermiso("READ_EVENTOS_RECRUITMENT"),
+                getPermiso("READ_HISTORIAL_POSTULANTES"),
                 getPermiso("TYPIFY_POSTULACIONES"),
 
                 getPermiso("READ_EMPLEADOS"),

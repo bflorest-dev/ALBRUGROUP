@@ -1,7 +1,8 @@
-<form [formGroup]="createOfferForm" class="form-grid">
-  <label class="field">
-    <span>Codigo</span>
-    <input pInputText type="text" formControlName="codigo" />
+<form [formGroup]="createOfferForm" class="form-grid" (ngSubmit)="save.emit()" novalidate>
+  <label class="field field--wide">
+    <span>Código de oferta</span>
+    <input pInputText type="text" formControlName="codigo" placeholder="Ej. OF-2026-001" />
+    <small>Identifica esta demanda para que el equipo pueda encontrarla rápidamente.</small>
   </label>
 
   <label class="field">
@@ -13,6 +14,7 @@
       optionValue="value"
       appendTo="body"
     />
+    <small>Define la operación a la que pertenece la vacante.</small>
   </label>
 
   <label class="field">
@@ -24,6 +26,7 @@
       optionValue="value"
       appendTo="body"
     />
+    <small>Prioriza el rol que alimentará la bandeja de Reclutamiento.</small>
   </label>
 
   <label class="field">
@@ -35,6 +38,7 @@
       optionValue="value"
       appendTo="body"
     />
+    <small>Indica cómo se organizará la jornada del equipo.</small>
   </label>
 
   <label class="field">
@@ -46,11 +50,13 @@
       optionValue="value"
       appendTo="body"
     />
+    <small>Selecciona el turno operativo de la oferta.</small>
   </label>
 
   <label class="field">
-    <span>Cantidad inicial</span>
-    <input pInputText type="number" formControlName="cantidadInicial" min="1" />
+    <span>Vacantes iniciales</span>
+    <input pInputText type="number" formControlName="cantidadInicial" min="1" placeholder="Ej. 10" />
+    <small>Capacidad inicial que se habilitará para postulantes.</small>
   </label>
 
   <label class="field">
@@ -63,29 +69,24 @@
       appendTo="body"
       (ngModelChange)="setDateControl(createOfferForm, 'plazoInicial', $event)"
     />
+    <small>Fecha hasta la que se considera vigente esta demanda.</small>
   </label>
+
+  <div class="actions">
+    <button type="button" class="button button--ghost" (click)="cancel.emit()">
+      <i class="ti ti-x" aria-hidden="true"></i>
+      Cancelar
+    </button>
+    <button type="submit" class="button button--primary" [disabled]="isCreatingOffer">
+      <i class="ti ti-check" aria-hidden="true"></i>
+      {{ isCreatingOffer ? 'Procesando…' : 'Registrar oferta' }}
+    </button>
+  </div>
 </form>
 
 @if (createErrorMessage) {
-  <p-message severity="error" [text]="createErrorMessage" />
+  <div class="inline-notice inline-notice--error" role="alert">
+    <i class="ti ti-alert-circle" aria-hidden="true"></i>
+    <span>{{ createErrorMessage }}</span>
+  </div>
 }
-
-<div class="actions">
-  <button
-    pButton
-    type="button"
-    severity="secondary"
-    [outlined]="true"
-    icon="pi pi-times"
-    label="Cancelar"
-    (click)="cancel.emit()"
-  ></button>
-  <button
-    pButton
-    type="button"
-    icon="pi pi-save"
-    label="Guardar oferta"
-    [loading]="isCreatingOffer"
-    (click)="save.emit()"
-  ></button>
-</div>

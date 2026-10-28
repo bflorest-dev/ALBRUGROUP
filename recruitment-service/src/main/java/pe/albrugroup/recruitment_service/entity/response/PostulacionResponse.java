@@ -9,8 +9,13 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.enums.Origen;
+import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
+import pe.albrugroup.recruitment_service.entity.enums.Modalidad;
+import pe.albrugroup.recruitment_service.entity.enums.TurnoHorario;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Builder
 @Getter
@@ -23,6 +28,11 @@ public class PostulacionResponse {
     private Long idGrupoCapacitacion;
     private Long idEmpleadoRegistrador;
     private Origen origen;
+    private PuestoObjetivo puestoObjetivo;
+    private Negocio negocio;
+    private Modalidad modalidad;
+    private TurnoHorario horario;
+    private LocalDate fechaPostulacion;
     private Etapa etapa;
     private EstadoPostulacion estado;
     private EstadoBandejaPostulacion estadoBandeja;

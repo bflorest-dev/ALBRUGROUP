@@ -15,7 +15,10 @@ const LABEL_OVERRIDES: Record<string, string> = {
   AFP_INTEGRA: 'AFP Integra',
   AFP_PROFUTURO: 'AFP Profuturo',
   AFP_HABITAT: 'AFP Habitat',
-  PRIMA_AFP: 'Prima AFP'
+  PRIMA_AFP: 'Prima AFP',
+  MORNING: 'Mañana',
+  AFTERNOON: 'Tarde',
+  NIGHT: 'Noche'
 };
 
 export function formatLabel(value: string | null | undefined): string {

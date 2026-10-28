@@ -111,8 +111,8 @@
                 </div>
                 <div class="meta-grid">
                   <span><strong>Grupo:</strong> {{ postulacion.idGrupoCapacitacion || 'Sin grupo' }}</span>
-                  <span><strong>Oferta:</strong> {{ postulacion.ofertaLaboral.codigo }}</span>
-                  <span><strong>Puesto:</strong> {{ toLabel(postulacion.ofertaLaboral.puestoObjetivo) }}</span>
+                  <span><strong>Oferta:</strong> {{ postulacion.ofertaLaboral?.codigo || 'Sin asociar' }}</span>
+                  <span><strong>Puesto:</strong> {{ toLabel(postulacion.ofertaLaboral?.puestoObjetivo || postulacion.puestoObjetivo) }}</span>
                 </div>
                 <div class="card-actions">
                   <button type="button" class="primary-button" (click)="facade.selectPostulacion(postulacion)">
@@ -348,6 +348,14 @@
                 <option value="WHATSAPP">WhatsApp</option>
               </select>
             </label>
+
+            @if (facade.typifyForm.controls.modalidadContacto.value) {
+              <label>
+                <span>Fecha y hora de gestión</span>
+                <input type="datetime-local" formControlName="fechaHoraGestion" />
+                <small>Indica cuándo ocurrió o quedó programado el contacto.</small>
+              </label>
+            }
 
             <label class="field-wide">
               <span>Observacion</span>

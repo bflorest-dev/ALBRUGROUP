@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { formatLabel } from '../../../../shared/utils/display-label';
-import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
@@ -14,7 +13,7 @@ type SelectOption = {
 
 @Component({
   selector: 'app-offer-registration-panel',
-  imports: [ReactiveFormsModule, FormsModule, ButtonModule, DatePickerModule, InputTextModule, MessageModule, SelectModule],
+  imports: [ReactiveFormsModule, FormsModule, DatePickerModule, InputTextModule, MessageModule, SelectModule],
   templateUrl: './offer-registration-panel.component.html',
   styleUrl: './offer-registration-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

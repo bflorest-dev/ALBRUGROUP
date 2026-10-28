@@ -13,9 +13,9 @@
 
     <div class="summary-grid">
       <span><strong>Celular:</strong> {{ item.postulante.celular }}</span>
-      <span><strong>Oferta:</strong> {{ item.ofertaLaboral.codigo }}</span>
-      <span><strong>Puesto:</strong> {{ toLabel(item.ofertaLaboral.puestoObjetivo) }}</span>
-      <span><strong>Negocio:</strong> {{ toLabel(item.ofertaLaboral.negocio) }}</span>
+      <span><strong>Oferta:</strong> {{ item.ofertaLaboral?.codigo || 'Sin asociar' }}</span>
+      <span><strong>Puesto:</strong> {{ toLabel(item.ofertaLaboral?.puestoObjetivo || item.puestoObjetivo) }}</span>
+      <span><strong>Negocio:</strong> {{ toLabel(item.ofertaLaboral?.negocio || item.negocio) }}</span>
       <span><strong>Etapa:</strong> {{ toLabel(item.etapa) }}</span>
       <span><strong>Estado:</strong> {{ toLabel(item.estadoBandeja) }}</span>
     </div>
@@ -80,6 +80,14 @@
           </select>
         </label>
 
+        @if (typifyForm.get('modalidadContacto')?.value) {
+          <label>
+            <span>Fecha y hora de gestión</span>
+            <input type="datetime-local" formControlName="fechaHoraGestion" />
+            <small>Indica cuándo ocurrió o quedó programado el contacto.</small>
+          </label>
+        }
+
         <label class="field-wide">
           <span>Observacion</span>
           <textarea rows="3" formControlName="observacion"></textarea>
@@ -126,7 +134,7 @@
               </span>
               <div>
                 <span class="event-item__meta">
-                  {{ toLabel(evento.accion) }} - {{ evento.createdAt | date: 'short' }}
+                  {{ toLabel(evento.accion) }} · {{ toDateTime(evento.fechaHoraGestion) }}
                 </span>
                 <strong>{{ getEventTitle(evento) }}</strong>
                 <p>{{ getEventDetail(evento) }}</p>

@@ -7,6 +7,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.recruitment_service.entity.enums.*;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
@@ -19,7 +20,7 @@ public class Postulacion {
     @JoinColumn(name = "postulante_id")
     private Postulante postulante;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "oferta_laboral_id")
     private OfertaLaboral ofertaLaboral;
 
@@ -27,6 +28,15 @@ public class Postulacion {
 
     @Enumerated(EnumType.STRING)
     private Origen origen;
+    @Enumerated(EnumType.STRING)
+    private PuestoObjetivo puestoObjetivo;
+    @Enumerated(EnumType.STRING)
+    private Negocio negocio;
+    @Enumerated(EnumType.STRING)
+    private Modalidad modalidad;
+    @Enumerated(EnumType.STRING)
+    private TurnoHorario horario;
+    private LocalDate fechaPostulacion;
     @Enumerated(EnumType.STRING)
     private Etapa etapa;
     @Enumerated(EnumType.STRING)

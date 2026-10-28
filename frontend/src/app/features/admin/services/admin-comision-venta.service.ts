@@ -37,10 +37,13 @@ export class AdminComisionVentaService {
   private readonly leadsUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
   private readonly scheduleUrl = `${API_CONSTANTS.gatewayBaseUrl}/schedule`;
 
-  obtenerVentasPorCorte(mesComision?: string, proveedor = 'WIN'): Observable<ComisionVentaResponse> {
+  obtenerVentasPorCorte(mesComision?: string, proveedor = 'WIN', fechaLimiteMorosidad?: string | null): Observable<ComisionVentaResponse> {
     let params = new HttpParams().set('proveedor', proveedor);
     if (mesComision) {
       params = params.set('mesComision', mesComision);
+    }
+    if (fechaLimiteMorosidad) {
+      params = params.set('fechaLimiteMorosidad', fechaLimiteMorosidad);
     }
     return this.http.get<ComisionVentaResponse>(
       `${this.leadsUrl}/comisiones/ventas-por-corte`,

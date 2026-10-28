@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
 
 import java.util.Optional;
+import java.util.List;
 
 public interface PostulacionRepository extends JpaRepository<Postulacion, Long>, JpaSpecificationExecutor<Postulacion> {
 
@@ -25,6 +26,9 @@ public interface PostulacionRepository extends JpaRepository<Postulacion, Long>,
             where p.id = :idPostulacion
             """)
     Optional<Postulacion> findDetalleById(@Param("idPostulacion") Long idPostulacion);
+
+    @EntityGraph(attributePaths = {"postulante", "ofertaLaboral"})
+    List<Postulacion> findByPostulanteIdOrderByFechaPostulacionDescIdDesc(Long idPostulante);
 
     @Query("""
             select count(gcd) > 0

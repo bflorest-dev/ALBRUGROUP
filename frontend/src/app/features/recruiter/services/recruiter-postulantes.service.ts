@@ -7,6 +7,7 @@ import { CatalogoTipificacionResponse } from '../../../shared/models/recruitment
 import { EventoResponse } from '../../../shared/models/recruitment/evento-response';
 import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
+import { RegistrarContactoPostulacionRequest } from '../../../shared/models/recruitment/registrar-contacto-postulacion-request';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
 
 @Injectable({
@@ -21,14 +22,16 @@ export class RecruiterPostulantesService {
   listarBandejaReclutamiento(
     estadoBandeja: string,
     pageNumber = 0,
-    pageSize = 8
+    pageSize = 8,
+    idTipificacion?: number
   ): Observable<PageResponse<PostulacionResponse>> {
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('estadoBandeja', estadoBandeja)
       .set('pageNumber', pageNumber)
       .set('pageSize', pageSize)
       .set('sortBy', 'updatedAt')
       .set('direction', 'desc');
+    if (idTipificacion) params = params.set('idTipificacion', idTipificacion);
 
     return this.http.get<PageResponse<PostulacionResponse>>(
       `${this.postulacionesUrl}/bandeja/reclutamiento`,
@@ -76,6 +79,20 @@ export class RecruiterPostulantesService {
     return this.http.post<PostulacionResponse>(
       `${this.postulacionesUrl}/${idPostulacion}/tipificacion`,
       request
+    );
+  }
+
+  registrarContacto(
+    idPostulacion: number,
+    request: RegistrarContactoPostulacionRequest
+  ): Observable<void> {
+    return this.http.post<void>(`${this.postulacionesUrl}/${idPostulacion}/contactos`, request);
+  }
+
+  asignarGrupo(idGrupoCapacitacion: number, idPostulacion: number): Observable<unknown> {
+    return this.http.post(
+      `${this.recruitmentUrl}/grupos-capacitacion/${idGrupoCapacitacion}/postulaciones`,
+      { idPostulacion }
     );
   }
 }

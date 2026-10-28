@@ -43,6 +43,7 @@ const ROLE_THEME_CLASS: Record<string, string> = {
   ADMINISTRADOR: 'theme-admin',
   RRHH: 'theme-rrhh',
   RECLUTADOR: 'theme-recruiter',
+  SUPERVISOR_RECLUTAMIENTO: 'theme-recruiter',
   CAPACITADOR: 'theme-trainer',
   FREELANCE: 'theme-freelance',
   ASESOR_GTR: 'theme-gtr',
@@ -344,8 +345,21 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
     if (activeRole === 'RECLUTADOR') {
       return [
+        { label: 'Bandeja operativa', route: '/app/reclutador/bandeja-operativa', icon: 'pi pi-inbox', exact: true },
         { label: 'Grupos de capacitacion', route: '/app/reclutador/grupos-capacitacion', icon: 'pi pi-users' },
         { label: 'Postulantes', route: '/app/reclutador/postulantes', icon: 'pi pi-list-check' }
+      ];
+    }
+
+    if (activeRole === 'SUPERVISOR_RECLUTAMIENTO') {
+      return [
+        {
+          domainId: 'recruitment',
+          label: 'Inicio',
+          route: '/app/reclutamiento/inicio',
+          icon: 'pi pi-home',
+          exact: true
+        }
       ];
     }
 

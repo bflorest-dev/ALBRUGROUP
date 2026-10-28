@@ -10,6 +10,7 @@ import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Builder
 @Getter
@@ -29,5 +30,6 @@ public class EventoResponse {
     private String tipificacion;
     private String subtipificacion;
     private String observacion;
+    private LocalDateTime fechaHoraGestion;
     private Instant createdAt;
 }

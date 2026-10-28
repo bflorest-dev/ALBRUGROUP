@@ -43,6 +43,7 @@ public class OfertaLaboralService {
     private final OfertaMapper ofertaMapper;
     private final CurrentUser currentUser;
     private final PaginationService paginationService;
+    private final OfertaLaboralRealtimeNotifier ofertaLaboralRealtimeNotifier;
 
 
     @CacheEvict(value = CacheNames.OFERTAS_ACTIVAS, allEntries = true)
@@ -53,7 +54,13 @@ public class OfertaLaboralService {
         OfertaLaboral oferta = ofertaMapper.toEntity(request);
         oferta.setIdSolicitante(currentUser.empleadoID());
         oferta.setEstado(EstadoOferta.ACTIVO);
-        return ofertaMapper.toResponse(ofertaRepository.save(oferta));
+        OfertaLaboral ofertaGuardada = ofertaRepository.save(oferta);
+        ofertaLaboralRealtimeNotifier.publishAfterCommit(
+                "REGISTRO_OFERTA_LABORAL",
+                "OFERTA_LABORAL",
+                ofertaGuardada
+        );
+        return ofertaMapper.toResponse(ofertaGuardada);
     }
 
     @Transactional(readOnly = true)
@@ -89,7 +96,13 @@ public class OfertaLaboralService {
         OfertaAmpliacion ampliacion = ofertaMapper.toEntity(request);
         ampliacion.setIdSolicitante(currentUser.empleadoID());
         ampliacion.setOfertaLaboral(oferta);
-        return ofertaMapper.toResponse(ampliacionRepository.save(ampliacion));
+        OfertaAmpliacion ampliacionGuardada = ampliacionRepository.save(ampliacion);
+        ofertaLaboralRealtimeNotifier.publishAfterCommit(
+                "AMPLIACION_OFERTA_LABORAL",
+                "OFERTA_LABORAL",
+                oferta
+        );
+        return ofertaMapper.toResponse(ampliacionGuardada);
     }
 
     @CacheEvict(value = CacheNames.OFERTAS_ACTIVAS, allEntries = true)
@@ -102,7 +115,13 @@ public class OfertaLaboralService {
 
         validarCambioEstado(oferta, request.getEstado());
         oferta.setEstado(request.getEstado());
-        return ofertaMapper.toResponse(ofertaRepository.save(oferta));
+        OfertaLaboral ofertaGuardada = ofertaRepository.save(oferta);
+        ofertaLaboralRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_ESTADO_OFERTA_LABORAL",
+                "OFERTA_LABORAL",
+                ofertaGuardada
+        );
+        return ofertaMapper.toResponse(ofertaGuardada);
     }
 
     private void validarCodigoUnico(String codigo) {

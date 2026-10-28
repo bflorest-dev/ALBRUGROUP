@@ -25,7 +25,15 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
                     JOIN lead_etapa_resumen ler2 ON ler2.id_lead = l2.id AND ler2.etapa = 'PREVENTA'
                     WHERE l2.etapa = 'POSTVENTA'
                       AND l2.estado_cliente_postventa = 'ACTIVO'
-                      AND (ls2.fue_moroso_primer_periodo IS NULL OR ls2.fue_moroso_primer_periodo = false)
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM pago_postventa pp_s
+                          JOIN periodo_facturacion_postventa pf_s ON pf_s.id = pp_s.id_periodo_facturacion
+                          WHERE pp_s.id_lead = l2.id
+                            AND pf_s.numero_periodo = 1
+                            AND pp_s.fecha_pago IS NOT NULL
+                            AND pp_s.fecha_pago > :fechaLimiteMorosidad
+                      )
                       AND cf2.proveedor_snapshot = :proveedor
                       AND cf2.activo = true
                       AND cf2.mes_corte_base = cf.mes_corte_base
@@ -39,7 +47,15 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN zona z ON z.id = l.id_zona
             WHERE l.etapa = 'POSTVENTA'
               AND l.estado_cliente_postventa = 'ACTIVO'
-              AND (ls.fue_moroso_primer_periodo IS NULL OR ls.fue_moroso_primer_periodo = false)
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM pago_postventa pp_m
+                  JOIN periodo_facturacion_postventa pf_m ON pf_m.id = pp_m.id_periodo_facturacion
+                  WHERE pp_m.id_lead = l.id
+                    AND pf_m.numero_periodo = 1
+                    AND pp_m.fecha_pago IS NOT NULL
+                    AND pp_m.fecha_pago > :fechaLimiteMorosidad
+              )
               AND cf.proveedor_snapshot = :proveedor
               AND cf.activo = true
               AND (
@@ -53,6 +69,7 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
             """, nativeQuery = true)
     List<ComisionVentaAsesorProjection> ventasPorCorteYAsesor(
             @Param("proveedor") String proveedor,
+            @Param("fechaLimiteMorosidad") LocalDate fechaLimiteMorosidad,
             @Param("mesCorte1") LocalDate mesCorte1,
             @Param("numCorte1") int numCorte1,
             @Param("mesCorte2") LocalDate mesCorte2,

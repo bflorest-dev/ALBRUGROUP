@@ -18,6 +18,8 @@ import pe.albrugroup.recruitment_service.repository.PostulacionRepository;
 import pe.albrugroup.recruitment_service.service.mapper.EventoMapper;
 
 import java.util.Set;
+import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +44,31 @@ public class EventoService {
             String subtipificacion,
             String observacion
     ) {
+        registrarEvento(
+                postulacion,
+                accion,
+                modalidadContacto,
+                idTipificacion,
+                idSubtipificacion,
+                tipificacion,
+                subtipificacion,
+                observacion,
+                null
+        );
+    }
+
+    @Transactional
+    public void registrarEvento(
+            Postulacion postulacion,
+            Accion accion,
+            ModalidadContacto modalidadContacto,
+            Long idTipificacion,
+            Long idSubtipificacion,
+            String tipificacion,
+            String subtipificacion,
+            String observacion,
+            LocalDateTime fechaHoraGestion
+    ) {
         Evento evento = Evento.builder()
                 .postulacion(postulacion)
                 .idEmpleadoResponsable(currentUser.empleadoID())
@@ -53,6 +80,7 @@ public class EventoService {
                 .tipificacion(tipificacion)
                 .subtipificacion(subtipificacion)
                 .observacion(observacion)
+                .fechaHoraGestion(fechaHoraGestion)
                 .build();
 
         eventoRepository.save(evento);
@@ -70,5 +98,13 @@ public class EventoService {
                 )
                 .map(eventoMapper::toResponse);
         return PageResponse.from(eventos);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventoResponse> listarTodosPorPostulacion(Long idPostulacion) {
+        return eventoRepository.findByPostulacionIdOrderByCreatedAtAscIdAsc(idPostulacion)
+                .stream()
+                .map(eventoMapper::toResponse)
+                .toList();
     }
 }
