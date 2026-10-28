@@ -9,6 +9,7 @@ import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/gr
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
 import { RegistrarContactoPostulacionRequest } from '../../../shared/models/recruitment/registrar-contacto-postulacion-request';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
+import { GestionReclutamiento, GestionRequest } from '../../../shared/models/recruitment/gestion-reclutamiento';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +19,13 @@ export class RecruiterPostulantesService {
   private readonly postulacionesUrl = `${this.recruitmentUrl}/postulaciones`;
 
   constructor(private readonly http: HttpClient) {}
+
+  obtenerGestion(id:number): Observable<GestionReclutamiento> {
+    return this.http.get<GestionReclutamiento>(`${this.postulacionesUrl}/${id}/gestion-reclutamiento`);
+  }
+  registrarGestion(id:number, request:GestionRequest): Observable<GestionReclutamiento> {
+    return this.http.post<GestionReclutamiento>(`${this.postulacionesUrl}/${id}/gestion-reclutamiento`,request);
+  }
 
   listarBandejaReclutamiento(
     estadoBandeja: string,
@@ -59,9 +67,9 @@ export class RecruiterPostulantesService {
     );
   }
 
-  listarEventos(idPostulacion: number): Observable<PageResponse<EventoResponse>> {
+  listarEventos(idPostulacion: number, pageNumber = 0): Observable<PageResponse<EventoResponse>> {
     const params = new HttpParams()
-      .set('pageNumber', 0)
+      .set('pageNumber', pageNumber)
       .set('pageSize', 12)
       .set('sortBy', 'createdAt')
       .set('direction', 'desc');
@@ -89,10 +97,4 @@ export class RecruiterPostulantesService {
     return this.http.post<void>(`${this.postulacionesUrl}/${idPostulacion}/contactos`, request);
   }
 
-  asignarGrupo(idGrupoCapacitacion: number, idPostulacion: number): Observable<unknown> {
-    return this.http.post(
-      `${this.recruitmentUrl}/grupos-capacitacion/${idGrupoCapacitacion}/postulaciones`,
-      { idPostulacion }
-    );
-  }
 }

@@ -15,6 +15,10 @@ import java.util.List;
 
 public interface PostulacionRepository extends JpaRepository<Postulacion, Long>, JpaSpecificationExecutor<Postulacion> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Postulacion p where p.id = :id")
+    Optional<Postulacion> findLockedById(@Param("id") Long id);
+
     @Override
     @EntityGraph(attributePaths = {"postulante", "ofertaLaboral"})
     Page<Postulacion> findAll(Specification<Postulacion> spec, Pageable pageable);

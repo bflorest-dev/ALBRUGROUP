@@ -74,6 +74,8 @@ public class PostulacionService {
     private final CurrentUser currentUser;
     private final PaginationService paginationService;
     private final PostulacionRealtimeNotifier postulacionRealtimeNotifier;
+    private final pe.albrugroup.recruitment_service.repository.GestionReclutamientoRepository gestionReclutamientoRepository;
+    private final pe.albrugroup.recruitment_service.repository.ActividadReclutamientoRepository actividadReclutamientoRepository;
 
     public PostulacionResponse registrarPostulacion(PostulacionRequest request) {
         OfertaLaboral ofertaLaboral = obtenerOfertaActivaOpcional(request.getIdOfertaLaboral());
@@ -136,6 +138,16 @@ public class PostulacionService {
                 request.getIdGrupoCapacitacion()
         );
         validarFechaHoraGestion(request.getModalidadContacto(), request.getFechaHoraGestion());
+        if (requiereAsignacionGrupo && gestionReclutamientoRepository.findById(idPostulacion)
+                .map(g -> g.getEvaluadaAt() == null).orElse(true)) {
+            throw new BadRequestException("Registra la evaluación realizada antes de aprobar el paso a capacitación.");
+        }
+        if (etapaAnterior == Etapa.RECLUTAMIENTO) {
+            gestionReclutamientoRepository.findById(idPostulacion).ifPresent(g -> {
+                g.setRevision(g.getRevision() + 1);
+                gestionReclutamientoRepository.save(g);
+            });
+        }
 
         Postulacion postulacionGuardada = aplicarTipificacion(
                 context.postulacion(),
@@ -574,8 +586,11 @@ public class PostulacionService {
     }
 
     private TipificacionContext prepararTipificacion(Long idPostulacion, Long idTipificacion, Long idSubtipificacion) {
-        Postulacion postulacion = postulacionRepository.findById(idPostulacion)
+        Postulacion postulacion = postulacionRepository.findLockedById(idPostulacion)
                 .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+        if (postulacion.getEtapa() == Etapa.RECLUTAMIENTO && postulacion.getEstado() != EstadoPostulacion.EN_PROCESO) {
+            throw new BadRequestException("La postulación está cerrada y no admite nuevas gestiones de reclutamiento.");
+        }
 
         Tipificacion tipificacion = tipificacionRepository.findById(idTipificacion)
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, idTipificacion));
@@ -793,6 +808,14 @@ public class PostulacionService {
 
     private PostulacionResponse mapearPostulacionResponse(Postulacion postulacion) {
         PostulacionResponse response = postulacionMapper.toResponse(postulacion);
+        gestionReclutamientoRepository.findById(postulacion.getId()).ifPresent(g -> {
+            response.setUltimaGestionAt(g.getUltimaGestionAt());
+            response.setUltimoResultado(g.getUltimoResultado());
+        });
+        actividadReclutamientoRepository.findByPostulacionIdAndEstado(postulacion.getId(), "PENDIENTE").ifPresent(a -> {
+            response.setProximaActividadAt(a.getFechaHora());
+            response.setProximaActividadTipo(a.getTipo());
+        });
         grupoCapacitacionDetalleRepository.findByPostulacionId(postulacion.getId())
                 .ifPresent(detalle -> response.setIdGrupoCapacitacion(detalle.getGrupoCapacitacion().getId()));
         return response;

@@ -1,0 +1,359 @@
+<section class="gastos-page mx-auto w-full max-w-[96rem]">
+  <p-toast position="top-right" />
+
+  <app-page-header eyebrow="Finanzas" title="Gastos Generales"
+    description="Registra gastos, configura tipos y revisa el resumen mensual consolidado." />
+
+  <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
+    <p-tablist>
+      <p-tab value="resumen">
+        <i class="pi pi-chart-bar" aria-hidden="true"></i>
+        <span>Resumen Mensual</span>
+      </p-tab>
+      <p-tab value="gastos">
+        <i class="pi pi-receipt" aria-hidden="true"></i>
+        <span>Registro de Gastos</span>
+      </p-tab>
+      <p-tab value="config">
+        <i class="pi pi-cog" aria-hidden="true"></i>
+        <span>Configuraci&oacute;n</span>
+      </p-tab>
+    </p-tablist>
+
+    <p-tabpanels>
+      <!-- ═══════════ TAB RESUMEN ═══════════ -->
+      <p-tabpanel value="resumen">
+        <div class="resumen-section">
+          <header class="resumen-section__head">
+            <p-datepicker
+              [(ngModel)]="resumenDate"
+              view="month"
+              dateFormat="mm/yy"
+              [showIcon]="true"
+              [readonlyInput]="true"
+              (onSelect)="onResumenDateChange($event)"
+              placeholder="Mes / A&ntilde;o"
+              styleClass="w-48"
+            />
+          </header>
+
+          @if (loading()) {
+            <div class="mt-4 flex flex-col gap-3">
+              @for (_ of [1,2,3,4]; track $index) {
+                <p-skeleton height="2.5rem" />
+              }
+            </div>
+          } @else if (resumen(); as r) {
+            <!-- Grupos manuales -->
+            @for (grupo of r.grupos; track grupo.idGrupo) {
+              <div class="resumen-grupo">
+                <h3 class="resumen-grupo__titulo">{{ grupo.nombreGrupo | uppercase }}</h3>
+                <table class="resumen-table">
+                  <tbody>
+                    @for (linea of grupo.lineas; track linea.idTipoGasto) {
+                      <tr>
+                        <td class="resumen-table__nombre">
+                          {{ linea.nombreTipoGasto }}
+                          <span class="resumen-table__cat">({{ linea.categoria }})</span>
+                        </td>
+                        <td class="resumen-table__monto">S/.{{ linea.acumuladoMes | number:'1.2-2' }}</td>
+                        <td class="resumen-table__count">{{ linea.cantidadRegistros }} reg.</td>
+                      </tr>
+                    }
+                  </tbody>
+                  <tfoot>
+                    <tr class="resumen-table__subtotal">
+                      <td>Subtotal</td>
+                      <td class="resumen-table__monto">S/.{{ grupo.subtotalGrupo | number:'1.2-2' }}</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            }
+
+            <!-- Redes (invocado) -->
+            <div class="resumen-grupo">
+              <h3 class="resumen-grupo__titulo">REDES</h3>
+              <table class="resumen-table">
+                <tbody>
+                  <tr>
+                    <td class="resumen-table__nombre">CTA bancaria</td>
+                    <td class="resumen-table__monto">S/.{{ r.ctaBancaria | number:'1.2-2' }}</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td class="resumen-table__nombre">CTA publicitaria</td>
+                    <td class="resumen-table__monto">S/.{{ r.ctaPublicitaria | number:'1.2-2' }}</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="resumen-table__subtotal">
+                    <td>Subtotal Redes</td>
+                    <td class="resumen-table__monto">S/.{{ r.ctaBancaria + r.ctaPublicitaria | number:'1.2-2' }}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Cashback (invocado) -->
+            <div class="resumen-grupo">
+              <h3 class="resumen-grupo__titulo">CASHBACK PROMOCIONAL</h3>
+              <table class="resumen-table">
+                <tbody>
+                  <tr>
+                    <td class="resumen-table__nombre">Preventa</td>
+                    <td class="resumen-table__monto">S/.{{ r.cashbackPreventa | number:'1.2-2' }}</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td class="resumen-table__nombre">Postventa</td>
+                    <td class="resumen-table__monto">S/.{{ r.cashbackPostventa | number:'1.2-2' }}</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="resumen-table__subtotal">
+                    <td>Subtotal Cashback</td>
+                    <td class="resumen-table__monto">S/.{{ r.cashbackPreventa + r.cashbackPostventa | number:'1.2-2' }}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Totales finales -->
+            <div class="resumen-totales">
+              <div class="resumen-totales__row">
+                <span>Subtotal Fijos</span>
+                <span>S/.{{ r.subtotalFijos | number:'1.2-2' }}</span>
+              </div>
+              <div class="resumen-totales__row">
+                <span>Subtotal Variables</span>
+                <span>S/.{{ r.subtotalVariables | number:'1.2-2' }}</span>
+              </div>
+              <div class="resumen-totales__row resumen-totales__row--total">
+                <span>Total General</span>
+                <span>S/.{{ r.totalGeneral | number:'1.2-2' }}</span>
+              </div>
+            </div>
+          } @else {
+            <div class="mt-4 text-center text-slate-500">
+              <i class="pi pi-info-circle mr-1"></i>
+              Selecciona un mes para ver el resumen.
+            </div>
+          }
+        </div>
+      </p-tabpanel>
+
+      <!-- ═══════════ TAB GASTOS ═══════════ -->
+      <p-tabpanel value="gastos">
+        <div class="gastos-section">
+          <header class="gastos-section__head">
+            <div class="flex flex-wrap items-end gap-3">
+              <p-floatlabel>
+                <p-datepicker inputId="gDesde" [(ngModel)]="gastoFechaDesde" dateFormat="dd/mm/yy"
+                  [showIcon]="true" styleClass="w-40" />
+                <label for="gDesde">Desde</label>
+              </p-floatlabel>
+              <p-floatlabel>
+                <p-datepicker inputId="gHasta" [(ngModel)]="gastoFechaHasta" dateFormat="dd/mm/yy"
+                  [showIcon]="true" styleClass="w-40" />
+                <label for="gHasta">Hasta</label>
+              </p-floatlabel>
+              <p-select
+                [options]="tiposActivosOptions()"
+                optionLabel="label"
+                optionValue="value"
+                [(ngModel)]="filtroTipoGasto"
+                placeholder="Todos los tipos"
+                [showClear]="true"
+                styleClass="w-60"
+              />
+              <button pButton icon="pi pi-search" label="Buscar" (click)="cargarGastos()" severity="secondary"></button>
+              <button pButton icon="pi pi-plus" label="Registrar Gasto" (click)="abrirNuevoGasto()"></button>
+            </div>
+          </header>
+
+          <p-table [value]="gastos()" styleClass="p-datatable-sm mt-3" [paginator]="true" [rows]="15"
+            [rowsPerPageOptions]="[10, 15, 30]" emptyMessage="No hay gastos registrados en este rango.">
+            <ng-template #header>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Documento</th>
+                <th>Descripci&oacute;n</th>
+                <th class="text-right">Monto</th>
+                <th class="w-24"></th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-g>
+              <tr>
+                <td>{{ g.fecha }}</td>
+                <td>{{ g.nombreTipoGasto }}</td>
+                <td>{{ g.documento ?? '-' }}</td>
+                <td class="max-w-xs truncate">{{ g.descripcion ?? '-' }}</td>
+                <td class="text-right font-semibold">S/.{{ g.monto | number:'1.2-2' }}</td>
+                <td class="flex gap-1">
+                  <button pButton icon="pi pi-pencil" [text]="true" severity="secondary" pTooltip="Editar" (click)="abrirEditarGasto(g)"></button>
+                  <button pButton icon="pi pi-trash" [text]="true" severity="danger" pTooltip="Eliminar" (click)="eliminarGasto(g)"></button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </p-tabpanel>
+
+      <!-- ═══════════ TAB CONFIGURACION ═══════════ -->
+      <p-tabpanel value="config">
+        <div class="config-section">
+          <!-- Grupos -->
+          <div class="config-block">
+            <header class="config-block__head">
+              <h3>Grupos de gasto</h3>
+              <button pButton icon="pi pi-plus" label="Nuevo grupo" size="small" (click)="abrirNuevoGrupo()"></button>
+            </header>
+            <p-table [value]="grupos()" styleClass="p-datatable-sm" emptyMessage="No hay grupos creados.">
+              <ng-template #header>
+                <tr>
+                  <th>Nombre</th>
+                  <th class="w-24">Orden</th>
+                  <th class="w-28"></th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-g>
+                <tr>
+                  <td>{{ g.nombre }}</td>
+                  <td>{{ g.orden }}</td>
+                  <td class="flex gap-1">
+                    <button pButton icon="pi pi-pencil" [text]="true" severity="secondary" pTooltip="Editar" (click)="abrirEditarGrupo(g)"></button>
+                    <button pButton icon="pi pi-trash" [text]="true" severity="danger" pTooltip="Eliminar" (click)="eliminarGrupo(g)"></button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <!-- Tipos -->
+          <div class="config-block">
+            <header class="config-block__head">
+              <h3>Tipos de gasto</h3>
+              <button pButton icon="pi pi-plus" label="Nuevo tipo" size="small" (click)="abrirNuevoTipo()"
+                [disabled]="grupos().length === 0"></button>
+            </header>
+            <p-table [value]="tipos()" styleClass="p-datatable-sm" emptyMessage="No hay tipos creados.">
+              <ng-template #header>
+                <tr>
+                  <th>Grupo</th>
+                  <th>Nombre</th>
+                  <th>Categor&iacute;a</th>
+                  <th class="w-24">Estado</th>
+                  <th class="w-28"></th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-t>
+                <tr [class.opacity-50]="!t.activo">
+                  <td>{{ t.grupo.nombre }}</td>
+                  <td>{{ t.nombre }}</td>
+                  <td>
+                    <p-tag [value]="t.categoria" [severity]="t.categoria === 'FIJO' ? 'info' : 'warn'" />
+                  </td>
+                  <td>
+                    <p-tag [value]="t.activo ? 'Activo' : 'Inactivo'" [severity]="t.activo ? 'success' : 'secondary'" />
+                  </td>
+                  <td class="flex gap-1">
+                    <button pButton icon="pi pi-pencil" [text]="true" severity="secondary" pTooltip="Editar" (click)="abrirEditarTipo(t)"></button>
+                    @if (t.activo) {
+                      <button pButton icon="pi pi-ban" [text]="true" severity="danger" pTooltip="Desactivar" (click)="desactivarTipo(t)"></button>
+                    }
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </div>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+</section>
+
+<!-- ═══════════ DIALOG GRUPO ═══════════ -->
+<p-dialog [header]="editingGrupo() ? 'Editar grupo' : 'Nuevo grupo'" [(visible)]="showGrupoDialog"
+  [modal]="true" [style]="{ width: '28rem' }">
+  <div class="flex flex-col gap-4 pt-2">
+    <p-floatlabel>
+      <input pInputText id="grNombre" [(ngModel)]="grupoForm().nombre" class="w-full" />
+      <label for="grNombre">Nombre</label>
+    </p-floatlabel>
+    <p-floatlabel>
+      <p-inputNumber inputId="grOrden" [(ngModel)]="grupoForm().orden" [showButtons]="true" [min]="0" styleClass="w-full" />
+      <label for="grOrden">Orden</label>
+    </p-floatlabel>
+  </div>
+  <ng-template #footer>
+    <button pButton label="Cancelar" severity="secondary" [outlined]="true" (click)="showGrupoDialog.set(false)"></button>
+    <button pButton label="Guardar" icon="pi pi-check" (click)="guardarGrupo()" [disabled]="!grupoForm().nombre.trim()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- ═══════════ DIALOG TIPO ═══════════ -->
+<p-dialog [header]="editingTipo() ? 'Editar tipo de gasto' : 'Nuevo tipo de gasto'" [(visible)]="showTipoDialog"
+  [modal]="true" [style]="{ width: '32rem' }">
+  <div class="flex flex-col gap-4 pt-2">
+    <p-floatlabel>
+      <p-select inputId="tpGrupo" [options]="grupoOptions()" optionLabel="label" optionValue="value"
+        [(ngModel)]="tipoForm().idGrupoGasto" styleClass="w-full" />
+      <label for="tpGrupo">Grupo</label>
+    </p-floatlabel>
+    <p-floatlabel>
+      <input pInputText id="tpNombre" [(ngModel)]="tipoForm().nombre" class="w-full" />
+      <label for="tpNombre">Nombre</label>
+    </p-floatlabel>
+    <p-floatlabel>
+      <p-select inputId="tpCategoria" [options]="categoriaOptions" optionLabel="label" optionValue="value"
+        [(ngModel)]="tipoForm().categoria" styleClass="w-full" />
+      <label for="tpCategoria">Categor&iacute;a</label>
+    </p-floatlabel>
+  </div>
+  <ng-template #footer>
+    <button pButton label="Cancelar" severity="secondary" [outlined]="true" (click)="showTipoDialog.set(false)"></button>
+    <button pButton label="Guardar" icon="pi pi-check" (click)="guardarTipo()"
+      [disabled]="!tipoForm().nombre.trim() || !tipoForm().idGrupoGasto"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- ═══════════ DIALOG GASTO ═══════════ -->
+<p-dialog [header]="editingGasto() ? 'Editar gasto' : 'Registrar gasto'" [(visible)]="showGastoDialog"
+  [modal]="true" [style]="{ width: '34rem' }">
+  <div class="flex flex-col gap-4 pt-2">
+    <p-floatlabel>
+      <p-select inputId="gsType" [options]="tiposActivosOptions()" optionLabel="label" optionValue="value"
+        [(ngModel)]="gastoForm().idTipoGasto" styleClass="w-full" />
+      <label for="gsType">Tipo de gasto</label>
+    </p-floatlabel>
+    <p-floatlabel>
+      <p-inputNumber inputId="gsMonto" [(ngModel)]="gastoForm().monto" mode="currency" currency="PEN"
+        locale="es-PE" [minFractionDigits]="2" styleClass="w-full" />
+      <label for="gsMonto">Monto</label>
+    </p-floatlabel>
+    <p-floatlabel>
+      <input pInputText id="gsDoc" [(ngModel)]="gastoForm().documento" class="w-full" />
+      <label for="gsDoc">Documento (opcional)</label>
+    </p-floatlabel>
+    <p-floatlabel>
+      <input pInputText id="gsDesc" [(ngModel)]="gastoForm().descripcion" class="w-full" />
+      <label for="gsDesc">Descripci&oacute;n (opcional)</label>
+    </p-floatlabel>
+    <p-floatlabel>
+      <p-datepicker inputId="gsFecha" [(ngModel)]="gastoForm().fecha" dateFormat="yy-mm-dd" [showIcon]="true" styleClass="w-full" />
+      <label for="gsFecha">Fecha</label>
+    </p-floatlabel>
+  </div>
+  <ng-template #footer>
+    <button pButton label="Cancelar" severity="secondary" [outlined]="true" (click)="showGastoDialog.set(false)"></button>
+    <button pButton label="Guardar" icon="pi pi-check" (click)="guardarGasto()"
+      [disabled]="!gastoForm().idTipoGasto || !gastoForm().monto || !gastoForm().fecha"></button>
+  </ng-template>
+</p-dialog>

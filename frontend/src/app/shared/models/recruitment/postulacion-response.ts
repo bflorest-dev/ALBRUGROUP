@@ -16,6 +16,10 @@ export interface PostulacionResponse {
   estadoBandeja: string;
   createdAt: string;
   updatedAt: string;
+  ultimaGestionAt?: string | null;
+  ultimoResultado?: string | null;
+  proximaActividadAt?: string | null;
+  proximaActividadTipo?: string | null;
   postulante: PostulanteResponse;
   ofertaLaboral?: PostulacionOfertaResponse | null;
 }

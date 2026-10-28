@@ -8,6 +8,7 @@ import { AdminProveedoresPageComponent } from '../admin/pages/admin-proveedores-
 import { AdminFinancePageComponent } from '../admin/pages/admin-finance-page/admin-finance-page.component';
 import { AdminBillingPageComponent } from '../admin/pages/admin-billing-page/admin-billing-page.component';
 import { AdminDashboardPlaceholderPageComponent } from '../admin/pages/admin-dashboard-placeholder-page/admin-dashboard-placeholder-page.component';
+import { AdminGastosGeneralesPageComponent } from '../admin/pages/admin-gastos-generales-page/admin-gastos-generales-page.component';
 import { AdminMaintenancePageComponent } from '../admin/pages/admin-maintenance-page/admin-maintenance-page.component';
 import { AdminMetricsPageComponent } from '../admin/pages/admin-metrics-page/admin-metrics-page.component';
 import { RevisionSemanalPageComponent } from '../admin/pages/revision-semanal-page/revision-semanal-page.component';
@@ -204,14 +205,10 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'admin/finanzas/gastos-generales',
-    component: AdminDashboardPlaceholderPageComponent,
+    component: AdminGastosGeneralesPageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMINISTRADOR'],
-      eyebrow: 'Finanzas',
-      titulo: 'Gastos Generales',
-      descripcion: 'Esta sección estará disponible próximamente.',
-      emptyText: 'Aquí podrás registrar y consultar gastos que no pertenecen a una campaña.'
+      roles: ['ADMINISTRADOR']
     }
   },
   {

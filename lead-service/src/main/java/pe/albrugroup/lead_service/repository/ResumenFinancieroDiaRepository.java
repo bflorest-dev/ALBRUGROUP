@@ -91,4 +91,14 @@ public interface ResumenFinancieroDiaRepository extends JpaRepository<ResumenFin
             ) sub
             """)
     java.math.BigDecimal ctaPublicitaria(Long idProveedor, LocalDate fecha);
+
+    @Query(nativeQuery = true, value = """
+            SELECT COALESCE(SUM(r.cta_bancaria), 0),
+                   COALESCE(SUM(r.cta_publicitaria), 0),
+                   COALESCE(SUM(r.cashback_preventa), 0),
+                   COALESCE(SUM(r.cashback_postventa), 0)
+            FROM resumen_financiero_dia r
+            WHERE r.fecha BETWEEN :desde AND :hasta
+            """)
+    Object[] acumuladoMensualGlobal(LocalDate desde, LocalDate hasta);
 }

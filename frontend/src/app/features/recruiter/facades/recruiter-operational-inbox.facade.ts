@@ -73,6 +73,7 @@ export class RecruiterOperationalInboxFacade {
   readonly actionError = signal('');
   readonly contactChannel = signal<ContactChannel | null>(null);
   readonly summary = signal<OperationalSummary>(EMPTY_SUMMARY);
+  private readonly trainingGroupAssignmentRequired = signal(false);
   readonly summaryLoading = signal(false);
   readonly searchTerm = signal('');
   readonly estadoFilter = signal('');
@@ -96,6 +97,10 @@ export class RecruiterOperationalInboxFacade {
       row.ofertaLaboral?.codigo ?? ''
     ].join(' ')).includes(term));
   });
+
+  constructor() {
+    this.typifyForm.valueChanges.subscribe(() => this.refreshTrainingGroupAssignmentRequirement());
+  }
 
   initialize(): void {
     this.loadCatalogs();
@@ -270,24 +275,6 @@ export class RecruiterOperationalInboxFacade {
     });
   }
 
-  assignGroup(idGrupoCapacitacion: number): void {
-    const selected = this.selectedPostulacion();
-    if (!selected || !idGrupoCapacitacion || this.actionState() === 'loading') return;
-
-    this.actionState.set('loading');
-    this.actionMessage.set('Asignando grupo…');
-    this.actionError.set('');
-    this.service.asignarGrupo(idGrupoCapacitacion, selected.id).pipe(timeout(this.requestTimeoutMs)).subscribe({
-      next: () => {
-        this.actionState.set('success');
-        this.actionMessage.set('Grupo asignado');
-        this.loadEvents(selected.id);
-        this.load();
-      },
-      error: (error: HttpErrorResponse) => this.failAction(error, 'No fue posible asignar el grupo.')
-    });
-  }
-
   getSubtipificaciones(idTipificacion: number): SubtipificacionResponse[] {
     return this.tipificaciones().find((item) => item.id === idTipificacion)?.subtipificaciones ?? [];
   }
@@ -299,11 +286,7 @@ export class RecruiterOperationalInboxFacade {
   }
 
   requiresTrainingGroupAssignment(): boolean {
-    const selected = this.selectedPostulacion();
-    const raw = this.typifyForm.getRawValue();
-    if (!selected || selected.etapa !== 'RECLUTAMIENTO') return false;
-    return this.getSubtipificaciones(Number(raw.idTipificacion))
-      .some((item) => item.id === Number(raw.idSubtipificacion) && item.etapaDestino === 'CAPACITACION');
+    return this.trainingGroupAssignmentRequired();
   }
 
   label(value: string | null | undefined): string {
@@ -408,6 +391,14 @@ export class RecruiterOperationalInboxFacade {
       fechaHoraGestion: '',
       observacion: ''
     });
+  }
+
+  private refreshTrainingGroupAssignmentRequirement(): void {
+    const raw = this.typifyForm.getRawValue();
+    const requiresAssignment = this.getSubtipificaciones(Number(raw.idTipificacion))
+      .some((item) => item.id === Number(raw.idSubtipificacion) &&
+        (item.etapaDestino === 'CAPACITACION' || item.codigo === 'APTO_PARA_CAPACITACION'));
+    this.trainingGroupAssignmentRequired.set(requiresAssignment);
   }
 
   private openExternalContact(postulacion: PostulacionResponse, channel: ContactChannel): void {

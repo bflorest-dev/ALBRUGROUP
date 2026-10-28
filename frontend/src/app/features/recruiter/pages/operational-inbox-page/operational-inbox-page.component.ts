@@ -3,10 +3,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RecruitmentRealtimeService } from '../../../../core/services/recruitment-realtime.service';
 import { RecruiterOperationalInboxFacade } from '../../facades/recruiter-operational-inbox.facade';
+import { GestionDrawerComponent } from '../../components/gestion-drawer/gestion-drawer.component';
 
 @Component({
   selector: 'app-recruiter-operational-inbox-page',
-  imports: [FormsModule, ReactiveFormsModule],
+  imports: [FormsModule, ReactiveFormsModule, GestionDrawerComponent],
   providers: [RecruiterOperationalInboxFacade],
   templateUrl: './operational-inbox-page.component.html',
   styleUrl: './operational-inbox-page.component.scss',

@@ -38,6 +38,10 @@ public class PostulacionResponse {
     private EstadoBandejaPostulacion estadoBandeja;
     private Instant createdAt;
     private Instant updatedAt;
+    private java.time.LocalDateTime ultimaGestionAt;
+    private String ultimoResultado;
+    private java.time.LocalDateTime proximaActividadAt;
+    private String proximaActividadTipo;
     private PostulanteResponse postulante;
     private PostulacionOfertaResponse ofertaLaboral;
 }
