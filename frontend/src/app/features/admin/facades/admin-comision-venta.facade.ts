@@ -35,7 +35,7 @@ export interface AsesorCorteVM {
   comisionBruta: number;
   faltas: number;
   pctDsctoFaltas: number;
-  minutosDesbalance: number;
+  minutosTardanza: number;
   pctDsctoTardanzas: number;
   comisionFinal: number;
   cumpleCuota: boolean;
@@ -288,12 +288,12 @@ function calcularComisionAsesor(
   cfg: ComisionConfig
 ): AsesorCorteVM {
   const faltas = resumen?.diasFalta ?? 0;
-  const minutosDesbalance = resumen ? Math.abs(Math.min(resumen.balanceFinal, 0)) : 0;
+  const minutosTardanza = resumen?.minutosTardanza ?? 0;
 
   if (!modalidad) {
     return {
       ...a, modalidad: null, factor: 0, comisionBruta: 0,
-      faltas, pctDsctoFaltas: 0, minutosDesbalance, pctDsctoTardanzas: 0,
+      faltas, pctDsctoFaltas: 0, minutosTardanza, pctDsctoTardanzas: 0,
       comisionFinal: 0, cumpleCuota: false
     };
   }
@@ -304,14 +304,14 @@ function calcularComisionAsesor(
   const comisionBruta = a.ventasLima * factor;
 
   const pctDsctoFaltas = resolverDescuentoFaltas(faltas, cfg.penalidadFaltas);
-  const pctDsctoTardanzas = resolverDescuentoTardanzas(minutosDesbalance, cfg.penalidadTardanzas);
+  const pctDsctoTardanzas = resolverDescuentoTardanzas(minutosTardanza, cfg.penalidadTardanzas);
 
   const descuento = comisionBruta * (pctDsctoFaltas + pctDsctoTardanzas) / 100;
   const comisionFinal = Math.max(comisionBruta - descuento, 0);
 
   return {
     ...a, modalidad, factor, comisionBruta,
-    faltas, pctDsctoFaltas, minutosDesbalance, pctDsctoTardanzas,
+    faltas, pctDsctoFaltas, minutosTardanza, pctDsctoTardanzas,
     comisionFinal, cumpleCuota
   };
 }

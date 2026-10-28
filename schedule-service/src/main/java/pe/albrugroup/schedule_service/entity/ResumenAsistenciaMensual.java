@@ -49,6 +49,8 @@ public class ResumenAsistenciaMensual {
     private Integer minutosExtra;
     private Integer minutosCompensados;
     private Integer cantidadTardanzas;
+    /** Suma de minutos de retraso de entrada en días tardíos con marcación (max(0, ingreso - entrada programada)). */
+    private Integer minutosTardanza;
 
     @Column(columnDefinition = "TEXT")
     private String estadosDiarios;

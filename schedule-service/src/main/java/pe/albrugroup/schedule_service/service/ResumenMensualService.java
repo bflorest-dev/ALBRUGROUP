@@ -154,7 +154,7 @@ public class ResumenMensualService {
         int tolerancia = parametroResolver.resolve(List.of()).toleranciaTardanzaMin();
 
         int diasLaborables = 0, diasPresente = 0, diasTardanza = 0, diasCompensable = 0, diasJustificada = 0, diasFalta = 0;
-        int minutosObjetivo = 0, minutosTrabajados = 0, minutosExtra = 0, sumaBalance = 0, sumaCompensados = 0;
+        int minutosObjetivo = 0, minutosTrabajados = 0, minutosExtra = 0, sumaBalance = 0, sumaCompensados = 0, sumaMinutosTardanza = 0;
         List<String> estados = new ArrayList<>(hasta.getDayOfMonth());
 
         for (LocalDate fecha = desde; !fecha.isAfter(hasta); fecha = fecha.plusDays(1)) {
@@ -191,6 +191,17 @@ public class ResumenMensualService {
                 case TARDANZA_JUSTIFICADA -> { diasTardanza++; diasJustificada++; }
                 case FALTA, NO_LABORABLE -> { /* no alcanzable aqui */ }
             }
+            if (estadoDia == EstadoDia.TARDANZA
+                    || estadoDia == EstadoDia.TARDANZA_COMPENSABLE
+                    || estadoDia == EstadoDia.TARDANZA_JUSTIFICADA) {
+                if (asistencia.getFechaHoraIngreso() != null && asistencia.getEntradaProgramada() != null) {
+                    long retraso = Duration.between(
+                            asistencia.getEntradaProgramada(),
+                            asistencia.getFechaHoraIngreso().toLocalTime()
+                    ).toMinutes();
+                    sumaMinutosTardanza += (int) Math.max(0, retraso);
+                }
+            }
             estados.add(estadoDia.name().charAt(0) == 'T' && estadoDia != EstadoDia.TARDANZA
                     ? (estadoDia == EstadoDia.TARDANZA_COMPENSABLE ? "TC" : "TJ")
                     : estadoDia.name().substring(0, 1));
@@ -218,6 +229,7 @@ public class ResumenMensualService {
                 .minutosExtra(minutosExtra)
                 .minutosCompensados(minutosCompensados)
                 .cantidadTardanzas(diasTardanza)
+                .minutosTardanza(sumaMinutosTardanza)
                 .estadosDiarios(serializarEstados(estados))
                 .build();
     }
@@ -325,6 +337,7 @@ public class ResumenMensualService {
                 .minutosExtra(r.getMinutosExtra())
                 .minutosCompensados(r.getMinutosCompensados())
                 .cantidadTardanzas(r.getCantidadTardanzas())
+                .minutosTardanza(r.getMinutosTardanza() != null ? r.getMinutosTardanza() : 0)
                 .estadosDiarios(deserializarEstados(r.getEstadosDiarios()))
                 .build();
     }

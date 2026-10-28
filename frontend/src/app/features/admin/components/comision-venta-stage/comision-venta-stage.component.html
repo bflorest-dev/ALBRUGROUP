@@ -137,7 +137,7 @@
                   <td class="col-money">S/ {{ a.comisionBruta | number:'1.2-2' }}</td>
                   <td class="col-num">{{ a.faltas || '' }}</td>
                   <td class="col-pct">{{ a.pctDsctoFaltas ? (a.pctDsctoFaltas + '%') : '' }}</td>
-                  <td class="col-num">{{ a.minutosDesbalance ? formatMinutos(a.minutosDesbalance) : '' }}</td>
+                  <td class="col-num">{{ a.minutosTardanza ? formatMinutos(a.minutosTardanza) : '' }}</td>
                   <td class="col-pct">{{ a.pctDsctoTardanzas ? (a.pctDsctoTardanzas + '%') : '' }}</td>
                   <td class="col-money highlight">S/ {{ a.comisionFinal | number:'1.2-2' }}</td>
                 </tr>

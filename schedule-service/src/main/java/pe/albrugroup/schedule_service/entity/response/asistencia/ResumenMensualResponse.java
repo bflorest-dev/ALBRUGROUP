@@ -40,5 +40,6 @@ public class ResumenMensualResponse {
     private Integer minutosExtra;
     private Integer minutosCompensados;
     private Integer cantidadTardanzas;
+    private Integer minutosTardanza;
     private List<String> estadosDiarios;
 }
