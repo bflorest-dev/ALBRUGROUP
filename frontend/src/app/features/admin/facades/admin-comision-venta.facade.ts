@@ -74,14 +74,14 @@ function configPorDefecto(): ComisionConfig {
       { faltas: 4, descuento: 100 }
     ],
     penalidadTardanzas: [
-      { desdeMin: 100, hastaMin: 120, descuento: 5 },
-      { desdeMin: 120, hastaMin: 140, descuento: 10 },
-      { desdeMin: 140, hastaMin: 160, descuento: 15 },
-      { desdeMin: 160, hastaMin: 180, descuento: 20 },
-      { desdeMin: 180, hastaMin: 200, descuento: 25 },
-      { desdeMin: 200, hastaMin: 220, descuento: 30 },
-      { desdeMin: 220, hastaMin: 240, descuento: 35 },
-      { desdeMin: 240, hastaMin: null, descuento: 50 }
+      { desdeMin: 60,  hastaMin: 80,  descuento: 5  },
+      { desdeMin: 80,  hastaMin: 100, descuento: 10 },
+      { desdeMin: 100, hastaMin: 120, descuento: 15 },
+      { desdeMin: 120, hastaMin: 140, descuento: 20 },
+      { desdeMin: 140, hastaMin: 160, descuento: 25 },
+      { desdeMin: 160, hastaMin: 180, descuento: 30 },
+      { desdeMin: 180, hastaMin: 200, descuento: 35 },
+      { desdeMin: 200, hastaMin: null, descuento: 50 }
     ]
   };
 }
