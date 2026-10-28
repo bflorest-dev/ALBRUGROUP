@@ -38,6 +38,7 @@ export class ComisionVentaStageComponent implements OnInit {
   protected readonly fechaLimiteMorosidad = this.facade.fechaLimiteMorosidad;
 
   protected readonly activeTab = signal<TabId>('totales');
+  protected readonly proveedorActivo = signal<'WIN' | 'CLARO'>('WIN');
 
   protected readonly tabs = computed(() => {
     const result: { id: TabId; label: string }[] = [
@@ -55,13 +56,34 @@ export class ComisionVentaStageComponent implements OnInit {
     return this.cortes().find(c => c.etiqueta === id) ?? null;
   });
 
-  protected readonly totalGeneral = computed(() => {
-    const t = this.totales();
-    return t.reduce((sum, a) => sum + a.comisionFinal, 0);
+  protected readonly totalesFiltrados = computed(() => {
+    const cortes = this.cortes();
+    const proveedor = this.proveedorActivo();
+    const map = new Map<number, TotalAsesorVM>();
+    for (const c of cortes) {
+      const asesores = proveedor === 'WIN' ? c.asesoresWin : c.asesoresClaro;
+      for (const a of asesores) {
+        const ex = map.get(a.idAsesor);
+        if (ex) {
+          ex.comisionBruta += a.comisionBruta;
+          ex.comisionFinal += a.comisionFinal;
+        } else {
+          map.set(a.idAsesor, {
+            idAsesor: a.idAsesor,
+            nombreAsesor: a.nombreAsesor,
+            comisionBruta: a.comisionBruta,
+            comisionFinal: a.comisionFinal
+          });
+        }
+      }
+    }
+    return [...map.values()]
+      .filter(a => a.comisionFinal > 0)
+      .sort((a, b) => b.comisionFinal - a.comisionFinal);
   });
 
-  protected readonly totalesFiltrados = computed(() =>
-    this.totales().filter(a => a.comisionFinal > 0)
+  protected readonly totalGeneral = computed(() =>
+    this.totalesFiltrados().reduce((sum, a) => sum + a.comisionFinal, 0)
   );
 
   ngOnInit(): void {
@@ -79,6 +101,7 @@ export class ComisionVentaStageComponent implements OnInit {
   }
 
   protected selectTab(id: TabId): void { this.activeTab.set(id); }
+  protected selectProveedor(p: 'WIN' | 'CLARO'): void { this.proveedorActivo.set(p); }
 
   protected modalidadLabel(m: Modalidad | null): string {
     return m ? MODALIDAD_LABELS[m] : '—';

@@ -47,7 +47,8 @@ export interface CorteVM {
   etiqueta: string;
   mesAsistencia: number;
   anioAsistencia: number;
-  asesores: AsesorCorteVM[];
+  asesoresWin: AsesorCorteVM[];
+  asesoresClaro: AsesorCorteVM[];
 }
 
 export interface TotalAsesorVM {
@@ -96,6 +97,7 @@ export class AdminComisionVentaFacade {
 
   private readonly _mes = signal<{ anio: number; mes: number } | null>(null);
   private readonly _response = signal<ComisionVentaResponse | null>(null);
+  private readonly _responseClaro = signal<ComisionVentaResponse | null>(null);
   private readonly _asistenciaMap = signal<Map<string, ResumenMensualResponse>>(new Map());
   private readonly _modalidadMap = signal<Map<string, Modalidad>>(new Map());
   private readonly _loading = signal(false);
@@ -121,45 +123,58 @@ export class AdminComisionVentaFacade {
   });
 
   readonly cortes = computed<CorteVM[]>(() => {
-    const resp = this._response();
-    if (!resp) return [];
+    const respWin = this._response();
+    if (!respWin) return [];
+    const respClaro = this._responseClaro();
     const asistencia = this._asistenciaMap();
     const modalidades = this._modalidadMap();
     const cfg = this.config();
 
-    return resp.cortes.map(corte => ({
-      mesCorteBase: corte.mesCorteBase,
-      numeroCorteBase: corte.numeroCorteBase,
-      etiqueta: corte.etiqueta,
-      mesAsistencia: corte.mesAsistencia,
-      anioAsistencia: corte.anioAsistencia,
-      asesores: corte.asesores.map(a => {
-        const key = `${a.idAsesor}_${corte.anioAsistencia}_${corte.mesAsistencia}`;
-        const resumen = asistencia.get(key) ?? null;
-        const modalidad = modalidades.get(key) ?? null;
-        return calcularComisionAsesor(a, modalidad, resumen, cfg);
-      })
-    }));
+    const mapAsesor = (
+      a: { idAsesor: number; nombreAsesor: string; ventasTotales: number; ventasLima: number },
+      anioAsistencia: number,
+      mesAsistencia: number
+    ): AsesorCorteVM => {
+      const key = `${a.idAsesor}_${anioAsistencia}_${mesAsistencia}`;
+      return calcularComisionAsesor(a, modalidades.get(key) ?? null, asistencia.get(key) ?? null, cfg);
+    };
+
+    return respWin.cortes.map(corteWin => {
+      const corteClaro = respClaro?.cortes.find(c =>
+        c.mesCorteBase === corteWin.mesCorteBase && c.numeroCorteBase === corteWin.numeroCorteBase
+      );
+      return {
+        mesCorteBase: corteWin.mesCorteBase,
+        numeroCorteBase: corteWin.numeroCorteBase,
+        etiqueta: corteWin.etiqueta,
+        mesAsistencia: corteWin.mesAsistencia,
+        anioAsistencia: corteWin.anioAsistencia,
+        asesoresWin: corteWin.asesores.map(a => mapAsesor(a, corteWin.anioAsistencia, corteWin.mesAsistencia)),
+        asesoresClaro: (corteClaro?.asesores ?? []).map(a => mapAsesor(a, corteWin.anioAsistencia, corteWin.mesAsistencia)),
+      };
+    });
   });
 
   readonly totales = computed<TotalAsesorVM[]>(() => {
     const cortesVM = this.cortes();
     const map = new Map<number, TotalAsesorVM>();
-    for (const corte of cortesVM) {
-      for (const a of corte.asesores) {
-        const existing = map.get(a.idAsesor);
-        if (existing) {
-          existing.comisionBruta += a.comisionBruta;
-          existing.comisionFinal += a.comisionFinal;
-        } else {
-          map.set(a.idAsesor, {
-            idAsesor: a.idAsesor,
-            nombreAsesor: a.nombreAsesor,
-            comisionBruta: a.comisionBruta,
-            comisionFinal: a.comisionFinal
-          });
-        }
+    const acumular = (a: AsesorCorteVM) => {
+      const existing = map.get(a.idAsesor);
+      if (existing) {
+        existing.comisionBruta += a.comisionBruta;
+        existing.comisionFinal += a.comisionFinal;
+      } else {
+        map.set(a.idAsesor, {
+          idAsesor: a.idAsesor,
+          nombreAsesor: a.nombreAsesor,
+          comisionBruta: a.comisionBruta,
+          comisionFinal: a.comisionFinal
+        });
       }
+    };
+    for (const corte of cortesVM) {
+      for (const a of corte.asesoresWin) acumular(a);
+      for (const a of corte.asesoresClaro) acumular(a);
     }
     return [...map.values()].sort((a, b) => b.comisionFinal - a.comisionFinal);
   });
@@ -200,23 +215,28 @@ export class AdminComisionVentaFacade {
   private cargar(mesComision?: string): void {
     this._loading.set(true);
     this._error.set(null);
+    const fechaLimite = this.fechaLimiteMorosidad();
 
-    this.service.obtenerVentasPorCorte(mesComision, 'WIN', this.fechaLimiteMorosidad()).pipe(
-      switchMap(resp => {
-        this._response.set(resp);
-        this._mes.set(parseMes(resp.mesComision));
+    forkJoin({
+      win:   this.service.obtenerVentasPorCorte(mesComision, 'WIN',   fechaLimite),
+      claro: this.service.obtenerVentasPorCorte(mesComision, 'CLARO', fechaLimite),
+    }).pipe(
+      switchMap(({ win, claro }) => {
+        this._response.set(win);
+        this._responseClaro.set(claro);
+        this._mes.set(parseMes(win.mesComision));
 
-        const allIds = uniqueIds(resp.cortes);
+        const allIds = uniqueIdsFromBoth(win.cortes, claro.cortes);
         if (allIds.length === 0) return of(null);
 
-        const asistencia$ = resp.cortes.map(c =>
+        const asistencia$ = win.cortes.map(c =>
           this.service.obtenerResumenAsistenciaBulk(allIds, c.anioAsistencia, c.mesAsistencia).pipe(
             map(resumenes => ({ corte: c, resumenes })),
             catchError(() => of({ corte: c, resumenes: [] as ResumenMensualResponse[] }))
           )
         );
 
-        const horarios$ = resp.cortes.flatMap(c =>
+        const horarios$ = win.cortes.flatMap(c =>
           allIds.map(id =>
             this.service.obtenerHorarioVigente(id, `${c.anioAsistencia}-${String(c.mesAsistencia).padStart(2, '0')}-15`).pipe(
               map(h => ({ idEmpleado: id, corte: c, modalidad: h.modalidad })),
@@ -233,14 +253,12 @@ export class AdminComisionVentaFacade {
                 asistMap.set(`${r.idEmpleado}_${corte.anioAsistencia}_${corte.mesAsistencia}`, r);
               }
             }
-
             const modMap = new Map<string, Modalidad>();
             for (const h of horarioResults) {
               if (h.modalidad) {
                 modMap.set(`${h.idEmpleado}_${h.corte.anioAsistencia}_${h.corte.mesAsistencia}`, h.modalidad);
               }
             }
-
             return { asistMap, modMap };
           })
         );
@@ -326,9 +344,9 @@ function resolverDescuentoTardanzas(minutos: number, config: PenalidadTardanzasC
   return 0;
 }
 
-function uniqueIds(cortes: ComisionVentaCorte[]): number[] {
+function uniqueIdsFromBoth(cortesWin: ComisionVentaCorte[], cortesClaro: ComisionVentaCorte[]): number[] {
   const set = new Set<number>();
-  for (const c of cortes) {
+  for (const c of [...cortesWin, ...cortesClaro]) {
     for (const a of c.asesores) set.add(a.idAsesor);
   }
   return [...set];

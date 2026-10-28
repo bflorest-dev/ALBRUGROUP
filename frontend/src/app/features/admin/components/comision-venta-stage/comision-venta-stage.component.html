@@ -7,6 +7,14 @@
     </div>
 
     <div class="cv-controls">
+      <!-- Selector de proveedor -->
+      <div class="cv-proveedor-seg">
+        <button type="button" class="cv-proveedor-seg__item" [class.active]="proveedorActivo() === 'WIN'"
+          (click)="selectProveedor('WIN')" [disabled]="isLoading()">WIN</button>
+        <button type="button" class="cv-proveedor-seg__item" [class.active]="proveedorActivo() === 'CLARO'"
+          (click)="selectProveedor('CLARO')" [disabled]="isLoading()">CLARO</button>
+      </div>
+
       <div class="cv-period">
         <button type="button" class="cv-period__nav" (click)="mesAnterior()" [disabled]="isLoading()" aria-label="Mes anterior">
           <i class="pi pi-chevron-left" aria-hidden="true"></i>
@@ -119,7 +127,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (a of corte.asesores; track a.idAsesor) {
+              @for (a of (proveedorActivo() === 'WIN' ? corte.asesoresWin : corte.asesoresClaro); track a.idAsesor) {
                 <tr [class.no-cuota]="!a.cumpleCuota" [class.si-cuota]="a.cumpleCuota">
                   <td class="col-nombre">{{ a.nombreAsesor }}</td>
                   <td class="col-num">{{ modalidadLabel(a.modalidad) }}</td>
