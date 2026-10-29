@@ -146,7 +146,7 @@ const ROLE_CONFIGS: Record<string, SidebarV2RoleConfig> = {
       {
         id: 'recruitment',
         label: 'Selección',
-        description: 'Grupos de capacitación y postulantes',
+        description: 'Bandeja, agenda y gestión de postulaciones',
         icon: 'ti ti-user-search'
       }
     ]

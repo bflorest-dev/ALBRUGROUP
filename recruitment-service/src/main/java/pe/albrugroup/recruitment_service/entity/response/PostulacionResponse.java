@@ -41,6 +41,7 @@ public class PostulacionResponse {
     private Instant updatedAt;
     private java.time.LocalDateTime ultimaGestionAt;
     private String ultimoResultado;
+    private String resultadoEvaluacion;
     private Long ultimaGestionResponsableId;
     private ModalidadContacto ultimaGestionModalidad;
     private java.time.LocalDateTime proximaActividadAt;

@@ -18,6 +18,7 @@ export interface PostulacionResponse {
   updatedAt: string;
   ultimaGestionAt?: string | null;
   ultimoResultado?: string | null;
+  resultadoEvaluacion?: string | null;
   ultimaGestionResponsableId?: number | null;
   ultimaGestionModalidad?: string | null;
   proximaActividadAt?: string | null;

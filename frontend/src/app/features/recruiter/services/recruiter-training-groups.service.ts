@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { PageResponse } from '../../../shared/models/common/page-response';
 import { ActualizarDetalleGrupoCapacitacionRequest } from '../../../shared/models/recruitment/actualizar-detalle-grupo-capacitacion-request';
+import { AsignarPostulacionesGrupoCapacitacionRequest } from '../../../shared/models/recruitment/asignar-postulaciones-grupo-capacitacion-request';
 import { GrupoCapacitacionRequest } from '../../../shared/models/recruitment/grupo-capacitacion-request';
 import { GrupoCapacitacionDetalleResponse } from '../../../shared/models/recruitment/grupo-capacitacion-detalle-response';
 import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
@@ -43,6 +44,17 @@ export class RecruiterTrainingGroupsService {
 
   crearGrupo(request: GrupoCapacitacionRequest): Observable<GrupoCapacitacionResponse> {
     return this.http.post<GrupoCapacitacionResponse>(this.groupsUrl, request);
+  }
+
+  asignarPostulaciones(
+    idGrupoCapacitacion: number,
+    idsPostulaciones: number[]
+  ): Observable<GrupoCapacitacionDetalleResponse[]> {
+    const request: AsignarPostulacionesGrupoCapacitacionRequest = { idsPostulaciones };
+    return this.http.post<GrupoCapacitacionDetalleResponse[]>(
+      `${this.groupsUrl}/${idGrupoCapacitacion}/postulaciones:asignar`,
+      request
+    );
   }
 
   obtenerGrupo(idGrupoCapacitacion: number): Observable<GrupoCapacitacionResponse> {

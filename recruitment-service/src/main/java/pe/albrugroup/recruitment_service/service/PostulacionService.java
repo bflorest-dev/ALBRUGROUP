@@ -821,6 +821,7 @@ public class PostulacionService {
         gestionReclutamientoRepository.findById(postulacion.getId()).ifPresent(g -> {
             response.setUltimaGestionAt(g.getUltimaGestionAt());
             response.setUltimoResultado(g.getUltimoResultado());
+            response.setResultadoEvaluacion(g.getResultadoEvaluacion());
         });
         eventoService.obtenerUltimoConGestion(postulacion.getId()).ifPresent(evento -> {
             response.setUltimaGestionResponsableId(evento.getIdEmpleadoResponsable());

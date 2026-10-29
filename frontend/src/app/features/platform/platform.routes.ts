@@ -356,7 +356,7 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'reclutador',
     pathMatch: 'full',
-    redirectTo: 'reclutador/grupos-capacitacion'
+    redirectTo: 'reclutador/bandeja-operativa'
   },
   {
     path: 'reclutador/grupos-capacitacion',

@@ -12,6 +12,7 @@ import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/
 import { GestionReclutamiento, GestionRequest, HorarioMeet } from '../../../shared/models/recruitment/gestion-reclutamiento';
 import { ContactoPostulacionResponse } from '../../../shared/models/recruitment/contacto-postulacion-response';
 import { SesionMeetResponse } from '../../../shared/models/recruitment/sesion-meet-response';
+import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 
 @Injectable({
   providedIn: 'root'
@@ -19,6 +20,7 @@ import { SesionMeetResponse } from '../../../shared/models/recruitment/sesion-me
 export class RecruiterPostulantesService {
   private readonly recruitmentUrl = `${API_CONSTANTS.gatewayBaseUrl}/recruitment`;
   private readonly postulacionesUrl = `${this.recruitmentUrl}/postulaciones`;
+  private readonly empleadosUrl = `${API_CONSTANTS.gatewayBaseUrl}/rrhh/empleados`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -35,6 +37,12 @@ export class RecruiterPostulantesService {
     let params = new HttpParams().set('fecha', fecha);
     if (negocio) params = params.set('negocio', negocio);
     return this.http.get<SesionMeetResponse[]>(`${this.recruitmentUrl}/reclutamiento/meet/sesiones`, { params });
+  }
+
+  listarEmpleadosLight(empleadoIds: number[]): Observable<EmpleadoRolResponse[]> {
+    let params = new HttpParams();
+    empleadoIds.forEach(id => params = params.append('empleadoIds', id));
+    return this.http.get<EmpleadoRolResponse[]>(`${this.empleadosUrl}/light`, { params });
   }
 
   listarBandejaReclutamiento(

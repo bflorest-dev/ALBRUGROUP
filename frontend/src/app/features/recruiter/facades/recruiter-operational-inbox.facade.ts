@@ -11,6 +11,7 @@ import { PostulacionResponse } from '../../../shared/models/recruitment/postulac
 import { RegistrarContactoPostulacionRequest } from '../../../shared/models/recruitment/registrar-contacto-postulacion-request';
 import { SubtipificacionResponse } from '../../../shared/models/recruitment/subtipificacion-response';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
+import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { RecruiterPostulantesService } from '../services/recruiter-postulantes.service';
 
 export type RecruiterOperationalDrawer = 'none' | 'detail';
@@ -57,6 +58,7 @@ export class RecruiterOperationalInboxFacade {
   });
 
   readonly rows = signal<PostulacionResponse[]>([]);
+  readonly responsibleEmployees = signal<Record<number, EmpleadoRolResponse>>({});
   readonly selectedPostulacion = signal<PostulacionResponse | null>(null);
   readonly eventos = signal<EventoResponse[]>([]);
   readonly catalogo = signal<CatalogoTipificacionResponse>(EMPTY_CATALOG);
@@ -149,6 +151,7 @@ export class RecruiterOperationalInboxFacade {
             new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
           );
           this.rows.set(rows);
+          this.loadResponsibleEmployees(rows);
           this.summary.set(summary);
           this.lastSync.set(new Date());
         },
@@ -305,6 +308,20 @@ export class RecruiterOperationalInboxFacade {
     return labels[value] ?? value.toLowerCase().split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
   }
 
+  recruiterName(row: PostulacionResponse): string {
+    const id = row.ultimaGestionResponsableId;
+    if (!id) return 'Sin gestión registrada';
+    const employee = this.responsibleEmployees()[id];
+    return employee ? `${employee.nombres} ${employee.apellidos}`.trim() : `Empleado #${id}`;
+  }
+
+  recruiterInitials(row: PostulacionResponse): string {
+    const id = row.ultimaGestionResponsableId;
+    const employee = id ? this.responsibleEmployees()[id] : null;
+    if (!employee) return id ? 'E' : '—';
+    return `${employee.nombres.charAt(0)}${employee.apellidos.charAt(0)}`.toUpperCase();
+  }
+
   date(value: string | null | undefined): string {
     if (!value) return 'Pendiente';
     const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -345,6 +362,28 @@ export class RecruiterOperationalInboxFacade {
         this.eventos.set([]);
         this.eventsError.set(this.errorMessage(error, 'No fue posible cargar la trazabilidad.'));
       }
+    });
+  }
+
+  private loadResponsibleEmployees(rows: PostulacionResponse[]): void {
+    const ids = [...new Set(rows
+      .map(row => row.ultimaGestionResponsableId)
+      .filter((id): id is number => id != null && Number.isInteger(id) && id > 0))];
+
+    if (!ids.length) {
+      this.responsibleEmployees.set({});
+      return;
+    }
+
+    this.service.listarEmpleadosLight(ids).pipe(timeout(this.requestTimeoutMs)).subscribe({
+      next: employees => {
+        const directory = employees.reduce<Record<number, EmpleadoRolResponse>>((accumulator, employee) => {
+          accumulator[employee.idEmpleado] = employee;
+          return accumulator;
+        }, {});
+        this.responsibleEmployees.set(directory);
+      },
+      error: () => this.responsibleEmployees.set({})
     });
   }
 

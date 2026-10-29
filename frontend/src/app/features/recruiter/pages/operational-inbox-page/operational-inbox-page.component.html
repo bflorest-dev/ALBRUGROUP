@@ -11,9 +11,20 @@
         <i class="ti ti-calendar-event" aria-hidden="true"></i>
         {{ meetAgendaOpen() ? 'Cerrar agenda' : 'Agenda Meet' }}
       </button>
-      <button type="button" class="button button--ghost" (click)="facade.refresh()" [disabled]="facade.listLoading() || facade.catalogLoading()">
+      <button type="button" class="button button--primary" [attr.aria-expanded]="trainingGroupsOpen()" (click)="toggleTrainingGroups()">
+        <i class="ti ti-users-group" aria-hidden="true"></i>
+        {{ trainingGroupsOpen() ? 'Cerrar grupos' : 'Grupos de capacitación' }}
+        @if (approvedPendingGroup().length) { <span class="button__badge">{{ approvedPendingGroup().length }}</span> }
+      </button>
+      <button
+        type="button"
+        class="button icon-button"
+        [attr.aria-busy]="facade.listLoading() || facade.catalogLoading()"
+        [attr.aria-label]="facade.listLoading() ? 'Actualizando bandeja' : 'Actualizar bandeja'"
+        title="Actualizar bandeja"
+        (click)="facade.refresh()"
+        [disabled]="facade.listLoading() || facade.catalogLoading()">
         <i class="ti ti-refresh" aria-hidden="true"></i>
-        {{ facade.listLoading() ? 'Actualizando…' : 'Actualizar bandeja' }}
       </button>
     </div>
   </header>
@@ -54,6 +65,7 @@
     </section>
   }
 
+  @if (!trainingGroupsOpen()) {
   <div class="summary-grid" aria-label="Resumen de la bandeja">
     <article class="summary-card summary-card--total">
       <span class="summary-card__label">Postulaciones visibles</span>
@@ -137,6 +149,8 @@
               <th scope="col">Contacto</th>
               <th scope="col">Objetivo</th>
               <th scope="col">Estado</th>
+              <th scope="col">Reclutador</th>
+              <th scope="col">Última gestión</th>
               <th scope="col">Gestión y próximo paso</th>
               <th scope="col"><span class="sr-only">Acciones</span></th>
             </tr>
@@ -156,12 +170,16 @@
                 </td>
                 <td data-label="Objetivo"><strong>{{ label(row.puestoObjetivo) }}</strong><small class="muted-line">{{ row.negocio ? label(row.negocio) : 'Negocio pendiente' }}</small></td>
                 <td data-label="Estado"><span class="status-badge" [class]="'status-badge status-badge--' + rowStatusClass(row.estadoBandeja)">{{ label(row.estadoBandeja) }}</span></td>
-                <td data-label="Gestión y próximo paso"><span class="date-cell">{{ row.ultimaGestionAt ? dateTime(row.ultimaGestionAt) : 'Sin gestión registrada' }}</span><small class="muted-line">{{ row.ultimoResultado || 'Pendiente de contacto' }}</small>@if(row.ultimaGestionResponsableId){<small class="muted-line">Por: empleado #{{ row.ultimaGestionResponsableId }} · {{ label(row.ultimaGestionModalidad) }}</small>}@if(row.proximaActividadAt){<small class="muted-line">{{ label(row.proximaActividadTipo) }} · {{ dateTime(row.proximaActividadAt) }}</small>}</td>
+                <td data-label="Reclutador">
+                  <span class="owner-cell"><span class="owner-cell__avatar">{{ facade.recruiterInitials(row) }}</span><span><strong [title]="facade.recruiterName(row)">{{ facade.recruiterName(row) }}</strong><small>{{ row.ultimaGestionResponsableId ? 'Última gestión registrada' : 'Pendiente de contacto' }}</small></span></span>
+                </td>
+                <td data-label="Última gestión"><span class="date-cell">{{ row.ultimaGestionAt ? dateTime(row.ultimaGestionAt) : 'Sin gestión registrada' }}</span><small class="muted-line">{{ row.ultimaGestionModalidad ? label(row.ultimaGestionModalidad) : 'Aún sin contacto' }}</small></td>
+                <td data-label="Gestión y próximo paso"><span class="result-cell">{{ row.ultimoResultado || 'Pendiente de contacto' }}</span>@if(row.proximaActividadAt){<small class="muted-line">{{ label(row.proximaActividadTipo) }} · {{ dateTime(row.proximaActividadAt) }}</small>} @else {<small class="muted-line">Sin próxima actividad</small>}</td>
                 <td class="row-action"><button type="button" class="button button--ghost button--small" (click)="facade.openDetail(row)">Gestionar <i class="ti ti-arrow-up-right" aria-hidden="true"></i></button></td>
               </tr>
             } @empty {
               @if (!facade.listLoading()) {
-                <tr><td colspan="6"><div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i><strong>No hay postulaciones con estos filtros</strong><span>Ajusta el estado o la tipificación para continuar la gestión.</span></div></td></tr>
+                <tr><td colspan="8"><div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i><strong>No hay postulaciones con estos filtros</strong><span>Ajusta el estado o la tipificación para continuar la gestión.</span></div></td></tr>
               }
             }
           </tbody>
@@ -170,6 +188,111 @@
       <footer class="table-footer"><span>{{ facade.filteredRows().length }} registros cargados</span><span class="table-footer__hint"><i class="ti ti-bolt" aria-hidden="true"></i> Bandeja compartida</span></footer>
     </div>
   </section>
+  } @else {
+    <section class="group-workspace" aria-labelledby="group-workspace-title">
+      <header class="group-workspace__header">
+        <div>
+          <span class="workspace-header__live"><span aria-hidden="true"></span> Siguiente etapa</span>
+          <h2 id="group-workspace-title">Asignación a capacitación</h2>
+          <p>Solo aparecen postulantes aprobados en reclutamiento y todavía sin grupo.</p>
+        </div>
+        <div class="group-workspace__summary">
+          <strong>{{ approvedPendingGroup().length }}</strong>
+          <span>aprobados pendientes</span>
+        </div>
+      </header>
+
+      <div class="group-workspace__body">
+        <section class="approved-pool" aria-labelledby="approved-pool-title">
+          <div class="section-heading">
+            <div>
+              <span class="section-heading__signal">01 · Seleccionar</span>
+              <h3 id="approved-pool-title">Postulantes listos para capacitación</h3>
+              <p>Selecciona uno o varios. La validación final también se aplica en el backend.</p>
+            </div>
+            <span class="section-heading__count">{{ selectedGroupPostulacionIds().length }} seleccionados</span>
+          </div>
+
+          @if (facade.listLoading()) {
+            <div class="group-workspace__status" role="status"><span class="spinner" aria-hidden="true"></span>Actualizando aprobados…</div>
+          } @else if (!approvedPendingGroup().length) {
+            <div class="group-workspace__empty"><i class="ti ti-user-check" aria-hidden="true"></i><strong>No hay postulantes pendientes de grupo</strong><span>Aprueba una postulación desde el drawer para habilitarla aquí.</span></div>
+          } @else {
+            <div class="approved-pool__list">
+              @for (row of approvedPendingGroup(); track row.id) {
+                <label class="approved-candidate" [class.approved-candidate--selected]="isGroupPostulacionSelected(row.id)">
+                  <input type="checkbox" [checked]="isGroupPostulacionSelected(row.id)" (change)="toggleGroupPostulacion(row.id)" />
+                  <span class="person-cell__avatar">{{ initials(row.postulante.nombres, row.postulante.apellidos) }}</span>
+                  <span class="approved-candidate__identity"><strong>{{ row.postulante.nombres }} {{ row.postulante.apellidos }}</strong><small>{{ row.postulante.documento }} · {{ label(row.puestoObjetivo) }}</small></span>
+                  <span class="approved-candidate__context"><strong>{{ label(row.negocio) }}</strong><small>Aprobado · {{ date(row.fechaPostulacion) }}</small></span>
+                </label>
+              }
+            </div>
+          }
+        </section>
+
+        <section class="group-workspace__actions" aria-labelledby="group-actions-title">
+          <div class="section-heading">
+            <div>
+              <span class="section-heading__signal">02 · Preparar</span>
+              <h3 id="group-actions-title">Crear o elegir un grupo</h3>
+              <p>Usa turnos distintos para organizar la siguiente jornada.</p>
+            </div>
+          </div>
+
+          <app-training-group-form-panel
+            [groupForm]="trainingFacade.groupForm"
+            [capacitadores]="trainingFacade.capacitadores()"
+            [turnoOptions]="trainingFacade.turnoOptions"
+            [salaOptions]="trainingFacade.salaOptions"
+            [isLoadingCapacitadores]="trainingFacade.isLoadingCapacitadores()"
+            [capacitadoresErrorMessage]="trainingFacade.capacitadoresErrorMessage()"
+            [isCreatingGroup]="trainingFacade.isCreatingGroup()"
+            [createErrorMessage]="trainingFacade.createErrorMessage()"
+            [createSuccessMessage]="trainingFacade.createSuccessMessage()"
+            (save)="trainingFacade.submitGroup()"
+            (resetForm)="trainingFacade.resetForm()"
+          />
+
+          <div class="assignment-card">
+            <div class="assignment-card__heading">
+              <div><span class="section-heading__signal">03 · Asignar</span><h3>Enviar selección a capacitación</h3></div>
+              <i class="ti ti-arrow-down-right" aria-hidden="true"></i>
+            </div>
+            <label class="field">
+              <span>Grupo abierto</span>
+              <select [value]="selectedTrainingGroupId() ?? ''" (change)="selectTrainingGroup($any($event.target).value)">
+                <option value="">Seleccionar grupo</option>
+                @for (group of trainingFacade.groups(); track group.id) {
+                  <option [value]="group.id">{{ group.codigo }} · {{ groupLabel(group.turno) }} · {{ groupLabel(group.sala) }}</option>
+                }
+              </select>
+              <small>Solo se pueden asignar postulantes aprobados sin grupo previo.</small>
+            </label>
+            @if (groupAssignmentError()) { <div class="inline-notice inline-notice--error" role="alert"><i class="ti ti-alert-circle" aria-hidden="true"></i>{{ groupAssignmentError() }}</div> }
+            @if (groupAssignmentMessage()) { <div class="inline-notice inline-notice--success" role="status"><i class="ti ti-circle-check" aria-hidden="true"></i>{{ groupAssignmentMessage() }}</div> }
+            <button type="button" class="button button--primary assignment-card__submit" [disabled]="!selectedGroupPostulacionIds().length || !selectedTrainingGroupId() || groupAssignmentState() === 'loading'" (click)="assignSelectedToTrainingGroup()">
+              <i class="ti ti-users-plus" aria-hidden="true"></i>
+              {{ groupAssignmentState() === 'loading' ? 'Asignando…' : groupAssignmentState() === 'success' ? 'Asignados' : 'Asignar seleccionados' }}
+            </button>
+          </div>
+
+          <div class="group-list-compact">
+            <div class="section-heading"><div><span class="section-heading__signal">Disponibles</span><h3>Grupos abiertos</h3></div><button type="button" class="button button--ghost button--small" (click)="trainingFacade.loadGroups(0, true)">Actualizar</button></div>
+            @if (!trainingFacade.groups().length) { <p class="empty-copy">Crea el primer grupo para habilitar la asignación.</p> } @else {
+              <div class="group-list-compact__items">
+                @for (group of trainingFacade.groups(); track group.id) {
+                  <button type="button" class="group-pill" [class.group-pill--selected]="selectedTrainingGroupId() === group.id" (click)="selectTrainingGroup(groupIdValue(group.id))">
+                    <span><strong>{{ group.codigo }}</strong><small>{{ groupLabel(group.turno) }} · {{ groupLabel(group.sala) }}</small></span><b>{{ group.detalles.length }}</b>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </section>
+      </div>
+    </section>
+  }
 </section>
 
 @if (facade.drawer() === 'detail' && facade.selectedPostulacion(); as selected) {
