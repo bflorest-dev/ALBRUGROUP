@@ -30,10 +30,11 @@
      <section class="appointment" [class.overdue]="overdue()" aria-label="Próxima actividad">
       <div class="appointment-heading"><i class="ti ti-calendar-event"></i><h3>{{ next.tipo==='ENTREVISTA'?'Próxima entrevista':'Próximo contacto' }}</h3><span>{{ overdue()?'Pendiente de resolver':'Programado' }}</span></div>
       <strong class="appointment-date">{{ date(next.fechaHora) }}</strong><p>{{ label(next.modalidad) }} @if(next.referencia){ · {{ next.referencia }} }</p>
-      <div class="inline-actions">
-       @if(can('EVALUAR')&&next.tipo==='ENTREVISTA'){<button type="button" (click)="choose('EVALUAR')">Registrar evaluación</button>}
-       @if(can('REPROGRAMAR')){<button type="button" (click)="choose('REPROGRAMAR')">Reprogramar</button>}
+       <div class="inline-actions">
+       @if(can('ASISTIO_MEET')&&overdue()){<button type="button" class="primary" (click)="choose('ASISTIO_MEET')">Confirmar asistencia</button>}
+       @if(can('REPROGRAMAR_MEET')){<button type="button" (click)="choose('REPROGRAMAR_MEET')">Reprogramar Meet</button>}
        @if(can('INASISTENCIA')&&overdue()){<button type="button" (click)="choose('INASISTENCIA')">No asistió</button>}
+       @if(can('REPROGRAMAR')){<button type="button" (click)="choose('REPROGRAMAR')">Reprogramar llamada</button>}
        @if(can('CANCELAR_CITA')){<button type="button" (click)="choose('CANCELAR_CITA')">Cancelar actividad</button>}
       </div>
      </section>
@@ -41,27 +42,35 @@
     @if(!active()) {
      <section class="finished"><i class="ti ti-circle-check"></i><h3>{{ p().etapa==='CAPACITACION'?'Postulación transferida a capacitación':'Gestión de reclutamiento finalizada' }}</h3><p>Consulta el historial para revisar las decisiones registradas.</p></section>
     } @else {
-     @if(context.evaluadaAt) {
-      <section class="evaluation"><div><i class="ti ti-check"></i><strong>Evaluación registrada</strong><span>{{ date(context.evaluadaAt) }}</span></div><p>Ya puedes registrar el resultado final o mantener el seguimiento.</p>
-       <div class="inline-actions">@if(can('APROBAR')){<button type="button" (click)="choose('APROBAR')">Aprobar para capacitación</button>}@if(can('RECHAZAR')){<button type="button" class="danger-link" (click)="choose('RECHAZAR')">Rechazar postulación</button>}<button type="button" (click)="choose('SEGUIMIENTO')">Continuar seguimiento</button></div>
-       @if(p().puestoObjetivo!=='ASESOR_VENTAS'){<small>La transferencia a grupos está habilitada actualmente para Asesor de ventas.</small>}
-      </section>
-     }
-     <section class="work-area">
-      <h3>Registrar una gestión</h3><p class="intro">Indica qué ocurrió. Te mostraremos el siguiente paso.</p>
-      <div class="choices" aria-label="Resultado del contacto">
-       <button type="button" [class.selected]="contactResult()==='sin'" [attr.aria-pressed]="contactResult()==='sin'" (click)="chooseContact('sin')"><i class="ti ti-phone-off"></i>No hubo contacto</button>
-       <button type="button" [class.selected]="contactResult()==='con'" [attr.aria-pressed]="contactResult()==='con'" (click)="chooseContact('con')"><i class="ti ti-message-circle"></i>Hubo contacto</button>
-       <button type="button" [class.selected]="contactResult()==='no'" [attr.aria-pressed]="contactResult()==='no'" (click)="chooseContact('no')"><i class="ti ti-user-minus"></i>No desea continuar</button>
-      </div>
-      @if(contactResult()==='con') {
-       <div class="next-step"><label for="next-step">Siguiente paso</label><select id="next-step" [value]="action()||''" (change)="choose($any($event.target).value||null)"><option value="">Seleccionar siguiente paso</option><option value="SEGUIMIENTO">Continuar seguimiento</option>@if(can('AGENDAR')){<option value="AGENDAR">Programar entrevista</option>}<option value="EVALUAR">Registrar evaluación realizada</option></select><small>Si ya evaluaste al postulante durante la conversación, registra la evaluación.</small></div>
+      @if(context.evaluadaAt) {
+       <section class="evaluation"><div><i class="ti ti-check"></i><strong>Meet evaluado</strong><span>{{ date(context.evaluadaAt) }}</span></div><p>La decisión queda separada de la asignación al grupo.</p>
+        <div class="inline-actions">@if(can('APROBAR')){<button type="button" class="primary" (click)="choose('APROBAR')">Aprobar postulación</button>}@if(can('RECHAZAR')){<button type="button" class="danger-link" (click)="choose('RECHAZAR')">Rechazar postulación</button>}</div>
+       </section>
       }
+      @if(can('EVALUAR')&&!action()) {
+       <section class="evaluation evaluation--pending"><div><i class="ti ti-clipboard-check"></i><strong>Meet listo para evaluar</strong><span>Asistencia registrada</span></div><p>Registra la evaluación del Meet para habilitar la aprobación o el rechazo.</p><div class="inline-actions"><button type="button" class="primary" (click)="choose('EVALUAR')">Registrar evaluación</button></div></section>
+      }
+      @if(context.resultadoEvaluacion==='APROBADO') {
+       <section class="evaluation evaluation--approved"><div><i class="ti ti-circle-check"></i><strong>Aprobado · pendiente de grupo</strong></div><p>La postulación ya superó el Meet. Asigna un grupo cuando tengas el conjunto listo.</p>
+        <div class="inline-actions">@if(can('ASIGNAR_GRUPO')){<button type="button" class="primary" (click)="choose('ASIGNAR_GRUPO')">Asignar a un grupo</button>}</div>
+       </section>
+      }
+     @if(action()||(!context.evaluadaAt&&!can('EVALUAR'))) {<section class="work-area">
+       <h3>Registrar una gestión</h3><p class="intro">Elige el resultado del contacto. El siguiente paso aparecerá solo cuando corresponda.</p>
+       <div class="choices" aria-label="Resultado del contacto">
+        <button type="button" [class.selected]="contactResult()==='sin'" [attr.aria-pressed]="contactResult()==='sin'" (click)="chooseContact('sin')"><i class="ti ti-phone-off"></i><span>No hubo contacto<small>No respondió o se perdió el intento</small></span></button>
+        <button type="button" [class.selected]="contactResult()==='con'" [attr.aria-pressed]="contactResult()==='con'" (click)="chooseContact('con')"><i class="ti ti-message-circle"></i><span>Hubo contacto<small>Decide el próximo paso</small></span></button>
+        <button type="button" [class.selected]="contactResult()==='no'" [attr.aria-pressed]="contactResult()==='no'" (click)="chooseContact('no')"><i class="ti ti-user-minus"></i><span>No desea continuar<small>Cierra la postulación</small></span></button>
+       </div>
+       @if(contactResult()==='con'&&!action()) {
+        <div class="decision-card"><span class="step-label">Siguiente decisión</span><h4>¿Quedó acordado un Meet?</h4><p>Si todavía no hay fecha, puedes dejar seguimiento o programar una llamada posterior.</p><div class="decision-actions">@if(can('AGENDAR_MEET')){<button type="button" class="primary" (click)="choose('AGENDAR_MEET')">Sí, asignar Meet</button>}<button type="button" (click)="choose('SEGUIMIENTO')">No, continuar seguimiento</button></div></div>
+       }
       @if(action(); as current) {
        <form [formGroup]="form" (ngSubmit)="submit()" class="management-form" id="management-form">
         <div class="form-heading"><h3>{{ title(current) }}</h3><button type="button" class="quiet" (click)="cancel()">Cambiar gestión</button></div>
-        @if(current==='EVALUAR'){<p class="context-note">Confirma que la evaluación se realizó y registra lo observado. Después podrás aprobar o rechazar.</p>}
-        @if(current==='APROBAR'){<p class="context-note">Al confirmar, la postulación pasará a capacitación con el grupo seleccionado.</p>}
+         @if(current==='EVALUAR'){<p class="context-note">Confirma la asistencia al Meet y registra la evaluación. La aprobación será una decisión posterior.</p>}
+         @if(current==='APROBAR'){<p class="context-note">La postulación quedará aprobada y visible como pendiente de grupo.</p>}
+         @if(current==='ASIGNAR_GRUPO'){<p class="context-note">Esta acción mueve la postulación a capacitación. Puedes repetirla para cada aprobado o usar la asignación masiva.</p>}
         @if(current==='NO_CONTACTO'||current==='NO_INTERESADO'||current==='RECHAZAR'){
          <label class="wide">Motivo <span aria-hidden="true">*</span><select formControlName="motivo" [attr.aria-invalid]="invalidField()==='motivo'"><option value="">Seleccionar motivo</option>@for(reason of reasons();track reason.id){<option [value]="reason.codigo">{{ label(reason.codigo) }}</option>}</select><small>Describe el resultado usando un motivo del proceso.</small>@if(invalidField()==='motivo'){<small class="field-error">{{ error() }}</small>}</label>
         }
@@ -72,36 +81,37 @@
           @else {<strong>Inicia con Llamar o WhatsApp</strong><small>Después podrás seleccionar el motivo de “No hubo contacto”.</small>}
           @if(invalidField()==='contactAttempt'){<small class="field-error">{{ error() }}</small>}
          </div>
-        } @else {
+        } @else if(showManualManagementDetails(current)) {
          <label>Fecha y hora de gestión <span aria-hidden="true">*</span><input type="datetime-local" formControlName="fechaHoraGestion"/><small>Cuándo ocurrió esta gestión, hora de Lima.</small>@if(invalidField()==='fechaHoraGestion'){<small class="field-error">{{ error() }}</small>}</label>
          <label>Canal de la gestión <span aria-hidden="true">*</span><select formControlName="modalidadContacto"><option value="LLAMADA">Llamada</option><option value="WHATSAPP">WhatsApp</option><option value="MEET">Meet</option><option value="PRESENCIAL">Presencial</option></select><small>Por dónde se realizó la comunicación.</small></label>
         }
         @if(current==='SEGUIMIENTO'){
-         <label class="check wide"><input type="checkbox" formControlName="programarReintento"/>Programar próximo contacto</label>
+         <label class="check wide"><input type="checkbox" formControlName="programarReintento"/>Programar llamada de seguimiento</label>
         }
-        @if(scheduled()) {
-         <div class="schedule-block wide">
-          <h3>{{ current==='AGENDAR'?'Detalles de la entrevista':'Próxima actividad' }}</h3>
+        @if(meetBooking()) {
+         <div class="schedule-block schedule-block--meet wide"><div class="schedule-heading"><i class="ti ti-video"></i><div><h3>{{ current==='REPROGRAMAR_MEET'?'Reprogramar Meet':'Asignar Meet' }}</h3><p>Elige una fecha y uno de los horarios disponibles para {{ label(p().negocio) }}.</p></div></div>
           <div class="form-grid">
-           <label>Fecha y hora programadas <span aria-hidden="true">*</span><input type="datetime-local" formControlName="fechaHoraActividad"/><small>La actividad debe ser posterior a la gestión.</small>@if(invalidField()==='fechaHoraActividad'){<small class="field-error">{{ error() }}</small>}</label>
-           <label>Modalidad de la actividad <span aria-hidden="true">*</span><select formControlName="modalidadActividad"><option value="LLAMADA">Llamada</option><option value="MEET">Meet</option><option value="PRESENCIAL">Presencial</option>@if(current==='NO_CONTACTO'||current==='SEGUIMIENTO'||pending()?.tipo==='REINTENTO'){<option value="WHATSAPP">WhatsApp</option>}</select><small>Canal acordado para el siguiente encuentro.</small></label>
-           @if(form.controls.modalidadActividad.value==='MEET'||form.controls.modalidadActividad.value==='PRESENCIAL'){
-            <label class="wide">{{ form.controls.modalidadActividad.value==='MEET'?'Enlace de reunión':'Ubicación' }} <span aria-hidden="true">*</span><input formControlName="referencia" [placeholder]="form.controls.modalidadActividad.value==='MEET'?'https://meet.google.com/abc-defg-hij':'Sede, piso y sala'"/><small>{{ form.controls.modalidadActividad.value==='MEET'?'Pega el enlace HTTPS de la reunión.':'Indica dónde debe presentarse el postulante.' }}</small></label>
-           }
+           <label>Fecha del Meet <span aria-hidden="true">*</span><input type="date" formControlName="fechaMeet"/><small>No se permite elegir una hora libre.</small>@if(invalidField()==='fechaMeet'){<small class="field-error">{{ error() }}</small>}</label>
+           <label>Horario disponible <span aria-hidden="true">*</span><select formControlName="idHorarioMeet"><option [value]="0">Seleccionar horario</option>@for(slot of meetSlots();track slot.id){<option [value]="slot.id">{{ slot.etiqueta }}</option>}</select><small>{{ meetSlotsLoading()?'Cargando horarios…':'Horarios configurados para este negocio.' }}</small>@if(invalidField()==='idHorarioMeet'){<small class="field-error">{{ error() }}</small>}</label>
           </div>
          </div>
+        } @else if(scheduled()) {
+         <div class="schedule-block wide"><h3>Programar llamada de seguimiento</h3><div class="form-grid">
+           <label>Fecha y hora <span aria-hidden="true">*</span><input type="datetime-local" formControlName="fechaHoraActividad"/><small>Se registra como una actividad futura.</small>@if(invalidField()==='fechaHoraActividad'){<small class="field-error">{{ error() }}</small>}</label>
+           <label>Canal acordado <span aria-hidden="true">*</span><select formControlName="modalidadActividad"><option value="LLAMADA">Llamada</option><option value="WHATSAPP">WhatsApp</option></select><small>Solo canales de recontacto.</small></label>
+          </div></div>
         }
-        @if(current==='APROBAR') {
-         <label class="wide">Grupo de capacitación <span aria-hidden="true">*</span><select formControlName="idGrupoCapacitacion"><option [value]="0">Seleccionar grupo abierto</option>@for(g of groups();track g.id){<option [value]="g.id">{{ g.codigo }} · {{ label(g.turno) }} · {{ g.fechaInicio }}</option>}</select><small>La aprobación y la asignación se guardan juntas.</small></label>
-         @if(!groups().length){<div class="notice warning wide">No hay grupos abiertos disponibles. Conserva la gestión y coordina la apertura de un grupo.<button type="button" (click)="loadGroups()">Actualizar grupos</button></div>}
+        @if(current==='ASIGNAR_GRUPO') {
+         <label class="wide">Grupo de capacitación <span aria-hidden="true">*</span><select formControlName="idGrupoCapacitacion"><option [value]="0">Seleccionar grupo abierto</option>@for(g of groups();track g.id){<option [value]="g.id">{{ g.codigo }} · {{ label(g.turno) }} · {{ g.fechaInicio }}</option>}</select><small>La postulación ya está aprobada; aquí se realiza la transferencia.</small>@if(invalidField()==='idGrupoCapacitacion'){<small class="field-error">{{ error() }}</small>}</label>
+         @if(!groups().length){<div class="notice warning wide">No hay grupos abiertos disponibles. Puedes dejar la postulación aprobada y asignarla después.<button type="button" (click)="loadGroups()">Actualizar grupos</button></div>}
         }
-        <label class="wide">Observación @if(['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','INASISTENCIA','CANCELAR_CITA'].includes(current)){<span aria-hidden="true">*</span>}<textarea rows="3" maxlength="2000" formControlName="observacion" [placeholder]="current==='NO_CONTACTO'?'Nota opcional del intento':'Resultado de la conversación y acuerdos'" [attr.aria-invalid]="invalidField()==='observacion'"></textarea><small>Contexto útil para el siguiente reclutador. Las fechas se registran automáticamente cuando corresponde.</small>@if(invalidField()==='observacion'){<small class="field-error">{{ error() }}</small>}</label>
+        <label class="wide">Observación @if(['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','ASIGNAR_GRUPO','INASISTENCIA','CANCELAR_CITA'].includes(current)){<span aria-hidden="true">*</span>}<textarea rows="3" maxlength="2000" formControlName="observacion" [placeholder]="current==='NO_CONTACTO'?'Nota opcional del intento':'Resultado de la conversación y acuerdos'" [attr.aria-invalid]="invalidField()==='observacion'"></textarea><small>Contexto útil para el siguiente reclutador. El historial conservará esta decisión.</small>@if(invalidField()==='observacion'){<small class="field-error">{{ error() }}</small>}</label>
         @if(invalidField()==='referencia'||invalidField()==='idGrupoCapacitacion'||invalidField()==='modalidadActividad'||invalidField()==='modalidadContacto'){<small class="field-error wide">{{ error() }}</small>}
        </form>
       } @else {
        <div class="guidance"><i class="ti ti-route"></i><p>Primero registra el contacto. La agenda y la evaluación se habilitan según el siguiente paso.</p></div>
       }
-     </section>
+     </section>}
     }
    }
    @if(panel()==='datos') {
@@ -119,13 +129,13 @@
  <footer>
   <span role="status">{{ busy()?'Guardando gestión…':error()?'Revisa los datos: hay un error.':message()?'Listo':action()?'Gestión pendiente de guardar':'Bandeja compartida' }}</span>
   <div><button type="button" (click)="close()" [disabled]="busy()">Cerrar</button>
-   @if(action()&&panel()==='gestion'){<button type="submit" form="management-form" class="primary" [disabled]="busy()||stale()||(action()==='APROBAR'&&!groups().length)">{{ cta() }}</button>}
+    @if(action()&&panel()==='gestion'){<button type="submit" form="management-form" class="primary" [disabled]="busy()||stale()||(action()==='ASIGNAR_GRUPO'&&!groups().length)">{{ cta() }}</button>}
   </div>
  </footer>
  @if(confirmation(); as dialog) {
   <div class="confirm-layer"><section class="confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
    <header><h3 id="confirm-title">{{ dialog==='close'||dialog==='change'?'Descartar gestión pendiente':title(action()) }}</h3><button type="button" class="icon-button" aria-label="Seguir editando" (click)="confirmation.set(null)"><i class="ti ti-x" aria-hidden="true"></i></button></header>
-   <p>{{ dialog==='close'?'Los datos que aún no guardaste se perderán al cerrar la ficha.':dialog==='change'?'Los datos sin guardar se descartarán para comenzar otra gestión.':action()==='APROBAR'?'El postulante ingresará al grupo seleccionado y dejará la bandeja de reclutamiento. La decisión quedará en su historial.':'La postulación quedará cerrada y la decisión quedará registrada en el historial.' }}</p>
+    <p>{{ dialog==='close'?'Los datos que aún no guardaste se perderán al cerrar la ficha.':dialog==='change'?'Los datos sin guardar se descartarán para comenzar otra gestión.':action()==='ASIGNAR_GRUPO'?'La postulación aprobada ingresará al grupo seleccionado y dejará la bandeja de reclutamiento.':action()==='APROBAR'?'La postulación quedará aprobada y permanecerá pendiente de grupo.':'La decisión quedará registrada en el historial.' }}</p>
    <footer><button type="button" (click)="confirmation.set(null)" cdkFocusInitial>Seguir editando</button><button type="button" class="primary" (click)="dialog==='close'?confirmClose():dialog==='change'?confirmChange():persist()">{{ dialog==='close'?'Descartar y cerrar':dialog==='change'?'Descartar y cambiar':title(action()) }}</button></footer>
   </section></div>
  }

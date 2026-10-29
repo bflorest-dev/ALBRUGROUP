@@ -10,4 +10,5 @@ public class GestionReclutamiento {
  private LocalDateTime evaluadaAt;
  private LocalDateTime ultimaGestionAt;
  @Column(length=80) private String ultimoResultado;
+ @Column(length=30) private String resultadoEvaluacion;
 }

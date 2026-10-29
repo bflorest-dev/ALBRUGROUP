@@ -9,8 +9,9 @@ import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/gr
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
 import { RegistrarContactoPostulacionRequest } from '../../../shared/models/recruitment/registrar-contacto-postulacion-request';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
-import { GestionReclutamiento, GestionRequest } from '../../../shared/models/recruitment/gestion-reclutamiento';
+import { GestionReclutamiento, GestionRequest, HorarioMeet } from '../../../shared/models/recruitment/gestion-reclutamiento';
 import { ContactoPostulacionResponse } from '../../../shared/models/recruitment/contacto-postulacion-response';
+import { SesionMeetResponse } from '../../../shared/models/recruitment/sesion-meet-response';
 
 @Injectable({
   providedIn: 'root'
@@ -26,6 +27,14 @@ export class RecruiterPostulantesService {
   }
   registrarGestion(id:number, request:GestionRequest): Observable<GestionReclutamiento> {
     return this.http.post<GestionReclutamiento>(`${this.postulacionesUrl}/${id}/gestion-reclutamiento`,request);
+  }
+  listarHorariosMeet(negocio:string): Observable<HorarioMeet[]> {
+    return this.http.get<HorarioMeet[]>(`${this.recruitmentUrl}/reclutamiento/meet/horarios`, { params: { negocio } });
+  }
+  listarSesionesMeet(fecha:string, negocio?:string): Observable<SesionMeetResponse[]> {
+    let params = new HttpParams().set('fecha', fecha);
+    if (negocio) params = params.set('negocio', negocio);
+    return this.http.get<SesionMeetResponse[]>(`${this.recruitmentUrl}/reclutamiento/meet/sesiones`, { params });
   }
 
   listarBandejaReclutamiento(

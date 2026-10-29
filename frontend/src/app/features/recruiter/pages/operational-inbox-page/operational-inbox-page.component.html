@@ -7,12 +7,52 @@
     </div>
     <div class="workspace-header__actions">
       <span class="sync-status"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizado {{ dateTime(facade.lastSync().toISOString()) }}</span>
+      <button type="button" class="button button--ghost" [attr.aria-expanded]="meetAgendaOpen()" (click)="toggleMeetAgenda()">
+        <i class="ti ti-calendar-event" aria-hidden="true"></i>
+        {{ meetAgendaOpen() ? 'Cerrar agenda' : 'Agenda Meet' }}
+      </button>
       <button type="button" class="button button--ghost" (click)="facade.refresh()" [disabled]="facade.listLoading() || facade.catalogLoading()">
         <i class="ti ti-refresh" aria-hidden="true"></i>
         {{ facade.listLoading() ? 'Actualizando…' : 'Actualizar bandeja' }}
       </button>
     </div>
   </header>
+
+  @if (meetAgendaOpen()) {
+    <section class="meet-agenda" aria-labelledby="meet-agenda-title">
+      <div class="meet-agenda__heading">
+        <div>
+          <span class="workspace-header__live"><span aria-hidden="true"></span> Agenda operativa</span>
+          <h2 id="meet-agenda-title">Postulantes por Meet</h2>
+          <p>La lista se agrupa automáticamente por negocio, fecha y franja horaria.</p>
+        </div>
+        <label class="field field--compact">Fecha de Meet
+          <input type="date" [value]="meetDate()" (change)="changeMeetDate($any($event.target).value)" />
+        </label>
+      </div>
+      @if (meetLoading()) {
+        <div class="meet-agenda__status" role="status"><span class="spinner" aria-hidden="true"></span>Actualizando agenda…</div>
+      } @else if (meetError()) {
+        <div class="inline-notice inline-notice--error" role="alert"><i class="ti ti-alert-circle" aria-hidden="true"></i><span>{{ meetError() }}</span><button type="button" class="button button--ghost button--small" (click)="loadMeetAgenda()">Reintentar</button></div>
+      } @else if (!meetSessions().length) {
+        <div class="meet-agenda__empty"><i class="ti ti-calendar-off" aria-hidden="true"></i><strong>No hay Meets programados para esta fecha</strong><span>Cuando un reclutador asigne una franja, los postulantes aparecerán aquí agrupados.</span></div>
+      } @else {
+        <div class="meet-agenda__grid">
+          @for (session of meetSessions(); track session.id) {
+            <article class="meet-session">
+              <header><div><span>{{ label(session.negocio) }}</span><strong>{{ session.horarioEtiqueta }}</strong></div><b>{{ session.postulaciones.length }}</b></header>
+              <p>{{ meetHour(session) }} · {{ label(session.estado) }}</p>
+              <ul>
+                @for (postulacion of session.postulaciones; track postulacion.id) {
+                  <li><span>{{ postulacion.postulante.nombres }} {{ postulacion.postulante.apellidos }}</span><small>{{ postulacion.postulante.documento }} · {{ label(postulacion.puestoObjetivo) }}</small></li>
+                }
+              </ul>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
 
   <div class="summary-grid" aria-label="Resumen de la bandeja">
     <article class="summary-card summary-card--total">

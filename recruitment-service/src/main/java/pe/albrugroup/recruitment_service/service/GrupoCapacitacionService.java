@@ -26,6 +26,7 @@ import pe.albrugroup.recruitment_service.exception.ConflictException;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
 import pe.albrugroup.recruitment_service.repository.GrupoCapacitacionDetalleRepository;
 import pe.albrugroup.recruitment_service.repository.GrupoCapacitacionRepository;
+import pe.albrugroup.recruitment_service.repository.GestionReclutamientoRepository;
 import pe.albrugroup.recruitment_service.repository.PostulacionRepository;
 import pe.albrugroup.recruitment_service.service.mapper.GrupoCapacitacionMapper;
 
@@ -43,6 +44,7 @@ public class GrupoCapacitacionService {
 
     private final GrupoCapacitacionRepository grupoCapacitacionRepository;
     private final GrupoCapacitacionDetalleRepository detalleRepository;
+    private final GestionReclutamientoRepository gestionReclutamientoRepository;
     private final PostulacionRepository postulacionRepository;
     private final GrupoCapacitacionMapper grupoCapacitacionMapper;
     private final EventoService eventoService;
@@ -136,6 +138,18 @@ public class GrupoCapacitacionService {
         );
 
         return grupoCapacitacionMapper.toResponse(detalleGuardado);
+    }
+
+    public java.util.List<GrupoCapacitacionDetalleResponse> agregarPostulaciones(
+            Long idGrupoCapacitacion,
+            java.util.List<Long> idsPostulaciones
+    ) {
+        return idsPostulaciones.stream()
+                .map(id -> agregarPostulacion(
+                        idGrupoCapacitacion,
+                        AgregarPostulacionGrupoCapacitacionRequest.builder().idPostulacion(id).build()
+                ))
+                .toList();
     }
 
     public GrupoCapacitacionDetalleResponse actualizarDetalle(
@@ -248,8 +262,19 @@ public class GrupoCapacitacionService {
     }
 
     private void validarPostulacionAptaParaCapacitacion(Postulacion postulacion) {
+        if (postulacion.getEtapa() == Etapa.RECLUTAMIENTO) {
+            boolean aprobada = gestionReclutamientoRepository.findById(postulacion.getId())
+                    .map(g -> "APROBADO".equals(g.getResultadoEvaluacion()))
+                    .orElse(false);
+            if (!aprobada) {
+                throw new BadRequestException("Solo se pueden asignar postulaciones aprobadas en reclutamiento");
+            }
+            postulacion.setEtapa(Etapa.CAPACITACION);
+            postulacionRepository.save(postulacion);
+            return;
+        }
         if (postulacion.getEtapa() != Etapa.CAPACITACION) {
-            throw new BadRequestException("Solo se pueden agregar postulaciones que esten en la etapa de capacitacion");
+            throw new BadRequestException("Solo se pueden agregar postulaciones aprobadas a capacitacion");
         }
 
         if (postulacion.getPuestoObjetivo() != PuestoObjetivo.ASESOR_VENTAS) {

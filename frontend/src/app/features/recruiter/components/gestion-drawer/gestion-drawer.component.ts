@@ -10,7 +10,7 @@ import { PostulacionResponse } from '../../../../shared/models/recruitment/postu
 import { CatalogoTipificacionResponse } from '../../../../shared/models/recruitment/catalogo-tipificacion-response';
 import { EventoResponse } from '../../../../shared/models/recruitment/evento-response';
 import { GrupoCapacitacionResponse } from '../../../../shared/models/recruitment/grupo-capacitacion-response';
-import { GestionAccion, GestionReclutamiento, GestionRequest } from '../../../../shared/models/recruitment/gestion-reclutamiento';
+import { GestionAccion, GestionReclutamiento, GestionRequest, HorarioMeet } from '../../../../shared/models/recruitment/gestion-reclutamiento';
 
 @Component({
  selector:'app-gestion-reclutamiento-drawer',
@@ -31,6 +31,8 @@ export class GestionDrawerComponent implements OnInit {
  readonly state=signal<GestionReclutamiento|null>(null);
  readonly catalog=signal<CatalogoTipificacionResponse|null>(null);
  readonly groups=signal<GrupoCapacitacionResponse[]>([]);
+ readonly meetSlots=signal<HorarioMeet[]>([]);
+ readonly meetSlotsLoading=signal(false);
  readonly events=signal<EventoResponse[]>([]);
  readonly historyPage=signal(0);
  readonly historyPages=signal(0);
@@ -56,10 +58,17 @@ export class GestionDrawerComponent implements OnInit {
  readonly form=this.fb.nonNullable.group({
   fechaHoraGestion:[this.now(),Validators.required], modalidadContacto:['LLAMADA',Validators.required],
   motivo:[''], observacion:['',Validators.maxLength(2000)], programarReintento:[false],
-  fechaHoraActividad:[''], modalidadActividad:['LLAMADA'], referencia:[''], idGrupoCapacitacion:[0]
+  fechaHoraActividad:[''], modalidadActividad:['LLAMADA'], referencia:[''], idGrupoCapacitacion:[0],
+  fechaMeet:[''], idHorarioMeet:[0], idSesionMeet:[0]
  });
  readonly changed=signal(0);
- readonly scheduled=computed(()=>{this.changed();return this.action()==='AGENDAR'||this.action()==='REPROGRAMAR'||this.form.controls.programarReintento.value;});
+ readonly meetBooking=computed(()=>{this.changed();return ['AGENDAR_MEET','REPROGRAMAR_MEET'].includes(this.action()??'');});
+ readonly scheduled=computed(()=>{this.changed();return ['AGENDAR','REPROGRAMAR'].includes(this.action()??'')||(this.action()==='SEGUIMIENTO'&&this.form.controls.programarReintento.value);});
+  showManualManagementDetails(action:GestionAccion):boolean {
+   // La gestión empieza desde Llamar o WhatsApp. La fecha/canal del contacto
+   // son automáticos; solo la próxima actividad mantiene fecha y hora editables.
+   return false;
+  }
  readonly reasons=computed(()=>{
   const code=this.action()==='NO_CONTACTO'?'SIN_CONTACTO':this.action()==='RECHAZAR'?'RECHAZADO':'NO_INTERESADO';
   return this.catalog()?.tipificaciones.find(t=>t.codigo===code)?.subtipificaciones
@@ -90,11 +99,20 @@ export class GestionDrawerComponent implements OnInit {
     next:r=>{this.state.set(r.state);this.catalog.set(r.catalog);this.loading.set(false);this.stale.set(false);},
     error:e=>{this.error.set(this.errorText(e));this.loading.set(false);}
    });
-  this.loadGroups();this.loadHistory();
+  this.loadGroups();this.loadMeetSlots();this.loadHistory();
  }
  loadGroups():void {
   this.api.listarGruposCapacitacionAbiertos().pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
    next:r=>this.groups.set(r.content),error:()=>this.error.set('No se pudieron cargar los grupos. Pulsa Actualizar grupos para reintentar.')
+  });
+ }
+ loadMeetSlots():void {
+  const negocio=this.p().negocio;
+  if(!negocio){this.meetSlots.set([]);return;}
+  this.meetSlotsLoading.set(true);
+  this.api.listarHorariosMeet(negocio).pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
+   next:r=>{this.meetSlots.set(r);this.meetSlotsLoading.set(false);},
+   error:()=>{this.meetSlots.set([]);this.meetSlotsLoading.set(false);}
   });
  }
  loadHistory(page=0):void {
@@ -123,13 +141,14 @@ export class GestionDrawerComponent implements OnInit {
   this.action.set(a);this.message.set('');this.error.set('');
   this.form.patchValue({motivo:'',idGrupoCapacitacion:0,programarReintento:false});
   if(a==='REPROGRAMAR'&&this.pending()) this.form.patchValue({modalidadActividad:this.pending()!.modalidad,referencia:this.pending()!.referencia??''});
+  if(['AGENDAR_MEET','REPROGRAMAR_MEET'].includes(a??'')) this.loadMeetSlots();
   this.changed.update(v=>v+1);
  }
  cancel():void {
   this.requestAction(null,null);
  }
  reset():void {
-  this.form.reset({fechaHoraGestion:this.now(),modalidadContacto:'LLAMADA',motivo:'',observacion:'',programarReintento:false,fechaHoraActividad:'',modalidadActividad:'LLAMADA',referencia:'',idGrupoCapacitacion:0});
+  this.form.reset({fechaHoraGestion:this.now(),modalidadContacto:'LLAMADA',motivo:'',observacion:'',programarReintento:false,fechaHoraActividad:'',modalidadActividad:'LLAMADA',referencia:'',idGrupoCapacitacion:0,fechaMeet:'',idHorarioMeet:0,idSesionMeet:0});
   this.action.set(null);this.contactResult.set(null);this.contactAttempt.set(null);this.contacted.set(null);this.error.set('');this.confirmation.set(null);
  }
  close():void {if(this.busy())return;if(this.form.dirty||this.action())this.confirmation.set('close');else this.closed.emit();}
@@ -142,28 +161,24 @@ export class GestionDrawerComponent implements OnInit {
  validate():boolean {
   const a=this.action();const r=this.form.getRawValue();
   this.form.markAllAsTouched();
-  let error='';
-  if(!a||!this.can(a)) error='Selecciona una acción disponible para esta postulación.';
-  else if(a==='NO_CONTACTO'&&!this.contactAttempt())error='Inicia el intento con Llamar o WhatsApp para registrar la hora y el canal automáticamente.';
-  else if(a!=='NO_CONTACTO'&&(!r.fechaHoraGestion||!r.modalidadContacto))error='Indica cuándo y por qué canal realizaste la gestión.';
-  else if(['NO_CONTACTO','NO_INTERESADO','RECHAZAR'].includes(a)&&!r.motivo)error='Selecciona el motivo del resultado.';
-  else if(['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','INASISTENCIA','CANCELAR_CITA'].includes(a)&&!r.observacion.trim())error='Describe el resultado de esta gestión.';
-  else if(r.observacion.length>2000)error='La observación admite hasta 2000 caracteres.';
-  else if(this.scheduled()&&(!r.fechaHoraActividad||!r.modalidadActividad))error='Indica modalidad, fecha y hora de la próxima actividad.';
-  else if(this.scheduled()&&new Date(r.fechaHoraActividad).getTime()<=Date.now())error='La próxima actividad debe estar en el futuro.';
-  else if(this.scheduled()&&['MEET','PRESENCIAL'].includes(r.modalidadActividad)&&!r.referencia.trim())error='Completa el enlace o la ubicación de la entrevista.';
-  else if(a==='APROBAR'&&!Number(r.idGrupoCapacitacion))error='Selecciona un grupo abierto para aprobar y avanzar.';
-  const field=a==='NO_CONTACTO'&&!this.contactAttempt()?'contactAttempt':!r.fechaHoraGestion?'fechaHoraGestion':!r.modalidadContacto?'modalidadContacto':
-   a&&['NO_CONTACTO','NO_INTERESADO','RECHAZAR'].includes(a)&&!r.motivo?'motivo':
-   a&&['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','INASISTENCIA','CANCELAR_CITA'].includes(a)&&!r.observacion.trim()?'observacion':
-   this.scheduled()&&(!r.fechaHoraActividad||new Date(r.fechaHoraActividad).getTime()<=Date.now())?'fechaHoraActividad':
-   this.scheduled()&&!r.modalidadActividad?'modalidadActividad':
-   this.scheduled()&&['MEET','PRESENCIAL'].includes(r.modalidadActividad)&&!r.referencia.trim()?'referencia':
-   a==='APROBAR'&&!Number(r.idGrupoCapacitacion)?'idGrupoCapacitacion':'';
+  const meet=['AGENDAR_MEET','REPROGRAMAR_MEET'].includes(a??'');
+  const needsObservation=['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','INASISTENCIA','CANCELAR_CITA','ASIGNAR_GRUPO'].includes(a??'');
+  let error='';let field='';
+  if(!a||!this.can(a)) {error='Selecciona una acción disponible para esta postulación.';}
+  else if(['NO_CONTACTO','SEGUIMIENTO','AGENDAR_MEET','REPROGRAMAR_MEET','NO_INTERESADO'].includes(a??'')&&!this.contactAttempt()) {error='Inicia el contacto con Llamar o WhatsApp para registrar la hora y el canal automáticamente.';field='contactAttempt';}
+  else if(a!=='NO_CONTACTO'&&this.showManualManagementDetails(a!)&&!r.fechaHoraGestion) {error='Indica cuándo ocurrió esta gestión.';field='fechaHoraGestion';}
+  else if(['NO_CONTACTO','NO_INTERESADO','RECHAZAR'].includes(a)&&!r.motivo) {error='Selecciona el motivo del resultado.';field='motivo';}
+  else if(needsObservation&&!r.observacion.trim()) {error='Describe el resultado de esta gestión.';field='observacion';}
+  else if(r.observacion.length>2000) {error='La observación admite hasta 2000 caracteres.';field='observacion';}
+  else if(meet&&!r.fechaMeet) {error='Selecciona la fecha del Meet.';field='fechaMeet';}
+  else if(meet&&!Number(r.idHorarioMeet)) {error='Selecciona un horario disponible.';field='idHorarioMeet';}
+  else if(this.scheduled()&&(!r.fechaHoraActividad||!r.modalidadActividad)) {error='Indica fecha, hora y canal de la próxima llamada.';field=!r.fechaHoraActividad?'fechaHoraActividad':'modalidadActividad';}
+  else if(this.scheduled()&&new Date(r.fechaHoraActividad).getTime()<=Date.now()) {error='La próxima llamada debe estar en el futuro.';field='fechaHoraActividad';}
+  else if(a==='ASIGNAR_GRUPO'&&!Number(r.idGrupoCapacitacion)) {error='Selecciona un grupo abierto para asignar.';field='idGrupoCapacitacion';}
   this.invalidField.set(error?field:'');this.error.set(error);
   if(error)queueMicrotask(()=>{
    const target=this.element.nativeElement.querySelector(field==='contactAttempt'?'[data-contact-attempt]':field?'[formControlName="'+field+'"]':'[role="alert"]');
-   target?.scrollIntoView({block:'center',behavior:'smooth'});target?.focus({preventScroll:true});
+   target?.scrollIntoView({block:'center',behavior:'smooth'});(target as HTMLElement|null)?.focus?.({preventScroll:true});
   });
   return !error;
  }
@@ -177,11 +192,15 @@ export class GestionDrawerComponent implements OnInit {
   this.confirmation.set(null);this.busy.set(true);this.message.set('');
   const r=this.form.getRawValue();
   const attempt=this.contactAttempt();
-  const payload:GestionRequest={accion:this.action()!,revision:this.state()!.revision,
-   fechaHoraGestion:this.action()==='NO_CONTACTO'&&attempt?attempt.at:r.fechaHoraGestion,
-   modalidadContacto:this.action()==='NO_CONTACTO'&&attempt?attempt.channel:r.modalidadContacto,observacion:r.observacion.trim(),motivo:r.motivo||null,
+  const action=this.action()!;
+  const meet=['AGENDAR_MEET','REPROGRAMAR_MEET'].includes(action);
+  const payload:GestionRequest={accion:action,revision:this.state()!.revision,
+   fechaHoraGestion:(attempt?.at??r.fechaHoraGestion)||this.now(),
+   modalidadContacto:attempt&&['NO_CONTACTO','SEGUIMIENTO','AGENDAR_MEET','REPROGRAMAR_MEET','NO_INTERESADO'].includes(action)?attempt.channel:meet||['ASISTIO_MEET','INASISTENCIA','EVALUAR','APROBAR','ASIGNAR_GRUPO'].includes(action)?'MEET':r.modalidadContacto,
+   observacion:r.observacion.trim(),motivo:r.motivo||null,
    fechaHoraActividad:this.scheduled()?r.fechaHoraActividad:null,modalidadActividad:this.scheduled()?r.modalidadActividad:null,
-   referencia:this.scheduled()?r.referencia.trim()||null:null,idGrupoCapacitacion:this.action()==='APROBAR'?Number(r.idGrupoCapacitacion):null};
+   referencia:this.scheduled()?r.referencia.trim()||null:null,idGrupoCapacitacion:action==='ASIGNAR_GRUPO'?Number(r.idGrupoCapacitacion):null,
+   fechaMeet:meet?r.fechaMeet:null,idHorarioMeet:meet?Number(r.idHorarioMeet):null,idSesionMeet:meet?Number(r.idSesionMeet)||null:null};
   this.api.registrarGestion(this.p().id,payload).pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
    next:s=>{this.state.set(s);this.busy.set(false);this.reset();this.message.set(s.ultimoResultado??'Gestión guardada');this.loadHistory();this.saved.emit();},
    error:(e:HttpErrorResponse)=>{this.busy.set(false);this.error.set(this.errorText(e));if(e.status===409)this.stale.set(true);}
@@ -201,7 +220,7 @@ export class GestionDrawerComponent implements OnInit {
    });
  }
  title(a:GestionAccion|null):string {
-  const labels:Record<GestionAccion,string>={NO_CONTACTO:'Guardar intento',SEGUIMIENTO:'Guardar seguimiento',AGENDAR:'Programar entrevista',REPROGRAMAR:'Reprogramar actividad',INASISTENCIA:'Registrar inasistencia',CANCELAR_CITA:'Cancelar actividad',EVALUAR:'Registrar evaluación',NO_INTERESADO:'Cerrar postulación',RECHAZAR:'Rechazar postulación',APROBAR:'Aprobar y asignar grupo'};
+  const labels:Record<GestionAccion,string>={NO_CONTACTO:'Guardar intento',SEGUIMIENTO:'Guardar seguimiento',AGENDAR:'Programar actividad',AGENDAR_MEET:'Asignar Meet',REPROGRAMAR:'Reprogramar actividad',REPROGRAMAR_MEET:'Reprogramar Meet',ASISTIO_MEET:'Registrar asistencia',INASISTENCIA:'Registrar inasistencia',CANCELAR_CITA:'Cancelar actividad',EVALUAR:'Registrar evaluación',NO_INTERESADO:'Cerrar postulación',RECHAZAR:'Rechazar postulación',APROBAR:'Aprobar postulación',ASIGNAR_GRUPO:'Asignar grupo'};
   return a?labels[a]:'Selecciona una gestión';
  }
  label(s:string|null|undefined):string {

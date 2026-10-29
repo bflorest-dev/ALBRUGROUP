@@ -12,6 +12,7 @@ public class ActividadReclutamiento {
  @Column(nullable=false,length=30) private String modalidad;
  @Column(nullable=false) private LocalDateTime fechaHora;
  @Column(length=500) private String referencia;
+ @Column(name="meet_sesion_id") private Long meetSesionId;
  @Column(nullable=false,length=30) private String estado;
  @Column(nullable=false) private Long responsableId;
  @CreationTimestamp @Column(nullable=false,updatable=false) private Instant createdAt;

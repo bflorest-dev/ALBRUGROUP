@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoGrupoCapacitacion;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDetalleGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.AsignarPostulacionesGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.GrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionDetalleResponse;
@@ -57,6 +58,17 @@ public class GrupoCapacitacionController {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(grupoCapacitacionService.agregarPostulacion(idGrupoCapacitacion, request));
+    }
+
+    @PostMapping("/{idGrupoCapacitacion}/postulaciones:asignar")
+    @PreAuthorize("hasAuthority('ASSIGN_GRUPOS_CAPACITACION')")
+    public ResponseEntity<java.util.List<GrupoCapacitacionDetalleResponse>> asignarPostulaciones(
+            @PathVariable @Positive Long idGrupoCapacitacion,
+            @Valid @RequestBody AsignarPostulacionesGrupoCapacitacionRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                grupoCapacitacionService.agregarPostulaciones(idGrupoCapacitacion, request.getIdsPostulaciones())
+        );
     }
 
     @PatchMapping("/{idGrupoCapacitacion}/postulaciones/{idPostulacion}")

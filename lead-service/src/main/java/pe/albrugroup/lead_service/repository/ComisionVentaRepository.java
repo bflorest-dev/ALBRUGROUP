@@ -36,14 +36,14 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
             JOIN lead_etapa_resumen ler ON ler.id_lead = l.id AND ler.etapa = 'PREVENTA'
             LEFT JOIN zona z ON z.id = l.id_zona
             WHERE l.etapa IN ('POSTVENTA', 'COBRANZA')
-              AND NOT EXISTS (
+              AND EXISTS (
                   SELECT 1
                   FROM pago_postventa pp_m
                   JOIN periodo_facturacion_postventa pf_m ON pf_m.id = pp_m.id_periodo_facturacion
                   WHERE pp_m.id_lead = l.id
                     AND pf_m.numero_periodo = 1
                     AND pp_m.fecha_pago IS NOT NULL
-                    AND pp_m.fecha_pago > COALESCE(
+                    AND pp_m.fecha_pago <= COALESCE(
                             CAST(:fechaLimiteMorosidad AS date),
                             COALESCE(pf_m.fecha_vencimiento_confirmado, pf_m.fecha_vencimiento_estimado) + INTERVAL '7 days'
                         )
