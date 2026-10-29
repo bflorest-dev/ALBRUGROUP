@@ -65,9 +65,18 @@
         @if(current==='NO_CONTACTO'||current==='NO_INTERESADO'||current==='RECHAZAR'){
          <label class="wide">Motivo <span aria-hidden="true">*</span><select formControlName="motivo" [attr.aria-invalid]="invalidField()==='motivo'"><option value="">Seleccionar motivo</option>@for(reason of reasons();track reason.id){<option [value]="reason.codigo">{{ label(reason.codigo) }}</option>}</select><small>Describe el resultado usando un motivo del proceso.</small>@if(invalidField()==='motivo'){<small class="field-error">{{ error() }}</small>}</label>
         }
-        <label>Fecha y hora de gestión <span aria-hidden="true">*</span><input type="datetime-local" formControlName="fechaHoraGestion"/><small>Cuándo ocurrió esta gestión, hora de Lima.</small>@if(invalidField()==='fechaHoraGestion'){<small class="field-error">{{ error() }}</small>}</label>
-        <label>Canal de la gestión <span aria-hidden="true">*</span><select formControlName="modalidadContacto"><option value="LLAMADA">Llamada</option><option value="WHATSAPP">WhatsApp</option><option value="MEET">Meet</option><option value="PRESENCIAL">Presencial</option></select><small>Por dónde se realizó la comunicación.</small></label>
-        @if(current==='NO_CONTACTO'||current==='SEGUIMIENTO'){
+        @if(current==='NO_CONTACTO') {
+         <div class="captured-contact wide" data-contact-attempt>
+          <div><i class="ti ti-clock-check" aria-hidden="true"></i><span>Intento registrado automáticamente</span></div>
+          @if(contactAttempt(); as attempt) {<strong>{{ label(attempt.channel) }} · {{ date(attempt.at) }}</strong><small>La hora y el canal vienen del botón que utilizaste arriba.</small>}
+          @else {<strong>Inicia con Llamar o WhatsApp</strong><small>Después podrás seleccionar el motivo de “No hubo contacto”.</small>}
+          @if(invalidField()==='contactAttempt'){<small class="field-error">{{ error() }}</small>}
+         </div>
+        } @else {
+         <label>Fecha y hora de gestión <span aria-hidden="true">*</span><input type="datetime-local" formControlName="fechaHoraGestion"/><small>Cuándo ocurrió esta gestión, hora de Lima.</small>@if(invalidField()==='fechaHoraGestion'){<small class="field-error">{{ error() }}</small>}</label>
+         <label>Canal de la gestión <span aria-hidden="true">*</span><select formControlName="modalidadContacto"><option value="LLAMADA">Llamada</option><option value="WHATSAPP">WhatsApp</option><option value="MEET">Meet</option><option value="PRESENCIAL">Presencial</option></select><small>Por dónde se realizó la comunicación.</small></label>
+        }
+        @if(current==='SEGUIMIENTO'){
          <label class="check wide"><input type="checkbox" formControlName="programarReintento"/>Programar próximo contacto</label>
         }
         @if(scheduled()) {
@@ -86,7 +95,7 @@
          <label class="wide">Grupo de capacitación <span aria-hidden="true">*</span><select formControlName="idGrupoCapacitacion"><option [value]="0">Seleccionar grupo abierto</option>@for(g of groups();track g.id){<option [value]="g.id">{{ g.codigo }} · {{ label(g.turno) }} · {{ g.fechaInicio }}</option>}</select><small>La aprobación y la asignación se guardan juntas.</small></label>
          @if(!groups().length){<div class="notice warning wide">No hay grupos abiertos disponibles. Conserva la gestión y coordina la apertura de un grupo.<button type="button" (click)="loadGroups()">Actualizar grupos</button></div>}
         }
-        <label class="wide">Observación @if(['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','INASISTENCIA','CANCELAR_CITA'].includes(current)){<span aria-hidden="true">*</span>}<textarea rows="3" maxlength="2000" formControlName="observacion" placeholder="Resultado de la conversación y acuerdos" [attr.aria-invalid]="invalidField()==='observacion'"></textarea><small>Contexto útil para el siguiente reclutador. Las fechas se registran en sus campos.</small>@if(invalidField()==='observacion'){<small class="field-error">{{ error() }}</small>}</label>
+        <label class="wide">Observación @if(['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','INASISTENCIA','CANCELAR_CITA'].includes(current)){<span aria-hidden="true">*</span>}<textarea rows="3" maxlength="2000" formControlName="observacion" [placeholder]="current==='NO_CONTACTO'?'Nota opcional del intento':'Resultado de la conversación y acuerdos'" [attr.aria-invalid]="invalidField()==='observacion'"></textarea><small>Contexto útil para el siguiente reclutador. Las fechas se registran automáticamente cuando corresponde.</small>@if(invalidField()==='observacion'){<small class="field-error">{{ error() }}</small>}</label>
         @if(invalidField()==='referencia'||invalidField()==='idGrupoCapacitacion'||invalidField()==='modalidadActividad'||invalidField()==='modalidadContacto'){<small class="field-error wide">{{ error() }}</small>}
        </form>
       } @else {

@@ -19,6 +19,7 @@ import pe.albrugroup.recruitment_service.service.mapper.EventoMapper;
 
 import java.util.Set;
 import java.util.List;
+import java.util.Optional;
 import java.time.LocalDateTime;
 
 @Service
@@ -106,5 +107,12 @@ public class EventoService {
                 .stream()
                 .map(eventoMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Evento> obtenerUltimoConGestion(Long idPostulacion) {
+        return eventoRepository.findFirstByPostulacionIdAndFechaHoraGestionIsNotNullOrderByFechaHoraGestionDescIdDesc(
+                idPostulacion
+        );
     }
 }

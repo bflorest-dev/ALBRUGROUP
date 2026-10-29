@@ -1,7 +1,7 @@
 export interface ContratoResponse {
   id: number;
   idEmpleado: number;
-  categoriaPersonal?: 'ESTRUCTURAL' | 'OPERATIVO';
+  categoriaPersonal?: 'ESTRUCTURAL' | 'OPERATIVO' | 'MANTENIMIENTO';
   puestoTrabajo: string;
   regimen: string;
   modalidad: string;

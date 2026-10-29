@@ -18,6 +18,8 @@ export interface PostulacionResponse {
   updatedAt: string;
   ultimaGestionAt?: string | null;
   ultimoResultado?: string | null;
+  ultimaGestionResponsableId?: number | null;
+  ultimaGestionModalidad?: string | null;
   proximaActividadAt?: string | null;
   proximaActividadTipo?: string | null;
   postulante: PostulanteResponse;

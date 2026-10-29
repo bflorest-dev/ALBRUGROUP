@@ -13,6 +13,7 @@ import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
 import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.enums.Modalidad;
 import pe.albrugroup.recruitment_service.entity.enums.TurnoHorario;
+import pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,6 +41,8 @@ public class PostulacionResponse {
     private Instant updatedAt;
     private java.time.LocalDateTime ultimaGestionAt;
     private String ultimoResultado;
+    private Long ultimaGestionResponsableId;
+    private ModalidadContacto ultimaGestionModalidad;
     private java.time.LocalDateTime proximaActividadAt;
     private String proximaActividadTipo;
     private PostulanteResponse postulante;

@@ -20,7 +20,6 @@ public class RegistrarContactoPostulacionRequest {
     @NotNull
     private ModalidadContacto modalidadContacto;
 
-    @NotNull
     private LocalDateTime fechaHoraGestion;
 
     private String observacion;

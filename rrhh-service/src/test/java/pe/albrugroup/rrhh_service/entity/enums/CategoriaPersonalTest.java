@@ -30,4 +30,13 @@ class CategoriaPersonalTest {
     void noInventaCategoriaCuandoNoExistePuestoLegado() {
         assertThat(CategoriaPersonal.desdePuestoTrabajo(null)).isNull();
     }
+
+    @Test
+    void mantenimientoNoTienePuestoLegadoAsociado() {
+        // MANTENIMIENTO se envia siempre explicitamente; ningun PuestoTrabajo lo deriva.
+        for (PuestoTrabajo puesto : PuestoTrabajo.values()) {
+            assertThat(CategoriaPersonal.desdePuestoTrabajo(puesto))
+                    .isNotEqualTo(CategoriaPersonal.MANTENIMIENTO);
+        }
+    }
 }

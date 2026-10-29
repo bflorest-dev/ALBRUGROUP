@@ -91,4 +91,18 @@ class GestionReclutamientoServiceTest {
   assertThrows(BadRequestException.class,()->service.registrar(1L,request("INASISTENCIA",0,now)));
   assertEquals("PENDIENTE",cita.getEstado());verify(actividades,never()).saveAndFlush(any());
  }
+ @Test void noContactoSoloAdmiteLlamadaOWhatsapp() {
+  escritura();
+  var request=new GestionReclutamientoRequest("NO_CONTACTO",0L,now,ModalidadContacto.MEET,
+   "", "SIN_RESPUESTA", null,null,null,null);
+  assertThrows(BadRequestException.class,()->service.registrar(1L,request));
+  verifyNoInteractions(eventos,tipificaciones,subtipificaciones,postulacionService);
+ }
+ @Test void noContactoNoPermiteProgramarActividad() {
+  escritura();
+  var request=new GestionReclutamientoRequest("NO_CONTACTO",0L,now,ModalidadContacto.LLAMADA,
+   "", "SIN_RESPUESTA", now.plusHours(2),ModalidadContacto.LLAMADA,null,null);
+  assertThrows(BadRequestException.class,()->service.registrar(1L,request));
+  verifyNoInteractions(eventos,tipificaciones,subtipificaciones,postulacionService);
+ }
 }

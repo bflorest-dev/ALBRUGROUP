@@ -49,6 +49,7 @@ export class GestionDrawerComponent implements OnInit {
  private pendingContact:'sin'|'con'|'no'|null=null;
  readonly contacting=signal<'LLAMADA'|'WHATSAPP'|null>(null);
  readonly contacted=signal<'LLAMADA'|'WHATSAPP'|null>(null);
+ readonly contactAttempt=signal<{channel:'LLAMADA'|'WHATSAPP';at:string}|null>(null);
  readonly p=computed(()=>this.state()?.postulacion??this.postulacion());
  readonly pending=computed(()=>this.state()?.actividades.find(a=>a.estado==='PENDIENTE'));
  readonly active=computed(()=>!!this.state()?.accionesDisponibles.length);
@@ -129,7 +130,7 @@ export class GestionDrawerComponent implements OnInit {
  }
  reset():void {
   this.form.reset({fechaHoraGestion:this.now(),modalidadContacto:'LLAMADA',motivo:'',observacion:'',programarReintento:false,fechaHoraActividad:'',modalidadActividad:'LLAMADA',referencia:'',idGrupoCapacitacion:0});
-  this.action.set(null);this.contactResult.set(null);this.error.set('');this.confirmation.set(null);
+  this.action.set(null);this.contactResult.set(null);this.contactAttempt.set(null);this.contacted.set(null);this.error.set('');this.confirmation.set(null);
  }
  close():void {if(this.busy())return;if(this.form.dirty||this.action())this.confirmation.set('close');else this.closed.emit();}
  confirmClose():void {this.closed.emit();}
@@ -143,7 +144,8 @@ export class GestionDrawerComponent implements OnInit {
   this.form.markAllAsTouched();
   let error='';
   if(!a||!this.can(a)) error='Selecciona una acción disponible para esta postulación.';
-  else if(!r.fechaHoraGestion||!r.modalidadContacto)error='Indica cuándo y por qué canal realizaste la gestión.';
+  else if(a==='NO_CONTACTO'&&!this.contactAttempt())error='Inicia el intento con Llamar o WhatsApp para registrar la hora y el canal automáticamente.';
+  else if(a!=='NO_CONTACTO'&&(!r.fechaHoraGestion||!r.modalidadContacto))error='Indica cuándo y por qué canal realizaste la gestión.';
   else if(['NO_CONTACTO','NO_INTERESADO','RECHAZAR'].includes(a)&&!r.motivo)error='Selecciona el motivo del resultado.';
   else if(['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','INASISTENCIA','CANCELAR_CITA'].includes(a)&&!r.observacion.trim())error='Describe el resultado de esta gestión.';
   else if(r.observacion.length>2000)error='La observación admite hasta 2000 caracteres.';
@@ -151,7 +153,7 @@ export class GestionDrawerComponent implements OnInit {
   else if(this.scheduled()&&new Date(r.fechaHoraActividad).getTime()<=Date.now())error='La próxima actividad debe estar en el futuro.';
   else if(this.scheduled()&&['MEET','PRESENCIAL'].includes(r.modalidadActividad)&&!r.referencia.trim())error='Completa el enlace o la ubicación de la entrevista.';
   else if(a==='APROBAR'&&!Number(r.idGrupoCapacitacion))error='Selecciona un grupo abierto para aprobar y avanzar.';
-  const field=!r.fechaHoraGestion?'fechaHoraGestion':!r.modalidadContacto?'modalidadContacto':
+  const field=a==='NO_CONTACTO'&&!this.contactAttempt()?'contactAttempt':!r.fechaHoraGestion?'fechaHoraGestion':!r.modalidadContacto?'modalidadContacto':
    a&&['NO_CONTACTO','NO_INTERESADO','RECHAZAR'].includes(a)&&!r.motivo?'motivo':
    a&&['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','INASISTENCIA','CANCELAR_CITA'].includes(a)&&!r.observacion.trim()?'observacion':
    this.scheduled()&&(!r.fechaHoraActividad||new Date(r.fechaHoraActividad).getTime()<=Date.now())?'fechaHoraActividad':
@@ -160,7 +162,7 @@ export class GestionDrawerComponent implements OnInit {
    a==='APROBAR'&&!Number(r.idGrupoCapacitacion)?'idGrupoCapacitacion':'';
   this.invalidField.set(error?field:'');this.error.set(error);
   if(error)queueMicrotask(()=>{
-   const target=this.element.nativeElement.querySelector(field?'[formControlName="'+field+'"]':'[role="alert"]');
+   const target=this.element.nativeElement.querySelector(field==='contactAttempt'?'[data-contact-attempt]':field?'[formControlName="'+field+'"]':'[role="alert"]');
    target?.scrollIntoView({block:'center',behavior:'smooth'});target?.focus({preventScroll:true});
   });
   return !error;
@@ -174,8 +176,10 @@ export class GestionDrawerComponent implements OnInit {
   if(!this.validate()||this.busy()||this.stale())return;
   this.confirmation.set(null);this.busy.set(true);this.message.set('');
   const r=this.form.getRawValue();
-  const payload:GestionRequest={accion:this.action()!,revision:this.state()!.revision,fechaHoraGestion:r.fechaHoraGestion,
-   modalidadContacto:r.modalidadContacto,observacion:r.observacion.trim(),motivo:r.motivo||null,
+  const attempt=this.contactAttempt();
+  const payload:GestionRequest={accion:this.action()!,revision:this.state()!.revision,
+   fechaHoraGestion:this.action()==='NO_CONTACTO'&&attempt?attempt.at:r.fechaHoraGestion,
+   modalidadContacto:this.action()==='NO_CONTACTO'&&attempt?attempt.channel:r.modalidadContacto,observacion:r.observacion.trim(),motivo:r.motivo||null,
    fechaHoraActividad:this.scheduled()?r.fechaHoraActividad:null,modalidadActividad:this.scheduled()?r.modalidadActividad:null,
    referencia:this.scheduled()?r.referencia.trim()||null:null,idGrupoCapacitacion:this.action()==='APROBAR'?Number(r.idGrupoCapacitacion):null};
   this.api.registrarGestion(this.p().id,payload).pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -185,12 +189,13 @@ export class GestionDrawerComponent implements OnInit {
  }
  contact(channel:'LLAMADA'|'WHATSAPP'):void {
   if(this.busy()||!this.active())return;
+  const hadDraft=this.form.dirty;
   this.busy.set(true);this.contacting.set(channel);this.contacted.set(null);this.error.set('');this.message.set('');
   const number=(channel==='LLAMADA'?(this.p().postulante.numeroExclusivoLlamadas||this.p().postulante.celular):this.p().postulante.celular).replace(/\D/g,'');
   const normalized=number.length===9?'51'+number:number;
   this.api.registrarContacto(this.p().id,{modalidadContacto:channel,fechaHoraGestion:this.now(),observacion:'Intento iniciado por '+this.label(channel)})
    .pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
-    next:()=>{this.busy.set(false);this.contacting.set(null);this.contacted.set(channel);this.message.set('Intento registrado. Indica el resultado de la comunicación.');this.form.patchValue({modalidadContacto:channel,fechaHoraGestion:this.now()});this.loadHistory();
+   next:r=>{this.busy.set(false);this.contacting.set(null);this.contacted.set(channel);this.contactAttempt.set({channel:r.modalidadContacto,at:r.fechaHoraGestion});this.message.set('Intento registrado. Indica el resultado de la comunicación.');this.form.patchValue({modalidadContacto:r.modalidadContacto,fechaHoraGestion:r.fechaHoraGestion});if(!hadDraft)this.form.markAsPristine();this.loadHistory();
      window.open(channel==='LLAMADA'?'tel:'+number:'https://wa.me/'+normalized,'_blank','noopener,noreferrer');},
     error:e=>{this.busy.set(false);this.contacting.set(null);this.error.set(this.errorText(e));}
    });

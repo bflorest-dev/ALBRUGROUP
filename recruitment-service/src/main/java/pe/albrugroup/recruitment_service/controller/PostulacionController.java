@@ -28,6 +28,7 @@ import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.RegistrarContactoPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PageResponse;
+import pe.albrugroup.recruitment_service.entity.response.ContactoPostulacionResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.service.PostulacionService;
 
@@ -74,12 +75,11 @@ public class PostulacionController {
 
     @PostMapping("/{idPostulacion}/contactos")
     @PreAuthorize("hasAuthority('CREATE_CONTACTO_POSTULACION')")
-    public ResponseEntity<Void> registrarContacto(
+    public ResponseEntity<ContactoPostulacionResponse> registrarContacto(
             @PathVariable @Positive Long idPostulacion,
             @Valid @RequestBody RegistrarContactoPostulacionRequest request
     ) {
-        postulacionService.registrarContacto(idPostulacion, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(postulacionService.registrarContacto(idPostulacion, request));
     }
 
     @PostMapping("/{idPostulacion}/tipificacion")

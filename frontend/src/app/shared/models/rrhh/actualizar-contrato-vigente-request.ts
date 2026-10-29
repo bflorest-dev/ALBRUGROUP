@@ -1,5 +1,5 @@
 export interface ActualizarContratoVigenteRequest {
-  categoriaPersonal: 'ESTRUCTURAL' | 'OPERATIVO';
+  categoriaPersonal: 'ESTRUCTURAL' | 'OPERATIVO' | 'MANTENIMIENTO';
   puestoTrabajo?: string | null;
   regimen: string;
   modalidad: string;

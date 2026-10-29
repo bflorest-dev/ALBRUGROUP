@@ -48,6 +48,7 @@ public class GestionReclutamientoService {
    throw new BadRequestException("La gestión no puede ser anterior a la fecha de postulación.");
   if(g.getUltimaGestionAt()!=null && r.fechaHoraGestion().isBefore(g.getUltimaGestionAt()))
    throw new BadRequestException("La gestión no puede ser anterior a la última gestión registrada.");
+  validarNoContacto(r);
   ActividadReclutamiento pendiente = agenda.stream().filter(a -> a.getEstado().equals("PENDIENTE")).findFirst().orElse(null);
   String resultado;
   switch(r.accion()) {
@@ -169,6 +170,13 @@ public class GestionReclutamientoService {
  }
  private void exigirObservacion(GestionReclutamientoRequest r) {
   if(r.observacion()==null || r.observacion().isBlank()) throw new BadRequestException("Describe el resultado de esta gestión.");
+ }
+ private void validarNoContacto(GestionReclutamientoRequest r) {
+  if(!r.accion().equals("NO_CONTACTO")) return;
+  if(r.modalidadContacto()!=ModalidadContacto.LLAMADA && r.modalidadContacto()!=ModalidadContacto.WHATSAPP)
+   throw new BadRequestException("Un intento sin contacto solo puede registrarse por llamada o WhatsApp.");
+  if(r.fechaHoraActividad()!=null || r.modalidadActividad()!=null || (r.referencia()!=null && !r.referencia().isBlank()))
+   throw new BadRequestException("Un intento sin contacto no puede programar una próxima actividad.");
  }
  private GestionReclutamiento inicial(Long id) {
   var g=new GestionReclutamiento(); g.setPostulacionId(id); return g;

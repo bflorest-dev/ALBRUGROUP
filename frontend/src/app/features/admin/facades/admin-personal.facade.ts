@@ -401,7 +401,7 @@ export class AdminPersonalFacade implements OnDestroy {
   ];
   readonly bancoOptions = ['BCP', 'BBVA', 'INTERBANK', 'SCOTIABANK', 'BANCO_DE_LA_NACION'];
   readonly parentescoOptions = ['PADRE', 'MADRE', 'TIO', 'ESPOSO', 'HERMANO', 'ABUELO', 'PAREJA', 'OTRO'];
-  readonly categoriaPersonalOptions = ['ESTRUCTURAL', 'OPERATIVO'];
+  readonly categoriaPersonalOptions = ['ESTRUCTURAL', 'OPERATIVO', 'MANTENIMIENTO'];
   readonly regimenOptions = ['RECIBO_POR_HONORARIOS', 'PLANILLA'];
   readonly modalidadOptions = ['PART_TIME', 'FULL_TIME', 'SEMI_FULL', 'SUPER_FULL'];
   readonly seguroSaludOptions = ['SIS', 'ESSALUD'];

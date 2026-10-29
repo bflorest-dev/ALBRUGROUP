@@ -15,7 +15,8 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
   ASESOR_POSTVENTA: '/app/postventa',
   SUPERVISOR_POSTVENTA: '/app/postventa',
   COMMUNITY: '/app/community',
-  MONITOR: '/app/backoffice/general'
+  MONITOR: '/app/backoffice/general',
+  MANTENIMIENTO: '/app/rrhh/asistencia'
 };
 
 export type OperationalScope = 'BACKOFFICE' | 'POSTVENTA';

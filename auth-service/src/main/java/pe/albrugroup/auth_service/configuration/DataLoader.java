@@ -619,6 +619,8 @@ public class DataLoader {
         );
         saveRol("CONTADOR", "Contabilidad - Gestion de pagos y consulta laboral", contadorPermisos);
 
+        saveRol("MANTENIMIENTO", "Personal de mantenimiento - sin acceso operativo", Set.of());
+
         log.info("Roles Creados");
     }
 

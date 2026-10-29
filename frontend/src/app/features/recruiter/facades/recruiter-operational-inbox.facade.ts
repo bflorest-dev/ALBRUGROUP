@@ -214,7 +214,6 @@ export class RecruiterOperationalInboxFacade {
 
     const request: RegistrarContactoPostulacionRequest = {
       modalidadContacto: channel,
-      fechaHoraGestion: this.nowLocalDateTime(),
       observacion: channel === 'WHATSAPP' ? 'Contacto iniciado por WhatsApp.' : 'Contacto iniciado por llamada.'
     };
     this.actionState.set('loading');
@@ -407,12 +406,6 @@ export class RecruiterOperationalInboxFacade {
     const normalized = number.length === 9 ? `51${number}` : number;
     const url = channel === 'WHATSAPP' ? `https://wa.me/${normalized}` : `tel:${number}`;
     window.open(url, '_blank', 'noopener,noreferrer');
-  }
-
-  private nowLocalDateTime(): string {
-    const now = new Date();
-    const pad = (value: number) => String(value).padStart(2, '0');
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
   }
 
   private normalize(value: string): string {

@@ -97,7 +97,7 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly documentoOptions = ['DNI', 'CE'];
   protected readonly nacionalidadOptions = ['PERUANO', 'EXTRANJERO'];
   protected readonly estadoCivilOptions = ['SOLTERO', 'CASADO', 'VIUDO', 'DIVORCIADO'];
-  protected readonly categoriaPersonalOptions = ['ESTRUCTURAL', 'OPERATIVO'];
+  protected readonly categoriaPersonalOptions = ['ESTRUCTURAL', 'OPERATIVO', 'MANTENIMIENTO'];
   protected readonly regimenOptions = ['RECIBO_POR_HONORARIOS', 'PLANILLA'];
   protected readonly modalidadOptions = ['PART_TIME', 'FULL_TIME', 'SEMI_FULL', 'SUPER_FULL'];
   protected readonly seguroSaludOptions = ['SIS', 'ESSALUD'];

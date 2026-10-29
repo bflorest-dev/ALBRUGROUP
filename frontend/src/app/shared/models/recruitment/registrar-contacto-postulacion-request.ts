@@ -1,5 +1,5 @@
 export interface RegistrarContactoPostulacionRequest {
   modalidadContacto: 'LLAMADA' | 'WHATSAPP';
-  fechaHoraGestion: string;
+  fechaHoraGestion?: string;
   observacion?: string | null;
 }

@@ -10,6 +10,7 @@ import { PostulacionResponse } from '../../../shared/models/recruitment/postulac
 import { RegistrarContactoPostulacionRequest } from '../../../shared/models/recruitment/registrar-contacto-postulacion-request';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
 import { GestionReclutamiento, GestionRequest } from '../../../shared/models/recruitment/gestion-reclutamiento';
+import { ContactoPostulacionResponse } from '../../../shared/models/recruitment/contacto-postulacion-response';
 
 @Injectable({
   providedIn: 'root'
@@ -93,8 +94,8 @@ export class RecruiterPostulantesService {
   registrarContacto(
     idPostulacion: number,
     request: RegistrarContactoPostulacionRequest
-  ): Observable<void> {
-    return this.http.post<void>(`${this.postulacionesUrl}/${idPostulacion}/contactos`, request);
+  ): Observable<ContactoPostulacionResponse> {
+    return this.http.post<ContactoPostulacionResponse>(`${this.postulacionesUrl}/${idPostulacion}/contactos`, request);
   }
 
 }

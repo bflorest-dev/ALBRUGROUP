@@ -6,10 +6,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import pe.albrugroup.recruitment_service.entity.Evento;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     Page<Evento> findByPostulacionId(Long idPostulacion, Pageable pageable);
 
     List<Evento> findByPostulacionIdOrderByCreatedAtAscIdAsc(Long idPostulacion);
+
+    Optional<Evento> findFirstByPostulacionIdAndFechaHoraGestionIsNotNullOrderByFechaHoraGestionDescIdDesc(
+            Long idPostulacion
+    );
 }

@@ -2,7 +2,8 @@ package pe.albrugroup.rrhh_service.entity.enums;
 
 public enum CategoriaPersonal {
     ESTRUCTURAL,
-    OPERATIVO;
+    OPERATIVO,
+    MANTENIMIENTO;
 
     public static CategoriaPersonal desdePuestoTrabajo(PuestoTrabajo puestoTrabajo) {
         if (puestoTrabajo == null) {

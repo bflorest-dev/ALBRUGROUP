@@ -23,6 +23,7 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoOferta;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
+import pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarClasificacionPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AsignarOfertaPostulacionRequest;
@@ -32,6 +33,7 @@ import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.RegistrarContactoPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PageResponse;
+import pe.albrugroup.recruitment_service.entity.response.ContactoPostulacionResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionHistorialResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulanteHistorialResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
@@ -48,6 +50,7 @@ import pe.albrugroup.recruitment_service.service.mapper.PostulacionMapper;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
@@ -326,9 +329,14 @@ public class PostulacionService {
         return mapearPostulacionResponse(postulacionGuardada);
     }
 
-    public void registrarContacto(Long idPostulacion, RegistrarContactoPostulacionRequest request) {
+    public ContactoPostulacionResponse registrarContacto(Long idPostulacion, RegistrarContactoPostulacionRequest request) {
         Postulacion postulacion = postulacionRepository.findById(idPostulacion)
                 .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+        if (request.getModalidadContacto() != ModalidadContacto.LLAMADA
+                && request.getModalidadContacto() != ModalidadContacto.WHATSAPP) {
+            throw new BadRequestException("Los intentos de contacto solo pueden registrarse por llamada o WhatsApp.");
+        }
+        LocalDateTime fechaHoraGestion = LocalDateTime.now(ZoneId.of("America/Lima"));
         Etapa etapaAnterior = postulacion.getEtapa();
         EstadoPostulacion estadoAnterior = postulacion.getEstado();
         EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
@@ -342,7 +350,7 @@ public class PostulacionService {
                 null,
                 null,
                 request.getObservacion(),
-                request.getFechaHoraGestion()
+                fechaHoraGestion
         );
 
         postulacionRealtimeNotifier.publishAfterCommit(
@@ -355,6 +363,8 @@ public class PostulacionService {
                 null,
                 postulacion.getPuestoObjetivo()
         );
+
+        return new ContactoPostulacionResponse(request.getModalidadContacto(), fechaHoraGestion);
     }
 
     @Transactional(readOnly = true)
@@ -811,6 +821,10 @@ public class PostulacionService {
         gestionReclutamientoRepository.findById(postulacion.getId()).ifPresent(g -> {
             response.setUltimaGestionAt(g.getUltimaGestionAt());
             response.setUltimoResultado(g.getUltimoResultado());
+        });
+        eventoService.obtenerUltimoConGestion(postulacion.getId()).ifPresent(evento -> {
+            response.setUltimaGestionResponsableId(evento.getIdEmpleadoResponsable());
+            response.setUltimaGestionModalidad(evento.getModalidadContacto());
         });
         actividadReclutamientoRepository.findByPostulacionIdAndEstado(postulacion.getId(), "PENDIENTE").ifPresent(a -> {
             response.setProximaActividadAt(a.getFechaHora());
