@@ -78,16 +78,16 @@
               <thead>
                 <tr>
                   <th class="col-nombre">Asesor</th>
-                  <th class="col-money">Comisión Bruta</th>
-                  <th class="col-money">Comisión a Pagar</th>
+                  <th class="col-money cv-gold">Comisión Bruta</th>
+                  <th class="col-money cv-gold">Comisión a Pagar</th>
                 </tr>
               </thead>
               <tbody>
                 @for (a of totalesFiltrados(); track a.idAsesor) {
                   <tr>
                     <td class="col-nombre">{{ a.nombreAsesor }}</td>
-                    <td class="col-money">S/ {{ a.comisionBruta | number:'1.2-2' }}</td>
-                    <td class="col-money highlight">S/ {{ a.comisionFinal | number:'1.2-2' }}</td>
+                    <td class="col-money cv-gold">S/ {{ a.comisionBruta | number:'1.2-2' }}</td>
+                    <td class="col-money cv-gold highlight">S/ {{ a.comisionFinal | number:'1.2-2' }}</td>
                   </tr>
                 }
               </tbody>
@@ -95,7 +95,7 @@
                 <tr>
                   <td class="col-nombre"><strong>TOTAL</strong></td>
                   <td class="col-money"></td>
-                  <td class="col-money highlight"><strong>S/ {{ totalGeneral() | number:'1.2-2' }}</strong></td>
+                  <td class="col-money cv-gold highlight"><strong>S/ {{ totalGeneral() | number:'1.2-2' }}</strong></td>
                 </tr>
               </tfoot>
             </table>
@@ -115,15 +115,15 @@
               <tr>
                 <th class="col-nombre">Asesor</th>
                 <th class="col-num">Modalidad</th>
-                <th class="col-num">Ventas Totales</th>
-                <th class="col-num">Factor</th>
-                <th class="col-num">Ventas Válidas</th>
-                <th class="col-money">Comisión</th>
-                <th class="col-num">Faltas</th>
-                <th class="col-pct">% Dscto Faltas</th>
-                <th class="col-num">Tardanzas (min)</th>
-                <th class="col-pct">% Dscto Tard.</th>
-                <th class="col-money">Comisión a Pagar</th>
+                <th class="col-num cv-green">Ventas Totales</th>
+                <th class="col-num cv-green">Factor</th>
+                <th class="col-num cv-green">Ventas Válidas</th>
+                <th class="col-money cv-gold">Comisión</th>
+                <th class="col-num cv-red">Faltas</th>
+                <th class="col-pct cv-red">% Dscto Faltas</th>
+                <th class="col-num cv-red">Tardanzas (min)</th>
+                <th class="col-pct cv-red">% Dscto Tard.</th>
+                <th class="col-money cv-gold">Comisión a Pagar</th>
               </tr>
             </thead>
             <tbody>
@@ -131,15 +131,15 @@
                 <tr [class.no-cuota]="!a.cumpleCuota" [class.si-cuota]="a.cumpleCuota">
                   <td class="col-nombre">{{ a.nombreAsesor }}</td>
                   <td class="col-num">{{ modalidadLabel(a.modalidad) }}</td>
-                  <td class="col-num">{{ a.ventasTotales }}</td>
-                  <td class="col-num">{{ a.factor }}</td>
-                  <td class="col-num">{{ a.ventasValidas }}</td>
-                  <td class="col-money">S/ {{ a.comisionBruta | number:'1.2-2' }}</td>
-                  <td class="col-num">{{ a.faltas || '' }}</td>
-                  <td class="col-pct">{{ a.pctDsctoFaltas ? (a.pctDsctoFaltas + '%') : '' }}</td>
-                  <td class="col-num">{{ a.minutosTardanza ? formatMinutos(a.minutosTardanza) : '' }}</td>
-                  <td class="col-pct">{{ a.pctDsctoTardanzas ? (a.pctDsctoTardanzas + '%') : '' }}</td>
-                  <td class="col-money highlight">S/ {{ a.comisionFinal | number:'1.2-2' }}</td>
+                  <td class="col-num cv-green">{{ a.ventasTotales }}</td>
+                  <td class="col-num cv-green">{{ a.factor }}</td>
+                  <td class="col-num cv-green">{{ a.ventasValidas }}</td>
+                  <td class="col-money cv-gold">S/ {{ a.comisionBruta | number:'1.2-2' }}</td>
+                  <td class="col-num cv-red">{{ a.faltas || '' }}</td>
+                  <td class="col-pct cv-red">{{ a.pctDsctoFaltas ? (a.pctDsctoFaltas + '%') : '' }}</td>
+                  <td class="col-num cv-red">{{ a.minutosTardanza ? formatMinutos(a.minutosTardanza) : '' }}</td>
+                  <td class="col-pct cv-red">{{ a.pctDsctoTardanzas ? (a.pctDsctoTardanzas + '%') : '' }}</td>
+                  <td class="col-money cv-gold highlight">S/ {{ a.comisionFinal | number:'1.2-2' }}</td>
                 </tr>
               } @empty {
                 <tr><td colspan="11" class="cv-empty">Sin ventas válidas en este corte</td></tr>
