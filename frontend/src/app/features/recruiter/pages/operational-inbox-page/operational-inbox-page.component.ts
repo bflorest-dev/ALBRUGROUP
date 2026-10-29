@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Observable } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RecruitmentRealtimeService } from '../../../../core/services/recruitment-realtime.service';
 import { RecruiterOperationalInboxFacade } from '../../facades/recruiter-operational-inbox.facade';
@@ -37,10 +38,24 @@ export class OperationalInboxPageComponent implements OnInit {
   protected readonly groupAssignmentState = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   protected readonly groupAssignmentMessage = signal('');
   protected readonly groupAssignmentError = signal('');
+  protected readonly createGroupDrawerOpen = signal(false);
+  protected readonly expandedGroupId = signal<number | null>(null);
+  protected readonly movingDetalleId = signal<number | null>(null);
+  protected readonly moveDestinoId = signal<number | null>(null);
+  protected readonly groupOpBusy = signal(false);
   private trainingGroupsInitialized = false;
 
+  private readonly closeDrawerOnCreate = effect(
+    () => {
+      if (this.trainingFacade.createSuccessMessage() && this.createGroupDrawerOpen()) {
+        this.createGroupDrawerOpen.set(false);
+      }
+    },
+    { allowSignalWrites: true }
+  );
+
   protected readonly approvedPendingGroup = computed(() =>
-    this.facade.rows().filter(row => row.resultadoEvaluacion === 'APROBADO' && !row.idGrupoCapacitacion)
+    this.facade.trainingRows().filter(row => row.resultadoEvaluacion === 'APROBADO' && !row.idGrupoCapacitacion)
   );
 
   ngOnInit(): void {
@@ -116,46 +131,106 @@ export class OperationalInboxPageComponent implements OnInit {
     return this.selectedGroupPostulacionIds().includes(id);
   }
 
-  protected selectTrainingGroup(id: string): void {
-    this.selectedTrainingGroupId.set(Number(id) || null);
+  protected selectTrainingGroup(value: string): void {
+    this.selectedTrainingGroupId.set(Number(value) || null);
     this.groupAssignmentState.set('idle');
     this.groupAssignmentMessage.set('');
     this.groupAssignmentError.set('');
   }
 
-  protected assignSelectedToTrainingGroup(): void {
-    const groupId = this.selectedTrainingGroupId();
-    const ids = this.selectedGroupPostulacionIds();
-    if (!groupId || !ids.length || this.groupAssignmentState() === 'loading') return;
+  protected openCreateDrawer(): void {
+    this.trainingFacade.createSuccessMessage.set('');
+    this.trainingFacade.createErrorMessage.set('');
+    this.createGroupDrawerOpen.set(true);
+  }
 
-    this.groupAssignmentState.set('loading');
-    this.groupAssignmentMessage.set('Asignando postulantes…');
+  protected closeCreateDrawer(): void {
+    this.createGroupDrawerOpen.set(false);
+  }
+
+  protected toggleGroupExpanded(id: number): void {
+    this.expandedGroupId.update(current => (current === id ? null : id));
+    this.cancelMove();
+  }
+
+  protected assignSelectedToGroup(groupId: number): void {
+    const ids = this.selectedGroupPostulacionIds();
+    if (!ids.length || this.groupOpBusy()) return;
+    this.runGroupOp(
+      this.trainingGroupsApi.asignarPostulaciones(groupId, ids),
+      `${ids.length} postulante${ids.length > 1 ? 's' : ''} asignado${ids.length > 1 ? 's' : ''} al grupo.`,
+      'No se pudieron asignar los postulantes. Verifica que sigan aprobados y sin grupo.',
+      () => this.selectedGroupPostulacionIds.set([])
+    );
+  }
+
+  protected startMove(detalleId: number): void {
+    this.movingDetalleId.set(detalleId);
+    this.moveDestinoId.set(null);
+  }
+
+  protected setMoveDestino(value: string): void {
+    this.moveDestinoId.set(Number(value) || null);
+  }
+
+  protected cancelMove(): void {
+    this.movingDetalleId.set(null);
+    this.moveDestinoId.set(null);
+  }
+
+  protected isMoving(detalleId: number): boolean {
+    return this.movingDetalleId() === detalleId;
+  }
+
+  protected confirmMove(idGrupoOrigen: number, idPostulacion: number): void {
+    const destino = this.moveDestinoId();
+    if (!destino || this.groupOpBusy()) return;
+    this.runGroupOp(
+      this.trainingGroupsApi.trasladarPostulaciones(destino, idGrupoOrigen, [idPostulacion]),
+      'Postulante trasladado al nuevo grupo.',
+      'No se pudo mover al postulante. Revisa que ambos grupos sigan abiertos.',
+      () => {
+        this.cancelMove();
+        this.expandedGroupId.set(destino);
+      }
+    );
+  }
+
+  protected retirarMiembro(idGrupoCapacitacion: number, idPostulacion: number): void {
+    if (this.groupOpBusy()) return;
+    this.runGroupOp(
+      this.trainingGroupsApi.retirarPostulacion(idGrupoCapacitacion, idPostulacion),
+      'Postulante retirado · vuelve a aprobados sin grupo.',
+      'No se pudo retirar al postulante. El grupo debe seguir abierto.'
+    );
+  }
+
+  private runGroupOp(
+    operation: Observable<unknown>,
+    successMessage: string,
+    errorMessage: string,
+    onSuccess?: () => void
+  ): void {
+    this.groupOpBusy.set(true);
+    this.groupAssignmentMessage.set('');
     this.groupAssignmentError.set('');
-    this.trainingGroupsApi.asignarPostulaciones(groupId, ids)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.groupAssignmentState.set('success');
-          this.groupAssignmentMessage.set(`${ids.length} postulantes asignados al grupo.`);
-          this.selectedGroupPostulacionIds.set([]);
-          this.selectedTrainingGroupId.set(null);
-          this.facade.refresh();
-          this.trainingFacade.handleRealtime();
-        },
-        error: () => {
-          this.groupAssignmentState.set('error');
-          this.groupAssignmentMessage.set('');
-          this.groupAssignmentError.set('No se pudieron asignar los postulantes seleccionados. Verifica que sigan aprobados y sin grupo.');
-        }
-      });
+    operation.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.groupOpBusy.set(false);
+        this.groupAssignmentMessage.set(successMessage);
+        onSuccess?.();
+        this.facade.refresh();
+        this.trainingFacade.handleRealtime();
+      },
+      error: () => {
+        this.groupOpBusy.set(false);
+        this.groupAssignmentError.set(errorMessage);
+      }
+    });
   }
 
   protected groupLabel(value: string | null | undefined): string {
     return this.label(value);
-  }
-
-  protected groupIdValue(id: number): string {
-    return String(id);
   }
 
   protected changeMeetDate(value: string): void {

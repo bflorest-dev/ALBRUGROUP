@@ -253,6 +253,18 @@ export class RecruiterTrainingGroupsFacade {
   readonly updateDetailSuccessMessage = signal('');
 
   readonly capacitadores = computed(() => this.capacitadoresState().capacitadores);
+  readonly capacitadoresById = computed(
+    () => new Map(this.capacitadores().map((c) => [c.idEmpleado, c]))
+  );
+
+  capacitadorNombre(idCapacitador: number | null | undefined): string {
+    if (!idCapacitador) {
+      return 'Sin capacitador';
+    }
+    const capacitador = this.capacitadoresById().get(idCapacitador);
+    return capacitador ? `${capacitador.nombres} ${capacitador.apellidos}`.trim() : 'Capacitador';
+  }
+
   readonly capacitadoresErrorMessage = computed(() => {
     const state = this.capacitadoresState();
     return state.status === 'error' ? state.message : '';

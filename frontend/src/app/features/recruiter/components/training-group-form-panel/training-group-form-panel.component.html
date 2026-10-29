@@ -1,36 +1,40 @@
-<section class="panel panel--accent">
-  <div class="panel__header">
+<section class="group-create" aria-labelledby="training-group-create-title">
+  <div class="group-create__heading">
+    <span class="group-create__icon" aria-hidden="true"><i class="ti ti-users-group"></i></span>
     <div>
-      <span class="panel__eyebrow">Nuevo grupo</span>
-      <h3>Crear grupo de capacitacion</h3>
+      <span class="group-create__signal">Nuevo grupo</span>
+      <h3 id="training-group-create-title">Crear grupo de capacitación</h3>
+      <p>Define el turno y la sala para habilitar la asignación de postulantes.</p>
     </div>
   </div>
 
   @if (capacitadoresErrorMessage) {
-    <p class="form-message form-message--error">{{ capacitadoresErrorMessage }}</p>
+    <p class="form-message form-message--error" role="alert"><i class="ti ti-alert-circle" aria-hidden="true"></i>{{ capacitadoresErrorMessage }}</p>
   }
 
-  <form [formGroup]="groupForm" class="form-grid">
-    <label>
-      <span>Codigo</span>
-      <input type="text" formControlName="codigo" placeholder="GRP-MAY-01" />
+  <form [formGroup]="groupForm" class="group-create__form">
+    <label class="group-create__field">
+      <span>Código</span>
+      <input type="text" formControlName="codigo" placeholder="Ej. GRP-WIN-MAN-01" autocomplete="off" />
+      <small>Identificador visible del grupo.</small>
     </label>
 
-    <label>
+    <label class="group-create__field group-create__field--wide">
       <span>Capacitador</span>
       <select formControlName="idCapacitador" [disabled]="isLoadingCapacitadores">
         <option [value]="0">
-          {{ isLoadingCapacitadores ? 'Cargando capacitadores...' : 'Seleccionar capacitador' }}
+          {{ isLoadingCapacitadores ? 'Cargando capacitadores…' : 'Seleccionar capacitador' }}
         </option>
         @for (capacitador of capacitadores; track capacitador.idEmpleado) {
           <option [value]="capacitador.idEmpleado">
-            {{ getDisplayName(capacitador) }} - {{ capacitador.numeroDocumento }}
+            {{ getDisplayName(capacitador) }} · {{ capacitador.numeroDocumento }}
           </option>
         }
       </select>
+      <small>Usa una persona con rol Capacitador.</small>
     </label>
 
-    <label>
+    <label class="group-create__field">
       <span>Turno</span>
       <select formControlName="turno">
         @for (option of turnoOptions; track option) {
@@ -39,7 +43,7 @@
       </select>
     </label>
 
-    <label>
+    <label class="group-create__field">
       <span>Sala</span>
       <select formControlName="sala">
         @for (option of salaOptions; track option) {
@@ -48,26 +52,33 @@
       </select>
     </label>
 
-    <app-date-field label="Fecha de inicio" formControlName="fechaInicio" />
+    <div class="group-create__field group-create__field--date">
+      <app-date-field label="Inicio de capacitación" formControlName="fechaInicio" />
+      <small>Fecha en la que empieza el grupo.</small>
+    </div>
   </form>
 
   @if (createErrorMessage) {
-    <p class="form-message form-message--error">{{ createErrorMessage }}</p>
+    <p class="form-message form-message--error" role="alert"><i class="ti ti-alert-circle" aria-hidden="true"></i>{{ createErrorMessage }}</p>
   }
 
   @if (createSuccessMessage) {
-    <p class="form-message form-message--success">{{ createSuccessMessage }}</p>
+    <p class="form-message form-message--success" role="status"><i class="ti ti-circle-check" aria-hidden="true"></i>{{ createSuccessMessage }}</p>
   }
 
-  <div class="actions">
-    <button type="button" class="secondary-button" (click)="resetForm.emit()">Limpiar</button>
-    <button
-      type="button"
-      class="primary-button"
-      [disabled]="isCreatingGroup || isLoadingCapacitadores"
-      (click)="save.emit()"
-    >
-      {{ isCreatingGroup ? 'Creando...' : 'Crear grupo' }}
-    </button>
+  <div class="group-create__actions">
+    <span class="group-create__hint">Los postulantes se asignan después de crear el grupo.</span>
+    <div>
+      <button type="button" class="secondary-button" (click)="resetForm.emit()">Limpiar</button>
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="isCreatingGroup || isLoadingCapacitadores"
+        (click)="save.emit()"
+      >
+        <i class="ti ti-plus" aria-hidden="true"></i>
+        {{ isCreatingGroup ? 'Creando grupo…' : 'Crear grupo' }}
+      </button>
+    </div>
   </div>
 </section>

@@ -116,7 +116,7 @@ public class GestionReclutamientoService {
    }
    case "APROBAR" -> {
     exigirObservacion(r);
-    if(g.getEvaluadaAt()==null) throw new BadRequestException("Registra la evaluación realizada antes de aprobar.");
+     if(!tieneMeetAsistido(agenda)) throw new BadRequestException("Registra la asistencia al Meet antes de aprobar.");
     tipificar(id,"RECLUTADO","APROBADO_PENDIENTE_GRUPO",r); g.setResultadoEvaluacion("APROBADO");
     registrarEvento(p,Accion.APROBACION_RECLUTAMIENTO,ModalidadContacto.MEET,"Postulante aprobado · pendiente de grupo · "+r.observacion().trim(),r.fechaHoraGestion());
     resultado="Aprobado · pendiente de grupo";
@@ -156,12 +156,11 @@ public class GestionReclutamientoService {
   if(pendiente!=null && "MEET".equals(pendiente.getModalidad())) {
    result.add("REPROGRAMAR_MEET"); result.add("INASISTENCIA");
    if(!pendiente.getFechaHora().isAfter(LocalDateTime.now(ZoneId.of("America/Lima")))) {
-    result.add("ASISTIO_MEET"); result.add("RECHAZAR");
+     result.add("ASISTIO_MEET");
    }
   } else if(pendiente!=null) result.add("REPROGRAMAR");
   else if(!meetAsistido && g.getEvaluadaAt()==null && g.getResultadoEvaluacion()==null) result.addAll(List.of("AGENDAR_MEET","AGENDAR"));
-  if(meetAsistido && g.getEvaluadaAt()==null) result.add("EVALUAR");
-  if(g.getEvaluadaAt()!=null && g.getResultadoEvaluacion()==null) result.addAll(List.of("APROBAR","RECHAZAR"));
+   if(meetAsistido && g.getResultadoEvaluacion()==null) result.addAll(List.of("APROBAR","RECHAZAR"));
   if("APROBADO".equals(g.getResultadoEvaluacion())) result.add("ASIGNAR_GRUPO");
   return result;
  }

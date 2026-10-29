@@ -60,9 +60,13 @@ class GestionReclutamientoServiceTest {
   assertFalse(actions.contains("APROBAR"));assertFalse(actions.contains("RECHAZAR"));
   assertTrue(actions.contains("AGENDAR"));assertTrue(actions.contains("NO_CONTACTO"));
  }
- @Test void evaluacionHabilitaResultadoFinal() {
-  gestion.setEvaluadaAt(now);lectura();
-  assertTrue(service.obtener(1L).accionesDisponibles().containsAll(List.of("APROBAR","RECHAZAR")));
+ @Test void asistenciaHabilitaDecisionFinalSinEvaluacionIntermedia() {
+  var meet=new ActividadReclutamiento();meet.setTipo("ENTREVISTA");meet.setModalidad("MEET");
+  meet.setEstado("REALIZADA");meet.setFechaHora(now.minusHours(1));
+  when(actividades.findByPostulacionIdOrderByIdDesc(1L)).thenReturn(List.of(meet));
+  lectura();var actions=service.obtener(1L).accionesDisponibles();
+  assertTrue(actions.containsAll(List.of("APROBAR","RECHAZAR")));
+  assertFalse(actions.contains("EVALUAR"));
  }
  @Test void capacitacionNoPermiteGestionReclutador() {
   postulacion.setEtapa(Etapa.CAPACITACION);lectura();

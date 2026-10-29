@@ -54,6 +54,7 @@ export class GestionDrawerComponent implements OnInit {
  readonly contactAttempt=signal<{channel:'LLAMADA'|'WHATSAPP';at:string}|null>(null);
  readonly p=computed(()=>this.state()?.postulacion??this.postulacion());
  readonly pending=computed(()=>this.state()?.actividades.find(a=>a.estado==='PENDIENTE'));
+ readonly pendingMeet=computed(()=>{const next=this.pending();return next?.tipo==='ENTREVISTA'&&next.modalidad==='MEET';});
  readonly active=computed(()=>!!this.state()?.accionesDisponibles.length);
  readonly form=this.fb.nonNullable.group({
   fechaHoraGestion:[this.now(),Validators.required], modalidadContacto:['LLAMADA',Validators.required],
@@ -194,9 +195,11 @@ export class GestionDrawerComponent implements OnInit {
   const attempt=this.contactAttempt();
   const action=this.action()!;
   const meet=['AGENDAR_MEET','REPROGRAMAR_MEET'].includes(action);
+  const automaticManagement=['ASISTIO_MEET','INASISTENCIA','EVALUAR','APROBAR','RECHAZAR','CANCELAR_CITA','ASIGNAR_GRUPO'].includes(action);
+  const fechaHoraGestion=automaticManagement?this.nowWithSeconds():(attempt?.at??r.fechaHoraGestion)||this.nowWithSeconds();
   const payload:GestionRequest={accion:action,revision:this.state()!.revision,
-   fechaHoraGestion:(attempt?.at??r.fechaHoraGestion)||this.now(),
-   modalidadContacto:attempt&&['NO_CONTACTO','SEGUIMIENTO','AGENDAR_MEET','REPROGRAMAR_MEET','NO_INTERESADO'].includes(action)?attempt.channel:meet||['ASISTIO_MEET','INASISTENCIA','EVALUAR','APROBAR','ASIGNAR_GRUPO'].includes(action)?'MEET':r.modalidadContacto,
+   fechaHoraGestion,
+   modalidadContacto:attempt&&['NO_CONTACTO','SEGUIMIENTO','AGENDAR_MEET','REPROGRAMAR_MEET','NO_INTERESADO'].includes(action)?attempt.channel:meet||['ASISTIO_MEET','INASISTENCIA','EVALUAR','APROBAR','RECHAZAR','ASIGNAR_GRUPO'].includes(action)?'MEET':r.modalidadContacto,
    observacion:r.observacion.trim(),motivo:r.motivo||null,
    fechaHoraActividad:this.scheduled()?r.fechaHoraActividad:null,modalidadActividad:this.scheduled()?r.modalidadActividad:null,
    referencia:this.scheduled()?r.referencia.trim()||null:null,idGrupoCapacitacion:action==='ASIGNAR_GRUPO'?Number(r.idGrupoCapacitacion):null,
@@ -233,5 +236,6 @@ export class GestionDrawerComponent implements OnInit {
  }
  overdue():boolean {return !!this.pending()&&new Date(this.pending()!.fechaHora).getTime()<Date.now();}
  now():string {const d=new Date();const z=(n:number)=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'T'+z(d.getHours())+':'+z(d.getMinutes());}
+ nowWithSeconds():string {const d=new Date();const z=(n:number)=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'T'+z(d.getHours())+':'+z(d.getMinutes())+':'+z(d.getSeconds());}
  errorText(e:HttpErrorResponse):string {return e.error?.message??'No se pudo completar la operación. Conservamos tus datos; vuelve a intentarlo.';}
 }

@@ -125,6 +125,7 @@ export class RecruitmentSupervisorFacade {
     ).subscribe({
       next: (page) => {
         this.rows.set(page.content);
+        this.listError.set('');
         this.totalPages.set(Math.max(page.totalPages, 1));
         this.totalElements.set(page.totalElements);
       },

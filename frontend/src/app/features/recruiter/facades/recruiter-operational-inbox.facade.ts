@@ -58,6 +58,7 @@ export class RecruiterOperationalInboxFacade {
   });
 
   readonly rows = signal<PostulacionResponse[]>([]);
+  readonly trainingRows = signal<PostulacionResponse[]>([]);
   readonly responsibleEmployees = signal<Record<number, EmpleadoRolResponse>>({});
   readonly selectedPostulacion = signal<PostulacionResponse | null>(null);
   readonly eventos = signal<EventoResponse[]>([]);
@@ -113,6 +114,7 @@ export class RecruiterOperationalInboxFacade {
     this.listLoading.set(true);
     this.listError.set('');
     this.summaryLoading.set(true);
+    this.loadTrainingPool();
     const selectedStatus = this.estadoFilter();
     const statuses = selectedStatus ? [selectedStatus] : this.statuses;
     const idTipificacion = this.tipificacionFilter() || undefined;
@@ -322,6 +324,14 @@ export class RecruiterOperationalInboxFacade {
     return `${employee.nombres.charAt(0)}${employee.apellidos.charAt(0)}`.toUpperCase();
   }
 
+  isNewPostulacion(row: PostulacionResponse): boolean {
+    if (row.estadoBandeja !== 'POSTULANTE' || row.ultimaGestionAt || row.ultimoResultado) return false;
+    const createdAt = new Date(row.createdAt).getTime();
+    if (!Number.isFinite(createdAt)) return false;
+    const ageInHours = (Date.now() - createdAt) / (1000 * 60 * 60);
+    return ageInHours >= -1 && ageInHours <= 48;
+  }
+
   date(value: string | null | undefined): string {
     if (!value) return 'Pendiente';
     const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -385,6 +395,15 @@ export class RecruiterOperationalInboxFacade {
       },
       error: () => this.responsibleEmployees.set({})
     });
+  }
+
+  private loadTrainingPool(): void {
+    this.service.listarBandejaCapacitacion(true, 0, 100)
+      .pipe(timeout(this.requestTimeoutMs))
+      .subscribe({
+        next: page => this.trainingRows.set(page.content),
+        error: () => this.trainingRows.set([])
+      });
   }
 
   private loadCatalogs(force = false): void {

@@ -332,6 +332,7 @@ public class DataLoader {
                 getPermiso("READ_TIPIFICACIONES_RECLUTAMIENTO"),
 
                 getPermiso("READ_POSTULACIONES_RECLUTAMIENTO"),
+                getPermiso("READ_POSTULACIONES_CAPACITACION"),
                 getPermiso("READ_POSTULACION"),
                 getPermiso("READ_HISTORIAL_POSTULANTES"),
                 getPermiso("UPDATE_POSTULACIONES"),

@@ -152,6 +152,104 @@ public class GrupoCapacitacionService {
                 .toList();
     }
 
+    public void retirarPostulacion(Long idGrupoCapacitacion, Long idPostulacion) {
+        GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion);
+        GrupoCapacitacionDetalle detalle = detalleRepository
+                .findByGrupoCapacitacionIdAndPostulacionId(idGrupoCapacitacion, idPostulacion)
+                .orElseThrow(() -> new NotFoundException(
+                        "No existe un detalle de capacitacion para la postulacion indicada en el grupo enviado"
+                ));
+        validarGrupoAbiertoParaMovimiento(grupo);
+
+        Postulacion postulacion = detalle.getPostulacion();
+        Etapa etapaAnterior = postulacion.getEtapa();
+        EstadoPostulacion estadoAnterior = postulacion.getEstado();
+        EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
+
+        // El postulante permanece aprobado en etapa CAPACITACION; al quedarse sin detalle
+        // reaparece en la bandeja de aprobados sin grupo (no vuelve a RECLUTAMIENTO).
+        detalleRepository.delete(detalle);
+
+        eventoService.registrarEvento(
+                postulacion,
+                Accion.RETIRO_GRUPO_CAPACITACION,
+                null, null, null, null, null,
+                "Retirado del grupo de capacitacion " + grupo.getCodigo()
+        );
+
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "RETIRO_GRUPO_CAPACITACION",
+                "CAPACITACION",
+                postulacion,
+                etapaAnterior,
+                estadoAnterior,
+                estadoBandejaAnterior,
+                null,
+                postulacion.getPuestoObjetivo()
+        );
+        grupoCapacitacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_GRUPO_CAPACITACION",
+                "CAPACITACION",
+                grupo
+        );
+    }
+
+    public java.util.List<GrupoCapacitacionDetalleResponse> trasladarPostulaciones(
+            Long idGrupoDestino,
+            Long idGrupoOrigen,
+            java.util.List<Long> idsPostulaciones
+    ) {
+        if (idGrupoOrigen.equals(idGrupoDestino)) {
+            throw new BadRequestException("El grupo de origen y el de destino no pueden ser el mismo");
+        }
+        GrupoCapacitacion origen = obtenerGrupoConDetalles(idGrupoOrigen);
+        GrupoCapacitacion destino = obtenerGrupoConDetalles(idGrupoDestino);
+        validarGrupoAbiertoParaMovimiento(origen);
+        validarGrupoAbiertoParaMovimiento(destino);
+
+        java.util.List<GrupoCapacitacionDetalleResponse> resultados = new java.util.ArrayList<>();
+        for (Long idPostulacion : idsPostulaciones) {
+            GrupoCapacitacionDetalle detalle = detalleRepository
+                    .findByGrupoCapacitacionIdAndPostulacionId(idGrupoOrigen, idPostulacion)
+                    .orElseThrow(() -> new NotFoundException(
+                            "La postulacion " + idPostulacion + " no pertenece al grupo de origen indicado"
+                    ));
+            Postulacion postulacion = detalle.getPostulacion();
+            Etapa etapaAnterior = postulacion.getEtapa();
+            EstadoPostulacion estadoAnterior = postulacion.getEstado();
+            EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
+
+            detalle.setGrupoCapacitacion(destino);
+            detalle.setEstadoCapacitacion(EstadoCapacitacionPostulante.ASIGNADO);
+            detalle.setFechaAsignacion(destino.getFechaInicio());
+            GrupoCapacitacionDetalle detalleGuardado = detalleRepository.save(detalle);
+
+            eventoService.registrarEvento(
+                    postulacion,
+                    Accion.TRASLADO_GRUPO_CAPACITACION,
+                    null, null, null, null, null,
+                    "Trasladado del grupo " + origen.getCodigo() + " al grupo " + destino.getCodigo()
+            );
+            postulacionRealtimeNotifier.publishAfterCommit(
+                    "TRASLADO_GRUPO_CAPACITACION",
+                    "CAPACITACION",
+                    postulacion,
+                    etapaAnterior,
+                    estadoAnterior,
+                    estadoBandejaAnterior,
+                    destino.getId(),
+                    postulacion.getPuestoObjetivo()
+            );
+            resultados.add(grupoCapacitacionMapper.toResponse(detalleGuardado));
+        }
+
+        grupoCapacitacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_GRUPO_CAPACITACION", "CAPACITACION", origen);
+        grupoCapacitacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_GRUPO_CAPACITACION", "CAPACITACION", destino);
+        return resultados;
+    }
+
     public GrupoCapacitacionDetalleResponse actualizarDetalle(
             Long idGrupoCapacitacion,
             Long idPostulacion,
@@ -258,6 +356,14 @@ public class GrupoCapacitacionService {
     private void validarGrupoDisponible(GrupoCapacitacion grupo) {
         if (grupo.getEstado() == EstadoGrupoCapacitacion.CERRADO || grupo.getEstado() == EstadoGrupoCapacitacion.ANULADO) {
             throw new BadRequestException("No se pueden agregar postulaciones a un grupo de capacitacion cerrado o anulado");
+        }
+    }
+
+    private void validarGrupoAbiertoParaMovimiento(GrupoCapacitacion grupo) {
+        if (grupo.getEstado() != EstadoGrupoCapacitacion.ABIERTO) {
+            throw new BadRequestException(
+                    "Solo se pueden mover o retirar postulantes mientras el grupo esta ABIERTO (aun no inicia)"
+            );
         }
     }
 

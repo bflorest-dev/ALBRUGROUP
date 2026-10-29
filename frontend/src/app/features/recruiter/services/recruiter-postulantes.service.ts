@@ -65,6 +65,24 @@ export class RecruiterPostulantesService {
     );
   }
 
+  listarBandejaCapacitacion(
+    sinGrupo = true,
+    pageNumber = 0,
+    pageSize = 100
+  ): Observable<PageResponse<PostulacionResponse>> {
+    const params = new HttpParams()
+      .set('sinGrupo', sinGrupo)
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize)
+      .set('sortBy', 'updatedAt')
+      .set('direction', 'desc');
+
+    return this.http.get<PageResponse<PostulacionResponse>>(
+      `${this.postulacionesUrl}/bandeja/capacitacion`,
+      { params }
+    );
+  }
+
   obtenerCatalogoReclutamiento(): Observable<CatalogoTipificacionResponse> {
     return this.http.get<CatalogoTipificacionResponse>(
       `${this.recruitmentUrl}/tipificaciones/RECLUTAMIENTO/catalogo`

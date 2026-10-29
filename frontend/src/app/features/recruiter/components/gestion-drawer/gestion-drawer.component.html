@@ -42,28 +42,27 @@
     @if(!active()) {
      <section class="finished"><i class="ti ti-circle-check"></i><h3>{{ p().etapa==='CAPACITACION'?'Postulación transferida a capacitación':'Gestión de reclutamiento finalizada' }}</h3><p>Consulta el historial para revisar las decisiones registradas.</p></section>
     } @else {
-      @if(context.evaluadaAt) {
-       <section class="evaluation"><div><i class="ti ti-check"></i><strong>Meet evaluado</strong><span>{{ date(context.evaluadaAt) }}</span></div><p>La decisión queda separada de la asignación al grupo.</p>
+      @if(can('APROBAR')||can('RECHAZAR')) {
+       <section class="evaluation"><div><i class="ti ti-check"></i><strong>Meet completado</strong><span>Asistencia registrada</span></div><p>Define ahora si la postulación es aprobada o rechazada.</p>
         <div class="inline-actions">@if(can('APROBAR')){<button type="button" class="primary" (click)="choose('APROBAR')">Aprobar postulación</button>}@if(can('RECHAZAR')){<button type="button" class="danger-link" (click)="choose('RECHAZAR')">Rechazar postulación</button>}</div>
        </section>
-      }
-      @if(can('EVALUAR')&&!action()) {
-       <section class="evaluation evaluation--pending"><div><i class="ti ti-clipboard-check"></i><strong>Meet listo para evaluar</strong><span>Asistencia registrada</span></div><p>Registra la evaluación del Meet para habilitar la aprobación o el rechazo.</p><div class="inline-actions"><button type="button" class="primary" (click)="choose('EVALUAR')">Registrar evaluación</button></div></section>
       }
       @if(context.resultadoEvaluacion==='APROBADO') {
        <section class="evaluation evaluation--approved"><div><i class="ti ti-circle-check"></i><strong>Aprobado · pendiente de grupo</strong></div><p>La postulación ya superó el Meet. Asigna un grupo cuando tengas el conjunto listo.</p>
         <div class="inline-actions">@if(can('ASIGNAR_GRUPO')){<button type="button" class="primary" (click)="choose('ASIGNAR_GRUPO')">Asignar a un grupo</button>}</div>
        </section>
       }
-     @if(action()||(!context.evaluadaAt&&!can('EVALUAR'))) {<section class="work-area">
-       <h3>Registrar una gestión</h3><p class="intro">Elige el resultado del contacto. El siguiente paso aparecerá solo cuando corresponda.</p>
-       <div class="choices" aria-label="Resultado del contacto">
-        <button type="button" [class.selected]="contactResult()==='sin'" [attr.aria-pressed]="contactResult()==='sin'" (click)="chooseContact('sin')"><i class="ti ti-phone-off"></i><span>No hubo contacto<small>No respondió o se perdió el intento</small></span></button>
-        <button type="button" [class.selected]="contactResult()==='con'" [attr.aria-pressed]="contactResult()==='con'" (click)="chooseContact('con')"><i class="ti ti-message-circle"></i><span>Hubo contacto<small>Decide el próximo paso</small></span></button>
-        <button type="button" [class.selected]="contactResult()==='no'" [attr.aria-pressed]="contactResult()==='no'" (click)="chooseContact('no')"><i class="ti ti-user-minus"></i><span>No desea continuar<small>Cierra la postulación</small></span></button>
-       </div>
-       @if(contactResult()==='con'&&!action()) {
-        <div class="decision-card"><span class="step-label">Siguiente decisión</span><h4>¿Quedó acordado un Meet?</h4><p>Si todavía no hay fecha, puedes dejar seguimiento o programar una llamada posterior.</p><div class="decision-actions">@if(can('AGENDAR_MEET')){<button type="button" class="primary" (click)="choose('AGENDAR_MEET')">Sí, asignar Meet</button>}<button type="button" (click)="choose('SEGUIMIENTO')">No, continuar seguimiento</button></div></div>
+     @if(action()||(!pendingMeet()&&!can('APROBAR')&&!can('RECHAZAR')&&!context.resultadoEvaluacion)) {<section class="work-area">
+       @if(!action()) {
+        <h3>Registrar una gestión</h3><p class="intro">Elige el resultado del contacto. El siguiente paso aparecerá solo cuando corresponda.</p>
+        <div class="choices" aria-label="Resultado del contacto">
+         <button type="button" [class.selected]="contactResult()==='sin'" [attr.aria-pressed]="contactResult()==='sin'" (click)="chooseContact('sin')"><i class="ti ti-phone-off"></i><span>No hubo contacto<small>No respondió o se perdió el intento</small></span></button>
+         <button type="button" [class.selected]="contactResult()==='con'" [attr.aria-pressed]="contactResult()==='con'" (click)="chooseContact('con')"><i class="ti ti-message-circle"></i><span>Hubo contacto<small>Decide el próximo paso</small></span></button>
+         <button type="button" [class.selected]="contactResult()==='no'" [attr.aria-pressed]="contactResult()==='no'" (click)="chooseContact('no')"><i class="ti ti-user-minus"></i><span>No desea continuar<small>Cierra la postulación</small></span></button>
+        </div>
+        @if(contactResult()==='con') {
+         <div class="decision-card"><span class="step-label">Siguiente decisión</span><h4>¿Quedó acordado un Meet?</h4><p>Si todavía no hay fecha, puedes dejar seguimiento o programar una llamada posterior.</p><div class="decision-actions">@if(can('AGENDAR_MEET')){<button type="button" class="primary" (click)="choose('AGENDAR_MEET')">Sí, asignar Meet</button>}<button type="button" (click)="choose('SEGUIMIENTO')">No, continuar seguimiento</button></div></div>
+        }
        }
       @if(action(); as current) {
        <form [formGroup]="form" (ngSubmit)="submit()" class="management-form" id="management-form">

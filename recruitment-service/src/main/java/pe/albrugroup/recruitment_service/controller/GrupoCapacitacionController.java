@@ -13,6 +13,7 @@ import pe.albrugroup.recruitment_service.entity.request.ActualizarDetalleGrupoCa
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AsignarPostulacionesGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.GrupoCapacitacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.TrasladarPostulacionesGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionDetalleResponse;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionResponse;
@@ -69,6 +70,27 @@ public class GrupoCapacitacionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 grupoCapacitacionService.agregarPostulaciones(idGrupoCapacitacion, request.getIdsPostulaciones())
         );
+    }
+
+    @PostMapping("/{idGrupoDestino}/postulaciones:mover")
+    @PreAuthorize("hasAuthority('ASSIGN_GRUPOS_CAPACITACION')")
+    public ResponseEntity<java.util.List<GrupoCapacitacionDetalleResponse>> trasladarPostulaciones(
+            @PathVariable @Positive Long idGrupoDestino,
+            @Valid @RequestBody TrasladarPostulacionesGrupoCapacitacionRequest request
+    ) {
+        return ResponseEntity.ok(grupoCapacitacionService.trasladarPostulaciones(
+                idGrupoDestino, request.getIdGrupoOrigen(), request.getIdsPostulaciones()
+        ));
+    }
+
+    @DeleteMapping("/{idGrupoCapacitacion}/postulaciones/{idPostulacion}")
+    @PreAuthorize("hasAuthority('ASSIGN_GRUPOS_CAPACITACION')")
+    public ResponseEntity<Void> retirarPostulacion(
+            @PathVariable @Positive Long idGrupoCapacitacion,
+            @PathVariable @Positive Long idPostulacion
+    ) {
+        grupoCapacitacionService.retirarPostulacion(idGrupoCapacitacion, idPostulacion);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{idGrupoCapacitacion}/postulaciones/{idPostulacion}")

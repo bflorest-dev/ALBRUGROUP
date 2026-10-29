@@ -8,6 +8,7 @@ import { AsignarPostulacionesGrupoCapacitacionRequest } from '../../../shared/mo
 import { GrupoCapacitacionRequest } from '../../../shared/models/recruitment/grupo-capacitacion-request';
 import { GrupoCapacitacionDetalleResponse } from '../../../shared/models/recruitment/grupo-capacitacion-detalle-response';
 import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
+import { TrasladarPostulacionesGrupoCapacitacionRequest } from '../../../shared/models/recruitment/trasladar-postulaciones-grupo-capacitacion-request';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 
 @Injectable({
@@ -54,6 +55,24 @@ export class RecruiterTrainingGroupsService {
     return this.http.post<GrupoCapacitacionDetalleResponse[]>(
       `${this.groupsUrl}/${idGrupoCapacitacion}/postulaciones:asignar`,
       request
+    );
+  }
+
+  trasladarPostulaciones(
+    idGrupoDestino: number,
+    idGrupoOrigen: number,
+    idsPostulaciones: number[]
+  ): Observable<GrupoCapacitacionDetalleResponse[]> {
+    const request: TrasladarPostulacionesGrupoCapacitacionRequest = { idGrupoOrigen, idsPostulaciones };
+    return this.http.post<GrupoCapacitacionDetalleResponse[]>(
+      `${this.groupsUrl}/${idGrupoDestino}/postulaciones:mover`,
+      request
+    );
+  }
+
+  retirarPostulacion(idGrupoCapacitacion: number, idPostulacion: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.groupsUrl}/${idGrupoCapacitacion}/postulaciones/${idPostulacion}`
     );
   }
 
