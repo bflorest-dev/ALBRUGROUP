@@ -95,30 +95,27 @@ export class BillingWorkspaceFacade {
       this.planilla.set(null);
       this.adjustments.set(null);
       this.companyMap.set(new Map());
-      if (this.isClosedMonth()) {
-        this.errorMessage.set(this.getErrorMessage(error, 'No hay planilla calculada para el periodo seleccionado.'));
-      } else {
-        this.errorMessage.set('El mes seleccionado aun no ha cerrado.');
-      }
+      this.errorMessage.set(this.getErrorMessage(error, 'No hay planilla calculada para el periodo seleccionado.'));
     } finally {
       this.isLoading.set(false);
     }
   }
 
   async calcular(): Promise<void> {
-    if (!this.isClosedMonth()) {
-      this.errorMessage.set('Solo puedes calcular meses cerrados.');
-      return;
-    }
+    const esMesCerrado = this.isClosedMonth();
     const { anio, mes } = this.parseMonth(this.selectedMonth());
     this.isCalculating.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
     try {
-      const planilla = await firstValueFrom(this.billingService.calcularPlanilla(anio, mes));
+      const planilla = await firstValueFrom(this.billingService.calcularPlanilla(anio, mes, !esMesCerrado));
       this.planilla.set(planilla);
       await this.loadAdjustments();
-      this.successMessage.set('Planilla calculada en borrador.');
+      this.successMessage.set(
+        esMesCerrado
+          ? 'Planilla calculada en borrador.'
+          : 'Proyección calculada. Los datos de asistencia son del mes en curso y pueden cambiar.'
+      );
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo calcular la planilla.'));
     } finally {

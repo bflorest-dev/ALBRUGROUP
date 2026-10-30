@@ -34,9 +34,10 @@ public class PlanillaController {
     @PostMapping("/planillas/calcular")
     public PlanillaGeneralResponse calcular(
             @RequestParam @Min(2000) Integer anio,
-            @RequestParam @Min(1) @Max(12) Integer mes
+            @RequestParam @Min(1) @Max(12) Integer mes,
+            @RequestParam(defaultValue = "false") boolean proyeccion
     ) {
-        return planillaService.calcular(anio, mes);
+        return planillaService.calcular(anio, mes, proyeccion);
     }
 
     @GetMapping("/planillas")

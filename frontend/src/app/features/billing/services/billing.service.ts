@@ -195,10 +195,10 @@ export class BillingService {
     });
   }
 
-  calcularPlanilla(anio: number, mes: number): Observable<PlanillaGeneralResponse> {
-    return this.http.post<PlanillaGeneralResponse>(`${this.billingUrl}/planillas/calcular`, null, {
-      params: this.periodParams(anio, mes)
-    });
+  calcularPlanilla(anio: number, mes: number, proyeccion = false): Observable<PlanillaGeneralResponse> {
+    let params = this.periodParams(anio, mes);
+    if (proyeccion) params = params.set('proyeccion', 'true');
+    return this.http.post<PlanillaGeneralResponse>(`${this.billingUrl}/planillas/calcular`, null, { params });
   }
 
   aprobarPlanilla(id: number): Observable<PlanillaGeneralResponse> {

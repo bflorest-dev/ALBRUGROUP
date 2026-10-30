@@ -28,11 +28,11 @@
         class="billing-primary-action"
         type="button"
         (click)="calculate()"
-        [disabled]="!facade.isClosedMonth() || facade.isCalculating()"
-        pTooltip="Disponible solo para meses cerrados"
+        [disabled]="facade.isCalculating()"
+        [pTooltip]="facade.isClosedMonth() ? 'Calcular planilla definitiva del periodo' : 'Proyección con asistencia parcial del mes en curso'"
       >
         <i class="pi pi-calculator" aria-hidden="true"></i>
-        Calcular planilla
+        {{ facade.isClosedMonth() ? 'Calcular planilla' : 'Calcular proyección' }}
       </button>
       @if (facade.planilla()?.estado === 'REVISION') {
         <button class="billing-approve-button" type="button" (click)="approve()" [disabled]="facade.isApproving()">

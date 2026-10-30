@@ -64,8 +64,8 @@ public class PlanillaService {
     private String timezone;
 
     @Transactional
-    public PlanillaGeneralResponse calcular(Integer anio, Integer mes) {
-        YearMonth periodo = validarPeriodoCerrado(anio, mes);
+    public PlanillaGeneralResponse calcular(Integer anio, Integer mes, boolean proyeccion) {
+        YearMonth periodo = proyeccion ? YearMonth.of(anio, mes) : validarPeriodoCerrado(anio, mes);
         MatrizCalculoPlanilla matriz = matrizPlanillaService.obtenerActiva();
         planillaGeneralRepository.findByAnioAndMesAndTipoPlanilla(anio, mes, TipoPlanilla.REGULAR)
                 .ifPresent(planilla -> {
