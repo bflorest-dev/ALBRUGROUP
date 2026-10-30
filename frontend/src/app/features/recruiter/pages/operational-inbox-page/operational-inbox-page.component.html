@@ -278,7 +278,7 @@
                     </span>
                     <span class="gcard__right">
                       <span class="status-badge status-badge--grupo">{{ groupLabel(group.estado) }}</span>
-                      <span class="gcard__count">{{ group.detalles?.length ?? 0 }}</span>
+                      <span class="gcard__count">{{ group.detalles.length }}</span>
                     </span>
                   </button>
 
@@ -292,10 +292,10 @@
 
                   @if (expandedGroupId() === group.id) {
                     <div class="gcard__members">
-                      @if (!group.detalles?.length) {
+                      @if (!group.detalles.length) {
                         <p class="gcard__empty">Aún sin postulantes asignados.</p>
                       } @else {
-                        @for (detalle of group.detalles ?? []; track detalle.id) {
+                        @for (detalle of group.detalles; track detalle.id) {
                           <div class="mrow">
                             <span class="person-cell__avatar person-cell__avatar--mini">{{ initials(detalle.postulacion.postulante.nombres, detalle.postulacion.postulante.apellidos) }}</span>
                             <span class="mrow__id">

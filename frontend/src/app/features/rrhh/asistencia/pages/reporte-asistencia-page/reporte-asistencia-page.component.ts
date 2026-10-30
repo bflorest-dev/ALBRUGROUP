@@ -24,6 +24,40 @@ export class ReporteAsistenciaPageComponent {
   protected readonly filas = signal<FilaReporteAsistencia[]>([]);
   protected readonly hoveredCol = signal<number | null>(null);
 
+  protected readonly empresaFiltro = signal<string | null>(null);
+  protected readonly busqueda = signal('');
+  protected readonly rolFiltro = signal<string | null>(null);
+
+  protected readonly empresasDisponibles = computed<string[]>(() => {
+    const unique = new Set<string>();
+    for (const f of this.filas()) {
+      if (f.empleado.empresaContratista) unique.add(f.empleado.empresaContratista);
+    }
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  });
+
+  protected readonly rolesDisponibles = computed<string[]>(() => {
+    const empresa = this.empresaFiltro();
+    const unique = new Set<string>();
+    for (const f of this.filas()) {
+      if (empresa && f.empleado.empresaContratista !== empresa) continue;
+      if (f.empleado.rolPrincipal) unique.add(f.empleado.rolPrincipal);
+    }
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  });
+
+  protected readonly filasFiltradas = computed<FilaReporteAsistencia[]>(() => {
+    const empresa = this.empresaFiltro();
+    const rol = this.rolFiltro();
+    const q = this.busqueda().trim().toLowerCase();
+    return this.filas().filter(f => {
+      if (empresa && f.empleado.empresaContratista !== empresa) return false;
+      if (rol && f.empleado.rolPrincipal !== rol) return false;
+      if (q && !f.empleado.nombreCompleto.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  });
+
   protected readonly diasDelMes = computed(() => {
     const d = new Date(this.anio(), this.mes(), 0).getDate();
     return Array.from({ length: d }, (_, i) => i + 1);
@@ -112,6 +146,15 @@ export class ReporteAsistenciaPageComponent {
   protected formatModalidad(m: string | null): string {
     if (!m) return '-';
     return m.replace(/_/g, ' ').toLowerCase().replace(/^\w/, c => c.toUpperCase());
+  }
+
+  protected setEmpresaFiltro(value: string | null): void {
+    this.empresaFiltro.set(value);
+    this.rolFiltro.set(null);
+  }
+
+  protected formatRol(rol: string): string {
+    return rol.toLowerCase().split('_').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
   }
 
   protected cambiarMes(delta: number): void {

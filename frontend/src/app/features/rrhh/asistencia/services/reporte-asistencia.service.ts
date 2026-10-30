@@ -13,6 +13,7 @@ export interface EmpleadoReporteAsistencia {
   fechaIngreso: string | null;
   fechaBaja: string | null;
   diasConsiderados: number;
+  empresaContratista: string | null;
 }
 
 export interface FilaReporteAsistencia {

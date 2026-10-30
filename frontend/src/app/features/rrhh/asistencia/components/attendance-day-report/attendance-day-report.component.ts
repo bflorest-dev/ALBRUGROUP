@@ -33,6 +33,16 @@ interface PresBlock {
   title: string;
 }
 
+/** Resumen legible de cada intervalo de presencia para no depender solo del hover. */
+interface PresenceDetail {
+  index: number;
+  start: string;
+  end: string;
+  duration: number;
+  open: boolean;
+  title: string;
+}
+
 /** Sub-segmento en la línea 2: almuerzo real o una sesión, con su acumulado adentro. */
 interface SegBlock {
   leftPct: number;
@@ -48,6 +58,18 @@ interface IncBlock {
   widthPct: number;
   kind: 'dead' | 'soft' | 'exceso';
   label: string;
+  title: string;
+}
+
+/** Detalle textual de cada tramo de la línea Incidencias. */
+interface IncidentDetail {
+  start: string;
+  end: string;
+  duration: number;
+  label: string;
+  status: string;
+  penalizes: boolean;
+  kind: IncBlock['kind'];
   title: string;
 }
 
@@ -68,7 +90,8 @@ const SESION_KIND: Record<TipoSesionEstado, SegBlock['kind']> = {
 };
 const MOTIVO_LABEL: Record<string, string> = {
   INACTIVIDAD: 'Inactividad',
-  CIERRE_MANUAL: 'Cierre'
+  CIERRE: 'Cierre manual',
+  CIERRE_MANUAL: 'Cierre manual'
 };
 
 /**
@@ -220,10 +243,28 @@ export class AttendanceDayReportComponent {
       capLeft: iv.s === ingreso ? this.hhmm(iv.s) : '',
       capRight: !iv.open && cerrada && iv.e === salida ? this.hhmm(iv.e) : '',
       title: iv.open
-        ? `Conectado desde ${this.hhmm(iv.s)} · sin salida marcada`
-        : `Conectado ${this.hhmm(iv.s)}–${this.hhmm(iv.e)}`
+        ? `Conectado desde ${this.hhmm(iv.s)} · ${this.durLabel(Math.max(iv.e - iv.s, 0))} · sin salida marcada`
+        : `Conectado ${this.hhmm(iv.s)}–${this.hhmm(iv.e)} · ${this.durLabel(iv.e - iv.s)}`
     }));
   });
+
+  /** Lista visible y accesible de todos los intervalos verdes de la línea Marcaciones. */
+  protected readonly presenceDetails = computed<PresenceDetail[]>(() =>
+    this.presenceIntervals().map((iv, index) => ({
+      index: index + 1,
+      start: this.hhmm(iv.s),
+      end: iv.open ? 'ahora' : this.hhmm(iv.e),
+      duration: Math.max(iv.e - iv.s, 0),
+      open: iv.open,
+      title: iv.open
+        ? `Marcación ${index + 1}: conectado desde ${this.hhmm(iv.s)} · ${this.durLabel(Math.max(iv.e - iv.s, 0))} · tramo abierto`
+        : `Marcación ${index + 1}: conectado ${this.hhmm(iv.s)}–${this.hhmm(iv.e)} · ${this.durLabel(iv.e - iv.s)}`
+    }))
+  );
+
+  protected readonly presenceTotal = computed(() =>
+    this.presenceIntervals().reduce((total, iv) => total + Math.max(iv.e - iv.s, 0), 0)
+  );
 
   protected readonly overlaySegments = computed<SegBlock[]>(() => {
     const r = this.reporte();
@@ -265,7 +306,7 @@ export class AttendanceDayReportComponent {
         leftPct: this.pct(a), widthPct: w, kind: penaliza ? 'dead' : 'soft',
         label: penaliza && w >= 6 ? `−${min}m` : '',
         title: `${this.motivoLabel(g.motivo)} · ${this.hhmm(a)}–${this.hhmm(b)} · ${min} min`
-          + (penaliza ? ' · penaliza' : '')
+          + (penaliza ? ' · penaliza el balance' : ' · informativo, no penaliza')
       });
     }
     for (const e of this.reporte()?.excesos ?? []) {
@@ -283,6 +324,35 @@ export class AttendanceDayReportComponent {
   });
 
   protected readonly hasInc = computed(() => this.incBlocks().length > 0);
+
+  protected readonly incidentDetails = computed<IncidentDetail[]>(() => {
+    const out: IncidentDetail[] = [];
+    for (const g of this.reporte()?.tiemposMuertos ?? []) {
+      const a = this.toMin(g.inicio); const b = this.toMin(g.fin);
+      if (a === null || b === null || b <= a) continue;
+      const duration = g.minutos ?? (b - a);
+      const penalizes = (g.estadoAlDesconectar ?? '').toUpperCase() === 'ONLINE';
+      const label = this.motivoLabel(g.motivo);
+      out.push({
+        start: this.hhmm(a), end: this.hhmm(b), duration, label,
+        status: penalizes ? 'Penaliza' : 'No penaliza', penalizes,
+        kind: penalizes ? 'dead' : 'soft',
+        title: `${label} · ${this.hhmm(a)}–${this.hhmm(b)} · ${this.durLabel(duration)} · ${penalizes ? 'penaliza el balance' : 'no penaliza'}`
+      });
+    }
+    for (const e of this.reporte()?.excesos ?? []) {
+      const a = this.toMin(e.inicio); const b = this.toMin(e.fin);
+      if (a === null || b === null || b <= a) continue;
+      const duration = e.minutos ?? (b - a);
+      const label = `Exceso de ${this.excesoLabel(e.tipo)}`;
+      out.push({
+        start: this.hhmm(a), end: this.hhmm(b), duration, label,
+        status: 'Afecta el balance', penalizes: true, kind: 'exceso',
+        title: `${label} · ${this.hhmm(a)}–${this.hhmm(b)} · ${this.durLabel(duration)}`
+      });
+    }
+    return out;
+  });
 
   // ── Tarjeta: Tiempos muertos (penaliza vs informativo, altura fija) ─────
   protected readonly deadRows = computed<AggRow[]>(() => {
@@ -343,6 +413,11 @@ export class AttendanceDayReportComponent {
       extra: r?.minutosExtra ?? 0,
       compensado: r?.minutosCompensados ?? 0
     };
+  });
+
+  protected readonly balanceFormula = computed(() => {
+    const t = this.totales();
+    return `${this.durLabel(t.trabajado)} − ${this.durLabel(t.objetivo)} = ${this.balanceLabel(t.balance)}`;
   });
 
   protected readonly sinDatos = computed(() => {

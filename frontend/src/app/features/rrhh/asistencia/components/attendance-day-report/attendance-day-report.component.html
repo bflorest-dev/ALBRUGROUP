@@ -123,9 +123,71 @@
         <span><i class="sw sw--lunch"></i> Almuerzo real</span>
         <span><i class="sw sw--serv"></i> Servicios</span>
         <span><i class="sw sw--pausa"></i> Pausa activa</span>
-        <span><i class="sw sw--dead"></i> Tiempo muerto</span>
+        <span><i class="sw sw--dead"></i> Tiempo muerto · penaliza</span>
+        <span><i class="sw sw--soft"></i> Desconexión informativa</span>
         <span><i class="sw sw--exceso"></i> Exceso</span>
       </div>
+
+      @if (presenceDetails().length > 0) {
+        <div class="dr-presence-detail">
+          <div class="dr-presence-detail__head">
+            <div>
+              <span class="dr-presence-detail__eyebrow">Detalle de marcaciones</span>
+              <strong>{{ presenceDetails().length }} intervalos conectados</strong>
+            </div>
+            <span class="dr-presence-detail__total">{{ durLabel(presenceTotal()) }} conectado</span>
+          </div>
+          <div class="dr-intervals" role="list" aria-label="Intervalos de conexión">
+            @for (p of presenceDetails(); track p.index) {
+              <div
+                class="dr-interval"
+                [class.dr-interval--open]="p.open"
+                role="listitem"
+                tabindex="0"
+                [pTooltip]="p.title"
+                tooltipPosition="top"
+                [attr.aria-label]="p.title"
+              >
+                <span class="dr-interval__index">{{ p.index }}</span>
+                <span class="dr-interval__range">{{ p.start }}–{{ p.end }}</span>
+                <span class="dr-interval__duration">{{ durLabel(p.duration) }}</span>
+              </div>
+            }
+          </div>
+          <p class="dr-presence-detail__hint">Pasa el cursor o enfoca un intervalo para ver su detalle.</p>
+        </div>
+      }
+
+      @if (incidentDetails().length > 0) {
+        <div class="dr-incidence-detail">
+          <div class="dr-presence-detail__head">
+            <div>
+              <span class="dr-presence-detail__eyebrow">Detalle de incidencias</span>
+              <strong>Qué representa cada bloque</strong>
+            </div>
+          </div>
+          <div class="dr-incidence-list" role="list" aria-label="Detalle de incidencias">
+            @for (incident of incidentDetails(); track $index) {
+              <div
+                class="dr-incidence"
+                [class.dr-incidence--soft]="incident.kind === 'soft'"
+                [class.dr-incidence--exceso]="incident.kind === 'exceso'"
+                role="listitem"
+                tabindex="0"
+                [pTooltip]="incident.title"
+                tooltipPosition="top"
+                [attr.aria-label]="incident.title"
+              >
+                <i class="sw" [class.sw--dead]="incident.kind === 'dead'" [class.sw--soft]="incident.kind === 'soft'" [class.sw--exceso]="incident.kind === 'exceso'" aria-hidden="true"></i>
+                <span class="dr-incidence__range">{{ incident.start }}–{{ incident.end }}</span>
+                <span class="dr-incidence__label">{{ incident.label }}</span>
+                <span class="dr-incidence__status">{{ incident.status }}</span>
+                <strong>{{ durLabel(incident.duration) }}</strong>
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
 
     <!-- ── Tarjetas agregadas (altura fija) ── -->
@@ -173,11 +235,19 @@
     <div class="dr-card">
       <h5>Totales del día</h5>
       <div class="dr-tots">
-        <div class="tot"><span class="k">Objetivo</span><span class="v">{{ durLabel(totales().objetivo) }}</span></div>
-        <div class="tot"><span class="k">Trabajado</span><span class="v">{{ durLabel(totales().trabajado) }}</span></div>
+        <div class="tot"><span class="k">Objetivo del día</span><span class="v">{{ durLabel(totales().objetivo) }}</span></div>
+        <div class="tot"><span class="k">Trabajado acreditado</span><span class="v">{{ durLabel(totales().trabajado) }}</span></div>
         <div class="tot"><span class="k">Balance</span><span class="v" [class.v--neg]="totales().balance < 0" [class.v--pos]="totales().balance > 0">{{ balanceLabel(totales().balance) }}</span></div>
         <div class="tot"><span class="k">Extra</span><span class="v">{{ totales().extra ? '+' + durLabel(totales().extra) : '0' }}</span></div>
         <div class="tot"><span class="k">Compensado</span><span class="v">{{ durLabel(totales().compensado) }}</span></div>
+      </div>
+      <div class="dr-balance-explain" role="note">
+        <i class="pi pi-calculator" aria-hidden="true"></i>
+        <div>
+          <strong>Cómo se calcula el balance</strong>
+          <span>{{ balanceFormula() }}</span>
+          <small>El balance compara el tiempo trabajado acreditado con el objetivo del día. Los {{ durLabel(deadTotal().min) }} de tiempo muerto penalizado y los huecos informativos se muestran aparte para explicar cuándo ocurrió cada incidencia.</small>
+        </div>
       </div>
     </div>
 

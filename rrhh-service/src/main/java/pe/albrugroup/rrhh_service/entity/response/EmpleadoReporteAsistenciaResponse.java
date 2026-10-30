@@ -15,4 +15,5 @@ public class EmpleadoReporteAsistenciaResponse {
     private LocalDate fechaIngreso;
     private LocalDate fechaBaja;
     private Integer diasConsiderados;
+    private String empresaContratista;
 }

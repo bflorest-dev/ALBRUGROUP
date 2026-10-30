@@ -399,6 +399,7 @@ public class EmpleadoService implements IEmpleado {
                     .fechaIngreso(fechaIngreso)
                     .fechaBaja(fechaBaja)
                     .diasConsiderados(Math.max(diasConsiderados, 0))
+                    .empresaContratista(emp.getEmpresaContratista() != null ? emp.getEmpresaContratista().getNombre() : null)
                     .build());
         }
 

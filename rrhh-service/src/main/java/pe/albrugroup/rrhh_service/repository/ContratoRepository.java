@@ -25,6 +25,7 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
             SELECT c
             FROM Contrato c
             JOIN FETCH c.empleado e
+            LEFT JOIN FETCH e.empresaContratista
             WHERE c.fechaInicio <= :hasta
               AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
             ORDER BY e.id ASC, c.fechaInicio ASC

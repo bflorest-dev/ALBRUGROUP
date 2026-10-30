@@ -36,6 +36,36 @@
       <span class="ra-legend-item"><span class="ra-legend-dot st-f"></span>Falta</span>
       <span class="ra-legend-item"><span class="ra-legend-dot st-d"></span>Descanso</span>
     </div>
+
+    <!-- Barra de filtros -->
+    <div class="ra-filter-bar">
+      <div class="ra-empresa-tabs" role="tablist" aria-label="Filtrar por empresa">
+        <button class="ra-empresa-tab" [class.ra-empresa-tab--active]="empresaFiltro() === null"
+                role="tab" [attr.aria-selected]="empresaFiltro() === null"
+                (click)="setEmpresaFiltro(null)">Todas</button>
+        @for (emp of empresasDisponibles(); track emp) {
+          <button class="ra-empresa-tab" [class.ra-empresa-tab--active]="empresaFiltro() === emp"
+                  role="tab" [attr.aria-selected]="empresaFiltro() === emp"
+                  (click)="setEmpresaFiltro(emp)">{{ emp }}</button>
+        }
+      </div>
+      <div class="ra-filter-controls">
+        <div class="ra-search-wrap">
+          <i class="pi pi-search ra-search-ic" aria-hidden="true"></i>
+          <input class="ra-search" type="search" placeholder="Buscar empleado…"
+                 [value]="busqueda()" (input)="busqueda.set($any($event.target).value)"
+                 aria-label="Buscar empleado" />
+        </div>
+        <select class="ra-role-select" [value]="rolFiltro() ?? ''"
+                (change)="rolFiltro.set($any($event.target).value || null)"
+                aria-label="Filtrar por rol">
+          <option value="">Todos los roles</option>
+          @for (rol of rolesDisponibles(); track rol) {
+            <option [value]="rol">{{ formatRol(rol) }}</option>
+          }
+        </select>
+      </div>
+    </div>
   }
 
   <!-- Loading -->
@@ -85,58 +115,67 @@
 
   <!-- Grilla -->
   @if (!loading() && filas().length) {
-    <div class="ra-grid-wrapper">
-      <table class="ra-grid" (mouseleave)="hoveredCol.set(null)">
-        <thead>
-          <tr>
-            <th class="ra-th-fixed ra-th-name ra-sticky ra-sticky--name">Empleado</th>
-            <th class="ra-th-fixed ra-th-doc ra-sticky ra-sticky--doc">Documento</th>
-            <th class="ra-th-fixed ra-th-meta">Rol</th>
-            <th class="ra-th-fixed ra-th-meta">Modalidad</th>
-            <th class="ra-th-fixed ra-th-meta">Ingreso</th>
-            <th class="ra-th-fixed ra-th-meta">Baja</th>
-            @for (dia of diasDelMes(); track dia) {
-              <th class="ra-th-dia"
-                  [class.ra-dom]="diasSemana()[dia - 1] === 'D'"
-                  [class.ra-col-hover]="hoveredCol() === dia">
-                <span class="ra-dia-num mono">{{ dia }}</span>
-                <span class="ra-dia-letra">{{ diasSemana()[dia - 1] }}</span>
-              </th>
-            }
-            <th class="ra-th-total">Días</th>
-            <th class="ra-th-total">T</th>
-            <th class="ra-th-total">F</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (fila of filas(); track fila.empleado.idEmpleado) {
+    @if (filasFiltradas().length) {
+      <div class="ra-grid-wrapper">
+        <table class="ra-grid" (mouseleave)="hoveredCol.set(null)">
+          <thead>
             <tr>
-              <td class="ra-td-name ra-sticky ra-sticky--name">{{ fila.empleado.nombreCompleto }}</td>
-              <td class="ra-td-doc mono ra-sticky ra-sticky--doc">{{ fila.empleado.numeroDocumento }}</td>
-              <td class="ra-td-meta">{{ fila.empleado.rolPrincipal ?? '-' }}</td>
-              <td class="ra-td-meta">{{ formatModalidad(fila.empleado.modalidad) }}</td>
-              <td class="ra-td-meta mono">{{ formatFecha(fila.empleado.fechaIngreso) }}</td>
-              <td class="ra-td-meta mono">{{ formatFecha(fila.empleado.fechaBaja) }}</td>
+              <th class="ra-th-fixed ra-th-name ra-sticky ra-sticky--name">Empleado</th>
+              <th class="ra-th-fixed ra-th-doc ra-sticky ra-sticky--doc">Documento</th>
+              <th class="ra-th-fixed ra-th-meta">Empresa</th>
+              <th class="ra-th-fixed ra-th-meta">Rol</th>
+              <th class="ra-th-fixed ra-th-meta">Modalidad</th>
+              <th class="ra-th-fixed ra-th-meta">Ingreso</th>
+              <th class="ra-th-fixed ra-th-meta">Baja</th>
               @for (dia of diasDelMes(); track dia) {
-                @let estado = fila.resumen?.estadosDiarios?.[dia - 1] ?? null;
-                <td class="ra-td-dia"
-                    [class]="estadoClase(estado)"
+                <th class="ra-th-dia"
                     [class.ra-dom]="diasSemana()[dia - 1] === 'D'"
-                    [class.ra-col-hover]="hoveredCol() === dia"
-                    (mouseenter)="hoveredCol.set(dia)">
-                  {{ estadoLetra(estado) }}
-                </td>
+                    [class.ra-col-hover]="hoveredCol() === dia">
+                  <span class="ra-dia-num mono">{{ dia }}</span>
+                  <span class="ra-dia-letra">{{ diasSemana()[dia - 1] }}</span>
+                </th>
               }
-              <td class="ra-td-total mono">{{ fila.empleado.diasConsiderados }}</td>
-              @let tardanzas = contarEstado(fila, 'tardanza');
-              @let faltas = contarEstado(fila, 'falta');
-              <td class="ra-td-total mono" [class.ra-total-warn]="tardanzas > 0">{{ tardanzas || '' }}</td>
-              <td class="ra-td-total mono" [class.ra-total-danger]="faltas > 0">{{ faltas || '' }}</td>
+              <th class="ra-th-total">Días</th>
+              <th class="ra-th-total">T</th>
+              <th class="ra-th-total">F</th>
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            @for (fila of filasFiltradas(); track fila.empleado.idEmpleado) {
+              <tr>
+                <td class="ra-td-name ra-sticky ra-sticky--name">{{ fila.empleado.nombreCompleto }}</td>
+                <td class="ra-td-doc mono ra-sticky ra-sticky--doc">{{ fila.empleado.numeroDocumento }}</td>
+                <td class="ra-td-meta">{{ fila.empleado.empresaContratista ?? '-' }}</td>
+                <td class="ra-td-meta">{{ fila.empleado.rolPrincipal ?? '-' }}</td>
+                <td class="ra-td-meta">{{ formatModalidad(fila.empleado.modalidad) }}</td>
+                <td class="ra-td-meta mono">{{ formatFecha(fila.empleado.fechaIngreso) }}</td>
+                <td class="ra-td-meta mono">{{ formatFecha(fila.empleado.fechaBaja) }}</td>
+                @for (dia of diasDelMes(); track dia) {
+                  @let estado = fila.resumen?.estadosDiarios?.[dia - 1] ?? null;
+                  <td class="ra-td-dia"
+                      [class]="estadoClase(estado)"
+                      [class.ra-dom]="diasSemana()[dia - 1] === 'D'"
+                      [class.ra-col-hover]="hoveredCol() === dia"
+                      (mouseenter)="hoveredCol.set(dia)">
+                    {{ estadoLetra(estado) }}
+                  </td>
+                }
+                <td class="ra-td-total mono">{{ fila.empleado.diasConsiderados }}</td>
+                @let tardanzas = contarEstado(fila, 'tardanza');
+                @let faltas = contarEstado(fila, 'falta');
+                <td class="ra-td-total mono" [class.ra-total-warn]="tardanzas > 0">{{ tardanzas || '' }}</td>
+                <td class="ra-td-total mono" [class.ra-total-danger]="faltas > 0">{{ faltas || '' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="ra-empty">
+        <i class="pi pi-filter-slash"></i>
+        <span>Ningún empleado coincide con los filtros activos.</span>
+      </div>
+    }
   }
 
   <!-- Vacío -->
