@@ -38,6 +38,17 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <label class="hidden-role-toggle"><input type="checkbox" [checked]="facade.showHiddenRoles()" (change)="facade.showHiddenRoles.set($any($event.target).checked)"/><i class="ti ti-eye"></i><span>Roles ocultos</span></label>
   </section>
 
+  @if (facade.companyOptions().length) {
+    <div class="company-filter-bar" role="group" aria-label="Filtrar por empresa">
+      <button type="button" class="company-tab" [class.active]="facade.companyFilter() === null"
+              (click)="facade.companyFilter.set(null)">Todas</button>
+      @for (company of facade.companyOptions(); track company) {
+        <button type="button" class="company-tab" [class.active]="facade.companyFilter() === company"
+                (click)="facade.companyFilter.set(company)">{{ company }}</button>
+      }
+    </div>
+  }
+
   <div class="directory-meta"><span><strong class="mono">{{ facade.visibleCount() }}</strong> de <span class="mono">{{ facade.totalCount() }}</span> empleados</span><span>·</span><span>búsqueda total</span><span>·</span><span>visibilidad {{ facade.isAdmin() ? 'ADMIN' : 'RR. HH.' }}</span><button type="button" (click)="facade.refresh()"><i class="ti ti-refresh"></i>Actualizar</button></div>
 
   <section class="directory" aria-label="Directorio de empleados">

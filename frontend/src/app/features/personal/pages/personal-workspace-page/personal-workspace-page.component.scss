@@ -12,3 +12,34 @@
 
 /* Align employee content with the deepest visible scope level. */
 .employee-row { padding-left: 55px; }
+
+/* Company filter pill tabs */
+.company-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+
+.company-tab {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-2);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font: 600 11.5px 'Archivo', sans-serif;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+
+  &:hover { background: var(--panel-2); color: var(--ink); }
+
+  &.active {
+    background: var(--signal);
+    border-color: var(--signal);
+    color: #fff;
+  }
+}

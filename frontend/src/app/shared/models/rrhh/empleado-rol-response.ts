@@ -8,4 +8,5 @@ export interface EmpleadoRolResponse {
   categoriaPersonal?: 'ESTRUCTURAL' | 'OPERATIVO';
   puestoTrabajo: string;
   estadoOperativo: 'ACTIVO' | 'INACTIVO';
+  empresaContratista?: string | null;
 }

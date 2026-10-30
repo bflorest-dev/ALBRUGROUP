@@ -165,6 +165,7 @@ export class PersonalWorkspaceFacade {
   readonly search = signal('');
   readonly categoryFilter = signal<PersonalCategoryFilter>('TODOS');
   readonly roleFilter = signal('');
+  readonly companyFilter = signal<string | null>(null);
   readonly showHiddenRoles = signal(false);
   readonly selectedEmployeeId = signal<number | null>(null);
 
@@ -174,6 +175,14 @@ export class PersonalWorkspaceFacade {
     this.rows().find((row) => row.employee.idEmpleado === this.selectedEmployeeId()) ?? null
   );
 
+  readonly companyOptions = computed<string[]>(() => {
+    const unique = new Set<string>();
+    for (const emp of this.employees()) {
+      if (emp.empresaContratista) unique.add(emp.empresaContratista.toUpperCase());
+    }
+    return Array.from(unique).sort((a, b) => a.localeCompare(b, 'es'));
+  });
+
   readonly rows = computed<PersonalDirectoryRow[]>(() => {
     const access = this.accessByEmployeeId();
     const teamNames = this.teamNamesByEmployeeId();
@@ -182,6 +191,7 @@ export class PersonalWorkspaceFacade {
     const term = this.normalize(this.search());
     const categoryFilter = this.categoryFilter();
     const roleFilter = this.roleFilter();
+    const companyFilter = this.companyFilter();
 
     return this.employees()
       .map((employee): PersonalDirectoryRow => {
@@ -220,6 +230,7 @@ export class PersonalWorkspaceFacade {
         if (row.employee.estadoOperativo !== expectedState) return false;
         if (categoryFilter !== 'TODOS' && categoryFilter !== 'INACTIVO' && row.category !== categoryFilter) return false;
         if (roleFilter && row.primaryRole !== roleFilter) return false;
+        if (companyFilter && (row.employee.empresaContratista ?? '').toUpperCase() !== companyFilter) return false;
         if (!term) return true;
         return this.normalize([
           row.employee.nombres,
@@ -440,7 +451,8 @@ export class PersonalWorkspaceFacade {
         correoPersonal: employee.correoPersonal,
         categoriaPersonal: employment?.categoriaPersonal,
         puestoTrabajo: employment?.puestoTrabajo ?? 'SIN_CONTRATO',
-        estadoOperativo: employee.estadoOperativo === 'INACTIVO' ? 'INACTIVO' : 'ACTIVO'
+        estadoOperativo: employee.estadoOperativo === 'INACTIVO' ? 'INACTIVO' : 'ACTIVO',
+        empresaContratista: employee.empresaContratista ?? null
       };
     });
   }
