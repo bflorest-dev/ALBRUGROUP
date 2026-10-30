@@ -7,6 +7,7 @@ import { CatalogoTipificacionResponse } from '../../../shared/models/recruitment
 import { EventoResponse } from '../../../shared/models/recruitment/evento-response';
 import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
+import { ActualizarDatosPostulanteRequest } from '../../../shared/models/recruitment/actualizar-datos-postulante-request';
 import { RegistrarContactoPostulacionRequest } from '../../../shared/models/recruitment/registrar-contacto-postulacion-request';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
 import { GestionReclutamiento, GestionRequest, HorarioMeet } from '../../../shared/models/recruitment/gestion-reclutamiento';
@@ -131,6 +132,13 @@ export class RecruiterPostulantesService {
     request: RegistrarContactoPostulacionRequest
   ): Observable<ContactoPostulacionResponse> {
     return this.http.post<ContactoPostulacionResponse>(`${this.postulacionesUrl}/${idPostulacion}/contactos`, request);
+  }
+
+  actualizarDatosPostulante(
+    idPostulacion: number,
+    request: ActualizarDatosPostulanteRequest
+  ): Observable<PostulacionResponse> {
+    return this.http.put<PostulacionResponse>(`${this.postulacionesUrl}/${idPostulacion}/datos-postulante`, request);
   }
 
 }

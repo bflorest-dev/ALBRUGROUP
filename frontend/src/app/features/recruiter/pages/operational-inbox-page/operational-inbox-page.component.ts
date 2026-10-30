@@ -90,8 +90,16 @@ export class OperationalInboxPageComponent implements OnInit {
     return (value ?? 'pendiente').toLowerCase().replace(/_/g, '-');
   }
 
-  protected initials(nombres: string, apellidos: string): string {
-    return `${nombres.charAt(0)}${apellidos.charAt(0)}`.toUpperCase();
+  protected initials(nombres?: string | null, apellidos?: string | null, usuarioMeta?: string | null): string {
+    const first = nombres?.trim()?.[0] ?? '';
+    const last = apellidos?.trim()?.[0] ?? '';
+    const meta = usuarioMeta?.replace(/^@+/, '').trim();
+    return (first + last || meta?.slice(0, 2) || '?').toUpperCase();
+  }
+
+  protected displayName(postulante: { nombres?: string | null; apellidos?: string | null; usuarioMeta?: string | null }): string {
+    const name = [postulante.nombres, postulante.apellidos].filter(Boolean).join(' ').trim();
+    return name || (postulante.usuarioMeta ? `@${postulante.usuarioMeta.replace(/^@+/, '')}` : 'Postulante sin nombre');
   }
 
   protected isInvalid(controlName: keyof typeof this.form.controls): boolean {

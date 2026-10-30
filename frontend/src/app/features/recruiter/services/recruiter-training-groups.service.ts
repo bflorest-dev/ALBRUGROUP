@@ -8,6 +8,7 @@ import { AsignarPostulacionesGrupoCapacitacionRequest } from '../../../shared/mo
 import { GrupoCapacitacionRequest } from '../../../shared/models/recruitment/grupo-capacitacion-request';
 import { GrupoCapacitacionDetalleResponse } from '../../../shared/models/recruitment/grupo-capacitacion-detalle-response';
 import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
+import { ReprogramarGrupoCapacitacionRequest } from '../../../shared/models/recruitment/reprogramar-grupo-capacitacion-request';
 import { TrasladarPostulacionesGrupoCapacitacionRequest } from '../../../shared/models/recruitment/trasladar-postulaciones-grupo-capacitacion-request';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 
@@ -43,8 +44,21 @@ export class RecruiterTrainingGroupsService {
     return this.http.get<PageResponse<GrupoCapacitacionResponse>>(this.groupsUrl, { params });
   }
 
+  listarAgenda(desde: string, hasta: string): Observable<GrupoCapacitacionResponse[]> {
+    const params = new HttpParams().set('desde', desde).set('hasta', hasta);
+    return this.http.get<GrupoCapacitacionResponse[]>(`${this.groupsUrl}/agenda`, { params });
+  }
+
   crearGrupo(request: GrupoCapacitacionRequest): Observable<GrupoCapacitacionResponse> {
     return this.http.post<GrupoCapacitacionResponse>(this.groupsUrl, request);
+  }
+
+  reprogramarGrupo(idGrupoCapacitacion: number, fechaInicio: string): Observable<GrupoCapacitacionResponse> {
+    const request: ReprogramarGrupoCapacitacionRequest = { fechaInicio };
+    return this.http.post<GrupoCapacitacionResponse>(
+      `${this.groupsUrl}/${idGrupoCapacitacion}:reprogramar`,
+      request
+    );
   }
 
   asignarPostulaciones(

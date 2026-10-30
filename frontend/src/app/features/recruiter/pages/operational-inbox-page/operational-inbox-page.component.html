@@ -55,7 +55,7 @@
               <p>{{ meetHour(session) }} · {{ label(session.estado) }}</p>
               <ul>
                 @for (postulacion of session.postulaciones; track postulacion.id) {
-                  <li><span>{{ postulacion.postulante.nombres }} {{ postulacion.postulante.apellidos }}</span><small>{{ postulacion.postulante.documento }} · {{ label(postulacion.puestoObjetivo) }}</small></li>
+                  <li><span>{{ displayName(postulacion.postulante) }}</span><small>{{ postulacion.postulante.documento || '@' + (postulacion.postulante.usuarioMeta || '') }} · {{ label(postulacion.puestoObjetivo) }}</small></li>
                 }
               </ul>
             </article>
@@ -172,14 +172,14 @@
               <tr class="data-row" [style.background-color]="facade.isNewPostulacion(row) ? '#f4fbf9' : null" (dblclick)="facade.openDetail(row)">
                 <td data-label="Postulante">
                   <button type="button" class="person-cell" (click)="facade.openDetail(row)">
-                    <span class="person-cell__avatar">{{ initials(row.postulante.nombres, row.postulante.apellidos) }}</span>
-                    <span><strong>{{ row.postulante.nombres }} {{ row.postulante.apellidos }}</strong><small>{{ row.postulante.tipoDocumento }} {{ row.postulante.documento }}</small></span>
+                    <span class="person-cell__avatar">{{ initials(row.postulante.nombres, row.postulante.apellidos, row.postulante.usuarioMeta) }}</span>
+                    <span><strong>{{ displayName(row.postulante) }}</strong><small>{{ row.postulante.tipoDocumento || 'Documento pendiente' }} {{ row.postulante.documento || '' }}</small></span>
                   </button>
                 </td>
                 <td data-label="Registro"><span class="date-cell">{{ facade.dateTime(row.createdAt) }}</span><small class="muted-line">{{ facade.isNewPostulacion(row) ? 'Nuevo ingreso' : 'Registrado' }}</small></td>
                 <td data-label="Contacto">
-                  <span class="contact-cell"><i class="ti ti-device-mobile" aria-hidden="true"></i>{{ row.postulante.celular }}</span>
-                  <small class="muted-line">Llamadas: {{ row.postulante.numeroExclusivoLlamadas || 'usa celular' }}</small>
+                  <span class="contact-cell"><i class="ti ti-device-mobile" aria-hidden="true"></i>{{ row.postulante.celular || 'WhatsApp por Meta' }}</span>
+                  <small class="muted-line">{{ row.postulante.usuarioMeta ? '@' + row.postulante.usuarioMeta : 'Llamadas: ' + (row.postulante.numeroExclusivoLlamadas || 'usa celular') }}</small>
                 </td>
                 <td data-label="Objetivo"><strong>{{ label(row.puestoObjetivo) }}</strong><small class="muted-line">{{ row.negocio ? label(row.negocio) : 'Negocio pendiente' }}</small></td>
                 <td data-label="Estado"><span class="status-badge" [class]="'status-badge status-badge--' + rowStatusClass(row.estadoBandeja)">{{ label(row.estadoBandeja) }}</span></td>

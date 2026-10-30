@@ -84,6 +84,15 @@ public class GrupoCapacitacionService {
     }
 
     @Transactional(readOnly = true)
+    public java.util.List<GrupoCapacitacionResponse> listarAgenda(LocalDate desde, LocalDate hasta) {
+        return grupoCapacitacionRepository
+                .findByFechaInicioBetweenOrderByFechaInicioAscTurnoAsc(desde, hasta)
+                .stream()
+                .map(grupoCapacitacionMapper::toResumenResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public GrupoCapacitacionResponse obtenerGrupo(Long idGrupoCapacitacion) {
         return grupoCapacitacionMapper.toResponse(obtenerGrupoConDetalles(idGrupoCapacitacion));
     }
@@ -248,6 +257,36 @@ public class GrupoCapacitacionService {
         grupoCapacitacionRealtimeNotifier.publishAfterCommit(
                 "ACTUALIZACION_GRUPO_CAPACITACION", "CAPACITACION", destino);
         return resultados;
+    }
+
+    public GrupoCapacitacionResponse reprogramarGrupo(Long idGrupoCapacitacion, LocalDate nuevaFechaInicio) {
+        GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion);
+        validarGrupoAbiertoParaMovimiento(grupo);
+
+        LocalDate fechaAnterior = grupo.getFechaInicio();
+        if (!nuevaFechaInicio.equals(fechaAnterior)) {
+            grupo.setFechaInicio(nuevaFechaInicio);
+            grupo.setFechaFin(calcularFechaFin(nuevaFechaInicio));
+
+            // Las fechas de asignacion siguen al nuevo inicio; se registra la reprogramacion en la
+            // traza de cada postulante asignado (la traza es por postulacion). Grupo sin postulantes
+            // solo cambia de fecha, sin evento.
+            for (GrupoCapacitacionDetalle detalle : grupo.getDetalles()) {
+                detalle.setFechaAsignacion(nuevaFechaInicio);
+                eventoService.registrarEvento(
+                        detalle.getPostulacion(),
+                        Accion.REPROGRAMACION_GRUPO_CAPACITACION,
+                        null, null, null, null, null,
+                        "Reprogramado el grupo " + grupo.getCodigo() + " del " + fechaAnterior + " al " + nuevaFechaInicio
+                );
+            }
+
+            grupoCapacitacionRepository.save(grupo);
+            grupoCapacitacionRealtimeNotifier.publishAfterCommit(
+                    "ACTUALIZACION_GRUPO_CAPACITACION", "CAPACITACION", grupo);
+        }
+
+        return grupoCapacitacionMapper.toResponse(grupo);
     }
 
     public GrupoCapacitacionDetalleResponse actualizarDetalle(

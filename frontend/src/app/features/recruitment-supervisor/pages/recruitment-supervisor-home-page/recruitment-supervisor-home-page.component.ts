@@ -70,6 +70,18 @@ export class RecruitmentSupervisorHomePageComponent implements OnInit {
     this.facade.openDetail(row);
   }
 
+  protected displayName(postulante: { nombres?: string | null; apellidos?: string | null; usuarioMeta?: string | null }): string {
+    const name = [postulante.nombres, postulante.apellidos].filter(Boolean).join(' ').trim();
+    return name || (postulante.usuarioMeta ? `@${postulante.usuarioMeta.replace(/^@+/, '')}` : 'Postulante sin nombre');
+  }
+
+  protected initials(nombres?: string | null, apellidos?: string | null, usuarioMeta?: string | null): string {
+    const first = nombres?.trim()?.[0] ?? '';
+    const last = apellidos?.trim()?.[0] ?? '';
+    const meta = usuarioMeta?.replace(/^@+/, '').trim();
+    return (first + last || meta?.slice(0, 2) || '?').toUpperCase();
+  }
+
   protected isInvalid(controlName: keyof typeof this.form.controls): boolean {
     const control = this.form.controls[controlName];
     return control.invalid && control.touched;
@@ -77,6 +89,7 @@ export class RecruitmentSupervisorHomePageComponent implements OnInit {
 
   protected saveLabel(): string {
     if (this.facade.actionState() === 'loading') return 'Procesando…';
+    if (this.facade.isMetaRegistration()) return 'Crear alta Meta';
     return this.facade.isEditing() ? 'Guardar correcciones' : 'Registrar postulante';
   }
 

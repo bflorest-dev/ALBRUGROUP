@@ -3,6 +3,7 @@ package pe.albrugroup.recruitment_service.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,8 +14,11 @@ import pe.albrugroup.recruitment_service.entity.request.ActualizarDetalleGrupoCa
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AsignarPostulacionesGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.GrupoCapacitacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.ReprogramarGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TrasladarPostulacionesGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
+
+import java.time.LocalDate;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionDetalleResponse;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionResponse;
 import pe.albrugroup.recruitment_service.entity.response.PageResponse;
@@ -43,12 +47,32 @@ public class GrupoCapacitacionController {
         return ResponseEntity.ok(grupoCapacitacionService.listarGrupos(estado, pageRequest));
     }
 
+    @GetMapping("/agenda")
+    @PreAuthorize("hasAuthority('READ_GRUPOS_CAPACITACION')")
+    public ResponseEntity<java.util.List<GrupoCapacitacionResponse>> listarAgenda(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
+    ) {
+        return ResponseEntity.ok(grupoCapacitacionService.listarAgenda(desde, hasta));
+    }
+
     @GetMapping("/{idGrupoCapacitacion}")
     @PreAuthorize("hasAuthority('READ_GRUPOS_CAPACITACION')")
     public ResponseEntity<GrupoCapacitacionResponse> obtenerGrupo(
             @PathVariable @Positive Long idGrupoCapacitacion
     ) {
         return ResponseEntity.ok(grupoCapacitacionService.obtenerGrupo(idGrupoCapacitacion));
+    }
+
+    @PostMapping("/{idGrupoCapacitacion:\\d+}:reprogramar")
+    @PreAuthorize("hasAuthority('UPDATE_GRUPOS_CAPACITACION')")
+    public ResponseEntity<GrupoCapacitacionResponse> reprogramarGrupo(
+            @PathVariable @Positive Long idGrupoCapacitacion,
+            @Valid @RequestBody ReprogramarGrupoCapacitacionRequest request
+    ) {
+        return ResponseEntity.ok(
+                grupoCapacitacionService.reprogramarGrupo(idGrupoCapacitacion, request.getFechaInicio())
+        );
     }
 
     @PostMapping("/{idGrupoCapacitacion}/postulaciones")

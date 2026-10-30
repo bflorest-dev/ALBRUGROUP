@@ -23,6 +23,7 @@ public class Postulante {
     private String documento;
     private String celular;
     private String numeroExclusivoLlamadas;
+    private String usuarioMeta;
     private LocalDate fechaNacimiento;
 
     private Boolean listaNegra; // Inicia en False

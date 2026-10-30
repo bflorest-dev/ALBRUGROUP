@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { PageResponse } from '../../../shared/models/common/page-response';
 import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
+import { AltaMetaPostulacionRequest } from '../../../shared/models/recruitment/alta-meta-postulacion-request';
+import { ActualizarDatosPostulanteRequest } from '../../../shared/models/recruitment/actualizar-datos-postulante-request';
 import { OfertaLaboralResponse } from '../../../shared/models/recruitment/oferta-laboral-response';
 import { PostulacionHistorialResponse } from '../../../shared/models/recruitment/postulacion-historial-response';
 import { PostulacionRequest } from '../../../shared/models/recruitment/postulacion-request';
@@ -45,6 +47,17 @@ export class RecruitmentSupervisorService {
 
   registrarPostulacion(request: PostulacionRequest): Observable<PostulacionResponse> {
     return this.http.post<PostulacionResponse>(this.postulacionesUrl, request);
+  }
+
+  registrarPostulacionRapidaMeta(request: AltaMetaPostulacionRequest): Observable<PostulacionResponse> {
+    return this.http.post<PostulacionResponse>(`${this.postulacionesUrl}/rapida-meta`, request);
+  }
+
+  actualizarDatosPostulante(
+    idPostulacion: number,
+    request: ActualizarDatosPostulanteRequest
+  ): Observable<PostulacionResponse> {
+    return this.http.put<PostulacionResponse>(`${this.postulacionesUrl}/${idPostulacion}/datos-postulante`, request);
   }
 
   actualizarPostulacion(

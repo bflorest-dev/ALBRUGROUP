@@ -11,4 +11,8 @@ import java.util.Optional;
 public interface PostulanteRepository extends JpaRepository<Postulante,Long> {
 
     Optional<Postulante> findByTipoDocumentoAndDocumento(Documento tipoDocumento, String documento);
+
+    Optional<Postulante> findByUsuarioMetaIgnoreCase(String usuarioMeta);
+
+    boolean existsByUsuarioMetaIgnoreCaseAndIdNot(String usuarioMeta, Long id);
 }

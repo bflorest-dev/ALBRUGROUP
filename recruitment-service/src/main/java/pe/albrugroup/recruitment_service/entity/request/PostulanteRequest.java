@@ -21,5 +21,6 @@ public class PostulanteRequest {
     @NotBlank private String documento;
     @NotBlank private String celular;
     private String numeroExclusivoLlamadas;
+    private String usuarioMeta;
     @NotNull private LocalDate fechaNacimiento;
 }

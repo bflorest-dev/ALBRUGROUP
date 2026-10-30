@@ -94,6 +94,7 @@ export class RecruiterOperationalInboxFacade {
       row.postulante.documento,
       row.postulante.celular,
       row.postulante.numeroExclusivoLlamadas ?? '',
+      row.postulante.usuarioMeta ?? '',
       row.puestoObjetivo,
       row.negocio ?? '',
       row.estadoBandeja,

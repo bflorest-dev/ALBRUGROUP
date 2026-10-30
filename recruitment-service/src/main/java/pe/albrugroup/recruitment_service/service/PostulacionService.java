@@ -26,7 +26,9 @@ import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
 import pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarClasificacionPostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.ActualizarDatosPostulanteRequest;
 import pe.albrugroup.recruitment_service.entity.request.AsignarOfertaPostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.AltaMetaPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
@@ -39,6 +41,7 @@ import pe.albrugroup.recruitment_service.entity.response.PostulanteHistorialResp
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.exception.BadRequestException;
 import pe.albrugroup.recruitment_service.exception.ConflictException;
+import pe.albrugroup.recruitment_service.exception.ForbiddenException;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
 import pe.albrugroup.recruitment_service.repository.GrupoCapacitacionDetalleRepository;
 import pe.albrugroup.recruitment_service.repository.OfertaLaboralRepository;
@@ -124,6 +127,75 @@ public class PostulacionService {
         );
 
         return postulacionMapper.toResponse(postulacionGuardada);
+    }
+
+    public PostulacionResponse registrarPostulacionRapidaMeta(AltaMetaPostulacionRequest request) {
+        if (!currentUser.tieneRol("SUPERVISOR_RECLUTAMIENTO")) {
+            throw new ForbiddenException("El alta rápida por usuario Meta corresponde al Supervisor de Reclutamiento");
+        }
+        Postulante postulante = postulanteService.crearDesdeUsuarioMeta(request.getUsuarioMeta());
+        Postulacion postulacion = Postulacion.builder()
+                .postulante(postulante)
+                .idEmpleadoRegistrador(currentUser.empleadoID())
+                .origen(request.getOrigen())
+                .puestoObjetivo(request.getPuestoObjetivo())
+                .negocio(request.getNegocio())
+                .fechaPostulacion(request.getFechaPostulacion())
+                .etapa(Etapa.RECLUTAMIENTO)
+                .estado(EstadoPostulacion.EN_PROCESO)
+                .estadoBandeja(EstadoBandejaPostulacion.POSTULANTE)
+                .build();
+
+        Postulacion guardada = postulacionRepository.save(postulacion);
+        eventoService.registrarEvento(guardada, Accion.REGISTRO_POSTULACION, null, null, null, null, null, null);
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "REGISTRO_POSTULACION",
+                "POSTULACION",
+                guardada,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+        return mapearPostulacionResponse(guardada);
+    }
+
+    public PostulacionResponse actualizarDatosPostulante(
+            Long idPostulacion,
+            ActualizarDatosPostulanteRequest request
+    ) {
+        Postulacion postulacion = postulacionRepository.findById(idPostulacion)
+                .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+        if (currentUser.tieneRol("RECLUTADOR")
+                && !currentUser.tieneRol("SUPERVISOR_RECLUTAMIENTO")
+                && postulacion.getEtapa() != Etapa.RECLUTAMIENTO) {
+            throw new ForbiddenException("El Reclutador solo puede completar datos durante la etapa de reclutamiento");
+        }
+
+        postulanteService.actualizarDatos(postulacion.getPostulante(), request);
+        Postulacion guardada = postulacionRepository.save(postulacion);
+        eventoService.registrarEvento(
+                guardada,
+                Accion.ACTUALIZACION_DATOS_POSTULANTE,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "Datos personales actualizados"
+        );
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_DATOS_POSTULANTE",
+                "POSTULANTE",
+                guardada,
+                guardada.getEtapa(),
+                guardada.getEstado(),
+                guardada.getEstadoBandeja(),
+                null,
+                guardada.getPuestoObjetivo()
+        );
+        return mapearPostulacionResponse(guardada);
     }
 
     public PostulacionResponse tipificarPostulacion(Long idPostulacion, TipificarPostulacionRequest request) {

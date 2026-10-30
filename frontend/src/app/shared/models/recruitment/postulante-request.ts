@@ -5,5 +5,6 @@ export interface PostulanteRequest {
   documento: string;
   celular: string;
   numeroExclusivoLlamadas?: string | null;
+  usuarioMeta?: string | null;
   fechaNacimiento: string;
 }

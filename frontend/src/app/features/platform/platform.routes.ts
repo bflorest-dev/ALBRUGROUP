@@ -45,6 +45,7 @@ import { PostventaWorkspacePageComponent } from '../postventa/pages/postventa-wo
 import { PostulantesBoardPageComponent } from '../recruiter/pages/postulantes-board-page/postulantes-board-page.component';
 import { OperationalInboxPageComponent } from '../recruiter/pages/operational-inbox-page/operational-inbox-page.component';
 import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-page/training-groups-page.component';
+import { TrainingAgendaPageComponent } from '../recruiter/pages/training-agenda-page/training-agenda-page.component';
 import { ReporteAsistenciaPageComponent } from '../rrhh/asistencia/pages/reporte-asistencia-page/reporte-asistencia-page.component';
 import { RrhhPersonalPageComponent } from '../rrhh/pages/rrhh-personal-page/rrhh-personal-page.component';
 import { TrainerWorkspacePageComponent } from '../trainer/pages/trainer-workspace-page/trainer-workspace-page.component';
@@ -361,6 +362,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'reclutador/grupos-capacitacion',
     component: TrainingGroupsPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['RECLUTADOR']
+    }
+  },
+  {
+    path: 'reclutador/agenda-capacitacion',
+    component: TrainingAgendaPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['RECLUTADOR']

@@ -24,6 +24,7 @@ public class PostulanteResponse {
     private String documento;
     private String celular;
     private String numeroExclusivoLlamadas;
+    private String usuarioMeta;
     private LocalDate fechaNacimiento;
     private Boolean listaNegra;
     private Instant createdAt;

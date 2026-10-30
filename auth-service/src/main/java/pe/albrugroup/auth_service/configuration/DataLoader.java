@@ -67,6 +67,7 @@ public class DataLoader {
         savePermiso("CONFIRM_CONTRATACION_POSTULACIONES", "Puede confirmar la contratacion de postulaciones", "POSTULACION", "CONFIRM");
         savePermiso("CREATE_CONTACTO_POSTULACION", "Puede registrar intentos de contacto de postulaciones", "POSTULACION", "CONTACT");
         savePermiso("ASSIGN_OFERTA_POSTULACION", "Puede asociar una oferta laboral a una postulacion", "POSTULACION", "ASSIGN_OFFER");
+        savePermiso("UPDATE_DATOS_POSTULANTE", "Puede completar y corregir los datos personales de un postulante", "POSTULANTE", "UPDATE");
         savePermiso("READ_HISTORIAL_POSTULANTES", "Puede consultar el historial de postulaciones de un postulante", "POSTULANTE", "READ_HISTORY");
 
         // RECRUITMENT-SERVICE - OFERTAS LABORALES
@@ -337,6 +338,7 @@ public class DataLoader {
                 getPermiso("READ_HISTORIAL_POSTULANTES"),
                 getPermiso("UPDATE_POSTULACIONES"),
                 getPermiso("CREATE_CONTACTO_POSTULACION"),
+                getPermiso("UPDATE_DATOS_POSTULANTE"),
 
                 getPermiso("READ_OFERTAS_LABORALES_ACTIVAS"),
 
@@ -361,6 +363,7 @@ public class DataLoader {
                 getPermiso("READ_POSTULACION"),
                 getPermiso("READ_HISTORIAL_POSTULANTES"),
                 getPermiso("UPDATE_POSTULACIONES"),
+                getPermiso("UPDATE_DATOS_POSTULANTE"),
                 getPermiso("READ_OFERTAS_LABORALES_ACTIVAS"),
                 getPermiso("ASSIGN_OFERTA_POSTULACION"),
                 getPermiso("READ_GRUPOS_CAPACITACION"),

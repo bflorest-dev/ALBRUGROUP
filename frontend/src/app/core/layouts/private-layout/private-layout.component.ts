@@ -345,7 +345,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
     if (activeRole === 'RECLUTADOR') {
       return [
-        { label: 'Bandeja operativa', route: '/app/reclutador/bandeja-operativa', icon: 'pi pi-inbox', exact: true }
+        { label: 'Bandeja operativa', route: '/app/reclutador/bandeja-operativa', icon: 'pi pi-inbox', exact: true },
+        { label: 'Agenda capacitación', route: '/app/reclutador/agenda-capacitacion', icon: 'pi pi-calendar', exact: true }
       ];
     }
 

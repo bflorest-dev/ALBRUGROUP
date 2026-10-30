@@ -19,4 +19,10 @@ public class CurrentUser {
     public Long empleadoID() {
         return get().empleadoId();
     }
+
+    public boolean tieneRol(String rol) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_" + rol));
+    }
 }

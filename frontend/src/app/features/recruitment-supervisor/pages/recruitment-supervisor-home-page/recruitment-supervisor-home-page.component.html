@@ -11,6 +11,10 @@
         <i class="ti ti-refresh" aria-hidden="true"></i>
         {{ facade.listLoading() ? 'Actualizando…' : 'Actualizar' }}
       </button>
+      <button type="button" class="button button--ghost" (click)="facade.openMetaRegister()">
+        <i class="ti ti-brand-meta" aria-hidden="true"></i>
+        Alta por Meta
+      </button>
       <button type="button" class="button button--primary" (click)="facade.openRegister()">
         <i class="ti ti-user-plus" aria-hidden="true"></i>
         Registrar postulante
@@ -121,10 +125,10 @@
               <tr class="data-row" (dblclick)="openDetail(row)">
                 <td data-label="Postulante">
                   <button type="button" class="person-cell" (click)="openDetail(row)">
-                    <span class="person-cell__avatar">{{ row.postulante.nombres.charAt(0) }}{{ row.postulante.apellidos.charAt(0) }}</span>
+                    <span class="person-cell__avatar">{{ initials(row.postulante.nombres, row.postulante.apellidos, row.postulante.usuarioMeta) }}</span>
                     <span>
-                      <strong>{{ row.postulante.nombres }} {{ row.postulante.apellidos }}</strong>
-                      <small>{{ row.postulante.tipoDocumento }} {{ row.postulante.documento }}</small>
+                      <strong>{{ displayName(row.postulante) }}</strong>
+                      <small>{{ row.postulante.tipoDocumento || 'Documento pendiente' }} {{ row.postulante.documento || '' }}</small>
                     </span>
                   </button>
                 </td>
@@ -170,8 +174,8 @@
       <header class="drawer__header">
         <div>
           <span class="drawer__eyebrow">{{ facade.drawer() === 'register' ? 'Nuevo registro' : 'Ficha de postulante' }}</span>
-          <h2 id="drawer-title">{{ facade.drawer() === 'register' ? 'Registrar postulante' : facade.drawer() === 'edit' ? 'Editar datos' : 'Detalle y trazabilidad' }}</h2>
-          <p>{{ facade.drawer() === 'register' ? 'Guarda los datos disponibles y deja lo operativo para el reclutador.' : 'Consulta el contexto completo y realiza correcciones administrativas.' }}</p>
+          <h2 id="drawer-title">{{ facade.drawer() === 'register' ? (facade.isMetaRegistration() ? 'Alta rápida por usuario Meta' : 'Registrar postulante') : facade.drawer() === 'edit' ? 'Editar datos' : 'Detalle y trazabilidad' }}</h2>
+          <p>{{ facade.drawer() === 'register' ? (facade.isMetaRegistration() ? 'Crea la postulación con el único dato disponible y complétala después.' : 'Guarda los datos disponibles y deja lo operativo para el reclutador.') : 'Consulta el contexto completo y realiza correcciones administrativas.' }}</p>
         </div>
         <button type="button" class="icon-button" aria-label="Cerrar ficha" (click)="facade.closeDrawer()"><i class="ti ti-x" aria-hidden="true"></i></button>
       </header>
@@ -179,6 +183,20 @@
       <div class="drawer__body">
         @if (facade.drawer() === 'register' || facade.drawer() === 'edit') {
           <form id="candidate-form" class="candidate-form" [formGroup]="form" (ngSubmit)="facade.save()" novalidate>
+            @if (facade.actionError()) {<div class="inline-notice inline-notice--error" role="alert"><i class="ti ti-alert-circle" aria-hidden="true"></i>{{ facade.actionError() }}</div>}
+            @if (facade.isMetaRegistration()) {
+              <div class="form-section quick-registration">
+                <div class="form-section__heading"><span>01</span><div><h3>Identificador de origen</h3><p>Registra el usuario de Meta sin bloquear la gestión posterior.</p></div></div>
+                <div class="form-grid">
+                  <label class="field field--wide"><span>Usuario Meta <em>*</em></span><input [formControl]="facade.metaForm.controls.usuarioMeta" placeholder="@usuario42" autocomplete="off" /><small>Se normalizará y guardará sin @. Debe ser único.</small></label>
+                  <label class="field"><span>Origen <em>*</em></span><select [formControl]="facade.metaForm.controls.origen"><option value="FACEBOOK">Facebook</option><option value="TIKTOK">TikTok</option><option value="INDEED">Indeed</option><option value="REFERIDO">Referido</option></select><small>De dónde provino el contacto.</small></label>
+                  <label class="field"><span>Puesto objetivo <em>*</em></span><select [formControl]="facade.metaForm.controls.puestoObjetivo">@for (option of puestoObjetivoOptions; track option.value) {<option [value]="option.value">{{ option.label }}</option>}</select></label>
+                  <label class="field"><span>Negocio <em>*</em></span><select [formControl]="facade.metaForm.controls.negocio"><option value="WIN">WIN</option><option value="CLARO">Claro</option></select></label>
+                  <label class="field"><span>Fecha de postulación <em>*</em></span><input type="date" [formControl]="facade.metaForm.controls.fechaPostulacion" /><small>Fecha informada por el registro original.</small></label>
+                </div>
+                <div class="quick-registration__note"><i class="ti ti-info-circle" aria-hidden="true"></i><span>Los nombres, documentos y teléfonos podrán completarse desde el drawer del Reclutador. WhatsApp quedará disponible con este usuario; llamar se habilitará al registrar un teléfono.</span></div>
+              </div>
+            } @else {
             <div class="form-section">
               <div class="form-section__heading"><span>01</span><div><h3>Identidad y contacto</h3><p>Datos mínimos para identificar y volver a contactar.</p></div></div>
               <div class="form-grid">
@@ -203,12 +221,13 @@
                 <label class="field"><span>Oferta laboral</span><select formControlName="idOfertaLaboral"><option [ngValue]="0">Sin asociar por ahora</option>@for (offer of facade.offers(); track offer.id) {<option [ngValue]="offer.id">{{ offer.codigo }} · {{ offer.puestoObjetivo }}</option>}</select><small>La asociación puede realizarse después, sin detener el registro.</small></label>
               </div>
             </div>
+            }
           </form>
         } @else if (facade.selectedPostulacion(); as selected) {
           <div class="detail-view">
             <div class="detail-identity">
-              <span class="person-cell__avatar person-cell__avatar--large">{{ selected.postulante.nombres.charAt(0) }}{{ selected.postulante.apellidos.charAt(0) }}</span>
-              <div><h3>{{ selected.postulante.nombres }} {{ selected.postulante.apellidos }}</h3><p>{{ selected.postulante.tipoDocumento }} {{ selected.postulante.documento }} · Registrado {{ date(selected.createdAt) }}</p></div>
+              <span class="person-cell__avatar person-cell__avatar--large">{{ initials(selected.postulante.nombres, selected.postulante.apellidos, selected.postulante.usuarioMeta) }}</span>
+              <div><h3>{{ displayName(selected.postulante) }}</h3><p>{{ selected.postulante.tipoDocumento || 'Documento pendiente' }} {{ selected.postulante.documento || '' }} · Registrado {{ date(selected.createdAt) }}</p></div>
               <span class="status-badge" [class]="'status-badge status-badge--' + rowStatusClass(selected.estadoBandeja)">{{ label(selected.estadoBandeja) }}</span>
             </div>
             @if (facade.actionMessage()) {<div class="inline-notice inline-notice--success" role="status"><i class="ti ti-circle-check" aria-hidden="true"></i>{{ facade.actionMessage() }}</div>}

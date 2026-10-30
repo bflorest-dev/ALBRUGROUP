@@ -8,6 +8,7 @@ import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/gr
 import { OfertaLaboralResponse } from '../../../shared/models/recruitment/oferta-laboral-response';
 import { PostulacionHistorialResponse } from '../../../shared/models/recruitment/postulacion-historial-response';
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
+import { AltaMetaPostulacionRequest } from '../../../shared/models/recruitment/alta-meta-postulacion-request';
 import {
   RecruitmentSupervisorService,
   SupervisorListFilters
@@ -15,6 +16,7 @@ import {
 
 export type SupervisorDrawer = 'none' | 'register' | 'detail' | 'edit';
 export type SupervisorActionState = 'idle' | 'loading' | 'success' | 'error';
+export type RegistrationMode = 'full' | 'meta';
 
 export type SupervisorSummary = {
   total: number;
@@ -45,6 +47,7 @@ export class RecruitmentSupervisorFacade {
     documento: ['', Validators.required],
     celular: ['', Validators.required],
     numeroExclusivoLlamadas: [''],
+    usuarioMeta: [''],
     fechaNacimiento: ['', Validators.required],
     origen: ['COMPUTRABAJO', Validators.required],
     puestoObjetivo: ['ASESOR_VENTAS', Validators.required],
@@ -55,12 +58,21 @@ export class RecruitmentSupervisorFacade {
     idOfertaLaboral: [0]
   });
 
+  readonly metaForm = this.formBuilder.nonNullable.group({
+    usuarioMeta: ['', Validators.required],
+    origen: ['FACEBOOK', Validators.required],
+    puestoObjetivo: ['ASESOR_VENTAS', Validators.required],
+    negocio: ['WIN', Validators.required],
+    fechaPostulacion: [this.today(), Validators.required]
+  });
+
   readonly rows = signal<PostulacionResponse[]>([]);
   readonly selectedPostulacion = signal<PostulacionResponse | null>(null);
   readonly history = signal<PostulacionHistorialResponse[]>([]);
   readonly offers = signal<OfertaLaboralResponse[]>([]);
   readonly groups = signal<GrupoCapacitacionResponse[]>([]);
   readonly drawer = signal<SupervisorDrawer>('none');
+  readonly registrationMode = signal<RegistrationMode>('full');
   readonly listLoading = signal(false);
   readonly listError = signal('');
   readonly summary = signal<SupervisorSummary>(EMPTY_SUMMARY);
@@ -91,6 +103,7 @@ export class RecruitmentSupervisorFacade {
         row.postulante.apellidos,
         row.postulante.documento,
         row.postulante.celular,
+        row.postulante.usuarioMeta ?? '',
         row.puestoObjetivo,
         row.negocio ?? '',
         row.estadoBandeja,
@@ -170,6 +183,7 @@ export class RecruitmentSupervisorFacade {
   }
 
   openRegister(): void {
+    this.registrationMode.set('full');
     this.resetForm();
     this.selectedPostulacion.set(null);
     this.actionState.set('idle');
@@ -177,6 +191,20 @@ export class RecruitmentSupervisorFacade {
     this.actionError.set('');
     this.drawer.set('register');
     this.loadCatalogs();
+  }
+
+  openMetaRegister(): void {
+    this.registrationMode.set('meta');
+    this.resetMetaForm();
+    this.selectedPostulacion.set(null);
+    this.actionState.set('idle');
+    this.actionMessage.set('');
+    this.actionError.set('');
+    this.drawer.set('register');
+  }
+
+  isMetaRegistration(): boolean {
+    return this.drawer() === 'register' && this.registrationMode() === 'meta';
   }
 
   openDetail(postulacion: PostulacionResponse): void {
@@ -200,6 +228,7 @@ export class RecruitmentSupervisorFacade {
       documento: selected.postulante.documento,
       celular: selected.postulante.celular,
       numeroExclusivoLlamadas: selected.postulante.numeroExclusivoLlamadas ?? '',
+      usuarioMeta: selected.postulante.usuarioMeta ?? '',
       fechaNacimiento: selected.postulante.fechaNacimiento,
       origen: selected.origen,
       puestoObjetivo: selected.puestoObjetivo,
@@ -227,6 +256,10 @@ export class RecruitmentSupervisorFacade {
   }
 
   save(): void {
+    if (this.isMetaRegistration()) {
+      this.saveMeta();
+      return;
+    }
     this.form.markAllAsTouched();
     if (this.form.invalid || this.actionState() === 'loading') return;
 
@@ -253,6 +286,38 @@ export class RecruitmentSupervisorFacade {
         this.actionState.set('error');
         this.actionMessage.set('');
         this.actionError.set(this.errorMessage(error, 'No fue posible guardar los cambios.'));
+      }
+    });
+  }
+
+  private saveMeta(): void {
+    this.metaForm.markAllAsTouched();
+    if (this.metaForm.invalid || this.actionState() === 'loading') return;
+
+    const value = this.metaForm.getRawValue();
+    const request: AltaMetaPostulacionRequest = {
+      usuarioMeta: value.usuarioMeta.trim(),
+      origen: value.origen,
+      puestoObjetivo: value.puestoObjetivo,
+      negocio: value.negocio,
+      fechaPostulacion: value.fechaPostulacion
+    };
+    this.actionState.set('loading');
+    this.actionMessage.set('Registrando usuario Meta…');
+    this.actionError.set('');
+    this.service.registrarPostulacionRapidaMeta(request).pipe(timeout(this.requestTimeoutMs)).subscribe({
+      next: (saved) => {
+        this.selectedPostulacion.set(saved);
+        this.actionState.set('success');
+        this.actionMessage.set('Postulante Meta registrado');
+        this.drawer.set('detail');
+        this.loadHistory(saved.postulante.id);
+        this.refresh();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.actionState.set('error');
+        this.actionMessage.set('');
+        this.actionError.set(this.errorMessage(error, 'No fue posible registrar el usuario Meta.'));
       }
     });
   }
@@ -411,6 +476,7 @@ export class RecruitmentSupervisorFacade {
       documento: '',
       celular: '',
       numeroExclusivoLlamadas: '',
+      usuarioMeta: '',
       fechaNacimiento: '',
       origen: 'COMPUTRABAJO',
       puestoObjetivo: 'ASESOR_VENTAS',
@@ -419,6 +485,16 @@ export class RecruitmentSupervisorFacade {
       horario: '',
       fechaPostulacion: this.today(),
       idOfertaLaboral: 0
+    });
+  }
+
+  private resetMetaForm(): void {
+    this.metaForm.reset({
+      usuarioMeta: '',
+      origen: 'FACEBOOK',
+      puestoObjetivo: 'ASESOR_VENTAS',
+      negocio: 'WIN',
+      fechaPostulacion: this.today()
     });
   }
 
@@ -439,6 +515,7 @@ export class RecruitmentSupervisorFacade {
         documento: value.documento.trim(),
         celular: value.celular.trim(),
         numeroExclusivoLlamadas: value.numeroExclusivoLlamadas.trim() || null,
+        usuarioMeta: value.usuarioMeta.trim() || null,
         fechaNacimiento: value.fechaNacimiento
       }
     };

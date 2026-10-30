@@ -2,15 +2,15 @@
 <aside class="workspace" role="dialog" aria-modal="true" aria-labelledby="candidate-name" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
  <header>
   <div class="identity">
-   <div><h2 id="candidate-name">{{ p().postulante.nombres }} {{ p().postulante.apellidos }}</h2>
-    <p>{{ label(p().puestoObjetivo) }} · {{ label(p().negocio) }} <span class="document">{{ p().postulante.tipoDocumento }} {{ p().postulante.documento }}</span></p>
+   <div><h2 id="candidate-name">{{ displayName() }}</h2>
+    <p>{{ label(p().puestoObjetivo) }} · {{ label(p().negocio) }} <span class="document">{{ p().postulante.tipoDocumento || 'Documento pendiente' }} {{ p().postulante.documento || '' }}</span></p>
    </div>
    <button class="icon-button" type="button" aria-label="Cerrar ficha" (click)="close()" cdkFocusInitial><i class="ti ti-x"></i></button>
   </div>
   <div class="contact-bar">
    <span class="badge">{{ p().etapa==='RECLUTAMIENTO'?label(p().estadoBandeja):label(p().etapa) }}</span>
-   <button type="button" class="contact-button" [disabled]="busy()||!active()" (click)="contact('LLAMADA')"><i class="ti ti-phone" aria-hidden="true"></i><span>{{ contacting()==='LLAMADA'?'Registrando…':contacted()==='LLAMADA'?'Listo · llamar':'Llamar' }} <small>{{ p().postulante.numeroExclusivoLlamadas || p().postulante.celular }}</small></span></button>
-   <button type="button" class="contact-button" [disabled]="busy()||!active()" (click)="contact('WHATSAPP')"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i><span>{{ contacting()==='WHATSAPP'?'Registrando…':contacted()==='WHATSAPP'?'Listo · WhatsApp':'WhatsApp' }} <small>{{ p().postulante.celular }}</small></span></button>
+   <button type="button" class="contact-button" [disabled]="busy()||!active()||!hasPhone()" [attr.title]="hasPhone()?'Llamar al postulante':'Registra un celular o número exclusivo para habilitar llamadas'" (click)="contact('LLAMADA')"><i class="ti ti-phone" aria-hidden="true"></i><span>{{ contacting()==='LLAMADA'?'Registrando…':contacted()==='LLAMADA'?'Listo · llamar':'Llamar' }} <small>{{ contactReference('LLAMADA') }}</small></span></button>
+   <button type="button" class="contact-button" [disabled]="busy()||!active()||!hasWhatsApp()" [attr.title]="hasWhatsApp()?'Abrir WhatsApp':'Registra un celular o usuario Meta para abrir WhatsApp'" (click)="contact('WHATSAPP')"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i><span>{{ contacting()==='WHATSAPP'?'Registrando…':contacted()==='WHATSAPP'?'Listo · WhatsApp':'WhatsApp' }} <small>{{ contactReference('WHATSAPP') }}</small></span></button>
   </div>
   <nav aria-label="Secciones de la ficha">
    <button type="button" [class.current]="panel()==='gestion'" [attr.aria-current]="panel()==='gestion'?'page':null" (click)="panel.set('gestion')">Gestionar</button>
@@ -113,9 +113,26 @@
      </section>}
     }
    }
-   @if(panel()==='datos') {
-    <h3>Datos de la postulación</h3><dl class="data-grid"><div><dt>Documento</dt><dd>{{ p().postulante.documento }}</dd></div><div><dt>Fecha de postulación</dt><dd>{{ date(p().fechaPostulacion) }}</dd></div><div><dt>Puesto objetivo</dt><dd>{{ label(p().puestoObjetivo) }}</dd></div><div><dt>Negocio</dt><dd>{{ label(p().negocio) }}</dd></div><div><dt>Turno</dt><dd>{{ label(p().horario) }}</dd></div><div><dt>Modalidad laboral</dt><dd>{{ label(p().modalidad) }}</dd></div><div><dt>Origen</dt><dd>{{ label(p().origen) }}</dd></div><div><dt>Oferta laboral</dt><dd>{{ p().ofertaLaboral?.codigo || 'Sin asociar' }}</dd></div></dl><p class="context-note">La asociación de ofertas es gestionada por el Supervisor de Reclutamiento.</p>
-   }
+    @if(panel()==='datos') {
+     <section class="data-panel" aria-labelledby="candidate-data-title">
+      <div class="form-heading"><div><h3 id="candidate-data-title">Datos del postulante</h3><p class="intro">Completa solo la identidad y los medios de contacto. La clasificación y la etapa permanecen protegidas.</p></div><span class="data-status">{{ canEditDatos() ? 'Editable en reclutamiento' : 'Solo consulta en esta etapa' }}</span></div>
+      @if(datosIncomplete()){<div class="notice warning"><strong>Ficha incompleta</strong><p>Faltan datos personales. WhatsApp puede abrirse con el usuario Meta; las llamadas requieren un número.</p></div>}
+      @if(dataMessage()){<div class="notice success" role="status"><i class="ti ti-circle-check" aria-hidden="true"></i>{{ dataMessage() }}</div>}
+      @if(dataError()){<div class="notice error" role="alert">{{ dataError() }}</div>}
+      <form class="data-form" [formGroup]="datosForm" (ngSubmit)="saveDatos()">
+       <label>Nombres<input formControlName="nombres" placeholder="Nombres completos" [readonly]="!canEditDatos()" /><small>Puede quedar pendiente en un alta por usuario Meta.</small></label>
+       <label>Apellidos<input formControlName="apellidos" placeholder="Apellidos completos" [readonly]="!canEditDatos()" /></label>
+       <label>Tipo de documento<select formControlName="tipoDocumento" [disabled]="!canEditDatos()"><option value="">Pendiente</option><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></select></label>
+       <label>Número de documento<input formControlName="documento" placeholder="8 dígitos" [readonly]="!canEditDatos()" /></label>
+       <label>Celular<input formControlName="celular" placeholder="9 dígitos" inputmode="tel" [readonly]="!canEditDatos()" /><small>Habilita llamadas y WhatsApp.</small></label>
+       <label>Número exclusivo de llamadas<input formControlName="numeroExclusivoLlamadas" placeholder="9 dígitos (opcional)" inputmode="tel" [readonly]="!canEditDatos()" /></label>
+       <label>Usuario Meta<input formControlName="usuarioMeta" placeholder="@usuario (opcional)" [readonly]="!canEditDatos()" /><small>Se guarda sin @ y permite buscarlo en WhatsApp.</small></label>
+       <label>Fecha de nacimiento<input type="date" formControlName="fechaNacimiento" [readonly]="!canEditDatos()" /></label>
+       @if(canEditDatos()){<div class="data-form__action"><button type="submit" class="primary" [disabled]="dataSaving()">{{ dataSaving() ? 'Guardando…' : 'Guardar datos' }}</button></div>}
+      </form>
+      <h3>Datos de la postulación</h3><dl class="data-grid"><div><dt>Fecha de postulación</dt><dd>{{ date(p().fechaPostulacion) }}</dd></div><div><dt>Puesto objetivo</dt><dd>{{ label(p().puestoObjetivo) }}</dd></div><div><dt>Negocio</dt><dd>{{ label(p().negocio) }}</dd></div><div><dt>Turno</dt><dd>{{ label(p().horario) }}</dd></div><div><dt>Modalidad laboral</dt><dd>{{ label(p().modalidad) }}</dd></div><div><dt>Origen</dt><dd>{{ label(p().origen) }}</dd></div><div><dt>Oferta laboral</dt><dd>{{ p().ofertaLaboral?.codigo || 'Sin asociar' }}</dd></div></dl><p class="context-note">La asociación de ofertas es gestionada por el Supervisor de Reclutamiento.</p>
+     </section>
+    }
    @if(panel()==='historial') {
     <div class="form-heading"><h3>Historial de gestión</h3><button type="button" (click)="loadHistory()">Actualizar historial</button></div>
     <p class="intro">Gestiones y responsable de cada registro, desde la más reciente.</p>

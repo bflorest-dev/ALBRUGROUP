@@ -22,7 +22,9 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarClasificacionPostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.ActualizarDatosPostulanteRequest;
 import pe.albrugroup.recruitment_service.entity.request.AsignarOfertaPostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.AltaMetaPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.RegistrarContactoPostulacionRequest;
@@ -46,6 +48,14 @@ public class PostulacionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(postulacionService.registrarPostulacion(request));
     }
 
+    @PostMapping("/rapida-meta")
+    @PreAuthorize("hasAuthority('CREATE_POSTULACIONES')")
+    public ResponseEntity<PostulacionResponse> registrarPostulacionRapidaMeta(
+            @Valid @RequestBody AltaMetaPostulacionRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(postulacionService.registrarPostulacionRapidaMeta(request));
+    }
+
     @PutMapping("/{idPostulacion}")
     @PreAuthorize("hasAuthority('UPDATE_POSTULACIONES')")
     public ResponseEntity<PostulacionResponse> editarPostulacion(
@@ -53,6 +63,15 @@ public class PostulacionController {
             @Valid @RequestBody PostulacionRequest request
     ) {
         return ResponseEntity.ok(postulacionService.editarPostulacion(idPostulacion, request));
+    }
+
+    @PutMapping("/{idPostulacion}/datos-postulante")
+    @PreAuthorize("hasAuthority('UPDATE_DATOS_POSTULANTE')")
+    public ResponseEntity<PostulacionResponse> actualizarDatosPostulante(
+            @PathVariable @Positive Long idPostulacion,
+            @Valid @RequestBody ActualizarDatosPostulanteRequest request
+    ) {
+        return ResponseEntity.ok(postulacionService.actualizarDatosPostulante(idPostulacion, request));
     }
 
     @PatchMapping("/{idPostulacion}/clasificacion")

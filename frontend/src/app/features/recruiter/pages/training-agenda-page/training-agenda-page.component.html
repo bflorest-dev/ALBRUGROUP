@@ -1,0 +1,219 @@
+<section class="agenda">
+  <header class="agenda__header">
+    <div>
+      <h1>Agenda de capacitación</h1>
+      <p>Organizá los grupos en el calendario. Arrastrá para reprogramar, abrí uno para gestionar postulantes.</p>
+    </div>
+    <button type="button" class="btn" (click)="openCreateDrawer()">
+      <i class="pi pi-plus"></i> Nuevo grupo
+    </button>
+  </header>
+
+  <div class="agenda__toolbar">
+    <div class="nav">
+      <button type="button" class="icbtn" (click)="prevMonth()" aria-label="Mes anterior">‹</button>
+      <span class="mlabel">{{ rangeLabel() }}</span>
+      <button type="button" class="icbtn" (click)="nextMonth()" aria-label="Mes siguiente">›</button>
+      <button type="button" class="today-btn" (click)="goToday()">Hoy</button>
+    </div>
+    <div class="legend">
+      <span><i class="dot" data-k="abierto"></i>Abierto</span>
+      <span><i class="dot" data-k="curso"></i>En curso</span>
+      <span><i class="dot" data-k="cerrado"></i>Cerrado</span>
+      <span><i class="dot dot--round" data-k="manana"></i>Mañana</span>
+      <span><i class="dot dot--round" data-k="tarde"></i>Tarde</span>
+    </div>
+  </div>
+
+  @if (errorMsg()) {
+    <div class="banner banner--error">{{ errorMsg() }}</div>
+  }
+
+  <div class="agenda__months">
+    @for (month of months(); track month.label) {
+      <div class="month">
+        <div class="dow">
+          <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+        </div>
+        <div class="grid">
+          @for (cell of month.cells; track cell.dateStr) {
+            <div
+              class="cell"
+              [class.out]="cell.out"
+              [class.today]="cell.today"
+              [class.past]="cell.past"
+              [class.droptarget]="dragOverDate() === cell.dateStr"
+              (dragover)="onDragOver($event, cell)"
+              (dragleave)="onDragLeave(cell)"
+              (drop)="onDrop($event, cell)"
+            >
+              <div class="cell__n">
+                <span class="num">{{ cell.day }}</span>
+                @if (cell.today) { <span class="cell__hint">hoy</span> }
+              </div>
+              @for (chip of cell.groups; track chip.id) {
+                <div
+                  [class]="'chip ' + chip.estadoClass + ' ' + chip.turnoClass + (chip.draggable ? ' draggable' : '') + (cell.openUp ? ' pop-up' : '') + (cell.openLeft ? ' pop-left' : '')"
+                  [attr.draggable]="chip.draggable"
+                  (dragstart)="onDragStart($event, chip)"
+                  (dragend)="onDragEnd()"
+                  (click)="openGroup(chip)"
+                >
+                  @if (chip.draggable) { <span class="grip">⠿</span> }
+                  <i class="tdot"></i>
+                  <span class="cod">{{ chip.codigo }}</span>
+                  <span class="cnt">{{ chip.count }}</span>
+                  <div class="pop">
+                    <h4><span>{{ chip.codigo }}</span><span>{{ chip.count }} post.</span></h4>
+                    @if (chip.nombres.length) {
+                      <ol>
+                        @for (nombre of chip.nombres; track $index) { <li>{{ nombre }}</li> }
+                      </ol>
+                    } @else {
+                      <div class="none">Sin postulantes asignados</div>
+                    }
+                    <div class="hint">Click para gestionar{{ chip.draggable ? ' · arrastrar para reprogramar' : '' }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- drawer de gestión -->
+@if (selectedGroup(); as grupo) {
+  <div class="scrim" (click)="closeGroup()"></div>
+  <aside class="drawer">
+    <div class="dr__h">
+      <div>
+        <h2>{{ grupo.codigo }}</h2>
+        <p>Inicia {{ fmtLong(grupo.fechaInicio) }}</p>
+      </div>
+      <button type="button" class="dr__close" (click)="closeGroup()" aria-label="Cerrar">×</button>
+    </div>
+
+    <div class="dr__body">
+      <div class="dr__meta">
+        <div class="mcell"><span>Turno</span><b>{{ turnoLabel(grupo.turno) }}</b></div>
+        <div class="mcell"><span>Sala</span><b>{{ label(grupo.sala) }}</b></div>
+        <div class="mcell"><span>Capacitador</span><b>{{ capacitadorNombre(grupo.idCapacitador) }}</b></div>
+        <div class="mcell"><span>Estado</span><b><span class="badge" [class]="'badge ' + estadoClass(grupo.estado)">{{ estadoLabel(grupo.estado) }}</span></b></div>
+      </div>
+
+      @if (opMsg()) { <div class="banner banner--ok">{{ opMsg() }}</div> }
+      @if (opError()) { <div class="banner banner--error">{{ opError() }}</div> }
+
+      <div class="sec">
+        <div class="sec__h">
+          <h3>Postulantes asignados</h3>
+          <small>{{ grupo.detalles.length }} asignado{{ grupo.detalles.length === 1 ? '' : 's' }}</small>
+        </div>
+        @if (grupo.detalles.length) {
+          <div class="mrows">
+            @for (detalle of grupo.detalles; track detalle.id) {
+              <div class="mrow">
+                <span class="av">{{ iniciales(detalle.postulacion) }}</span>
+                <div class="mrow__id">
+                  <strong>{{ nombreCompleto(detalle.postulacion) }}</strong>
+                  <small>DNI {{ detalle.postulacion.postulante.documento }} · {{ label(detalle.estadoCapacitacion) }}</small>
+                </div>
+                @if (grupo.estado === 'ABIERTO') {
+                  <div class="mrow__act">
+                    @if (isMoving(detalle.id)) {
+                      <span class="mrow__move">
+                        <select [disabled]="opBusy()" (change)="setMoveDestino($any($event.target).value)">
+                          <option value="">Mover a…</option>
+                          @for (destino of moveTargets(); track destino.id) {
+                            <option [value]="destino.id">{{ destino.codigo }}</option>
+                          }
+                        </select>
+                      </span>
+                      <button type="button" class="mini" [disabled]="opBusy() || moveDestinoId() === null" (click)="confirmMove(detalle.postulacion.id)">Confirmar</button>
+                      <button type="button" class="mini mini--ghost" [disabled]="opBusy()" (click)="cancelMove()">Cancelar</button>
+                    } @else {
+                      <button type="button" class="mini" [disabled]="opBusy() || !moveTargets().length" (click)="startMove(detalle.id)">Mover</button>
+                      <button type="button" class="mini mini--danger" [disabled]="opBusy()" (click)="retire(detalle.postulacion.id)">Retirar</button>
+                    }
+                  </div>
+                } @else {
+                  <small class="muted">grupo iniciado</small>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="empty-note">Sin postulantes asignados todavía.</p>
+        }
+      </div>
+
+      @if (grupo.estado === 'ABIERTO') {
+        <div class="divider"></div>
+        <div class="sec">
+          <div class="sec__h">
+            <h3>Aprobados sin grupo</h3>
+            <small>{{ pool().length }} disponible{{ pool().length === 1 ? '' : 's' }}</small>
+          </div>
+          @if (pool().length) {
+            <div class="mrows">
+              @for (postulacion of pool(); track postulacion.id) {
+                <label class="prow">
+                  <input type="checkbox" [checked]="isPoolSelected(postulacion.id)" (change)="togglePool(postulacion.id)" />
+                  <span class="av">{{ iniciales(postulacion) }}</span>
+                  <div class="mrow__id">
+                    <strong>{{ nombreCompleto(postulacion) }}</strong>
+                    <small>DNI {{ postulacion.postulante.documento }} · Aprobado</small>
+                  </div>
+                </label>
+              }
+            </div>
+          } @else {
+            <p class="empty-note">No hay aprobados sin grupo.</p>
+          }
+        </div>
+      }
+    </div>
+
+    @if (grupo.estado === 'ABIERTO') {
+      <div class="dr__foot">
+        <button type="button" class="btn ghost" (click)="closeGroup()">Cerrar</button>
+        <button type="button" class="btn" [disabled]="opBusy() || !selectedPoolIds().length" (click)="assignSelected()">
+          Asignar seleccionados ({{ selectedPoolIds().length }})
+        </button>
+      </div>
+    }
+  </aside>
+}
+
+<!-- drawer crear grupo -->
+@if (createDrawerOpen()) {
+  <div class="scrim" (click)="closeCreateDrawer()"></div>
+  <aside class="drawer drawer--create">
+    <div class="dr__h">
+      <div><h2>Nuevo grupo de capacitación</h2><p>Definí código, capacitador, turno, sala y fecha de inicio.</p></div>
+      <button type="button" class="dr__close" (click)="closeCreateDrawer()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="dr__body">
+      <app-training-group-form-panel
+        [groupForm]="facade.groupForm"
+        [capacitadores]="facade.capacitadores()"
+        [turnoOptions]="facade.turnoOptions"
+        [salaOptions]="facade.salaOptions"
+        [isLoadingCapacitadores]="facade.isLoadingCapacitadores()"
+        [capacitadoresErrorMessage]="facade.capacitadoresErrorMessage()"
+        [isCreatingGroup]="facade.isCreatingGroup()"
+        [createErrorMessage]="facade.createErrorMessage()"
+        [createSuccessMessage]="facade.createSuccessMessage()"
+        (save)="facade.submitGroup()"
+        (resetForm)="facade.resetForm()"
+      />
+    </div>
+  </aside>
+}
+
+@if (toastMsg()) {
+  <div class="toast">{{ toastMsg() }}</div>
+}
