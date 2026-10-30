@@ -145,7 +145,7 @@
               <tr>
                 <td class="ra-td-name ra-sticky ra-sticky--name">{{ fila.empleado.nombreCompleto }}</td>
                 <td class="ra-td-doc mono ra-sticky ra-sticky--doc">{{ fila.empleado.numeroDocumento }}</td>
-                <td class="ra-td-meta">{{ fila.empleado.empresaContratista ?? '-' }}</td>
+                <td class="ra-td-meta">{{ (fila.empleado.empresaContratista ?? '-').toUpperCase() }}</td>
                 <td class="ra-td-meta">{{ fila.empleado.rolPrincipal ?? '-' }}</td>
                 <td class="ra-td-meta">{{ formatModalidad(fila.empleado.modalidad) }}</td>
                 <td class="ra-td-meta mono">{{ formatFecha(fila.empleado.fechaIngreso) }}</td>

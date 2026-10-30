@@ -31,7 +31,7 @@ export class ReporteAsistenciaPageComponent {
   protected readonly empresasDisponibles = computed<string[]>(() => {
     const unique = new Set<string>();
     for (const f of this.filas()) {
-      if (f.empleado.empresaContratista) unique.add(f.empleado.empresaContratista);
+      if (f.empleado.empresaContratista) unique.add(f.empleado.empresaContratista.toUpperCase());
     }
     return Array.from(unique).sort((a, b) => a.localeCompare(b));
   });
@@ -40,7 +40,7 @@ export class ReporteAsistenciaPageComponent {
     const empresa = this.empresaFiltro();
     const unique = new Set<string>();
     for (const f of this.filas()) {
-      if (empresa && f.empleado.empresaContratista !== empresa) continue;
+      if (empresa && (f.empleado.empresaContratista ?? '').toUpperCase() !== empresa) continue;
       if (f.empleado.rolPrincipal) unique.add(f.empleado.rolPrincipal);
     }
     return Array.from(unique).sort((a, b) => a.localeCompare(b));
@@ -51,7 +51,7 @@ export class ReporteAsistenciaPageComponent {
     const rol = this.rolFiltro();
     const q = this.busqueda().trim().toLowerCase();
     return this.filas().filter(f => {
-      if (empresa && f.empleado.empresaContratista !== empresa) return false;
+      if (empresa && (f.empleado.empresaContratista ?? '').toUpperCase() !== empresa) return false;
       if (rol && f.empleado.rolPrincipal !== rol) return false;
       if (q && !f.empleado.nombreCompleto.toLowerCase().includes(q)) return false;
       return true;
