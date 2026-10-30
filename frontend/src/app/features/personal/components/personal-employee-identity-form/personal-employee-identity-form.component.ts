@@ -52,7 +52,10 @@ export class PersonalEmployeeIdentityFormComponent {
 
     const items: SelectOption[] = [
       { label: 'No aplica', value: '' },
-      ...this.empresasContratistas.map((empresa) => ({ label: empresa.nombre, value: String(empresa.id) }))
+      ...this.empresasContratistas.map((empresa) => ({
+        label: empresa.nombre.toLocaleUpperCase('es-PE'),
+        value: String(empresa.id)
+      }))
     ];
     this.empresaItemsCache = { source: this.empresasContratistas, items };
     return items;

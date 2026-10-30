@@ -1154,7 +1154,7 @@ export class EmployeeWorkspaceDrawerComponent {
 
   private async loadContractors(): Promise<void> {
     try {
-      this.contractorOptions.set(await firstValueFrom(this.rrhh.listarEmpresasContratistas(false)));
+      this.contractorOptions.set(await firstValueFrom(this.rrhh.listarEmpresasContratistas()));
     } catch {
       this.contractorOptions.set([]);
     }

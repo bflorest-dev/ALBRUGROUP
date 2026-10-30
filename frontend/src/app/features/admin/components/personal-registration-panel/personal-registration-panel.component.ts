@@ -135,7 +135,7 @@ export class PersonalRegistrationPanelComponent {
     const items: SelectOption[] = [
       { label: 'No aplica', value: '' },
       ...this.empresasContratistas.map((empresa) => ({
-        label: empresa.nombre,
+        label: empresa.nombre.toLocaleUpperCase('es-PE'),
         value: String(empresa.id)
       }))
     ];

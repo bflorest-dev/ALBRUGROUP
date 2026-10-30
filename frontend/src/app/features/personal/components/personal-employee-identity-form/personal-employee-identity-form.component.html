@@ -33,7 +33,7 @@
     </div>
 
     <form [formGroup]="empleadoForm" class="form-grid">
-      <label class="form-field form-field--wide"><span>Empresa contratista <small>(opcional)</small></span><select formControlName="idEmpresaContratista"><option [value]="''">No aplica</option>@for (empresa of empresasContratistas; track empresa.id) { <option [value]="empresa.id">{{ empresa.nombre }}</option> }</select></label>
+      <label class="form-field form-field--wide"><span>Empresa contratista <small>(opcional)</small></span><select formControlName="idEmpresaContratista"><option [value]="''">No aplica</option>@for (empresa of empresasContratistas; track empresa.id) { <option [value]="empresa.id">{{ empresa.nombre.toLocaleUpperCase('es-PE') }}</option> }</select></label>
 
       <label class="form-field"><span>Nombres</span><input appNormalizeText="personName" type="text" formControlName="nombres" [class.invalid]="isInvalid('nombres')" /></label>
       <label class="form-field"><span>Apellidos</span><input appNormalizeText="personName" type="text" formControlName="apellidos" [class.invalid]="isInvalid('apellidos')" /></label>

@@ -58,6 +58,7 @@ public class DataLoader {
     public void loadData() {
         log.info("Cargando empresas contratistas iniciales...");
         crearEmpresaContratista("Albru");
+        crearEmpresaContratista("Lybitel");
         crearEmpresaContratista("Runa");
         crearOActualizarEmpleadoAdmin();
         log.info("Empresas contratistas iniciales cargadas");

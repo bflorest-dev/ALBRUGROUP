@@ -170,7 +170,7 @@
               <label class="form-field"><span>Cuenta propia</span><select formControlName="cuentaPropia"><option [ngValue]="true">Sí</option><option [ngValue]="false">No</option></select></label>
               <label class="form-field"><span>Parentesco</span><select formControlName="parentesco"><option value="">No aplica</option>@for (option of parentescoOptions; track option) { <option [value]="option">{{ label(option) }}</option> }</select></label>
               <label class="form-field"><span>Celular de transferencia</span><input type="tel" formControlName="celularTransferencia" autocomplete="tel" /></label>
-              <label class="form-field form-field--wide"><span>Empresa contratista</span><select formControlName="idEmpresaContratista"><option [ngValue]="0">Sin empresa contratista</option>@for (company of contractorOptions(); track company.id) { <option [ngValue]="company.id">{{ company.nombre }}</option> }</select></label>
+              <label class="form-field form-field--wide"><span>Empresa contratista</span><select formControlName="idEmpresaContratista"><option [ngValue]="0">Sin empresa contratista</option>@for (company of contractorOptions(); track company.id) { <option [ngValue]="company.id">{{ company.nombre.toLocaleUpperCase('es-PE') }}</option> }</select></label>
             </form>
           }
         </section>

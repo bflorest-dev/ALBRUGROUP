@@ -6,6 +6,14 @@ ON CONFLICT (id) DO UPDATE
 SET nombre = EXCLUDED.nombre,
     activo = EXCLUDED.activo;
 
+INSERT INTO empresa_contratista (nombre, activo)
+SELECT 'Lybitel', TRUE
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM empresa_contratista
+    WHERE LOWER(TRIM(nombre)) IN (LOWER('Lybitel'), LOWER('LYBTEL'))
+);
+
 SELECT setval(
     pg_get_serial_sequence('empresa_contratista', 'id'),
     GREATEST((SELECT COALESCE(MAX(id), 1) FROM empresa_contratista), 1),

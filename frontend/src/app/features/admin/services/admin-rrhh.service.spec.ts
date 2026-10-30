@@ -1,3 +1,4 @@
+import '@angular/compiler';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -5,6 +6,23 @@ import { describe, expect, it } from 'vitest';
 import { AdminRrhhService } from './admin-rrhh.service';
 
 describe('AdminRrhhService', () => {
+  it('consulta empresas contratistas activas por defecto', () => {
+    TestBed.configureTestingModule({
+      providers: [AdminRrhhService, provideHttpClient(), provideHttpClientTesting()]
+    });
+
+    const service = TestBed.inject(AdminRrhhService);
+    const http = TestBed.inject(HttpTestingController);
+
+    service.listarEmpresasContratistas().subscribe();
+
+    const httpRequest = http.expectOne((pending) => pending.url.endsWith('/rrhh/empresas-contratistas'));
+    expect(httpRequest.request.method).toBe('GET');
+    expect(httpRequest.request.params.get('activo')).toBe('true');
+    httpRequest.flush([]);
+    http.verify();
+  });
+
   it('envía la fecha de fin al dar de baja un empleado', () => {
     TestBed.configureTestingModule({
       providers: [AdminRrhhService, provideHttpClient(), provideHttpClientTesting()]
