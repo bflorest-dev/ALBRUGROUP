@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
 import { RecruitmentRealtimeService } from '../../../../core/services/recruitment-realtime.service';
 import { GrupoCapacitacionResponse } from '../../../../shared/models/recruitment/grupo-capacitacion-response';
@@ -66,6 +67,10 @@ export class TrainingAgendaPageComponent implements OnInit {
   private readonly postulantesApi = inject(RecruiterPostulantesService);
   private readonly realtime = inject(RecruitmentRealtimeService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+
+  /** true para el Reclutador (gestiona); false para el Capacitador (solo visualiza). */
+  protected readonly canManage = this.route.snapshot.data['canManage'] !== false;
 
   private readonly todayIso = this.iso(new Date());
 
@@ -153,7 +158,7 @@ export class TrainingAgendaPageComponent implements OnInit {
 
   private refresh(): void {
     this.loadAgenda();
-    if (this.selectedGroupId() !== null) {
+    if (this.canManage && this.selectedGroupId() !== null) {
       this.loadPool();
     }
   }
@@ -220,7 +225,7 @@ export class TrainingAgendaPageComponent implements OnInit {
     const id = this.dragGroupId();
     this.dragOverDate.set(null);
     this.dragGroupId.set(null);
-    if (id === null || cell.out || cell.past || this.opBusy()) {
+    if (!this.canManage || id === null || cell.out || cell.past || this.opBusy()) {
       return;
     }
     const grupo = this.agenda().find((g) => g.id === id);
@@ -250,7 +255,9 @@ export class TrainingAgendaPageComponent implements OnInit {
     this.cancelMove();
     this.opMsg.set('');
     this.opError.set('');
-    this.loadPool();
+    if (this.canManage) {
+      this.loadPool();
+    }
   }
 
   protected closeGroup(): void {
@@ -472,7 +479,7 @@ export class TrainingAgendaPageComponent implements OnInit {
       estadoClass: this.estadoClass(g.estado),
       turnoClass: g.turno === 'AFTERNOON' ? 't' : g.turno === 'NIGHT' ? 'n' : '',
       count: g.detalles?.length ?? 0,
-      draggable: g.estado === 'ABIERTO',
+      draggable: this.canManage && g.estado === 'ABIERTO',
       nombres
     };
   }

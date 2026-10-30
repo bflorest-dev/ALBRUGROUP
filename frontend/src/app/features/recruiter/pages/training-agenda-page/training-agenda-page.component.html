@@ -2,11 +2,17 @@
   <header class="agenda__header">
     <div>
       <h1>Agenda de capacitación</h1>
-      <p>Organizá los grupos en el calendario. Arrastrá para reprogramar, abrí uno para gestionar postulantes.</p>
+      @if (canManage) {
+        <p>Organizá los grupos en el calendario. Arrastrá para reprogramar, abrí uno para gestionar postulantes.</p>
+      } @else {
+        <p>Consultá los grupos del mes y sus postulantes. Abrí un grupo para ver el detalle.</p>
+      }
     </div>
-    <button type="button" class="btn" (click)="openCreateDrawer()">
-      <i class="pi pi-plus"></i> Nuevo grupo
-    </button>
+    @if (canManage) {
+      <button type="button" class="btn" (click)="openCreateDrawer()">
+        <i class="pi pi-plus"></i> Nuevo grupo
+      </button>
+    }
   </header>
 
   <div class="agenda__toolbar">
@@ -72,7 +78,7 @@
                     } @else {
                       <div class="none">Sin postulantes asignados</div>
                     }
-                    <div class="hint">Click para gestionar{{ chip.draggable ? ' · arrastrar para reprogramar' : '' }}</div>
+                    <div class="hint">Click para {{ canManage ? 'gestionar' : 'ver detalle' }}{{ chip.draggable ? ' · arrastrar para reprogramar' : '' }}</div>
                   </div>
                 </div>
               }
@@ -121,7 +127,7 @@
                   <strong>{{ nombreCompleto(detalle.postulacion) }}</strong>
                   <small>DNI {{ detalle.postulacion.postulante.documento }} · {{ label(detalle.estadoCapacitacion) }}</small>
                 </div>
-                @if (grupo.estado === 'ABIERTO') {
+                @if (canManage && grupo.estado === 'ABIERTO') {
                   <div class="mrow__act">
                     @if (isMoving(detalle.id)) {
                       <span class="mrow__move">
@@ -139,7 +145,7 @@
                       <button type="button" class="mini mini--danger" [disabled]="opBusy()" (click)="retire(detalle.postulacion.id)">Retirar</button>
                     }
                   </div>
-                } @else {
+                } @else if (canManage) {
                   <small class="muted">grupo iniciado</small>
                 }
               </div>
@@ -150,7 +156,7 @@
         }
       </div>
 
-      @if (grupo.estado === 'ABIERTO') {
+      @if (canManage && grupo.estado === 'ABIERTO') {
         <div class="divider"></div>
         <div class="sec">
           <div class="sec__h">
@@ -177,7 +183,7 @@
       }
     </div>
 
-    @if (grupo.estado === 'ABIERTO') {
+    @if (canManage && grupo.estado === 'ABIERTO') {
       <div class="dr__foot">
         <button type="button" class="btn ghost" (click)="closeGroup()">Cerrar</button>
         <button type="button" class="btn" [disabled]="opBusy() || !selectedPoolIds().length" (click)="assignSelected()">

@@ -3,7 +3,7 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
   RRHH: '/app/rrhh/asistencia',
   RECLUTADOR: '/app/reclutador/bandeja-operativa',
   SUPERVISOR_RECLUTAMIENTO: '/app/reclutamiento/inicio',
-  CAPACITADOR: '/app/capacitador',
+  CAPACITADOR: '/app/capacitador/agenda-capacitacion',
   FREELANCE: '/app/freelance',
   ASESOR_GTR: '/app/gtr',
   SUPERVISOR_GTR: '/app/gtr',

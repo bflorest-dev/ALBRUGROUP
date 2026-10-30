@@ -48,7 +48,6 @@ import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-
 import { TrainingAgendaPageComponent } from '../recruiter/pages/training-agenda-page/training-agenda-page.component';
 import { ReporteAsistenciaPageComponent } from '../rrhh/asistencia/pages/reporte-asistencia-page/reporte-asistencia-page.component';
 import { RrhhPersonalPageComponent } from '../rrhh/pages/rrhh-personal-page/rrhh-personal-page.component';
-import { TrainerWorkspacePageComponent } from '../trainer/pages/trainer-workspace-page/trainer-workspace-page.component';
 import { FreelancePageComponent } from '../freelance/pages/freelance-page/freelance-page.component';
 import { RoleHomeRedirectComponent } from './pages/role-home-redirect/role-home-redirect.component';
 import { RolePlatformPageComponent } from './pages/role-platform-page/role-platform-page.component';
@@ -372,7 +371,8 @@ export const PLATFORM_ROUTES: Routes = [
     component: TrainingAgendaPageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['RECLUTADOR']
+      roles: ['RECLUTADOR'],
+      canManage: true
     }
   },
   {
@@ -415,10 +415,16 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'capacitador',
-    component: TrainerWorkspacePageComponent,
+    pathMatch: 'full',
+    redirectTo: 'capacitador/agenda-capacitacion'
+  },
+  {
+    path: 'capacitador/agenda-capacitacion',
+    component: TrainingAgendaPageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['CAPACITADOR']
+      roles: ['CAPACITADOR'],
+      canManage: false
     }
   },
   {

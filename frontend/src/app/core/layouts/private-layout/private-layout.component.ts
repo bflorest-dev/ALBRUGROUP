@@ -350,6 +350,12 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ];
     }
 
+    if (activeRole === 'CAPACITADOR') {
+      return [
+        { label: 'Agenda capacitación', route: '/app/capacitador/agenda-capacitacion', icon: 'pi pi-calendar', exact: true }
+      ];
+    }
+
     if (activeRole === 'SUPERVISOR_RECLUTAMIENTO') {
       return [
         {
