@@ -20,6 +20,7 @@ import pe.albrugroup.billing_service.entity.response.BonoAdicionalResponse;
 import pe.albrugroup.billing_service.entity.response.MatrizPlanillaResponse;
 import pe.albrugroup.billing_service.entity.response.PlanillaAjustesResponse;
 import pe.albrugroup.billing_service.entity.response.PlanillaGeneralResponse;
+import pe.albrugroup.billing_service.entity.response.ResumenPagoEmpleadoResponse;
 import pe.albrugroup.billing_service.service.MatrizPlanillaService;
 import pe.albrugroup.billing_service.service.PlanillaService;
 
@@ -56,6 +57,14 @@ public class PlanillaController {
     @GetMapping("/planillas/{id}/ajustes")
     public PlanillaAjustesResponse ajustes(@PathVariable Long id) {
         return planillaService.obtenerAjustes(id);
+    }
+
+    @GetMapping("/planillas/{idPlanilla}/empleados/{idEmpleado}/resumen")
+    public ResumenPagoEmpleadoResponse resumenPago(
+            @PathVariable Long idPlanilla,
+            @PathVariable Long idEmpleado
+    ) {
+        return planillaService.obtenerResumenPago(idPlanilla, idEmpleado);
     }
 
     @GetMapping("/matriz-planilla/activa")

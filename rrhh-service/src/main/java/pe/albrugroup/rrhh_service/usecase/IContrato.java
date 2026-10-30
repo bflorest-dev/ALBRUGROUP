@@ -6,6 +6,7 @@ import pe.albrugroup.rrhh_service.entity.request.contrato.ActualizarContratoVige
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoBancoResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoPlanillaResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
 
@@ -22,4 +23,5 @@ public interface IContrato {
     ContratoResponse finalizarContrato(Long idEmpleado, CerrarContratoRequest contratoCerrado, String authHeader);
     void registrarContratos(List<Long> idEmpleados, List<RegistrarContratoRequest> nuevosContratosVigentes, String authHeader, Long responsableId);
     List<EmpleadoPlanillaResponse> listarEmpleadosPlanilla(YearMonth periodo);
+    EmpleadoBancoResponse obtenerDatosBancarios(Long idEmpleado);
 }

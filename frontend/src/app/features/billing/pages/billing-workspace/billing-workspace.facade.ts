@@ -7,7 +7,8 @@ import {
   MatrizPlanillaResponse,
   PlanillaAjustesResponse,
   PlanillaEmpleadoResponse,
-  PlanillaGeneralResponse
+  PlanillaGeneralResponse,
+  ResumenPagoEmpleadoResponse
 } from '../../services/billing.service';
 import { AdminRrhhService } from '../../../admin/services/admin-rrhh.service';
 
@@ -42,6 +43,11 @@ export class BillingWorkspaceFacade {
 
   readonly companyMap = signal<Map<number, string>>(new Map());
   readonly companyFilter = signal<string | null>(null);
+
+  readonly resumenVisible = signal(false);
+  readonly resumenEmployee = signal<PlanillaEmpleadoResponse | null>(null);
+  readonly resumenData = signal<ResumenPagoEmpleadoResponse | null>(null);
+  readonly isLoadingResumen = signal(false);
 
   readonly isClosedMonth = computed(() => this.periodIsClosed(this.selectedMonth()));
   readonly rows = computed(() => this.planilla()?.empleados ?? []);
@@ -151,6 +157,54 @@ export class BillingWorkspaceFacade {
   closeDetail(): void {
     this.detailVisible.set(false);
     this.selectedEmployee.set(null);
+  }
+
+  async openResumen(row: PlanillaEmpleadoResponse): Promise<void> {
+    const planilla = this.planilla();
+    if (!planilla) return;
+    this.resumenEmployee.set(row);
+    this.resumenData.set(null);
+    this.resumenVisible.set(true);
+    this.isLoadingResumen.set(true);
+    this.errorMessage.set(null);
+    try {
+      const data = await firstValueFrom(this.billingService.obtenerResumenPago(planilla.id, row.idEmpleado));
+      this.resumenData.set(data);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar el resumen de pago.'));
+      this.resumenVisible.set(false);
+    } finally {
+      this.isLoadingResumen.set(false);
+    }
+  }
+
+  closeResumen(): void {
+    this.resumenVisible.set(false);
+    this.resumenEmployee.set(null);
+    this.resumenData.set(null);
+  }
+
+  bancoLabel(banco: string | null | undefined): string {
+    if (!banco) return '—';
+    const labels: Record<string, string> = {
+      BCP: 'BCP',
+      BBVA: 'BBVA',
+      INTERBANK: 'Interbank',
+      SCOTIABANK: 'Scotiabank',
+      BANCO_DE_LA_NACION: 'Banco de la Nación'
+    };
+    return labels[banco] ?? banco;
+  }
+
+  tipoDocumentoLabel(tipo: string | null | undefined): string {
+    if (!tipo) return '—';
+    const labels: Record<string, string> = {
+      DNI: 'DNI',
+      CE: 'Carné de Extranjería',
+      RUC10: 'RUC (persona natural)',
+      RUC20: 'RUC (empresa)'
+    };
+    return labels[tipo] ?? tipo;
   }
 
   async openMatrix(): Promise<void> {

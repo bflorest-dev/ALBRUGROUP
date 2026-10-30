@@ -184,6 +184,35 @@ export type PlanillaAjustesResponse = {
   bonosAdicionales: BonoAdicionalResponse[];
 };
 
+export type ResumenPagoEmpleadoResponse = {
+  idEmpleado: number;
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: BillingTipoDocumento;
+  numeroDocumento: string;
+  fechaIngreso: string;
+  fechaBaja: string | null;
+  sueldoBasico: number;
+  sueldoAfecto: number;
+  bonoProductividad: number;
+  bonoPuntualidad: number;
+  bonoCapacitacion: number;
+  pagoExtras: number;
+  bonoAdicional: number;
+  descuentoTardanzas: number;
+  descuentoFaltas: number;
+  adelantoSueldo: number;
+  totalDescuento: number;
+  totalBonificaciones: number;
+  remuneracionNeta: number;
+  tardanzas: number;
+  faltasInjustificadas: number;
+  minutosExtras: number;
+  banco: string | null;
+  cuentaBancaria: string | null;
+  cuentaInterbancaria: string | null;
+};
+
 @Injectable({ providedIn: 'root' })
 export class BillingService {
   private readonly http = inject(HttpClient);
@@ -223,6 +252,10 @@ export class BillingService {
 
   registrarBonoAdicional(request: { idEmpleado: number; anio: number; mes: number; monto: number; comentario: string }): Observable<BonoAdicionalResponse> {
     return this.http.post<BonoAdicionalResponse>(`${this.billingUrl}/bonos-adicionales`, request);
+  }
+
+  obtenerResumenPago(idPlanilla: number, idEmpleado: number): Observable<ResumenPagoEmpleadoResponse> {
+    return this.http.get<ResumenPagoEmpleadoResponse>(`${this.billingUrl}/planillas/${idPlanilla}/empleados/${idEmpleado}/resumen`);
   }
 
   private periodParams(anio: number, mes: number): HttpParams {

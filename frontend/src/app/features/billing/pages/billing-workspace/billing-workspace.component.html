@@ -195,6 +195,9 @@
               <button class="billing-icon-button" type="button" (click)="facade.openAdjustments(row)" pTooltip="Ajustes manuales">
                 <i class="pi pi-wallet" aria-hidden="true"></i>
               </button>
+              <button class="billing-icon-button billing-icon-button--resumen" type="button" (click)="facade.openResumen(row)" pTooltip="Resumen de pago">
+                <i class="pi pi-receipt" aria-hidden="true"></i>
+              </button>
             </td>
           </tr>
         </ng-template>
@@ -416,5 +419,136 @@
         </ng-template>
       </p-table>
     </section>
+  }
+</p-drawer>
+
+<p-drawer
+  [visible]="facade.resumenVisible()"
+  position="right"
+  [style]="{ width: 'min(42rem, 96vw)' }"
+  (visibleChange)="!$event && facade.closeResumen()"
+>
+  <ng-template #header>
+    <div class="billing-drawer-header">
+      <strong>Resumen de pago</strong>
+      <span>{{ facade.periodLabel() }}</span>
+    </div>
+  </ng-template>
+
+  @let resumen = facade.resumenData();
+  @if (facade.isLoadingResumen()) {
+    <div class="boleta-loading">Cargando resumen…</div>
+  } @else if (resumen) {
+    <div class="boleta">
+      <div class="boleta__header">
+        <div class="boleta__period">{{ facade.periodLabel() }}</div>
+        <div class="boleta__name">{{ resumen.nombres }} {{ resumen.apellidos }}</div>
+        <div class="boleta__doc">{{ facade.tipoDocumentoLabel(resumen.tipoDocumento) }} {{ resumen.numeroDocumento }}</div>
+        <div class="boleta__meta-row">
+          <span>Ingreso: {{ facade.date(resumen.fechaIngreso) }}</span>
+          @if (resumen.fechaBaja) {
+            <span class="boleta__badge boleta__badge--off">Cese: {{ facade.date(resumen.fechaBaja) }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="boleta__card boleta__card--primary">
+        <div class="boleta__card-label">Sueldo del mes</div>
+        <div class="boleta__card-amount">{{ facade.money(resumen.sueldoAfecto) }}</div>
+        <div class="boleta__card-note">Sueldo base {{ facade.money(resumen.sueldoBasico) }}</div>
+      </div>
+
+      <div class="boleta__section-title">Bonificaciones</div>
+      <div class="boleta__items">
+        @if (resumen.bonoProductividad > 0) {
+          <div class="boleta__item boleta__item--bonus">
+            <span>Bono por ventas</span>
+            <span>+ {{ facade.money(resumen.bonoProductividad) }}</span>
+          </div>
+        }
+        @if (resumen.bonoPuntualidad > 0) {
+          <div class="boleta__item boleta__item--bonus">
+            <span>Bono por puntualidad</span>
+            <span>+ {{ facade.money(resumen.bonoPuntualidad) }}</span>
+          </div>
+        }
+        @if (resumen.bonoCapacitacion > 0) {
+          <div class="boleta__item boleta__item--bonus">
+            <span>Bono por capacitación</span>
+            <span>+ {{ facade.money(resumen.bonoCapacitacion) }}</span>
+          </div>
+        }
+        @if (resumen.pagoExtras > 0) {
+          <div class="boleta__item boleta__item--bonus">
+            <span>Pago por horas extras ({{ facade.hoursFromMinutes(resumen.minutosExtras) }})</span>
+            <span>+ {{ facade.money(resumen.pagoExtras) }}</span>
+          </div>
+        }
+        @if (resumen.bonoAdicional > 0) {
+          <div class="boleta__item boleta__item--bonus">
+            <span>Bono adicional</span>
+            <span>+ {{ facade.money(resumen.bonoAdicional) }}</span>
+          </div>
+        }
+        @if (resumen.totalBonificaciones === 0) {
+          <div class="boleta__item boleta__item--empty">Sin bonos este mes</div>
+        }
+      </div>
+
+      <div class="boleta__section-title">Descuentos</div>
+      <div class="boleta__items">
+        @if (resumen.descuentoTardanzas > 0) {
+          <div class="boleta__item boleta__item--discount">
+            <span>Tardanzas ({{ resumen.tardanzas }})</span>
+            <span>− {{ facade.money(resumen.descuentoTardanzas) }}</span>
+          </div>
+        }
+        @if (resumen.descuentoFaltas > 0) {
+          <div class="boleta__item boleta__item--discount">
+            <span>Faltas ({{ resumen.faltasInjustificadas }})</span>
+            <span>− {{ facade.money(resumen.descuentoFaltas) }}</span>
+          </div>
+        }
+        @if (resumen.adelantoSueldo > 0) {
+          <div class="boleta__item boleta__item--discount">
+            <span>Adelanto de sueldo</span>
+            <span>− {{ facade.money(resumen.adelantoSueldo) }}</span>
+          </div>
+        }
+        @if (resumen.totalDescuento === 0) {
+          <div class="boleta__item boleta__item--empty">Sin descuentos este mes</div>
+        }
+      </div>
+
+      <div class="boleta__total">
+        <span>Total a depositar</span>
+        <strong>{{ facade.money(resumen.remuneracionNeta) }}</strong>
+      </div>
+
+      <div class="boleta__bank">
+        <div class="boleta__bank-title">Datos bancarios</div>
+        @if (resumen.banco) {
+          <div class="boleta__bank-row">
+            <span>Banco</span>
+            <strong>{{ facade.bancoLabel(resumen.banco) }}</strong>
+          </div>
+        }
+        @if (resumen.cuentaBancaria) {
+          <div class="boleta__bank-row">
+            <span>Cuenta</span>
+            <strong>{{ resumen.cuentaBancaria }}</strong>
+          </div>
+        }
+        @if (resumen.cuentaInterbancaria) {
+          <div class="boleta__bank-row">
+            <span>CCI</span>
+            <strong>{{ resumen.cuentaInterbancaria }}</strong>
+          </div>
+        }
+        @if (!resumen.banco && !resumen.cuentaBancaria) {
+          <div class="boleta__item boleta__item--empty">Sin datos bancarios registrados</div>
+        }
+      </div>
+    </div>
   }
 </p-drawer>

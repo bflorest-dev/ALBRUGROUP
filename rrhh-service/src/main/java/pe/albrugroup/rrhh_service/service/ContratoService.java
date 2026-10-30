@@ -18,6 +18,7 @@ import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
 import pe.albrugroup.rrhh_service.entity.response.ContratoPlanillaResponse;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoBancoResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoPlanillaResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
 import pe.albrugroup.rrhh_service.exception.*;
@@ -379,6 +380,19 @@ public class ContratoService implements IContrato {
                 confirmarContratacionRecruitment(empleado, nuevoContrato, authHeader);
             }
         });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EmpleadoBancoResponse obtenerDatosBancarios(Long idEmpleado) {
+        Empleado empleado = empleadoRepository.findById(idEmpleado)
+                .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
+        return new EmpleadoBancoResponse(
+                empleado.getId(),
+                empleado.getBanco() == null ? null : empleado.getBanco().name(),
+                empleado.getCuentaBancaria(),
+                empleado.getCuentaInterbancaria()
+        );
     }
 
     private void programarDeshabilitacionUsuarioPostCommit(String authHeader, Long idEmpleado) {

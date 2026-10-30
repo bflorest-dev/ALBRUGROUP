@@ -17,6 +17,7 @@ import pe.albrugroup.rrhh_service.entity.request.contrato.ActualizarContratoVige
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoBancoResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoPlanillaResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
 import pe.albrugroup.rrhh_service.security.UserSession;
@@ -61,6 +62,14 @@ public class ContratoController {
             @Parameter(description = "ID del empleado", example = "10")
             @PathVariable @Positive Long id) {
         return ResponseEntity.ok(contratoService.actualizarContratoVigente(id, request));
+    }
+
+    @GetMapping("/internal/billing/banco/{idEmpleado}")
+    @PreAuthorize("hasAuthority('SERVICE_INTERNAL')")
+    public ResponseEntity<EmpleadoBancoResponse> obtenerDatosBancarios(
+            @PathVariable @Positive Long idEmpleado
+    ) {
+        return ResponseEntity.ok(contratoService.obtenerDatosBancarios(idEmpleado));
     }
 
     @GetMapping("/internal/billing/periodo")

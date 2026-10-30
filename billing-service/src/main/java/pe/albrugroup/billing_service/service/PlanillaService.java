@@ -26,6 +26,7 @@ import pe.albrugroup.billing_service.entity.response.DetallePlanillaResponse;
 import pe.albrugroup.billing_service.entity.response.PlanillaAjustesResponse;
 import pe.albrugroup.billing_service.entity.response.PlanillaEmpleadoResponse;
 import pe.albrugroup.billing_service.entity.response.PlanillaGeneralResponse;
+import pe.albrugroup.billing_service.entity.response.ResumenPagoEmpleadoResponse;
 import pe.albrugroup.billing_service.entity.response.TramoPlanillaEmpleadoResponse;
 import pe.albrugroup.billing_service.exception.BillingException;
 import pe.albrugroup.billing_service.integration.LeadPlanillaClient;
@@ -200,6 +201,45 @@ public class PlanillaService {
                 .map(this::toResponse)
                 .toList();
         return new PlanillaAjustesResponse(planilla.getId(), planilla.getAnio(), planilla.getMes(), adelantos, bonos);
+    }
+
+    @Transactional(readOnly = true)
+    public ResumenPagoEmpleadoResponse obtenerResumenPago(Long idPlanilla, Long idEmpleado) {
+        PlanillaGeneral planilla = planillaGeneralRepository.findById(idPlanilla)
+                .orElseThrow(() -> new BillingException(HttpStatus.NOT_FOUND, "Planilla no encontrada"));
+        PlanillaEmpleado fila = planilla.getEmpleados().stream()
+                .filter(e -> e.getIdEmpleado().equals(idEmpleado))
+                .findFirst()
+                .orElseThrow(() -> new BillingException(HttpStatus.NOT_FOUND, "Empleado no encontrado en la planilla"));
+        RrhhPlanillaClient.EmpleadoBancoDto banco = rrhhClient.obtenerDatosBancarios(idEmpleado);
+        return new ResumenPagoEmpleadoResponse(
+                fila.getIdEmpleado(),
+                fila.getNombres(),
+                fila.getApellidos(),
+                fila.getTipoDocumento() == null ? null : fila.getTipoDocumento().name(),
+                fila.getNumeroDocumento(),
+                fila.getFechaIngreso(),
+                fila.getFechaBaja(),
+                fila.getSueldoBasico(),
+                fila.getSueldoAfecto(),
+                fila.getBonoProductividad(),
+                fila.getBonoPuntualidad(),
+                fila.getBonoCapacitacion(),
+                fila.getPagoExtras(),
+                fila.getBonoAdicional(),
+                fila.getDescuentoTardanzas(),
+                fila.getDescuentoFaltas(),
+                fila.getAdelantoSueldo(),
+                fila.getTotalDescuento(),
+                fila.getTotalBonificaciones(),
+                fila.getRemuneracionNeta(),
+                fila.getTardanzas(),
+                fila.getFaltasInjustificadas(),
+                fila.getMinutosExtras(),
+                banco == null ? null : banco.banco(),
+                banco == null ? null : banco.cuentaBancaria(),
+                banco == null ? null : banco.cuentaInterbancaria()
+        );
     }
 
     private PlanillaEmpleado calcularEmpleado(

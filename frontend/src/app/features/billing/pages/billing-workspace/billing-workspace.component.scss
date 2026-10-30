@@ -549,6 +549,206 @@
   font-size: 0.74rem;
 }
 
+.billing-icon-button--resumen {
+  color: var(--billing-contract);
+}
+
+.boleta-loading {
+  color: var(--billing-muted);
+  font-size: 0.85rem;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.boleta {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 36rem;
+  padding-bottom: 2rem;
+}
+
+.boleta__header {
+  background: linear-gradient(135deg, var(--billing-contract) 0%, #1a4f6e 100%);
+  border-radius: 12px;
+  color: #fff;
+  padding: 1.4rem 1.6rem;
+}
+
+.boleta__period {
+  font: 700 0.7rem/1.2 'Spline Sans Mono', ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  opacity: 0.75;
+  text-transform: uppercase;
+}
+
+.boleta__name {
+  font: 800 1.35rem/1.2 Archivo, 'Segoe UI', sans-serif;
+  margin-top: 0.5rem;
+}
+
+.boleta__doc {
+  font: 400 0.82rem/1.4 'Spline Sans Mono', ui-monospace, monospace;
+  margin-top: 0.35rem;
+  opacity: 0.82;
+}
+
+.boleta__meta-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  opacity: 0.88;
+}
+
+.boleta__badge {
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+}
+
+.boleta__badge--off {
+  background: rgba(200, 60, 40, 0.45);
+}
+
+.boleta__card {
+  border-radius: 10px;
+  padding: 1.1rem 1.4rem;
+}
+
+.boleta__card--primary {
+  background: var(--billing-contract-wash);
+  border: 1px solid #b8d9ec;
+}
+
+.boleta__card-label {
+  color: var(--billing-contract);
+  font: 700 0.68rem/1.2 Archivo, 'Segoe UI', sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.boleta__card-amount {
+  color: var(--billing-contract);
+  font: 800 1.8rem/1.1 'Spline Sans Mono', ui-monospace, monospace;
+  letter-spacing: -0.01em;
+  margin-top: 0.3rem;
+}
+
+.boleta__card-note {
+  color: var(--billing-muted);
+  font-size: 0.78rem;
+  margin-top: 0.3rem;
+}
+
+.boleta__section-title {
+  border-bottom: 1px solid var(--billing-line);
+  color: var(--billing-muted);
+  font: 800 0.65rem/1.2 Archivo, 'Segoe UI', sans-serif;
+  letter-spacing: 0.1em;
+  padding-bottom: 0.4rem;
+  text-transform: uppercase;
+}
+
+.boleta__items {
+  display: grid;
+  gap: 0;
+}
+
+.boleta__item {
+  align-items: center;
+  border-bottom: 1px solid var(--billing-line);
+  display: flex;
+  font-size: 0.85rem;
+  justify-content: space-between;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.2rem;
+}
+
+.boleta__item span:first-child {
+  color: var(--billing-ink);
+}
+
+.boleta__item span:last-child {
+  font: 700 0.88rem/1 'Spline Sans Mono', ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+.boleta__item--bonus span:last-child {
+  color: var(--billing-bonus);
+}
+
+.boleta__item--discount span:last-child {
+  color: var(--billing-discount);
+}
+
+.boleta__item--empty {
+  color: var(--billing-muted);
+  font-size: 0.8rem;
+  font-style: italic;
+  justify-content: center;
+}
+
+.boleta__total {
+  align-items: center;
+  background: var(--billing-ink);
+  border-radius: 10px;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 1.4rem;
+}
+
+.boleta__total span {
+  font: 700 0.78rem/1 Archivo, 'Segoe UI', sans-serif;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+  text-transform: uppercase;
+}
+
+.boleta__total strong {
+  font: 800 1.55rem/1 'Spline Sans Mono', ui-monospace, monospace;
+  letter-spacing: -0.01em;
+}
+
+.boleta__bank {
+  background: var(--billing-panel-soft);
+  border: 1px solid var(--billing-line);
+  border-radius: 10px;
+  display: grid;
+  gap: 0;
+  padding: 0.9rem 1.2rem;
+}
+
+.boleta__bank-title {
+  color: var(--billing-muted);
+  font: 800 0.65rem/1.2 Archivo, 'Segoe UI', sans-serif;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+}
+
+.boleta__bank-row {
+  align-items: center;
+  border-top: 1px solid var(--billing-line);
+  display: flex;
+  font-size: 0.84rem;
+  justify-content: space-between;
+  min-height: 2.2rem;
+  padding: 0.45rem 0;
+}
+
+.boleta__bank-row span {
+  color: var(--billing-muted);
+  font-size: 0.78rem;
+}
+
+.boleta__bank-row strong {
+  color: var(--billing-ink);
+  font: 700 0.84rem/1 'Spline Sans Mono', ui-monospace, monospace;
+}
+
 @media (max-width: 900px) {
   :host {
     height: calc(100dvh - 5rem);

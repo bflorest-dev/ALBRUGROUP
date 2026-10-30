@@ -47,6 +47,22 @@ public class RrhhPlanillaClient {
     ) {
     }
 
+    public EmpleadoBancoDto obtenerDatosBancarios(Long idEmpleado) {
+        return restClient.get()
+                .uri("/contratos/internal/billing/banco/{id}", idEmpleado)
+                .header("X-Internal-Secret", internalSecret)
+                .retrieve()
+                .body(EmpleadoBancoDto.class);
+    }
+
+    public record EmpleadoBancoDto(
+            Long idEmpleado,
+            String banco,
+            String cuentaBancaria,
+            String cuentaInterbancaria
+    ) {
+    }
+
     public record ContratoPlanillaDto(
             Long idContrato,
             String modalidad,
