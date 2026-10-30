@@ -81,13 +81,24 @@
   <section class="billing-table-section" aria-label="Detalle consolidado por empleado">
     <app-section-header
       title="Colaboradores calculados"
-      [count]="facade.rows().length"
+      [count]="facade.filteredRows().length"
       description="Una fila consolidada por empleado; los cambios de contrato se revisan en el detalle."
     />
 
+    @if (facade.companyOptions().length) {
+      <div class="company-filter-bar" role="group" aria-label="Filtrar por empresa">
+        <button type="button" class="company-tab" [class.active]="facade.companyFilter() === null"
+                (click)="facade.companyFilter.set(null)">Todas</button>
+        @for (company of facade.companyOptions(); track company) {
+          <button type="button" class="company-tab" [class.active]="facade.companyFilter() === company"
+                  (click)="facade.companyFilter.set(company)">{{ company }}</button>
+        }
+      </div>
+    }
+
     <div class="billing-table-scroll">
       <p-table
-        [value]="facade.rows()"
+        [value]="facade.filteredRows()"
         [loading]="facade.isLoading() || facade.isCalculating()"
         [scrollable]="true"
         scrollHeight="flex"

@@ -16,4 +16,5 @@ public interface EmpleadoRolProjection {
     @Deprecated(forRemoval = true)
     PuestoTrabajo getPuestoTrabajo();
     EstadoOperativo getEstadoOperativo();
+    String getEmpresaContratista();
 }

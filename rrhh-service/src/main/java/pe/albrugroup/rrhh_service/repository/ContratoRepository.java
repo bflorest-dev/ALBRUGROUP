@@ -82,9 +82,11 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.correoPersonal AS correoPersonal,
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
-                e.estadoOperativo AS estadoOperativo
+                e.estadoOperativo AS estadoOperativo,
+                ec.nombre AS empresaContratista
             FROM Contrato c
             JOIN c.empleado e
+            LEFT JOIN e.empresaContratista ec
             WHERE e.estadoOperativo = :estadoOperativo
               AND c.fechaInicio <= :fechaActual
               AND (c.fechaFin IS NULL OR c.fechaFin >= :fechaActual)
@@ -105,9 +107,11 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.correoPersonal AS correoPersonal,
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
-                e.estadoOperativo AS estadoOperativo
+                e.estadoOperativo AS estadoOperativo,
+                ec.nombre AS empresaContratista
             FROM Contrato c
             JOIN c.empleado e
+            LEFT JOIN e.empresaContratista ec
             WHERE e.estadoOperativo = :estadoOperativo
               AND c.fechaInicio <= :fechaActual
               AND (c.fechaFin IS NULL OR c.fechaFin >= :fechaActual)
@@ -129,9 +133,11 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.correoPersonal AS correoPersonal,
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
-                e.estadoOperativo AS estadoOperativo
+                e.estadoOperativo AS estadoOperativo,
+                ec.nombre AS empresaContratista
             FROM Contrato c
             JOIN c.empleado e
+            LEFT JOIN e.empresaContratista ec
             WHERE e.estadoOperativo = :estadoOperativo
               AND c.fechaInicio <= :fechaActual
               AND (c.fechaFin IS NULL OR c.fechaFin >= :fechaActual)
@@ -150,9 +156,11 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.correoPersonal AS correoPersonal,
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
-                e.estadoOperativo AS estadoOperativo
+                e.estadoOperativo AS estadoOperativo,
+                ec.nombre AS empresaContratista
             FROM Contrato c
             JOIN c.empleado e
+            LEFT JOIN e.empresaContratista ec
             WHERE e.estadoOperativo = :estadoOperativo
               AND c.fechaInicio <= :fechaActual
               AND (c.fechaFin IS NULL OR c.fechaFin >= :fechaActual)
@@ -173,9 +181,11 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.correoPersonal AS correoPersonal,
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
-                e.estadoOperativo AS estadoOperativo
+                e.estadoOperativo AS estadoOperativo,
+                ec.nombre AS empresaContratista
             FROM Contrato c
             JOIN c.empleado e
+            LEFT JOIN e.empresaContratista ec
             WHERE c.fechaInicio <= :hasta
               AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
             ORDER BY e.nombres ASC, e.apellidos ASC
@@ -193,9 +203,11 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.correoPersonal AS correoPersonal,
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
-                e.estadoOperativo AS estadoOperativo
+                e.estadoOperativo AS estadoOperativo,
+                ec.nombre AS empresaContratista
             FROM Contrato c
             JOIN c.empleado e
+            LEFT JOIN e.empresaContratista ec
             WHERE c.fechaInicio <= :hasta
               AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
               AND c.puestoTrabajo IN :puestosTrabajo
@@ -216,9 +228,11 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.correoPersonal AS correoPersonal,
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
-                e.estadoOperativo AS estadoOperativo
+                e.estadoOperativo AS estadoOperativo,
+                ec.nombre AS empresaContratista
             FROM Contrato c
             JOIN c.empleado e
+            LEFT JOIN e.empresaContratista ec
             WHERE c.fechaInicio <= :hasta
               AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
               AND c.categoriaPersonal IN :categoriasPersonal
@@ -239,9 +253,11 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 e.correoPersonal AS correoPersonal,
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
-                e.estadoOperativo AS estadoOperativo
+                e.estadoOperativo AS estadoOperativo,
+                ec.nombre AS empresaContratista
             FROM Contrato c
             JOIN c.empleado e
+            LEFT JOIN e.empresaContratista ec
             WHERE c.fechaInicio <= :hasta
               AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
               AND e.id IN :empleadoIds

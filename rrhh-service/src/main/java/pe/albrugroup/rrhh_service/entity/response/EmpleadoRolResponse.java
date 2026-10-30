@@ -26,4 +26,5 @@ public class EmpleadoRolResponse {
     @Deprecated(forRemoval = true)
     private PuestoTrabajo puestoTrabajo;
     private EstadoOperativo estadoOperativo;
+    private String empresaContratista;
 }

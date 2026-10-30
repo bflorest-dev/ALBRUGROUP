@@ -9,12 +9,14 @@ import {
   PlanillaEmpleadoResponse,
   PlanillaGeneralResponse
 } from '../../services/billing.service';
+import { AdminRrhhService } from '../../../admin/services/admin-rrhh.service';
 
 type PeriodValue = `${number}-${string}`;
 
 @Injectable()
 export class BillingWorkspaceFacade {
   private readonly billingService = inject(BillingService);
+  private readonly rrhhService = inject(AdminRrhhService);
 
   readonly isLoading = signal(false);
   readonly isCalculating = signal(false);
@@ -38,8 +40,21 @@ export class BillingWorkspaceFacade {
   readonly bonoAdicionalMonto = signal<number | null>(null);
   readonly bonoAdicionalComentario = signal('');
 
+  readonly companyMap = signal<Map<number, string>>(new Map());
+  readonly companyFilter = signal<string | null>(null);
+
   readonly isClosedMonth = computed(() => this.periodIsClosed(this.selectedMonth()));
   readonly rows = computed(() => this.planilla()?.empleados ?? []);
+  readonly companyOptions = computed<string[]>(() => {
+    const unique = new Set(this.companyMap().values());
+    return Array.from(unique).sort((a, b) => a.localeCompare(b, 'es'));
+  });
+  readonly filteredRows = computed(() => {
+    const filter = this.companyFilter();
+    if (!filter) return this.rows();
+    const map = this.companyMap();
+    return this.rows().filter(row => (map.get(row.idEmpleado) ?? '') === filter);
+  });
   readonly periodLabel = computed(() => this.formatPeriod(this.selectedMonth()));
   readonly employeeAdelantos = computed(() => {
     const employee = this.adjustmentEmployee();
@@ -62,6 +77,8 @@ export class BillingWorkspaceFacade {
     }
     this.selectedMonth.set(value as PeriodValue);
     this.planilla.set(null);
+    this.companyFilter.set(null);
+    this.companyMap.set(new Map());
     await this.loadPlanilla();
   }
 
@@ -73,10 +90,11 @@ export class BillingWorkspaceFacade {
     try {
       const planilla = await firstValueFrom(this.billingService.obtenerPlanilla(anio, mes));
       this.planilla.set(planilla);
-      await this.loadAdjustments();
+      await Promise.all([this.loadAdjustments(), this.loadCompanyMap()]);
     } catch (error) {
       this.planilla.set(null);
       this.adjustments.set(null);
+      this.companyMap.set(new Map());
       if (this.isClosedMonth()) {
         this.errorMessage.set(this.getErrorMessage(error, 'No hay planilla calculada para el periodo seleccionado.'));
       } else {
@@ -366,6 +384,27 @@ export class BillingWorkspaceFacade {
       this.adjustments.set(await firstValueFrom(this.billingService.obtenerAjustes(planilla.id)));
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar los ajustes.'));
+    }
+  }
+
+  private async loadCompanyMap(): Promise<void> {
+    const planilla = this.planilla();
+    if (!planilla || planilla.empleados.length === 0) {
+      this.companyMap.set(new Map());
+      return;
+    }
+    try {
+      const ids = planilla.empleados.map(e => e.idEmpleado);
+      const employees = await firstValueFrom(this.rrhhService.listarEmpleadosLight(ids));
+      const map = new Map<number, string>();
+      for (const emp of employees) {
+        if (emp.empresaContratista) {
+          map.set(emp.idEmpleado, emp.empresaContratista.toUpperCase());
+        }
+      }
+      this.companyMap.set(map);
+    } catch {
+      this.companyMap.set(new Map());
     }
   }
 
