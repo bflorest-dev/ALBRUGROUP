@@ -302,6 +302,14 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) var(--panel-sunk);
+
+  &::-webkit-scrollbar { height: 8px; }
+  &::-webkit-scrollbar-track { background: var(--panel-sunk); border-radius: 0 0 8px 8px; }
+  &::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
+  &::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
 }
 
 .ra-grid {
