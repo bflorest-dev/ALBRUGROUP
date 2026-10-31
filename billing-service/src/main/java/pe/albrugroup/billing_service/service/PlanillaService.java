@@ -348,13 +348,14 @@ public class PlanillaService {
                 .toList();
         int tardanzas = (int) delTramo.stream().filter(SchedulePlanillaClient.IncidenciaDiaDto::tardanza).count();
         int faltas = (int) delTramo.stream().filter(SchedulePlanillaClient.IncidenciaDiaDto::falta).count();
-        int minutosExtra = delTramo.stream().mapToInt(i -> nvl(i.minutosExtra())).sum();
+        // minutosExtra del schedule es tiempo de gestión, no horas extras remuneradas; queda en 0 hasta que se defina el concepto de pago
+        int minutosExtra = 0;
         BigDecimal descuentoTardanzas = delTramo.stream()
                 .filter(SchedulePlanillaClient.IncidenciaDiaDto::tardanza)
                 .map(i -> policy.descuentoTardanza(matriz, nvl(i.minutosTarde())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal descuentoFaltas = PlanillaPolicyService.money(pagoDiaHabil.multiply(BigDecimal.valueOf(faltas)));
-        BigDecimal sueldoAfecto = policy.sueldoAfecto(pagoDiaHabil, diasValidos);
+        BigDecimal sueldoAfecto = policy.sueldoAfecto(PlanillaPolicyService.money(contrato.sueldoBasico()), diasValidos, diasHabiles);
         BigDecimal pagoExtras = policy.pagoExtras(matriz, pagoDiaHabil, modalidad, minutosExtra);
         return new TramoTemporal(
                 contrato.idContrato(),

@@ -426,6 +426,8 @@
   [visible]="facade.resumenVisible()"
   position="right"
   [style]="{ width: 'min(42rem, 96vw)' }"
+  [showCloseIcon]="false"
+  [blockScroll]="true"
   (visibleChange)="!$event && facade.closeResumen()"
 >
   <ng-template #header>
@@ -551,4 +553,13 @@
       </div>
     </div>
   }
+
+  <ng-template #footer>
+    <div class="boleta-footer">
+      <button class="billing-secondary-button" type="button" (click)="facade.closeResumen()">
+        <i class="pi pi-times" aria-hidden="true"></i>
+        Cerrar
+      </button>
+    </div>
+  </ng-template>
 </p-drawer>

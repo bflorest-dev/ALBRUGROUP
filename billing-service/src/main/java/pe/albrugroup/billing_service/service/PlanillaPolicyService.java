@@ -42,8 +42,9 @@ public class PlanillaPolicyService {
         return sueldoBasico.divide(BigDecimal.valueOf(diasHabiles), 2, RoundingMode.HALF_UP);
     }
 
-    public BigDecimal sueldoAfecto(BigDecimal pagoDiaHabil, int diasValidos) {
-        return money(pagoDiaHabil.multiply(BigDecimal.valueOf(diasValidos)));
+    public BigDecimal sueldoAfecto(BigDecimal sueldoBasico, int diasValidos, int diasHabiles) {
+        return sueldoBasico.multiply(BigDecimal.valueOf(diasValidos))
+                .divide(BigDecimal.valueOf(diasHabiles), 2, RoundingMode.HALF_UP);
     }
 
     public BigDecimal descuentoTardanza(MatrizCalculoPlanilla matriz, int minutosTarde) {

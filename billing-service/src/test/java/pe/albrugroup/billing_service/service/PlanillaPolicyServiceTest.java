@@ -23,11 +23,13 @@ class PlanillaPolicyServiceTest {
     }
 
     @Test
-    void calculaPagoDiaYSueldoAfectoConRedondeo() {
+    void calculaPagoDiaYSueldoAfectoSinErrorDeRedondeo() {
         BigDecimal pagoDia = policy.pagoDiaHabil(new BigDecimal("1500.00"), 26);
 
         assertThat(pagoDia).isEqualByComparingTo("57.69");
-        assertThat(policy.sueldoAfecto(pagoDia, 26)).isEqualByComparingTo("1499.94");
+        // sueldoAfecto calcula directo desde sueldoBasico para evitar error de redondeo intermedio
+        assertThat(policy.sueldoAfecto(new BigDecimal("1500.00"), 26, 26)).isEqualByComparingTo("1500.00");
+        assertThat(policy.sueldoAfecto(new BigDecimal("1500.00"), 25, 26)).isEqualByComparingTo("1442.31");
     }
 
     @Test

@@ -553,6 +553,12 @@
   color: var(--billing-contract);
 }
 
+.boleta-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+}
+
 .boleta-loading {
   color: var(--billing-muted);
   font-size: 0.85rem;
