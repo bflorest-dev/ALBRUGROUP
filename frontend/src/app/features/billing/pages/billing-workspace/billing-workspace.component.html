@@ -85,6 +85,18 @@
       description="Una fila consolidada por empleado; los cambios de contrato se revisan en el detalle."
     />
 
+    <div class="billing-search-bar">
+      <label class="billing-search-field">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <input
+          type="search"
+          placeholder="Buscar por nombre o DNI…"
+          [ngModel]="facade.search()"
+          (ngModelChange)="facade.search.set($event)"
+        />
+      </label>
+    </div>
+
     @if (facade.companyOptions().length) {
       <div class="company-filter-bar" role="group" aria-label="Filtrar por empresa">
         <button type="button" class="company-tab" [class.active]="facade.companyFilter() === null"

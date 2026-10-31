@@ -43,6 +43,7 @@ export class BillingWorkspaceFacade {
 
   readonly companyMap = signal<Map<number, string>>(new Map());
   readonly companyFilter = signal<string | null>(null);
+  readonly search = signal('');
 
   readonly resumenVisible = signal(false);
   readonly resumenEmployee = signal<PlanillaEmpleadoResponse | null>(null);
@@ -57,9 +58,19 @@ export class BillingWorkspaceFacade {
   });
   readonly filteredRows = computed(() => {
     const filter = this.companyFilter();
-    if (!filter) return this.rows();
-    const map = this.companyMap();
-    return this.rows().filter(row => (map.get(row.idEmpleado) ?? '') === filter);
+    const query = this.search().trim().toLowerCase();
+    let result = this.rows();
+    if (filter) {
+      const map = this.companyMap();
+      result = result.filter(row => (map.get(row.idEmpleado) ?? '') === filter);
+    }
+    if (query) {
+      result = result.filter(row =>
+        `${row.nombres} ${row.apellidos}`.toLowerCase().includes(query) ||
+        row.numeroDocumento.includes(query)
+      );
+    }
+    return result;
   });
   readonly periodLabel = computed(() => this.formatPeriod(this.selectedMonth()));
   readonly employeeAdelantos = computed(() => {

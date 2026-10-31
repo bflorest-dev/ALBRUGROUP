@@ -218,9 +218,46 @@
 
 .billing-table-section {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
+}
+
+.billing-search-bar {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--billing-line);
+  background: var(--billing-panel);
+}
+
+.billing-search-field {
+  align-items: center;
+  background: var(--billing-panel-soft);
+  border: 1px solid var(--billing-line);
+  border-radius: 7px;
+  display: inline-flex;
+  gap: 0.5rem;
+  max-width: 280px;
+  padding: 0 0.65rem;
+  width: 100%;
+
+  i { color: var(--billing-muted); font-size: 13px; }
+
+  input {
+    background: transparent;
+    border: 0;
+    color: var(--billing-ink);
+    font: 500 12.5px 'Archivo', sans-serif;
+    min-height: 2rem;
+    min-width: 0;
+    outline: 0;
+    width: 100%;
+    &::placeholder { color: var(--billing-muted); }
+  }
+
+  &:focus-within {
+    border-color: var(--billing-signal);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--billing-signal) 14%, transparent);
+  }
 }
 
 .company-filter-bar {
