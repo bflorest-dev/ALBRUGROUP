@@ -38,7 +38,7 @@ public class SchedulePlanillaClient {
     public record IncidenciasRequest(Integer anio, Integer mes, List<Long> empleados) {
     }
 
-    public record EmpleadoIncidenciasDto(Long idEmpleado, List<IncidenciaDiaDto> incidencias) {
+    public record EmpleadoIncidenciasDto(Long idEmpleado, List<IncidenciaDiaDto> incidencias, List<LocalDate> diasLibres) {
     }
 
     public record IncidenciaDiaDto(
@@ -47,7 +47,8 @@ public class SchedulePlanillaClient {
             boolean tardanza,
             Integer minutosTarde,
             Integer minutosExtra,
-            Integer minutosTrabajados
+            Integer minutosTrabajados,
+            Integer minutosJornada
     ) {
     }
 }

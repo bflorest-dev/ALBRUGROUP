@@ -44,9 +44,10 @@ class PlanillaPolicyServiceTest {
 
     @Test
     void calculaBonosPorModalidad() {
-        assertThat(policy.bonoPuntualidad(matriz, ModalidadTrabajo.PARTTIME, 0)).isEqualByComparingTo("50.00");
-        assertThat(policy.bonoPuntualidad(matriz, ModalidadTrabajo.FULLTIME, 0)).isEqualByComparingTo("100.00");
-        assertThat(policy.bonoPuntualidad(matriz, ModalidadTrabajo.FULLTIME, 1)).isEqualByComparingTo("0.00");
+        assertThat(policy.bonoPuntualidad(matriz, ModalidadTrabajo.PARTTIME, 0, 5280, 5280)).isEqualByComparingTo("50.00");
+        assertThat(policy.bonoPuntualidad(matriz, ModalidadTrabajo.FULLTIME, 0, 10560, 10560)).isEqualByComparingTo("100.00");
+        assertThat(policy.bonoPuntualidad(matriz, ModalidadTrabajo.FULLTIME, 1, 10560, 10560)).isEqualByComparingTo("0.00");
+        assertThat(policy.bonoPuntualidad(matriz, ModalidadTrabajo.FULLTIME, 0, 5000, 10560)).isEqualByComparingTo("0.00");
         assertThat(policy.bonoProductividad(matriz, ModalidadTrabajo.PARTTIME, 29)).isEqualByComparingTo("0.00");
         assertThat(policy.bonoProductividad(matriz, ModalidadTrabajo.PARTTIME, 30)).isEqualByComparingTo("100.00");
         assertThat(policy.bonoProductividad(matriz, ModalidadTrabajo.SUPERFULLTIME, 60)).isEqualByComparingTo("100.00");

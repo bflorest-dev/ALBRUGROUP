@@ -72,8 +72,8 @@ public class PlanillaPolicyService {
         return modalidadConfig(matriz, modalidad).getHorasDia();
     }
 
-    public BigDecimal bonoPuntualidad(MatrizCalculoPlanilla matriz, ModalidadTrabajo modalidad, int tardanzas) {
-        if (tardanzas > 0) {
+    public BigDecimal bonoPuntualidad(MatrizCalculoPlanilla matriz, ModalidadTrabajo modalidad, int tardanzas, int minutosTrabajados, int minutosObjetivo) {
+        if (tardanzas > 0 || minutosTrabajados < minutosObjetivo) {
             return money(BigDecimal.ZERO);
         }
         return money(modalidadConfig(matriz, modalidad).getBonoPuntualidad());

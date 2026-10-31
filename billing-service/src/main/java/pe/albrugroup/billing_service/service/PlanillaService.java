@@ -82,13 +82,19 @@ public class PlanillaService {
                 List.of()
         );
         List<Long> idsEmpleados = empleados.stream().map(RrhhPlanillaClient.EmpleadoPlanillaDto::idEmpleado).toList();
-        Map<Long, List<SchedulePlanillaClient.IncidenciaDiaDto>> incidencias = Objects.requireNonNullElse(
-                        scheduleClient.obtenerIncidencias(anio, mes, idsEmpleados),
-                        List.<SchedulePlanillaClient.EmpleadoIncidenciasDto>of()
-                ).stream()
+        List<SchedulePlanillaClient.EmpleadoIncidenciasDto> incidenciasRaw = Objects.requireNonNullElse(
+                scheduleClient.obtenerIncidencias(anio, mes, idsEmpleados),
+                List.<SchedulePlanillaClient.EmpleadoIncidenciasDto>of()
+        );
+        Map<Long, List<SchedulePlanillaClient.IncidenciaDiaDto>> incidencias = incidenciasRaw.stream()
                 .collect(Collectors.toMap(
                         SchedulePlanillaClient.EmpleadoIncidenciasDto::idEmpleado,
                         dto -> Objects.requireNonNullElse(dto.incidencias(), List.of())
+                ));
+        Map<Long, List<LocalDate>> diasLibresMap = incidenciasRaw.stream()
+                .collect(Collectors.toMap(
+                        SchedulePlanillaClient.EmpleadoIncidenciasDto::idEmpleado,
+                        dto -> Objects.requireNonNullElse(dto.diasLibres(), List.of())
                 ));
         Map<Long, Integer> ventas = Objects.requireNonNullElse(
                         leadClient.obtenerVentasValidas(anio, mes),
@@ -126,6 +132,7 @@ public class PlanillaService {
                         periodo,
                         empleado,
                         incidencias.getOrDefault(empleado.idEmpleado(), List.of()),
+                        diasLibresMap.getOrDefault(empleado.idEmpleado(), List.of()),
                         ventas.getOrDefault(empleado.idEmpleado(), 0),
                         adelantos.getOrDefault(empleado.idEmpleado(), BigDecimal.ZERO),
                         bonosAdicionales.getOrDefault(empleado.idEmpleado(), BigDecimal.ZERO),
@@ -247,13 +254,14 @@ public class PlanillaService {
             YearMonth periodo,
             RrhhPlanillaClient.EmpleadoPlanillaDto empleado,
             List<SchedulePlanillaClient.IncidenciaDiaDto> incidencias,
+            List<LocalDate> diasLibres,
             int ventasValidas,
             BigDecimal adelanto,
             BigDecimal bonoAdicional,
             MatrizCalculoPlanilla matriz
     ) {
         List<TramoTemporal> tramos = empleado.contratos().stream()
-                .map(contrato -> crearTramoTemporal(periodo, contrato, incidencias, matriz))
+                .map(contrato -> crearTramoTemporal(periodo, contrato, incidencias, diasLibres, matriz))
                 .sorted(Comparator.comparing(TramoTemporal::fechaDesdeTramo))
                 .toList();
         if (tramos.isEmpty()) {
@@ -267,12 +275,14 @@ public class PlanillaService {
         int faltas = tramos.stream().mapToInt(TramoTemporal::faltas).sum();
         int minutosExtra = tramos.stream().mapToInt(TramoTemporal::minutosExtra).sum();
         int diasValidos = tramos.stream().mapToInt(TramoTemporal::diasValidos).sum();
+        int minutosObjetivo = tramos.stream().mapToInt(TramoTemporal::minutosObjetivo).sum();
+        int minutosJornada = tramos.stream().mapToInt(TramoTemporal::minutosJornada).sum();
         BigDecimal sueldoAfecto = sum(tramos, TramoTemporal::sueldoAfecto);
         BigDecimal descuentoTardanzas = sum(tramos, TramoTemporal::descuentoTardanzas);
         BigDecimal descuentoFaltas = sum(tramos, TramoTemporal::descuentoFaltas);
         BigDecimal pagoExtras = sum(tramos, TramoTemporal::pagoExtras);
         BigDecimal bonoProductividad = policy.bonoProductividad(matriz, dominante.modalidad(), ventasValidas);
-        BigDecimal bonoPuntualidad = policy.bonoPuntualidad(matriz, dominante.modalidad(), tardanzas);
+        BigDecimal bonoPuntualidad = policy.bonoPuntualidad(matriz, dominante.modalidad(), tardanzas, minutosJornada, minutosObjetivo);
         BigDecimal bonoCapacitacion = policy.bonoCapacitacion(matriz, empleado.primerContratoInicio() != null
                 && YearMonth.from(empleado.primerContratoInicio()).equals(periodo));
         BigDecimal totalDescuento = PlanillaPolicyService.money(descuentoTardanzas.add(descuentoFaltas).add(adelanto));
@@ -333,6 +343,7 @@ public class PlanillaService {
             YearMonth periodo,
             RrhhPlanillaClient.ContratoPlanillaDto contrato,
             List<SchedulePlanillaClient.IncidenciaDiaDto> incidencias,
+            List<LocalDate> diasLibres,
             MatrizCalculoPlanilla matriz
     ) {
         LocalDate inicioMes = periodo.atDay(1);
@@ -350,6 +361,13 @@ public class PlanillaService {
         int faltas = (int) delTramo.stream().filter(SchedulePlanillaClient.IncidenciaDiaDto::falta).count();
         // minutosExtra del schedule es tiempo de gestión, no horas extras remuneradas; queda en 0 hasta que se defina el concepto de pago
         int minutosExtra = 0;
+        int horasDia = policy.horasDia(matriz, modalidad);
+        long diasLibresEnTramo = diasLibres.stream()
+                .filter(d -> !d.isBefore(desde) && !d.isAfter(hasta) && d.getDayOfWeek() != java.time.DayOfWeek.SUNDAY)
+                .count();
+        int diasEfectivos = (int) Math.max(diasValidos - diasLibresEnTramo, 0);
+        int minutosObjetivo = horasDia * diasEfectivos * 60;
+        int minutosJornada = delTramo.stream().mapToInt(i -> nvl(i.minutosJornada())).sum();
         BigDecimal descuentoTardanzas = delTramo.stream()
                 .filter(SchedulePlanillaClient.IncidenciaDiaDto::tardanza)
                 .map(i -> policy.descuentoTardanza(matriz, nvl(i.minutosTarde())))
@@ -365,7 +383,7 @@ public class PlanillaService {
                 hasta,
                 modalidad,
                 PlanillaPolicyService.money(contrato.sueldoBasico()),
-                policy.horasDia(matriz, modalidad),
+                horasDia,
                 diasValidos,
                 pagoDiaHabil,
                 sueldoAfecto,
@@ -374,7 +392,9 @@ public class PlanillaService {
                 PlanillaPolicyService.money(descuentoTardanzas),
                 descuentoFaltas,
                 minutosExtra,
-                pagoExtras
+                pagoExtras,
+                minutosObjetivo,
+                minutosJornada
         );
     }
 
@@ -598,7 +618,9 @@ public class PlanillaService {
             BigDecimal descuentoTardanzas,
             BigDecimal descuentoFaltas,
             Integer minutosExtra,
-            BigDecimal pagoExtras
+            BigDecimal pagoExtras,
+            Integer minutosObjetivo,
+            Integer minutosJornada
     ) {
         TramoPlanillaEmpleado toEntity(PlanillaEmpleado fila) {
             return TramoPlanillaEmpleado.builder()

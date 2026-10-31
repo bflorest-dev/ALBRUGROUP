@@ -8,6 +8,7 @@ public record BillingIncidenciaDiaResponse(
         boolean tardanza,
         Integer minutosTarde,
         Integer minutosExtra,
-        Integer minutosTrabajados
+        Integer minutosTrabajados,
+        Integer minutosJornada
 ) {
 }
