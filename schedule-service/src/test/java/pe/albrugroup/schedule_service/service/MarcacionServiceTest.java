@@ -29,6 +29,7 @@ import pe.albrugroup.schedule_service.entity.enums.TipoRegistroMarcacion;
 import pe.albrugroup.schedule_service.entity.request.asistencia.CorregirMarcacionesRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.MarcacionPatchRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.IntervaloPresenciaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.PresenciaGapResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
@@ -326,6 +327,74 @@ class MarcacionServiceTest {
         almacen.set(asistenciaOnline(LocalDateTime.of(2026, 8, 10, 8, 0), 72)); // 12 min de mas
         service.registrarSalida();
         assertThat(almacen.get().getMinutosBalance()).isEqualTo(-12);
+    }
+
+    @Test
+    void huecoDePresenciaDentroDelAlmuerzoNoSeDescuentaDosVeces() {
+        reloj(17, 12);
+        almacen.set(asistenciaOnline(LocalDateTime.of(DIA, LocalTime.of(7, 58)), 61));
+        when(presenciaTramoService.tienePresencia(EMP, DIA)).thenReturn(true);
+        when(presenciaTramoService.intervalosDelDia(EMP, DIA)).thenReturn(List.of(
+                presencia(LocalTime.of(7, 58), LocalTime.of(13, 38)),
+                presencia(LocalTime.of(14, 9), LocalTime.of(17, 12))));
+        when(presenciaTramoService.gapsDelDia(EMP, DIA)).thenReturn(List.of(
+                PresenciaGapResponse.builder()
+                        .inicio(LocalDateTime.of(DIA, LocalTime.of(13, 38)))
+                        .fin(LocalDateTime.of(DIA, LocalTime.of(14, 9)))
+                        .minutos(31).motivo("CIERRE_MANUAL").estadoAlDesconectar("ALMUERZO").build()));
+
+        service.registrarSalida();
+
+        assertThat(almacen.get().getMinutosTrabajados()).isEqualTo(479); // 540 - 61; el hueco esta dentro del almuerzo
+        assertThat(almacen.get().getMinutosBalance()).isEqualTo(-1);    // 479 - 480
+    }
+
+    @Test
+    void huecoOfflineDentroDelHorarioPenaliza() {
+        reloj(17, 0);
+        almacen.set(asistenciaOnline(LocalDateTime.of(DIA, LocalTime.of(8, 0)), 60));
+        when(presenciaTramoService.tienePresencia(EMP, DIA)).thenReturn(true);
+        when(presenciaTramoService.intervalosDelDia(EMP, DIA)).thenReturn(List.of(
+                presencia(LocalTime.of(8, 0), LocalTime.of(12, 0)),
+                presencia(LocalTime.of(12, 10), LocalTime.of(17, 0))));
+        when(presenciaTramoService.gapsDelDia(EMP, DIA)).thenReturn(List.of(
+                PresenciaGapResponse.builder()
+                        .inicio(LocalDateTime.of(DIA, LocalTime.of(12, 0)))
+                        .fin(LocalDateTime.of(DIA, LocalTime.of(12, 10)))
+                        .minutos(10).motivo("CIERRE_MANUAL").estadoAlDesconectar("OFFLINE").build()));
+
+        service.registrarSalida();
+
+        assertThat(almacen.get().getMinutosTrabajados()).isEqualTo(470); // 540 - 60 - 10
+        assertThat(almacen.get().getMinutosBalance()).isEqualTo(-10);
+    }
+
+    @Test
+    void serviciosDentroDelTopeNoDescuentanYElExcesoSi() {
+        reloj(17, 0);
+        almacen.set(asistenciaOnline(LocalDateTime.of(DIA, LocalTime.of(8, 0)), 60));
+        when(sesionEstadoRepository.findByAsistenciaIdOrderByInicioAsc(1L)).thenReturn(List.of(
+                sesionCerrada(TipoSesionEstado.SERVICIOS, LocalTime.of(10, 0), LocalTime.of(10, 20))));
+        when(sesionEstadoRepository.findByAsistenciaIdAndTipoOrderByInicioAsc(1L, TipoSesionEstado.SERVICIOS))
+                .thenReturn(List.of(sesionCerrada(TipoSesionEstado.SERVICIOS, LocalTime.of(10, 0), LocalTime.of(10, 20))));
+
+        service.registrarSalida();
+
+        assertThat(almacen.get().getMinutosTrabajados()).isEqualTo(475); // 540 - 60 - 5 de exceso
+        assertThat(almacen.get().getMinutosBalance()).isEqualTo(-5);
+    }
+
+    @Test
+    void capacitacionNoGeneraDescuentoNiExceso() {
+        reloj(17, 0);
+        almacen.set(asistenciaOnline(LocalDateTime.of(DIA, LocalTime.of(8, 0)), 60));
+        when(sesionEstadoRepository.findByAsistenciaIdOrderByInicioAsc(1L)).thenReturn(List.of(
+                sesionCerrada(TipoSesionEstado.CAPACITACION, LocalTime.of(10, 0), LocalTime.of(12, 0))));
+
+        service.registrarSalida();
+
+        assertThat(almacen.get().getMinutosTrabajados()).isEqualTo(480);
+        assertThat(almacen.get().getMinutosBalance()).isZero();
     }
 
     @Test
@@ -676,6 +745,11 @@ class MarcacionServiceTest {
                         .inicio(LocalDateTime.of(2026, 8, 10, 12, 0))
                         .fin(LocalDateTime.of(2026, 8, 10, 12, 30))
                         .minutos(30).motivo("INACTIVIDAD").estadoAlDesconectar("ONLINE").build()));
+        when(presenciaTramoService.gapsDentroDeVentana(anyLong(), any(), any(), any())).thenReturn(List.of(
+                PresenciaGapResponse.builder()
+                        .inicio(LocalDateTime.of(2026, 8, 10, 12, 0))
+                        .fin(LocalDateTime.of(2026, 8, 10, 12, 30))
+                        .minutos(30).motivo("INACTIVIDAD").estadoAlDesconectar("ONLINE").build()));
         reloj(17, 30); // despues del cierre
 
         ReporteDiaResponse r = service.getReporteDia(EMP, DIA);
@@ -926,6 +1000,13 @@ class MarcacionServiceTest {
     private SesionEstado sesionCerrada(TipoSesionEstado tipo, LocalTime inicio, LocalTime fin) {
         return SesionEstado.builder()
                 .tipo(tipo)
+                .inicio(LocalDateTime.of(DIA, inicio))
+                .fin(LocalDateTime.of(DIA, fin))
+                .build();
+    }
+
+    private IntervaloPresenciaResponse presencia(LocalTime inicio, LocalTime fin) {
+        return IntervaloPresenciaResponse.builder()
                 .inicio(LocalDateTime.of(DIA, inicio))
                 .fin(LocalDateTime.of(DIA, fin))
                 .build();

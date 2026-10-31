@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 /**
  * Un exceso del dia que pesa en el balance y se pinta en la linea de Incidencias: el tramo de tiempo que
- * paso del tope de un estado. {@code tipo} = ALMUERZO | PAUSA_ACTIVA. El rango [inicio, fin] es el pedazo
+ * paso del tope de un estado. {@code tipo} = ALMUERZO | SERVICIOS | PAUSA_ACTIVA. El rango [inicio, fin] es el pedazo
  * que se paso (la "cola" sobre lo permitido); {@code minutos} su duracion.
  */
 @Getter

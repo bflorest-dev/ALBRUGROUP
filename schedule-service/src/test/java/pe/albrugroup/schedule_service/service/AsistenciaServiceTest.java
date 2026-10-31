@@ -86,6 +86,8 @@ class AsistenciaServiceTest {
     private ScheduleEngineProperties scheduleEngineProperties;
     @Mock
     private JornadaShadowComparator jornadaShadowComparator;
+    @Mock
+    private MarcacionService marcacionService;
 
     @InjectMocks
     private AsistenciaService service;

@@ -29,6 +29,7 @@ export interface CumplimientoDetalleDiaResponse {
   jornadaCerrada: boolean;
   minutosObjetivoDia: number;
   minutosTrabajados: number;
+  minutosTrabajadosMarcacion: number;
   minutosBalance: number;
   minutosServiciosAcumulados: number;
   excedioServicios: boolean;

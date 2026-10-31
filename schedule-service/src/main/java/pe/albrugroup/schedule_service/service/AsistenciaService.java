@@ -84,6 +84,7 @@ public class AsistenciaService implements IAsistencia {
     private final JornadaEfectivaResolver jornadaEfectivaResolver;
     private final ScheduleEngineProperties scheduleEngineProperties;
     private final JornadaShadowComparator jornadaShadowComparator;
+    private final MarcacionService marcacionService;
 
     @Override
     @Transactional
@@ -887,8 +888,9 @@ public class AsistenciaService implements IAsistencia {
             }
 
             diasConRegistro++;
-            minutosTrabajados += asistencia.getMinutosTrabajados();
-            minutosBalance += asistencia.getMinutosBalance();
+            MarcacionService.TotalesDia totales = totalesDia(idEmpleado, fecha, asistencia);
+            minutosTrabajados += totales.minutosTrabajados();
+            minutosBalance += totales.minutosBalance();
             minutosServiciosAcumulados += asistencia.getMinutosServiciosAcumulados();
 
             if (asistencia.getFechaHoraSalida() != null) {
@@ -956,6 +958,7 @@ public class AsistenciaService implements IAsistencia {
         LocalTime horaSalidaAsistencia = fechaHoraSalida != null ? fechaHoraSalida.toLocalTime() : null;
         List<TramoAsistenciaResponse> tramos = construirTramos(asistencia, tramosArchivados);
 
+        MarcacionService.TotalesDia totales = totalesDia(idEmpleado, fecha, asistencia);
         return CumplimientoDetalleDiaResponse.builder()
                 .fecha(fecha)
                 .laborable(programacion.laborable())
@@ -966,8 +969,9 @@ public class AsistenciaService implements IAsistencia {
                 .salidaForzada(asistencia != null && Boolean.TRUE.equals(asistencia.getSalidaForzada()))
                 .jornadaCerrada(asistencia != null && asistencia.getFechaHoraSalida() != null)
                 .minutosObjetivoDia(asistencia != null ? asistencia.getMinutosObjetivoDia() : programacion.minutosObjetivo())
-                .minutosTrabajados(asistencia != null ? asistencia.getMinutosTrabajados() : 0)
-                .minutosBalance(asistencia != null ? asistencia.getMinutosBalance() : 0)
+                .minutosTrabajados(totales.minutosTrabajados())
+                .minutosTrabajadosMarcacion(PresenciaMarcacion.neta(asistencia, tramosArchivados))
+                .minutosBalance(totales.minutosBalance())
                 .minutosServiciosAcumulados(asistencia != null ? asistencia.getMinutosServiciosAcumulados() : 0)
                 .excedioServicios(asistencia != null && Boolean.TRUE.equals(asistencia.getExcedioServicios()))
                 .tardanza(esTardanza(fechaHoraIngreso, horaEntradaEstablecida))
@@ -979,6 +983,16 @@ public class AsistenciaService implements IAsistencia {
                 .minutosCompensados(asistencia != null ? asistencia.getMinutosCompensados() : 0)
                 .tramos(tramos)
                 .build();
+    }
+
+    private MarcacionService.TotalesDia totalesDia(Long idEmpleado, LocalDate fecha, Asistencia asistencia) {
+        if (asistencia == null || marcacionService == null) {
+            return new MarcacionService.TotalesDia(
+                    asistencia != null ? asistencia.getMinutosTrabajados() : 0,
+                    asistencia != null ? asistencia.getMinutosBalance() : 0
+            );
+        }
+        return marcacionService.calcularTotalesDia(idEmpleado, fecha);
     }
 
     private TramoResumen resolverTramoBase(Asistencia asistencia, List<AsistenciaTramo> tramosArchivados) {

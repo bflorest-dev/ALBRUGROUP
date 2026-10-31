@@ -299,8 +299,8 @@ export class AttendanceDayReportComponent {
       const a = this.toMin(g.inicio); const b = this.toMin(g.fin);
       if (a === null || b === null || b <= a) continue;
       const w = this.pct(b) - this.pct(a);
-      // Solo penaliza el balance la desconexión estando ONLINE; en otro estado es informativa.
-      const penaliza = (g.estadoAlDesconectar ?? '').toUpperCase() === 'ONLINE';
+      // Penalizan los huecos ONLINE/OFFLINE; los solapados con estados permitidos son informativos.
+      const penaliza = this.gapPenalizes(g.estadoAlDesconectar);
       const min = g.minutos ?? (b - a);
       out.push({
         leftPct: this.pct(a), widthPct: w, kind: penaliza ? 'dead' : 'soft',
@@ -331,7 +331,7 @@ export class AttendanceDayReportComponent {
       const a = this.toMin(g.inicio); const b = this.toMin(g.fin);
       if (a === null || b === null || b <= a) continue;
       const duration = g.minutos ?? (b - a);
-      const penalizes = (g.estadoAlDesconectar ?? '').toUpperCase() === 'ONLINE';
+      const penalizes = this.gapPenalizes(g.estadoAlDesconectar);
       const label = this.motivoLabel(g.motivo);
       out.push({
         start: this.hhmm(a), end: this.hhmm(b), duration, label,
@@ -358,7 +358,7 @@ export class AttendanceDayReportComponent {
   protected readonly deadRows = computed<AggRow[]>(() => {
     let penMin = 0, penCt = 0, infMin = 0, infCt = 0;
     for (const g of this.reporte()?.tiemposMuertos ?? []) {
-      if ((g.estadoAlDesconectar ?? '').toUpperCase() === 'ONLINE') { penMin += g.minutos ?? 0; penCt += 1; }
+      if (this.gapPenalizes(g.estadoAlDesconectar)) { penMin += g.minutos ?? 0; penCt += 1; }
       else { infMin += g.minutos ?? 0; infCt += 1; }
     }
     return [
@@ -371,7 +371,7 @@ export class AttendanceDayReportComponent {
   protected readonly deadTotal = computed(() => {
     let min = 0; let count = 0;
     for (const g of this.reporte()?.tiemposMuertos ?? []) {
-      if ((g.estadoAlDesconectar ?? '').toUpperCase() === 'ONLINE') { min += g.minutos ?? 0; count += 1; }
+      if (this.gapPenalizes(g.estadoAlDesconectar)) { min += g.minutos ?? 0; count += 1; }
     }
     return { min, count };
   });
@@ -456,6 +456,11 @@ export class AttendanceDayReportComponent {
     if (key === 'PAUSA_ACTIVA') return 'pausa activa';
     if (key === 'SERVICIOS') return 'servicios';
     return this.humanize(key || 'estado').toLowerCase();
+  }
+
+  private gapPenalizes(estado: string | null | undefined): boolean {
+    const key = (estado ?? '').toUpperCase();
+    return !['ALMUERZO', 'SERVICIOS', 'PAUSA_ACTIVA', 'CAPACITACION'].includes(key);
   }
 
   private humanize(v: string): string {

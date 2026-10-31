@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.schedule_service.entity.Asistencia;
+import pe.albrugroup.schedule_service.entity.AsistenciaTramo;
 import pe.albrugroup.schedule_service.entity.DiaNoLaborable;
 import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.enums.AlcanceDiaNoLaborable;
@@ -11,6 +12,7 @@ import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.response.asistencia.BillingEmpleadoIncidenciasResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.BillingIncidenciaDiaResponse;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
+import pe.albrugroup.schedule_service.repository.AsistenciaTramoRepository;
 import pe.albrugroup.schedule_service.repository.DiaNoLaborableRepository;
 import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
 import pe.albrugroup.schedule_service.repository.HorarioRepository;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 public class BillingIncidenciasService {
 
     private final AsistenciaRepository asistenciaRepository;
+    private final AsistenciaTramoRepository asistenciaTramoRepository;
     private final ParametroAsistenciaResolver parametroResolver;
     private final DiaNoLaborableRepository diaNoLaborableRepository;
     private final ExcepcionHorarioRepository excepcionHorarioRepository;
@@ -41,10 +44,19 @@ public class BillingIncidenciasService {
                 empleados, desde, hasta);
         int tolerancia = parametroResolver.resolve(List.of()).toleranciaTardanzaMin();
 
+        // Tramos archivados (dias partidos) en una sola query, para sumar presencia por marcaciones.
+        List<Long> asistenciaIds = asistencias.stream().map(Asistencia::getId).toList();
+        Map<Long, List<AsistenciaTramo>> tramosPorAsistencia = asistenciaIds.isEmpty()
+                ? Map.of()
+                : asistenciaTramoRepository.findByAsistenciaIdInOrderByAsistenciaIdAscIdAsc(asistenciaIds).stream()
+                        .collect(Collectors.groupingBy(t -> t.getAsistencia().getId()));
+
         Map<Long, List<BillingIncidenciaDiaResponse>> porEmpleado = asistencias.stream()
                 .collect(Collectors.groupingBy(
                         Asistencia::getIdEmpleado,
-                        Collectors.mapping(a -> toIncidencia(a, tolerancia), Collectors.toList())
+                        Collectors.mapping(
+                                a -> toIncidencia(a, tolerancia, tramosPorAsistencia.getOrDefault(a.getId(), List.of())),
+                                Collectors.toList())
                 ));
 
         Map<Long, List<LocalDate>> diasLibresPorEmpleado = calcularDiasLibres(empleados, asistencias, desde, hasta);
@@ -128,14 +140,14 @@ public class BillingIncidenciasService {
                         .orElse(null));
     }
 
-    private BillingIncidenciaDiaResponse toIncidencia(Asistencia asistencia, int tolerancia) {
+    private BillingIncidenciaDiaResponse toIncidencia(Asistencia asistencia, int tolerancia, List<AsistenciaTramo> tramosArchivados) {
         boolean falta = asistencia.getMinutosObjetivoDia() != null
                 && asistencia.getMinutosObjetivoDia() > 0
                 && asistencia.getFechaHoraIngreso() == null;
         int minutosTarde = calcularMinutosTarde(asistencia, tolerancia);
-        int minutosJornada = nvl(asistencia.getMinutosTrabajados())
-                + nvl(asistencia.getMinutosAlmuerzoTomados())
-                + nvl(asistencia.getMinutosServiciosAcumulados());
+        // Presencia bruta por marcaciones (ingreso->salida, incluye almuerzo). El bono de puntualidad
+        // la compara contra el objetivo: el almuerzo es tiempo valido, no descuenta.
+        int minutosJornada = PresenciaMarcacion.bruta(asistencia, tramosArchivados);
         return new BillingIncidenciaDiaResponse(
                 asistencia.getFecha(),
                 falta,

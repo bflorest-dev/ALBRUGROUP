@@ -13,6 +13,7 @@ const baseDay: CumplimientoDetalleDiaResponse = {
   jornadaCerrada: true,
   minutosObjetivoDia: 540,
   minutosTrabajados: 540,
+  minutosTrabajadosMarcacion: 480,
   minutosBalance: 0,
   minutosServiciosAcumulados: 0,
   excedioServicios: false,

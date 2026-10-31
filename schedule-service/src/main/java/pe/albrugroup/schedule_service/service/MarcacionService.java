@@ -27,6 +27,7 @@ import pe.albrugroup.schedule_service.entity.request.asistencia.MarcacionPatchRe
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.PoliticaMarcacionResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.ExcesoDiaResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.PresenciaGapResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.SesionEstadoResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.TramoDiaResponse;
@@ -61,13 +62,15 @@ import java.util.stream.Collectors;
  * viejo/nuevo. Convive con {@code AsistenciaService} hasta el cutover.
  *
  * Fase 3.1.a: read model del dia. Fase 3.1.b: ingreso/salida. Estados cronometrados (3.1.c) y almuerzo
- * (3.1.d) se agregan despues; {@code recalcularMinutos} ya los descuenta (0 mientras no existan).
+ * (3.1.d) se integran en una sola linea temporal para evitar descuentos dobles por solapamiento.
  */
 @Service
 @RequiredArgsConstructor
 public class MarcacionService {
 
     private static final String OJT_ROLE = "OJT";
+    private static final int MAX_MINUTOS_ALMUERZO = 60;
+    private static final int MAX_MINUTOS_SERVICIOS_POR_DEFECTO = 15;
 
     private final AsistenciaRepository asistenciaRepository;
     private final AsistenciaTramoRepository asistenciaTramoRepository;
@@ -80,6 +83,8 @@ public class MarcacionService {
     private final ResumenMensualService resumenMensualService;
     private final CurrentUser currentUser;
     private final AttendanceRealtimeNotifier attendanceRealtimeNotifier;
+
+    public record TotalesDia(int minutosTrabajados, int minutosBalance) {}
 
     // ===================== Marcacion =====================
 
@@ -596,7 +601,9 @@ public class MarcacionService {
      *  - COMPENSACION: suma a minutosCompensados; el resto de aditivos, a minutosExtra.
      *  - Extras/compensables se ANULAN a 0 si el tramo no tuvo cierre coherente (salida real o handoff de
      *    presencia que cubre su fin): abandono. El base nunca se anula (los gaps quedan como deficit).
-     * Las pausas personales del dia (almuerzo + servicios + pausa activa) se descuentan del tiempo base.
+     * El BASE parte de la ventana bruta y solo descuenta almuerzo real, huecos no cubiertos por un estado
+     * permitido y excesos de servicios/pausa activa. Un hueco solapado con un estado permitido no se vuelve
+     * a descontar; CAPACITACION no genera penalizacion.
      */
     private void recalcularMinutos(Asistencia asistencia) {
         JornadaEfectivaResponse jornada = jornadaEfectivaResolver
@@ -612,7 +619,8 @@ public class MarcacionService {
                         aj -> aj.getRazon() == null ? RazonAjuste.AMPLIACION_OPERATIVA : aj.getRazon(),
                         (a, b) -> a));
 
-        int base = 0, extra = 0, compensado = 0;
+        int base = calcularMinutosBaseAcreditados(asistencia, jornada, segmentos);
+        int extra = 0, compensado = 0;
         if (jornada != null) {
             for (TramoJornadaResponse t : jornada.getTramos()) {
                 if (t.getInicio() == null || t.getFin() == null) {
@@ -620,25 +628,20 @@ public class MarcacionService {
                 }
                 boolean esBase = Boolean.TRUE.equals(t.getBase())
                         || t.getOrigen() == OrigenAjusteJornada.REEMPLAZO_BASE;
-                int credito = creditoTramo(asistencia, t, segmentos, hayPresencia, esBase);
+                if (esBase) {
+                    continue;
+                }
+                int credito = creditoTramo(asistencia, t, segmentos, hayPresencia, false);
                 if (credito <= 0) {
                     continue;
                 }
-                if (esBase) {
-                    base += credito;
-                } else if (razonPorAjuste.get(t.getIdAjuste()) == RazonAjuste.COMPENSACION) {
+                if (razonPorAjuste.get(t.getIdAjuste()) == RazonAjuste.COMPENSACION) {
                     compensado += credito;
                 } else {
                     extra += credito;
                 }
             }
         }
-
-        // Las pausas personales ocurren dentro del turno base -> se descuentan del tiempo base.
-        int pausas = safe(asistencia.getMinutosAlmuerzoTomados())
-                + sumarSesionesCerradas(asistencia.getId(), TipoSesionEstado.SERVICIOS)
-                + sumarPausaCapadaDesde(asistencia.getId(), null);
-        base = Math.max(base - pausas, 0);
 
         asistencia.setMinutosTrabajados(base);
         asistencia.setMinutosExtra(extra);
@@ -648,7 +651,7 @@ public class MarcacionService {
     }
 
     /**
-     * Credito de un tramo = suma, sobre los segmentos de marca del dia, de la interseccion
+     * Credito de un tramo adicional = suma, sobre los segmentos de marca del dia, de la interseccion
      * [ingreso,salida] ∩ [tramo.inicio,tramo.fin], topada por la cobertura de presencia (si hay datos;
      * fail-open si no). Para tramos NO base aplica la regla de nulidad: si ningun segmento cerro
      * coherentemente el tramo (salida real o presencia que cubre el fin), el credito es 0 (abandono).
@@ -701,6 +704,204 @@ public class MarcacionService {
     }
 
     private record Segmento(LocalDateTime ingreso, LocalDateTime salida, Boolean forzada) {}
+
+    private record Intervalo(LocalDateTime inicio, LocalDateTime fin) {}
+
+    /**
+     * Calcula el trabajo de BASE sin contar dos veces un mismo intervalo.
+     *
+     * La ventana programada es el envelope bruto. Los huecos que quedan fuera de las marcaciones o de la
+     * presencia solo penalizan si no estan cubiertos por un estado reconocido. Los estados permitidos se
+     * descuentan de la jornada neta solo cuando exceden su tope: almuerzo (60 min), servicios (tope del
+     * horario, normalmente 15 min) y pausa activa (tope de politica, normalmente 5 min). CAPACITACION no
+     * genera exceso.
+     */
+    private int calcularMinutosBaseAcreditados(Asistencia asistencia, JornadaEfectivaResponse jornada,
+                                               List<Segmento> segmentos) {
+        if (jornada == null) {
+            return 0;
+        }
+
+        List<Intervalo> ventanasBase = jornada.getTramos().stream()
+                .filter(t -> t.getInicio() != null && t.getFin() != null)
+                .filter(t -> Boolean.TRUE.equals(t.getBase())
+                        || t.getOrigen() == OrigenAjusteJornada.REEMPLAZO_BASE)
+                .map(t -> new Intervalo(t.getInicio(), t.getFin()))
+                .toList();
+        if (ventanasBase.isEmpty()) {
+            return 0;
+        }
+
+        List<Intervalo> marcaciones = intervalosMarcacion(segmentos);
+        List<Intervalo> presencia = presenciaTramos(asistencia);
+        List<Intervalo> cobertura = presencia.isEmpty()
+                ? marcaciones
+                : intersectar(marcaciones, presencia);
+        List<Intervalo> noCubierto = restar(ventanasBase, cobertura);
+        List<Intervalo> estadosPermitidos = estadosPermitidos(asistencia);
+        int huecosPenalizables = minutos(restar(noCubierto, estadosPermitidos));
+
+        int almuerzo = safe(asistencia.getMinutosAlmuerzoTomados());
+        int excesoServicios = excesoServicios(asistencia, ventanasBase);
+        int excesoPausaActiva = excesoPausaActiva(asistencia, ventanasBase);
+        int bruto = minutos(ventanasBase);
+
+        return Math.max(bruto - almuerzo - huecosPenalizables - excesoServicios - excesoPausaActiva, 0);
+    }
+
+    private List<Intervalo> intervalosMarcacion(List<Segmento> segmentos) {
+        return segmentos.stream()
+                .filter(s -> s.ingreso() != null && s.salida() != null && s.ingreso().isBefore(s.salida()))
+                .map(s -> new Intervalo(s.ingreso(), s.salida()))
+                .toList();
+    }
+
+    private List<Intervalo> presenciaTramos(Asistencia asistencia) {
+        return presenciaTramoService.intervalosDelDia(asistencia.getIdEmpleado(), asistencia.getFecha()).stream()
+                .filter(p -> p.getInicio() != null && p.getFin() != null && p.getInicio().isBefore(p.getFin()))
+                .map(p -> new Intervalo(p.getInicio(), p.getFin()))
+                .toList();
+    }
+
+    private List<Intervalo> estadosPermitidos(Asistencia asistencia) {
+        List<Intervalo> out = new ArrayList<>();
+        agregarIntervalo(out, asistencia.getFecha(), asistencia.getInicioAlmuerzoProgramado(),
+                asistencia.getFinAlmuerzoProgramado());
+        agregarIntervalo(out, asistencia.getAlmuerzoRealInicio(), asistencia.getAlmuerzoRealFin());
+
+        sesionEstadoRepository.findByAsistenciaIdOrderByInicioAsc(asistencia.getId()).stream()
+                .filter(s -> s.getInicio() != null && s.getFin() != null)
+                .forEach(s -> out.add(new Intervalo(s.getInicio(), s.getFin())));
+
+        for (PresenciaGapResponse gap : presenciaTramoService.gapsDelDia(asistencia.getIdEmpleado(), asistencia.getFecha())) {
+            if (estadoPermitido(gap.getEstadoAlDesconectar())
+                    && gap.getInicio() != null && gap.getFin() != null) {
+                out.add(new Intervalo(gap.getInicio(), gap.getFin()));
+            }
+        }
+        return out;
+    }
+
+    private void agregarIntervalo(List<Intervalo> out, LocalDate fecha, LocalTime inicio, LocalTime fin) {
+        if (inicio != null && fin != null && inicio.isBefore(fin)) {
+            out.add(new Intervalo(LocalDateTime.of(fecha, inicio), LocalDateTime.of(fecha, fin)));
+        }
+    }
+
+    private void agregarIntervalo(List<Intervalo> out, LocalDateTime inicio, LocalDateTime fin) {
+        if (inicio != null && fin != null && inicio.isBefore(fin)) {
+            out.add(new Intervalo(inicio, fin));
+        }
+    }
+
+    private boolean estadoPermitido(String estado) {
+        if (estado == null) {
+            return false;
+        }
+        return switch (estado.toUpperCase()) {
+            case "ALMUERZO", "SERVICIOS", "PAUSA_ACTIVA", "CAPACITACION" -> true;
+            default -> false;
+        };
+    }
+
+    private int excesoServicios(Asistencia asistencia, List<Intervalo> ventanasBase) {
+        List<Intervalo> sesiones = sesionEstadoRepository
+                .findByAsistenciaIdAndTipoOrderByInicioAsc(asistencia.getId(), TipoSesionEstado.SERVICIOS).stream()
+                .filter(s -> s.getInicio() != null && s.getFin() != null)
+                .map(s -> new Intervalo(s.getInicio(), s.getFin()))
+                .toList();
+        int usado = minutos(intersectar(sesiones, ventanasBase));
+        int permitido = asistencia.getMinutosServiciosPermitidos() == null
+                ? MAX_MINUTOS_SERVICIOS_POR_DEFECTO : Math.max(asistencia.getMinutosServiciosPermitidos(), 0);
+        return Math.max(usado - permitido, 0);
+    }
+
+    private int excesoPausaActiva(Asistencia asistencia, List<Intervalo> ventanasBase) {
+        int maximo = Math.max(parametrosGlobales().maxMinutosPausaActiva(), 0);
+        if (maximo == 0) {
+            return 0;
+        }
+        return sesionEstadoRepository
+                .findByAsistenciaIdAndTipoOrderByInicioAsc(asistencia.getId(), TipoSesionEstado.PAUSA_ACTIVA).stream()
+                .filter(s -> s.getInicio() != null && s.getFin() != null)
+                .mapToInt(s -> Math.max(minutos(intersectar(
+                        List.of(new Intervalo(s.getInicio(), s.getFin())), ventanasBase)) - maximo, 0))
+                .sum();
+    }
+
+    private int minutos(List<Intervalo> intervalos) {
+        return unir(intervalos).stream()
+                .mapToInt(i -> (int) Math.max(Duration.between(i.inicio(), i.fin()).toMinutes(), 0))
+                .sum();
+    }
+
+    private List<Intervalo> intersectar(List<Intervalo> left, List<Intervalo> right) {
+        List<Intervalo> out = new ArrayList<>();
+        for (Intervalo a : left) {
+            for (Intervalo b : right) {
+                LocalDateTime inicio = a.inicio().isAfter(b.inicio()) ? a.inicio() : b.inicio();
+                LocalDateTime fin = a.fin().isBefore(b.fin()) ? a.fin() : b.fin();
+                if (inicio.isBefore(fin)) {
+                    out.add(new Intervalo(inicio, fin));
+                }
+            }
+        }
+        return unir(out);
+    }
+
+    private List<Intervalo> restar(List<Intervalo> source, List<Intervalo> blockers) {
+        List<Intervalo> out = new ArrayList<>();
+        List<Intervalo> bloqueos = unir(blockers);
+        for (Intervalo original : unir(source)) {
+            LocalDateTime cursor = original.inicio();
+            for (Intervalo bloqueo : bloqueos) {
+                if (!bloqueo.fin().isAfter(cursor)) {
+                    continue;
+                }
+                if (!bloqueo.inicio().isBefore(original.fin())) {
+                    break;
+                }
+                LocalDateTime inicioBloqueo = bloqueo.inicio().isAfter(cursor) ? bloqueo.inicio() : cursor;
+                if (cursor.isBefore(inicioBloqueo)) {
+                    out.add(new Intervalo(cursor, inicioBloqueo));
+                }
+                if (bloqueo.fin().isAfter(cursor)) {
+                    cursor = bloqueo.fin();
+                }
+                if (!cursor.isBefore(original.fin())) {
+                    break;
+                }
+            }
+            if (cursor.isBefore(original.fin())) {
+                out.add(new Intervalo(cursor, original.fin()));
+            }
+        }
+        return unir(out);
+    }
+
+    private List<Intervalo> unir(List<Intervalo> intervalos) {
+        List<Intervalo> ordenados = intervalos.stream()
+                .filter(i -> i != null && i.inicio() != null && i.fin() != null && i.inicio().isBefore(i.fin()))
+                .sorted(Comparator.comparing(Intervalo::inicio))
+                .toList();
+        if (ordenados.isEmpty()) {
+            return List.of();
+        }
+        List<Intervalo> out = new ArrayList<>();
+        Intervalo actual = ordenados.get(0);
+        for (int index = 1; index < ordenados.size(); index++) {
+            Intervalo siguiente = ordenados.get(index);
+            if (!siguiente.inicio().isAfter(actual.fin())) {
+                LocalDateTime fin = siguiente.fin().isAfter(actual.fin()) ? siguiente.fin() : actual.fin();
+                actual = new Intervalo(actual.inicio(), fin);
+            } else {
+                out.add(actual);
+                actual = siguiente;
+            }
+        }
+        out.add(actual);
+        return out;
+    }
 
     /** Minutos de interseccion entre [aInicio, aFin] y [bInicio, bFin] (0 si no se solapan). */
     private int overlapMinutos(LocalDateTime aInicio, LocalDateTime aFin, LocalDateTime bInicio, LocalDateTime bFin) {
@@ -1272,6 +1473,8 @@ public class MarcacionService {
         }
         List<ExcesoDiaResponse> excesos = asistencia == null ? List.of()
                 : calcularExcesos(asistencia, lunchIni, lunchFin);
+        List<PresenciaGapResponse> tiemposMuertos = gapsParaReporte(idEmpleado, fecha, jornada);
+        TotalesDia totales = calcularTotalesDia(asistencia, jornada);
 
         return ReporteDiaResponse.builder()
                 .idEmpleado(idEmpleado)
@@ -1281,7 +1484,7 @@ public class MarcacionService {
                 .marcaciones(marcacionesEditables(asistencia))
                 .tramos(construirTramosDia(asistencia, jornada))
                 .sesiones(sesiones)
-                .tiemposMuertos(presenciaTramoService.gapsDelDia(idEmpleado, fecha))
+                .tiemposMuertos(tiemposMuertos)
                 .presencia(presenciaTramoService.intervalosDelDia(idEmpleado, fecha))
                 .excesos(excesos)
                 .inicioAlmuerzoProgramado(lunchIni != null ? LocalDateTime.of(fecha, lunchIni) : null)
@@ -1290,11 +1493,51 @@ public class MarcacionService {
                 .almuerzoRealFin(asistencia != null ? asistencia.getAlmuerzoRealFin() : null)
                 .minutosAlmuerzoTomados(asistencia != null ? asistencia.getMinutosAlmuerzoTomados() : 0)
                 .minutosObjetivoDia(asistencia != null ? asistencia.getMinutosObjetivoDia() : objetivoJornada(jornada))
-                .minutosTrabajados(asistencia != null ? asistencia.getMinutosTrabajados() : 0)
-                .minutosBalance(asistencia != null ? asistencia.getMinutosBalance() : 0)
+                .minutosTrabajados(totales.minutosTrabajados())
+                .minutosBalance(totales.minutosBalance())
                 .minutosExtra(asistencia != null ? asistencia.getMinutosExtra() : 0)
                 .minutosCompensados(asistencia != null ? asistencia.getMinutosCompensados() : 0)
                 .build();
+    }
+
+    /**
+     * Recalcula los totales derivados del dia para consumidores de resumen que aun pueden tener un
+     * snapshot historico generado con la regla anterior.
+     */
+    @Transactional(readOnly = true)
+    public TotalesDia calcularTotalesDia(Long idEmpleado, LocalDate fecha) {
+        JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolverSiExiste(idEmpleado, fecha).orElse(null);
+        Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha).orElse(null);
+        return calcularTotalesDia(asistencia, jornada);
+    }
+
+    private TotalesDia calcularTotalesDia(Asistencia asistencia, JornadaEfectivaResponse jornada) {
+        if (asistencia == null) {
+            return new TotalesDia(0, 0);
+        }
+        if (jornada == null) {
+            return new TotalesDia(safe(asistencia.getMinutosTrabajados()), safe(asistencia.getMinutosBalance()));
+        }
+        int minutosTrabajados = calcularMinutosBaseAcreditados(asistencia, jornada, segmentosTrabajados(asistencia));
+        int minutosBalance = Math.min(minutosTrabajados - safe(asistencia.getMinutosObjetivoDia()), 0);
+        return new TotalesDia(minutosTrabajados, minutosBalance);
+    }
+
+    private List<PresenciaGapResponse> gapsParaReporte(Long idEmpleado, LocalDate fecha,
+                                                       JornadaEfectivaResponse jornada) {
+        if (jornada == null) {
+            return presenciaTramoService.gapsDelDia(idEmpleado, fecha);
+        }
+        TramoJornadaResponse base = jornada.getTramos().stream()
+                .filter(t -> t.getInicio() != null && t.getFin() != null)
+                .filter(t -> Boolean.TRUE.equals(t.getBase())
+                        || t.getOrigen() == OrigenAjusteJornada.REEMPLAZO_BASE)
+                .findFirst()
+                .orElse(null);
+        if (base == null) {
+            return presenciaTramoService.gapsDelDia(idEmpleado, fecha);
+        }
+        return presenciaTramoService.gapsDentroDeVentana(idEmpleado, fecha, base.getInicio(), base.getFin());
     }
 
     /**
@@ -1389,16 +1632,15 @@ public class MarcacionService {
 
     /**
      * Excesos del dia que pesan en el balance, con su rango temporal (la "cola" sobre el tope), para la
-     * linea de Incidencias: almuerzo pasado del programado + cada pausa activa que paso del maximo.
+     * linea de Incidencias: almuerzo, servicios y pausa activa. CAPACITACION no tiene tope ni exceso.
      */
     private List<ExcesoDiaResponse> calcularExcesos(Asistencia a, LocalTime lunchIni, LocalTime lunchFin) {
         List<ExcesoDiaResponse> out = new ArrayList<>();
 
-        Integer progMin = minutosEntre(lunchIni, lunchFin);
         int tomado = safe(a.getMinutosAlmuerzoTomados());
-        if (progMin != null && progMin > 0 && tomado > progMin
+        if (tomado > MAX_MINUTOS_ALMUERZO
                 && a.getAlmuerzoRealInicio() != null && a.getAlmuerzoRealFin() != null) {
-            LocalDateTime desde = a.getAlmuerzoRealInicio().plusMinutes(progMin);
+            LocalDateTime desde = a.getAlmuerzoRealInicio().plusMinutes(MAX_MINUTOS_ALMUERZO);
             if (desde.isBefore(a.getAlmuerzoRealFin())) {
                 out.add(ExcesoDiaResponse.builder().tipo("ALMUERZO")
                         .inicio(desde).fin(a.getAlmuerzoRealFin())
@@ -1419,6 +1661,25 @@ public class MarcacionService {
                                     .minutos(dur - maxPausa).build());
                         }
                     });
+        }
+
+        int maxServicios = a.getMinutosServiciosPermitidos() == null
+                ? MAX_MINUTOS_SERVICIOS_POR_DEFECTO : Math.max(a.getMinutosServiciosPermitidos(), 0);
+        int serviciosAcumulados = 0;
+        for (SesionEstado sesion : sesionEstadoRepository
+                .findByAsistenciaIdAndTipoOrderByInicioAsc(a.getId(), TipoSesionEstado.SERVICIOS)) {
+            if (sesion.getInicio() == null || sesion.getFin() == null) {
+                continue;
+            }
+            int duracion = (int) Math.max(Duration.between(sesion.getInicio(), sesion.getFin()).toMinutes(), 0);
+            int inicioExceso = Math.max(maxServicios - serviciosAcumulados, 0);
+            if (duracion > inicioExceso) {
+                LocalDateTime desde = sesion.getInicio().plusMinutes(inicioExceso);
+                out.add(ExcesoDiaResponse.builder().tipo("SERVICIOS")
+                        .inicio(desde).fin(sesion.getFin())
+                        .minutos(duracion - inicioExceso).build());
+            }
+            serviciosAcumulados += duracion;
         }
         return out;
     }
@@ -1445,6 +1706,9 @@ public class MarcacionService {
                         (x, y) -> x));
 
         List<TramoDiaResponse> out = new ArrayList<>();
+        int minutosBaseAcreditados = a != null
+                ? calcularMinutosBaseAcreditados(a, jornada, segmentos) : 0;
+        boolean baseCreditoPublicado = false;
         for (TramoJornadaResponse t : jornada.getTramos()) {
             if (t.getInicio() == null || t.getFin() == null) {
                 continue;
@@ -1454,7 +1718,13 @@ public class MarcacionService {
             TipoTramoDia tipo = esBase ? TipoTramoDia.BASE
                     : (razonPorAjuste.get(t.getIdAjuste()) == RazonAjuste.COMPENSACION
                             ? TipoTramoDia.COMPENSABLE : TipoTramoDia.EXTRA);
-            int credito = a != null ? creditoTramo(a, t, segmentos, hayPresencia, esBase) : 0;
+            int credito;
+            if (esBase) {
+                credito = baseCreditoPublicado ? 0 : minutosBaseAcreditados;
+                baseCreditoPublicado = true;
+            } else {
+                credito = a != null ? creditoTramo(a, t, segmentos, hayPresencia, false) : 0;
+            }
 
             LocalDateTime ingresoReal = null, salidaReal = null;
             boolean huboMarca = false;

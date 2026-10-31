@@ -118,6 +118,71 @@ public class PresenciaTramoService {
     }
 
     /**
+     * Huecos de presencia dentro de una ventana programada. Ademas de los huecos entre conexiones, incluye
+     * el tiempo OFFLINE al inicio o al final de la ventana para que el calculo y el reporte no oculten
+     * tardanzas, salidas anticipadas ni desconexiones sin un tramo siguiente.
+     */
+    public List<PresenciaGapResponse> gapsDentroDeVentana(Long idEmpleado, LocalDate fecha,
+                                                           LocalDateTime windowStart, LocalDateTime windowEnd) {
+        if (windowStart == null || windowEnd == null || !windowStart.isBefore(windowEnd)) {
+            return List.of();
+        }
+
+        List<PresenciaTramo> tramos = presenciaTramoRepository.findByIdEmpleadoAndFechaOrderByInicioAsc(idEmpleado, fecha);
+        List<PresenciaGapResponse> gaps = new ArrayList<>();
+        List<PresenciaTramo> validos = tramos.stream()
+                .filter(t -> t.getInicio() != null && t.getInicio().isBefore(windowEnd))
+                .toList();
+
+        if (validos.isEmpty()) {
+            return List.of(gap(windowStart, windowEnd, "OFFLINE", "OFFLINE"));
+        }
+
+        PresenciaTramo primero = validos.get(0);
+        if (windowStart.isBefore(primero.getInicio())) {
+            LocalDateTime fin = primero.getInicio().isBefore(windowEnd) ? primero.getInicio() : windowEnd;
+            if (windowStart.isBefore(fin)) {
+                gaps.add(gap(windowStart, fin, "OFFLINE", "OFFLINE"));
+            }
+        }
+
+        for (int i = 0; i < validos.size() - 1; i++) {
+            PresenciaTramo actual = validos.get(i);
+            PresenciaTramo siguiente = validos.get(i + 1);
+            if (actual.getFin() == null || siguiente.getInicio() == null
+                    || !actual.getFin().isBefore(siguiente.getInicio())) {
+                continue;
+            }
+            LocalDateTime inicio = actual.getFin().isAfter(windowStart) ? actual.getFin() : windowStart;
+            LocalDateTime fin = siguiente.getInicio().isBefore(windowEnd) ? siguiente.getInicio() : windowEnd;
+            if (inicio.isBefore(fin)) {
+                gaps.add(gap(inicio, fin,
+                        actual.getOrigenFin() != null ? actual.getOrigenFin().name() : null,
+                        actual.getEstadoAlDesconectar()));
+            }
+        }
+
+        PresenciaTramo ultimo = validos.get(validos.size() - 1);
+        if (ultimo.getFin() != null && ultimo.getFin().isBefore(windowEnd)) {
+            LocalDateTime inicio = ultimo.getFin().isAfter(windowStart) ? ultimo.getFin() : windowStart;
+            if (inicio.isBefore(windowEnd)) {
+                gaps.add(gap(inicio, windowEnd, "OFFLINE", "OFFLINE"));
+            }
+        }
+        return gaps;
+    }
+
+    private PresenciaGapResponse gap(LocalDateTime inicio, LocalDateTime fin, String motivo, String estado) {
+        return PresenciaGapResponse.builder()
+                .inicio(inicio)
+                .fin(fin)
+                .minutos((int) Duration.between(inicio, fin).toMinutes())
+                .motivo(motivo)
+                .estadoAlDesconectar(estado)
+                .build();
+    }
+
+    /**
      * Intervalos de presencia real (conectado) del dia, en orden. Cada tramo abierto (fin == null) se
      * devuelve tal cual (fin nulo) para que el consumidor decida el corte (p. ej. "ahora"). Evidencia
      * autoritativa de la linea de Marcaciones del reporte.

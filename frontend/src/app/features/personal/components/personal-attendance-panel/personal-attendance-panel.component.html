@@ -29,8 +29,8 @@
       <div class="attendance-metric"><span>Faltas</span><strong [class.is-danger]="attendance.metrics().faltas > 0">{{ attendance.metrics().faltas }}</strong></div>
       <div class="attendance-metric"><span>Tardanzas</span><strong [class.is-warning]="attendance.metrics().tardanzas > 0">{{ attendance.metrics().tardanzas }}</strong></div>
       <div class="attendance-metric"><span>Balance</span><strong [class.is-danger]="attendance.metrics().balance < 0">{{ balanceLabel(attendance.metrics().balance) }}</strong></div>
-      <div class="attendance-metric"><span>Extra</span><strong>{{ durationLabel(attendance.metrics().extra) }}</strong></div>
-      <div class="attendance-metric"><span>Compensado</span><strong>{{ durationLabel(attendance.metrics().compensado) }}</strong></div>
+      <div class="attendance-metric"><span>Horas objetivo</span><strong>{{ durationLabel(attendance.metrics().objetivo) }}</strong></div>
+      <div class="attendance-metric"><span>Horas trabajadas</span><strong [class.is-warning]="attendance.metrics().trabajadas < attendance.metrics().objetivo">{{ durationLabel(attendance.metrics().trabajadas) }}</strong></div>
     </section>
 
     @if (!attendance.days().length) {

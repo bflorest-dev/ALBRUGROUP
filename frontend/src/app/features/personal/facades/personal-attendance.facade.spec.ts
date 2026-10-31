@@ -20,6 +20,7 @@ function day(overrides: Partial<CumplimientoDetalleDiaResponse>): CumplimientoDe
     jornadaCerrada: true,
     minutosObjetivoDia: 540,
     minutosTrabajados: 450,
+    minutosTrabajadosMarcacion: 480,
     minutosBalance: -90,
     minutosServiciosAcumulados: 0,
     excedioServicios: false,
@@ -56,8 +57,8 @@ describe('PersonalAttendanceFacade', () => {
       getCumplimientoDetalle: vi.fn(() => of({
         empleados: [{ idEmpleado: 42, dias: [
           day({ fecha: '2026-09-01' }),
-          day({ fecha: '2026-09-02', horaEntradaAsistencia: null, horaSalidaAsistencia: null, tardanza: false, minutosBalance: 0, minutosExtra: 0, minutosCompensados: 30 }),
-          day({ fecha: '2026-09-03', laborable: false, horaEntradaAsistencia: null, horaSalidaAsistencia: null, minutosBalance: 0, minutosExtra: 0 })
+          day({ fecha: '2026-09-02', horaEntradaAsistencia: null, horaSalidaAsistencia: null, tardanza: false, minutosBalance: 0, minutosTrabajadosMarcacion: 0 }),
+          day({ fecha: '2026-09-03', laborable: false, horaEntradaAsistencia: null, horaSalidaAsistencia: null, minutosBalance: 0, minutosTrabajadosMarcacion: 0 })
         ] }]
       }))
     };
@@ -66,7 +67,7 @@ describe('PersonalAttendanceFacade', () => {
     await facade.initialize(42);
 
     expect(facade.days()).toHaveLength(3);
-    expect(facade.metrics()).toEqual({ presentes: 1, faltas: 1, tardanzas: 1, balance: -90, extra: 60, compensado: 30 });
+    expect(facade.metrics()).toEqual({ presentes: 1, faltas: 1, tardanzas: 1, balance: -90, objetivo: 1080, trabajadas: 480 });
   });
 
   it('expande un día, guarda el reporte y reutiliza el cache al abrirlo nuevamente', async () => {

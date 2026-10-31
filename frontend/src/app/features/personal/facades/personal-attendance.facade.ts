@@ -17,8 +17,8 @@ export interface PersonalAttendanceMetrics {
   faltas: number;
   tardanzas: number;
   balance: number;
-  extra: number;
-  compensado: number;
+  objetivo: number;
+  trabajadas: number;
 }
 
 @Injectable()
@@ -56,21 +56,21 @@ export class PersonalAttendanceFacade {
     let faltas = 0;
     let tardanzas = 0;
     let balance = 0;
-    let extra = 0;
-    let compensado = 0;
+    let objetivo = 0;
+    let trabajadas = 0;
 
     for (const day of this.days()) {
       if (day.laborable) {
         if (day.horaEntradaAsistencia) presentes += 1;
         else if (day.fecha < today) faltas += 1;
+        objetivo += Math.max(day.minutosObjetivoDia ?? 0, 0);
       }
       if (day.laborable && day.tardanza) tardanzas += 1;
       balance += Math.min(day.minutosBalance ?? 0, 0);
-      extra += Math.max(day.minutosExtra ?? 0, 0);
-      compensado += Math.max(day.minutosCompensados ?? 0, 0);
+      trabajadas += Math.max(day.minutosTrabajadosMarcacion ?? 0, 0);
     }
 
-    return { presentes, faltas, tardanzas, balance, extra, compensado };
+    return { presentes, faltas, tardanzas, balance, objetivo, trabajadas };
   });
 
   async initialize(employeeId: number): Promise<void> {

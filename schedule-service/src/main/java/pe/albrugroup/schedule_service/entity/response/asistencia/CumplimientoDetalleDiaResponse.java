@@ -28,6 +28,8 @@ public class CumplimientoDetalleDiaResponse {
     private Boolean jornadaCerrada;
     private Integer minutosObjetivoDia;
     private Integer minutosTrabajados;
+    /** Presencia neta por marcaciones del dia: (salida - ingreso) - almuerzo. Independiente del tiempo productivo. */
+    private Integer minutosTrabajadosMarcacion;
     private Integer minutosBalance;
     private Integer minutosServiciosAcumulados;
     private Boolean excedioServicios;

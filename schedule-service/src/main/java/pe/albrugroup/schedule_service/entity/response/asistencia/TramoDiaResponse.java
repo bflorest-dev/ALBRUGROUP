@@ -26,6 +26,6 @@ public class TramoDiaResponse {
     private LocalDateTime ingresoReal;
     private LocalDateTime salidaReal;
 
-    /** Minutos ya acreditados a este tramo (envelope ∩ ventana ∩ presencia, con nulidad para extra/comp). */
+    /** Minutos acreditados al tramo; BASE respeta estados permitidos y excesos, extra/comp conservan nulidad. */
     private Integer minutosAcreditados;
 }
