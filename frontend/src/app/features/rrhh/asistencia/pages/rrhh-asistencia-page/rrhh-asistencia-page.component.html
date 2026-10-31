@@ -32,7 +32,12 @@
         <div class="cumplimiento-section">
           <header class="cumplimiento-section__head">
             <div class="cumplimiento-section__title">
-              <h3>Cumplimiento del mes</h3>
+              <div class="cumplimiento-section__title-row">
+                <h3>Cumplimiento del mes</h3>
+                @if (!facade.isLoading()) {
+                  <p-tag [value]="facade.rows().length.toString()" severity="secondary" styleClass="cumplimiento-count-badge" />
+                }
+              </div>
               <p>Faltas, tardanzas y balance de horas por empleado. Haz click en una fila para ver el detalle.</p>
             </div>
             <div class="cumplimiento-section__chip">

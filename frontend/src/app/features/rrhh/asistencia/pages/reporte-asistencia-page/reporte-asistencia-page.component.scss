@@ -77,6 +77,29 @@
   }
 }
 
+.ra-title-group {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.ra-count-badge {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 10px;
+}
+
+[data-theme="light"] .ra-count-badge {
+  background: rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.55);
+}
+
 .ra-actions {
   display: flex;
   gap: 4px;

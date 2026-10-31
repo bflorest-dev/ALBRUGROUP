@@ -147,7 +147,14 @@
         </ng-template>
         <ng-template #body let-row>
           <tr>
-            <td class="billing-sticky-column billing-person"><strong>{{ row.nombres }}</strong></td>
+            <td class="billing-sticky-column billing-person">
+              <div class="billing-person__inner">
+                <button class="billing-icon-button billing-icon-button--resumen" type="button" (click)="facade.openResumen(row)" pTooltip="Resumen de pago">
+                  <i class="pi pi-receipt" aria-hidden="true"></i>
+                </button>
+                <strong>{{ row.nombres }}</strong>
+              </div>
+            </td>
             <td>{{ row.apellidos }}</td>
             <td class="billing-band--identity">{{ row.tipoDocumento }}</td>
             <td class="billing-band--identity billing-data">{{ row.numeroDocumento }}</td>
@@ -194,9 +201,6 @@
               </button>
               <button class="billing-icon-button" type="button" (click)="facade.openAdjustments(row)" pTooltip="Ajustes manuales">
                 <i class="pi pi-wallet" aria-hidden="true"></i>
-              </button>
-              <button class="billing-icon-button billing-icon-button--resumen" type="button" (click)="facade.openResumen(row)" pTooltip="Resumen de pago">
-                <i class="pi pi-receipt" aria-hidden="true"></i>
               </button>
             </td>
           </tr>

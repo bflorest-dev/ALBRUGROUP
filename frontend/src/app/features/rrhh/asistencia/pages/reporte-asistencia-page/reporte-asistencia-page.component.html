@@ -4,7 +4,12 @@
   <!-- Header -->
   <header class="ra-header">
     <div class="ra-title-row">
-      <h1>Asistencia</h1>
+      <div class="ra-title-group">
+        <h1>Asistencia</h1>
+        @if (!loading() && filasFiltradas().length) {
+          <span class="ra-count-badge">{{ filasFiltradas().length }}</span>
+        }
+      </div>
       <div class="ra-actions">
         <button class="ra-btn ra-btn--ghost" (click)="recalcular()" [disabled]="loading()" title="Recalcular">
           <i class="pi pi-refresh"></i>

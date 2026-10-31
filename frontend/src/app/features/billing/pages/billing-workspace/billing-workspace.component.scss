@@ -313,10 +313,14 @@
   left: 0;
   position: sticky;
   z-index: 2;
+  width: 11rem;
+  min-width: 11rem;
+  max-width: 11rem;
 }
 
 .billing-table ::ng-deep .p-datatable-thead .billing-sticky-column {
   background: var(--billing-panel-soft);
+  box-shadow: 2px 0 6px -2px var(--billing-line-strong);
   top: 0;
   text-align: left;
   z-index: 4;
@@ -324,12 +328,24 @@
 
 .billing-table ::ng-deep .p-datatable-tbody .billing-sticky-column {
   background: var(--billing-panel);
+  box-shadow: 2px 0 6px -2px var(--billing-line-strong);
   text-align: left;
   z-index: 2;
 }
 
 .billing-person {
-  min-width: 9rem;
+  &__inner {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    overflow: hidden;
+  }
+
+  strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .billing-data,
@@ -412,6 +428,7 @@
 .billing-drawer-header {
   display: grid;
   gap: 0.25rem;
+  width: 100%;
 }
 
 .billing-drawer-header strong {
@@ -569,7 +586,7 @@
 .boleta {
   display: grid;
   gap: 1.25rem;
-  max-width: 36rem;
+  width: 100%;
   padding-bottom: 2rem;
 }
 
