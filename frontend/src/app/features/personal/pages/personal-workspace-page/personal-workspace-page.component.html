@@ -30,7 +30,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       <input type="search" [ngModel]="facade.search()" (ngModelChange)="facade.search.set($event)" placeholder="Nombre, DNI, correo o usuario…" />
     </label>
     <div class="category-segments" role="group" aria-label="Categoría de personal">
-      @for (option of [{value:'TODOS',label:'Activos'},{value:'OPERATIVO',label:'Operativo'},{value:'ESTRUCTURAL',label:'Estructural'},{value:'INACTIVO',label:'Inactivos'}]; track option.value) {
+      @for (option of [{value:'TODOS',label:'Activos'},{value:'OPERATIVO',label:'Operativo'},{value:'ESTRUCTURAL',label:'Estructural'},{value:'MANTENIMIENTO',label:'Mantenimiento'},{value:'INACTIVO',label:'Inactivos'}]; track option.value) {
         <button type="button" [class.active]="facade.categoryFilter() === option.value" (click)="setCategoryFilter($any(option.value))">{{ option.label }}</button>
       }
     </div>
@@ -72,6 +72,13 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <button class="category-row" type="button" (click)="toggleCategory('ESTRUCTURAL')"><i class="ti" [class.ti-chevron-down]="isCategoryExpanded('ESTRUCTURAL')" [class.ti-chevron-right]="!isCategoryExpanded('ESTRUCTURAL')"></i><strong>ESTRUCTURAL</strong><span class="mono">{{ facade.structuralRows().length }}</span></button>
         @if (isCategoryExpanded('ESTRUCTURAL')) {
           @for (row of facade.structuralRows(); track row.employee.idEmpleado) { <ng-container [ngTemplateOutlet]="employeeRow" [ngTemplateOutletContext]="{$implicit:row}"></ng-container> }
+        }
+      }
+
+      @if (facade.maintenanceRows().length) {
+        <button class="category-row" type="button" (click)="toggleCategory('MANTENIMIENTO')"><i class="ti" [class.ti-chevron-down]="isCategoryExpanded('MANTENIMIENTO')" [class.ti-chevron-right]="!isCategoryExpanded('MANTENIMIENTO')"></i><strong>MANTENIMIENTO</strong><span class="mono">{{ facade.maintenanceRows().length }}</span></button>
+        @if (isCategoryExpanded('MANTENIMIENTO')) {
+          @for (row of facade.maintenanceRows(); track row.employee.idEmpleado) { <ng-container [ngTemplateOutlet]="employeeRow" [ngTemplateOutletContext]="{$implicit:row}"></ng-container> }
         }
       }
 

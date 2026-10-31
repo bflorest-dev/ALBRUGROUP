@@ -20,12 +20,12 @@ import {
   UserRoles
 } from '../services/personal-access.service';
 
-export type PersonalCategoryFilter = 'TODOS' | 'OPERATIVO' | 'ESTRUCTURAL' | 'INACTIVO';
+export type PersonalCategoryFilter = 'TODOS' | 'OPERATIVO' | 'ESTRUCTURAL' | 'MANTENIMIENTO' | 'INACTIVO';
 
 export interface PersonalDirectoryRow {
   employee: EmpleadoRolResponse;
   access: UserAccessSummary | null;
-  category: 'OPERATIVO' | 'ESTRUCTURAL' | 'SIN_CATEGORIA';
+  category: 'OPERATIVO' | 'ESTRUCTURAL' | 'MANTENIMIENTO' | 'SIN_CATEGORIA';
   hasContract: boolean;
   primaryRole: string;
   secondaryRoles: string[];
@@ -248,6 +248,7 @@ export class PersonalWorkspaceFacade {
   });
 
   readonly structuralRows = computed(() => this.rows().filter((row) => row.category === 'ESTRUCTURAL'));
+  readonly maintenanceRows = computed(() => this.rows().filter((row) => row.category === 'MANTENIMIENTO'));
   readonly unclassifiedRows = computed(() => this.rows().filter((row) => row.category === 'SIN_CATEGORIA'));
   readonly operationalGroups = computed<PersonalRoleGroup[]>(() => {
     const roles = new Map<string, PersonalDirectoryRow[]>();
