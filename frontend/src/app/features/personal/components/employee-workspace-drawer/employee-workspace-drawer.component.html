@@ -27,7 +27,9 @@
     @if (subview() === 'none') {
       <nav class="drawer-tabs" aria-label="Secciones del expediente">
         <button type="button" [class.active]="section() === 'resumen'" (click)="setSection('resumen')">Resumen</button>
-        <button type="button" [class.active]="section() === 'contrato'" (click)="setSection('contrato')">Contrato</button>
+        @if (canViewContract()) {
+          <button type="button" [class.active]="section() === 'contrato'" (click)="setSection('contrato')">Contrato</button>
+        }
         @if (canManageRoles()) {
           <button type="button" [class.active]="section() === 'roles'" (click)="setSection('roles')">Roles</button>
         }
@@ -506,7 +508,7 @@
             @if (current.secondaryRoles.length) { <div><span>Roles secundarios</span><strong>{{ labels(current.secondaryRoles) }}</strong></div> }
           </div>
         </section>
-      } @else if (section() === 'contrato') {
+      } @else if (section() === 'contrato' && canViewContract()) {
         <section class="summary-block">
           <h3>Contrato vigente</h3>
           @if (isLoadingEmployment()) { <p class="muted">Consultando contrato…</p> }
@@ -713,7 +715,7 @@
         @if (canManageRoles()) {
           @if (current.employee.estadoOperativo !== 'INACTIVO') { <button type="button" class="danger-button push-right" (click)="openDismissConfirmation()">Dar de baja</button> }
         }
-      } @else if (section() === 'contrato') {
+      } @else if (section() === 'contrato' && canViewContract()) {
         <button type="button" class="primary-button" (click)="openContractForm()">{{ contract() ? 'Nuevo contrato' : 'Registrar contrato' }}</button>
         @if (contract() && canEditContract()) { <button type="button" class="ghost-button" (click)="openEditContract()"><i class="ti ti-pencil" aria-hidden="true"></i>Editar contrato</button> }
         @if (contract()) { <button type="button" class="danger-ghost-button push-right" (click)="openCloseContract()">Finalizar contrato</button> }

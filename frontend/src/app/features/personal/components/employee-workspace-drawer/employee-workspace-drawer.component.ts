@@ -62,6 +62,10 @@ export function canEditVigenteContract(roles: string[], hasContract: boolean): b
   return hasContract && roles.includes('ADMINISTRADOR');
 }
 
+export function canViewContractSection(activeRole: string | null): boolean {
+  return activeRole === 'ADMINISTRADOR';
+}
+
 @Component({
   selector: 'app-employee-workspace-drawer',
   imports: [DatePipe, FormsModule, ReactiveFormsModule, DateFieldComponent, ScheduleWeekEditorComponent, ScheduleDayEditorComponent, ScheduleFooterActionsComponent, ScheduleOverviewControlsComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent, PersonalAttendancePanelComponent],
@@ -291,12 +295,14 @@ export class EmployeeWorkspaceDrawerComponent {
         this.loadEmployeeDetails(row),
         this.loadContractors(),
         this.loadEmployment(row.employee.idEmpleado),
-        this.loadContractHistory(row.employee.idEmpleado)
+        ...(this.canViewContract() ? [this.loadContractHistory(row.employee.idEmpleado)] : [])
       ]);
     });
   }
 
   protected setSection(section: DrawerSection): void {
+    if (section === 'contrato' && !this.canViewContract()) return;
+
     this.section.set(section);
     this.subview.set('none');
     this.clearActionFeedback();
@@ -377,7 +383,12 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected canEditContract(): boolean {
-    return canEditVigenteContract(this.session.session()?.roles ?? [], !!this.contract());
+    return this.canViewContract()
+      && canEditVigenteContract(this.session.session()?.roles ?? [], !!this.contract());
+  }
+
+  protected canViewContract(): boolean {
+    return canViewContractSection(this.session.getActiveRole());
   }
 
   protected displayValue(value: string | number | boolean | null | undefined): string {
@@ -621,6 +632,8 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected openContractForm(): void {
+    if (!this.canViewContract()) return;
+
     const current = this.contract();
     this.isEditingContract.set(false);
     this.contractForm.reset({
@@ -723,7 +736,7 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected async submitContract(): Promise<void> {
     const row = this.row();
-    if (!row) return;
+    if (!row || !this.canViewContract()) return;
     if (this.contractForm.invalid || (this.hasContractEndDate() && !this.contractForm.controls.fechaFin.value)) {
       this.contractForm.markAllAsTouched();
       this.actionError.set('Completa los datos obligatorios del contrato.');
@@ -766,6 +779,8 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected openCloseContract(): void {
+    if (!this.canViewContract()) return;
+
     this.closeContractForm.reset({ fechaFin: this.today() });
     this.clearActionFeedback();
     this.subview.set('cerrar-contrato');
@@ -773,7 +788,7 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected async confirmCloseContract(): Promise<void> {
     const row = this.row();
-    if (!row || this.closeContractForm.invalid) return;
+    if (!row || !this.canViewContract() || this.closeContractForm.invalid) return;
     this.isClosingContract.set(true);
     this.clearActionFeedback();
     try {

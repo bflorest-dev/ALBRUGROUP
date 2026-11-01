@@ -1,6 +1,6 @@
 import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
-import { canEditVigenteContract, scopeCapabilitiesForRoles } from './employee-workspace-drawer.component';
+import { canEditVigenteContract, canViewContractSection, scopeCapabilitiesForRoles } from './employee-workspace-drawer.component';
 
 describe('capacidades de ámbito del drawer de PERSONAL', () => {
   it('muestra únicamente equipos para roles de equipo', () => {
@@ -20,5 +20,11 @@ describe('capacidades de ámbito del drawer de PERSONAL', () => {
     expect(canEditVigenteContract(['ADMINISTRADOR'], true)).toBe(true);
     expect(canEditVigenteContract(['RRHH'], true)).toBe(false);
     expect(canEditVigenteContract(['ADMINISTRADOR'], false)).toBe(false);
+  });
+
+  it('muestra la sección Contrato únicamente con el rol activo de administrador', () => {
+    expect(canViewContractSection('ADMINISTRADOR')).toBe(true);
+    expect(canViewContractSection('RRHH')).toBe(false);
+    expect(canViewContractSection(null)).toBe(false);
   });
 });
