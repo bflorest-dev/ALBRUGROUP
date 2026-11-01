@@ -60,17 +60,18 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                                         @Param("fin") LocalDate fin);
 
     @Query("""
-            SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END
+            SELECT c
             FROM Contrato c
             WHERE c.empleado.id = :empleadoId
               AND c.id <> :contratoId
               AND (:hasta IS NULL OR c.fechaInicio <= :hasta)
               AND (c.fechaFin IS NULL OR c.fechaFin >= :desde)
+            ORDER BY c.fechaInicio DESC
             """)
-    boolean existeSolapamientoContratosExceptoId(@Param("empleadoId") Long empleadoId,
-                                                  @Param("contratoId") Long contratoId,
-                                                  @Param("desde") LocalDate desde,
-                                                  @Param("hasta") LocalDate hasta);
+    List<Contrato> findContratosSolapadosExceptoId(@Param("empleadoId") Long empleadoId,
+                                                   @Param("contratoId") Long contratoId,
+                                                   @Param("desde") LocalDate desde,
+                                                   @Param("hasta") LocalDate hasta);
 
     @Query("""
             SELECT

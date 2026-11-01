@@ -94,21 +94,41 @@ public class ContratoService implements IContrato {
                 .orElseThrow(() -> new NotFoundException(Contrato.class, idEmpleado));
 
         validarVigenciaContratoEditado(request.getFechaInicio(), request.getFechaFin(), hoy);
-        boolean haySolapamiento = contratoRepository.existeSolapamientoContratosExceptoId(
+        List<Contrato> contratosSolapados = contratoRepository.findContratosSolapadosExceptoId(
                 idEmpleado,
                 contrato.getId(),
                 request.getFechaInicio(),
                 request.getFechaFin()
         );
-        if (haySolapamiento) {
-            throw new ConflictException(
-                    "El rango de fechas [" + request.getFechaInicio() + " - "
-                            + request.getFechaFin() + "] se solapa con un contrato existente."
-            );
-        }
+        ajustarContratosAnteriores(contratosSolapados, request.getFechaInicio(), request.getFechaFin());
 
         mapper.updateContrato(request, contrato);
         return mapper.toResponse(contratoRepository.save(contrato));
+    }
+
+    private void ajustarContratosAnteriores(List<Contrato> contratosSolapados,
+                                            LocalDate fechaInicioNueva,
+                                            LocalDate fechaFinNueva) {
+        if (contratosSolapados.isEmpty()) {
+            return;
+        }
+
+        boolean hayContratoPosterior = contratosSolapados.stream()
+                .anyMatch(contrato -> !contrato.getFechaInicio().isBefore(fechaInicioNueva));
+        if (hayContratoPosterior) {
+            throw conflictoDeSolapamiento(fechaInicioNueva, fechaFinNueva);
+        }
+
+        LocalDate fechaFinAnterior = fechaInicioNueva.minusDays(1);
+        contratosSolapados.forEach(contrato -> contrato.setFechaFin(fechaFinAnterior));
+    }
+
+    private ConflictException conflictoDeSolapamiento(LocalDate fechaInicio,
+                                                      LocalDate fechaFin) {
+        return new ConflictException(
+                "El rango de fechas [" + fechaInicio + " - " + fechaFin
+                        + "] se solapa con un contrato existente."
+        );
     }
 
     @Override @Transactional

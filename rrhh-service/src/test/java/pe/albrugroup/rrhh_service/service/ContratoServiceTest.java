@@ -28,6 +28,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,9 +83,9 @@ class ContratoServiceTest {
         ContratoResponse response = new ContratoResponse();
         when(contratoRepository.findContratoVigenteByEmpleadoId(eq(EMPLEADO_ID), any(LocalDate.class)))
                 .thenReturn(Optional.of(contrato));
-        when(contratoRepository.existeSolapamientoContratosExceptoId(
+        when(contratoRepository.findContratosSolapadosExceptoId(
                 eq(EMPLEADO_ID), eq(contrato.getId()), any(LocalDate.class), isNull()))
-                .thenReturn(false);
+                .thenReturn(List.of());
         when(contratoRepository.save(same(contrato))).thenReturn(contrato);
         when(mapper.toResponse(same(contrato))).thenReturn(response);
 
@@ -103,9 +104,9 @@ class ContratoServiceTest {
         ContratoResponse response = new ContratoResponse();
         when(contratoRepository.findContratoVigenteByEmpleadoId(eq(EMPLEADO_ID), any(LocalDate.class)))
                 .thenReturn(Optional.of(contrato));
-        when(contratoRepository.existeSolapamientoContratosExceptoId(
+        when(contratoRepository.findContratosSolapadosExceptoId(
                 eq(EMPLEADO_ID), eq(contrato.getId()), any(LocalDate.class), eq(request.getFechaFin())))
-                .thenReturn(false);
+                .thenReturn(List.of());
         when(contratoRepository.save(same(contrato))).thenReturn(contrato);
         when(mapper.toResponse(same(contrato))).thenReturn(response);
 
@@ -120,11 +121,15 @@ class ContratoServiceTest {
     @Test
     void rechazaUnSolapamientoConOtroContrato() {
         Contrato contrato = contratoVigente();
+        Contrato contratoPosterior = Contrato.builder()
+                .id(21L)
+                .fechaInicio(LocalDate.now().plusDays(1))
+                .build();
         when(contratoRepository.findContratoVigenteByEmpleadoId(eq(EMPLEADO_ID), any(LocalDate.class)))
                 .thenReturn(Optional.of(contrato));
-        when(contratoRepository.existeSolapamientoContratosExceptoId(
+        when(contratoRepository.findContratosSolapadosExceptoId(
                 eq(EMPLEADO_ID), eq(contrato.getId()), any(LocalDate.class), isNull()))
-                .thenReturn(true);
+                .thenReturn(List.of(contratoPosterior));
 
         assertThatThrownBy(() -> contratoService.actualizarContratoVigente(EMPLEADO_ID, requestVigente()))
                 .isInstanceOf(ConflictException.class)
@@ -132,6 +137,30 @@ class ContratoServiceTest {
 
         verify(mapper, never()).updateContrato(any(), any());
         verify(contratoRepository, never()).save(any());
+    }
+
+    @Test
+    void ajustaElFinDelContratoAnteriorCuandoElInicioSeMueveHaciaAtras() {
+        Contrato contrato = contratoVigente();
+        Contrato contratoAnterior = Contrato.builder()
+                .id(19L)
+                .fechaInicio(LocalDate.now().minusDays(60))
+                .fechaFin(LocalDate.now().minusDays(10))
+                .build();
+        ActualizarContratoVigenteRequest request = requestVigente();
+        when(contratoRepository.findContratoVigenteByEmpleadoId(eq(EMPLEADO_ID), any(LocalDate.class)))
+                .thenReturn(Optional.of(contrato));
+        when(contratoRepository.findContratosSolapadosExceptoId(
+                eq(EMPLEADO_ID), eq(contrato.getId()), eq(request.getFechaInicio()), isNull()))
+                .thenReturn(List.of(contratoAnterior));
+        when(contratoRepository.save(same(contrato))).thenReturn(contrato);
+        when(mapper.toResponse(same(contrato))).thenReturn(new ContratoResponse());
+
+        contratoService.actualizarContratoVigente(EMPLEADO_ID, request);
+
+        assertThat(contratoAnterior.getFechaFin()).isEqualTo(request.getFechaInicio().minusDays(1));
+        verify(mapper).updateContrato(same(request), same(contrato));
+        verify(contratoRepository).save(same(contrato));
     }
 
     @Test
@@ -147,7 +176,7 @@ class ContratoServiceTest {
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("fecha de fin");
 
-        verify(contratoRepository, never()).existeSolapamientoContratosExceptoId(any(), any(), any(), any());
+        verify(contratoRepository, never()).findContratosSolapadosExceptoId(any(), any(), any(), any());
     }
 
     @Test
