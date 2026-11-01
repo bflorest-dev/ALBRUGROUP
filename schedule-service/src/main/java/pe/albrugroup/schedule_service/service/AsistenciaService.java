@@ -772,7 +772,7 @@ public class AsistenciaService implements IAsistencia {
                 .salidaProgramada(programacion.horaSalida())
                 .inicioAlmuerzoProgramado(programacion.inicioAlmuerzo())
                 .finAlmuerzoProgramado(programacion.finAlmuerzo())
-                .minutosObjetivoDia(programacion.minutosObjetivo())
+                .minutosObjetivoDia(jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha))
                 .minutosTrabajados(0)
                 .minutosBalance(0)
                 .minutosAlmuerzoTomados(0)
@@ -877,7 +877,7 @@ public class AsistenciaService implements IAsistencia {
             }
 
             diasLaborables++;
-            minutosObjetivo += asistencia != null ? asistencia.getMinutosObjetivoDia() : programacion.minutosObjetivo();
+            minutosObjetivo += jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha);
 
             boolean sinRegistroCompleto = asistencia == null
                     || asistencia.getFechaHoraIngreso() == null
@@ -968,7 +968,7 @@ public class AsistenciaService implements IAsistencia {
                 .horaSalidaAsistencia(horaSalidaAsistencia)
                 .salidaForzada(asistencia != null && Boolean.TRUE.equals(asistencia.getSalidaForzada()))
                 .jornadaCerrada(asistencia != null && asistencia.getFechaHoraSalida() != null)
-                .minutosObjetivoDia(asistencia != null ? asistencia.getMinutosObjetivoDia() : programacion.minutosObjetivo())
+                .minutosObjetivoDia(jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha))
                 .minutosTrabajados(totales.minutosTrabajados())
                 .minutosTrabajadosMarcacion(PresenciaMarcacion.neta(asistencia, tramosArchivados))
                 .minutosBalance(totales.minutosBalance())
@@ -1036,17 +1036,33 @@ public class AsistenciaService implements IAsistencia {
     }
 
     private ProgramacionDiaria resolverProgramacionMensual(Long idEmpleado, LocalDate fecha, Asistencia asistencia) {
-        if (asistencia != null) {
-            return ProgramacionDiaria.builder()
-                    .laborable(true)
-                    .horaEntrada(asistencia.getEntradaProgramada())
-                    .horaSalida(asistencia.getSalidaProgramada())
-                    .inicioAlmuerzo(asistencia.getInicioAlmuerzoProgramado())
-                    .finAlmuerzo(asistencia.getFinAlmuerzoProgramado())
-                    .minutosObjetivo(asistencia.getMinutosObjetivoDia())
-                    .build();
+        ProgramacionDiaria programacionBase = resolverProgramacionMensualSinAsistencia(idEmpleado, fecha);
+        if (asistencia == null || !programacionBase.laborable()) {
+            return programacionBase;
         }
 
+        LocalTime inicioAlmuerzo = asistencia.getInicioAlmuerzoProgramado();
+        LocalTime finAlmuerzo = asistencia.getFinAlmuerzoProgramado();
+        if (!ventanasSeSolapan(
+                asistencia.getEntradaProgramada(),
+                asistencia.getSalidaProgramada(),
+                inicioAlmuerzo,
+                finAlmuerzo
+        )) {
+            inicioAlmuerzo = null;
+            finAlmuerzo = null;
+        }
+        return ProgramacionDiaria.builder()
+                .laborable(true)
+                .horaEntrada(asistencia.getEntradaProgramada())
+                .horaSalida(asistencia.getSalidaProgramada())
+                .inicioAlmuerzo(inicioAlmuerzo)
+                .finAlmuerzo(finAlmuerzo)
+                .minutosObjetivo(jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha))
+                .build();
+    }
+
+    private ProgramacionDiaria resolverProgramacionMensualSinAsistencia(Long idEmpleado, LocalDate fecha) {
         try {
             if (scheduleEngineProperties.enabledForOperationalReads(fecha)) {
                 JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolverSiExiste(idEmpleado, fecha)
@@ -1058,24 +1074,50 @@ public class AsistenciaService implements IAsistencia {
                     return ProgramacionDiaria.builder().laborable(false).minutosObjetivo(0).build();
                 }
                 TramoJornadaResponse primero = jornada.getTramos().getFirst();
-                int objetivo = jornada.getTramos().stream()
-                        .mapToInt(tramo -> (int) Duration.between(tramo.getInicio(), tramo.getFin()).toMinutes())
-                        .sum();
                 return ProgramacionDiaria.builder()
                         .laborable(true)
                         .horaEntrada(primero.getInicio().toLocalTime())
                         .horaSalida(jornada.getTramos().getLast().getFin().toLocalTime())
-                        .minutosObjetivo(objetivo)
+                        .minutosObjetivo(jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha))
                         .build();
             }
             Horario horario = buscarHorarioVigente(idEmpleado, fecha);
             if (horario == null) {
                 return programacionNoLaborable();
             }
-            return resolverProgramacion(horario, fecha);
+            ProgramacionDiaria programacion = resolverProgramacion(horario, fecha);
+            return programacion.laborable()
+                    ? ProgramacionDiaria.builder()
+                    .laborable(true)
+                    .horaEntrada(programacion.horaEntrada())
+                    .horaSalida(programacion.horaSalida())
+                    .inicioAlmuerzo(programacion.inicioAlmuerzo())
+                    .finAlmuerzo(programacion.finAlmuerzo())
+                    .minutosObjetivo(jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha))
+                    .build()
+                    : programacion;
         } catch (NotFoundException e) {
             return programacionNoLaborable();
         }
+    }
+
+    private boolean ventanasSeSolapan(
+            LocalTime inicioJornada,
+            LocalTime finJornada,
+            LocalTime inicioAlmuerzo,
+            LocalTime finAlmuerzo
+    ) {
+        if (inicioJornada == null || finJornada == null || inicioAlmuerzo == null || finAlmuerzo == null) {
+            return false;
+        }
+        LocalDate referencia = LocalDate.of(2000, 1, 1);
+        LocalDateTime jornadaInicio = referencia.atTime(inicioJornada);
+        LocalDateTime jornadaFin = referencia.atTime(finJornada);
+        if (!jornadaFin.isAfter(jornadaInicio)) jornadaFin = jornadaFin.plusDays(1);
+        LocalDateTime almuerzoInicio = referencia.atTime(inicioAlmuerzo);
+        LocalDateTime almuerzoFin = referencia.atTime(finAlmuerzo);
+        if (!almuerzoFin.isAfter(almuerzoInicio)) almuerzoFin = almuerzoFin.plusDays(1);
+        return jornadaInicio.isBefore(almuerzoFin) && almuerzoInicio.isBefore(jornadaFin);
     }
 
     private Map<Long, Map<LocalDate, Asistencia>> cargarAsistenciasPorEmpleado(List<Long> empleadoIds, LocalDate desde, LocalDate hasta) {
@@ -1396,9 +1438,7 @@ public class AsistenciaService implements IAsistencia {
                     .operativo(false)
                     .build();
         }
-        int objetivo = jornada.getTramos().stream()
-                .mapToInt(item -> (int) Duration.between(item.getInicio(), item.getFin()).toMinutes())
-                .sum();
+        int objetivo = jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha);
         return DetalleAsistenciaResponse.builder()
                 .idEmpleado(idEmpleado)
                 .idHorario(jornada.getIdHorario())

@@ -227,6 +227,64 @@ public class JornadaEfectivaResolver {
         };
     }
 
+    /**
+     * Objetivo contractual del dia: usa el detalle recurrente del horario base, no una excepcion
+     * puntual de entrada/salida. La excepcion solo decide si el dia conserva o pierde su objetivo
+     * mediante {@code laborableBase}.
+     */
+    int minutosObjetivoContractual(Long idEmpleado, LocalDate fecha) {
+        Horario horario = horarioRepository.findHorarioVigente(idEmpleado, fecha).orElse(null);
+        if (horario == null) {
+            return 0;
+        }
+        JornadaEfectivaResponse jornada = resolverSiExiste(idEmpleado, fecha).orElse(null);
+        if (jornada == null || !Boolean.TRUE.equals(jornada.getLaborableBase())) {
+            return 0;
+        }
+        return minutosObjetivoContractual(horario, fecha);
+    }
+
+    /** Objetivo base del dia, independiente de corrimientos y cambios completos puntuales. */
+    int minutosObjetivoContractual(Horario horario, LocalDate fecha) {
+        Dia dia = mapearDia(fecha.getDayOfWeek());
+        return horario.getDetalles().stream()
+                .filter(detalle -> detalle.getDia() == dia)
+                .filter(detalle -> Boolean.TRUE.equals(detalle.getLaborable()))
+                .findFirst()
+                .map(this::minutosObjetivoDetalle)
+                .orElse(0);
+    }
+
+    private int minutosObjetivoDetalle(HorarioDetalle detalle) {
+        if (detalle.getHoraEntrada() == null || detalle.getHoraSalida() == null) {
+            return 0;
+        }
+        LocalDate referencia = LocalDate.of(2000, 1, 1);
+        LocalDateTime inicio = referencia.atTime(detalle.getHoraEntrada());
+        LocalDateTime fin = referencia.atTime(detalle.getHoraSalida());
+        if (!fin.isAfter(inicio)) {
+            fin = fin.plusDays(1);
+        }
+
+        int minutosBase = (int) Duration.between(inicio, fin).toMinutes();
+        if (detalle.getInicioAlmuerzo() == null || detalle.getFinAlmuerzo() == null) {
+            return Math.max(minutosBase, 0);
+        }
+
+        LocalDateTime inicioAlmuerzo = referencia.atTime(detalle.getInicioAlmuerzo());
+        LocalDateTime finAlmuerzo = referencia.atTime(detalle.getFinAlmuerzo());
+        if (!finAlmuerzo.isAfter(inicioAlmuerzo)) {
+            finAlmuerzo = finAlmuerzo.plusDays(1);
+        }
+
+        LocalDateTime inicioSolape = inicio.isAfter(inicioAlmuerzo) ? inicio : inicioAlmuerzo;
+        LocalDateTime finSolape = fin.isBefore(finAlmuerzo) ? fin : finAlmuerzo;
+        int minutosAlmuerzo = finSolape.isAfter(inicioSolape)
+                ? (int) Duration.between(inicioSolape, finSolape).toMinutes()
+                : 0;
+        return Math.max(minutosBase - minutosAlmuerzo, 0);
+    }
+
     @Builder
     record BaseDiaria(boolean laborable, LocalDateTime inicio, LocalDateTime fin) {
     }

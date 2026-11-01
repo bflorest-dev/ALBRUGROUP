@@ -509,15 +509,11 @@ public class MarcacionService {
         TramoJornadaResponse anchor = anclarABase(jornada, tramo);
         OrigenTramo origen = mapOrigenTramo(anchor);
         VentanaAlmuerzo almuerzo = resolverAlmuerzoProgramado(horario, fecha);
-        int minutosAlmuerzoProgramado = almuerzo == null ? 0
-                : (int) Duration.between(almuerzo.inicio(), almuerzo.fin()).toMinutes();
-        // Objetivo = jornada NETA del BASE ORIGINAL (ventana programada menos almuerzo), NO la ventana del
-        // corrimiento: un CORRIMIENTO parcial (mueve solo el ingreso, misma salida) deja la neta base intacta
-        // como objetivo, asi la ventana mas corta produce el deficit que luego se cubre con COMPENSACION. Un
-        // corrimiento que mueve TODA la ventana (misma duracion) da el mismo objetivo -> balance 0. Un tramo
-        // extra no tiene objetivo (horas extra): no perjudican el balance del horario programado.
+        // El objetivo pertenece al dia contractual de la jornada base; un cambio puntual de horario
+        // no lo reduce. Un tramo extra no tiene objetivo y no perjudica el balance del horario base.
         int objetivo = esBaseOrigen(origen)
-                ? objetivoNetaBase(horario, fecha, minutosAlmuerzoProgramado)
+                && Boolean.TRUE.equals(jornada.getLaborableBase())
+                ? jornadaEfectivaResolver.minutosObjetivoContractual(horario, fecha)
                 : 0;
         // Nota: minutos_servicios_* / excedio_servicios son columnas viejas (NOT NULL) que se conservan
         // durante la transicion; el nuevo flujo usa sesion_estado. Se dropean en Fase 7.
@@ -560,20 +556,6 @@ public class MarcacionService {
                 .minutosServiciosAcumulados(0)
                 .excedioServicios(Boolean.FALSE)
                 .build());
-    }
-
-    /**
-     * Objetivo neto del BASE ORIGINAL del dia: ventana programada de {@link JornadaEfectivaResolver#resolverBase}
-     * menos el almuerzo programado. Se usa como objetivo tanto para el base como para un CORRIMIENTO
-     * (REEMPLAZO_BASE): el corrimiento mueve la ventana pero el objetivo del dia sigue siendo la neta base,
-     * de modo que un corrimiento parcial deja deficit (horas por compensar). 0 si el dia no es laborable.
-     */
-    private int objetivoNetaBase(Horario horario, LocalDate fecha, int minutosAlmuerzoProgramado) {
-        JornadaEfectivaResolver.BaseDiaria base = jornadaEfectivaResolver.resolverBase(horario, fecha);
-        if (!base.laborable() || base.inicio() == null || base.fin() == null) {
-            return 0;
-        }
-        return Math.max((int) Duration.between(base.inicio(), base.fin()).toMinutes() - minutosAlmuerzoProgramado, 0);
     }
 
     /**
@@ -647,7 +629,11 @@ public class MarcacionService {
         asistencia.setMinutosExtra(extra);
         asistencia.setMinutosCompensados(compensado);
         // Invariante: balance <= 0. El extra/compensacion viven en sus propios acumuladores.
-        asistencia.setMinutosBalance(Math.min(base - safe(asistencia.getMinutosObjetivoDia()), 0));
+        int objetivo = jornadaEfectivaResolver.minutosObjetivoContractual(
+                asistencia.getIdEmpleado(),
+                asistencia.getFecha());
+        asistencia.setMinutosObjetivoDia(objetivo);
+        asistencia.setMinutosBalance(Math.min(base - objetivo, 0));
     }
 
     /**
@@ -1381,7 +1367,7 @@ public class MarcacionService {
                     .fechaHoraIngreso(asistencia.getFechaHoraIngreso())
                     .fechaHoraSalida(asistencia.getFechaHoraSalida())
                     .jornadaCerrada(jornadaCerrada)
-                    .minutosObjetivoDia(asistencia.getMinutosObjetivoDia())
+                    .minutosObjetivoDia(jornadaEfectivaResolver.minutosObjetivoContractual(asistencia.getIdEmpleado(), fecha))
                     .minutosTrabajados(asistencia.getMinutosTrabajados())
                     .minutosBalance(asistencia.getMinutosBalance())
                     .minutosExtra(asistencia.getMinutosExtra())
@@ -1492,7 +1478,9 @@ public class MarcacionService {
                 .almuerzoRealInicio(asistencia != null ? asistencia.getAlmuerzoRealInicio() : null)
                 .almuerzoRealFin(asistencia != null ? asistencia.getAlmuerzoRealFin() : null)
                 .minutosAlmuerzoTomados(asistencia != null ? asistencia.getMinutosAlmuerzoTomados() : 0)
-                .minutosObjetivoDia(asistencia != null ? asistencia.getMinutosObjetivoDia() : objetivoJornada(jornada))
+                .minutosObjetivoDia(asistencia != null
+                        ? jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha)
+                        : objetivoJornada(jornada))
                 .minutosTrabajados(totales.minutosTrabajados())
                 .minutosBalance(totales.minutosBalance())
                 .minutosExtra(asistencia != null ? asistencia.getMinutosExtra() : 0)
@@ -1516,10 +1504,17 @@ public class MarcacionService {
             return new TotalesDia(0, 0);
         }
         if (jornada == null) {
-            return new TotalesDia(safe(asistencia.getMinutosTrabajados()), safe(asistencia.getMinutosBalance()));
+            int minutosTrabajados = safe(asistencia.getMinutosTrabajados());
+            int minutosObjetivo = jornadaEfectivaResolver.minutosObjetivoContractual(
+                    asistencia.getIdEmpleado(),
+                    asistencia.getFecha());
+            return new TotalesDia(minutosTrabajados, Math.min(minutosTrabajados - minutosObjetivo, 0));
         }
         int minutosTrabajados = calcularMinutosBaseAcreditados(asistencia, jornada, segmentosTrabajados(asistencia));
-        int minutosBalance = Math.min(minutosTrabajados - safe(asistencia.getMinutosObjetivoDia()), 0);
+        int minutosObjetivo = jornadaEfectivaResolver.minutosObjetivoContractual(
+                asistencia.getIdEmpleado(),
+                asistencia.getFecha());
+        int minutosBalance = Math.min(minutosTrabajados - minutosObjetivo, 0);
         return new TotalesDia(minutosTrabajados, minutosBalance);
     }
 
@@ -1562,21 +1557,19 @@ public class MarcacionService {
             throw new BadRequestException("El almuerzo ya se marco ese dia; no se puede cambiar");
         }
 
-        int oldLunch = safe(minutosEntre(a.getInicioAlmuerzoProgramado(), a.getFinAlmuerzoProgramado()));
         boolean quitar = inicio == null && fin == null;
-        int newLunch;
         if (quitar) {
             a.setInicioAlmuerzoProgramado(null);
             a.setFinAlmuerzoProgramado(null);
-            newLunch = 0;
         } else {
             validarAlmuerzoDentroDeJornada(inicio, fin, a.getEntradaProgramada(), a.getSalidaProgramada());
             a.setInicioAlmuerzoProgramado(inicio);
             a.setFinAlmuerzoProgramado(fin);
-            newLunch = (int) Duration.between(inicio, fin).toMinutes();
         }
 
-        a.setMinutosObjetivoDia(safe(a.getMinutosObjetivoDia()) + oldLunch - newLunch);
+        // El almuerzo es un estado informativo y sus limites se aplican al tiempo acreditado;
+        // no modifica el objetivo contractual del dia.
+        a.setMinutosObjetivoDia(jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha));
         recalcularMinutos(a);
         asistenciaRepository.save(a);
         publicar("EXCEPCION_HORARIO_AFECTADA", "AJUSTE_ALMUERZO", idEmpleado, fecha, a.getEstadoActual());

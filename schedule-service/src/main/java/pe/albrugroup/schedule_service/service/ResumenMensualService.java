@@ -168,9 +168,7 @@ public class ResumenMensualService {
             }
             diasLaborables++;
             Asistencia asistencia = asistenciasPorFecha.get(fecha);
-            minutosObjetivo += asistencia != null
-                    ? safe(asistencia.getMinutosObjetivoDia())
-                    : objetivoNetoBase(idEmpleado, fecha);
+            minutosObjetivo += jornadaResolver.minutosObjetivoContractual(idEmpleado, fecha);
 
             if (asistencia == null || asistencia.getFechaHoraIngreso() == null
                     || asistencia.getFechaHoraSalida() == null) {
@@ -277,42 +275,6 @@ public class ResumenMensualService {
         }
         return asistencia.getFechaHoraIngreso().toLocalTime()
                 .isAfter(asistencia.getEntradaProgramada().plusMinutes(tolerancia));
-    }
-
-    /** Objetivo NETO de un dia laborable sin asistencia (falta): ventana base menos almuerzo programado. */
-    private int objetivoNetoBase(Long idEmpleado, LocalDate fecha) {
-        Horario horario = horarioRepository.findHorarioVigente(idEmpleado, fecha).orElse(null);
-        if (horario == null) {
-            return 0;
-        }
-        JornadaEfectivaResolver.BaseDiaria base = jornadaResolver.resolverBase(horario, fecha);
-        if (!base.laborable() || base.inicio() == null || base.fin() == null) {
-            return 0;
-        }
-        int ventana = (int) Duration.between(base.inicio(), base.fin()).toMinutes();
-        return Math.max(ventana - almuerzoProgramadoMin(horario, fecha), 0);
-    }
-
-    private int almuerzoProgramadoMin(Horario horario, LocalDate fecha) {
-        Dia dia = mapearDia(fecha.getDayOfWeek());
-        return horario.getDetalles().stream()
-                .filter(d -> d.getDia() == dia)
-                .findFirst()
-                .filter(d -> d.getInicioAlmuerzo() != null && d.getFinAlmuerzo() != null)
-                .map(d -> (int) Duration.between(d.getInicioAlmuerzo(), d.getFinAlmuerzo()).toMinutes())
-                .orElse(0);
-    }
-
-    private Dia mapearDia(DayOfWeek dayOfWeek) {
-        return switch (dayOfWeek) {
-            case MONDAY -> Dia.LUNES;
-            case TUESDAY -> Dia.MARTES;
-            case WEDNESDAY -> Dia.MIERCOLES;
-            case THURSDAY -> Dia.JUEVES;
-            case FRIDAY -> Dia.VIERNES;
-            case SATURDAY -> Dia.SABADO;
-            case SUNDAY -> Dia.DOMINGO;
-        };
     }
 
     private int safe(Integer valor) {
