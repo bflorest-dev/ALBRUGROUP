@@ -84,6 +84,10 @@ export class PostventaGestionDrawerComponent {
     return display(value);
   }
 
+  protected isClaroProvider(provider?: string | null): boolean {
+    return provider?.trim().toUpperCase() === 'CLARO';
+  }
+
   protected semColor(value: unknown): string {
     return semColorFn(value);
   }

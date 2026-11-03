@@ -353,6 +353,12 @@
   white-space: nowrap;
 }
 
+.cell-stack .customer-id {
+  font-family: 'Spline Sans Mono', ui-monospace, monospace;
+  font-size: 0.67rem;
+  font-variant-numeric: tabular-nums;
+}
+
 // ── PLAN CELL ───────────────────────────────────────────────────
 .plan-cell {
   align-items: center;

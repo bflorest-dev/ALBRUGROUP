@@ -454,6 +454,7 @@ public class PostventaBandejaService {
                 .numeroDocumento(datos == null
                         ? lead.getNumeroDocumentoTitularServicioSnapshot()
                         : datos.getNumeroDocumentoTitularServicio())
+                .customerId(lead.getCustomerId())
                 .lead(lead.getLead())
                 .nombreCliente(datos == null ? null : datos.getNombreTitularServicio())
                 .telefonoRegistro(datos == null ? null : datos.getCelularRegistro())

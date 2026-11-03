@@ -34,6 +34,7 @@ export interface LeadPostventaBandejaResponse {
   fechaInstalacion?: string | null;
   tipoDocumento?: string | null;
   numeroDocumento?: string | null;
+  customerId?: string | null;
   lead?: string | null;
   nombreCliente?: string | null;
   telefonoRegistro?: string | null;

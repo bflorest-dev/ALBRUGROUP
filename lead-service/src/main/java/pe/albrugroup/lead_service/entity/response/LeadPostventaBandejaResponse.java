@@ -29,6 +29,7 @@ public class LeadPostventaBandejaResponse {
     private LocalDate fechaInstalacion;
     private TipoDocumento tipoDocumento;
     private String numeroDocumento;
+    private String customerId;
     private String lead;
     private String nombreCliente;
     private String telefonoRegistro;

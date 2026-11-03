@@ -160,6 +160,9 @@
             <td class="col-client">
               <div class="cell-stack">
                 <strong>{{ row.tipoDocumento ?? '' }} {{ row.numeroDocumento ?? '—' }}</strong>
+                @if (isClaroProvider(row.proveedor)) {
+                  <span class="customer-id">Customer ID {{ row.customerId ?? '—' }}</span>
+                }
                 <span>{{ row.nombreCliente ?? '—' }}</span>
               </div>
             </td>

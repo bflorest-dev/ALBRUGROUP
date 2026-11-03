@@ -59,6 +59,12 @@
                   {{ display(lead.numeroDocumento) }}
                 </dd>
               </div>
+              @if (isClaroProvider(lead.proveedor)) {
+                <div>
+                  <dt><i class="pi pi-key" aria-hidden="true"></i> Customer ID</dt>
+                  <dd class="postventa-v2__mono">{{ display(facade.detail()?.customerId ?? lead.customerId) }}</dd>
+                </div>
+              }
               <div>
                 <dt><i class="pi pi-user" aria-hidden="true"></i> Nombre</dt>
                 <dd>{{ display(facade.detail()?.nombreTitular ?? lead.nombreCliente) }}</dd>

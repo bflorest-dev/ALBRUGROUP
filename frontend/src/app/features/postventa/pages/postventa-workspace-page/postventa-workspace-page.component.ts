@@ -49,6 +49,10 @@ export class PostventaWorkspacePageComponent implements OnInit {
   protected readonly shortName = shortName;
   protected readonly providerLogo = resolveProviderLogo;
 
+  protected isClaroProvider(provider?: string | null): boolean {
+    return provider?.trim().toUpperCase() === 'CLARO';
+  }
+
   ngOnInit(): void {
     void this.facade.initialize();
   }
