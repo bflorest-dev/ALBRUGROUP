@@ -612,12 +612,12 @@ public class LeadService {
      * ASIGNADO/EN_GESTION en PREVENTA): sinLeadsDesde = createdAt de su último evento de lead.
      * Si actualmente tiene leads pendientes, sinLeadsDesde es null.
      */
-    public List<AsesorSinLeadsResponse> listarSinLeadsDesde(List<Long> idsAsesor) {
+    public List<AsesorSinLeadsResponse> listarSinLeadsDesde(List<Long> idsAsesor, Long idEquipo) {
+        RankingEquipoScope equipos = resolverEquipoSupervisorSeleccionado(idEquipo);
         if (idsAsesor == null || idsAsesor.isEmpty()) {
             return List.of();
         }
 
-        RankingEquipoScope equipos = resolverEquiposActuales();
         Set<Long> conLeads = leadRepository.resumirAsignadosActualesPorAsesor(
                         Etapa.PREVENTA,
                         List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION),
@@ -631,7 +631,7 @@ public class LeadService {
 
         // "Sin leads desde" = cuándo terminó (tipificó) su último lead, no cuándo se lo asignaron.
         Map<Long, Instant> ultimoEvento = eventoRepository
-                .ultimoEventoPorActorYAccion(idsAsesor, Accion.TIPIFICACION).stream()
+                .ultimoEventoPorActorYAccion(idsAsesor, Accion.TIPIFICACION, idEquipo).stream()
                 .filter(row -> row.getIdAsesor() != null && row.getUltimo() != null)
                 .collect(java.util.stream.Collectors.toMap(row -> row.getIdAsesor(), row -> row.getUltimo()));
 
@@ -1582,14 +1582,14 @@ public class LeadService {
         return mapearBandejaAsesorVentas(leads);
     }
 
-    public List<SupervisorVentasResumenResponse> listarResumenSupervisorVentas(List<Long> idsAsesor) {
+    public List<SupervisorVentasResumenResponse> listarResumenSupervisorVentas(List<Long> idsAsesor, Long idEquipo) {
         LocalDate hoy = OperationalDateTime.today();
         OperationalDateTime.InstantRange rangoHoy = OperationalDateTime.dayRange(hoy);
         OperationalDateTime.InstantRange rangoMes = OperationalDateTime.monthRange(YearMonth.from(hoy));
 
         List<Long> asesorIds = idsAsesor == null ? List.of() : idsAsesor.stream().distinct().toList();
         boolean filtrarAsesores = !asesorIds.isEmpty();
-        RankingEquipoScope equipos = resolverEquiposActuales();
+        RankingEquipoScope equipos = resolverEquipoSupervisorSeleccionado(idEquipo);
 
         Map<Long, ResumenSupervisorVentasAccumulator> acumulados = new HashMap<>();
 
@@ -1611,7 +1611,8 @@ public class LeadService {
                         rangoHoy.inicio(),
                         rangoHoy.fin(),
                         filtrarAsesores,
-                        asesorIds
+                        asesorIds,
+                        idEquipo
                 )
                 .forEach(row -> {
                     ResumenSupervisorVentasAccumulator item = obtenerAcumulador(acumulados, row.getIdAsesor(), row.getNombreAsesor());
@@ -1624,7 +1625,8 @@ public class LeadService {
                         rangoHoy.inicio(),
                         rangoHoy.fin(),
                         filtrarAsesores,
-                        asesorIds
+                        asesorIds,
+                        idEquipo
                 )
                 .forEach(row -> {
                     ResumenSupervisorVentasAccumulator item = obtenerAcumulador(acumulados, row.getIdAsesor(), row.getNombreAsesor());
@@ -1637,7 +1639,8 @@ public class LeadService {
                         rangoMes.inicio(),
                         rangoMes.fin(),
                         filtrarAsesores,
-                        asesorIds
+                        asesorIds,
+                        idEquipo
                 )
                 .forEach(row -> {
                     ResumenSupervisorVentasAccumulator item = obtenerAcumulador(acumulados, row.getIdAsesor(), row.getNombreAsesor());
@@ -7233,6 +7236,17 @@ public class LeadService {
         return idEquipoSolicitado == null
                 ? new RankingEquipoScope(true, equiposUsuario)
                 : new RankingEquipoScope(true, List.of(idEquipoSolicitado));
+    }
+
+    private RankingEquipoScope resolverEquipoSupervisorSeleccionado(Long idEquipoSolicitado) {
+        List<Long> equiposUsuario = currentUser.equipos();
+        if (idEquipoSolicitado == null
+                || equiposUsuario == null
+                || equiposUsuario.isEmpty()
+                || !equiposUsuario.contains(idEquipoSolicitado)) {
+            throw new UnauthorizedException("No tienes acceso al equipo seleccionado.");
+        }
+        return new RankingEquipoScope(true, List.of(idEquipoSolicitado));
     }
 
     private RankingEquipoScope resolverEquiposActuales() {

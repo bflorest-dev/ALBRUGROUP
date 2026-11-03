@@ -162,12 +162,17 @@ export class PreventaLeadService {
     });
   }
 
-  obtenerResumenSupervisor(): Observable<SupervisorVentasResumenResponse[]> {
-    return this.http.get<SupervisorVentasResumenResponse[]>(`${this.leadUrl}/preventa/supervisor-ventas/resumen`);
+  obtenerResumenSupervisor(idEquipo: number): Observable<SupervisorVentasResumenResponse[]> {
+    const params = new HttpParams().set('idEquipo', idEquipo);
+    return this.http.get<SupervisorVentasResumenResponse[]>(`${this.leadUrl}/preventa/supervisor-ventas/resumen`, {
+      params
+    });
   }
 
-  listarSinLeadsDesde(idsAsesor: number[]): Observable<AsesorSinLeadsResponse[]> {
-    const params = new HttpParams().set('idsAsesor', idsAsesor.join(','));
+  listarSinLeadsDesde(idsAsesor: number[], idEquipo: number): Observable<AsesorSinLeadsResponse[]> {
+    const params = new HttpParams()
+      .set('idsAsesor', idsAsesor.join(','))
+      .set('idEquipo', idEquipo);
     return this.http.get<AsesorSinLeadsResponse[]>(`${this.leadUrl}/preventa/supervisor-ventas/sin-leads-desde`, {
       params
     });

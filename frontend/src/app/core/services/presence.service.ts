@@ -25,6 +25,7 @@ export interface AsesorSupervisorResponse {
   empleadoId: number;
   nombreCompleto: string;
   roles?: string[] | null;
+  equipoActivoId?: number | null;
   disponibilidad?: string | null;
   disponibilidadDesde?: string | null;
   lastSeen?: string | null;
@@ -159,16 +160,22 @@ export class PresenceService {
     });
   }
 
-  listarAsesoresSupervisor(fecha?: string): import('rxjs').Observable<AsesorSupervisorResponse[]> {
-    const params = fecha ? new HttpParams().set('fecha', fecha) : undefined;
+  listarAsesoresSupervisor(idEquipo: number, fecha?: string): import('rxjs').Observable<AsesorSupervisorResponse[]> {
+    let params = new HttpParams().set('idEquipo', idEquipo);
+    if (fecha) {
+      params = params.set('fecha', fecha);
+    }
     return this.http.get<AsesorSupervisorResponse[]>(
       `${this.baseUrl}/monitor/supervisor-ventas/asesores-ventas/conectados`,
       { params }
     );
   }
 
-  listarEsperadosNoConectados(fecha?: string): import('rxjs').Observable<EmpleadoEsperadoResponse[]> {
-    const params = fecha ? new HttpParams().set('fecha', fecha) : undefined;
+  listarEsperadosNoConectados(idEquipo: number, fecha?: string): import('rxjs').Observable<EmpleadoEsperadoResponse[]> {
+    let params = new HttpParams().set('idEquipo', idEquipo);
+    if (fecha) {
+      params = params.set('fecha', fecha);
+    }
     return this.http.get<EmpleadoEsperadoResponse[]>(
       `${this.baseUrl}/monitor/supervisor-ventas/asesores-ventas/esperados-no-conectados`,
       { params }

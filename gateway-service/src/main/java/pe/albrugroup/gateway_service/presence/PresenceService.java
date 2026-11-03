@@ -296,6 +296,9 @@ public class PresenceService {
                 ? Instant.now()
                 : existingPresence.getDisponibilidadDesde();
         Long equipoActivoId = existingPresence == null ? null : existingPresence.getEquipoActivoId();
+        if (equipoActivoId == null) {
+            equipoActivoId = safeEquipos(user.equipos()).stream().findFirst().orElse(null);
+        }
 
         EmployeePresence presence = EmployeePresence.builder()
                 .empleadoId(user.empleadoId())

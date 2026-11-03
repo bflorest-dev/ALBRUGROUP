@@ -250,11 +250,22 @@ export class CurrentUserTeamScopeService {
     if (this.lastSyncedPresenceEquipoId === id) {
       return;
     }
-    try {
-      await this.presenceService.actualizarEquipoActivo(id);
-      this.lastSyncedPresenceEquipoId = id;
-    } catch {
-      // La presencia puede no estar inicializada todavia; el siguiente cambio/normalizacion reintentara.
+
+    for (let intento = 0; intento < 4; intento++) {
+      if (this.activeIdState() !== id) {
+        return;
+      }
+      try {
+        await this.presenceService.actualizarEquipoActivo(id);
+        this.lastSyncedPresenceEquipoId = id;
+        return;
+      } catch {
+        // La presencia puede estar inicializandose en paralelo con el scope. Reintentamos para evitar
+        // dejar equipoActivoId en null cuando la primera sincronizacion ocurre demasiado pronto.
+        if (intento < 3) {
+          await new Promise((resolve) => setTimeout(resolve, 750));
+        }
+      }
     }
   }
 

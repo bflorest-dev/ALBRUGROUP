@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +16,7 @@ import pe.albrugroup.gateway_service.entity.response.AsesorGtrResponse;
 import pe.albrugroup.gateway_service.entity.response.AsesorSupervisorResponse;
 import pe.albrugroup.gateway_service.entity.response.EmpleadoEsperadoResponse;
 import pe.albrugroup.gateway_service.service.MonitoringService;
+import pe.albrugroup.gateway_service.security.AuthenticatedUser;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
@@ -48,9 +50,11 @@ public class MonitoringController {
     @Operation(summary = "Listar asesores conectados para supervisor", description = "Devuelve asesores de ventas conectados con su estado operativo actual y datos de supervisión.")
     public Mono<ResponseEntity<List<AsesorSupervisorResponse>>> listarAsesoresConectadosSupervisor(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam Long idEquipo,
             @RequestParam(required = false) LocalDate fecha
     ) {
-        return monitoringService.listarAsesoresConectadosSupervisor(authHeader, fecha)
+        return monitoringService.listarAsesoresConectadosSupervisor(authHeader, user, idEquipo, fecha)
                 .map(ResponseEntity::ok);
     }
 
@@ -59,9 +63,11 @@ public class MonitoringController {
     @Operation(summary = "Listar asesores esperados no conectados", description = "Cruza asesores activos por rol, expectativa laboral del día y presencia Redis para detectar ausentes en línea.")
     public Mono<ResponseEntity<List<EmpleadoEsperadoResponse>>> listarAsesoresEsperadosNoConectados(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam Long idEquipo,
             @RequestParam(required = false) LocalDate fecha
     ) {
-        return monitoringService.listarAsesoresEsperadosNoConectados(authHeader, fecha)
+        return monitoringService.listarAsesoresEsperadosNoConectados(authHeader, user, idEquipo, fecha)
                 .map(ResponseEntity::ok);
     }
 

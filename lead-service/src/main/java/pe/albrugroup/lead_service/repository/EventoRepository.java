@@ -131,12 +131,16 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     @Query("""
             SELECT e.idActor AS idAsesor, MAX(e.createdAt) AS ultimo
             FROM Evento e
-            WHERE e.idActor IN :idsAsesor AND e.accion = :accion
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.idActor IN :idsAsesor
+              AND e.accion = :accion
+              AND l.idEquipo = :idEquipo
             GROUP BY e.idActor
             """)
     List<AsesorUltimoEventoProjection> ultimoEventoPorActorYAccion(
             @Param("idsAsesor") Collection<Long> idsAsesor,
-            @Param("accion") Accion accion
+            @Param("accion") Accion accion,
+            @Param("idEquipo") Long idEquipo
     );
 
     // Resuelve el nombre denormalizado de un conjunto de actores (empleados) por su id.
@@ -1575,7 +1579,9 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                    e.nombreActor AS nombreAsesor,
                    COUNT(DISTINCT e.idLead) AS cantidad
             FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
             WHERE e.accion = :accion
+              AND l.idEquipo = :idEquipo
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
               AND (:filtrarAsesores = false OR e.idActor IN :asesorIds)
@@ -1586,7 +1592,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarAsesores") boolean filtrarAsesores,
-            @Param("asesorIds") Collection<Long> asesorIds
+            @Param("asesorIds") Collection<Long> asesorIds,
+            @Param("idEquipo") Long idEquipo
     );
 
     @Query("""
@@ -1614,6 +1621,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
               )
               AND (e.subtipificacion IS NULL OR e.subtipificacion <> 'INCOMPLETA')
+              AND l.idEquipo = :idEquipo
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
               AND (:filtrarAsesores = false OR e.idActor IN :asesorIds)
@@ -1625,7 +1633,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarAsesores") boolean filtrarAsesores,
-            @Param("asesorIds") Collection<Long> asesorIds
+            @Param("asesorIds") Collection<Long> asesorIds,
+            @Param("idEquipo") Long idEquipo
     );
 
     @Query("""
@@ -1802,6 +1811,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
               )
               AND (e.subtipificacion IS NULL OR e.subtipificacion <> 'INCOMPLETA')
+              AND l.idEquipo = :idEquipo
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
               AND (:filtrarAsesores = false OR e.idActor IN :asesorIds)
@@ -1813,7 +1823,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarAsesores") boolean filtrarAsesores,
-            @Param("asesorIds") Collection<Long> asesorIds
+            @Param("asesorIds") Collection<Long> asesorIds,
+            @Param("idEquipo") Long idEquipo
     );
 
     // ── Queries específicos GTR (usan soloActivos con EXISTS para asesores) ────

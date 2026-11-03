@@ -1248,6 +1248,43 @@ class LeadServiceGtrGroupingTest {
                 any(Instant.class), any(Instant.class), anyBoolean(), anyCollection());
     }
 
+    @Test
+    void resumenSupervisorPasaElEquipoSeleccionadoATodasLasMetricas() {
+        when(currentUser.equipos()).thenReturn(List.of(7L));
+        when(leadRepository.resumirAsignadosActualesPorAsesor(
+                any(Etapa.class), anyCollection(), anyBoolean(), anyCollection(), eq(true), eq(List.of(7L))))
+                .thenReturn(List.of());
+        when(eventoRepository.resumirTipificacionesPorAsesor(
+                any(Accion.class), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection(), eq(7L)))
+                .thenReturn(List.of());
+        when(eventoRepository.resumirPreventasPorAsesor(
+                any(Accion.class), any(), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection(), eq(7L)))
+                .thenReturn(List.of());
+        when(eventoRepository.resumirPreventasMensualesPorProveedor(
+                any(Accion.class), any(), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection(), eq(7L)))
+                .thenReturn(List.of());
+
+        leadService.listarResumenSupervisorVentas(List.of(), 7L);
+
+        verify(eventoRepository).resumirTipificacionesPorAsesor(
+                any(Accion.class), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection(), eq(7L));
+        verify(eventoRepository).resumirPreventasPorAsesor(
+                any(Accion.class), any(), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection(), eq(7L));
+        verify(eventoRepository).resumirPreventasMensualesPorProveedor(
+                any(Accion.class), any(), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection(), eq(7L));
+    }
+
+    @Test
+    void resumenSupervisorRechazaEquipoQueNoEstaEnElJwt() {
+        when(currentUser.equipos()).thenReturn(List.of(7L));
+
+        assertThatThrownBy(() -> leadService.listarResumenSupervisorVentas(List.of(), 8L))
+                .isInstanceOf(pe.albrugroup.lead_service.exception.UnauthorizedException.class);
+
+        verify(leadRepository, never()).resumirAsignadosActualesPorAsesor(
+                any(Etapa.class), anyCollection(), anyBoolean(), anyCollection(), anyBoolean(), anyCollection());
+    }
+
     private LeadGtrAgrupacionProjection group(
             Long idGrupo,
             String etiqueta,

@@ -13,6 +13,7 @@ import pe.albrugroup.gateway_service.integration.schedule.ScheduleMonitoringClie
 import pe.albrugroup.gateway_service.integration.schedule.ScheduleAdjustmentClient;
 import pe.albrugroup.gateway_service.integration.schedule.dto.EstadoMonitorResponse;
 import pe.albrugroup.gateway_service.presence.PresenceService;
+import pe.albrugroup.gateway_service.security.AuthenticatedUser;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
@@ -51,8 +52,10 @@ public class MonitoringService {
                                 .toList()));
     }
 
-    public Mono<List<AsesorSupervisorResponse>> listarAsesoresConectadosSupervisor(String authHeader, LocalDate fecha) {
-        return listarConectadosVentasYOjt()
+    public Mono<List<AsesorSupervisorResponse>> listarAsesoresConectadosSupervisor(
+            String authHeader, AuthenticatedUser user, Long idEquipo, LocalDate fecha) {
+        return validarEquipoSeleccionado(user, idEquipo)
+                .then(listarConectadosSupervisor(idEquipo))
                 .flatMap(conectados -> consultarEstados(authHeader, connectedIds(conectados), fecha)
                         .map(estados -> conectados.stream()
                                 .map(conectado -> toSupervisorResponse(conectado, estados.get(conectado.getEmpleadoId())))
@@ -60,13 +63,17 @@ public class MonitoringService {
                                 .toList()));
     }
 
-    public Mono<List<EmpleadoEsperadoResponse>> listarAsesoresEsperadosNoConectados(String authHeader, LocalDate fecha) {
-        Mono<List<UsuarioRolResponse>> asesoresMono = listarUsuariosActivosVentasYOjt(authHeader);
-        Mono<List<ConnectedUserResponse>> conectadosMono = listarConectadosVentasYOjt();
-
-        return Mono.zip(asesoresMono, conectadosMono)
+    public Mono<List<EmpleadoEsperadoResponse>> listarAsesoresEsperadosNoConectados(
+            String authHeader, AuthenticatedUser user, Long idEquipo, LocalDate fecha) {
+        return validarEquipoSeleccionado(user, idEquipo)
+                .then(Mono.zip(
+                        listarUsuariosActivosVentasYOjt(authHeader),
+                        listarConectadosSupervisor(idEquipo)
+                ))
                 .flatMap(tuple -> {
-                    List<UsuarioRolResponse> asesores = tuple.getT1();
+                    List<UsuarioRolResponse> asesores = tuple.getT1().stream()
+                            .filter(asesor -> asesor.getEquipoIds() != null && asesor.getEquipoIds().contains(idEquipo))
+                            .toList();
                     List<ConnectedUserResponse> conectados = tuple.getT2();
                     Set<Long> conectadosIds = connectedIds(conectados);
                     Set<Long> asesorIds = asesores.stream()
@@ -88,6 +95,25 @@ public class MonitoringService {
                 presenceService.listarUsuariosConectados(ROL_OJT),
                 presenceService.listarUsuariosConectados(ROL_SUPERVISOR_VENTAS)
         ).map(tuple -> mergePorEmpleado(tuple.getT1(), tuple.getT2(), tuple.getT3()));
+    }
+
+    private Mono<List<ConnectedUserResponse>> listarConectadosSupervisor(Long idEquipo) {
+        return Mono.zip(
+                presenceService.listarUsuariosConectados(ROL_ASESOR),
+                presenceService.listarUsuariosConectados(ROL_OJT)
+        ).map(tuple -> mergePorEmpleado(tuple.getT1(), tuple.getT2()).stream()
+                .filter(conectado -> idEquipo.equals(conectado.getEquipoActivoId()))
+                .toList());
+    }
+
+    private Mono<Void> validarEquipoSeleccionado(AuthenticatedUser user, Long idEquipo) {
+        if (idEquipo == null || user == null || user.equipos() == null || !user.equipos().contains(idEquipo)) {
+            return Mono.error(new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "El equipo seleccionado no pertenece al supervisor autenticado"
+            ));
+        }
+        return Mono.empty();
     }
 
     private Mono<List<UsuarioRolResponse>> listarUsuariosActivosVentasYOjt(String authHeader) {
@@ -252,6 +278,7 @@ public class MonitoringService {
                 .empleadoId(conectado.getEmpleadoId())
                 .nombreCompleto(conectado.getNombreCompleto())
                 .roles(conectado.getRoles())
+                .equipoActivoId(conectado.getEquipoActivoId())
                 .disponibilidad(conectado.getDisponibilidad())
                 .disponibilidadDesde(conectado.getDisponibilidadDesde())
                 .lastSeen(conectado.getLastSeen())

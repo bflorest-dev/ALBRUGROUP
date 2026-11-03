@@ -16,6 +16,7 @@ public class AsesorSupervisorResponse {
     private Long empleadoId;
     private String nombreCompleto;
     private List<String> roles;
+    private Long equipoActivoId;
     private Disponibilidad disponibilidad;
     private Instant disponibilidadDesde;
     private Instant lastSeen;

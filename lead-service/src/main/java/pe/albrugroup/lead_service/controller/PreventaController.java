@@ -424,17 +424,19 @@ public class PreventaController {
     // 1. Listar resumen de pre ventas gestionadas por asesor
     @GetMapping("/supervisor-ventas/resumen") @PreAuthorize("hasAuthority('READ_LEADS_SUPERVISOR_VENTAS_RESUMEN')")
     public ResponseEntity<List<SupervisorVentasResumenResponse>> listarResumenSupervisorVentas(
-            @RequestParam(required = false) List<Long> idsAsesor
+            @RequestParam(required = false) List<Long> idsAsesor,
+            @RequestParam Long idEquipo
     ) {
-        var resumen = leadService.listarResumenSupervisorVentas(idsAsesor);
+        var resumen = leadService.listarResumenSupervisorVentas(idsAsesor, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
     }
     // 1.1. Desde cuando cada asesor no tiene leads para gestionar
     @GetMapping("/supervisor-ventas/sin-leads-desde") @PreAuthorize("hasAuthority('READ_LEADS_SUPERVISOR_VENTAS_RESUMEN')")
     public ResponseEntity<List<AsesorSinLeadsResponse>> listarSinLeadsDesde(
-            @RequestParam(required = false) List<Long> idsAsesor
+            @RequestParam(required = false) List<Long> idsAsesor,
+            @RequestParam Long idEquipo
     ) {
-        return ResponseEntity.status(HttpStatus.OK).body(leadService.listarSinLeadsDesde(idsAsesor));
+        return ResponseEntity.status(HttpStatus.OK).body(leadService.listarSinLeadsDesde(idsAsesor, idEquipo));
     }
     // 2. Listar bandeja de pre ventas de los asesores
     @GetMapping("/supervisor-ventas/asesor/{idAsesor}/bandeja") @PreAuthorize("hasAuthority('READ_LEADS_SUPERVISOR_VENTAS_BANDEJA')")

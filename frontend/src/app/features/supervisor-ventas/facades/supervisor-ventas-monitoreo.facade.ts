@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Subscription, firstValueFrom } from 'rxjs';
 import {
   AsesorSupervisorResponse,
@@ -16,6 +16,7 @@ import {
   SupervisorVentasResumenResponse
 } from '../../../shared/models/preventa/preventa.models';
 import { STORAGE_KEYS } from '../../../core/constants/storage.constants';
+import { CurrentUserTeamScopeService } from '../../../core/services/current-user-team-scope.service';
 
 /** Asesor en vivo combinando monitoreo (presencia + horario + servicios) + resumen + leads + contadores. */
 export type AsesorMonitorView = AsesorSupervisorResponse & {
@@ -35,6 +36,7 @@ export type AsesorMonitorView = AsesorSupervisorResponse & {
 export class SupervisorVentasMonitoreoFacade {
   private readonly document = inject(DOCUMENT);
   private readonly presenceService = inject(PresenceService);
+  private readonly teamScope = inject(CurrentUserTeamScopeService);
   private readonly preventaService = inject(PreventaLeadService);
   private readonly presenceRealtime = inject(PresenceRealtimeService);
   private readonly attendanceRealtime = inject(AttendanceRealtimeService);
@@ -47,6 +49,24 @@ export class SupervisorVentasMonitoreoFacade {
   private tickTimer: ReturnType<typeof setInterval> | null = null;
   private readonly debounceMs = 500;
   private readonly fallbackMs = 90000;
+  private started = false;
+  private scopeReady = false;
+  private activeTeamId: number | null = null;
+
+  constructor() {
+    effect(() => {
+      const selectedTeamId = this.teamScope.activeId();
+      if (!this.started || !this.scopeReady || selectedTeamId === this.activeTeamId) {
+        return;
+      }
+
+      this.activeTeamId = selectedTeamId;
+      this.clearScopeData();
+      if (selectedTeamId !== null) {
+        void this.refreshAll(true);
+      }
+    });
+  }
 
   readonly asesores = signal<AsesorSupervisorResponse[]>([]);
   readonly esperados = signal<EmpleadoEsperadoResponse[]>([]);
@@ -143,7 +163,11 @@ export class SupervisorVentasMonitoreoFacade {
   });
 
   start(): void {
-    void this.refreshAll(true);
+    if (this.started) {
+      return;
+    }
+    this.started = true;
+    void this.initializeScopeAndRefresh();
 
     // Realtime-first: cada stream del websocket dispara un refresh debounced del dato afectado.
     this.subscriptions.add(
@@ -176,11 +200,28 @@ export class SupervisorVentasMonitoreoFacade {
   }
 
   stop(): void {
+    this.started = false;
+    this.scopeReady = false;
     this.subscriptions.unsubscribe();
     if (this.monitorTimer !== null) clearTimeout(this.monitorTimer);
     if (this.leadsTimer !== null) clearTimeout(this.leadsTimer);
     if (this.fallbackTimer !== null) clearInterval(this.fallbackTimer);
     if (this.tickTimer !== null) clearInterval(this.tickTimer);
+    this.clearScopeData();
+  }
+
+  private async initializeScopeAndRefresh(): Promise<void> {
+    try {
+      await this.teamScope.load();
+      this.activeTeamId = this.teamScope.activeId();
+      this.scopeReady = true;
+      this.clearScopeData();
+      if (this.activeTeamId !== null) {
+        await this.refreshAll(true);
+      }
+    } catch {
+      this.errorMessage.set('No se pudo cargar el equipo activo.');
+    }
   }
 
   private scheduleMonitorRefresh(): void {
@@ -210,26 +251,42 @@ export class SupervisorVentasMonitoreoFacade {
   }
 
   private async refreshMonitor(): Promise<void> {
+    const idEquipo = this.teamScope.activeId();
+    if (!this.scopeReady || idEquipo === null) {
+      this.clearScopeData();
+      return;
+    }
     try {
       const [asesores, esperados] = await Promise.all([
-        firstValueFrom(this.presenceService.listarAsesoresSupervisor()),
-        firstValueFrom(this.presenceService.listarEsperadosNoConectados())
+        firstValueFrom(this.presenceService.listarAsesoresSupervisor(idEquipo)),
+        firstValueFrom(this.presenceService.listarEsperadosNoConectados(idEquipo))
       ]);
-      const asesoresVentas = asesores.filter((asesor) => !this.hasOjtRole(asesor.roles));
-      this.asesores.set(asesoresVentas);
-      this.esperados.set(esperados.filter((empleado) => !this.hasOjtRole(empleado.roles)));
-      this.rememberConnectedAdvisors(asesoresVentas);
+      if (!this.isCurrentScope(idEquipo)) {
+        return;
+      }
+      this.asesores.set(asesores);
+      this.esperados.set(esperados);
+      this.rememberConnectedAdvisors(asesores, esperados);
     } catch {
       this.errorMessage.set('No se pudo actualizar el monitoreo de asesores.');
     }
   }
 
   private async refreshLeads(): Promise<void> {
+    const idEquipo = this.teamScope.activeId();
+    if (!this.scopeReady || idEquipo === null) {
+      this.resumen.set([]);
+      this.pendientes.set([]);
+      return;
+    }
     try {
       const [resumen, pendientes] = await Promise.all([
-        firstValueFrom(this.preventaService.obtenerResumenSupervisor()),
-        firstValueFrom(this.preventaService.listarLeadsPendientesPorAsesor())
+        firstValueFrom(this.preventaService.obtenerResumenSupervisor(idEquipo)),
+        firstValueFrom(this.preventaService.listarLeadsPendientesPorAsesor(idEquipo))
       ]);
+      if (!this.isCurrentScope(idEquipo)) {
+        return;
+      }
       this.resumen.set(resumen);
       this.pendientes.set(pendientes);
     } catch {
@@ -238,13 +295,17 @@ export class SupervisorVentasMonitoreoFacade {
   }
 
   private async refreshSinLeads(): Promise<void> {
+    const idEquipo = this.teamScope.activeId();
     const ids = this.visibleAdvisorIds();
-    if (!ids.length) {
+    if (!this.scopeReady || idEquipo === null || !ids.length) {
       this.sinLeadsPorAsesor.set([]);
       return;
     }
     try {
-      const data = await firstValueFrom(this.preventaService.listarSinLeadsDesde(ids));
+      const data = await firstValueFrom(this.preventaService.listarSinLeadsDesde(ids, idEquipo));
+      if (!this.isCurrentScope(idEquipo)) {
+        return;
+      }
       this.sinLeadsPorAsesor.set(data);
     } catch {
       // No crítico para el monitoreo.
@@ -252,24 +313,54 @@ export class SupervisorVentasMonitoreoFacade {
   }
 
   private visibleAdvisorIds(): number[] {
-    return Object.keys(this.seenAdvisorSnapshots())
-      .map(Number)
-      .filter((idAsesor) => Number.isFinite(idAsesor));
+    const ids = new Set<number>([
+      ...this.asesores().map((asesor) => asesor.empleadoId),
+      ...this.esperados().map((empleado) => empleado.empleadoId)
+    ]);
+    for (const id of Object.keys(this.seenAdvisorSnapshots()).map(Number)) {
+      if (Number.isFinite(id)) {
+        ids.add(id);
+      }
+    }
+    return [...ids];
   }
 
-  private rememberConnectedAdvisors(asesores: AsesorSupervisorResponse[]): void {
-    if (!asesores.length) {
-      return;
-    }
-
+  private rememberConnectedAdvisors(
+    asesores: AsesorSupervisorResponse[],
+    esperados: EmpleadoEsperadoResponse[]
+  ): void {
+    const autorizados = new Set([
+      ...asesores.map((asesor) => asesor.empleadoId),
+      ...esperados.map((empleado) => empleado.empleadoId)
+    ]);
     this.seenAdvisorSnapshots.update((current) => {
-      const next = { ...current };
+      const next: Record<number, AsesorSupervisorResponse> = {};
+      for (const [id, snapshot] of Object.entries(current)) {
+        if (autorizados.has(Number(id))) {
+          next[Number(id)] = snapshot;
+        }
+      }
       for (const asesor of asesores) {
         next[asesor.empleadoId] = asesor;
       }
       this.saveSeenAdvisorSnapshots(next);
       return next;
     });
+  }
+
+  private clearScopeData(): void {
+    this.asesores.set([]);
+    this.esperados.set([]);
+    this.resumen.set([]);
+    this.pendientes.set([]);
+    this.sinLeadsPorAsesor.set([]);
+    this.errorMessage.set(null);
+    this.seenAdvisorSnapshots.set({});
+    this.saveSeenAdvisorSnapshots({});
+  }
+
+  private isCurrentScope(idEquipo: number): boolean {
+    return this.started && this.teamScope.activeId() === idEquipo;
   }
 
   private buildOfflineAdvisor(
@@ -285,6 +376,7 @@ export class SupervisorVentasMonitoreoFacade {
       empleadoId: idAsesor,
       nombreCompleto: snapshot?.nombreCompleto ?? esperado?.nombreCompleto ?? 'Asesor ventas',
       roles: snapshot?.roles ?? esperado?.roles ?? [],
+      equipoActivoId: snapshot?.equipoActivoId ?? null,
       disponibilidad: snapshot?.disponibilidad ?? null,
       disponibilidadDesde: snapshot?.disponibilidadDesde ?? null,
       lastSeen: snapshot?.lastSeen ?? null,
@@ -312,10 +404,6 @@ export class SupervisorVentasMonitoreoFacade {
     }
 
     return Date.parse(asesor.disponibilidadDesde);
-  }
-
-  private hasOjtRole(roles?: string[] | null): boolean {
-    return roles?.some((role) => role?.toUpperCase() === 'OJT') ?? false;
   }
 
   private readSeenAdvisorSnapshots(): Record<number, AsesorSupervisorResponse> {
