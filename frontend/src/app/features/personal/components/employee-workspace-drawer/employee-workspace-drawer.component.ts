@@ -336,7 +336,10 @@ export class EmployeeWorkspaceDrawerComponent {
   protected canSelectMultipleTeams(row?: PersonalDirectoryRow | null): boolean {
     const roles = row ? [row.primaryRole, ...row.secondaryRoles] : this.selectedRoles();
     const teamRoles = roles.filter((role) => esRolDeEquipo(role));
-    return teamRoles.length > 0 && teamRoles.every((role) => puedeMultiEquipo(role));
+    // Los roles GTR habilitan el alcance multi-equipo aunque convivan con un rol operativo que
+    // normalmente es de equipo único, por ejemplo SUPERVISOR_VENTAS.
+    return teamRoles.includes('ASESOR_GTR') || teamRoles.includes('SUPERVISOR_GTR')
+      || (teamRoles.length > 0 && teamRoles.every((role) => puedeMultiEquipo(role)));
   }
 
   protected rolesDirty(): boolean {

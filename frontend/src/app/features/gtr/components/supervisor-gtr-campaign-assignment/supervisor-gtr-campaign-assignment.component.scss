@@ -1,0 +1,118 @@
+:host {
+  display: block;
+}
+
+.campaign-assignment {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 11px;
+  background: var(--app-surface, #fff);
+}
+
+.campaign-assignment__header,
+.campaign-assignment__footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+h2 {
+  margin: 0;
+  color: var(--app-text, #171b22);
+  font-size: 1.1rem;
+  letter-spacing: -0.015em;
+}
+
+p {
+  margin: .35rem 0 0;
+  color: var(--app-text-muted, #5a6472);
+  max-width: 68ch;
+}
+
+.campaign-assignment__team-name {
+  min-width: 0;
+  max-width: 16rem;
+  overflow: hidden;
+  color: var(--app-accent, #b5680e);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campaign-assignment__form {
+  display: grid;
+  grid-template-columns: minmax(12rem, .35fr) minmax(18rem, .65fr);
+  gap: .5rem 1rem;
+  align-items: center;
+}
+
+.campaign-assignment__form label {
+  color: var(--app-text-muted, #5a6472);
+  font-size: .84rem;
+  font-weight: 700;
+}
+
+.campaign-assignment__form p-select,
+.campaign-assignment__form p-multiSelect {
+  width: 100%;
+}
+
+.campaign-option {
+  display: grid;
+  gap: .15rem;
+  min-width: 0;
+}
+
+.campaign-option__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campaign-option small,
+.campaign-assignment__hint {
+  color: var(--app-text-muted, #5a6472);
+  font-size: .8rem;
+}
+
+.campaign-assignment__footer {
+  align-items: center;
+  min-height: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--app-border-soft);
+}
+
+.campaign-assignment__hint {
+  max-width: 58ch;
+}
+
+.campaign-assignment__loading {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  color: var(--app-text-muted, #5a6472);
+}
+
+.campaign-assignment__loading p-progressSpinner {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+@media (max-width: 48rem) {
+  .campaign-assignment__header,
+  .campaign-assignment__footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .campaign-assignment__team-name {
+    max-width: none;
+  }
+
+  .campaign-assignment__form {
+    grid-template-columns: 1fr;
+  }
+}

@@ -37,6 +37,7 @@ public class SubsanacionService {
     private final LeadRepository leadRepository;
     private final ContactoRepository contactoRepository;
     private final CampanaRepository campanaRepository;
+    private final EquipoCampanaRepository equipoCampanaRepository;
     private final PlanRepository planRepository;
     private final EquipoProveedorRepository equipoProveedorRepository;
     private final TipificacionRepository tipificacionRepository;
@@ -267,8 +268,8 @@ public class SubsanacionService {
                 .orElseThrow(() -> new NotFoundException(Campana.class, request.getIdCampana()));
         Plan plan = planRepository.findById(request.getIdPlan())
                 .orElseThrow(() -> new NotFoundException(Plan.class, request.getIdPlan()));
-        if (campana.getProveedor() == null || !equipoProveedorRepository.existsByIdEquipoAndProveedorId(
-                request.getIdEquipo(), campana.getProveedor().getId())) {
+        if (!equipoCampanaRepository.existsByIdEquipoAndCampanaId(
+                request.getIdEquipo(), campana.getId())) {
             throw new ConflictException("La campana no pertenece al equipo seleccionado");
         }
         if (plan.getProveedor() == null || !equipoProveedorRepository.existsByIdEquipoAndProveedorId(

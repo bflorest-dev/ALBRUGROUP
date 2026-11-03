@@ -69,6 +69,7 @@ import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.AgendadosGtrResumenResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrMetricasResponse;
+import pe.albrugroup.lead_service.entity.response.LeadGtrMetricasProveedorResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionItemResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.LeadVentaAgrupacionesResponse;
@@ -183,6 +184,7 @@ public class LeadService {
     private final LeadSeguimientoRepository leadSeguimientoRepository;
     private final ContactoRepository contactoRepository;
     private final EquipoProveedorRepository equipoProveedorRepository;
+    private final EquipoCampanaService equipoCampanaService;
     private final EquipoCampoService equipoCampoService;
     private final CampanaRepository campanaRepository;
     private final EventoRepository eventoRepository;
@@ -568,7 +570,11 @@ public class LeadService {
      * detectar a los asesores ausentes que dejaron leads sin atender.
      */
     public List<AsesorLeadsPendientesResponse> listarLeadsPendientesPorAsesor() {
-        RankingEquipoScope equipos = resolverEquiposActuales();
+        return listarLeadsPendientesPorAsesor(null);
+    }
+
+    public List<AsesorLeadsPendientesResponse> listarLeadsPendientesPorAsesor(Long idEquipo) {
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         List<Lead> leads = leadRepository.listarPendientesGtrPorAsesor(
                 Etapa.PREVENTA,
                 List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION),
@@ -643,12 +649,56 @@ public class LeadService {
     public LeadGtrMetricasResponse obtenerMetricasGtr(LocalDate fecha, Long idEquipo) {
         OperationalDateTime.InstantRange rangoDia = OperationalDateTime.dayRange(fecha);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        return calcularMetricasGtr(rangoDia, equipos, null);
+    }
 
+    /** Métricas diarias por proveedor para el supervisor, acotadas a sus equipos. */
+    public List<LeadGtrMetricasProveedorResponse> obtenerMetricasGtrPorProveedor(LocalDate fecha) {
+        OperationalDateTime.InstantRange rangoDia = OperationalDateTime.dayRange(fecha);
+        RankingEquipoScope equipos = resolverEquiposRanking(null);
+
+        List<Proveedor> proveedores = equipos.filtrar()
+                ? equipoProveedorRepository.findByIdEquipoIn(equipos.ids()).stream()
+                        .map(EquipoProveedor::getProveedor)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toMap(
+                                Proveedor::getId,
+                                proveedor -> proveedor,
+                                (primero, ignorado) -> primero,
+                                LinkedHashMap::new))
+                        .values().stream()
+                        .toList()
+                : proveedorRepository.listarPorActivo(null);
+
+        return proveedores.stream()
+                .filter(proveedor -> proveedor.getId() != null)
+                .sorted(Comparator.comparing(Proveedor::getNombre,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .map(proveedor -> {
+                    LeadGtrMetricasResponse metricas = calcularMetricasGtr(rangoDia, equipos, proveedor.getId());
+                    return new LeadGtrMetricasProveedorResponse(
+                            proveedor.getId(),
+                            proveedor.getNombre(),
+                            metricas.getNuevos(),
+                            metricas.getSinGestionar(),
+                            metricas.getGestionados(),
+                            metricas.getPreventas(),
+                            metricas.getIngresos());
+                })
+                .toList();
+    }
+
+    private LeadGtrMetricasResponse calcularMetricasGtr(
+            OperationalDateTime.InstantRange rangoDia,
+            RankingEquipoScope equipos,
+            Long idProveedor
+    ) {
         long nuevos = leadRepository.contarMetricasGtrPorEstado(
                 Etapa.PREVENTA,
                 EstadoSeguimiento.NUEVO,
                 rangoDia.inicio(),
                 rangoDia.fin(),
+                idProveedor,
                 equipos.filtrar(),
                 equipos.ids()
         );
@@ -657,6 +707,7 @@ public class LeadService {
                 EstadoSeguimiento.ASIGNADO,
                 rangoDia.inicio(),
                 rangoDia.fin(),
+                idProveedor,
                 equipos.filtrar(),
                 equipos.ids()
         );
@@ -666,6 +717,7 @@ public class LeadService {
                 COMPORTAMIENTO_CIERRE_PREVENTA,
                 rangoDia.inicio(),
                 rangoDia.fin(),
+                idProveedor,
                 equipos.filtrar(),
                 equipos.ids()
         );
@@ -674,6 +726,7 @@ public class LeadService {
                 COMPORTAMIENTO_CIERRE_PREVENTA,
                 rangoDia.inicio(),
                 rangoDia.fin(),
+                idProveedor,
                 equipos.filtrar(),
                 equipos.ids()
         );
@@ -681,6 +734,7 @@ public class LeadService {
                 Accion.REGISTRO,
                 rangoDia.inicio(),
                 rangoDia.fin(),
+                idProveedor,
                 equipos.filtrar(),
                 equipos.ids()
         );
@@ -3519,6 +3573,12 @@ public class LeadService {
         registrarIngresoLead(request, null, null);
     }
 
+    /** Registra desde la plataforma GTR bajo el equipo operativo seleccionado. */
+    @Transactional
+    public void registrarIngresoLead(LeadIntakeRequest request, Long idEquipo) {
+        registrarIngresoLead(request, null, normalizarIdEquipoContextual(idEquipo));
+    }
+
     @Transactional
     public void registrarIngresoLeadAdmin(Long idEquipo, LeadIntakeRequest request) {
         registrarIngresoLead(request, null, normalizarIdEquipoAdmin(idEquipo));
@@ -3526,12 +3586,18 @@ public class LeadService {
 
     @Transactional
     public void registrarIngresoLeadRetroactivo(LeadIntakeRetroactivoRequest request) {
+        registrarIngresoLeadRetroactivo(request, null);
+    }
+
+    /** Registro retroactivo bajo el equipo operativo seleccionado por el GTR. */
+    @Transactional
+    public void registrarIngresoLeadRetroactivo(LeadIntakeRetroactivoRequest request, Long idEquipo) {
         Instant registroAt = calcularRegistroRetroactivo(
                 OperationalDateTime.today(),
                 request.getFechaRegistro(),
                 request.getHoraRegistro()
         );
-        registrarIngresoLead(request, registroAt, null);
+        registrarIngresoLead(request, registroAt, normalizarIdEquipoContextual(idEquipo));
     }
 
     @Transactional
@@ -3610,6 +3676,7 @@ public class LeadService {
         Campana campana = request.getIdCampana() == null ? null : obtenerCampanaActiva(request.getIdCampana());
         Origen origen = resolverOrigenIntake(request.getIdOrigen(), campana != null);
         validarCampanaCompatibleConEquipoContextual(idEquipoContextual, campana);
+        Long idEquipoIntake = resolverIdEquipoIntake(campana, idEquipoContextual);
         LeadIdentidad identidad = resolverIdentidadContacto(prefijo, numeroLead, usermeta);
 
         // El lead PREVENTA del contacto (si existe) tiene prioridad: es el que el GTR gestiona y
@@ -3618,16 +3685,16 @@ public class LeadService {
         Optional<Lead> leadPreventa = leadRepository
                 .findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(identidad.contacto().getId(), Etapa.PREVENTA);
         if (leadPreventa.isPresent()) {
-            registrarIngresoLeadExistente(leadPreventa.get(), identidad, request, origen, campana, registroAt, idEquipoContextual);
+            registrarIngresoLeadExistente(leadPreventa.get(), identidad, request, origen, campana, registroAt, idEquipoIntake);
             return;
         }
         List<Lead> oportunidadesContacto =
                 leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(identidad.contacto().getId());
         if (!oportunidadesContacto.isEmpty()) {
-            registrarAtencionGtrLeadOtraEtapa(oportunidadesContacto.get(0), identidad, request, origen, campana, registroAt, idEquipoContextual);
+            registrarAtencionGtrLeadOtraEtapa(oportunidadesContacto.get(0), identidad, request, origen, campana, registroAt, idEquipoIntake);
             return;
         }
-        registrarLeadNuevo(identidad, request, origen, campana, registroAt, idEquipoContextual);
+        registrarLeadNuevo(identidad, request, origen, campana, registroAt, idEquipoIntake);
     }
 
     Origen resolverOrigen(String codigo) {
@@ -4494,24 +4561,58 @@ public class LeadService {
         return idEquipo;
     }
 
+    /** Valida el contexto elegido por un usuario operativo antes de registrar un lead. */
+    private Long normalizarIdEquipoContextual(Long idEquipo) {
+        if (idEquipo == null) {
+            return null;
+        }
+        if (idEquipo <= 0) {
+            throw new BadRequestException("Selecciona un equipo valido para registrar el lead");
+        }
+        if (!currentUser.tieneVisibilidadGlobalEquipos()) {
+            List<Long> equiposUsuario = currentUser.equipos();
+            if (equiposUsuario == null || !equiposUsuario.contains(idEquipo)) {
+                throw new UnauthorizedException("No tienes acceso al equipo seleccionado.");
+            }
+        }
+        return idEquipo;
+    }
+
     private void validarCampanaCompatibleConEquipoContextual(Long idEquipoContextual, Campana campana) {
-        if (idEquipoContextual == null || campana == null || campana.getProveedor() == null) {
-            return;
-        }
-        Long idProveedor = campana.getProveedor().getId();
-        if (idProveedor == null) {
-            return;
-        }
-        List<EquipoProveedor> proveedoresEquipo = equipoProveedorRepository.findByIdEquipo(idEquipoContextual);
-        if (!proveedoresEquipo.isEmpty()
-                && proveedoresEquipo.stream()
-                .noneMatch(ep -> ep.getProveedor() != null && idProveedor.equals(ep.getProveedor().getId()))) {
-            throw new ConflictException("La campana seleccionada no pertenece al equipo indicado.");
-        }
+        // La validación completa está en resolverIdEquipoIntake: campaña → equipo es exclusiva y
+        // el equipo contextual, si existe, debe coincidir exactamente con ella.
+        resolverIdEquipoIntake(campana, idEquipoContextual);
     }
 
     private Long resolverIdEquipoIntake(Campana campana, Long idEquipoContextual) {
-        return idEquipoContextual != null ? idEquipoContextual : derivarIdEquipo(campana);
+        if (campana != null) {
+            Long idEquipoCampana = equipoCampanaService.resolverEquipoPorCampana(campana.getId());
+            if (idEquipoCampana == null) {
+                throw new ConflictException("La campaña seleccionada no está asignada a un equipo operativo.");
+            }
+            if (idEquipoContextual != null && !idEquipoContextual.equals(idEquipoCampana)) {
+                throw new ConflictException("La campaña seleccionada pertenece a otro equipo.");
+            }
+            if (!currentUser.tieneVisibilidadGlobalEquipos()) {
+                List<Long> equiposUsuario = currentUser.equipos();
+                if (equiposUsuario == null || !equiposUsuario.contains(idEquipoCampana)) {
+                    throw new UnauthorizedException("No tienes acceso al equipo de la campaña seleccionada.");
+                }
+            }
+            return idEquipoCampana;
+        }
+
+        if (idEquipoContextual != null) {
+            return idEquipoContextual;
+        }
+        List<Long> equiposUsuario = currentUser.equipos();
+        if (!currentUser.tieneVisibilidadGlobalEquipos()
+                && equiposUsuario != null
+                && equiposUsuario.size() > 1) {
+            throw new BadRequestException(
+                    "Selecciona una campaña para registrar un lead cuando perteneces a más de un equipo.");
+        }
+        return derivarIdEquipo(null);
     }
 
     private void validarEquipoContextualLead(Lead lead, Long idEquipoContextual) {

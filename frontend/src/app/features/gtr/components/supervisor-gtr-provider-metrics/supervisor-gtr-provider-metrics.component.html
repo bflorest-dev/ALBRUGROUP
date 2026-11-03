@@ -1,0 +1,40 @@
+<section class="provider-metrics" aria-labelledby="provider-metrics-title">
+  <div class="provider-metrics__header">
+    <div>
+      <h2 id="provider-metrics-title">Métricas PREVENTA por proveedor</h2>
+      <p>Resumen del día operativo para los equipos dentro de tu alcance.</p>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="provider-metrics__loading" aria-live="polite">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Cargando métricas" />
+      <span>Cargando métricas…</span>
+    </div>
+  } @else if (metricas().length === 0) {
+    <p class="provider-metrics__empty">No hay proveedores configurados para los equipos disponibles.</p>
+  } @else {
+    <p-table [value]="metricas()" styleClass="provider-metrics__table">
+      <ng-template #header>
+        <tr>
+          <th class="col-provider">Proveedor</th>
+          <th class="col-preventas">Preventas</th>
+          <th class="col-operational">Ingresos</th>
+          <th class="col-operational">Gestionados</th>
+          <th class="col-context">Nuevos</th>
+          <th class="col-context">Sin gestionar</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-row>
+        <tr>
+          <td class="col-provider">{{ row.nombreProveedor }}</td>
+          <td class="col-preventas data">{{ row.preventas }}</td>
+          <td class="col-operational data">{{ row.ingresos }}</td>
+          <td class="col-operational data">{{ row.gestionados }}</td>
+          <td class="col-context data">{{ row.nuevos }}</td>
+          <td class="col-context data">{{ row.sinGestionar }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</section>

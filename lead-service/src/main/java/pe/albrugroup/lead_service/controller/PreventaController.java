@@ -49,8 +49,11 @@ public class PreventaController {
 
     // 1. Registrar un Lead, independientemente si es nuevo o ya esté registrado
     @PostMapping("/intake") @PreAuthorize("hasAuthority('CREATE_LEADS')")
-    public ResponseEntity<Void> registrarIngresoLead(@Valid @RequestBody LeadIntakeRequest request) {
-        leadService.registrarIngresoLead(request);
+    public ResponseEntity<Void> registrarIngresoLead(
+            @RequestParam(required = false) Long idEquipo,
+            @Valid @RequestBody LeadIntakeRequest request
+    ) {
+        leadService.registrarIngresoLead(request, idEquipo);
         return ResponseEntity.noContent().build();
     }
 
@@ -119,9 +122,10 @@ public class PreventaController {
 
     @PostMapping("/intake/retroactivo") @PreAuthorize("hasAuthority('CREATE_LEADS')")
     public ResponseEntity<Void> registrarIngresoLeadRetroactivo(
+            @RequestParam(required = false) Long idEquipo,
             @Valid @RequestBody LeadIntakeRetroactivoRequest request
     ) {
-        leadService.registrarIngresoLeadRetroactivo(request);
+        leadService.registrarIngresoLeadRetroactivo(request, idEquipo);
         return ResponseEntity.noContent().build();
     }
 
@@ -220,8 +224,10 @@ public class PreventaController {
     }
     // 2.0.1. Leads pendientes agrupados por asesor (para detectar abandonados cuando se desconectan)
     @GetMapping("/gtr/leads-pendientes-asesor") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
-    public ResponseEntity<List<AsesorLeadsPendientesResponse>> listarLeadsPendientesPorAsesor() {
-        return ResponseEntity.status(HttpStatus.OK).body(leadService.listarLeadsPendientesPorAsesor());
+    public ResponseEntity<List<AsesorLeadsPendientesResponse>> listarLeadsPendientesPorAsesor(
+            @RequestParam(required = false) Long idEquipo
+    ) {
+        return ResponseEntity.status(HttpStatus.OK).body(leadService.listarLeadsPendientesPorAsesor(idEquipo));
     }
     // 2.1. Metricas acumuladas del dia para la operacion GTR
     @GetMapping("/gtr/metricas") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
@@ -232,6 +238,14 @@ public class PreventaController {
     ) {
         var metricas = leadService.obtenerMetricasGtr(fecha, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(metricas);
+    }
+
+    @GetMapping("/gtr/metricas/proveedores") @PreAuthorize("hasAuthority('READ_METRICAS_GTR_PROVEEDOR')")
+    public ResponseEntity<List<LeadGtrMetricasProveedorResponse>> obtenerMetricasGtrPorProveedor(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        return ResponseEntity.ok(leadService.obtenerMetricasGtrPorProveedor(fecha));
     }
     // 2.2. Ranking de asesores para la vista GTR
     @GetMapping("/gtr/ranking") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")

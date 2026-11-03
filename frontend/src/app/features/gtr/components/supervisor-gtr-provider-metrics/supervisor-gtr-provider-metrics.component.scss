@@ -1,0 +1,101 @@
+:host {
+  display: block;
+}
+
+.provider-metrics {
+  container-type: inline-size;
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 11px;
+  background: var(--app-surface, #fff);
+}
+
+h2 {
+  margin: 0;
+  color: var(--app-text, #171b22);
+  font-size: 1.1rem;
+  letter-spacing: -0.015em;
+}
+
+p {
+  margin: .35rem 0 0;
+  color: var(--app-text-muted, #5a6472);
+}
+
+.provider-metrics__loading {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  color: var(--app-text-muted, #5a6472);
+}
+
+.provider-metrics__loading p-progressSpinner {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.provider-metrics__empty {
+  min-height: 2.5rem;
+}
+
+:host ::ng-deep .provider-metrics__table .p-datatable-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+:host ::ng-deep .provider-metrics__table th,
+:host ::ng-deep .provider-metrics__table td {
+  min-width: 0;
+}
+
+:host ::ng-deep .provider-metrics__table .col-provider {
+  width: 34%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .provider-metrics__table .col-preventas {
+  width: 14%;
+}
+
+:host ::ng-deep .provider-metrics__table .col-operational,
+:host ::ng-deep .provider-metrics__table .col-context {
+  width: 13%;
+}
+
+:host ::ng-deep .provider-metrics__table .data {
+  font-family: 'Spline Sans Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+@container (max-width: 46rem) {
+  :host ::ng-deep .provider-metrics__table .col-context {
+    display: none;
+  }
+
+  :host ::ng-deep .provider-metrics__table .col-provider {
+    width: 44%;
+  }
+
+  :host ::ng-deep .provider-metrics__table .col-preventas,
+  :host ::ng-deep .provider-metrics__table .col-operational {
+    width: 18.66%;
+  }
+}
+
+@container (max-width: 30rem) {
+  :host ::ng-deep .provider-metrics__table .col-operational {
+    display: none;
+  }
+
+  :host ::ng-deep .provider-metrics__table .col-provider {
+    width: 70%;
+  }
+
+  :host ::ng-deep .provider-metrics__table .col-preventas {
+    width: 30%;
+  }
+}

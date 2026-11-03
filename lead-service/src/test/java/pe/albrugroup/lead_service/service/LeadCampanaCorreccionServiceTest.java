@@ -14,7 +14,7 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.LeadCampanaCorreccionRequest;
 import pe.albrugroup.lead_service.entity.response.LeadCampanaCorreccionResponse;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
-import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
+import pe.albrugroup.lead_service.repository.EquipoCampanaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 
@@ -32,7 +32,7 @@ class LeadCampanaCorreccionServiceTest {
 
     @Mock private LeadRepository leadRepository;
     @Mock private CampanaRepository campanaRepository;
-    @Mock private EquipoProveedorRepository equipoProveedorRepository;
+    @Mock private EquipoCampanaRepository equipoCampanaRepository;
     @Mock private EventoRepository eventoRepository;
     @Mock private LeadRealtimeNotifier leadRealtimeNotifier;
 
@@ -41,7 +41,7 @@ class LeadCampanaCorreccionServiceTest {
         LeadCampanaCorreccionService service = new LeadCampanaCorreccionService(
                 leadRepository,
                 campanaRepository,
-                equipoProveedorRepository,
+                equipoCampanaRepository,
                 eventoRepository,
                 leadRealtimeNotifier
         );
@@ -67,7 +67,7 @@ class LeadCampanaCorreccionServiceTest {
         LeadCampanaCorreccionService service = new LeadCampanaCorreccionService(
                 leadRepository,
                 campanaRepository,
-                equipoProveedorRepository,
+                equipoCampanaRepository,
                 eventoRepository,
                 leadRealtimeNotifier
         );

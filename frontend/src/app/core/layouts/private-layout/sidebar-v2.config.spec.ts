@@ -24,4 +24,11 @@ describe('sidebar V2 role configuration', () => {
   it('trata MONITOR con el mismo sidebar de backoffice', () => {
     expect(sidebarDomainsForRole('MONITOR')).toEqual(sidebarDomainsForRole('ASESOR_BACKOFFICE'));
   });
+
+  it('define el contexto de supervisión GTR sin reutilizar la navegación operativa', () => {
+    expect(sidebarDomainsForRole('SUPERVISOR_GTR')).toEqual([
+      expect.objectContaining({ id: 'workspace', label: 'Supervisión GTR' }),
+      expect.objectContaining({ id: 'insights', label: 'Métricas' })
+    ]);
+  });
 });

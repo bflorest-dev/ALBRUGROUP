@@ -27,6 +27,7 @@ public class EquipoProveedorService {
     private final ProveedorRepository proveedorRepository;
     private final ProveedorMapper proveedorMapper;
     private final LeadRepository leadRepository;
+    private final EquipoCampanaService equipoCampanaService;
     private final CurrentUser currentUser;
 
     /** Reemplaza los proveedores asignados a un equipo. */
@@ -37,6 +38,10 @@ public class EquipoProveedorService {
     ) {
         Set<Long> ids = proveedorIds == null ? Set.of() : proveedorIds;
         validarFallback(ids, idProveedorFallbackLeadSinCampana);
+        if (equipoCampanaService.hayCampanasDeProveedorNoPermitido(idEquipo, ids)) {
+            throw new BadRequestException(
+                    "No se puede retirar un proveedor mientras el equipo tenga campañas asignadas de ese proveedor");
+        }
 
         List<Proveedor> proveedores = ids.isEmpty()
                 ? List.of()
@@ -63,6 +68,7 @@ public class EquipoProveedorService {
 
     /** Limpia los datos de lead-service asociados a un equipo (al eliminarlo en auth). */
     public void eliminarDatosDeEquipo(Long idEquipo) {
+        equipoCampanaService.eliminarDatosDeEquipo(idEquipo);
         equipoProveedorRepository.deleteByIdEquipo(idEquipo);
         equipoCampoRepository.deleteByIdEquipo(idEquipo);
         leadRepository.desvincularEquipo(idEquipo);

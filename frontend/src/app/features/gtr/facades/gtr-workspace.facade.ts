@@ -281,6 +281,8 @@ export class GtrWorkspaceFacade {
   private started = false;
   private realtimeStarted = false;
   private initializeInFlight = false;
+  private lastActiveTeamId: number | null = null;
+  private teamScopeReloadRequested = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
   private lastMasivoSearchFiltersKey: string | null = null;
   private planOfertaLoadSequence = 0;
@@ -1302,6 +1304,16 @@ export class GtrWorkspaceFacade {
 
       this.lastAttendanceStatus = status;
     });
+
+    effect(() => {
+      const activeTeamId = this.currentUserTeamScopeService.activeId();
+      const isAdminTeamView = this.adminEquipoId() !== null;
+      if (!this.started || isAdminTeamView || activeTeamId === null || activeTeamId === this.lastActiveTeamId) {
+        return;
+      }
+      this.lastActiveTeamId = activeTeamId;
+      untracked(() => this.requestTeamScopeReload());
+    });
   }
 
   setSection(section: GtrSection): void {
@@ -1340,6 +1352,7 @@ export class GtrWorkspaceFacade {
 
   start(): void {
     this.started = true;
+    this.lastActiveTeamId = this.currentUserTeamScopeService.activeId();
     this.startRetroactiveWindowClock();
     if (this.section() !== 'ranking' && this.operationalGate.canActivateOperationalData()) {
       void this.initialize();
@@ -1410,6 +1423,9 @@ export class GtrWorkspaceFacade {
     } finally {
       this.initializeInFlight = false;
       this.isLoading.set(false);
+      if (this.teamScopeReloadRequested && this.started) {
+        this.executeTeamScopeReload();
+      }
     }
   }
 
@@ -1475,12 +1491,13 @@ export class GtrWorkspaceFacade {
         idOrigen: formValue.idOrigen!
       };
       const adminEquipoId = this.adminEquipoId();
+      const idEquipoOperativo = await this.resolveOperationalEquipoId();
       if (!skipLookupConfirmation) {
         this.clearMessages();
         this.intakeError.set(null);
         try {
           const lookupValue = request.lead || request.usermeta || '';
-          const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(lookupValue, adminEquipoId));
+          const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(lookupValue, idEquipoOperativo));
           if (lookup.existe) {
             this.pendingIntakeLookup.set(lookup);
             this.activeDialog.set('intake-confirm');
@@ -1512,13 +1529,13 @@ export class GtrWorkspaceFacade {
         if (adminEquipoId !== null) {
           await firstValueFrom(this.preventaService.registrarIngresoLeadAdminRetroactivo(adminEquipoId, retroactiveRequest));
         } else {
-          await firstValueFrom(this.preventaService.registrarIngresoLeadRetroactivo(retroactiveRequest));
+          await firstValueFrom(this.preventaService.registrarIngresoLeadRetroactivo(retroactiveRequest, idEquipoOperativo));
         }
       } else {
         if (adminEquipoId !== null) {
           await firstValueFrom(this.preventaService.registrarIngresoLeadAdmin(adminEquipoId, request));
         } else {
-          await firstValueFrom(this.preventaService.registrarIngresoLead(request));
+          await firstValueFrom(this.preventaService.registrarIngresoLead(request, idEquipoOperativo));
         }
       }
       this.resetIntakeForm();
@@ -2337,11 +2354,38 @@ export class GtrWorkspaceFacade {
   }
 
   private async resolveSearchEquipoId(): Promise<number | null> {
+    return this.resolveOperationalEquipoId();
+  }
+
+  private async resolveOperationalEquipoId(): Promise<number | null> {
     const adminEquipoId = this.adminEquipoId();
     if (adminEquipoId !== null) {
       return adminEquipoId;
     }
-    return this.currentUserTeamScopeService.getPrimaryEquipoId();
+    return this.currentUserTeamScopeService.activeId()
+      ?? await this.currentUserTeamScopeService.getPrimaryEquipoId();
+  }
+
+  private requestTeamScopeReload(): void {
+    this.teamScopeReloadRequested = true;
+    if (!this.initializeInFlight) {
+      this.executeTeamScopeReload();
+    }
+  }
+
+  private executeTeamScopeReload(): void {
+    this.teamScopeReloadRequested = false;
+    this.selectedIds.set(new Set());
+    this.platformSelectedGroup.set(null);
+    this.pageNumber.set(0);
+    this.agendadosPageNumber.set(0);
+    this.closeDialog();
+    this.rows.set([]);
+    this.agendadosRows.set([]);
+    this.advisors.set([]);
+    this.pendientesPorAsesor.set([]);
+    this.campanas.set([]);
+    void this.initialize();
   }
 
   openAgendadoAssignment(row: LeadAgendadoGtrResponse): void {
@@ -2719,7 +2763,8 @@ export class GtrWorkspaceFacade {
   }
 
   async refreshPendientes(): Promise<void> {
-    const data = await firstValueFrom(this.preventaService.listarLeadsPendientesPorAsesor());
+    const idEquipo = await this.resolveOperationalEquipoId();
+    const data = await firstValueFrom(this.preventaService.listarLeadsPendientesPorAsesor(idEquipo));
     this.pendientesPorAsesor.set(data);
   }
 
@@ -2906,15 +2951,15 @@ export class GtrWorkspaceFacade {
       await this.refreshEquipos();
     }
 
+    const idEquipo = await this.resolveOperationalEquipoId();
+    if (idEquipo === null) {
+      this.advisors.set([]);
+      return;
+    }
+
     let activeUsers: UsuarioResponse[] = [];
     try {
-      activeUsers = this.mergeUsersWithTeams(
-        await Promise.all(
-          this.historicosEquipoOptions().map((equipo) =>
-            firstValueFrom(this.preventaService.listarAsesoresPreventaPorEquipo(equipo.value))
-          )
-        )
-      );
+      activeUsers = await firstValueFrom(this.preventaService.listarAsesoresPreventaPorEquipo(idEquipo));
     } catch (error) {
       this.advisors.set([]);
       throw new Error(this.getErrorMessage(error, 'catalogo de asesores activos'));
@@ -2941,23 +2986,6 @@ export class GtrWorkspaceFacade {
     }
 
     this.advisors.set(this.mapAdvisorOptions(activeUsers, connectedUsers, monitorUsers));
-  }
-
-  private mergeUsersWithTeams(lists: UsuarioResponse[][]): UsuarioResponse[] {
-    const porId = new Map<number, UsuarioResponse>();
-    for (const user of lists.flat()) {
-      const current = porId.get(user.empleadoId);
-      if (!current) {
-        porId.set(user.empleadoId, { ...user, equipoIds: [...(user.equipoIds ?? [])] });
-        continue;
-      }
-      porId.set(user.empleadoId, {
-        ...current,
-        roles: [...new Set([...(current.roles ?? []), ...(user.roles ?? [])])],
-        equipoIds: [...new Set([...(current.equipoIds ?? []), ...(user.equipoIds ?? [])])]
-      });
-    }
-    return [...porId.values()];
   }
 
   /** Une listas de usuarios deduplicando por empleadoId. */
@@ -4279,13 +4307,13 @@ export class GtrWorkspaceFacade {
     const previous = this.rows();
     const query = this.currentQuery(this.pageSize);
     const groupFilter = this.platformGroupFilter();
-    const adminEquipoId = this.adminEquipoId();
+    const idEquipo = await this.resolveOperationalEquipoId();
     const page = await firstValueFrom(
       this.preventaService.listarBandejaGtr(
         this.today,
         query,
         groupFilter,
-        adminEquipoId
+        idEquipo
       )
     );
     if (requestSeq !== this.platformRequestSeq || requestKey !== this.platformRequestKey()) {
@@ -4311,9 +4339,9 @@ export class GtrWorkspaceFacade {
         sortBy: this.agendadosSortField(),
         direction: this.agendadosSortDirection()
       };
-      const adminEquipoId = this.adminEquipoId();
+      const idEquipo = await this.resolveOperationalEquipoId();
       const page = await firstValueFrom(
-        this.preventaService.listarAgendadosGtr(query, adminEquipoId)
+        this.preventaService.listarAgendadosGtr(query, idEquipo)
       );
       if (requestSeq !== this.agendadosRequestSeq || requestKey !== this.agendadosRequestKey()) {
         return;
@@ -4373,14 +4401,16 @@ export class GtrWorkspaceFacade {
     if (!this.canDisplayOperationalData()) {
       return;
     }
-    this.metrics.set(await firstValueFrom(this.preventaService.obtenerMetricasGtr(this.today, this.adminEquipoId())));
+    const idEquipo = await this.resolveOperationalEquipoId();
+    this.metrics.set(await firstValueFrom(this.preventaService.obtenerMetricasGtr(this.today, idEquipo)));
   }
 
   private async refreshPlatformGroups(): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       return;
     }
-    const groups = await firstValueFrom(this.preventaService.listarAgrupacionesBandejaGtr(this.today, this.adminEquipoId()));
+    const idEquipo = await this.resolveOperationalEquipoId();
+    const groups = await firstValueFrom(this.preventaService.listarAgrupacionesBandejaGtr(this.today, idEquipo));
     this.platformGroups.set({
       asesores: groups.asesores ?? [],
       campanas: groups.campanas ?? [],
@@ -4420,7 +4450,13 @@ export class GtrWorkspaceFacade {
   }
 
   private async refreshCampanas(): Promise<void> {
-    this.campanas.set(await firstValueFrom(this.preventaService.listarCampanasActivas()));
+    const idEquipo = await this.resolveOperationalEquipoId();
+    const campanas = await firstValueFrom(this.preventaService.listarCampanasActivas(idEquipo));
+    this.campanas.set(campanas);
+    const idCampanaSeleccionada = this.intakeForm.controls.idCampana.value;
+    if (idCampanaSeleccionada && !campanas.some((campana) => campana.id === idCampanaSeleccionada)) {
+      this.intakeForm.controls.idCampana.setValue(null);
+    }
   }
 
   private async refreshOrigenes(): Promise<void> {
@@ -5089,7 +5125,7 @@ export class GtrWorkspaceFacade {
   private platformRequestKey(): string {
     return JSON.stringify({
       section: this.section(),
-      equipo: this.adminEquipoId(),
+      equipo: this.adminEquipoId() ?? this.currentUserTeamScopeService.activeId(),
       query: this.currentQuery(this.pageSize),
       group: this.platformGroupFilter()
     });
@@ -5098,7 +5134,7 @@ export class GtrWorkspaceFacade {
   private agendadosRequestKey(): string {
     return JSON.stringify({
       section: this.section(),
-      equipo: this.adminEquipoId(),
+      equipo: this.adminEquipoId() ?? this.currentUserTeamScopeService.activeId(),
       pageNumber: this.agendadosPageNumber(),
       pageSize: this.pageSize,
       sortBy: this.agendadosSortField(),

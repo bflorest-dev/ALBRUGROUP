@@ -48,11 +48,13 @@ public class EquipoService implements IEquipo {
             "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "OJT", "FREELANCE"
     );
 
-    // Roles operativos que SÍ pueden pertenecer a varios equipos a la vez. El ASESOR_VENTAS se
+    // Roles operativos que SÍ pueden pertenecer a varios equipos a la vez. ASESOR_GTR y
+    // SUPERVISOR_GTR trabajan con el alcance explícito de sus equipos. El ASESOR_VENTAS se
     // comparte entre equipos: cada GTR le asigna leads de su propio equipo y el aislamiento se
     // mantiene porque la partición de datos es por el equipo del lead, no por la membresía del asesor.
     private static final Set<String> ROLES_MULTIEQUIPO = Set.of(
             "ASESOR_GTR",
+            "SUPERVISOR_GTR",
             "ASESOR_VENTAS"
     );
 
@@ -326,10 +328,9 @@ public class EquipoService implements IEquipo {
                     "Este rol se gestiona por proveedor, no por equipo");
         }
 
-        // Un usuario queda limitado a un solo equipo si tiene algún rol operativo que NO admite
-        // multi-equipo. Así un ASESOR_VENTAS "puro" puede pertenecer a varios equipos, pero si
-        // además tuviera un rol operativo single-team (p. ej. GTR) prevalece la restricción a uno.
-        boolean limitadoAUnEquipo = usuario.getRoles().stream()
+        // Los roles GTR preservan su alcance multi-equipo aunque el usuario también tenga un rol
+        // operativo normalmente limitado a uno (p. ej. SUPERVISOR_VENTAS).
+        boolean limitadoAUnEquipo = !tieneAlcanceGtrMultiEquipo(roles) && usuario.getRoles().stream()
                 .map(Rol::getNombre)
                 .anyMatch(rol -> ROLES_OPERATIVOS.contains(rol) && !ROLES_MULTIEQUIPO.contains(rol));
 
@@ -348,12 +349,16 @@ public class EquipoService implements IEquipo {
             throw new BadRequestException(
                     "Quite primero las membresias de equipo antes de asignar exclusivamente roles por proveedor");
         }
-        boolean limitadoAUnEquipo = roles.stream()
+        boolean limitadoAUnEquipo = !tieneAlcanceGtrMultiEquipo(roles) && roles.stream()
                 .anyMatch(rol -> ROLES_OPERATIVOS.contains(rol) && !ROLES_MULTIEQUIPO.contains(rol));
         if (limitadoAUnEquipo && equiposActuales.size() > 1) {
             throw new BadRequestException(
                     "La combinacion de roles solicitada solo admite un equipo; ajuste primero las membresias");
         }
+    }
+
+    private boolean tieneAlcanceGtrMultiEquipo(Set<String> roles) {
+        return roles.contains("ASESOR_GTR") || roles.contains("SUPERVISOR_GTR");
     }
 
     private void validarEquipoVisible(Long equipoId) {

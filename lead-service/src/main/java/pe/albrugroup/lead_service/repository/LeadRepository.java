@@ -829,6 +829,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
               AND l.origen.esOrganico = true
+              AND (:idProveedor IS NULL OR l.proveedorOrigen.id = :idProveedor)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarMetricasGtrPorEstado(
@@ -836,6 +837,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("estado") EstadoSeguimiento estado,
             @Param("inicioDia") Instant inicioDia,
             @Param("finDia") Instant finDia,
+            @Param("idProveedor") Long idProveedor,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );

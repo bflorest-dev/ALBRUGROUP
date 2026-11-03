@@ -310,6 +310,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
         { domainId: 'people', label: 'Empleabilidad', route: '/app/admin/empleabilidad', icon: 'pi pi-briefcase' },
         { domainId: 'system', label: 'Tipificaciones', route: '/app/admin/tipificaciones', icon: 'pi pi-sitemap', exact: true },
         { domainId: 'system', label: 'Equipos', route: '/app/admin/equipos', icon: 'pi pi-th-large', exact: true },
+        { domainId: 'system', label: 'Campañas por equipo', route: '/app/admin/campanas-por-equipo', icon: 'pi pi-share-alt', exact: true },
         { domainId: 'system', label: 'Proveedores', route: '/app/admin/proveedores', icon: 'pi pi-building', exact: true },
         { domainId: 'operation', label: 'Mantenimiento', route: '/app/admin/mantenimiento', icon: 'pi pi-database', exact: true },
         { domainId: 'overview', label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
@@ -466,7 +467,15 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ];
     }
 
-    if (activeRole === 'ASESOR_GTR' || activeRole === 'SUPERVISOR_GTR') {
+    if (activeRole === 'SUPERVISOR_GTR') {
+      return [
+        { domainId: 'workspace', label: 'Campañas', route: '/app/gtr/campanas', icon: 'pi pi-share-alt', exact: true },
+        { domainId: 'insights', label: 'Leads del día', route: '/app/gtr/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
+        { domainId: 'insights', label: 'Dashboard', route: '/app/gtr/dashboard', icon: 'pi pi-chart-pie', exact: true }
+      ];
+    }
+
+    if (activeRole === 'ASESOR_GTR') {
       return [
         { domainId: 'workspace', label: 'Plataforma', route: '/app/gtr/plataforma', icon: 'pi pi-desktop', exact: true },
         {
@@ -539,6 +548,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ['/app/admin/mantenimiento', 8],
       ['/app/admin/tipificaciones', 9],
       ['/app/admin/equipos', 10],
+      ['/app/admin/campanas-por-equipo', 10.25],
       ['/app/admin/proveedores', 10.5],
       ['/app/admin/operaciones', 11],
       ['/app/admin/empleabilidad', 13]
@@ -647,7 +657,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
       const session = this.session();
 
       const activeRole = this.activeRole();
-      if (activeRole === 'ASESOR_GTR' || activeRole === 'SUPERVISOR_GTR') {
+      if (activeRole === 'ASESOR_GTR') {
         this.gtrAgendadosAlertFacade.start();
       } else {
         this.gtrAgendadosAlertFacade.stop();

@@ -35,6 +35,7 @@ class SubsanacionServiceTest {
     @Mock LeadRepository leadRepository;
     @Mock ContactoRepository contactoRepository;
     @Mock CampanaRepository campanaRepository;
+    @Mock EquipoCampanaRepository equipoCampanaRepository;
     @Mock PlanRepository planRepository;
     @Mock EquipoProveedorRepository equipoProveedorRepository;
     @Mock TipificacionRepository tipificacionRepository;
@@ -64,7 +65,7 @@ class SubsanacionServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         service = new SubsanacionService(
-                leadRepository, contactoRepository, campanaRepository, planRepository,
+                leadRepository, contactoRepository, campanaRepository, equipoCampanaRepository, planRepository,
                 equipoProveedorRepository, tipificacionRepository, subtipificacionRepository,
                 eventoRepository, resumenRepository, calendarioRepository, periodoRepository,
                 pagoRepository, encuestaRepository, entregaRepository, dispositivoRepository,
@@ -97,7 +98,7 @@ class SubsanacionServiceTest {
 
         when(campanaRepository.findByIdForSubsanacion(2L)).thenReturn(Optional.of(campana));
         when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
-        when(equipoProveedorRepository.existsByIdEquipoAndProveedorId(7L, 1L)).thenReturn(true);
+        when(equipoCampanaRepository.existsByIdEquipoAndCampanaId(7L, 2L)).thenReturn(true);
         when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigo(Etapa.PREVENTA, 1L, "PREVENTA"))
                 .thenReturn(Optional.of(tipiPreventa));
         when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigo(Etapa.VENTA, 1L, "INSTALADO"))
@@ -202,7 +203,7 @@ class SubsanacionServiceTest {
 
         when(campanaRepository.findByIdForSubsanacion(2L)).thenReturn(Optional.of(campana));
         when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
-        when(equipoProveedorRepository.existsByIdEquipoAndProveedorId(7L, 1L)).thenReturn(true);
+        when(equipoCampanaRepository.existsByIdEquipoAndCampanaId(7L, 2L)).thenReturn(true);
         when(equipoProveedorRepository.existsByIdEquipoAndProveedorId(7L, 2L)).thenReturn(true);
 
         ConflictException error = assertThrows(ConflictException.class, () -> service.subsanar(request));
@@ -225,6 +226,7 @@ class SubsanacionServiceTest {
 
         when(campanaRepository.findByIdForSubsanacion(2L)).thenReturn(Optional.of(campana));
         when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
+        when(equipoCampanaRepository.existsByIdEquipoAndCampanaId(7L, 2L)).thenReturn(true);
         when(equipoProveedorRepository.existsByIdEquipoAndProveedorId(7L, 1L)).thenReturn(true);
 
         ConflictException error = assertThrows(ConflictException.class, () -> service.subsanar(request));
@@ -251,6 +253,7 @@ class SubsanacionServiceTest {
                 ComportamientoTipificacion.REQUIERE_FECHA_INSTALACION);
         when(campanaRepository.findByIdForSubsanacion(2L)).thenReturn(Optional.of(campana));
         when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
+        when(equipoCampanaRepository.existsByIdEquipoAndCampanaId(7L, 2L)).thenReturn(true);
         when(equipoProveedorRepository.existsByIdEquipoAndProveedorId(7L, 1L)).thenReturn(true);
         when(tipificacionRepository.findByMatrizEtapaAndMatrizProveedorIdAndCodigo(Etapa.PREVENTA, 1L, "PREVENTA"))
                 .thenReturn(Optional.of(tipiPreventa));

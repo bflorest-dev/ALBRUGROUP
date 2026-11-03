@@ -50,9 +50,12 @@ public class CampanaController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('READ_CAMPANA')")
-    public ResponseEntity<List<CampanaResponse>> listarCampanas(@RequestParam(required = false) Boolean activo)
+    public ResponseEntity<List<CampanaResponse>> listarCampanas(
+            @RequestParam(required = false) Boolean activo,
+            @RequestParam(required = false) Long idEquipo
+    )
     {
-        var campanas = catalogoEquipoService.listarCampanasVisibles(activo);
+        var campanas = catalogoEquipoService.listarCampanasVisibles(activo, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(campanas);
     }
 }

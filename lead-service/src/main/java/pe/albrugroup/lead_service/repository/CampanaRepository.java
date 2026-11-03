@@ -31,10 +31,18 @@ public interface CampanaRepository extends JpaRepository<Campana, Long> {
     @Query("""
             SELECT c
             FROM Campana c
-            JOIN c.proveedor p
-            JOIN EquipoProveedor ep ON ep.proveedor = p
+            WHERE c.proveedor.id IN :proveedorIds
+              AND c.activo = true
+            ORDER BY c.nombre ASC
+            """)
+    List<Campana> listarActivasPorProveedorIds(@Param("proveedorIds") java.util.Collection<Long> proveedorIds);
+
+    @Query("""
+            SELECT c
+            FROM Campana c
+            JOIN EquipoCampana ec ON ec.campana = c
             WHERE c.activo = true
-              AND ep.idEquipo = :idEquipo
+              AND ec.idEquipo = :idEquipo
             ORDER BY c.nombre ASC
             """)
     List<Campana> listarActivasPorEquipo(@Param("idEquipo") Long idEquipo);
@@ -42,9 +50,8 @@ public interface CampanaRepository extends JpaRepository<Campana, Long> {
     @Query("""
             SELECT c
             FROM Campana c
-            JOIN c.proveedor p
-            JOIN EquipoProveedor ep ON ep.proveedor = p
-            WHERE ep.idEquipo = :idEquipo
+            JOIN EquipoCampana ec ON ec.campana = c
+            WHERE ec.idEquipo = :idEquipo
             ORDER BY c.nombre ASC
             """)
     List<Campana> listarTodasPorEquipo(@Param("idEquipo") Long idEquipo);

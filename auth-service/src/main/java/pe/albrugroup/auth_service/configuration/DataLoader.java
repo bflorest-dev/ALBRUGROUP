@@ -225,6 +225,9 @@ public class DataLoader {
         savePermiso("READ_EQUIPO_PROVEEDORES", "Puede consultar proveedores asignados a equipos", "EQUIPO_PROVEEDOR", "READ");
         savePermiso("ASSIGN_EQUIPO_PROVEEDORES", "Puede asignar proveedores a equipos", "EQUIPO_PROVEEDOR", "ASSIGN");
         savePermiso("DELETE_EQUIPO_PROVEEDORES", "Puede eliminar datos de proveedores de equipos", "EQUIPO_PROVEEDOR", "DELETE");
+        savePermiso("READ_EQUIPO_CAMPANAS", "Puede consultar campañas operativas por equipo", "EQUIPO_CAMPANA", "READ");
+        savePermiso("ASSIGN_EQUIPO_CAMPANAS", "Puede asignar campañas operativas a equipos", "EQUIPO_CAMPANA", "ASSIGN");
+        savePermiso("READ_METRICAS_GTR_PROVEEDOR", "Puede consultar métricas GTR PREVENTA por proveedor", "LEAD_GTR_METRICAS", "READ_BY_PROVIDER");
         savePermiso("EXPORT_BASE_LEADS", "Puede exportar base de leads como archivos encriptados ALB", "LEAD", "EXPORT");
         savePermiso("RUN_LEAD_ETAPA_BACKFILL", "Puede ejecutar el backfill de etapas de leads", "LEAD_ETAPA_BACKFILL", "RUN");
         savePermiso("AJUSTAR_JORNADA_COMPENSABLE", "Puede registrar corrimientos compensables", "JORNADA", "ADJUST_COMPENSABLE");
@@ -483,6 +486,9 @@ public class DataLoader {
                 getPermiso("READ_EVENTOS_LEADS"),
                 getPermiso("READ_LEADS_DIARIOS"),
                 getPermiso("READ_CAMPANA"),
+                getPermiso("READ_EQUIPO_CAMPANAS"),
+                getPermiso("ASSIGN_EQUIPO_CAMPANAS"),
+                getPermiso("READ_METRICAS_GTR_PROVEEDOR"),
                 getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS"),

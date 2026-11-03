@@ -24,15 +24,16 @@ public class CatalogoEquipoService {
     private final ProveedorService proveedorService;
     private final PlanService planService;
     private final EquipoProveedorService equipoProveedorService;
+    private final EquipoCampanaService equipoCampanaService;
 
-    public List<CampanaResponse> listarCampanasVisibles(Boolean activo) {
+    public List<CampanaResponse> listarCampanasVisibles(Boolean activo, Long idEquipo) {
         List<CampanaResponse> todas = campanaService.listarCampanas(activo);
-        Set<Long> visibles = equipoProveedorService.proveedorIdsVisibles();
-        if (visibles == null) {
+        Set<Long> campanasVisibles = equipoCampanaService.campanaIdsVisibles(idEquipo);
+        if (campanasVisibles == null) {
             return todas;
         }
         return todas.stream()
-                .filter(c -> c.getIdProveedor() != null && visibles.contains(c.getIdProveedor()))
+                .filter(c -> c.getId() != null && campanasVisibles.contains(c.getId()))
                 .toList();
     }
 

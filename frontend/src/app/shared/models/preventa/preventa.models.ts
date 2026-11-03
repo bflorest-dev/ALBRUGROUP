@@ -101,6 +101,25 @@ export interface LeadGtrResponse {
   etapa?: Etapa | string | null;
 }
 
+export interface EquipoCampanaResponse {
+  id: number;
+  nombre: string;
+  activo: boolean;
+  idProveedor?: number | null;
+  nombreProveedor?: string | null;
+  idEquipoAsignado?: number | null;
+}
+
+export interface LeadGtrMetricasProveedorResponse {
+  idProveedor: number;
+  nombreProveedor: string;
+  nuevos: number;
+  sinGestionar: number;
+  gestionados: number;
+  preventas: number;
+  ingresos: number;
+}
+
 export type LeadGtrGroupType =
   | 'ASESOR'
   | 'CAMPANA'

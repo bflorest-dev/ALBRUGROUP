@@ -16,7 +16,7 @@ import pe.albrugroup.lead_service.entity.response.CampanaResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
-import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
+import pe.albrugroup.lead_service.repository.EquipoCampanaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 
@@ -29,7 +29,7 @@ public class LeadCampanaCorreccionService {
 
     private final LeadRepository leadRepository;
     private final CampanaRepository campanaRepository;
-    private final EquipoProveedorRepository equipoProveedorRepository;
+    private final EquipoCampanaRepository equipoCampanaRepository;
     private final EventoRepository eventoRepository;
     private final LeadRealtimeNotifier leadRealtimeNotifier;
 
@@ -130,8 +130,7 @@ public class LeadCampanaCorreccionService {
     }
 
     private Campana validarCampanaPerteneceAlEquipo(Campana campana, Long idEquipoLead) {
-        Long idProveedor = campana.getProveedor() == null ? null : campana.getProveedor().getId();
-        if (idProveedor == null || !equipoProveedorRepository.existsByIdEquipoAndProveedorId(idEquipoLead, idProveedor)) {
+        if (!equipoCampanaRepository.existsByIdEquipoAndCampanaId(idEquipoLead, campana.getId())) {
             throw new BadRequestException("La campana seleccionada no pertenece al equipo de este lead.");
         }
         return campana;

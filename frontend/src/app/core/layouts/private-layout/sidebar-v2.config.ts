@@ -50,6 +50,23 @@ const gtrConfig: SidebarV2RoleConfig = {
   ]
 };
 
+const supervisorGtrConfig: SidebarV2RoleConfig = {
+  domains: [
+    {
+      id: 'workspace',
+      label: 'Supervisión GTR',
+      description: 'Distribución operativa de campañas',
+      icon: 'ti ti-headset'
+    },
+    {
+      id: 'insights',
+      label: 'Métricas',
+      description: 'Leads del día e indicadores PREVENTA',
+      icon: 'ti ti-chart-histogram'
+    }
+  ]
+};
+
 const backofficeConfig: SidebarV2RoleConfig = {
   domains: [
     {
@@ -182,7 +199,7 @@ const ROLE_CONFIGS: Record<string, SidebarV2RoleConfig> = {
     ]
   },
   ASESOR_GTR: gtrConfig,
-  SUPERVISOR_GTR: gtrConfig,
+  SUPERVISOR_GTR: supervisorGtrConfig,
   ASESOR_VENTAS: salesConfig,
   OJT: salesConfig,
   SUPERVISOR_VENTAS: salesSupervisorConfig,

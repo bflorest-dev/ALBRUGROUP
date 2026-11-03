@@ -1653,6 +1653,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     AND sc.codigo = e.subtipificacion
                     AND :comportamientoCierre MEMBER OF sc.comportamientos
               )
+              AND (:idProveedor IS NULL OR l.proveedorOrigen.id = :idProveedor)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarGestionadosGtr(
@@ -1661,6 +1662,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("comportamientoCierre") ComportamientoTipificacion comportamientoCierre,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
+            @Param("idProveedor") Long idProveedor,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1680,12 +1682,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
+              AND (:idProveedor IS NULL OR l.proveedorOrigen.id = :idProveedor)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarIngresosGtr(
             @Param("accion") Accion accion,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
+            @Param("idProveedor") Long idProveedor,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1715,6 +1719,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND (e.subtipificacion IS NULL OR e.subtipificacion <> 'INCOMPLETA')
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
+              AND (:idProveedor IS NULL OR l.proveedorOrigen.id = :idProveedor)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarPreventasGtr(
@@ -1722,6 +1727,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("comportamientoCierre") ComportamientoTipificacion comportamientoCierre,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
+            @Param("idProveedor") Long idProveedor,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );

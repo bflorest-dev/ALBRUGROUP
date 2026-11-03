@@ -1,0 +1,78 @@
+<section class="campaign-assignment" aria-labelledby="campaign-assignment-title">
+  <div class="campaign-assignment__header">
+    <div>
+      <h2 id="campaign-assignment-title">Campañas por equipo</h2>
+      <p>Elige el equipo y define las campañas que puede usar el GTR al registrar leads.</p>
+    </div>
+    @if (equipoSeleccionado(); as equipo) {
+      <span class="campaign-assignment__team-name">{{ equipo.nombre }}</span>
+    }
+  </div>
+
+  <div class="campaign-assignment__form">
+    <label for="supervisor-gtr-team">Equipo</label>
+    <p-select
+      inputId="supervisor-gtr-team"
+      [options]="equipos()"
+      [ngModel]="equipoSeleccionadoId()"
+      optionLabel="nombre"
+      optionValue="id"
+      placeholder="Selecciona un equipo"
+      [disabled]="cargando() || guardando()"
+      (onChange)="onEquipoChange($any($event.value))"
+    />
+
+    <label for="supervisor-gtr-campaigns">Campañas disponibles</label>
+    <p-multiSelect
+      inputId="supervisor-gtr-campaigns"
+      [options]="opcionesCampana()"
+      [ngModel]="selectedCampaignIds()"
+      optionLabel="nombre"
+      optionValue="id"
+      optionDisabled="disabled"
+      display="chip"
+      [filter]="true"
+      filterBy="nombre,nombreProveedor,asignacionLabel"
+      placeholder="Selecciona las campañas del equipo"
+      [disabled]="equipoSeleccionadoId() === null || cargando() || guardando()"
+      (ngModelChange)="onCampaignsChange($event)"
+    >
+      <ng-template let-option #item>
+        <div class="campaign-option">
+          <span class="campaign-option__name">{{ option.nombre }}</span>
+          <small>{{ option.nombreProveedor }} · {{ option.asignacionLabel }}</small>
+        </div>
+      </ng-template>
+    </p-multiSelect>
+  </div>
+
+  @if (cargando()) {
+    <div class="campaign-assignment__loading" aria-live="polite">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Cargando campañas" />
+      <span>Cargando campañas del equipo…</span>
+    </div>
+  } @else if (equipoSeleccionadoId() === null) {
+    <p-message severity="info">Selecciona un equipo para administrar sus campañas.</p-message>
+  } @else if (campanas().length === 0) {
+    <p-message severity="warn">Este equipo aún no tiene proveedores configurados con campañas disponibles.</p-message>
+  } @else {
+    <div class="campaign-assignment__footer">
+      <div class="campaign-assignment__hint" aria-live="polite">
+        @if (transfersPending() > 0) {
+          {{ transfersPending() }} campaña(s) se trasladará(n) desde otro equipo al guardar.
+        } @else {
+          Las campañas seleccionadas quedarán disponibles para este equipo.
+        }
+      </div>
+      <button
+        pButton
+        type="button"
+        label="Guardar campañas"
+        icon="pi pi-check"
+        [loading]="guardando()"
+        [disabled]="guardando()"
+        (click)="saveChanges()"
+      ></button>
+    </div>
+  }
+</section>

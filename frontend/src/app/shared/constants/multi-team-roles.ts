@@ -24,7 +24,7 @@ export const PROVIDER_SCOPED_ROLES: Readonly<Record<string, ProviderScope>> = {
 };
 
 /** Roles operativos que pueden pertenecer a más de un equipo a la vez. */
-export const MULTI_TEAM_ROLES: readonly string[] = ['ASESOR_GTR', 'ASESOR_VENTAS'];
+export const MULTI_TEAM_ROLES: readonly string[] = ['ASESOR_GTR', 'SUPERVISOR_GTR', 'ASESOR_VENTAS'];
 
 /** True si el rol pertenece al ámbito de equipos. */
 export function esRolDeEquipo(rol?: string | null): boolean {

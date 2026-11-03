@@ -152,8 +152,14 @@ export class PreventaLeadService {
     return this.http.get<LeadGtrGroupsResponse>(`${this.leadUrl}/preventa/gtr/agrupaciones`, { params });
   }
 
-  listarLeadsPendientesPorAsesor(): Observable<AsesorLeadsPendientesResponse[]> {
-    return this.http.get<AsesorLeadsPendientesResponse[]>(`${this.leadUrl}/preventa/gtr/leads-pendientes-asesor`);
+  listarLeadsPendientesPorAsesor(idEquipo?: number | null): Observable<AsesorLeadsPendientesResponse[]> {
+    let params = new HttpParams();
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<AsesorLeadsPendientesResponse[]>(`${this.leadUrl}/preventa/gtr/leads-pendientes-asesor`, {
+      params
+    });
   }
 
   obtenerResumenSupervisor(): Observable<SupervisorVentasResumenResponse[]> {
@@ -317,12 +323,20 @@ export class PreventaLeadService {
     });
   }
 
-  registrarIngresoLead(request: LeadIntakeRequest): Observable<void> {
-    return this.http.post<void>(`${this.leadUrl}/preventa/intake`, request);
+  registrarIngresoLead(request: LeadIntakeRequest, idEquipo?: number | null): Observable<void> {
+    let params = new HttpParams();
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.post<void>(`${this.leadUrl}/preventa/intake`, request, { params });
   }
 
-  registrarIngresoLeadRetroactivo(request: LeadIntakeRetroactivoRequest): Observable<void> {
-    return this.http.post<void>(`${this.leadUrl}/preventa/intake/retroactivo`, request);
+  registrarIngresoLeadRetroactivo(request: LeadIntakeRetroactivoRequest, idEquipo?: number | null): Observable<void> {
+    let params = new HttpParams();
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.post<void>(`${this.leadUrl}/preventa/intake/retroactivo`, request, { params });
   }
 
   registrarIngresoLeadAdmin(idEquipo: number, request: LeadIntakeRequest): Observable<void> {
@@ -483,9 +497,13 @@ export class PreventaLeadService {
     return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-agregado`);
   }
 
-  listarCampanasActivas(): Observable<CampanaResponse[]> {
+  listarCampanasActivas(idEquipo?: number | null): Observable<CampanaResponse[]> {
+    let params = new HttpParams().set('activo', true);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
     return this.http.get<CampanaResponse[]>(`${this.leadUrl}/campanas`, {
-      params: new HttpParams().set('activo', true)
+      params
     });
   }
 
