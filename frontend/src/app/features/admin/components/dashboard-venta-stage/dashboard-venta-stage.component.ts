@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
@@ -12,6 +12,7 @@ import {
   PeriodSelectorComponent
 } from '../../../../shared/components/period-selector/period-selector.component';
 import { MetricsRango, localToday, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
+import { CurrentUserTeamScopeService } from '../../../../core/services/current-user-team-scope.service';
 import { SessionService } from '../../../../core/services/session.service';
 import {
   DashboardVentaResponse,
@@ -145,8 +146,11 @@ const PROVEEDOR_ACCENT_DEFAULT = '#3a3f8f';
 })
 export class DashboardVentaStageComponent implements OnInit {
   private readonly service = inject(DashboardVentaService);
+  private readonly sessionService = inject(SessionService);
+  private readonly teamScope = inject(CurrentUserTeamScopeService);
   // El cargo fijo (dato financiero) solo lo ve el administrador.
-  protected readonly esAdmin = inject(SessionService).getPrimaryRole() === 'ADMINISTRADOR';
+  protected readonly esAdmin = this.sessionService.getPrimaryRole() === 'ADMINISTRADOR';
+  protected readonly isSupervisorVentas = computed(() => this.sessionService.getActiveRole() === 'SUPERVISOR_VENTAS');
 
   protected readonly proveedores = signal<ProveedorRef[]>([]);
   protected readonly proveedorId = signal<number | null>(null);
@@ -162,6 +166,9 @@ export class DashboardVentaStageComponent implements OnInit {
   protected readonly errorMessage = signal('');
   private readonly data = signal<DashboardVentaResponse | null>(null);
   private readonly tramos = signal<DashboardVentaTramosResponse | null>(null);
+  private readonly teamScopeReady = signal(false);
+  private lastTeamId: number | null | undefined;
+  private requestVersion = 0;
 
   protected readonly vistaOptions: Array<{ label: string; value: Vista }> = [
     { label: 'Resumen', value: 'resumen' },
@@ -209,6 +216,20 @@ export class DashboardVentaStageComponent implements OnInit {
   protected readonly tituloVista = computed(() =>
     this.vista() === 'resumen' ? 'Resumen de venta' : 'Rendimiento por asesor'
   );
+
+  constructor() {
+    effect(() => {
+      if (!this.teamScopeReady() || !this.isSupervisorVentas()) {
+        return;
+      }
+      const idEquipo = this.teamScope.activeId();
+      if (idEquipo === this.lastTeamId) {
+        return;
+      }
+      this.lastTeamId = idEquipo;
+      untracked(() => void this.cambiarEquipoSupervisor(idEquipo));
+    });
+  }
 
   // ── Contadores + conversiones ────────────────────────────────────────────────────────────────
   protected readonly counterCards = computed<CounterCard[]>(() => {
@@ -398,9 +419,10 @@ export class DashboardVentaStageComponent implements OnInit {
 
   private abrir(metrica: MetricaVentaDetalle, titulo: string, subtitulo: string, extra: Partial<DetalleDrawerReq> = {}): void {
     const idProveedor = this.proveedorId();
-    if (idProveedor === null) return;
+    const idEquipo = this.idEquipoConsulta();
+    if (idProveedor === null || (this.isSupervisorVentas() && idEquipo === undefined)) return;
     const range = resolveMetricsRange(this.periodo(), this.dia(), this.hasta());
-    this.detalleReq.set({ idProveedor, metrica, titulo, subtitulo, desde: range.desde, hasta: range.hasta, ...extra });
+    this.detalleReq.set({ idProveedor, idEquipo, metrica, titulo, subtitulo, desde: range.desde, hasta: range.hasta, ...extra });
   }
 
   protected abrirPreventas(): void {
@@ -446,9 +468,18 @@ export class DashboardVentaStageComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    if (this.isSupervisorVentas()) {
+      try {
+        await this.teamScope.load();
+        this.teamScopeReady.set(true);
+      } catch {
+        this.errorMessage.set('No se pudo cargar el equipo activo.');
+      }
+      return;
+    }
+
     try {
-      const todos = await firstValueFrom(this.service.obtenerProveedores());
-      const proveedores = (todos ?? []).filter((p) => PROVEEDORES_VISIBLES.has((p.nombre ?? '').toUpperCase()));
+      const proveedores = await this.cargarProveedores();
       this.proveedores.set(proveedores);
       if (proveedores.length) {
         this.proveedorId.set(proveedores[0].id);
@@ -504,24 +535,84 @@ export class DashboardVentaStageComponent implements OnInit {
 
   private async cargar(): Promise<void> {
     const idProveedor = this.proveedorId();
-    if (idProveedor === null) return;
+    const idEquipo = this.idEquipoConsulta();
+    if (idProveedor === null || (this.isSupervisorVentas() && idEquipo === undefined)) return;
+    const version = ++this.requestVersion;
     this.isLoading.set(true);
     this.errorMessage.set('');
     const range = resolveMetricsRange(this.periodo(), this.dia(), this.hasta());
     try {
       const [dashboard, tramos] = await Promise.all([
-        firstValueFrom(this.service.obtenerDashboard(idProveedor, range.desde, range.hasta)),
-        firstValueFrom(this.service.obtenerTramos(idProveedor))
+        firstValueFrom(this.service.obtenerDashboard(idProveedor, range.desde, range.hasta, idEquipo)),
+        firstValueFrom(this.service.obtenerTramos(idProveedor, idEquipo))
       ]);
+      if (!this.isCurrentRequest(version, idEquipo)) return;
       this.data.set(dashboard);
       this.tramos.set(tramos);
     } catch {
+      if (!this.isCurrentRequest(version, idEquipo)) return;
       this.errorMessage.set('No se pudieron cargar las métricas de venta.');
       this.data.set(null);
       this.tramos.set(null);
     } finally {
+      if (this.isCurrentRequest(version, idEquipo)) {
+        this.isLoading.set(false);
+      }
+    }
+  }
+
+  private async cambiarEquipoSupervisor(idEquipo: number | null): Promise<void> {
+    const version = ++this.requestVersion;
+    this.limpiarDatosDashboard();
+    this.isLoading.set(idEquipo !== null);
+    if (idEquipo === null) {
+      this.errorMessage.set('No tienes un equipo activo seleccionado.');
+      this.isLoading.set(false);
+      return;
+    }
+
+    try {
+      const proveedores = await this.cargarProveedores(idEquipo);
+      if (!this.isCurrentRequest(version, idEquipo)) return;
+      this.proveedores.set(proveedores);
+      if (!proveedores.length) {
+        this.errorMessage.set('No hay proveedores disponibles para tu equipo.');
+        this.isLoading.set(false);
+        return;
+      }
+      this.proveedorId.set(proveedores[0].id);
+      await this.cargar();
+    } catch {
+      if (!this.isCurrentRequest(version, idEquipo)) return;
+      this.errorMessage.set('No se pudieron cargar los proveedores.');
       this.isLoading.set(false);
     }
+  }
+
+  private async cargarProveedores(idEquipo?: number): Promise<ProveedorRef[]> {
+    const todos = await firstValueFrom(this.service.obtenerProveedores(idEquipo));
+    return (todos ?? []).filter((p) => PROVEEDORES_VISIBLES.has((p.nombre ?? '').toUpperCase()));
+  }
+
+  private limpiarDatosDashboard(): void {
+    this.proveedores.set([]);
+    this.proveedorId.set(null);
+    this.data.set(null);
+    this.tramos.set(null);
+    this.detalleReq.set(null);
+    this.zonaSel.set('total');
+    this.errorMessage.set('');
+  }
+
+  private idEquipoConsulta(): number | undefined {
+    if (!this.isSupervisorVentas()) return undefined;
+    const idEquipo = this.teamScope.activeId();
+    return idEquipo === null ? undefined : idEquipo;
+  }
+
+  private isCurrentRequest(version: number, idEquipo?: number): boolean {
+    return version === this.requestVersion
+      && (!this.isSupervisorVentas() || this.teamScope.activeId() === idEquipo);
   }
 
   private formatearFecha(value: string | null | undefined): string {

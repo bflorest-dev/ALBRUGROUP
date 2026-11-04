@@ -490,8 +490,9 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     );
 
     // ===== DASHBOARD de VENTA (docs/PLAN_DASHBOARD_VENTA.md §10) =====
-    // Scope por PROVEEDOR: JOIN l.plan.proveedor.id = :idProveedor (el equipoFilter se desactiva en el
-    // servicio; el proveedor es la partición). Universo = fila VENTA con fechaIngresoEtapa ∈ período.
+    // Scope por PROVEEDOR y, cuando corresponde a SUPERVISOR_VENTAS, por equipo: JOIN
+    // l.plan.proveedor.id = :idProveedor + l.idEquipo = :idEquipo. Un idEquipo nulo conserva el
+    // comportamiento histórico de ADMIN/BACKOFFICE. Universo = fila VENTA con fechaIngresoEtapa ∈ período.
     // El prefijo de ubigeo (SUBSTRING 1,2) se pliega a Lima ('15'/'07') / Provincia / SinUbigeo en Java.
 
     // Q1 — cohorte por (última tipificación, mayor rango). Anclada en fechaIngresoEtapa ∈ período. Da:
@@ -506,6 +507,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN l.plan pl
             JOIN pl.proveedor pr
             WHERE pr.id = :idProveedor
+              AND (:idEquipo IS NULL OR l.idEquipo = :idEquipo)
               AND r.fechaIngresoEtapa >= :inicio
               AND r.fechaIngresoEtapa < :fin
             GROUP BY r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion
@@ -513,6 +515,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     List<Object[]> dashboardVentaUniverso(
             @Param("etapa") Etapa etapa,
             @Param("idProveedor") Long idProveedor,
+            @Param("idEquipo") Long idEquipo,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
     );
@@ -530,6 +533,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN pl.proveedor pr
             LEFT JOIN l.direccion d
             WHERE pr.id = :idProveedor
+              AND (:idEquipo IS NULL OR l.idEquipo = :idEquipo)
               AND r.ultimaTipificacionAt >= :inicio
               AND r.ultimaTipificacionAt < :fin
             GROUP BY r.ultimaCodigoTipificacion, r.mayorRangoCodigoTipificacion, SUBSTRING(d.ubigeoDomicilio, 1, 2)
@@ -537,6 +541,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     List<Object[]> dashboardVentaEstado(
             @Param("etapa") Etapa etapa,
             @Param("idProveedor") Long idProveedor,
+            @Param("idEquipo") Long idEquipo,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin
     );
@@ -563,6 +568,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             LEFT JOIN l.direccion d
             JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
             WHERE pr.id = :idProveedor
+              AND (:idEquipo IS NULL OR l.idEquipo = :idEquipo)
               AND r.ultimaCodigoTipificacion = :codigoInstalado
               AND c.fechaInstalacion >= :desdeDate
               AND c.fechaInstalacion < :hastaDateExcl
@@ -571,6 +577,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     List<Object[]> dashboardVentaZonasInstaladas(
             @Param("etapa") Etapa etapa,
             @Param("idProveedor") Long idProveedor,
+            @Param("idEquipo") Long idEquipo,
             @Param("codigoInstalado") String codigoInstalado,
             @Param("codigoIngresado") String codigoIngresado,
             @Param("accionTip") Accion accionTip,
@@ -590,6 +597,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN l.plan pl
             JOIN pl.proveedor pr
             WHERE pr.id = :idProveedor
+              AND (:idEquipo IS NULL OR l.idEquipo = :idEquipo)
               AND r.ultimaCodigoTipificacion IN :codigos
               AND r.ultimaTipificacionAt < :fin
             GROUP BY r.ultimaCodigoTipificacion
@@ -597,6 +605,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     List<Object[]> dashboardVentaGeneralVivos(
             @Param("etapa") Etapa etapa,
             @Param("idProveedor") Long idProveedor,
+            @Param("idEquipo") Long idEquipo,
             @Param("codigos") java.util.Collection<String> codigos,
             @Param("fin") Instant fin
     );
@@ -612,6 +621,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN l.plan pl
             JOIN pl.proveedor pr
             WHERE pr.id = :idProveedor
+              AND (:idEquipo IS NULL OR l.idEquipo = :idEquipo)
               AND l.etapa = :etapa
               AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion = :codigoSinIngresar)
               AND r.fechaIngresoEtapa < :fin
@@ -619,6 +629,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     long dashboardVentaGeneralSinIngresar(
             @Param("etapa") Etapa etapa,
             @Param("idProveedor") Long idProveedor,
+            @Param("idEquipo") Long idEquipo,
             @Param("codigoSinIngresar") String codigoSinIngresar,
             @Param("fin") Instant fin
     );
@@ -633,6 +644,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN l.proveedor pr
             JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
             WHERE pr.id = :idProveedor
+              AND (:idEquipo IS NULL OR l.idEquipo = :idEquipo)
               AND r.ultimaCodigoTipificacion = :codigoInstalado
               AND r.fechaIngresoEtapa >= :inicio
               AND r.fechaIngresoEtapa < :fin
@@ -642,6 +654,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     long dashboardVentaDiaInstaladasEnVentana(
             @Param("etapa") Etapa etapa,
             @Param("idProveedor") Long idProveedor,
+            @Param("idEquipo") Long idEquipo,
             @Param("codigoInstalado") String codigoInstalado,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
@@ -657,6 +670,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN l.plan pl
             JOIN pl.proveedor pr
             WHERE pr.id = :idProveedor
+              AND (:idEquipo IS NULL OR l.idEquipo = :idEquipo)
               AND l.etapa = :etapa
               AND r.ultimaCodigoTipificacion = :codigoProgramado
             GROUP BY r.ultimaCodigoSubtipificacion
@@ -664,6 +678,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     List<Object[]> dashboardVentaProgramacionActual(
             @Param("etapa") Etapa etapa,
             @Param("idProveedor") Long idProveedor,
+            @Param("idEquipo") Long idEquipo,
             @Param("codigoProgramado") String codigoProgramado
     );
 
@@ -694,6 +709,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             LEFT JOIN l.direccion d
             LEFT JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
             WHERE pr.id = :idProveedor
+              AND (:idEquipo IS NULL OR l.idEquipo = :idEquipo)
               AND rp.idAsesorMerito IS NOT NULL
               AND (
                     (rv.fechaIngresoEtapa >= :inicio AND rv.fechaIngresoEtapa < :fin)
@@ -706,6 +722,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("etapaVenta") Etapa etapaVenta,
             @Param("etapaPreventa") Etapa etapaPreventa,
             @Param("idProveedor") Long idProveedor,
+            @Param("idEquipo") Long idEquipo,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
             @Param("ordenIngresado") int ordenIngresado,
@@ -1043,6 +1060,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN Evento e ON e.idLead = l.id AND e.etapa = :etapa AND e.tipificacion = :codigoProgramado
                          AND e.horaProgramada IS NOT NULL AND e.fechaProgramacion IS NOT NULL
             WHERE pr.id = :idProveedor
+              AND (:idEquipo IS NULL OR l.idEquipo = :idEquipo)
               AND l.etapa = :etapa
               AND r.ultimaCodigoTipificacion = :codigoProgramado
               AND e.fechaProgramacion IN :dias
@@ -1056,6 +1074,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     List<Object[]> dashboardVentaTramos(
             @Param("etapa") Etapa etapa,
             @Param("idProveedor") Long idProveedor,
+            @Param("idEquipo") Long idEquipo,
             @Param("codigoProgramado") String codigoProgramado,
             @Param("dias") Collection<java.time.LocalDate> dias
     );

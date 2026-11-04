@@ -38,28 +38,32 @@ public class DashboardVentaController {
     // Proveedores seleccionables en el dashboard (asignados si el rol está acotado, o todos si no).
     @GetMapping("/dashboard/proveedores")
     @PreAuthorize("hasAuthority('READ_DASHBOARD_VENTA')")
-    public ResponseEntity<List<DashboardVentaResponse.ProveedorRef>> listarProveedoresDashboard() {
-        return ResponseEntity.ok(dashboardVentaService.proveedoresSeleccionables());
+    public ResponseEntity<List<DashboardVentaResponse.ProveedorRef>> listarProveedoresDashboard(
+            @RequestParam(required = false) Long idEquipo
+    ) {
+        return ResponseEntity.ok(dashboardVentaService.proveedoresSeleccionables(idEquipo));
     }
 
     @GetMapping("/dashboard")
     @PreAuthorize("hasAuthority('READ_DASHBOARD_VENTA')")
     public ResponseEntity<DashboardVentaResponse> obtenerDashboardVenta(
             @RequestParam Long idProveedor,
+            @RequestParam(required = false) Long idEquipo,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
         var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
-        return ResponseEntity.ok(dashboardVentaService.obtener(idProveedor, rango.desde(), rango.hasta()));
+        return ResponseEntity.ok(dashboardVentaService.obtener(idProveedor, idEquipo, rango.desde(), rango.hasta()));
     }
 
     // Bloque 4: matriz tramo horario × día (hoy/mañana/pasado). Foto actual; no usa período.
     @GetMapping("/dashboard/programados-tramos")
     @PreAuthorize("hasAuthority('READ_DASHBOARD_VENTA')")
     public ResponseEntity<DashboardVentaTramosResponse> obtenerTramosProgramados(
-            @RequestParam Long idProveedor
+            @RequestParam Long idProveedor,
+            @RequestParam(required = false) Long idEquipo
     ) {
-        return ResponseEntity.ok(dashboardVentaService.obtenerTramos(idProveedor));
+        return ResponseEntity.ok(dashboardVentaService.obtenerTramos(idProveedor, idEquipo));
     }
 
     // Drill-down UNIFICADO: una fila superset por lead detrás de CUALQUIER contador del dashboard, con
@@ -69,6 +73,7 @@ public class DashboardVentaController {
     @PreAuthorize("hasAuthority('READ_DASHBOARD_VENTA')")
     public ResponseEntity<VentaDetallePage> obtenerDetalleUnificado(
             @RequestParam Long idProveedor,
+            @RequestParam(required = false) Long idEquipo,
             @RequestParam MetricaVentaDetalle metrica,
             @RequestParam(required = false) EnfoqueVenta enfoque,
             @RequestParam(required = false) String zona,
@@ -83,7 +88,7 @@ public class DashboardVentaController {
     ) {
         var rango = metricasPeriodoGuard.protegerRango(desde, hasta);
         return ResponseEntity.ok(dashboardVentaService.obtenerDetalle(
-                idProveedor, metrica, enfoque, zona, subtipificacion, tipificacion, idAsesor, rango.desde(), rango.hasta(),
+                idProveedor, idEquipo, metrica, enfoque, zona, subtipificacion, tipificacion, idAsesor, rango.desde(), rango.hasta(),
                 search, groupBy, pageRequest));
     }
 }

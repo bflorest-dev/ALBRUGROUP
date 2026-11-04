@@ -12,6 +12,7 @@ import {
 /** Lo que el dashboard pasa al abrir el drawer: qué contador y con qué calificadores + contexto. */
 export interface DetalleDrawerReq {
   idProveedor: number;
+  idEquipo?: number;
   metrica: MetricaVentaDetalle;
   enfoque?: EnfoqueVenta;
   zona?: string;
@@ -296,6 +297,7 @@ export class DashboardVentaDetalleDrawerComponent {
       const resp = await firstValueFrom(
         this.service.obtenerDetalleUnificado({
           idProveedor: req.idProveedor,
+          idEquipo: req.idEquipo,
           metrica: req.metrica,
           enfoque: req.enfoque,
           zona: req.zona,

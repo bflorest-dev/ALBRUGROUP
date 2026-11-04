@@ -195,6 +195,7 @@ export interface VentaDetallePage {
 /** Parámetros del drill-down unificado (metrica + calificadores + búsqueda/orden/agrupación/paginación). */
 export interface VentaDetalleQuery {
   idProveedor: number;
+  idEquipo?: number;
   metrica: MetricaVentaDetalle;
   enfoque?: EnfoqueVenta;
   zona?: string;
@@ -211,18 +212,25 @@ export interface VentaDetalleQuery {
   size?: number;
 }
 
-/** DASHBOARD de la etapa VENTA. Todo se filtra por proveedor; los % los calcula el frontend. */
+/** DASHBOARD de la etapa VENTA. Se filtra por proveedor y opcionalmente por equipo; los % los calcula el frontend. */
 @Injectable({ providedIn: 'root' })
 export class DashboardVentaService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/venta/dashboard`;
 
-  obtenerProveedores(): Observable<ProveedorRef[]> {
-    return this.http.get<ProveedorRef[]>(`${this.baseUrl}/proveedores`);
+  obtenerProveedores(idEquipo?: number): Observable<ProveedorRef[]> {
+    let params = new HttpParams();
+    if (idEquipo != null) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<ProveedorRef[]>(`${this.baseUrl}/proveedores`, { params });
   }
 
-  obtenerDashboard(idProveedor: number, desde?: string, hasta?: string): Observable<DashboardVentaResponse> {
+  obtenerDashboard(idProveedor: number, desde?: string, hasta?: string, idEquipo?: number): Observable<DashboardVentaResponse> {
     let params = new HttpParams().set('idProveedor', idProveedor);
+    if (idEquipo != null) {
+      params = params.set('idEquipo', idEquipo);
+    }
     if (desde) {
       params = params.set('desde', desde);
     }
@@ -232,9 +240,10 @@ export class DashboardVentaService {
     return this.http.get<DashboardVentaResponse>(this.baseUrl, { params });
   }
 
-  obtenerTramos(idProveedor: number): Observable<DashboardVentaTramosResponse> {
+  obtenerTramos(idProveedor: number, idEquipo?: number): Observable<DashboardVentaTramosResponse> {
     const params = new HttpParams().set('idProveedor', idProveedor);
-    return this.http.get<DashboardVentaTramosResponse>(`${this.baseUrl}/programados-tramos`, { params });
+    const scopedParams = idEquipo != null ? params.set('idEquipo', idEquipo) : params;
+    return this.http.get<DashboardVentaTramosResponse>(`${this.baseUrl}/programados-tramos`, { params: scopedParams });
   }
 
   /** Drill-down UNIFICADO: detalle de cualquier contador del dashboard con búsqueda/orden/agrupación. */
@@ -246,6 +255,7 @@ export class DashboardVentaService {
       .set('pageSize', q.size ?? 25)
       .set('sortBy', q.sortBy ?? 'createdAt')
       .set('direction', q.direction ?? 'desc');
+    if (q.idEquipo != null) params = params.set('idEquipo', q.idEquipo);
     if (q.enfoque) params = params.set('enfoque', q.enfoque);
     if (q.zona) params = params.set('zona', q.zona);
     if (q.subtipificacion) params = params.set('subtipificacion', q.subtipificacion);

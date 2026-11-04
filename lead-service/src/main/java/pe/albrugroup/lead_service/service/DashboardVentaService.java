@@ -47,10 +47,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * DASHBOARD de la etapa VENTA. Scope por PROVEEDOR (no por equipo): desactiva el {@code equipoFilter}
- * de Hibernate para que el filtro por {@code plan.proveedor.id} sea la única partición. Todo se lee de
- * {@link LeadEtapaResumen} (contadores/estado/ranking anclados en {@code fechaIngresoEtapa}); la
- * programación es foto del estado actual y las instaladas de zonas anclan en {@code fechaInstalacion}.
+ * DASHBOARD de la etapa VENTA. ADMIN/BACKOFFICE conservan su scope actual por proveedor. Para
+ * SUPERVISOR_VENTAS se exige además el equipo seleccionado y todas las consultas se acotan por
+ * {@code Lead.idEquipo}. Todo se lee de {@link LeadEtapaResumen} (contadores/estado/ranking anclados en
+ * {@code fechaIngresoEtapa}); la programación es foto del estado actual y las instaladas de zonas anclan
+ * en {@code fechaInstalacion}.
  * Ver docs/PLAN_DASHBOARD_VENTA.md.
  */
 @Service
@@ -95,14 +96,16 @@ public class DashboardVentaService {
     private final EntityManager entityManager;
 
     /**
-     * Proveedores que el usuario puede elegir en el dashboard: por equipo para SUPERVISOR_VENTAS,
-     * por asignación directa si está acotado por proveedor (BACKOFFICE), o todos los activos si no lo está.
+     * Proveedores que el usuario puede elegir en el dashboard: por el equipo seleccionado para
+     * SUPERVISOR_VENTAS, por asignación directa si está acotado por proveedor (BACKOFFICE), o todos los
+     * activos si no lo está.
      */
     @Transactional(readOnly = true)
-    public List<ProveedorRef> proveedoresSeleccionables() {
-        if (esSupervisorVentasAcotado()) {
-            Set<Long> proveedorIds = equipoProveedorService.proveedorIdsVisibles();
-            if (proveedorIds == null || proveedorIds.isEmpty()) {
+    public List<ProveedorRef> proveedoresSeleccionables(Long idEquipo) {
+        Long equipoScope = resolverEquipoSupervisor(idEquipo);
+        if (equipoScope != null) {
+            Set<Long> proveedorIds = equipoProveedorService.proveedorIdsVisibles(equipoScope);
+            if (proveedorIds.isEmpty()) {
                 return List.of();
             }
             return proveedorRepository.findAllById(proveedorIds).stream()
@@ -127,10 +130,10 @@ public class DashboardVentaService {
      */
     @Transactional(readOnly = true)
     public VentaDetallePage obtenerDetalle(
-            Long idProveedor, MetricaVentaDetalle metrica, EnfoqueVenta enfoque, String zona,
+            Long idProveedor, Long idEquipo, MetricaVentaDetalle metrica, EnfoqueVenta enfoque, String zona,
             String subtipificacion, String tipificacion, Long idAsesor, LocalDate desde, LocalDate hasta,
             String search, String groupBy, PageRequest pageRequest) {
-        validarProveedorVisibleParaSupervisorVentas(idProveedor);
+        Long equipoScope = validarProveedorVisibleParaSupervisorVentas(idProveedor, idEquipo);
         desactivarEquipoFilter();
 
         LocalDate desdeR = desde != null ? desde : OperationalDateTime.currentMonth().atDay(1);
@@ -146,7 +149,7 @@ public class DashboardVentaService {
                 inicio, fin, desdeR, hastaExcl, subtipificacion, idAsesor, tramoDias, tipificacion);
 
         return ventaDetalleQueryRepository.buscar(
-                idProveedor, metrica, enfoque, zona, ctx, search, groupBy,
+                idProveedor, equipoScope, metrica, enfoque, zona, ctx, search, groupBy,
                 pageRequest.getSortBy(), pageRequest.getDirection(),
                 pageRequest.getPageNumber(), pageRequest.getPageSize());
     }
@@ -159,13 +162,13 @@ public class DashboardVentaService {
     }
 
     @Transactional(readOnly = true)
-    public DashboardVentaResponse obtener(Long idProveedor, LocalDate desde, LocalDate hasta) {
-        validarProveedorVisibleParaSupervisorVentas(idProveedor);
+    public DashboardVentaResponse obtener(Long idProveedor, Long idEquipo, LocalDate desde, LocalDate hasta) {
+        Long equipoScope = validarProveedorVisibleParaSupervisorVentas(idProveedor, idEquipo);
         Proveedor proveedor = proveedorRepository.findById(idProveedor)
                 .orElseThrow(() -> new NotFoundException(Proveedor.class, idProveedor));
 
-        // El dashboard es cross-equipo dentro del proveedor: el equipoFilter (auto-activado por rol) no debe
-        // estrecharlo. El proveedorFilter (BACKOFFICE) se conserva: es fail-closed sobre proveedores no asignados.
+        // Las consultas reciben el scope explícito de SUPERVISOR_VENTAS. El filtro Hibernate se desactiva
+        // porque el proveedor/equipo se aplica en cada query; para BACKOFFICE se conserva proveedorFilter.
         Session session = entityManager.unwrap(Session.class);
         if (session.getEnabledFilter("equipoFilter") != null) {
             session.disableFilter("equipoFilter");
@@ -180,8 +183,8 @@ public class DashboardVentaService {
         // Q1 cohorte (fechaIngresoEtapa): PREVENTAS + breakdown + embudo para conversiones.
         // Q2 estado (ultimaTipificacionAt): REGISTRADAS/PROGRAMADAS/RECHAZADAS + zonas.registradas.
         Acumulador acc = new Acumulador()
-                .universo(resumenRepository.dashboardVentaUniverso(Etapa.VENTA, idProveedor, inicio, fin))
-                .estado(resumenRepository.dashboardVentaEstado(Etapa.VENTA, idProveedor, inicio, fin));
+                .universo(resumenRepository.dashboardVentaUniverso(Etapa.VENTA, idProveedor, equipoScope, inicio, fin))
+                .estado(resumenRepository.dashboardVentaEstado(Etapa.VENTA, idProveedor, equipoScope, inicio, fin));
 
         // Zonas primero: ancla las instaladas en fechaInstalacion y de paso fija el total de instaladas del
         // período (card "Instaladas"), que ya no es la cohorte por fechaIngresoEtapa. registradasEInstaladas
@@ -189,27 +192,27 @@ public class DashboardVentaService {
         Zonas zonas = construirZonas(
                 acc,
                 resumenRepository.dashboardVentaZonasInstaladas(
-                        Etapa.VENTA, idProveedor, TIPIFICACION_INSTALADO, TIPIFICACION_INGRESADO,
+                        Etapa.VENTA, idProveedor, equipoScope, TIPIFICACION_INSTALADO, TIPIFICACION_INGRESADO,
                         Accion.TIPIFICACION, inicio, fin, desdeR, hastaExcl));
         Contadores contadores = acc.build();
 
         // ── Rediseño 2 enfoques ──
         // PREVENTAS DEL DÍA sale del cohorte (Q1) ya acumulado; solo falta la auxiliar Q1 (instaló en ventana).
         long diaInstaladasEnVentana = resumenRepository.dashboardVentaDiaInstaladasEnVentana(
-                Etapa.VENTA, idProveedor, TIPIFICACION_INSTALADO, inicio, fin, desdeR, hastaExcl);
+                Etapa.VENTA, idProveedor, equipoScope, TIPIFICACION_INSTALADO, inicio, fin, desdeR, hastaExcl);
         EnfoqueDia enfoqueDia = acc.enfoqueDia(diaInstaladasEnVentana);
 
         // GESTIÓN GENERAL: vivos acumulados (≤ hasta) por Q7; rechazadas ∈ período (Q2, solo NO RECUPERABLE);
         // instaladas ∈ período = total de instaladas por fechaInstalacion (ya fijado en construirZonas).
         Map<String, Long> vivos = new LinkedHashMap<>();
         for (Object[] r : resumenRepository.dashboardVentaGeneralVivos(
-                Etapa.VENTA, idProveedor, TIPIFICACIONES_VIVAS_GENERAL, fin)) {
+                Etapa.VENTA, idProveedor, equipoScope, TIPIFICACIONES_VIVAS_GENERAL, fin)) {
             vivos.merge((String) r[0], asLong(r[1]), Long::sum);
         }
         // Sin ingresar acumulado (última nula o 'SIN INGRESAR' que aún no ingresaron al cierre): ancla en
         // fechaIngresoEtapa porque la última nula no tiene ultimaTipificacionAt. Query aparte.
         long generalSinIngresar = resumenRepository.dashboardVentaGeneralSinIngresar(
-                Etapa.VENTA, idProveedor, TIPIFICACION_SIN_INGRESAR, fin);
+                Etapa.VENTA, idProveedor, equipoScope, TIPIFICACION_SIN_INGRESAR, fin);
         EnfoqueGeneral enfoqueGeneral = new EnfoqueGeneral(
                 generalSinIngresar,
                 vivos.getOrDefault(TIPIFICACION_INGRESADO, 0L),
@@ -219,11 +222,11 @@ public class DashboardVentaService {
                 acc.ventasInstaladas);
 
         ProgramacionActual programacion = construirProgramacion(
-                resumenRepository.dashboardVentaProgramacionActual(Etapa.VENTA, idProveedor, TIPIFICACION_PROGRAMADO));
+                resumenRepository.dashboardVentaProgramacionActual(Etapa.VENTA, idProveedor, equipoScope, TIPIFICACION_PROGRAMADO));
 
         List<RankingAsesor> ranking = construirRanking(
                 resumenRepository.dashboardVentaRanking(
-                        Etapa.VENTA, Etapa.PREVENTA, idProveedor, inicio, fin,
+                        Etapa.VENTA, Etapa.PREVENTA, idProveedor, equipoScope, inicio, fin,
                         ORDEN_INGRESADO, desdeR, hastaExcl));
 
         return new DashboardVentaResponse(
@@ -242,8 +245,8 @@ public class DashboardVentaService {
 
     /** Endpoint auxiliar (bloque 4): matriz tramo horario × día (hoy/mañana/pasado). Relativo a HOY. */
     @Transactional(readOnly = true)
-    public DashboardVentaTramosResponse obtenerTramos(Long idProveedor) {
-        validarProveedorVisibleParaSupervisorVentas(idProveedor);
+    public DashboardVentaTramosResponse obtenerTramos(Long idProveedor, Long idEquipo) {
+        Long equipoScope = validarProveedorVisibleParaSupervisorVentas(idProveedor, idEquipo);
         Proveedor proveedor = proveedorRepository.findById(idProveedor)
                 .orElseThrow(() -> new NotFoundException(Proveedor.class, idProveedor));
         Session session = entityManager.unwrap(Session.class);
@@ -257,7 +260,7 @@ public class DashboardVentaService {
 
         long[][] m = new long[4][3]; // [tramo 0..3 (OTROS=3)][día 0=hoy,1=mañana,2=pasado]
         List<Object[]> rows = resumenRepository.dashboardVentaTramos(
-                Etapa.VENTA, idProveedor, TIPIFICACION_PROGRAMADO, List.of(hoy, manana, pasado));
+                Etapa.VENTA, idProveedor, equipoScope, TIPIFICACION_PROGRAMADO, List.of(hoy, manana, pasado));
         for (Object[] r : rows) {
             LocalDate fecha = (LocalDate) r[0];
             LocalTime hora = (LocalTime) r[1];
@@ -285,21 +288,28 @@ public class DashboardVentaService {
         return 3;
     }
 
-    private void validarProveedorVisibleParaSupervisorVentas(Long idProveedor) {
-        if (!esSupervisorVentasAcotado()) {
-            return;
+    private Long validarProveedorVisibleParaSupervisorVentas(Long idProveedor, Long idEquipo) {
+        Long equipoScope = resolverEquipoSupervisor(idEquipo);
+        if (equipoScope == null) {
+            return null;
         }
-        Set<Long> proveedorIds = equipoProveedorService.proveedorIdsVisibles();
-        if (proveedorIds == null || !proveedorIds.contains(idProveedor)) {
+        Set<Long> proveedorIds = equipoProveedorService.proveedorIdsVisibles(equipoScope);
+        if (!proveedorIds.contains(idProveedor)) {
             throw new ForbiddenException("No tienes acceso al proveedor seleccionado", idProveedor);
         }
+        return equipoScope;
     }
 
-    private boolean esSupervisorVentasAcotado() {
+    private Long resolverEquipoSupervisor(Long idEquipo) {
         List<String> roles = currentUser.roles();
-        return roles != null
-                && roles.contains(SUPERVISOR_VENTAS)
-                && !currentUser.tieneVisibilidadGlobalEquipos();
+        if (roles == null || !roles.contains(SUPERVISOR_VENTAS)) {
+            return null;
+        }
+        List<Long> equipos = currentUser.equipos();
+        if (idEquipo == null || equipos == null || !equipos.contains(idEquipo)) {
+            throw new ForbiddenException("No tienes acceso al equipo seleccionado", idEquipo);
+        }
+        return idEquipo;
     }
 
     // ── Contadores + estado (Q1 cohorte por fechaIngresoEtapa + Q2 estado por ultimaTipificacionAt) ──────

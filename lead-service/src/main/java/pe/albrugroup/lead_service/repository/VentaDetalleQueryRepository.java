@@ -93,7 +93,7 @@ public class VentaDetalleQueryRepository {
             "zona", ZONA_CASE);
 
     public VentaDetallePage buscar(
-            Long idProveedor, MetricaVentaDetalle metrica, EnfoqueVenta enfoque, String zona,
+            Long idProveedor, Long idEquipo, MetricaVentaDetalle metrica, EnfoqueVenta enfoque, String zona,
             VentaMetricaSpec.Ctx ctx, String search, String groupBy, String sortBy, String direction,
             int page, int size) {
 
@@ -105,9 +105,11 @@ public class VentaDetalleQueryRepository {
         params.put("codigoProgramado", VentaMetricaSpec.PROGRAMADO);
         params.put("accionTip", Accion.TIPIFICACION);
         params.put("idProveedor", idProveedor);
+        params.put("idEquipo", idEquipo);
         params.putAll(spec.params());
 
-        StringBuilder where = new StringBuilder("pr.id = :idProveedor AND (").append(spec.where()).append(")");
+        StringBuilder where = new StringBuilder("pr.id = :idProveedor AND (:idEquipo IS NULL OR l.idEquipo = :idEquipo) AND (")
+                .append(spec.where()).append(")");
         where.append(zonaClause(zona));
         boolean hasSearch = search != null && !search.isBlank();
         if (hasSearch) {

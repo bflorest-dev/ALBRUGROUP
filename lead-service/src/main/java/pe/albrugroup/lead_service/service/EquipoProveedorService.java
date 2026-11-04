@@ -121,4 +121,15 @@ public class EquipoProveedorService {
                 .map(ep -> ep.getProveedor().getId())
                 .collect(Collectors.toSet());
     }
+
+    /** Ids de proveedores asignados exclusivamente al equipo seleccionado. */
+    @Transactional(readOnly = true)
+    public Set<Long> proveedorIdsVisibles(Long idEquipo) {
+        if (idEquipo == null) {
+            return Set.of();
+        }
+        return equipoProveedorRepository.findByIdEquipo(idEquipo).stream()
+                .map(ep -> ep.getProveedor().getId())
+                .collect(Collectors.toSet());
+    }
 }
