@@ -24,7 +24,9 @@ import pe.albrugroup.auth_service.security.CustomUserDetails;
 import pe.albrugroup.auth_service.usecase.IEquipo;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -277,11 +279,23 @@ public class EquipoService implements IEquipo {
                 if (!Boolean.TRUE.equals(equipo.getActivo())) {
                     throw new BadRequestException("El equipo seleccionado no esta activo");
                 }
-                yield usuarioRepository
+                List<Usuario> miembrosElegiblesDelEquipo = usuarioRepository
                         .findDistinctByEquiposIdAndActivoTrueOrderByNombreCompletoAsc(equipoId).stream()
                         .filter(u -> u.getRoles().stream()
                                 .map(Rol::getNombre)
                                 .anyMatch(ROLES_MERITO_ADMIN_PREVENTA::contains))
+                        .toList();
+                // El mérito de PREVENTA puede corregirse a cualquier ASESOR_VENTAS activo,
+                // aunque opere desde otro equipo. Supervisores y GTR conservan el alcance del
+                // equipo del lead porque no son destinatarios transversales de ese mérito.
+                Map<Long, Usuario> candidatosPorEmpleado = new LinkedHashMap<>();
+                miembrosElegiblesDelEquipo.forEach(usuario ->
+                        candidatosPorEmpleado.put(usuario.getEmpleadoId(), usuario));
+                usuarioRepository.findDistinctByRolesNombreAndActivoTrue(ROL_ASESOR_VENTAS)
+                        .forEach(usuario -> candidatosPorEmpleado.putIfAbsent(usuario.getEmpleadoId(), usuario));
+                yield candidatosPorEmpleado.values().stream()
+                        .sorted(java.util.Comparator.comparing(Usuario::getNombreCompleto,
+                                java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                         .map(this::toUsuarioRolResponse)
                         .toList();
             }

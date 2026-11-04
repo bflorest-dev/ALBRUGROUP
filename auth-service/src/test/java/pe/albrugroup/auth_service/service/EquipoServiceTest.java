@@ -74,4 +74,37 @@ class EquipoServiceTest {
 
         assertThat(usuario.getEquipos()).extracting(Equipo::getId).containsExactlyInAnyOrder(1L, 6L);
     }
+
+    @Test
+    void correccionMeritoPreventaIncluyeAsesoresVentasDeOtrosEquipos() {
+        Equipo claroTeam = Equipo.builder().id(2L).nombre("ClaroTeam").activo(true).build();
+        Equipo claroTeam2 = Equipo.builder().id(6L).nombre("ClaroTeam2").activo(true).build();
+        Usuario asesorClaroTeam = usuario(11L, "Andrea ClaroTeam", claroTeam, "ASESOR_VENTAS");
+        Usuario asesorClaroTeam2 = usuario(12L, "Leonardo ClaroTeam2", claroTeam2, "ASESOR_VENTAS");
+        Usuario supervisorClaroTeam = usuario(13L, "Supervisor ClaroTeam", claroTeam, "SUPERVISOR_VENTAS");
+        EquipoService service = new EquipoService(
+                equipoRepository, usuarioRepository, refreshTokenService, sessionInvalidationService);
+
+        when(equipoRepository.findById(2L)).thenReturn(Optional.of(claroTeam));
+        when(usuarioRepository.findDistinctByEquiposIdAndActivoTrueOrderByNombreCompletoAsc(2L))
+                .thenReturn(List.of(asesorClaroTeam, supervisorClaroTeam));
+        when(usuarioRepository.findDistinctByRolesNombreAndActivoTrue("ASESOR_VENTAS"))
+                .thenReturn(List.of(asesorClaroTeam, asesorClaroTeam2));
+
+        var resultado = service.listarAsesoresMeritoAdmin(2L, "PREVENTA");
+
+        assertThat(resultado)
+                .extracting(usuario -> usuario.getEmpleadoId())
+                .containsExactlyInAnyOrder(11L, 12L, 13L);
+    }
+
+    private Usuario usuario(Long empleadoId, String nombre, Equipo equipo, String rol) {
+        return Usuario.builder()
+                .empleadoId(empleadoId)
+                .nombreCompleto(nombre)
+                .roles(Set.of(Rol.builder().nombre(rol).build()))
+                .equipos(Set.of(equipo))
+                .activo(true)
+                .build();
+    }
 }
