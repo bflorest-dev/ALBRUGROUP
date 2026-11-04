@@ -5,7 +5,7 @@
  * Cuando exista esa gestion, el filtro correcto es `activo` del backend (aplica a todo el sistema,
  * no solo a estos selectores) y este archivo debe borrarse.
  */
-const EQUIPOS_OPERATIVOS = ['claroteam', 'winteam'];
+const EQUIPOS_OPERATIVOS = ['claroteam', 'claroteam2', 'winteam'];
 
 export function esEquipoOperativo(nombre: string | null | undefined): boolean {
   return EQUIPOS_OPERATIVOS.includes((nombre ?? '').trim().toLowerCase());
