@@ -1,16 +1,12 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { MessageModule } from 'primeng/message';
 import { SupervisorGtrCampaignAssignmentComponent } from '../../components/supervisor-gtr-campaign-assignment/supervisor-gtr-campaign-assignment.component';
-import { SupervisorGtrProviderMetricsComponent } from '../../components/supervisor-gtr-provider-metrics/supervisor-gtr-provider-metrics.component';
 import { SupervisorGtrCampaignsFacade } from '../../facades/supervisor-gtr-campaigns.facade';
+import { DistribucionCampanasProveedorRequest } from '../../../../shared/models/preventa/preventa.models';
 
 @Component({
   selector: 'app-supervisor-gtr-campaigns-page',
-  imports: [
-    MessageModule,
-    SupervisorGtrCampaignAssignmentComponent,
-    SupervisorGtrProviderMetricsComponent
-  ],
+  imports: [MessageModule, SupervisorGtrCampaignAssignmentComponent],
   providers: [SupervisorGtrCampaignsFacade],
   templateUrl: './supervisor-gtr-campaigns-page.component.html',
   styleUrl: './supervisor-gtr-campaigns-page.component.scss',
@@ -23,11 +19,11 @@ export class SupervisorGtrCampaignsPageComponent implements OnInit {
     void this.facade.inicializar();
   }
 
-  protected onEquipoChange(idEquipo: number | null): void {
-    void this.facade.seleccionarEquipo(idEquipo);
+  protected onProveedorChange(idProveedor: number | null): void {
+    this.facade.seleccionarProveedor(idProveedor);
   }
 
-  protected onSave(campanaIds: number[]): void {
-    void this.facade.guardarCampanas(campanaIds);
+  protected onSave(request: DistribucionCampanasProveedorRequest): void {
+    void this.facade.guardarDistribucion(request);
   }
 }

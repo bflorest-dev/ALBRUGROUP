@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.request.AsignarCampanasEquipoRequest;
+import pe.albrugroup.lead_service.entity.request.DistribucionCampanasProveedorRequest;
 import pe.albrugroup.lead_service.entity.response.EquipoCampanaResponse;
+import pe.albrugroup.lead_service.entity.response.ProveedorCampanasEquipoResponse;
 import pe.albrugroup.lead_service.service.EquipoCampanaService;
 
 import java.util.List;
@@ -24,6 +26,21 @@ import java.util.List;
 public class EquipoCampanaController {
 
     private final EquipoCampanaService equipoCampanaService;
+
+    @GetMapping("/campanas/distribucion")
+    @PreAuthorize("hasAuthority('READ_EQUIPO_CAMPANAS')")
+    public ResponseEntity<List<ProveedorCampanasEquipoResponse>> listarDistribucionesPorProveedor() {
+        return ResponseEntity.ok(equipoCampanaService.listarDistribucionesPorProveedor());
+    }
+
+    @PutMapping("/campanas/proveedores/{idProveedor}/distribucion")
+    @PreAuthorize("hasAuthority('ASSIGN_EQUIPO_CAMPANAS')")
+    public ResponseEntity<ProveedorCampanasEquipoResponse> actualizarDistribucionProveedor(
+            @PathVariable Long idProveedor,
+            @Valid @RequestBody DistribucionCampanasProveedorRequest request
+    ) {
+        return ResponseEntity.ok(equipoCampanaService.actualizarDistribucionProveedor(idProveedor, request));
+    }
 
     @GetMapping("/{idEquipo}/campanas")
     @PreAuthorize("hasAuthority('READ_EQUIPO_CAMPANAS')")

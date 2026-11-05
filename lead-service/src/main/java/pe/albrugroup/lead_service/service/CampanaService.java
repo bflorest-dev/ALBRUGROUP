@@ -17,6 +17,7 @@ import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
 import pe.albrugroup.lead_service.repository.CuentaPublicitariaRepository;
+import pe.albrugroup.lead_service.repository.EquipoCampanaRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.service.mapper.CampanaMapper;
 
@@ -30,6 +31,7 @@ public class CampanaService {
     private final CampanaRepository repository;
     private final CuentaPublicitariaRepository cuentaPublicitariaRepository;
     private final ProveedorRepository proveedorRepository;
+    private final EquipoCampanaRepository equipoCampanaRepository;
 
     @CacheEvict(value = CacheNames.CAMPANAS, allEntries = true)
     public CampanaResponse registrarCampana(CampanaRequest request) {
@@ -65,7 +67,13 @@ public class CampanaService {
 
         campana.setActivo(activar);
         campana.setUpdatedAt(OperationalDateTime.now());
-        return mapper.toResponse(repository.save(campana));
+        Campana actualizada = repository.save(campana);
+        if (!activar) {
+            // Una campaña inactiva vuelve al pool sin equipo. Si se reactiva, deberá ser
+            // distribuida nuevamente de forma explícita desde la gestión operativa.
+            equipoCampanaRepository.deleteByCampanaId(idCampana);
+        }
+        return mapper.toResponse(actualizada);
     }
 
     private void validarDependenciasActivas(Campana campana) {

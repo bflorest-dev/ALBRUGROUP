@@ -10,6 +10,8 @@ import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.EquipoCampana;
 import pe.albrugroup.lead_service.entity.EquipoProveedor;
 import pe.albrugroup.lead_service.entity.Proveedor;
+import pe.albrugroup.lead_service.entity.request.DistribucionCampanaEquipoRequest;
+import pe.albrugroup.lead_service.entity.request.DistribucionCampanasProveedorRequest;
 import pe.albrugroup.lead_service.entity.response.EquipoCampanaResponse;
 import pe.albrugroup.lead_service.exception.ForbiddenException;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
@@ -124,6 +126,44 @@ class EquipoCampanaServiceTest {
                 .isInstanceOf(ForbiddenException.class);
     }
 
+    @Test
+    void reemplazaLaDistribucionCompletaDeUnProveedorSinTocarOtrosProveedoresDelEquipo() {
+        EquipoCampanaService service = service();
+        Campana primera = campanaClaro(136L);
+        Campana segunda = campanaClaro(150L);
+        EquipoCampana asignacionPrimera = EquipoCampana.builder()
+                .id(44L)
+                .idEquipo(2L)
+                .campana(primera)
+                .build();
+        EquipoCampana asignacionSegunda = EquipoCampana.builder()
+                .id(45L)
+                .idEquipo(6L)
+                .campana(segunda)
+                .build();
+        DistribucionCampanasProveedorRequest request = DistribucionCampanasProveedorRequest.builder()
+                .asignaciones(List.of(
+                        DistribucionCampanaEquipoRequest.builder().idCampana(136L).idEquipo(6L).build(),
+                        DistribucionCampanaEquipoRequest.builder().idCampana(150L).idEquipo(null).build()
+                ))
+                .build();
+
+        when(currentUser.tieneVisibilidadGlobalEquipos()).thenReturn(true);
+        when(equipoProveedorRepository.findAll()).thenReturn(List.of(
+                proveedorEquipo(2L, 2L), proveedorEquipo(6L, 2L)));
+        when(campanaRepository.listarActivasPorProveedorIds(Set.of(2L))).thenReturn(List.of(primera, segunda));
+        when(equipoCampanaRepository.findByCampanaIdIn(Set.of(136L, 150L)))
+                .thenReturn(List.of(asignacionPrimera, asignacionSegunda));
+
+        service.actualizarDistribucionProveedor(2L, request);
+
+        verify(equipoCampanaRepository).deleteAllByIdInBatch(List.of(44L, 45L));
+        ArgumentCaptor<EquipoCampana> captor = ArgumentCaptor.forClass(EquipoCampana.class);
+        verify(equipoCampanaRepository).save(captor.capture());
+        assertThat(captor.getValue().getCampana().getId()).isEqualTo(136L);
+        assertThat(captor.getValue().getIdEquipo()).isEqualTo(6L);
+    }
+
     private EquipoCampanaService service() {
         return new EquipoCampanaService(
                 equipoCampanaRepository,
@@ -137,6 +177,7 @@ class EquipoCampanaServiceTest {
         return Campana.builder()
                 .id(id)
                 .nombre("CLARO")
+                .activo(true)
                 .proveedor(Proveedor.builder().id(2L).nombre("CLARO").build())
                 .build();
     }

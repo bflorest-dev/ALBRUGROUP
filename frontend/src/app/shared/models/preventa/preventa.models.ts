@@ -110,6 +110,22 @@ export interface EquipoCampanaResponse {
   idEquipoAsignado?: number | null;
 }
 
+export interface DistribucionCampanaEquipoRequest {
+  idCampana: number;
+  idEquipo: number | null;
+}
+
+export interface DistribucionCampanasProveedorRequest {
+  asignaciones: DistribucionCampanaEquipoRequest[];
+}
+
+export interface ProveedorCampanasEquipoResponse {
+  idProveedor: number;
+  nombreProveedor: string;
+  equipoIds: number[];
+  campanas: EquipoCampanaResponse[];
+}
+
 export interface LeadGtrMetricasProveedorResponse {
   idProveedor: number;
   nombreProveedor: string;

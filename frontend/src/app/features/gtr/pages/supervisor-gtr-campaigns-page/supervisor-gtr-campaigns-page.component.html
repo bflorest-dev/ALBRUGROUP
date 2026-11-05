@@ -1,8 +1,8 @@
 <main class="supervisor-gtr-campaigns-page">
   <header class="supervisor-gtr-campaigns-page__header">
     <div>
-      <h1>Operación de campañas</h1>
-      <p>Distribuye campañas entre tus equipos y revisa la actividad PREVENTA por proveedor.</p>
+      <h1>Campañas y equipos</h1>
+      <p>Consulta y ajusta la distribución de las campañas activas por proveedor.</p>
     </div>
   </header>
 
@@ -14,18 +14,12 @@
   }
 
   <app-supervisor-gtr-campaign-assignment
+    [proveedores]="facade.distribuciones()"
+    [proveedorSeleccionadoId]="facade.proveedorSeleccionadoId()"
     [equipos]="facade.equipos()"
-    [equipoSeleccionadoId]="facade.equipoSeleccionadoId()"
-    [equipoSeleccionado]="facade.equipoSeleccionado()"
-    [campanas]="facade.campanas()"
-    [cargando]="facade.cargando() || facade.cargandoCampanas()"
-    [guardando]="facade.guardando()"
-    (equipoChange)="onEquipoChange($event)"
-    (save)="onSave($event)"
-  />
-
-  <app-supervisor-gtr-provider-metrics
-    [metricas]="facade.metricas()"
     [cargando]="facade.cargando()"
+    [guardando]="facade.guardando()"
+    (proveedorChange)="onProveedorChange($event)"
+    (save)="onSave($event)"
   />
 </main>

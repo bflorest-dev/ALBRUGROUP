@@ -1,78 +1,186 @@
-<section class="campaign-assignment" aria-labelledby="campaign-assignment-title">
-  <div class="campaign-assignment__header">
+<section class="campaign-board" aria-labelledby="campaign-board-title">
+  <div class="campaign-board__intro">
     <div>
-      <h2 id="campaign-assignment-title">Campañas por equipo</h2>
-      <p>Elige el equipo y define las campañas que puede usar el GTR al registrar leads.</p>
+      <p class="campaign-board__eyebrow">Distribución operativa</p>
+      <h2 id="campaign-board-title">Campañas por equipo</h2>
+      <p class="campaign-board__description">
+        Trabaja un proveedor a la vez. Una campaña activa solo puede pertenecer a un equipo o quedar disponible.
+      </p>
     </div>
-    @if (equipoSeleccionado(); as equipo) {
-      <span class="campaign-assignment__team-name">{{ equipo.nombre }}</span>
+    @if (cambios().length > 0) {
+      <span class="campaign-board__pending" aria-live="polite">
+        {{ cambios().length }} cambio{{ cambios().length === 1 ? '' : 's' }} pendiente{{ cambios().length === 1 ? '' : 's' }}
+      </span>
     }
   </div>
 
-  <div class="campaign-assignment__form">
-    <label for="supervisor-gtr-team">Equipo</label>
-    <p-select
-      inputId="supervisor-gtr-team"
-      [options]="equipos()"
-      [ngModel]="equipoSeleccionadoId()"
-      optionLabel="nombre"
-      optionValue="id"
-      placeholder="Selecciona un equipo"
-      [disabled]="cargando() || guardando()"
-      (onChange)="onEquipoChange($any($event.value))"
-    />
+  <div class="campaign-board__toolbar">
+    <label class="campaign-board__field" for="campaign-provider">
+      <span>Proveedor</span>
+      <p-select
+        inputId="campaign-provider"
+        [options]="proveedores()"
+        [ngModel]="proveedorSeleccionadoId()"
+        optionLabel="nombreProveedor"
+        optionValue="idProveedor"
+        placeholder="Selecciona un proveedor"
+        [disabled]="cargando() || guardando()"
+        (onChange)="seleccionarProveedor($any($event.value))"
+      />
+    </label>
 
-    <label for="supervisor-gtr-campaigns">Campañas disponibles</label>
-    <p-multiSelect
-      inputId="supervisor-gtr-campaigns"
-      [options]="opcionesCampana()"
-      [ngModel]="selectedCampaignIds()"
-      optionLabel="nombre"
-      optionValue="id"
-      optionDisabled="disabled"
-      display="chip"
-      [filter]="true"
-      filterBy="nombre,nombreProveedor,asignacionLabel"
-      placeholder="Selecciona las campañas del equipo"
-      [disabled]="equipoSeleccionadoId() === null || cargando() || guardando()"
-      (ngModelChange)="onCampaignsChange($event)"
-    >
-      <ng-template let-option #item>
-        <div class="campaign-option">
-          <span class="campaign-option__name">{{ option.nombre }}</span>
-          <small>{{ option.nombreProveedor }} · {{ option.asignacionLabel }}</small>
-        </div>
-      </ng-template>
-    </p-multiSelect>
+    <label class="campaign-board__field campaign-board__field--search" for="campaign-search">
+      <span>Buscar campaña</span>
+      <span class="campaign-board__search">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <input
+          id="campaign-search"
+          pInputText
+          type="search"
+          [ngModel]="filtro()"
+          [disabled]="cargando() || guardando()"
+          placeholder="Nombre de campaña"
+          (ngModelChange)="filtro.set($event ?? '')"
+        />
+      </span>
+    </label>
   </div>
 
   @if (cargando()) {
-    <div class="campaign-assignment__loading" aria-live="polite">
-      <p-progressSpinner strokeWidth="4" ariaLabel="Cargando campañas" />
-      <span>Cargando campañas del equipo…</span>
+    <div class="campaign-board__loading" aria-live="polite">
+      <p-progressSpinner strokeWidth="4" ariaLabel="Cargando distribución de campañas" />
+      <span>Cargando la distribución de campañas…</span>
     </div>
-  } @else if (equipoSeleccionadoId() === null) {
-    <p-message severity="info">Selecciona un equipo para administrar sus campañas.</p-message>
-  } @else if (campanas().length === 0) {
-    <p-message severity="warn">Este equipo aún no tiene proveedores configurados con campañas disponibles.</p-message>
+  } @else if (!distribucion()) {
+    <p-message severity="info">No hay proveedores o equipos operativos disponibles para gestionar.</p-message>
+  } @else if (distribucion()!.campanas.length === 0) {
+    <p-message severity="info">No hay campañas activas para este proveedor.</p-message>
   } @else {
-    <div class="campaign-assignment__footer">
-      <div class="campaign-assignment__hint" aria-live="polite">
-        @if (transfersPending() > 0) {
-          {{ transfersPending() }} campaña(s) se trasladará(n) desde otro equipo al guardar.
-        } @else {
-          Las campañas seleccionadas quedarán disponibles para este equipo.
-        }
-      </div>
-      <button
-        pButton
-        type="button"
-        label="Guardar campañas"
-        icon="pi pi-check"
-        [loading]="guardando()"
-        [disabled]="guardando()"
-        (click)="saveChanges()"
-      ></button>
+    <div class="campaign-board__instruction">
+      <i class="pi pi-arrows-h" aria-hidden="true"></i>
+      <span>Arrastra una campaña entre columnas o usa el selector de cada tarjeta. Los cambios no se aplican hasta confirmarlos.</span>
+    </div>
+
+    <div class="campaign-board__lanes" aria-label="Distribución de campañas por equipo">
+      @for (lane of lanes(); track lane.idEquipo) {
+        <section
+          class="campaign-lane"
+          [class.campaign-lane--unassigned]="lane.idEquipo === null"
+          [class.campaign-lane--readonly]="lane.fueraDeAlcance"
+          (dragover)="!lane.fueraDeAlcance && $event.preventDefault()"
+          (drop)="!lane.fueraDeAlcance && soltarEn($event, lane.idEquipo)"
+        >
+          <header class="campaign-lane__header">
+            <div>
+              <h3>{{ lane.nombre }}</h3>
+              <p>{{ lane.descripcion }}</p>
+            </div>
+            <span class="campaign-lane__count">{{ lane.campanas.length }}</span>
+          </header>
+
+          <div class="campaign-lane__cards">
+            @for (campana of lane.campanas; track campana.id) {
+              <article
+                class="campaign-card"
+                [class.campaign-card--dragging]="draggedCampaignId() === campana.id"
+                [draggable]="!lane.fueraDeAlcance && !guardando()"
+                (dragstart)="iniciarArrastre(campana.id)"
+                (dragend)="cancelarArrastre()"
+              >
+                <div class="campaign-card__topline">
+                  <span class="campaign-card__status"><i class="pi pi-circle-fill" aria-hidden="true"></i> Activa</span>
+                  @if (!lane.fueraDeAlcance) {
+                    <i class="pi pi-bars campaign-card__drag-handle" aria-label="Arrastra para mover"></i>
+                  }
+                </div>
+                <strong>{{ campana.nombre }}</strong>
+                <div class="campaign-card__destination">
+                  <label [for]="'campaign-destination-' + campana.id">Asignada a</label>
+                  <p-select
+                    [inputId]="'campaign-destination-' + campana.id"
+                    [options]="destinos()"
+                    [ngModel]="borrador().get(campana.id) ?? null"
+                    optionLabel="nombre"
+                    optionValue="id"
+                    [disabled]="lane.fueraDeAlcance || guardando()"
+                    (onChange)="moverCampana(campana.id, $any($event.value))"
+                  />
+                </div>
+              </article>
+            } @empty {
+              <div class="campaign-lane__empty">
+                <i class="pi pi-inbox" aria-hidden="true"></i>
+                <span>{{ filtro() ? 'No hay coincidencias' : 'Sin campañas' }}</span>
+              </div>
+            }
+          </div>
+        </section>
+      }
     </div>
   }
+
+  @if (cambios().length > 0) {
+    <footer class="campaign-board__actions">
+      <p>
+        La actualización reemplazará la distribución de campañas activas de
+        <strong>{{ distribucion()?.nombreProveedor }}</strong>.
+      </p>
+      <div>
+        <button pButton type="button" severity="secondary" [outlined]="true" label="Descartar" [disabled]="guardando()" (click)="descartarCambios()"></button>
+        <button pButton type="button" label="Revisar cambios" icon="pi pi-arrow-right" iconPos="right" [disabled]="guardando()" (click)="abrirRevision()"></button>
+      </div>
+    </footer>
+  }
 </section>
+
+<p-dialog
+  header="Revisar distribución"
+  [visible]="mostrarRevision()"
+  (visibleChange)="!$event && mostrarRevision.set(false)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  styleClass="campaign-review-dialog"
+>
+  <div class="campaign-review">
+    <p>Verifica el resultado antes de continuar. Estos son los únicos cambios que se guardarán.</p>
+    <ul>
+      @for (cambio of cambios(); track cambio.campana.id) {
+        <li>
+          <strong>{{ cambio.campana.nombre }}</strong>
+          <span>{{ cambio.equipoOrigen }}</span>
+          <i class="pi pi-arrow-right" aria-hidden="true"></i>
+          <span>{{ cambio.equipoDestino }}</span>
+        </li>
+      }
+    </ul>
+    <div class="campaign-review__actions">
+      <button pButton type="button" severity="secondary" [outlined]="true" label="Volver a editar" (click)="mostrarRevision.set(false)"></button>
+      <button pButton type="button" label="Continuar" icon="pi pi-check" (click)="confirmacionVisible.set(true)"></button>
+    </div>
+  </div>
+</p-dialog>
+
+<p-dialog
+  header="¿Aplicar esta distribución?"
+  [visible]="confirmacionVisible()"
+  (visibleChange)="!$event && confirmacionVisible.set(false)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  styleClass="campaign-confirm-dialog"
+>
+  <div class="campaign-confirm">
+    <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+    <p>
+      Al confirmar, las campañas activas de <strong>{{ distribucion()?.nombreProveedor }}</strong>
+      quedarán exactamente como las revisaste.
+    </p>
+    <div class="campaign-confirm__actions">
+      <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="confirmacionVisible.set(false)"></button>
+      <button pButton type="button" severity="warn" label="Sí, aplicar cambios" icon="pi pi-check" [loading]="guardando()" (click)="confirmarGuardado()"></button>
+    </div>
+  </div>
+</p-dialog>

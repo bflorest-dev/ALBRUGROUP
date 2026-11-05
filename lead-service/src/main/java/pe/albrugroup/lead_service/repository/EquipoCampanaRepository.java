@@ -22,4 +22,6 @@ public interface EquipoCampanaRepository extends JpaRepository<EquipoCampana, Lo
     boolean existsByIdEquipoAndCampanaId(Long idEquipo, Long idCampana);
 
     void deleteByIdEquipo(Long idEquipo);
+
+    void deleteByCampanaId(Long idCampana);
 }

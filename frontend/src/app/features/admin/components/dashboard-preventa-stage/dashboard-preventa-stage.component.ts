@@ -110,6 +110,8 @@ export class DashboardPreventaStageComponent implements OnInit {
   private readonly lockedEquipoId = signal<number | null>(null);
   private readonly viewReady = signal(false);
   private loadedAfterGate = false;
+  private lastLoadedTeamId: number | null = null;
+  private loadRequestId = 0;
 
   /** "Todos" conserva la comparación lado a lado entre equipos, que es el valor de este bloque. */
   protected readonly equipoOptions = computed(() => [
@@ -250,10 +252,31 @@ export class DashboardPreventaStageComponent implements OnInit {
       this.loadedAfterGate = true;
       void this.load();
     });
+
+    effect(() => {
+      if (!this.viewReady() || !this.isTeamScopedDashboard() || !this.canDisplayOperationalData()) {
+        return;
+      }
+      const activeTeamId = this.teamScope.activeId();
+      if (activeTeamId === null || activeTeamId === this.lastLoadedTeamId) {
+        return;
+      }
+      this.lastLoadedTeamId = activeTeamId;
+      untracked(() => {
+        this.raw.set([]);
+        this.lockedEquipoId.set(null);
+        this.selectedEquipoId.set(null);
+        void this.load();
+      });
+    });
   }
 
   async ngOnInit(): Promise<void> {
     this.isTeamScopedDashboard.set(this.teamScope.isDashboardTeamScoped());
+    if (this.isTeamScopedDashboard()) {
+      await this.teamScope.load();
+      this.lastLoadedTeamId = this.teamScope.activeId();
+    }
     this.viewReady.set(true);
     void this.cargarProveedores();
   }
@@ -362,6 +385,8 @@ export class DashboardPreventaStageComponent implements OnInit {
     this.loadedAfterGate = true;
     this.isLoading.set(true);
     this.errorMessage.set('');
+    const requestId = ++this.loadRequestId;
+    const requestedTeamId = this.isTeamScopedDashboard() ? this.teamScope.activeId() : null;
     try {
       const rango = resolveMetricsRange(this.periodo(), this.dia(), this.hasta());
       const [metricas, equipos] = await Promise.all([
@@ -370,6 +395,9 @@ export class DashboardPreventaStageComponent implements OnInit {
         ),
         firstValueFrom(this.shouldUseVisibleTeamsCatalog() ? this.equipoService.listarMisEquipos() : this.equipoService.listarEquipos())
       ]);
+      if (!this.isCurrentLoad(requestId, requestedTeamId)) {
+        return;
+      }
       this.equipos.set(equipos);
       this.equipoNombreById.set(new Map(equipos.map((equipo) => [equipo.id, equipo.nombre])));
       this.equipoColorById.set(
@@ -382,10 +410,15 @@ export class DashboardPreventaStageComponent implements OnInit {
       }
       this.raw.set(metricas);
     } catch {
+      if (!this.isCurrentLoad(requestId, requestedTeamId)) {
+        return;
+      }
       this.errorMessage.set('No se pudieron cargar las métricas del día.');
       this.raw.set([]);
     } finally {
-      this.isLoading.set(false);
+      if (requestId === this.loadRequestId) {
+        this.isLoading.set(false);
+      }
     }
   }
 
@@ -403,12 +436,22 @@ export class DashboardPreventaStageComponent implements OnInit {
   }
 
   private resolveLockedEquipoId(equipos: Array<{ id: number; nombre: string; activo: boolean }>): number | null {
+    const activeTeamId = this.teamScope.activeId();
+    if (activeTeamId !== null && equipos.some((equipo) => equipo.id === activeTeamId && equipo.activo !== false)) {
+      return activeTeamId;
+    }
+
     const locked = this.lockedEquipoId();
-    if (locked !== null) {
+    if (locked !== null && equipos.some((equipo) => equipo.id === locked)) {
       return locked;
     }
 
     return equipos.find((equipo) => equipo.activo !== false && esEquipoOperativo(equipo.nombre))?.id ?? equipos[0]?.id ?? null;
+  }
+
+  private isCurrentLoad(requestId: number, requestedTeamId: number | null): boolean {
+    return requestId === this.loadRequestId
+      && (!this.isTeamScopedDashboard() || requestedTeamId === this.teamScope.activeId());
   }
 
   private toRow(metrica: LeadsDiariosMetricasEquipo, nombres: Map<number, string>): DashboardMetricRow {

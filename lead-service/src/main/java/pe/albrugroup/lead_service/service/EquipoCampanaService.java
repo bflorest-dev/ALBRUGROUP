@@ -7,7 +7,10 @@ import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.EquipoCampana;
 import pe.albrugroup.lead_service.entity.EquipoProveedor;
+import pe.albrugroup.lead_service.entity.request.DistribucionCampanaEquipoRequest;
+import pe.albrugroup.lead_service.entity.request.DistribucionCampanasProveedorRequest;
 import pe.albrugroup.lead_service.entity.response.EquipoCampanaResponse;
+import pe.albrugroup.lead_service.entity.response.ProveedorCampanasEquipoResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.ForbiddenException;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
@@ -16,8 +19,10 @@ import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -88,6 +93,9 @@ public class EquipoCampanaService {
         if (campanas.size() != idsSolicitados.size()) {
             throw new BadRequestException("Una o más campañas no existen");
         }
+        if (campanas.stream().anyMatch(campana -> !Boolean.TRUE.equals(campana.getActivo()))) {
+            throw new BadRequestException("No se pueden asignar campañas inactivas");
+        }
 
         Set<Long> proveedoresEquipo = proveedorIdsDelEquipo(idEquipo);
         for (Campana campana : campanas) {
@@ -126,6 +134,107 @@ public class EquipoCampanaService {
                 .sorted(Comparator.comparing(EquipoCampanaResponse::getNombre,
                         Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();
+    }
+
+    /**
+     * Devuelve una vista de distribución por proveedor. Las campañas son siempre activas; los
+     * equipos listados son únicamente los que el usuario puede administrar para ese proveedor.
+     */
+    @Transactional(readOnly = true)
+    public List<ProveedorCampanasEquipoResponse> listarDistribucionesPorProveedor() {
+        Map<Long, List<EquipoProveedor>> configuracionesPorProveedor = configuracionesVisibles().stream()
+                .filter(configuracion -> configuracion.getProveedor() != null
+                        && configuracion.getProveedor().getId() != null)
+                .collect(Collectors.groupingBy(
+                        configuracion -> configuracion.getProveedor().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+        if (configuracionesPorProveedor.isEmpty()) {
+            return List.of();
+        }
+
+        return configuracionesPorProveedor.entrySet().stream()
+                .map(entry -> crearDistribucionProveedor(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(ProveedorCampanasEquipoResponse::getNombreProveedor,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .toList();
+    }
+
+    /**
+     * PUT de representación completa de un proveedor: todas sus campañas activas deben venir en
+     * el request, con un equipo válido o sin equipo. Así no se borran campañas de otro proveedor
+     * cuando un mismo equipo trabaja con varios.
+     */
+    public ProveedorCampanasEquipoResponse actualizarDistribucionProveedor(
+            Long idProveedor,
+            DistribucionCampanasProveedorRequest request
+    ) {
+        if (idProveedor == null || idProveedor <= 0) {
+            throw new BadRequestException("Selecciona un proveedor válido");
+        }
+        List<EquipoProveedor> configuracionesProveedor = configuracionesVisibles().stream()
+                .filter(configuracion -> configuracion.getProveedor() != null
+                        && idProveedor.equals(configuracion.getProveedor().getId()))
+                .toList();
+        if (configuracionesProveedor.isEmpty()) {
+            throw new ForbiddenException("No tienes equipos configurados para este proveedor");
+        }
+
+        Set<Long> equiposProveedor = configuracionesProveedor.stream()
+                .map(EquipoProveedor::getIdEquipo)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        List<Campana> campanasActivas = campanaRepository.listarActivasPorProveedorIds(Set.of(idProveedor));
+        Set<Long> idsActivos = campanasActivas.stream().map(Campana::getId).collect(Collectors.toSet());
+        Map<Long, Long> destinoPorCampana = destinosSolicitados(request);
+        if (!destinoPorCampana.keySet().equals(idsActivos)) {
+            throw new BadRequestException("La distribución debe incluir exactamente todas las campañas activas del proveedor");
+        }
+
+        List<EquipoCampana> asignacionesActuales = idsActivos.isEmpty()
+                ? List.of()
+                : equipoCampanaRepository.findByCampanaIdIn(idsActivos);
+        Map<Long, EquipoCampana> asignacionActualPorCampana = asignacionesActuales.stream()
+                .collect(Collectors.toMap(
+                        asignacion -> asignacion.getCampana().getId(),
+                        asignacion -> asignacion,
+                        (primera, ignorada) -> primera));
+
+        for (Campana campana : campanasActivas) {
+            EquipoCampana asignacionActual = asignacionActualPorCampana.get(campana.getId());
+            Long origen = asignacionActual == null ? null : asignacionActual.getIdEquipo();
+            Long destino = destinoPorCampana.get(campana.getId());
+            if (Objects.equals(origen, destino)) {
+                continue;
+            }
+            if (origen != null) {
+                validarEquipoAdministrable(origen);
+            }
+            if (destino != null) {
+                if (!equiposProveedor.contains(destino)) {
+                    throw new BadRequestException("El equipo seleccionado no está configurado para este proveedor");
+                }
+                validarEquipoAdministrable(destino);
+            }
+        }
+
+        if (!asignacionesActuales.isEmpty()) {
+            equipoCampanaRepository.deleteAllByIdInBatch(asignacionesActuales.stream()
+                    .map(EquipoCampana::getId)
+                    .toList());
+            equipoCampanaRepository.flush();
+        }
+        for (Campana campana : campanasActivas) {
+            Long destino = destinoPorCampana.get(campana.getId());
+            if (destino != null) {
+                equipoCampanaRepository.save(EquipoCampana.builder()
+                        .idEquipo(destino)
+                        .campana(campana)
+                        .build());
+            }
+        }
+
+        return crearDistribucionProveedor(idProveedor, configuracionesProveedor);
     }
 
     @Transactional(readOnly = true)
@@ -186,6 +295,67 @@ public class EquipoCampanaService {
 
     public void eliminarDatosDeEquipo(Long idEquipo) {
         equipoCampanaRepository.deleteByIdEquipo(idEquipo);
+    }
+
+    private Map<Long, Long> destinosSolicitados(DistribucionCampanasProveedorRequest request) {
+        if (request == null || request.getAsignaciones() == null) {
+            throw new BadRequestException("La distribución de campañas es obligatoria");
+        }
+        Map<Long, Long> destinos = new LinkedHashMap<>();
+        for (DistribucionCampanaEquipoRequest asignacion : request.getAsignaciones()) {
+            if (asignacion == null || asignacion.getIdCampana() == null || asignacion.getIdCampana() <= 0) {
+                throw new BadRequestException("Una o más campañas no son válidas");
+            }
+            if (asignacion.getIdEquipo() != null && asignacion.getIdEquipo() <= 0) {
+                throw new BadRequestException("Uno o más equipos no son válidos");
+            }
+            if (destinos.containsKey(asignacion.getIdCampana())) {
+                throw new BadRequestException("Una campaña no puede aparecer más de una vez en la distribución");
+            }
+            destinos.put(asignacion.getIdCampana(), asignacion.getIdEquipo());
+        }
+        return destinos;
+    }
+
+    private ProveedorCampanasEquipoResponse crearDistribucionProveedor(
+            Long idProveedor,
+            List<EquipoProveedor> configuracionesProveedor
+    ) {
+        List<Campana> campanas = campanaRepository.listarActivasPorProveedorIds(Set.of(idProveedor));
+        Map<Long, Long> equipoPorCampana = equipoCampanaRepository.findByCampanaIdIn(
+                        campanas.stream().map(Campana::getId).toList())
+                .stream()
+                .collect(Collectors.toMap(
+                        relacion -> relacion.getCampana().getId(),
+                        EquipoCampana::getIdEquipo,
+                        (primera, ignorada) -> primera));
+        String nombreProveedor = configuracionesProveedor.get(0).getProveedor().getNombre();
+        return ProveedorCampanasEquipoResponse.builder()
+                .idProveedor(idProveedor)
+                .nombreProveedor(nombreProveedor)
+                .equipoIds(configuracionesProveedor.stream()
+                        .map(EquipoProveedor::getIdEquipo)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .sorted()
+                        .toList())
+                .campanas(campanas.stream()
+                        .map(campana -> toResponse(campana, equipoPorCampana.get(campana.getId())))
+                        .sorted(Comparator.comparing(EquipoCampanaResponse::getNombre,
+                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                        .toList())
+                .build();
+    }
+
+    private List<EquipoProveedor> configuracionesVisibles() {
+        if (currentUser.tieneVisibilidadGlobalEquipos()) {
+            return equipoProveedorRepository.findAll();
+        }
+        List<Long> equipos = currentUser.equipos();
+        if (equipos == null || equipos.isEmpty()) {
+            return List.of();
+        }
+        return equipoProveedorRepository.findByIdEquipoIn(equipos);
     }
 
     private Set<Long> proveedorIdsDelEquipo(Long idEquipo) {
