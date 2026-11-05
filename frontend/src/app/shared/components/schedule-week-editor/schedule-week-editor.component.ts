@@ -664,14 +664,7 @@ export class ScheduleWeekEditorComponent implements OnChanges {
     if (i === null) return;
     this.error.set(null);
     this.bLab.set(checked);
-    const detalles = this.detalles();
-    detalles.controls.forEach((ctrl, index) => {
-      if (index === i) {
-        ctrl.get('laborable')?.setValue(checked ? 'true' : 'false');
-      } else if (!checked) {
-        ctrl.get('laborable')?.setValue('true');
-      }
-    });
+    this.detalles().at(i).get('laborable')?.setValue(checked ? 'true' : 'false');
   }
 
   private commitIfDay(): void {

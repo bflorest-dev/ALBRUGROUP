@@ -94,7 +94,6 @@ export class PersonalScheduleFacade {
     horaSalida: ['18:00', [Validators.required]],
     inicioAlmuerzo: ['13:00'],
     finAlmuerzo: ['14:00'],
-    diaDescanso: ['DOMINGO', [Validators.required]],
     modoAvanzado: ['true', [Validators.required]],
     detalles: this.formBuilder.nonNullable.array(this.buildDefaultRows())
   });
@@ -107,7 +106,7 @@ export class PersonalScheduleFacade {
         : schedule.fechaFin && schedule.fechaFin < today
           ? 'anterior'
           : 'actual';
-      const restDay = schedule.detalles.find((detail) => !detail.laborable)?.dia ?? '—';
+      const restDay = this.restDaysLabel(schedule);
       return {
         schedule,
         kind,
@@ -661,7 +660,6 @@ export class PersonalScheduleFacade {
     this.editorKey.update((value) => value + 1);
     const details = schedule?.detalles ?? [];
     const firstWorking = details.find((detail) => detail.laborable) ?? details[0];
-    const restDay = details.find((detail) => !detail.laborable)?.dia ?? 'DOMINGO';
     this.form.reset({
       fechaInicio: schedule?.fechaInicio ?? '',
       compensable: String(schedule?.compensable ?? true),
@@ -669,7 +667,6 @@ export class PersonalScheduleFacade {
       horaSalida: firstWorking?.horaSalida?.slice(0, 5) ?? '18:00',
       inicioAlmuerzo: firstWorking?.inicioAlmuerzo?.slice(0, 5) ?? '13:00',
       finAlmuerzo: firstWorking?.finAlmuerzo?.slice(0, 5) ?? '14:00',
-      diaDescanso: restDay,
       modoAvanzado: 'true',
       detalles: DAYS.map((dia) => {
         const detail = details.find((item) => item.dia === dia);
@@ -734,6 +731,13 @@ export class PersonalScheduleFacade {
 
   private labelDay(day: string): string {
     return day.charAt(0) + day.slice(1).toLowerCase();
+  }
+
+  private restDaysLabel(schedule: HorarioResponse): string {
+    const restDays = schedule.detalles
+      .filter((detail) => !detail.laborable)
+      .map((detail) => this.labelDay(detail.dia));
+    return restDays.length ? restDays.join(' · ') : '—';
   }
 
   private today(): string {

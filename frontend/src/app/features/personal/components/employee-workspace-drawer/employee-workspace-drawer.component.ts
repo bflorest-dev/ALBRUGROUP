@@ -1155,8 +1155,10 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected restDayLabel(schedule: HorarioResponse | null): string {
-    const restDay = schedule?.detalles.find((detail) => !detail.laborable)?.dia;
-    return restDay ? this.label(restDay) : 'No definido';
+    const restDays = schedule?.detalles
+      .filter((detail) => !detail.laborable)
+      .map((detail) => this.label(detail.dia)) ?? [];
+    return restDays.length ? restDays.join(' · ') : 'No definido';
   }
 
   private async loadEmployeeDetails(row: PersonalDirectoryRow): Promise<void> {
