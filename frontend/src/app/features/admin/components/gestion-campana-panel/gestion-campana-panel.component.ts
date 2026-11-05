@@ -48,6 +48,7 @@ export class GestionCampanaPanelComponent implements OnInit {
   private readonly teamScope = inject(CurrentUserTeamScopeService);
 
   readonly externalControls = input(false);
+  readonly aggregateAcrossTeams = input(false);
   readonly idEquipo = input<number | null>(null);
   readonly teamScoped = input(false);
   readonly periodo = input<MetricsPeriodo | null>(null);
@@ -67,6 +68,7 @@ export class GestionCampanaPanelComponent implements OnInit {
 
   constructor() {
     effect(() => {
+      this.facade.setAggregateAcrossTeams(this.aggregateAcrossTeams());
       if (!this.externalControls()) {
         return;
       }

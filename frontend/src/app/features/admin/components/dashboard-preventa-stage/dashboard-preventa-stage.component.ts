@@ -101,6 +101,7 @@ export class DashboardPreventaStageComponent implements OnInit {
   private readonly equipoNombreById = signal<Map<number, string>>(new Map());
   private readonly equipoColorById = signal<Map<number, string>>(new Map());
   protected readonly selectedEquipoId = signal<number | null>(null);
+  protected readonly selectedEquipoIdCampanas = signal<number | null>(null);
   // Seguimiento (VENTA) tiene su propio estado de filtros: por defecto TODO (sin scope), a diferencia del
   // Resumen que fuerza un equipo. Equipo = equipo del lead; Proveedor = proveedor del plan.
   protected readonly selectedEquipoIdVenta = signal<number | null>(null);
@@ -123,6 +124,10 @@ export class DashboardPreventaStageComponent implements OnInit {
       .sort((left, right) => left.label.localeCompare(right.label))
   ]);
   protected readonly showEquipoSelector = computed(() => !this.isTeamScopedDashboard());
+  protected readonly isAdminDashboard = computed(() => this.sessionService.getPrimaryRole() === 'ADMINISTRADOR');
+  protected readonly equipoOptionsCampanas = computed(() =>
+    this.isAdminDashboard() ? this.equipoOptions().filter((opcion) => opcion.value !== null) : this.equipoOptions()
+  );
 
   protected readonly campoOptions: Array<{ label: string; value: GestionCampoTipi }> = [
     { label: 'Mayor', value: 'MAYOR' },
@@ -356,6 +361,14 @@ export class DashboardPreventaStageComponent implements OnInit {
       return;
     }
     this.selectedEquipoId.set(value ?? null);
+  }
+
+  protected onCampanasEquipoChange(value: number | null): void {
+    if (this.isAdminDashboard()) {
+      this.selectedEquipoIdCampanas.set(value ?? null);
+      return;
+    }
+    this.onEquipoChange(value);
   }
 
   protected onViewChange(value: PreventaDashboardView | null): void {

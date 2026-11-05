@@ -198,6 +198,7 @@ export class AdminGestionCampanaFacade implements OnDestroy {
   readonly hastaSeleccionado = signal<string | null>(null);
   readonly selectedCampanaKeys = signal<string[]>([]);
   readonly selectedEquipoId = signal<number | null>(null);
+  private readonly aggregateAcrossTeams = signal(false);
   private readonly isEquipoLocked = signal(false);
   private readonly lockedEquipoId = signal<number | null>(null);
 
@@ -277,6 +278,9 @@ export class AdminGestionCampanaFacade implements OnDestroy {
     if (this.isEquipoLocked()) {
       return state.data.equipoOptions.filter((equipo) => equipo.value === lockedEquipoId);
     }
+    if (this.aggregateAcrossTeams()) {
+      return state.data.equipoOptions;
+    }
     return [{ label: 'Todos', value: null }, ...state.data.equipoOptions];
   });
 
@@ -289,6 +293,11 @@ export class AdminGestionCampanaFacade implements OnDestroy {
     effect(() => {
       const options = this.equipoOptions();
       if (this.aplicoEquipoPorDefecto) {
+        return;
+      }
+      if (this.aggregateAcrossTeams()) {
+        this.aplicoEquipoPorDefecto = true;
+        untracked(() => this.selectedEquipoId.set(null));
         return;
       }
       const lockedEquipoId = this.lockedEquipoId();
@@ -327,13 +336,14 @@ export class AdminGestionCampanaFacade implements OnDestroy {
 
   private readonly visibleAccumulated = computed<AccEquipo[]>(() => {
     const selectedEquipoId = this.selectedEquipoId();
+    const accumulated = this.accumulated();
     if (this.isEquipoLocked() && selectedEquipoId === null) {
       return [];
     }
     if (selectedEquipoId === null) {
-      return this.accumulated();
+      return this.aggregateAcrossTeams() ? this.aggregateTeams(accumulated) : accumulated;
     }
-    return this.accumulated().filter((equipo) => equipo.idEquipo === selectedEquipoId);
+    return accumulated.filter((equipo) => equipo.idEquipo === selectedEquipoId);
   });
 
   readonly campanaGroups = computed<GestionCampanaGroup[]>(() => {
@@ -502,6 +512,18 @@ export class AdminGestionCampanaFacade implements OnDestroy {
     this.selectedCampanaKeys.set([]);
   }
 
+  setAggregateAcrossTeams(enabled: boolean): void {
+    if (this.aggregateAcrossTeams() === enabled) {
+      return;
+    }
+    this.aggregateAcrossTeams.set(enabled);
+    this.aplicoEquipoPorDefecto = enabled;
+    if (enabled) {
+      this.selectedEquipoId.set(null);
+      this.selectedCampanaKeys.set([]);
+    }
+  }
+
   lockEquipo(idEquipo: number | null): void {
     this.isEquipoLocked.set(true);
     this.lockedEquipoId.set(idEquipo);
@@ -611,6 +633,52 @@ export class AdminGestionCampanaFacade implements OnDestroy {
         cierres
       };
     });
+  }
+
+  private aggregateTeams(equipos: AccEquipo[]): AccEquipo[] {
+    if (!equipos.length) {
+      return [];
+    }
+
+    const campanas = new Map<string, AccCampana>();
+    const codigos = new Set<string>();
+    for (const equipo of equipos) {
+      equipo.codigos.forEach((codigo) => codigos.add(codigo));
+      for (const campana of equipo.campanas) {
+        const agregada = campanas.get(campana.key) ?? {
+          key: campana.key,
+          idCampana: campana.idCampana,
+          nombre: campana.nombre,
+          total: 0,
+          porCodigo: new Map<string, number>()
+        };
+        agregada.total += campana.total;
+        for (const [codigo, cantidad] of campana.porCodigo) {
+          agregada.porCodigo.set(codigo, (agregada.porCodigo.get(codigo) ?? 0) + cantidad);
+        }
+        campanas.set(campana.key, agregada);
+      }
+    }
+
+    const referencia = equipos[0];
+    const codigosOrdenados = [...codigos].sort((left, right) => {
+      if (left === SIN_TIPIFICAR_CODIGO) return -1;
+      if (right === SIN_TIPIFICAR_CODIGO) return 1;
+      const ordenLeft = referencia.ordenPorCodigo.get(left) ?? Number.MAX_SAFE_INTEGER;
+      const ordenRight = referencia.ordenPorCodigo.get(right) ?? Number.MAX_SAFE_INTEGER;
+      return ordenLeft === ordenRight ? left.localeCompare(right) : ordenLeft - ordenRight;
+    });
+
+    return [{
+      idEquipo: null,
+      nombreEquipo: 'Todos los equipos',
+      accent: '#5b6cff',
+      campanas: [...campanas.values()].sort((left, right) => this.compareNombre(left.nombre, SIN_CAMPANA, right.nombre)),
+      codigos: codigosOrdenados,
+      ordenPorCodigo: referencia.ordenPorCodigo,
+      labelsPorCodigo: referencia.labelsPorCodigo,
+      cierres: referencia.cierres
+    }];
   }
 
   /** Construye la matriz visible de un equipo aplicando el filtro de columnas (si hay). */

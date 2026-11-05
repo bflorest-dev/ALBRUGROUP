@@ -235,7 +235,8 @@
       <p-card styleClass="metrics-gxc-card">
         <app-gestion-campana-panel
           [externalControls]="true"
-          [idEquipo]="selectedEquipoId()"
+          [idEquipo]="isAdminDashboard() ? selectedEquipoIdCampanas() : selectedEquipoId()"
+          [aggregateAcrossTeams]="isAdminDashboard()"
           [teamScoped]="isTeamScopedDashboard()"
           [periodo]="periodo()"
           [dia]="dia()"
@@ -248,13 +249,13 @@
               <div class="metrics-control">
                 <span class="metrics-control-label">Equipo</span>
                 <p-selectButton
-                  [options]="equipoOptions()"
+                  [options]="equipoOptionsCampanas()"
                   optionLabel="label"
                   optionValue="value"
-                  [allowEmpty]="false"
-                  [ngModel]="selectedEquipoId()"
+                  [allowEmpty]="isAdminDashboard()"
+                  [ngModel]="isAdminDashboard() ? selectedEquipoIdCampanas() : selectedEquipoId()"
                   [ngModelOptions]="{ standalone: true }"
-                  (onChange)="onEquipoChange($event.value)"
+                  (onChange)="onCampanasEquipoChange($event.value)"
                 />
               </div>
             }
