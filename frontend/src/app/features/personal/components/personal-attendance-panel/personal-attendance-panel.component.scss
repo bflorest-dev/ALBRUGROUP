@@ -81,14 +81,23 @@
 .attendance-metric strong.is-danger { color: var(--danger); }
 .attendance-metric strong.is-warning { color: var(--signal); }
 
-/* Alerta "respiración": las horas programadas no llegan al objetivo → el gestor debe programar más. */
-@keyframes attendance-breathe {
-  0%, 100% { background: color-mix(in srgb, var(--signal) 0%, transparent); }
-  50% { background: color-mix(in srgb, var(--signal) 14%, transparent); }
+/* Alerta: las horas programadas no llegan al objetivo → triángulo que "respira" en el hueco derecho. */
+.attendance-metric__value { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.attendance-metric__alert {
+  flex: none;
+  display: inline-block; /* imprescindible: transform:scale no aplica a elementos inline */
+  color: var(--signal);
+  font-size: 19px;
+  line-height: 1;
+  transform-origin: center;
+  animation: attendance-breathe 1.8s ease-in-out infinite;
 }
-.attendance-metric--alert { animation: attendance-breathe 2.2s ease-in-out infinite; }
+@keyframes attendance-breathe {
+  0%, 100% { opacity: .35; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .attendance-metric--alert { animation: none; background: color-mix(in srgb, var(--signal) 12%, transparent); }
+  .attendance-metric__alert { animation: none; opacity: 1; transform: none; }
 }
 
 .attendance-ledger { display: grid; gap: 12px; }
