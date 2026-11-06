@@ -15,6 +15,7 @@ import pe.albrugroup.schedule_service.entity.HorarioDetalle;
 import pe.albrugroup.schedule_service.entity.enums.Dia;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
 import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
+import pe.albrugroup.schedule_service.entity.enums.TipoDiaNoLaborable;
 import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.request.asistencia.ConsultaCumplimientoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.ConsultaMonitoreoRequest;
@@ -962,6 +963,9 @@ public class AsistenciaService implements IAsistencia {
         return CumplimientoDetalleDiaResponse.builder()
                 .fecha(fecha)
                 .laborable(programacion.laborable())
+                .tipoDiaNoLaborable(programacion.laborable()
+                        ? null
+                        : nombreTipoDiaLibre(jornadaEfectivaResolver.tipoDiaLibre(idEmpleado, fecha)))
                 .horaEntradaEstablecida(horaEntradaEstablecida)
                 .horaEntradaAsistencia(horaEntradaAsistencia)
                 .horaSalidaEstablecida(horaSalidaEstablecida)
@@ -969,6 +973,9 @@ public class AsistenciaService implements IAsistencia {
                 .salidaForzada(asistencia != null && Boolean.TRUE.equals(asistencia.getSalidaForzada()))
                 .jornadaCerrada(asistencia != null && asistencia.getFechaHoraSalida() != null)
                 .minutosObjetivoDia(jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha))
+                .minutosProgramadoDia(asistencia != null && asistencia.getMinutosObjetivoDia() != null
+                        ? asistencia.getMinutosObjetivoDia()
+                        : programacion.minutosObjetivo())
                 .minutosTrabajados(totales.minutosTrabajados())
                 .minutosTrabajadosMarcacion(PresenciaMarcacion.neta(asistencia, tramosArchivados))
                 .minutosBalance(totales.minutosBalance())
@@ -983,6 +990,10 @@ public class AsistenciaService implements IAsistencia {
                 .minutosCompensados(asistencia != null ? asistencia.getMinutosCompensados() : 0)
                 .tramos(tramos)
                 .build();
+    }
+
+    private String nombreTipoDiaLibre(TipoDiaNoLaborable tipo) {
+        return tipo != null ? tipo.name() : null;
     }
 
     private MarcacionService.TotalesDia totalesDia(Long idEmpleado, LocalDate fecha, Asistencia asistencia) {

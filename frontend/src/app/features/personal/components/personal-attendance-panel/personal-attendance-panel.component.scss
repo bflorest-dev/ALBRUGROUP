@@ -81,6 +81,16 @@
 .attendance-metric strong.is-danger { color: var(--danger); }
 .attendance-metric strong.is-warning { color: var(--signal); }
 
+/* Alerta "respiración": las horas programadas no llegan al objetivo → el gestor debe programar más. */
+@keyframes attendance-breathe {
+  0%, 100% { background: color-mix(in srgb, var(--signal) 0%, transparent); }
+  50% { background: color-mix(in srgb, var(--signal) 14%, transparent); }
+}
+.attendance-metric--alert { animation: attendance-breathe 2.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .attendance-metric--alert { animation: none; background: color-mix(in srgb, var(--signal) 12%, transparent); }
+}
+
 .attendance-ledger { display: grid; gap: 12px; }
 .attendance-section-heading { align-items: center; }
 .attendance-section-heading > div { display: flex; align-items: baseline; gap: 9px; }
@@ -130,6 +140,10 @@
 .attendance-status--falta { border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); color: var(--danger); background: var(--danger-wash); }
 .attendance-status--libre,
 .attendance-status--futuro { color: var(--ink-2); background: var(--panel-2); }
+.attendance-status--feriado,
+.attendance-status--vacaciones,
+.attendance-status--medico,
+.attendance-status--permiso { border-color: color-mix(in srgb, var(--focus) 30%, var(--line)); color: var(--focus); background: color-mix(in srgb, var(--focus) 8%, var(--panel)); }
 .attendance-status--extra { border-color: color-mix(in srgb, var(--focus) 35%, var(--line)); color: var(--focus); background: color-mix(in srgb, var(--focus) 10%, var(--panel)); }
 
 .attendance-day__cell,

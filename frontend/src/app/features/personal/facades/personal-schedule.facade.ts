@@ -432,19 +432,22 @@ export class PersonalScheduleFacade {
     }
   }
 
-  async submitDiaLibre(fecha: string, tipo: TipoDiaNoLaborable, motivo: string, global: boolean): Promise<boolean> {
+  async submitDiaLibre(fecha: string, tipo: TipoDiaNoLaborable, motivo: string, global: boolean, hasta?: string): Promise<boolean> {
     if (!this.canMutateOperationalData() || !this.employeeId) return false;
     this.startAdjustmentSave();
+    // Un feriado SIEMPRE es para todos (global), sin importar el flag del formulario.
+    const esGlobal = global || tipo === 'FERIADO';
     const request: DeclararDiaNoLaborableRequest = {
       fecha,
+      hasta: hasta && hasta !== fecha ? hasta : undefined,
       tipo,
       motivo,
       laborable: false,
-      empleadoIds: global ? undefined : [this.employeeId]
+      empleadoIds: esGlobal ? undefined : [this.employeeId]
     };
     try {
       await firstValueFrom(this.adjustmentService.declararDiaNoLaborable(request).pipe(timeout(REQUEST_TIMEOUT_MS)));
-      this.adjustmentSuccess.set(global ? 'Día libre declarado para todos.' : 'Día libre declarado para este empleado.');
+      this.adjustmentSuccess.set(esGlobal ? 'Día libre declarado para todos.' : 'Día libre declarado para este empleado.');
       await this.finishAdjustmentMutation();
       return true;
     } catch (error) {

@@ -13,6 +13,7 @@ import pe.albrugroup.schedule_service.entity.enums.AlcanceDiaNoLaborable;
 import pe.albrugroup.schedule_service.entity.enums.Dia;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
+import pe.albrugroup.schedule_service.entity.enums.TipoDiaNoLaborable;
 import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.TramoJornadaResponse;
@@ -198,6 +199,19 @@ public class JornadaEfectivaResolver {
     static boolean overlaps(LocalDateTime leftStart, LocalDateTime leftEnd,
                             LocalDateTime rightStart, LocalDateTime rightEnd) {
         return leftStart.isBefore(rightEnd) && rightStart.isBefore(leftEnd);
+    }
+
+    /**
+     * Tipo del dia no laborable aplicable a (empleado, fecha) cuando marca el dia como LIBRE
+     * (laborable=false). Null si no hay declaracion, o si la declaracion es un override "si trabaja".
+     * Sirve para que la vista de asistencia muestre "Feriado/Vacaciones/Descanso medico/Permiso".
+     */
+    public TipoDiaNoLaborable tipoDiaLibre(Long idEmpleado, LocalDate fecha) {
+        DiaNoLaborable dia = resolverDiaNoLaborable(idEmpleado, fecha);
+        if (dia == null || Boolean.TRUE.equals(dia.getLaborable())) {
+            return null;
+        }
+        return dia.getTipo();
     }
 
     /** Override de calendario aplicable a (empleado, fecha): el mas angosto gana (EMPLEADO > GLOBAL). */

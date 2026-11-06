@@ -12,6 +12,7 @@ function day(overrides: Partial<CumplimientoDetalleDiaResponse>): CumplimientoDe
   return {
     fecha: '2026-09-01',
     laborable: true,
+    tipoDiaNoLaborable: null,
     horaEntradaEstablecida: '09:00:00',
     horaEntradaAsistencia: '09:10:00',
     horaSalidaEstablecida: '18:00:00',
@@ -19,6 +20,7 @@ function day(overrides: Partial<CumplimientoDetalleDiaResponse>): CumplimientoDe
     salidaForzada: false,
     jornadaCerrada: true,
     minutosObjetivoDia: 540,
+    minutosProgramadoDia: 540,
     minutosTrabajados: 450,
     minutosTrabajadosMarcacion: 480,
     minutosBalance: -90,
@@ -57,8 +59,8 @@ describe('PersonalAttendanceFacade', () => {
       getCumplimientoDetalle: vi.fn(() => of({
         empleados: [{ idEmpleado: 42, dias: [
           day({ fecha: '2026-09-01' }),
-          day({ fecha: '2026-09-02', horaEntradaAsistencia: null, horaSalidaAsistencia: null, tardanza: false, minutosBalance: 0, minutosTrabajadosMarcacion: 0 }),
-          day({ fecha: '2026-09-03', laborable: false, horaEntradaAsistencia: null, horaSalidaAsistencia: null, minutosBalance: 0, minutosTrabajadosMarcacion: 0 })
+          day({ fecha: '2026-09-02', horaEntradaAsistencia: null, horaSalidaAsistencia: null, tardanza: false, minutosBalance: 0, minutosTrabajados: 0, minutosTrabajadosMarcacion: 0 }),
+          day({ fecha: '2026-09-03', laborable: false, horaEntradaAsistencia: null, horaSalidaAsistencia: null, minutosBalance: 0, minutosTrabajados: 0, minutosTrabajadosMarcacion: 0 })
         ] }]
       }))
     };
@@ -67,7 +69,13 @@ describe('PersonalAttendanceFacade', () => {
     await facade.initialize(42);
 
     expect(facade.days()).toHaveLength(3);
-    expect(facade.metrics()).toEqual({ presentes: 1, faltas: 1, tardanzas: 1, balance: -90, objetivo: 1080, trabajadas: 480 });
+    // Schedule-service entrega ambos enfoques; el facade suma los dos y sus dos balances, sin decidir contrato.
+    expect(facade.metrics()).toEqual({
+      presentes: 1, faltas: 1, tardanzas: 1,
+      objetivo: 1080, programadas: 1080,
+      marcacionales: 480, operativas: 450,
+      balanceMarcacional: -600, balanceOperacional: -630
+    });
   });
 
   it('expande un día, guarda el reporte y reutiliza el cache al abrirlo nuevamente', async () => {

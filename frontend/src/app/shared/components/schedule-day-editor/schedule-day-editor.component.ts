@@ -59,7 +59,14 @@ export class ScheduleDayEditorComponent {
 
   protected changeLabel(codigo: string, tipo: string): string {
     if (tipo === 'CAMBIO_ALMUERZO') return 'Almuerzo programado';
-    if (tipo === 'DIA_NO_LABORABLE') return codigo === 'FERIADO' ? 'Feriado' : 'Día libre';
+    if (tipo === 'DIA_NO_LABORABLE') {
+      return {
+        FERIADO: 'Feriado',
+        VACACIONES: 'Vacaciones',
+        DESCANSO_MEDICO: 'Descanso médico',
+        PERMISO: 'Permiso'
+      }[codigo] ?? 'Día libre';
+    }
     return {
       AMPLIACION_OPERATIVA: 'Horas extra',
       COMPENSACION: 'Compensación',

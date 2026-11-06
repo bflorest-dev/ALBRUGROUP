@@ -16,9 +16,16 @@ export interface PersonalAttendanceMetrics {
   presentes: number;
   faltas: number;
   tardanzas: number;
-  balance: number;
   objetivo: number;
-  trabajadas: number;
+  programadas: number;
+  /** Concepto 3: (salida - entrada) - almuerzo. Enfoque laxo. */
+  marcacionales: number;
+  /** Concepto 4: tiempo productivo en pantalla. Enfoque estricto. */
+  operativas: number;
+  /** Balance del empleado por marcaciones: marcacionales - programadas (dias transcurridos). */
+  balanceMarcacional: number;
+  /** Balance del empleado por tiempo productivo: operativas - programadas (dias transcurridos). */
+  balanceOperacional: number;
 }
 
 @Injectable()
@@ -55,22 +62,40 @@ export class PersonalAttendanceFacade {
     let presentes = 0;
     let faltas = 0;
     let tardanzas = 0;
-    let balance = 0;
     let objetivo = 0;
-    let trabajadas = 0;
+    let programadas = 0;
+    let marcacionales = 0;
+    let operativas = 0;
+    let balanceMarcacional = 0;
+    let balanceOperacional = 0;
 
     for (const day of this.days()) {
+      // Schedule-service entrega AMBOS enfoques por dia; aqui sumamos los dos, sin decidir contrato.
+      const marcacionalDia = Math.max(day.minutosTrabajadosMarcacion ?? 0, 0); // concepto 3
+      const operativaDia = Math.max(day.minutosTrabajados ?? 0, 0); // concepto 4
+      const programadoDia = Math.max(day.minutosProgramadoDia ?? 0, 0);
+
+      marcacionales += marcacionalDia;
+      operativas += operativaDia;
+
       if (day.laborable) {
         if (day.horaEntradaAsistencia) presentes += 1;
         else if (day.fecha < today) faltas += 1;
+        if (day.tardanza) tardanzas += 1;
         objetivo += Math.max(day.minutosObjetivoDia ?? 0, 0);
+        programadas += programadoDia;
+        // Balance del empleado = cumplido vs PROGRAMADO (su responsabilidad), solo dias ya transcurridos.
+        if (day.fecha <= today) {
+          balanceMarcacional += Math.min(marcacionalDia - programadoDia, 0);
+          balanceOperacional += Math.min(operativaDia - programadoDia, 0);
+        }
       }
-      if (day.laborable && day.tardanza) tardanzas += 1;
-      balance += Math.min(day.minutosBalance ?? 0, 0);
-      trabajadas += Math.max(day.minutosTrabajadosMarcacion ?? 0, 0);
     }
 
-    return { presentes, faltas, tardanzas, balance, objetivo, trabajadas };
+    return {
+      presentes, faltas, tardanzas, objetivo, programadas,
+      marcacionales, operativas, balanceMarcacional, balanceOperacional
+    };
   });
 
   async initialize(employeeId: number): Promise<void> {

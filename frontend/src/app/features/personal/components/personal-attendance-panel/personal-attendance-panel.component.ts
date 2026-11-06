@@ -5,10 +5,22 @@ import { AttendanceMarksEditorComponent } from '../attendance-marks-editor/atten
 import { PersonalAttendanceFacade } from '../../facades/personal-attendance.facade';
 import { CorregirMarcacionesRequest } from '../../../../shared/models/schedule/marcacion-editable-response';
 
-export type PersonalAttendanceDayState = 'libre' | 'pendiente' | 'futuro' | 'falta' | 'tardanza' | 'presente' | 'extra';
+export type PersonalAttendanceDayState =
+  | 'libre' | 'feriado' | 'vacaciones' | 'medico' | 'permiso'
+  | 'pendiente' | 'futuro' | 'falta' | 'tardanza' | 'presente' | 'extra';
+
+function diaLibreState(tipo: string | null): PersonalAttendanceDayState {
+  switch (tipo) {
+    case 'FERIADO': return 'feriado';
+    case 'VACACIONES': return 'vacaciones';
+    case 'DESCANSO_MEDICO': return 'medico';
+    case 'PERMISO': return 'permiso';
+    default: return 'libre'; // descanso base, excepción genérica o tipo histórico (DESCANSO_EQUIPO)
+  }
+}
 
 export function personalAttendanceDayState(day: CumplimientoDetalleDiaResponse, today = currentDateValue()): PersonalAttendanceDayState {
-  if (!day.laborable) return 'libre';
+  if (!day.laborable) return diaLibreState(day.tipoDiaNoLaborable);
   if (day.fecha > today) return 'futuro';
   if (!day.horaEntradaAsistencia && day.fecha === today && day.horaEntradaEstablecida) return 'pendiente';
   if (!day.horaEntradaAsistencia) return 'falta';
@@ -96,6 +108,10 @@ export class PersonalAttendancePanelComponent {
   protected dayStateLabel(day: CumplimientoDetalleDiaResponse): string {
     const labels: Record<PersonalAttendanceDayState, string> = {
       libre: 'Libre',
+      feriado: 'Feriado',
+      vacaciones: 'Vacaciones',
+      medico: 'D. Médico',
+      permiso: 'Permiso',
       pendiente: 'Pendiente',
       futuro: 'Futuro',
       falta: 'Falta',

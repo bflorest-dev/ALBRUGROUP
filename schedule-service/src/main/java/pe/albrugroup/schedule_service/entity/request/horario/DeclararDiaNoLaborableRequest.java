@@ -26,6 +26,10 @@ public class DeclararDiaNoLaborableRequest {
     @NotNull(message = "fecha es obligatoria")
     private LocalDate fecha;
 
+    /** Fin del rango (inclusive) para declaraciones de varios dias (vacaciones, descanso medico).
+     *  Nulo = un solo dia ({@code fecha}). */
+    private LocalDate hasta;
+
     @NotNull(message = "tipo es obligatorio")
     private TipoDiaNoLaborable tipo;
 

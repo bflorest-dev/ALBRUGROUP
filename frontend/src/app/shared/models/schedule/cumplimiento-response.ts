@@ -21,6 +21,9 @@ export interface CumplimientoResumenResponse {
 export interface CumplimientoDetalleDiaResponse {
   fecha: string;
   laborable: boolean;
+  /** Tipo del día no laborable (FERIADO/VACACIONES/DESCANSO_MEDICO/PERMISO) cuando el día es libre por
+   *  declaración; null si es laborable o si el día libre viene del horario base (descanso) o excepción genérica. */
+  tipoDiaNoLaborable: string | null;
   horaEntradaEstablecida: string | null;
   horaEntradaAsistencia: string | null;
   horaSalidaEstablecida: string | null;
@@ -28,6 +31,7 @@ export interface CumplimientoDetalleDiaResponse {
   salidaForzada: boolean;
   jornadaCerrada: boolean;
   minutosObjetivoDia: number;
+  minutosProgramadoDia: number;
   minutosTrabajados: number;
   minutosTrabajadosMarcacion: number;
   minutosBalance: number;

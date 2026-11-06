@@ -194,15 +194,27 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly adjustmentExtraMotivo = signal('');
   protected readonly adjustmentLunchDate = signal(this.today());
   protected readonly adjustmentDayOffDate = signal(this.today());
+  protected readonly adjustmentDayOffHasta = signal('');
   protected readonly adjustmentDayOffType = signal<TipoDiaNoLaborable>('FERIADO');
   protected readonly adjustmentDayOffGlobal = signal(false);
   protected readonly adjustmentDayOffReason = signal('');
   protected readonly tipoDiaNoLaborableOptions: { label: string; value: TipoDiaNoLaborable }[] = [
     { label: 'Feriado', value: 'FERIADO' },
     { label: 'Vacaciones', value: 'VACACIONES' },
-    { label: 'Permiso', value: 'PERMISO' },
-    { label: 'Descanso de equipo', value: 'DESCANSO_EQUIPO' }
+    { label: 'Descanso médico', value: 'DESCANSO_MEDICO' },
+    { label: 'Permiso', value: 'PERMISO' }
   ];
+
+  /** Un feriado siempre es para todos; el check "para todos" queda forzado. */
+  protected dayOffEsFeriado(): boolean {
+    return this.adjustmentDayOffType() === 'FERIADO';
+  }
+
+  /** Vacaciones y descanso médico suelen abarcar varios días → se habilita el rango (desde–hasta). */
+  protected dayOffEsRango(): boolean {
+    const tipo = this.adjustmentDayOffType();
+    return tipo === 'VACACIONES' || tipo === 'DESCANSO_MEDICO';
+  }
 
   @ViewChild(ScheduleExtensionTimelineComponent) private extensionEditor?: ScheduleExtensionTimelineComponent;
   @ViewChild(ScheduleShiftEditorComponent) private shiftEditor?: ScheduleShiftEditorComponent;
@@ -936,6 +948,7 @@ export class EmployeeWorkspaceDrawerComponent {
     this.adjustmentExtraMotivo.set(view === 'ajuste-compensar-falta' ? 'Compensación de falta' : '');
     this.adjustmentLunchDate.set(this.adjustmentDate());
     this.adjustmentDayOffDate.set(this.adjustmentDate());
+    this.adjustmentDayOffHasta.set('');
     this.adjustmentDayOffType.set('FERIADO');
     this.adjustmentDayOffGlobal.set(false);
     this.adjustmentDayOffReason.set('');
@@ -1032,7 +1045,8 @@ export class EmployeeWorkspaceDrawerComponent {
         this.adjustmentDayOffDate(),
         this.adjustmentDayOffType(),
         this.adjustmentDayOffReason().trim() || 'Día libre declarado',
-        this.adjustmentDayOffGlobal()
+        this.adjustmentDayOffGlobal(),
+        this.dayOffEsRango() ? (this.adjustmentDayOffHasta() || undefined) : undefined
       );
       if (saved) await this.finishDayAdjustment();
     }

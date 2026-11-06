@@ -363,9 +363,12 @@
                 <div><strong>Declarar un día no laborable</strong><p>Elige si la declaración corresponde solo a este empleado o a toda la operación.</p></div>
               </div>
               <div class="form-grid">
-                <label class="form-field"><span>Fecha</span><input type="date" [value]="adjustmentDayOffDate()" (change)="adjustmentDayOffDate.set($any($event.target).value)" /></label>
+                <label class="form-field"><span>{{ dayOffEsRango() ? 'Desde' : 'Fecha' }}</span><input type="date" [value]="adjustmentDayOffDate()" (change)="adjustmentDayOffDate.set($any($event.target).value)" /></label>
+                @if (dayOffEsRango()) {
+                  <label class="form-field"><span>Hasta</span><input type="date" [value]="adjustmentDayOffHasta()" [min]="adjustmentDayOffDate()" (change)="adjustmentDayOffHasta.set($any($event.target).value)" /></label>
+                }
                 <label class="form-field"><span>Tipo</span><select [value]="adjustmentDayOffType()" (change)="adjustmentDayOffType.set($any($event.target).value)">@for (option of tipoDiaNoLaborableOptions; track option.value) { <option [value]="option.value">{{ option.label }}</option> }</select></label>
-                <label class="check-field form-field--wide"><input type="checkbox" [checked]="adjustmentDayOffGlobal()" (change)="adjustmentDayOffGlobal.set($any($event.target).checked)" /><span>Declarar para todos los empleados</span></label>
+                <label class="check-field form-field--wide"><input type="checkbox" [checked]="dayOffEsFeriado() || adjustmentDayOffGlobal()" [disabled]="dayOffEsFeriado()" (change)="adjustmentDayOffGlobal.set($any($event.target).checked)" /><span>Declarar para todos los empleados@if (dayOffEsFeriado()) { <small> · un feriado siempre es para todos</small> }</span></label>
                 <label class="form-field form-field--wide"><span>Motivo</span><input type="text" maxlength="300" placeholder="Ej: Feriado nacional" [value]="adjustmentDayOffReason()" (input)="adjustmentDayOffReason.set($any($event.target).value)" /></label>
               </div>
             </div>
