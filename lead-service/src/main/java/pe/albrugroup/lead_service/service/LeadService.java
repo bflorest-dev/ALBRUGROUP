@@ -65,6 +65,7 @@ import pe.albrugroup.lead_service.entity.response.LeadPlanDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPromocionDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.CashbackPeriodoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
+import pe.albrugroup.lead_service.entity.response.LeadSupervisorSinEquipoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.AgendadosGtrResumenResponse;
@@ -226,6 +227,7 @@ public class LeadService {
     private final OrigenRepository origenRepository;
     private final LeadSeguimientoService leadSeguimientoService;
     private final ZonaService zonaService;
+    private final jakarta.persistence.EntityManager entityManager;
 
     // La bandeja de Agendados GTR ya no cuelga de una tipi: el concepto vive en el comportamiento, que
     // cada equipo marca en las subtipis que correspondan (hoy, varias de NO DESEA).
@@ -3588,6 +3590,84 @@ public class LeadService {
     }
 
     @Transactional
+    public void registrarIngresoLeadSupervisor(LeadIntakeRequest request) {
+        Proveedor proveedorActivo = resolverProveedorActivoPreventa();
+        Campana campana = request.getIdCampana() == null ? null : obtenerCampanaActiva(request.getIdCampana());
+        if (campana != null && (campana.getProveedor() == null
+                || !proveedorActivo.getId().equals(campana.getProveedor().getId()))) {
+            throw new BadRequestException("La campaña seleccionada no pertenece al proveedor activo");
+        }
+        registrarIngresoLeadSinEquipo(request, null);
+    }
+
+    @Transactional
+    public void asignarEquipoLead(Long idLead, Long idEquipo) {
+        if (idEquipo == null || idEquipo <= 0) {
+            throw new BadRequestException("Selecciona un equipo válido");
+        }
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        if (lead.getIdEquipo() != null) {
+            throw new ConflictException("El lead ya tiene un equipo asignado.");
+        }
+
+        if (proveedorScopeService.ambitoActual() == AmbitoProveedor.PREVENTA) {
+            Proveedor proveedor = lead.getProveedorOrigen();
+            if (proveedor == null && lead.getCampana() != null) {
+                proveedor = lead.getCampana().getProveedor();
+            }
+            if (proveedor == null) {
+                proveedor = resolverProveedorActivoPreventa();
+                lead.setProveedorOrigen(proveedor);
+            }
+            ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(AmbitoProveedor.PREVENTA);
+            if (scope.restringido() && !scope.proveedorIds().contains(proveedor.getId())) {
+                throw new UnauthorizedException("No tienes acceso al proveedor del lead.");
+            }
+            if (!equipoProveedorRepository.existsByIdEquipoAndProveedorId(idEquipo, proveedor.getId())) {
+                throw new BadRequestException("El equipo seleccionado no trabaja con el proveedor del lead");
+            }
+        } else if (!currentUser.tieneVisibilidadGlobalEquipos()) {
+            List<Long> equipos = currentUser.equipos();
+            if (equipos == null || !equipos.contains(idEquipo)) {
+                throw new UnauthorizedException("No tienes acceso al equipo seleccionado.");
+            }
+        }
+        lead.setIdEquipo(idEquipo);
+        if (lead.getProveedorOrigen() == null) {
+            lead.setProveedorOrigen(resolverProveedorOrigen(lead.getCampana(), idEquipo));
+        }
+        Lead savedLead = leadRepository.save(lead);
+        // El equipo y las bandejas GTR consumen el contrato común de asignaciones.
+        notificarCambioLead("ASIGNACION", savedLead, null, null);
+    }
+
+    public PageResponse<LeadSupervisorSinEquipoResponse> listarLeadsSinEquipo(
+            LocalDate fecha, String lead, PageRequest pageRequest
+    ) {
+        OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(fecha);
+        String pattern = (lead == null || lead.isBlank()) ? "%" : "%" + lead.trim() + "%";
+
+        org.hibernate.Session session = entityManager.unwrap(org.hibernate.Session.class);
+        session.disableFilter("equipoFilter");
+        try {
+            Page<LeadSupervisorSinEquipoResponse> page = leadRepository.listarLeadsSinEquipo(
+                    Etapa.PREVENTA,
+                    rango.inicio(),
+                    rango.fin(),
+                    pattern,
+                    paginationService.toPageable(pageRequest, Set.of("lastEntryAt"))
+            );
+            return PageResponse.from(page);
+        } finally {
+            List<Long> equipos = currentUser.equipos();
+            if (!currentUser.tieneVisibilidadGlobalEquipos() && equipos != null && !equipos.isEmpty()) {
+                session.enableFilter("equipoFilter").setParameterList("equipos", equipos);
+            }
+        }
+    }
+
+    @Transactional
     public void registrarIngresoLeadRetroactivo(LeadIntakeRetroactivoRequest request) {
         registrarIngresoLeadRetroactivo(request, null);
     }
@@ -3698,6 +3778,33 @@ public class LeadService {
             return;
         }
         registrarLeadNuevo(identidad, request, origen, campana, registroAt, idEquipoIntake);
+    }
+
+    private void registrarIngresoLeadSinEquipo(
+            LeadIntakeRequest request,
+            Instant registroAt
+    ) {
+        String prefijo = normalizarPrefijo(request.getPrefijo());
+        String numeroLead = normalizarLead(request.getLead());
+        String usermeta = normalizarUsermeta(request.getUsermeta());
+        validarIdentidadIntake(prefijo, numeroLead, usermeta);
+        Campana campana = request.getIdCampana() == null ? null : obtenerCampanaActiva(request.getIdCampana());
+        Origen origen = resolverOrigenIntake(request.getIdOrigen(), campana != null);
+        LeadIdentidad identidad = resolverIdentidadContacto(prefijo, numeroLead, usermeta);
+
+        Optional<Lead> leadPreventa = leadRepository
+                .findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(identidad.contacto().getId(), Etapa.PREVENTA);
+        if (leadPreventa.isPresent()) {
+            registrarIngresoLeadExistenteSinEquipo(leadPreventa.get(), identidad, request, origen, campana, registroAt);
+            return;
+        }
+        List<Lead> oportunidadesContacto =
+                leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(identidad.contacto().getId());
+        if (!oportunidadesContacto.isEmpty()) {
+            registrarAtencionGtrLeadOtraEtapaSinEquipo(oportunidadesContacto.get(0), identidad, request, origen, campana, registroAt);
+            return;
+        }
+        registrarLeadNuevoSinEquipo(identidad, request, origen, campana, registroAt);
     }
 
     Origen resolverOrigen(String codigo) {
@@ -4759,6 +4866,87 @@ public class LeadService {
         if (lead.getIdEquipo() == null) {
             lead.setIdEquipo(resolverIdEquipoIntake(campana, idEquipoContextual));
         }
+        if (lead.getProveedorOrigen() == null) {
+            lead.setProveedorOrigen(resolverProveedorOrigen(campana, lead.getIdEquipo()));
+        }
+        lead.setRequiereAtencionGtr(true);
+        lead.setLastEntryAt(OperationalDateTime.now());
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa(), registroAt);
+        notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior, true);
+    }
+
+    private void registrarLeadNuevoSinEquipo(
+            LeadIdentidad identidad,
+            LeadIntakeRequest request,
+            Origen origen,
+            Campana campana,
+            Instant registroAt
+    ) {
+        Lead lead = leadMapper.toNuevoLead(
+                identidad.prefijo(), identidad.lead(), identidad.usermeta(), origen, campana, OperationalDateTime.now());
+        lead.setContacto(identidad.contacto());
+        lead.setIdEquipo(null);
+        lead.setProveedorOrigen(resolverProveedorOrigen(campana, null));
+        completarNumeroParaLlamarSiFalta(lead);
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa(), registroAt);
+        leadEtapaResumenService.registrarEntradaEtapa(
+                savedLead.getId(), savedLead.getEtapa(), registroAt != null ? registroAt : OperationalDateTime.now());
+        notificarCambioLead("REGISTRO", savedLead, null, null);
+    }
+
+    private void registrarIngresoLeadExistenteSinEquipo(
+            Lead lead,
+            LeadIdentidad identidad,
+            LeadIntakeRequest request,
+            Origen origen,
+            Campana campana,
+            Instant registroAt
+    ) {
+        Etapa etapaAnterior = lead.getEtapa();
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        sincronizarIdentidadLead(lead, identidad);
+        if (campana != null) {
+            lead.setCampana(campana);
+        }
+        lead.setOrigen(origen);
+        lead.setLastEntryAt(OperationalDateTime.now());
+        if (lead.getProveedorOrigen() == null) {
+            lead.setProveedorOrigen(resolverProveedorOrigen(campana, lead.getIdEquipo()));
+        }
+
+        if (lead.getEtapa() == Etapa.PREVENTA && !tieneGestionHoy(lead.getId())) {
+            lead.setIdAsesorAsignado(null);
+            lead.setNombreAsesorAsignado(null);
+            lead.setIdTipificacion(null);
+            lead.setCodigoTipificacion(null);
+            lead.setIdSubtipificacion(null);
+            lead.setCodigoSubtipificacion(null);
+            lead.setEstado(EstadoSeguimiento.NUEVO);
+        }
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa(), registroAt);
+        notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior);
+    }
+
+    private void registrarAtencionGtrLeadOtraEtapaSinEquipo(
+            Lead lead,
+            LeadIdentidad identidad,
+            LeadIntakeRequest request,
+            Origen origen,
+            Campana campana,
+            Instant registroAt
+    ) {
+        Etapa etapaAnterior = lead.getEtapa();
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        sincronizarIdentidadLead(lead, identidad);
         if (lead.getProveedorOrigen() == null) {
             lead.setProveedorOrigen(resolverProveedorOrigen(campana, lead.getIdEquipo()));
         }
@@ -6028,7 +6216,27 @@ public class LeadService {
         if (campana != null && campana.getProveedor() != null) {
             return campana.getProveedor();
         }
-        return obtenerProveedorFallbackEntidadDeEquipo(idEquipo);
+        Proveedor fallback = obtenerProveedorFallbackEntidadDeEquipo(idEquipo);
+        if (fallback != null || idEquipo != null) {
+            return fallback;
+        }
+        if (proveedorScopeService.ambitoActual() == AmbitoProveedor.PREVENTA) {
+            return resolverProveedorActivoPreventa();
+        }
+        return null;
+    }
+
+    private Proveedor resolverProveedorActivoPreventa() {
+        if (proveedorScopeService.ambitoActual() != AmbitoProveedor.PREVENTA) {
+            throw new UnauthorizedException("El usuario no tiene un ámbito PREVENTA");
+        }
+        ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(AmbitoProveedor.PREVENTA);
+        if (scope.proveedorIds().size() != 1) {
+            throw new BadRequestException("Selecciona un proveedor activo antes de registrar el lead");
+        }
+        Long idProveedor = scope.proveedorIds().iterator().next();
+        return proveedorRepository.findByIdAndActivoTrue(idProveedor)
+                .orElseThrow(() -> new BadRequestException("El proveedor activo no existe o está inactivo"));
     }
 
     private Proveedor obtenerProveedorFallbackEntidadDeEquipo(Long idEquipo) {

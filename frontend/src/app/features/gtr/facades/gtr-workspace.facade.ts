@@ -625,7 +625,6 @@ export class GtrWorkspaceFacade {
   });
 
   readonly masivoFiltersForm = this.fb.group({
-    idEquipo: [0],
     campoTipificacion: ['ULTIMA' as CampoTipificacion],
     modoFecha: ['GESTIONADOS' as MasivoFechaMode],
     tipificaciones: [[] as string[]],
@@ -1120,13 +1119,6 @@ export class GtrWorkspaceFacade {
       ? 'Cada lead aparece una sola vez, aunque tenga varios registros en el período.'
       : null
   );
-  readonly historicosEquipoOptions = computed<SelectOption<number>[]>(() =>
-    this.equipos()
-      .filter((equipo) => equipo.activo)
-      .filter((equipo) => this.adminEquipoId() === null || equipo.id === this.adminEquipoId())
-      .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
-  );
-  readonly showHistoricosEquipoSelector = computed(() => this.adminEquipoId() === null && this.historicosEquipoOptions().length > 1);
   readonly historicosSortOptions = computed<Array<{ label: string; value: GtrHistoricosSortField }>>(() => [
     { label: 'Última actividad', value: 'lastEntryAt' },
     { label: this.historicosTipificacionColumnLabel(), value: 'codigoTipificacion' },
@@ -1339,9 +1331,6 @@ export class GtrWorkspaceFacade {
       this.saveHistoricosState();
     }
     this.adminEquipoId.set(idEquipo);
-    if (idEquipo !== null) {
-      this.masivoFiltersForm.controls.idEquipo.setValue(idEquipo);
-    }
     this.selectedIds.set(new Set());
     this.platformSelectedGroup.set(null);
     this.historicosSelectedGroup.set(null);
@@ -2382,6 +2371,13 @@ export class GtrWorkspaceFacade {
     this.closeDialog();
     this.rows.set([]);
     this.agendadosRows.set([]);
+    this.masivoRows.set([]);
+    this.masivoTotalElements.set(0);
+    this.masivoTotalPages.set(0);
+    this.masivoPageNumber.set(0);
+    this.masivoSearched.set(false);
+    this.lastMasivoSearchFiltersKey = null;
+    this.historicosStateService.clear();
     this.advisors.set([]);
     this.pendientesPorAsesor.set([]);
     this.campanas.set([]);
@@ -2928,26 +2924,13 @@ export class GtrWorkspaceFacade {
     }
     const equipos = await firstValueFrom(this.preventaService.listarMisEquipos());
     this.equipos.set(equipos.filter((equipo) => equipo.activo));
-    const options = this.historicosEquipoOptions();
-    const current = Number(this.masivoFiltersForm.controls.idEquipo.value);
-    const adminEquipoId = this.adminEquipoId();
-    if (adminEquipoId !== null && current !== adminEquipoId) {
-      this.masivoFiltersForm.controls.idEquipo.setValue(adminEquipoId);
-      return;
-    }
-    if (options.length === 1 && current !== options[0].value) {
-      this.masivoFiltersForm.controls.idEquipo.setValue(options[0].value);
-    }
-    if (options.length > 1 && current > 0 && !options.some((option) => option.value === current)) {
-      this.masivoFiltersForm.controls.idEquipo.setValue(0);
-    }
   }
 
   async refreshAdvisors(): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       return;
     }
-    if (!this.historicosEquipoOptions().length) {
+    if (!this.equipos().length) {
       await this.refreshEquipos();
     }
 
@@ -3196,8 +3179,7 @@ export class GtrWorkspaceFacade {
   }
 
   canSearchHistoricos(): boolean {
-    return this.canDisplayOperationalData()
-      && (!this.showHistoricosEquipoSelector() || Number(this.masivoFiltersForm.controls.idEquipo.value) > 0);
+    return this.canDisplayOperationalData();
   }
 
   async selectHistoricosGroup(group: LeadGtrGroupItemResponse | null | undefined): Promise<void> {
@@ -3360,10 +3342,6 @@ export class GtrWorkspaceFacade {
       this.errorMessage.set('Marca ONLINE para activar esta bandeja.');
       return;
     }
-    if (!this.canSearchHistoricos()) {
-      this.errorMessage.set('Selecciona un equipo para buscar historicos.');
-      return;
-    }
     if (this.historicosModoFecha() === 'REGISTRADOS'
         && !this.masivoFiltersForm.controls.fechaDesde.value) {
       this.errorMessage.set('Indica desde qué fecha quieres buscar los leads registrados.');
@@ -3398,7 +3376,6 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.masivoFiltersForm.reset({
-      idEquipo: this.defaultHistoricosEquipoId(),
       campoTipificacion: 'ULTIMA',
       modoFecha: 'GESTIONADOS',
       tipificaciones: [],
@@ -3506,7 +3483,7 @@ export class GtrWorkspaceFacade {
   }
 
   private resolveLeadEquipoId(row: Pick<LeadGtrResponse, 'idEquipo'>): number | null {
-    return row.idEquipo ?? (this.defaultHistoricosEquipoId() || null);
+    return row.idEquipo ?? this.adminEquipoId() ?? this.currentUserTeamScopeService.activeId();
   }
 
   isSelected(idLead: number): boolean {
@@ -5243,7 +5220,7 @@ export class GtrWorkspaceFacade {
     const raw = this.masivoFiltersForm.getRawValue();
     const adminEquipoId = this.adminEquipoId();
     return {
-      idEquipo: adminEquipoId ?? (raw.idEquipo > 0 ? raw.idEquipo : undefined),
+      idEquipo: adminEquipoId ?? this.currentUserTeamScopeService.activeId() ?? undefined,
       codigosTipificacion: raw.tipificaciones.length ? raw.tipificaciones : undefined,
       codigosSubtipificacion: raw.subtipificaciones.length ? raw.subtipificaciones : undefined,
       campoTipificacion: raw.campoTipificacion,
@@ -5284,7 +5261,7 @@ export class GtrWorkspaceFacade {
   private currentHistoricosFiltersFormValue(): GtrHistoricosFiltersFormValue {
     const raw = this.masivoFiltersForm.getRawValue();
     return {
-      idEquipo: raw.idEquipo,
+      idEquipo: this.adminEquipoId() ?? this.currentUserTeamScopeService.activeId() ?? 0,
       campoTipificacion: raw.campoTipificacion,
       modoFecha: raw.modoFecha,
       tipificaciones: [...raw.tipificaciones],
@@ -5304,7 +5281,6 @@ export class GtrWorkspaceFacade {
     const fechaHasta = state.filters.fechaHasta || fechaDesde;
 
     this.masivoFiltersForm.reset({
-      idEquipo: state.filters.idEquipo ?? this.defaultHistoricosEquipoId(),
       campoTipificacion: state.filters.campoTipificacion ?? 'ULTIMA',
       modoFecha: state.filters.modoFecha ?? 'GESTIONADOS',
       tipificaciones: state.filters.tipificaciones,
@@ -5350,11 +5326,6 @@ export class GtrWorkspaceFacade {
 
   private normalizeHistoricosPageSize(pageSize: number | null | undefined): number {
     return this.historicosPageSizeOptions.includes(Number(pageSize)) ? Number(pageSize) : 20;
-  }
-
-  private defaultHistoricosEquipoId(): number {
-    const options = this.historicosEquipoOptions();
-    return options.length === 1 ? options[0].value : 0;
   }
 
   private getStoredHistoricosSelectedIds(): Set<number> {

@@ -338,6 +338,7 @@
               [ngModel]="toPickerDate(facade.horarioForm.controls.fechaInicio.getRawValue())"
               [ngModelOptions]="{ standalone: true }"
               dateFormat="dd/mm/yy"
+              [minDate]="facade.canApplyRetroactiveCorrection() ? null : scheduleStartMinDate"
               [showIcon]="true"
               appendTo="body"
               (ngModelChange)="setHorarioDate($event)"

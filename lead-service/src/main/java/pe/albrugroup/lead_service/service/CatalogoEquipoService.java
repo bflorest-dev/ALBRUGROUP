@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import pe.albrugroup.lead_service.entity.enums.ComposicionServiciosPlan;
 import pe.albrugroup.lead_service.entity.response.CampanaResponse;
 import pe.albrugroup.lead_service.entity.response.PlanResponse;
+import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
+import pe.albrugroup.lead_service.exception.ForbiddenException;
 import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
 
 import java.util.List;
@@ -25,8 +27,17 @@ public class CatalogoEquipoService {
     private final PlanService planService;
     private final EquipoProveedorService equipoProveedorService;
     private final EquipoCampanaService equipoCampanaService;
+    private final ProveedorScopeService proveedorScopeService;
 
     public List<CampanaResponse> listarCampanasVisibles(Boolean activo, Long idEquipo) {
+        return listarCampanasVisibles(activo, idEquipo, null);
+    }
+
+    public List<CampanaResponse> listarCampanasVisibles(Boolean activo, Long idEquipo, Long idProveedor) {
+        if (idProveedor != null) {
+            validarProveedorVisible(idProveedor);
+            return campanaService.listarCampanasPorProveedor(idProveedor, activo);
+        }
         List<CampanaResponse> todas = campanaService.listarCampanas(activo);
         Set<Long> campanasVisibles = equipoCampanaService.campanaIdsVisibles(idEquipo);
         if (campanasVisibles == null) {
@@ -36,6 +47,17 @@ public class CatalogoEquipoService {
                 .filter(c -> c.getId() != null && campanasVisibles.contains(c.getId()))
                 .toList();
     }
+
+    private void validarProveedorVisible(Long idProveedor) {
+        AmbitoProveedor ambito = proveedorScopeService.ambitoActual();
+        if (ambito == null || proveedorScopeService.esAdministrador()) {
+            return;
+        }
+        ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(ambito);
+        if (!scope.proveedorIds().contains(idProveedor)) {
+            throw new ForbiddenException("No tienes acceso al proveedor seleccionado");
+        }
+      }
 
     public List<ProveedorResponse> listarProveedoresVisibles(Boolean activo) {
         List<ProveedorResponse> todos = proveedorService.listarProveedores(activo);

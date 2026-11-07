@@ -41,22 +41,21 @@ public class EquipoService implements IEquipo {
     private final RefreshTokenService refreshTokenService;
     private final SessionInvalidationService sessionInvalidationService;
 
-    // Roles operativos: su acceso a datos se particiona por equipo. Por defecto pertenecen a
+        // Roles operativos: su acceso a datos se particiona por equipo. Por defecto pertenecen a
     // exactamente un equipo (salvo los listados en ROLES_MULTIEQUIPO). ADMIN/COMMUNITY no
     // son operativos (acceso global por permiso) y van sin equipo. BACKOFFICE y POSTVENTA ya NO se
     // particionan por equipo sino por proveedor (ver ROLES_GESTIONADOS_POR_PROVEEDOR y lead-service).
     private static final Set<String> ROLES_OPERATIVOS = Set.of(
-            "ASESOR_GTR", "SUPERVISOR_GTR",
+            "ASESOR_GTR",
             "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "OJT", "FREELANCE"
     );
 
     // Roles operativos que SÍ pueden pertenecer a varios equipos a la vez. ASESOR_GTR y
-    // SUPERVISOR_GTR trabajan con el alcance explícito de sus equipos. El ASESOR_VENTAS se
+    // ASESOR_GTR trabaja con el alcance explícito de sus equipos. El ASESOR_VENTAS se
     // comparte entre equipos: cada GTR le asigna leads de su propio equipo y el aislamiento se
     // mantiene porque la partición de datos es por el equipo del lead, no por la membresía del asesor.
     private static final Set<String> ROLES_MULTIEQUIPO = Set.of(
             "ASESOR_GTR",
-            "SUPERVISOR_GTR",
             "ASESOR_VENTAS"
     );
 
@@ -66,7 +65,8 @@ public class EquipoService implements IEquipo {
     private static final Set<String> ROLES_GESTIONADOS_POR_PROVEEDOR = Set.of(
             "ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE",
             "MONITOR",
-            "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA"
+                "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA",
+                "SUPERVISOR_GTR"
     );
 
     private static final Set<String> ROLES_ASIGNABLES_PREVENTA = Set.of(
@@ -372,7 +372,7 @@ public class EquipoService implements IEquipo {
     }
 
     private boolean tieneAlcanceGtrMultiEquipo(Set<String> roles) {
-        return roles.contains("ASESOR_GTR") || roles.contains("SUPERVISOR_GTR");
+        return roles.contains("ASESOR_GTR");
     }
 
     private void validarEquipoVisible(Long equipoId) {

@@ -1,8 +1,60 @@
 @use '../gtr-board-shared';
 
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
 :host ::ng-deep .gtr-board {
   border: 1px solid var(--app-border-soft);
   box-shadow: var(--app-shadow-soft);
+}
+
+:host ::ng-deep .gtr-board--agendados {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: auto;
+  min-height: 0;
+}
+
+:host ::ng-deep .gtr-board--agendados .p-card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+:host ::ng-deep .gtr-board--agendados .p-card-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+:host ::ng-deep .gtr-board--agendados .gtr-table {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+:host ::ng-deep .gtr-board--agendados .gtr-table .p-datatable-table-container,
+:host ::ng-deep .gtr-board--agendados .gtr-table .p-datatable-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+:host ::ng-deep .gtr-board--agendados p-paginator {
+  flex: 0 0 auto;
 }
 
 .col-sortable {
@@ -118,5 +170,27 @@
   :host ::ng-deep .gtr-table th:nth-child(6),
   :host ::ng-deep .gtr-table td:nth-child(6) {
     width: 10rem;
+  }
+}
+
+@media (max-width: 900px) {
+  :host {
+    flex: none;
+    height: auto;
+  }
+
+  :host ::ng-deep .gtr-board--agendados {
+    flex: none;
+    height: auto;
+  }
+
+  :host ::ng-deep .gtr-board--agendados .p-card-body,
+  :host ::ng-deep .gtr-board--agendados .p-card-content,
+  :host ::ng-deep .gtr-board--agendados .gtr-table {
+    min-height: auto;
+  }
+
+  :host ::ng-deep .gtr-board--agendados .gtr-table {
+    height: auto;
   }
 }

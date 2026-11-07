@@ -46,6 +46,7 @@ export class RrhhPersonalPageComponent implements OnInit {
   protected readonly facade = inject(AdminPersonalFacade);
   private readonly route = inject(ActivatedRoute);
   protected readonly activeSection = signal<'activos' | 'alta'>('activos');
+  protected readonly scheduleStartMinDate = new Date();
   private simpleTimeSnapshot: {
     horaEntrada: string;
     horaSalida: string;

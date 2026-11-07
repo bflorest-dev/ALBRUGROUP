@@ -22,6 +22,10 @@ public class ReemplazarHorarioRequest {
     @NotNull(message = "fechaInicio es obligatoria")
     private LocalDate fechaInicio;
 
+    /** Solo ADMINISTRADOR puede usarlo y únicamente para una fecha hasta hoy. */
+    @Builder.Default
+    private Boolean correccionRetroactiva = Boolean.FALSE;
+
     @Builder.Default
     @NotNull(message = "compensable es obligatorio")
     private Boolean compensable = Boolean.TRUE;

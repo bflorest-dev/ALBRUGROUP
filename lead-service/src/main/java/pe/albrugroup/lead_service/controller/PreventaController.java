@@ -67,6 +67,37 @@ public class PreventaController {
         return ResponseEntity.noContent().build();
     }
 
+    // ── Supervisor GTR ──────────────────────────────────────────────────────
+
+    @PostMapping("/supervisor/intake")
+    @PreAuthorize("hasAuthority('CREATE_LEADS_SUPERVISOR_GTR')")
+    public ResponseEntity<Void> registrarIngresoLeadSupervisor(
+            @Valid @RequestBody LeadIntakeRequest request
+    ) {
+        leadService.registrarIngresoLeadSupervisor(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/supervisor/sin-equipo")
+    @PreAuthorize("hasAuthority('CREATE_LEADS_SUPERVISOR_GTR')")
+    public ResponseEntity<PageResponse<LeadSupervisorSinEquipoResponse>> listarLeadsSinEquipo(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam(required = false) String lead,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        return ResponseEntity.ok(leadService.listarLeadsSinEquipo(fecha, lead, pageRequest));
+    }
+
+    @PatchMapping("/supervisor/{idLead}/equipo")
+    @PreAuthorize("hasAuthority('ASSIGN_EQUIPO_LEAD')")
+    public ResponseEntity<Void> asignarEquipoLead(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadEquipoAsignacionRequest request
+    ) {
+        leadService.asignarEquipoLead(idLead, request.getIdEquipo());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/correcciones/campana") @PreAuthorize("hasAuthority('CORREGIR_CAMPANA_LEAD')")
     public ResponseEntity<List<LeadCampanaCorreccionCandidatoResponse>> buscarCorreccionCampana(
             @RequestParam String lead

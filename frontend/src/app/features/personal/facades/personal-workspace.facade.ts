@@ -156,7 +156,8 @@ export class PersonalWorkspaceFacade {
   readonly activeProviders = signal<ProveedorLite[]>([]);
   readonly providerAssignmentsByScope = signal<PersonalProviderAssignmentsByScope>({
     BACKOFFICE: {},
-    POSTVENTA: {}
+    POSTVENTA: {},
+    PREVENTA: {}
   });
   readonly providerScopeStatus = signal<'idle' | 'loading' | 'ready' | 'error'>('idle');
   readonly providerScopeError = signal('');
@@ -343,19 +344,21 @@ export class PersonalWorkspaceFacade {
     this.providerScopeStatus.set('loading');
     this.providerScopeError.set('');
     try {
-      const [providers, backoffice, postventa] = await Promise.all([
+      const [providers, backoffice, postventa, preventa] = await Promise.all([
         firstValueFrom(this.teamsService.listarProveedores()),
         firstValueFrom(this.teamsService.listarAsignacionesProveedor('BACKOFFICE')),
-        firstValueFrom(this.teamsService.listarAsignacionesProveedor('POSTVENTA'))
+        firstValueFrom(this.teamsService.listarAsignacionesProveedor('POSTVENTA')),
+        firstValueFrom(this.teamsService.listarAsignacionesProveedor('PREVENTA'))
       ]);
       this.providerAssignmentsByScope.set({
         BACKOFFICE: resolveProviderAssignments(providers, backoffice),
-        POSTVENTA: resolveProviderAssignments(providers, postventa)
+        POSTVENTA: resolveProviderAssignments(providers, postventa),
+        PREVENTA: resolveProviderAssignments(providers, preventa)
       });
       this.activeProviders.set(providers.filter((provider) => provider.activo !== false));
       this.providerScopeStatus.set('ready');
     } catch {
-      this.providerAssignmentsByScope.set({ BACKOFFICE: {}, POSTVENTA: {} });
+      this.providerAssignmentsByScope.set({ BACKOFFICE: {}, POSTVENTA: {}, PREVENTA: {} });
       this.activeProviders.set([]);
       this.providerScopeStatus.set('error');
       this.providerScopeError.set('No se pudo cargar el ámbito por proveedor. Intenta actualizar.');

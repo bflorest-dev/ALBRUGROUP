@@ -4,7 +4,6 @@
  */
 export const TEAM_SCOPED_ROLES: readonly string[] = [
   'ASESOR_GTR',
-  'SUPERVISOR_GTR',
   'ASESOR_VENTAS',
   'SUPERVISOR_VENTAS',
   'OJT',
@@ -12,7 +11,7 @@ export const TEAM_SCOPED_ROLES: readonly string[] = [
 ];
 
 /** Ambitos secundarios usados por los roles gestionados por proveedor. */
-export type ProviderScope = 'BACKOFFICE' | 'POSTVENTA';
+export type ProviderScope = 'BACKOFFICE' | 'POSTVENTA' | 'PREVENTA';
 
 /** Espejo del backend (ProveedorScopeService) para resolver la matriz de PERSONAL. */
 export const PROVIDER_SCOPED_ROLES: Readonly<Record<string, ProviderScope>> = {
@@ -20,11 +19,12 @@ export const PROVIDER_SCOPED_ROLES: Readonly<Record<string, ProviderScope>> = {
   SUPERVISOR_BACKOFFICE: 'BACKOFFICE',
   MONITOR: 'BACKOFFICE',
   ASESOR_POSTVENTA: 'POSTVENTA',
-  SUPERVISOR_POSTVENTA: 'POSTVENTA'
+  SUPERVISOR_POSTVENTA: 'POSTVENTA',
+  SUPERVISOR_GTR: 'PREVENTA'
 };
 
 /** Roles operativos que pueden pertenecer a más de un equipo a la vez. */
-export const MULTI_TEAM_ROLES: readonly string[] = ['ASESOR_GTR', 'SUPERVISOR_GTR', 'ASESOR_VENTAS'];
+export const MULTI_TEAM_ROLES: readonly string[] = ['ASESOR_GTR', 'ASESOR_VENTAS'];
 
 /** True si el rol pertenece al ámbito de equipos. */
 export function esRolDeEquipo(rol?: string | null): boolean {

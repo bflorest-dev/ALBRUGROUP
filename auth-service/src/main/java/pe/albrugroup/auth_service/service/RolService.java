@@ -50,11 +50,11 @@ public class RolService {
     private final RoleScopeReconciliationClient roleScopeReconciliationClient;
 
     private static final Set<String> ROLES_DE_EQUIPO = Set.of(
-            "ASESOR_GTR", "SUPERVISOR_GTR", "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "OJT", "FREELANCE"
+            "ASESOR_GTR", "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "OJT", "FREELANCE"
     );
     private static final Set<String> ROLES_DE_PROVEEDOR = Set.of(
             "ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE", "MONITOR",
-            "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA"
+            "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA", "SUPERVISOR_GTR"
     );
 
     @Transactional(readOnly = true)

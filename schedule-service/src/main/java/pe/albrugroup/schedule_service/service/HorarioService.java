@@ -26,6 +26,7 @@ import pe.albrugroup.schedule_service.entity.response.horario.HorarioMesVigencia
 import pe.albrugroup.schedule_service.entity.response.horario.HorarioResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
 import pe.albrugroup.schedule_service.exception.ConflictException;
+import pe.albrugroup.schedule_service.exception.ForbiddenException;
 import pe.albrugroup.schedule_service.exception.NotFoundException;
 import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
@@ -172,6 +173,10 @@ public class HorarioService implements IHorario {
     @Transactional
     public HorarioResponse reemplazarHorario(Long idHorario, ReemplazarHorarioRequest request) {
         Horario actual = getHorarioById(idHorario);
+        boolean correccionRetroactiva = validarCorreccionRetroactiva(
+                request.getCorreccionRetroactiva(),
+                request.getFechaInicio()
+        );
         if (!request.getFechaInicio().isAfter(actual.getFechaInicio())) {
             throw new BadRequestException("La nueva fechaInicio debe ser posterior al horario actual");
         }
@@ -179,7 +184,7 @@ public class HorarioService implements IHorario {
         // Guard: no reemplazar sobre días ya marcados. Si el empleado ya tiene asistencia en la fecha nueva
         // o posteriores, arrancar ahí dejaría la marca vieja bajo el horario nuevo (incoherencia). El nuevo
         // horario debe iniciar en una fecha sin marcaciones (p. ej. mañana si ya marcó hoy).
-        if (asistenciaRepository.existsByIdEmpleadoAndFechaGreaterThanEqual(
+        if (!correccionRetroactiva && asistenciaRepository.existsByIdEmpleadoAndFechaGreaterThanEqual(
                 actual.getIdEmpleado(), request.getFechaInicio())) {
             throw new ConflictException(
                     "El empleado ya tiene asistencia registrada en esa fecha o posteriores. "
@@ -220,8 +225,15 @@ public class HorarioService implements IHorario {
     @Transactional
     public HorarioResponse corregirHorario(Long idHorario, CorregirHorarioRequest request) {
         Horario horario = getHorarioById(idHorario);
+        LocalDate fechaAplicada = request.getFechaInicio() != null
+                ? request.getFechaInicio()
+                : horario.getFechaInicio();
+        boolean correccionRetroactiva = validarCorreccionRetroactiva(
+                request.getCorreccionRetroactiva(),
+                fechaAplicada
+        );
 
-        if (asistenciaRepository.existsByIdHorarioAndFechaHoraIngresoIsNotNull(idHorario)) {
+        if (!correccionRetroactiva && asistenciaRepository.existsByIdHorarioAndFechaHoraIngresoIsNotNull(idHorario)) {
             throw new ConflictException(
                     "El horario ya tiene marcaciones reales. Usa una excepcion puntual para un dia especifico o un reemplazo para un cambio estructural",
                     idHorario
@@ -230,7 +242,7 @@ public class HorarioService implements IHorario {
 
         validarDiasDuplicados(request.getDetalles().stream().map(detalle -> detalle.getDia()).toList());
         normalizarAlmuerzoPorModalidad(request.getModalidad(), request.getDetalles());
-        reprogramarFechaInicioSiCorresponde(horario, request.getFechaInicio());
+        reprogramarFechaInicioSiCorresponde(horario, request.getFechaInicio(), correccionRetroactiva);
 
         horario.setCompensable(request.getCompensable());
         PoliticaModalidad politica = politicaModalidadService.getPolitica(request.getModalidad());
@@ -256,7 +268,11 @@ public class HorarioService implements IHorario {
         return mapper.toResponse(savedHorario);
     }
 
-    private void reprogramarFechaInicioSiCorresponde(Horario horario, LocalDate nuevaFechaInicio) {
+    private void reprogramarFechaInicioSiCorresponde(
+            Horario horario,
+            LocalDate nuevaFechaInicio,
+            boolean correccionRetroactiva
+    ) {
         if (nuevaFechaInicio == null || nuevaFechaInicio.isEqual(horario.getFechaInicio())) {
             return;
         }
@@ -265,7 +281,7 @@ public class HorarioService implements IHorario {
             throw new BadRequestException("fechaInicio no puede ser posterior a fechaFin", nuevaFechaInicio);
         }
 
-        if (asistenciaRepository.existsByIdEmpleadoAndFechaGreaterThanEqual(
+        if (!correccionRetroactiva && asistenciaRepository.existsByIdEmpleadoAndFechaGreaterThanEqual(
                 horario.getIdEmpleado(), nuevaFechaInicio)) {
             throw new ConflictException(
                     "No se puede mover el inicio del horario porque ya existe asistencia registrada en esa fecha o posteriores",
@@ -301,6 +317,19 @@ public class HorarioService implements IHorario {
 
         horario.setFechaInicio(nuevaFechaInicio);
         horarioRepository.flush();
+    }
+
+    private boolean validarCorreccionRetroactiva(Boolean solicitada, LocalDate fechaInicio) {
+        if (!Boolean.TRUE.equals(solicitada)) {
+            return false;
+        }
+        if (!currentUser.roles().contains("ADMINISTRADOR")) {
+            throw new ForbiddenException("Solo ADMINISTRADOR puede aplicar correcciones retroactivas");
+        }
+        if (fechaInicio == null || fechaInicio.isAfter(OperationalDateTime.today())) {
+            throw new BadRequestException("La correccion retroactiva solo puede aplicar hasta hoy", fechaInicio);
+        }
+        return true;
     }
 
     @Override

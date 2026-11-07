@@ -6,7 +6,7 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
   CAPACITADOR: '/app/capacitador/agenda-capacitacion',
   FREELANCE: '/app/freelance',
   ASESOR_GTR: '/app/gtr',
-  SUPERVISOR_GTR: '/app/gtr/campanas',
+  SUPERVISOR_GTR: '/app/gtr/operativo',
   ASESOR_VENTAS: '/app/asesor-ventas/plataforma',
   OJT: '/app/asesor-ventas/plataforma',
   SUPERVISOR_VENTAS: '/app/supervisor-ventas',

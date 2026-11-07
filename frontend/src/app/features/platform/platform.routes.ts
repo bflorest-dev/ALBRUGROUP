@@ -42,6 +42,7 @@ import { CommunityWorkspacePageComponent } from '../community/pages/community-wo
 import { DailyLeadsPageComponent } from '../daily-leads/pages/daily-leads-page/daily-leads-page.component';
 import { GtrWorkspacePageComponent } from '../gtr/pages/gtr-workspace-page/gtr-workspace-page.component';
 import { SupervisorGtrCampaignsPageComponent } from '../gtr/pages/supervisor-gtr-campaigns-page/supervisor-gtr-campaigns-page.component';
+import { SupervisorGtrOperativoPageComponent } from '../gtr/pages/supervisor-gtr-operativo-page/supervisor-gtr-operativo-page.component';
 import { PostventaWorkspacePageComponent } from '../postventa/pages/postventa-workspace-page/postventa-workspace-page.component';
 import { PostulantesBoardPageComponent } from '../recruiter/pages/postulantes-board-page/postulantes-board-page.component';
 import { OperationalInboxPageComponent } from '../recruiter/pages/operational-inbox-page/operational-inbox-page.component';
@@ -480,6 +481,14 @@ export const PLATFORM_ROUTES: Routes = [
     canActivate: [roleGuard],
     data: {
       roles: ['ASESOR_GTR', 'SUPERVISOR_GTR']
+    }
+  },
+  {
+    path: 'gtr/operativo',
+    component: SupervisorGtrOperativoPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['SUPERVISOR_GTR']
     }
   },
   {

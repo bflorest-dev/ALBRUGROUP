@@ -32,7 +32,7 @@ export interface EmpleadoLite {
   puestoTrabajo: string;
 }
 
-export type AmbitoProveedor = 'BACKOFFICE' | 'POSTVENTA';
+export type AmbitoProveedor = 'BACKOFFICE' | 'POSTVENTA' | 'PREVENTA';
 
 export interface AsignacionUsuarioProveedor {
   idEmpleado: number;

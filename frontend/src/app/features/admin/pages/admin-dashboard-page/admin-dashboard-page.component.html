@@ -257,6 +257,7 @@
           <h3>{{ employee.nombres }} {{ employee.apellidos }}</h3>
           <p>
             Si dejas la fecha de inicio como esta, se corrige el horario en vigencia.
+            Solo ADMINISTRADOR puede corregir fechas pasadas; esa corrección conserva las marcaciones históricas.
             Si la mueves a una fecha futura, se cierra el actual y se aplica el nuevo desde esa fecha.
           </p>
         </div>
@@ -276,6 +277,7 @@
                 [lunchMinutes]="60"
                 [showDate]="true"
                 [showCompensable]="true"
+                [allowPastDates]="facade.canApplyRetroactiveCorrection()"
               />
             </div>
           </form>

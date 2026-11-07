@@ -8,6 +8,7 @@ import { BloqueHorarioRequest } from './bloque-horario-request';
 export interface CorregirHorarioRequest {
   modalidad: string;
   fechaInicio?: string;
+  correccionRetroactiva?: boolean;
   compensable: boolean;
   detalles: BloqueHorarioRequest[];
 }

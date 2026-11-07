@@ -22,6 +22,7 @@ import { CorregirHorarioRequest } from '../../../shared/models/schedule/corregir
 import { RegistrarExcepcionHorarioRequest } from '../../../shared/models/schedule/registrar-excepcion-horario-request';
 import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
 import { PresenceRealtimeService } from '../../../core/services/presence-realtime.service';
+import { SessionService } from '../../../core/services/session.service';
 import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimiento-response';
 import { AsesorLeadsPendientesResponse } from '../../../shared/models/preventa/preventa.models';
 import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
@@ -132,6 +133,7 @@ export class AdminPersonalFacade implements OnDestroy {
   private readonly adminEquipoService = inject(AdminEquipoService);
   private readonly scheduleAdjustmentService = inject(ScheduleAdjustmentService);
   private readonly authService = inject(AuthService);
+  private readonly sessionService = inject(SessionService);
   private readonly presenceService = inject(PresenceService);
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
   private readonly presenceRealtimeService = inject(PresenceRealtimeService);
@@ -562,6 +564,7 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly isSubmittingScheduleChange = signal(false);
   readonly scheduleChangeErrorMessage = signal('');
   readonly scheduleChangeSuccessMessage = signal('');
+  readonly canApplyRetroactiveCorrection = computed(() => this.sessionService.hasRole('ADMINISTRADOR'));
   readonly todayWorkdayEnabled = signal(false);
   readonly isAdjustmentDialogVisible = signal(false);
   readonly adjustmentDate = signal('');
@@ -2097,9 +2100,10 @@ export class AdminPersonalFacade implements OnDestroy {
     }
 
     const formFechaInicio = this.horarioForm.controls.fechaInicio.getRawValue();
-    if (formFechaInicio < this.getToday() && formFechaInicio !== horario.fechaInicio) {
+    const isRetroactiveCorrection = formFechaInicio <= this.getToday();
+    if (isRetroactiveCorrection && !this.canApplyRetroactiveCorrection()) {
       this.scheduleChangeErrorMessage.set(
-        'La nueva fecha de inicio no puede ser anterior a hoy.'
+        'Solo ADMINISTRADOR puede aplicar correcciones retroactivas.'
       );
       return;
     }
@@ -2110,6 +2114,14 @@ export class AdminPersonalFacade implements OnDestroy {
     const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
 
     try {
+      if (
+        isRetroactiveCorrection
+        && formFechaInicio !== horario.fechaInicio
+      ) {
+        await this.runReemplazarHorario(employee.idEmpleado, horario.id, baseRequest, true);
+        return;
+      }
+
       if (horario.fechaInicio > this.getToday() && formFechaInicio !== horario.fechaInicio) {
         await this.runCorregirHorario(employee.idEmpleado, horario.id, baseRequest, true);
         return;
@@ -2119,7 +2131,8 @@ export class AdminPersonalFacade implements OnDestroy {
         employee.idEmpleado,
         horario.id,
         baseRequest,
-        formFechaInicio !== horario.fechaInicio
+        formFechaInicio !== horario.fechaInicio,
+        isRetroactiveCorrection
       );
     } catch (error) {
       this.scheduleChangeErrorMessage.set(
@@ -2134,7 +2147,8 @@ export class AdminPersonalFacade implements OnDestroy {
     empleadoId: number,
     idHorario: number,
     baseRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>,
-    moverFechaInicio = false
+    moverFechaInicio = false,
+    correccionRetroactiva = false
   ): Promise<void> {
     const patchRequest: CorregirHorarioRequest = {
       modalidad: baseRequest.modalidad,
@@ -2143,6 +2157,9 @@ export class AdminPersonalFacade implements OnDestroy {
     };
     if (moverFechaInicio) {
       patchRequest.fechaInicio = baseRequest.fechaInicio;
+    }
+    if (correccionRetroactiva) {
+      patchRequest.correccionRetroactiva = true;
     }
 
     try {
@@ -2171,13 +2188,15 @@ export class AdminPersonalFacade implements OnDestroy {
   private async runReemplazarHorario(
     empleadoId: number,
     idHorario: number,
-    baseRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>
+    baseRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>,
+    correccionRetroactiva = false
   ): Promise<void> {
     const putRequest: ReemplazarHorarioRequest = {
       modalidad: baseRequest.modalidad,
       fechaInicio: baseRequest.fechaInicio,
       compensable: baseRequest.compensable,
-      detalles: baseRequest.detalles
+      detalles: baseRequest.detalles,
+      ...(correccionRetroactiva ? { correccionRetroactiva: true } : {})
     };
 
     try {

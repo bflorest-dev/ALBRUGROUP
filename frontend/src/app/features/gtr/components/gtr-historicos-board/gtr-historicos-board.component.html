@@ -46,19 +46,6 @@
           (onChange)="onCampoTipificacionChange($any($event.value))"
         />
       </label>
-      @if (facade.showHistoricosEquipoSelector()) {
-        <label class="historicos-team-field">
-          <span>Equipo</span>
-          <p-select
-            formControlName="idEquipo"
-            [options]="facade.historicosEquipoOptions()"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona equipo"
-            appendTo="body"
-          />
-        </label>
-      }
       <label class="historicos-multiselect-field">
         <span>Tipificaciones</span>
         <p-multiselect

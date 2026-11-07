@@ -428,6 +428,7 @@
               [lunchMinutes]="60"
               [showDate]="true"
               [showCompensable]="true"
+              [allowPastDates]="scheduleFacade.canApplyRetroactiveCorrection()"
               dateLabel="Fecha de inicio"
               [refreshKey]="scheduleFacade.editorKey()"
             />

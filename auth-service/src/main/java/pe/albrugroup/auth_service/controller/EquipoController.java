@@ -47,7 +47,7 @@ public class EquipoController {
     }
 
     @GetMapping("/catalogo")
-    @PreAuthorize("hasAuthority('READ_EQUIPOS')")
+    @PreAuthorize("hasAnyAuthority('READ_EQUIPOS', 'READ_LEADS_GTR')")
     @Operation(summary = "Catalogo de equipos", description = "Lista equipos (id y nombre) para selectores.")
     public ResponseEntity<List<EquipoResponse>> catalogo() {
         return ResponseEntity.ok(equipoService.listar());

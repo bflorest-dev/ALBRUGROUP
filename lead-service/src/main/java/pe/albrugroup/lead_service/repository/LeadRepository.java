@@ -23,6 +23,7 @@ import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstaladoBackofficeResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
+import pe.albrugroup.lead_service.entity.response.LeadSupervisorSinEquipoResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenEstadoLeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenRankingAsesorDetalleResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
@@ -3910,5 +3911,35 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("idAsesorPreventa") Long idAsesorPreventa,
             @Param("estadoPostventa") EstadoClientePostventa estadoPostventa,
             @Param("sinEstadoPostventa") boolean sinEstadoPostventa
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadSupervisorSinEquipoResponse(
+                l.id,
+                l.lastEntryAt,
+                l.prefijo,
+                l.lead,
+                l.usermeta,
+                c.nombre,
+                p.nombre,
+                l.origen.nombre,
+                l.estado
+            )
+            FROM Lead l
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            WHERE l.etapa = :etapa
+              AND l.idEquipo IS NULL
+              AND l.lastEntryAt >= :inicioDia
+              AND l.lastEntryAt < :finDia
+              AND (l.lead LIKE :leadPattern OR LOWER(l.usermeta) LIKE LOWER(:leadPattern))
+            ORDER BY l.lastEntryAt DESC, l.id DESC
+            """)
+    Page<LeadSupervisorSinEquipoResponse> listarLeadsSinEquipo(
+            @Param("etapa") Etapa etapa,
+            @Param("inicioDia") Instant inicioDia,
+            @Param("finDia") Instant finDia,
+            @Param("leadPattern") String leadPattern,
+            Pageable pageable
     );
 }

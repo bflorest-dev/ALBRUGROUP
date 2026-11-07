@@ -8,6 +8,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.lead_service.entity.request.AsignarProveedoresRequest;
 import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
+import pe.albrugroup.lead_service.entity.response.EquipoOperativoResponse;
 import pe.albrugroup.lead_service.service.EquipoProveedorService;
 
 import java.util.List;
@@ -34,6 +35,14 @@ public class EquipoProveedorController {
     @GetMapping("/{idEquipo}/proveedores") @PreAuthorize("hasAuthority('READ_EQUIPO_PROVEEDORES')")
     public ResponseEntity<List<ProveedorResponse>> listarProveedoresDeEquipo(@PathVariable Long idEquipo) {
         return ResponseEntity.ok(equipoProveedorService.listarProveedoresDeEquipo(idEquipo));
+    }
+
+    @GetMapping("/mis-equipos")
+    @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<List<EquipoOperativoResponse>> listarEquiposPorProveedor(
+            @RequestParam Long idProveedor
+    ) {
+        return ResponseEntity.ok(equipoProveedorService.listarEquiposPorProveedor(idProveedor));
     }
 
     // Limpieza al eliminar un equipo: quita mappings de proveedores y desvincula sus leads.

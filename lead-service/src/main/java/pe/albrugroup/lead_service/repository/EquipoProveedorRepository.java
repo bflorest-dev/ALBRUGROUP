@@ -13,6 +13,7 @@ public interface EquipoProveedorRepository extends JpaRepository<EquipoProveedor
 
     List<EquipoProveedor> findByIdEquipo(Long idEquipo);
     List<EquipoProveedor> findByIdEquipoIn(Collection<Long> idEquipos);
+    List<EquipoProveedor> findByProveedorId(Long proveedorId);
     boolean existsByIdEquipoAndProveedorId(Long idEquipo, Long proveedorId);
     Optional<EquipoProveedor> findByIdEquipoAndFallbackLeadSinCampanaTrue(Long idEquipo);
     Optional<EquipoProveedor> findFirstByProveedorId(Long proveedorId);

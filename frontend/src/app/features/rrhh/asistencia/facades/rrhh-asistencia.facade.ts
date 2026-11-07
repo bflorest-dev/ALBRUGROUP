@@ -5,6 +5,7 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { AttendanceService } from '../../../../core/services/attendance.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { ScheduleAdjustmentService } from '../../../../core/services/schedule-adjustment.service';
+import { SessionService } from '../../../../core/services/session.service';
 import { ReporteDiaResponse } from '../../../../shared/models/schedule/reporte-dia-response';
 import { ResumenMensualResponse } from '../../../../shared/models/schedule/resumen-mensual-response';
 import { ContratoResponse } from '../../../../shared/models/rrhh/contrato-response';
@@ -132,6 +133,7 @@ export class RrhhAsistenciaFacade {
   private readonly fb = inject(FormBuilder);
   private readonly operationalGateService = inject(OperationalGateService);
   private readonly operationalGate = this.operationalGateService.createGate('rrhh-asistencia');
+  private readonly sessionService = inject(SessionService);
   private recargaEnCurso = false;
 
   // ── Estado de navegación / tab activa
@@ -408,6 +410,7 @@ export class RrhhAsistenciaFacade {
   readonly isSubmittingHorario = signal<boolean>(false);
   readonly scheduleChangeErrorMessage = signal<string>('');
   readonly scheduleChangeSuccessMessage = signal<string>('');
+  readonly canApplyRetroactiveCorrection = computed(() => this.sessionService.hasRole('ADMINISTRADOR'));
 
   // Ajuste del día (v2): jornada base + señales compartidas por los editores inline
   readonly adjustmentDate = signal<string>('');
@@ -747,9 +750,10 @@ export class RrhhAsistenciaFacade {
     }
 
     const formFechaInicio = this.horarioForm.controls.fechaInicio.getRawValue();
-    if (formFechaInicio < this.getToday() && formFechaInicio !== horario.fechaInicio) {
+    const isRetroactiveCorrection = formFechaInicio <= this.getToday();
+    if (isRetroactiveCorrection && !this.canApplyRetroactiveCorrection()) {
       this.scheduleChangeErrorMessage.set(
-        'La nueva fecha de inicio no puede ser anterior a hoy.'
+        'Solo ADMINISTRADOR puede aplicar correcciones retroactivas.'
       );
       return;
     }
@@ -760,6 +764,11 @@ export class RrhhAsistenciaFacade {
     const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
 
     try {
+      if (isRetroactiveCorrection && formFechaInicio !== horario.fechaInicio) {
+        await this.runReemplazar(empleado.idEmpleado, horario.id, baseRequest, true);
+        return;
+      }
+
       if (horario.fechaInicio > this.getToday() && formFechaInicio !== horario.fechaInicio) {
         await this.runCorregir(empleado.idEmpleado, horario.id, baseRequest, true);
         return;
@@ -769,7 +778,8 @@ export class RrhhAsistenciaFacade {
         empleado.idEmpleado,
         horario.id,
         baseRequest,
-        formFechaInicio !== horario.fechaInicio
+        formFechaInicio !== horario.fechaInicio,
+        isRetroactiveCorrection
       );
     } catch (error) {
       this.scheduleChangeErrorMessage.set(this.extractErrorMessage(error, 'No se pudo guardar el horario.'));
@@ -985,7 +995,8 @@ export class RrhhAsistenciaFacade {
     idEmpleado: number,
     idHorario: number,
     baseRequest: { modalidad: string; fechaInicio: string; compensable: boolean; detalles: any[] },
-    moverFechaInicio = false
+    moverFechaInicio = false,
+    correccionRetroactiva = false
   ): Promise<void> {
     const patchRequest: CorregirHorarioRequest = {
       modalidad: baseRequest.modalidad,
@@ -994,6 +1005,9 @@ export class RrhhAsistenciaFacade {
     };
     if (moverFechaInicio) {
       patchRequest.fechaInicio = baseRequest.fechaInicio;
+    }
+    if (correccionRetroactiva) {
+      patchRequest.correccionRetroactiva = true;
     }
     try {
       const horario = await firstValueFrom(
@@ -1019,13 +1033,15 @@ export class RrhhAsistenciaFacade {
   private async runReemplazar(
     idEmpleado: number,
     idHorario: number,
-    baseRequest: { modalidad: string; fechaInicio: string; compensable: boolean; detalles: any[] }
+    baseRequest: { modalidad: string; fechaInicio: string; compensable: boolean; detalles: any[] },
+    correccionRetroactiva = false
   ): Promise<void> {
     const putRequest: ReemplazarHorarioRequest = {
       modalidad: baseRequest.modalidad,
       fechaInicio: baseRequest.fechaInicio,
       compensable: baseRequest.compensable,
-      detalles: baseRequest.detalles
+      detalles: baseRequest.detalles,
+      ...(correccionRetroactiva ? { correccionRetroactiva: true } : {})
     };
     try {
       const horario = await firstValueFrom(

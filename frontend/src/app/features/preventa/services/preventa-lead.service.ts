@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
+import { PageResponse } from '../../../shared/models/common/page-response';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
 import { OrigenResponse } from '../../admin/services/base-leads.service';
 import { VentaDetallePage } from '../../admin/services/dashboard-venta.service';
@@ -69,6 +70,24 @@ export interface EquipoOperativoResponse {
   descripcion?: string | null;
   color?: string | null;
   activo: boolean;
+}
+
+export interface ProveedorSimpleResponse {
+  id: number;
+  nombre: string;
+  activo: boolean;
+}
+
+export interface LeadSupervisorSinEquipoResponse {
+  id: number;
+  lastEntryAt: string;
+  prefijo: string | null;
+  lead: string;
+  usermeta: string | null;
+  nombreCampana: string | null;
+  nombreProveedorCampana: string | null;
+  origen: string | null;
+  estadoSeguimiento: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -352,6 +371,37 @@ export class PreventaLeadService {
     return this.http.post<void>(`${this.leadUrl}/preventa/admin/equipos/${idEquipo}/gtr/intake/retroactivo`, request);
   }
 
+  // ── Supervisor GTR ──────────────────────────────────────────────────────
+
+  registrarIngresoLeadSupervisor(request: LeadIntakeRequest): Observable<void> {
+    return this.http.post<void>(`${this.leadUrl}/preventa/supervisor/intake`, request);
+  }
+
+  listarLeadsSinEquipo(params?: {
+    fecha?: string;
+    lead?: string;
+    page?: number;
+    size?: number;
+  }): Observable<PageResponse<LeadSupervisorSinEquipoResponse>> {
+    let httpParams = new HttpParams();
+    if (params?.fecha) httpParams = httpParams.set('fecha', params.fecha);
+    if (params?.lead) httpParams = httpParams.set('lead', params.lead);
+    if (params?.page !== undefined) httpParams = httpParams.set('pageNumber', params.page);
+    if (params?.size !== undefined) httpParams = httpParams.set('pageSize', params.size);
+    httpParams = httpParams.set('sortBy', 'lastEntryAt').set('direction', 'desc');
+    return this.http.get<PageResponse<LeadSupervisorSinEquipoResponse>>(
+      `${this.leadUrl}/preventa/supervisor/sin-equipo`,
+      { params: httpParams }
+    );
+  }
+
+  asignarEquipoLead(idLead: number, idEquipo: number): Observable<void> {
+    return this.http.patch<void>(
+      `${this.leadUrl}/preventa/supervisor/${idLead}/equipo`,
+      { idEquipo }
+    );
+  }
+
   registrarIngresoLeadsAlb(file: File): Observable<LeadIntakeMasivoExcelResponse> {
     const formData = new FormData();
     formData.append('file', file);
@@ -502,10 +552,16 @@ export class PreventaLeadService {
     return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-agregado`);
   }
 
-  listarCampanasActivas(idEquipo?: number | null): Observable<CampanaResponse[]> {
+  listarCampanasActivas(
+    idEquipo?: number | null,
+    idProveedor?: number | null
+  ): Observable<CampanaResponse[]> {
     let params = new HttpParams().set('activo', true);
     if (idEquipo !== null && idEquipo !== undefined) {
       params = params.set('idEquipo', idEquipo);
+    }
+    if (idProveedor !== null && idProveedor !== undefined) {
+      params = params.set('idProveedor', idProveedor);
     }
     return this.http.get<CampanaResponse[]>(`${this.leadUrl}/campanas`, {
       params
@@ -755,5 +811,11 @@ export class PreventaLeadService {
 
   listarOrigenes(): Observable<OrigenResponse[]> {
     return this.http.get<OrigenResponse[]>(`${this.leadUrl}/origenes`);
+  }
+
+  listarProveedores(activo = true): Observable<ProveedorSimpleResponse[]> {
+    return this.http.get<ProveedorSimpleResponse[]>(`${this.leadUrl}/proveedores`, {
+      params: new HttpParams().set('activo', activo)
+    });
   }
 }

@@ -617,6 +617,18 @@ body {
   min-height: 100%;
 }
 
+/*
+ * El shell privado usa 100dvh y puede resolver a una fraccion de pixel mayor que
+ * el viewport redondeado por el navegador. En escritorio el scroll vive dentro
+ * de las superficies de trabajo, no en el documento completo.
+ */
+@media (min-width: 901px) {
+  html:has(app-private-layout),
+  body:has(app-private-layout) {
+    overflow: hidden;
+  }
+}
+
 html.gtr-modal-scroll-lock,
 html.merito-drawer-scroll-lock {
   overflow: hidden !important;

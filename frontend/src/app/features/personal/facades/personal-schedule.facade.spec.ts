@@ -3,6 +3,7 @@ import { FormBuilder } from '@angular/forms';
 import { of } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { OperationalGateService } from '../../../core/services/operational-gate.service';
+import { SessionService } from '../../../core/services/session.service';
 import { AdminRrhhService } from '../../admin/services/admin-rrhh.service';
 import { ContratoResponse } from '../../../shared/models/rrhh/contrato-response';
 import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
@@ -45,7 +46,8 @@ describe('PersonalScheduleFacade', () => {
         FormBuilder,
         PersonalScheduleFacade,
         { provide: AdminRrhhService, useValue: service },
-        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => true, blockedMessage: () => '' }) } }
+        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => true, blockedMessage: () => '' }) } },
+        { provide: SessionService, useValue: { hasRole: () => false } }
       ]
     });
 
@@ -68,7 +70,8 @@ describe('PersonalScheduleFacade', () => {
         FormBuilder,
         PersonalScheduleFacade,
         { provide: AdminRrhhService, useValue: service },
-        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => true, blockedMessage: () => '' }) } }
+        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => true, blockedMessage: () => '' }) } },
+        { provide: SessionService, useValue: { hasRole: () => false } }
       ]
     });
 
@@ -89,7 +92,8 @@ describe('PersonalScheduleFacade', () => {
         FormBuilder,
         PersonalScheduleFacade,
         { provide: AdminRrhhService, useValue: service },
-        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => true, blockedMessage: () => '' }) } }
+        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => true, blockedMessage: () => '' }) } },
+        { provide: SessionService, useValue: { hasRole: () => false } }
       ]
     });
 
@@ -117,7 +121,8 @@ describe('PersonalScheduleFacade', () => {
         FormBuilder,
         PersonalScheduleFacade,
         { provide: AdminRrhhService, useValue: service },
-        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => false, blockedMessage: () => 'Marca ONLINE para continuar.' }) } }
+        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => false, blockedMessage: () => 'Marca ONLINE para continuar.' }) } },
+        { provide: SessionService, useValue: { hasRole: () => false } }
       ]
     });
 
@@ -126,5 +131,29 @@ describe('PersonalScheduleFacade', () => {
 
     expect(await facade.save()).toBe(false);
     expect(facade.error()).toBe('Marca ONLINE para continuar.');
+  });
+
+  it('bloquea una correccion retroactiva para RRHH antes de llamar al backend', async () => {
+    const current = schedule(1, '2020-01-01');
+    const service = {
+      listarHistoricoHorarios: vi.fn(() => of({ content: [current] })),
+      corregirHorario: vi.fn()
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        FormBuilder,
+        PersonalScheduleFacade,
+        { provide: AdminRrhhService, useValue: service },
+        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => true, blockedMessage: () => '' }) } },
+        { provide: SessionService, useValue: { hasRole: () => false } }
+      ]
+    });
+
+    const facade = TestBed.inject(PersonalScheduleFacade);
+    facade.initialize(10, contract, current);
+
+    expect(await facade.save()).toBe(false);
+    expect(facade.error()).toBe('Solo ADMINISTRADOR puede aplicar correcciones retroactivas.');
+    expect(service.corregirHorario).not.toHaveBeenCalled();
   });
 });

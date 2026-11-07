@@ -83,11 +83,6 @@ label {
   flex: 0 0 auto;
 }
 
-.historicos-team-field {
-  flex: 0 1 12rem;
-  min-width: 10rem;
-}
-
 .historicos-date-helper {
   color: var(--app-text-muted);
   display: block;
@@ -334,7 +329,6 @@ label {
   .historicos-date-mode,
   .historicos-mode,
   .historicos-multiselect-field,
-  .historicos-team-field,
   .historicos-filter-row .dialog-actions {
     min-width: 0;
     width: 100%;

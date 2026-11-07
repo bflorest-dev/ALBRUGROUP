@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import pe.albrugroup.lead_service.entity.response.ConnectedStatusGatewayResponse;
+import pe.albrugroup.lead_service.entity.response.EquipoOperativoResponse;
 import pe.albrugroup.lead_service.entity.response.UsuarioRolAuthResponse;
 import pe.albrugroup.lead_service.exception.ForbiddenException;
 
@@ -58,6 +59,21 @@ public class AuthEquipoClient {
 
     public List<UsuarioRolAuthResponse> listarAsesoresPreventa(Long idEquipo) {
         return listarAsesores(idEquipo, "/equipos/{idEquipo}/asesores-preventa");
+    }
+
+    public List<EquipoOperativoResponse> listarEquiposCatalogo() {
+        String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authorization == null || authorization.isBlank()) {
+            throw new ForbiddenException("No se pudo validar el catálogo de equipos");
+        }
+        return restClientBuilder
+                .baseUrl(authBaseUrl)
+                .build()
+                .get()
+                .uri("/equipos/catalogo")
+                .header(HttpHeaders.AUTHORIZATION, authorization)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<EquipoOperativoResponse>>() {});
     }
 
     public boolean freelanceActivoEnEquipo(Long idEquipo, Long idFreelance) {

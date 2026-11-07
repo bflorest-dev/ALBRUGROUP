@@ -102,6 +102,8 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   @Input() dateLabel = 'Fecha de inicio';
   /** Fecha mínima seleccionable (ISO yyyy-mm-dd). Por defecto, hoy: nunca se elige un día pasado. */
   @Input() minDate = '';
+  /** Permite fechas pasadas solo cuando el flujo ya autorizó una corrección retroactiva. */
+  @Input() allowPastDates = false;
   /** Cambia cuando el consumidor vuelve a cargar el mismo FormGroup con otra versión. */
   @Input() refreshKey = 0;
   /** Presenta la jornada sin controles ni edición; conserva las barras para lectura y captura. */
@@ -275,7 +277,7 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   /** Fecha mínima efectiva (ISO): la provista, o hoy cuando se muestra el selector de fecha. */
   protected minAttr(): string {
     if (!this.showDate) return '';
-    return this.minDate || todayIso();
+    return this.minDate || (this.allowPastDates ? '' : todayIso());
   }
 
   protected onDate(value: string): void {

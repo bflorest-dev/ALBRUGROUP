@@ -178,6 +178,8 @@ public class DataLoader {
 
         savePermiso("CREATE_LEADS", "Puede registrar ingresos de leads", "LEAD", "CREATE");
         savePermiso("CREATE_LEADS_GTR_ADMIN", "Puede registrar leads GTR dentro de un equipo desde Administracion", "LEAD_GTR_ADMIN", "CREATE");
+        savePermiso("CREATE_LEADS_SUPERVISOR_GTR", "Puede registrar leads sin equipo (supervisor GTR)", "LEAD_SUPERVISOR_GTR", "CREATE");
+        savePermiso("ASSIGN_EQUIPO_LEAD", "Puede asignar un equipo a un lead sin equipo", "LEAD_SUPERVISOR_GTR", "UPDATE");
         savePermiso("DELETE_LEADS", "Puede eliminar integralmente leads", "LEAD", "DELETE");
         savePermiso("CORREGIR_CAMPANA_LEAD", "Puede corregir la campana asociada a un lead y sus eventos", "LEAD", "UPDATE_CAMPAIGN");
         savePermiso("CORREGIR_MERITO_PREVENTA", "Puede corregir el asesor de merito de una preventa", "LEAD_PREVENTA_MERITO", "CORRECT");
@@ -493,9 +495,12 @@ public class DataLoader {
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS"),
                 getPermiso("EXTEND_HORARIO"),
-                getPermiso("AJUSTAR_JORNADA_COMPENSABLE")
+                getPermiso("AJUSTAR_JORNADA_COMPENSABLE"),
+                getPermiso("READ_PROVEEDORES"),
+                getPermiso("CREATE_LEADS_SUPERVISOR_GTR"),
+                getPermiso("ASSIGN_EQUIPO_LEAD")
         );
-        saveRol("SUPERVISOR_GTR", "GTR - Supervision de asignacion de leads", supervisorGtrPermisos);
+        saveRol("SUPERVISOR_GTR", "GTR - Supervision operativa y asignacion de leads", supervisorGtrPermisos);
 
         // ASESOR_VENTAS
         Set<Permiso> asesorVentasPermisos = Set.of(

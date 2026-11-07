@@ -36,6 +36,7 @@ public class ProveedorScopeService {
     private static final String ADMINISTRADOR = "ADMINISTRADOR";
     private static final Set<String> ROLES_BACKOFFICE = Set.of("ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE", "MONITOR");
     private static final Set<String> ROLES_POSTVENTA = Set.of("ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA");
+    private static final Set<String> ROLES_PREVENTA = Set.of("SUPERVISOR_GTR");
 
     private final UsuarioProveedorRepository repository;
     private final ProveedorRepository proveedorRepository;
@@ -53,6 +54,9 @@ public class ProveedorScopeService {
         }
         if (roles.stream().anyMatch(ROLES_POSTVENTA::contains)) {
             return AmbitoProveedor.POSTVENTA;
+        }
+        if (roles.stream().anyMatch(ROLES_PREVENTA::contains)) {
+            return AmbitoProveedor.PREVENTA;
         }
         return null;
     }

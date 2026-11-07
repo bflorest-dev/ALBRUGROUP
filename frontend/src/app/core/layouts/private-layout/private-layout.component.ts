@@ -469,6 +469,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
     if (activeRole === 'SUPERVISOR_GTR') {
       return [
+        { domainId: 'workspace', label: 'Operativo', route: '/app/gtr/operativo', icon: 'pi pi-inbox', exact: true },
         { domainId: 'workspace', label: 'Campañas', route: '/app/gtr/campanas', icon: 'pi pi-share-alt', exact: true },
         { domainId: 'insights', label: 'Leads del día', route: '/app/gtr/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { domainId: 'insights', label: 'Dashboard', route: '/app/gtr/dashboard', icon: 'pi pi-chart-pie', exact: true }

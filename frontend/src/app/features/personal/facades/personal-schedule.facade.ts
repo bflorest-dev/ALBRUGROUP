@@ -5,6 +5,7 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { OperationalGateService } from '../../../core/services/operational-gate.service';
 import { ScheduleAdjustmentService } from '../../../core/services/schedule-adjustment.service';
+import { SessionService } from '../../../core/services/session.service';
 import { AdminRrhhService } from '../../admin/services/admin-rrhh.service';
 import { RrhhAsistenciaService } from '../../rrhh/asistencia/services/rrhh-asistencia.service';
 import { ContratoResponse } from '../../../shared/models/rrhh/contrato-response';
@@ -44,6 +45,7 @@ export class PersonalScheduleFacade {
   private readonly attendanceReviewService = inject(RrhhAsistenciaService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly gate = inject(OperationalGateService).createGate('personal-schedule');
+  private readonly session = inject(SessionService);
 
   private employeeId = 0;
   private contract: ContratoResponse | null = null;
@@ -86,6 +88,7 @@ export class PersonalScheduleFacade {
 
   readonly canMutateOperationalData = this.gate.canMutateOperationalData;
   readonly blockedMessage = this.gate.blockedMessage;
+  readonly canApplyRetroactiveCorrection = computed(() => this.session.hasRole('ADMINISTRADOR'));
 
   readonly form = this.formBuilder.nonNullable.group({
     fechaInicio: [this.tomorrow(), [Validators.required]],
@@ -256,8 +259,11 @@ export class PersonalScheduleFacade {
     const raw = this.form.getRawValue();
     const fechaInicio = raw.fechaInicio;
     const current = this.isCreatingFutureSchedule() ? null : (this.editingSchedule ?? this.schedule());
-    if (current && fechaInicio < this.today() && fechaInicio !== current.fechaInicio) {
-      this.error.set('La nueva fecha de inicio no puede ser anterior a hoy.');
+    const baseSchedule = this.schedule();
+    const retroactiveSchedule = current ?? (this.isCreatingFutureSchedule() ? baseSchedule : null);
+    const isRetroactiveCorrection = !!retroactiveSchedule && fechaInicio <= this.today();
+    if (isRetroactiveCorrection && !this.canApplyRetroactiveCorrection()) {
+      this.error.set('Solo ADMINISTRADOR puede aplicar correcciones retroactivas.');
       return false;
     }
 
@@ -266,6 +272,22 @@ export class PersonalScheduleFacade {
     try {
       const request = this.buildRequest(this.contract.modalidad);
       if (!current) {
+        if (this.isCreatingFutureSchedule() && baseSchedule && isRetroactiveCorrection) {
+          if (!fechaInicio || fechaInicio <= baseSchedule.fechaInicio) {
+            this.error.set('La nueva vigencia debe empezar después del inicio del horario actual.');
+            return false;
+          }
+          const replaced = await firstValueFrom(
+            this.service.reemplazarHorario(baseSchedule.id, {
+              ...request,
+              fechaInicio,
+              correccionRetroactiva: true
+            } satisfies ReemplazarHorarioRequest).pipe(timeout(REQUEST_TIMEOUT_MS))
+          );
+          await this.finishMutation(replaced, 'Horario reemplazado correctamente. Se conservó la vigencia anterior.');
+          return true;
+        }
+
         const created = await firstValueFrom(
           this.service.registrarHorario({
             idEmpleado: this.employeeId,
@@ -278,8 +300,27 @@ export class PersonalScheduleFacade {
         return true;
       }
 
+      // Un cambio de fecha retroactivo debe crear una nueva vigencia para conservar
+      // el tramo anterior y sus marcaciones históricas, en lugar de mover el registro actual.
+      if (
+        isRetroactiveCorrection
+        && fechaInicio !== current.fechaInicio
+        && current.id === this.schedule()?.id
+      ) {
+        const replaced = await firstValueFrom(
+          this.service.reemplazarHorario(current.id, {
+            ...request,
+            fechaInicio,
+            correccionRetroactiva: true
+          } satisfies ReemplazarHorarioRequest).pipe(timeout(REQUEST_TIMEOUT_MS))
+        );
+        await this.finishMutation(replaced, 'Horario reemplazado correctamente. Se conservó la vigencia anterior.');
+        return true;
+      }
+
       await this.correct(current, {
         ...request,
+        correccionRetroactiva: isRetroactiveCorrection,
         ...(fechaInicio !== current.fechaInicio ? { fechaInicio } : {})
       });
       return !this.correctionVisible();

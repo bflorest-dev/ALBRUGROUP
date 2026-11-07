@@ -26,6 +26,10 @@ public class CorregirHorarioRequest {
 
     private LocalDate fechaInicio;
 
+    /** Solo ADMINISTRADOR puede usarlo y únicamente para una fecha hasta hoy. */
+    @Builder.Default
+    private Boolean correccionRetroactiva = Boolean.FALSE;
+
     @Builder.Default
     @NotNull(message = "compensable es obligatorio")
     private Boolean compensable = Boolean.TRUE;

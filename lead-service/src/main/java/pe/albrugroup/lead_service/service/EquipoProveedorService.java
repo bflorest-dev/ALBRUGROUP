@@ -4,10 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
+import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.entity.EquipoProveedor;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
+import pe.albrugroup.lead_service.entity.response.EquipoOperativoResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.exception.ForbiddenException;
 import pe.albrugroup.lead_service.repository.EquipoCampoRepository;
 import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
@@ -15,6 +18,8 @@ import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.service.mapper.ProveedorMapper;
 
 import java.util.List;
+import java.util.Comparator;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,6 +34,8 @@ public class EquipoProveedorService {
     private final LeadRepository leadRepository;
     private final EquipoCampanaService equipoCampanaService;
     private final CurrentUser currentUser;
+    private final AuthEquipoClient authEquipoClient;
+    private final ProveedorScopeService proveedorScopeService;
 
     /** Reemplaza los proveedores asignados a un equipo. */
     public List<ProveedorResponse> asignarProveedores(
@@ -78,6 +85,31 @@ public class EquipoProveedorService {
     public List<ProveedorResponse> listarProveedoresDeEquipo(Long idEquipo) {
         return equipoProveedorRepository.findByIdEquipo(idEquipo).stream()
                 .map(this::mapearProveedorEquipo)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<EquipoOperativoResponse> listarEquiposPorProveedor(Long idProveedor) {
+        if (idProveedor == null || idProveedor <= 0) {
+            throw new BadRequestException("Selecciona un proveedor válido");
+        }
+        ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(AmbitoProveedor.PREVENTA);
+        if (scope.restringido() && !scope.proveedorIds().contains(idProveedor)) {
+            throw new ForbiddenException("No tienes acceso al proveedor seleccionado");
+        }
+        Set<Long> equiposConProveedor = equipoProveedorRepository.findByProveedorId(idProveedor).stream()
+                .map(EquipoProveedor::getIdEquipo)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (equiposConProveedor.isEmpty()) {
+            return List.of();
+        }
+        return authEquipoClient.listarEquiposCatalogo().stream()
+                .filter(equipo -> equipo.id() != null
+                        && Boolean.TRUE.equals(equipo.activo())
+                        && equiposConProveedor.contains(equipo.id()))
+                .sorted(Comparator.comparing(EquipoOperativoResponse::nombre,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();
     }
 

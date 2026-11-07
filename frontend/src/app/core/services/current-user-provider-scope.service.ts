@@ -13,7 +13,8 @@ const PROVIDER_SCOPED_ROLES = new Set([
   'SUPERVISOR_BACKOFFICE',
   'MONITOR',
   'ASESOR_POSTVENTA',
-  'SUPERVISOR_POSTVENTA'
+  'SUPERVISOR_POSTVENTA',
+  'SUPERVISOR_GTR'
 ]);
 
 export interface MiProveedor {
@@ -71,15 +72,17 @@ export class CurrentUserProviderScopeService {
     if (this.loaded || !this.isProviderScoped()) {
       return;
     }
-    this.loaded = true;
     try {
       const proveedores = await firstValueFrom(
         this.http.get<MiProveedor[]>(`${API_CONSTANTS.gatewayBaseUrl}/leads/usuarios/mis-proveedores`)
       );
       this.proveedoresState.set(proveedores ?? []);
       this.normalizarActivo();
+      this.loaded = true;
     } catch {
       this.proveedoresState.set([]);
+      this.activeIdState.set(null);
+      this.loaded = false;
     }
   }
 

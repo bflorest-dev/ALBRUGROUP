@@ -20,7 +20,8 @@ interface AmbitoOption {
 
 const ROLES_POR_AMBITO: Record<AmbitoProveedor, ReadonlySet<string>> = {
   BACKOFFICE: new Set(['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE', 'MONITOR']),
-  POSTVENTA: new Set(['ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA'])
+  POSTVENTA: new Set(['ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA']),
+  PREVENTA: new Set(['SUPERVISOR_GTR'])
 };
 
 /**
@@ -43,7 +44,8 @@ export class AdminProveedoresPageComponent implements OnInit {
 
   protected readonly ambitoOptions: AmbitoOption[] = [
     { label: 'Backoffice', value: 'BACKOFFICE' },
-    { label: 'Postventa', value: 'POSTVENTA' }
+    { label: 'Postventa', value: 'POSTVENTA' },
+    { label: 'Preventa GTR', value: 'PREVENTA' }
   ];
   protected readonly ambito = signal<AmbitoProveedor>('BACKOFFICE');
 

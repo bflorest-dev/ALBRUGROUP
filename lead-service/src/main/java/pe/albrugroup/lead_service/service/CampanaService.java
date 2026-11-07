@@ -76,6 +76,13 @@ public class CampanaService {
         return mapper.toResponse(actualizada);
     }
 
+    @Transactional(readOnly = true)
+    public List<CampanaResponse> listarCampanasPorProveedor(Long idProveedor, Boolean activo) {
+        return repository.listarPorProveedorYActivo(idProveedor, activo).stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
     private void validarDependenciasActivas(Campana campana) {
         if (campana.getProveedor() == null || !Boolean.TRUE.equals(campana.getProveedor().getActivo())) {
             throw new BadRequestException("No se puede activar la campana porque el proveedor asociado esta inactivo",
