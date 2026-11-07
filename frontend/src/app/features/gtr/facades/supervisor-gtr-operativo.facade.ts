@@ -1,9 +1,11 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormGroup, NonNullableFormBuilder, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
   CampanaResponse,
+  LeadGtrLookupResponse,
   LeadGtrMetricasResponse,
   LeadIntakeRequest
 } from '../../../shared/models/preventa/preventa.models';
@@ -17,6 +19,7 @@ import { GtrTeamCampaignService } from '../services/gtr-team-campaign.service';
 import { AsesorGtrPresenceResponse, PresenceService } from '../../../core/services/presence.service';
 import { CurrentUserProviderScopeService } from '../../../core/services/current-user-provider-scope.service';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
+import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
 
 const PERU_PHONE_PREFIX = '+51';
 const PERU_LEAD_PATTERN = /^9\d{8}$/;
@@ -53,6 +56,7 @@ export class SupervisorGtrOperativoFacade {
   readonly cargando = signal(false);
   readonly error = signal('');
   readonly exito = signal('');
+  readonly intakeError = signal('');
 
   // Intake
   readonly intakeNumberMaxLength = signal(9);
@@ -70,6 +74,8 @@ export class SupervisorGtrOperativoFacade {
   }, { validators: SupervisorGtrOperativoFacade.intakeIdentityValidator });
   readonly intakeSubmitting = signal(false);
   readonly intakeDialogVisible = signal(false);
+  readonly intakeConfirmationVisible = signal(false);
+  readonly pendingIntakeLookup = signal<LeadGtrLookupResponse | null>(null);
 
   // Equipo assignment
   readonly asignacionDialogVisible = signal(false);
@@ -89,6 +95,12 @@ export class SupervisorGtrOperativoFacade {
     this.intakeForm.controls.prefijo.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((prefijo) => this.updateIntakeLeadValidation(prefijo));
+    this.intakeForm.controls.idCampana.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((idCampana) => {
+        this.intakeCampanaId.set(idCampana == null ? null : Number(idCampana));
+        this.syncIntakeOriginWithCampaign();
+      });
 
     effect(() => {
       const idProveedor = this.providerScope.activeId();
@@ -264,18 +276,12 @@ export class SupervisorGtrOperativoFacade {
       idCampana: null, idOrigen: null
     });
     this.intakeCampanaId.set(null);
+    this.intakeError.set('');
+    this.pendingIntakeLookup.set(null);
+    this.intakeConfirmationVisible.set(false);
     this.exito.set('');
     this.error.set('');
     this.intakeDialogVisible.set(true);
-  }
-
-  seleccionarCampanaIntake(idCampana: number | null): void {
-    this.intakeCampanaId.set(idCampana);
-    const origenActual = this.intakeForm.controls.idOrigen.value;
-    const permitido = this.origenesDisponibles().some(origen => origen.id === origenActual);
-    if (!permitido) {
-      this.intakeForm.controls.idOrigen.setValue(null);
-    }
   }
 
   intakeIdentityMessage(): string | null {
@@ -294,26 +300,79 @@ export class SupervisorGtrOperativoFacade {
   }
 
   async submitIntake(): Promise<void> {
+    await this.submitIntakeInternal(false);
+  }
+
+  async confirmIntakeRegistration(): Promise<void> {
+    await this.submitIntakeInternal(true);
+  }
+
+  cancelIntakeConfirmation(): void {
+    this.pendingIntakeLookup.set(null);
+    this.intakeError.set('');
+    this.intakeConfirmationVisible.set(false);
+    this.intakeDialogVisible.set(true);
+  }
+
+  intakeConfirmationMessage(): string {
+    const lookup = this.pendingIntakeLookup();
+    if (!lookup?.existe) return '';
+
+    if (lookup.etapaActual === 'PREVENTA') {
+      return 'Este lead ya se encuentra registrado en el sistema. Regístralo nuevamente solo si se ha vuelto a comunicar por un canal de nuestras campañas.';
+    }
+
+    const contextMessage = lookup.mensajeUsuario
+      ?? 'Este lead ya se encuentra registrado en el sistema y no puede gestionarse desde GTR por el momento.';
+    return `${contextMessage}\nRegístralo nuevamente solo si se ha vuelto a comunicar por un canal de nuestras campañas.`;
+  }
+
+  intakeUsermetaLabel(value?: string | null): string {
+    const normalized = normalizeUsermeta(value);
+    return normalized ? `@${normalized}` : '';
+  }
+
+  private async submitIntakeInternal(skipLookupConfirmation: boolean): Promise<void> {
     if (this.intakeForm.invalid || this.intakeSubmitting()) return;
 
     this.intakeSubmitting.set(true);
     this.error.set('');
     this.exito.set('');
+    this.intakeError.set('');
     try {
       const v = this.intakeForm.getRawValue();
+      const leadNumber = String(v.lead ?? '').trim();
+      const hasPhone = !!leadNumber;
       const request: LeadIntakeRequest = {
-        prefijo: v.prefijo || undefined,
-        lead: v.lead || undefined,
-        usermeta: normalizeUsermeta(v.usermeta) || undefined,
-        idCampana: v.idCampana ?? undefined,
+        // El prefijo predeterminado es solo visual hasta que exista un número.
+        // Un registro por usermeta no debe enviarlo como teléfono incompleto.
+        prefijo: hasPhone ? v.prefijo : null,
+        lead: hasPhone ? leadNumber : null,
+        usermeta: normalizeUsermeta(v.usermeta) || null,
+        idCampana: v.idCampana ?? null,
         idOrigen: v.idOrigen!
       };
+
+      if (!skipLookupConfirmation) {
+        const lookupValue = request.lead || request.usermeta || '';
+        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(lookupValue));
+        if (lookup.existe) {
+          this.pendingIntakeLookup.set(lookup);
+          this.intakeError.set('');
+          this.intakeDialogVisible.set(false);
+          this.intakeConfirmationVisible.set(true);
+          return;
+        }
+      }
+
       await firstValueFrom(this.preventaService.registrarIngresoLeadSupervisor(request));
       this.exito.set('Lead registrado correctamente.');
       this.intakeDialogVisible.set(false);
+      this.intakeConfirmationVisible.set(false);
+      this.pendingIntakeLookup.set(null);
       await this.cargarLeadsSinEquipo(0);
-    } catch {
-      this.error.set('No se pudo registrar el lead. Verifica los datos e intenta nuevamente.');
+    } catch (error) {
+      this.intakeError.set(this.getIntakeErrorMessage(error));
     } finally {
       this.intakeSubmitting.set(false);
     }
@@ -372,6 +431,25 @@ export class SupervisorGtrOperativoFacade {
     ]);
     leadControl.updateValueAndValidity({ emitEvent: false });
     this.intakeForm.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private syncIntakeOriginWithCampaign(): void {
+    const allowedValues = new Set(this.origenesDisponibles().map((origen) => origen.id));
+    const current = this.intakeForm.controls.idOrigen.value;
+    if (current && allowedValues.has(current)) {
+      return;
+    }
+
+    const first = this.origenesDisponibles()[0]?.id ?? null;
+    this.intakeForm.controls.idOrigen.setValue(this.intakeCampanaId() ? first : null);
+  }
+
+  private getIntakeErrorMessage(error: unknown): string {
+    const fallback = 'No se pudo registrar el lead. Verifica los datos e intenta nuevamente.';
+    if (error instanceof HttpErrorResponse) {
+      return formatApiErrorMessage(error.error, fallback);
+    }
+    return error instanceof Error && error.message ? error.message : fallback;
   }
 
   private static intakeIdentityValidator(control: AbstractControl): { identityRequired?: true; phoneIncomplete?: true } | null {

@@ -49,51 +49,112 @@ p {
 
 .metricas-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: .75rem;
+  grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr));
+  gap: .85rem;
 }
 
 .metrica-card {
-  padding: .85rem 1rem;
-  border-radius: .5rem;
+  --team-color: #6366f1;
+  padding: 1rem 1.15rem;
+  border-radius: .6rem;
   border: 1px solid var(--app-border-soft, #dce0e7);
-  border-top-color: var(--role-primary, #6366f1);
+  border-left: 3px solid var(--team-color);
   background: var(--app-surface, #fff);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .05);
+  transition: box-shadow .15s ease;
+
+  &:hover {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, .08);
+  }
 }
 
 .metrica-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: .5rem;
+  margin-bottom: .85rem;
+  padding-bottom: .6rem;
+  border-bottom: 1px solid var(--app-border-soft, #edf0f3);
+}
+
+.metrica-card__team-name {
+  font-weight: 600;
+  font-size: .95rem;
+  color: var(--app-text, #171b22);
 }
 
 .metrica-card__asesores {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: .3rem;
-  font-size: .85rem;
+  font-size: .78rem;
+  font-weight: 500;
+  padding: .2rem .55rem;
+  border-radius: 1rem;
+  background: var(--app-surface-hover, #f3f4f6);
   color: var(--app-text-muted, #5a6472);
+
+  &--active {
+    background: #dcfce7;
+    color: #15803d;
+  }
 }
 
-.metrica-card__stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .5rem .85rem;
-  font-size: .82rem;
-  color: var(--app-text-muted, #5a6472);
+.metrica-card__tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .5rem;
+}
 
-  em {
-    font-style: normal;
-    font-weight: 600;
-    color: var(--app-text, #171b22);
-  }
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: .55rem .35rem;
+  border-radius: .4rem;
+  background: var(--app-surface-hover, #f8f9fa);
+  transition: background .15s ease;
+  min-width: 0;
+}
+
+.stat-tile__value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--app-text, #171b22);
+}
+
+.stat-tile__label {
+  font-size: .68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--app-text-muted, #5a6472);
+  text-align: center;
+  line-height: 1.25;
+  margin-top: .15rem;
+  min-height: 1.8em;
+  display: flex;
+  align-items: center;
+}
+
+.stat-tile--nuevos .stat-tile__value { color: #2563eb; }
+.stat-tile--gestionados .stat-tile__value { color: #16a34a; }
+.stat-tile--preventas .stat-tile__value { color: #7c3aed; }
+
+.stat-tile--pendientes .stat-tile__value { color: var(--app-text-muted, #6b7280); }
+.stat-tile--alerta {
+  background: #fef3c7;
+  .stat-tile__value { color: #b45309; }
+  .stat-tile__label { color: #92400e; }
 }
 
 .metrica-card__no-data {
   font-size: .82rem;
   color: var(--app-text-disabled, #9ca3af);
+  text-align: center;
+  padding: .5rem 0;
 }
 
 // ── Intake form ──────────────────────────────────────────────────
@@ -132,7 +193,37 @@ p {
 .intake-form__actions {
   display: flex;
   justify-content: flex-end;
+  gap: .5rem;
   padding-top: .5rem;
+}
+
+.intake-confirmation {
+  display: grid;
+  gap: .85rem;
+  margin-bottom: 1rem;
+}
+
+.intake-confirmation__identity {
+  margin: 0;
+  color: var(--app-text, #263448);
+  font-weight: 600;
+}
+
+.intake-confirmation__warning {
+  display: flex;
+  gap: .55rem;
+  align-items: flex-start;
+  margin: 0;
+  padding: .8rem;
+  border-radius: .55rem;
+  background: #fff7e8;
+  color: #7b4a00;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.intake-confirmation__warning i {
+  margin-top: .15rem;
 }
 
 // ── Assignment dialog ────────────────────────────────────────────
@@ -180,3 +271,4 @@ p {
     flex-direction: column;
   }
 }
+ 

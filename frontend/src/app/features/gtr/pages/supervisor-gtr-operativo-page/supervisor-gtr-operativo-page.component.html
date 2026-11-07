@@ -24,20 +24,32 @@
       <h2>Equipos</h2>
       <div class="metricas-grid">
         @for (equipo of facade.equiposActivos(); track equipo.id) {
-          <div class="metrica-card" [style.border-left-color]="equipo.color ?? '#6366f1'">
+          <div class="metrica-card" [style.--team-color]="equipo.color ?? '#6366f1'">
             <div class="metrica-card__header">
-              <strong>{{ equipo.nombre }}</strong>
-              <span class="metrica-card__asesores" title="Asesores operativos conectados">
+              <span class="metrica-card__team-name">{{ equipo.nombre }}</span>
+              <span class="metrica-card__asesores" [class.metrica-card__asesores--active]="(facade.asesoresPorEquipo().get(equipo.id) ?? 0) > 0">
                 <i class="pi pi-users"></i>
                 {{ facade.asesoresPorEquipo().get(equipo.id) ?? 0 }}
               </span>
             </div>
             @if (facade.metricasPorEquipo().get(equipo.id); as m) {
-              <div class="metrica-card__stats">
-                <span><em>{{ m.nuevos }}</em> nuevos</span>
-                <span><em>{{ m.sinGestionar }}</em> sin gestionar</span>
-                <span><em>{{ m.gestionados }}</em> gestionados</span>
-                <span><em>{{ m.preventas }}</em> preventas</span>
+              <div class="metrica-card__tiles">
+                <div class="stat-tile stat-tile--nuevos">
+                  <span class="stat-tile__value">{{ m.nuevos }}</span>
+                  <span class="stat-tile__label">Nuevos</span>
+                </div>
+                <div class="stat-tile stat-tile--pendientes" [class.stat-tile--alerta]="m.sinGestionar > 0">
+                  <span class="stat-tile__value">{{ m.sinGestionar }}</span>
+                  <span class="stat-tile__label">Sin gestionar</span>
+                </div>
+                <div class="stat-tile stat-tile--gestionados">
+                  <span class="stat-tile__value">{{ m.gestionados }}</span>
+                  <span class="stat-tile__label">Gestionados</span>
+                </div>
+                <div class="stat-tile stat-tile--preventas">
+                  <span class="stat-tile__value">{{ m.preventas }}</span>
+                  <span class="stat-tile__label">Preventas</span>
+                </div>
               </div>
             } @else {
               <span class="metrica-card__no-data">Sin datos</span>
@@ -121,15 +133,18 @@
         [numberInvalidMessage]="facade.intakeNumberInvalidMessage()"
       />
       <div class="intake-form__row">
-        <label>Usermeta</label>
+        <label>Usuario WhatsApp (opcional)</label>
         <input pInputText formControlName="usermeta" placeholder="@usuario" />
         <small>Ingresa teléfono o usuario WhatsApp como mínimo.</small>
       </div>
       @if (facade.intakeIdentityMessage(); as identityMessage) {
         <p-message severity="warn" [text]="identityMessage" />
       }
+      @if (facade.intakeError()) {
+        <p-message severity="error" [text]="facade.intakeError()" />
+      }
       <div class="intake-form__row">
-        <label>Campaña</label>
+        <label>Campaña (opcional)</label>
         <p-select
           formControlName="idCampana"
           [options]="facade.campanasDelProveedor()"
@@ -140,7 +155,6 @@
           [filter]="true"
           filterPlaceholder="Buscar campaña"
           appendTo="body"
-          (onChange)="facade.seleccionarCampanaIntake($event.value ?? null)"
         />
       </div>
       <div class="intake-form__row">
@@ -162,6 +176,48 @@
           [disabled]="facade.intakeForm.invalid || facade.intakeSubmitting()"></button>
       </div>
     </form>
+  </p-dialog>
+
+  <p-dialog
+    header="Confirmar registro"
+    [visible]="facade.intakeConfirmationVisible()"
+    (visibleChange)="!$event && facade.cancelIntakeConfirmation()"
+    [modal]="true"
+    [style]="{ width: '34rem' }"
+    [draggable]="false"
+    [blockScroll]="true"
+    [closable]="true"
+    styleClass="supervisor-intake-dialog"
+  >
+    <div class="intake-confirmation">
+      @if (facade.intakeForm.controls.lead.value; as leadNumber) {
+        <p class="intake-confirmation__identity">Lead {{ facade.intakeForm.controls.prefijo.value }} {{ leadNumber }}</p>
+      } @else if (facade.intakeForm.controls.usermeta.value; as usermeta) {
+        <p class="intake-confirmation__identity">Lead {{ facade.intakeUsermetaLabel(usermeta) }}</p>
+      }
+
+      @if (facade.intakeError()) {
+        <p-message severity="error" [text]="facade.intakeError()" />
+      }
+
+      <p class="intake-confirmation__warning">
+        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+        <span>{{ facade.intakeConfirmationMessage() }}</span>
+      </p>
+    </div>
+
+    <div class="intake-form__actions">
+      <button pButton type="button" label="Volver" severity="secondary" (click)="facade.cancelIntakeConfirmation()"></button>
+      <button
+        pButton
+        type="button"
+        label="Registrar de todos modos"
+        icon="pi pi-check"
+        [loading]="facade.intakeSubmitting()"
+        [disabled]="facade.intakeSubmitting()"
+        (click)="facade.confirmIntakeRegistration()"
+      ></button>
+    </div>
   </p-dialog>
 
   <!-- Equipo Assignment Dialog -->

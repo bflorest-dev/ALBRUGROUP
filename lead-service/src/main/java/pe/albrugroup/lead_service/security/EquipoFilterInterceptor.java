@@ -27,6 +27,8 @@ import java.util.List;
  * - Rol activo acotado por PROVEEDOR (BACKOFFICE / POSTVENTA): filtro `proveedorFilter`
  *   por sus proveedores (estrechado al proveedor activo del selector, header X-Proveedor-Id). Se usa
  *   proveedorFilter EN LUGAR de equipoFilter (nunca ambos) para evitar doble filtro.
+ * - Rol activo acotado por PROVEEDOR (PREVENTA): filtro `proveedorOrigenFilter`, porque en esta etapa
+ *   el proveedor del lead se representa en id_proveedor_origen y todavía no existe proveedor final.
  * - SIN proveedores asignados: filtro vacío, por lo que la autorización falla cerrada.
  * - Resto (GTR/ventas): filtro `equipoFilter` por sus equipos; sin equipos → [-1] (fail-closed).
  */
@@ -50,7 +52,11 @@ public class EquipoFilterInterceptor implements HandlerInterceptor {
         AmbitoProveedor ambito = proveedorScopeService.ambitoActual();
         if (ambito != null) {
             ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(ambito);
-            habilitarFiltroProveedor(scope);
+            if (ambito == AmbitoProveedor.PREVENTA) {
+                habilitarFiltroProveedorOrigen(scope);
+            } else {
+                habilitarFiltroProveedor(scope);
+            }
             return true;
         }
         if (esBackofficeGlobal(request)) {
@@ -97,11 +103,23 @@ public class EquipoFilterInterceptor implements HandlerInterceptor {
 
     private void habilitarFiltroProveedor(ProveedorScopeService.Scope scope) {
         try {
-            entityManager.unwrap(Session.class)
-                    .enableFilter("proveedorFilter")
+            Session session = entityManager.unwrap(Session.class);
+            session.disableFilter("proveedorOrigenFilter");
+            session.enableFilter("proveedorFilter")
                     .setParameterList("proveedores", List.copyOf(scope.idsParaQuery()));
         } catch (Exception e) {
             log.warn("No se pudo habilitar el filtro por proveedor: {}", e.getMessage());
+        }
+    }
+
+    private void habilitarFiltroProveedorOrigen(ProveedorScopeService.Scope scope) {
+        try {
+            Session session = entityManager.unwrap(Session.class);
+            session.disableFilter("proveedorFilter");
+            session.enableFilter("proveedorOrigenFilter")
+                    .setParameterList("proveedores", List.copyOf(scope.idsParaQuery()));
+        } catch (Exception e) {
+            log.warn("No se pudo habilitar el filtro por proveedor de origen: {}", e.getMessage());
         }
     }
 

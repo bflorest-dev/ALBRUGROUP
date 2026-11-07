@@ -69,6 +69,39 @@ class EquipoFilterInterceptorTest {
     }
 
     @Test
+    void ambitoPreventaFiltraPorProveedorDeOrigen() {
+        var user = new UserSession(
+                "supervisor.gtr",
+                15L,
+                "Supervisor GTR",
+                LocalDate.of(2026, 9, 7),
+                java.util.List.of("SUPERVISOR_GTR"),
+                java.util.List.of(),
+                java.util.List.of()
+        );
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(user, null)
+        );
+        Session session = mock(Session.class);
+        Filter proveedorOrigenFilter = mock(Filter.class);
+        when(entityManager.unwrap(Session.class)).thenReturn(session);
+        when(session.enableFilter("proveedorOrigenFilter")).thenReturn(proveedorOrigenFilter);
+        when(proveedorOrigenFilter.setParameterList("proveedores", java.util.List.of(2L)))
+                .thenReturn(proveedorOrigenFilter);
+        when(proveedorScopeService.ambitoActual()).thenReturn(AmbitoProveedor.PREVENTA);
+        when(proveedorScopeService.resolverScope(AmbitoProveedor.PREVENTA))
+                .thenReturn(new ProveedorScopeService.Scope(true, Set.of(2L), Set.of("CLARO")));
+
+        interceptor.preHandle(mock(HttpServletRequest.class), mock(HttpServletResponse.class), new Object());
+
+        verify(session).disableFilter("proveedorFilter");
+        verify(session).enableFilter("proveedorOrigenFilter");
+        verify(proveedorOrigenFilter).setParameterList("proveedores", java.util.List.of(2L));
+        verify(session, never()).enableFilter("proveedorFilter");
+        verify(session, never()).enableFilter("equipoFilter");
+    }
+
+    @Test
     void equipoActivoValidoReduceElFiltroDeEquipos() {
         autenticarUsuarioEquipos(java.util.List.of(1L, 2L));
         Session session = mock(Session.class);

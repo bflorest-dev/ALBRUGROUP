@@ -7428,6 +7428,13 @@ public class LeadService {
         if (esBackofficeAcotadoPorProveedor()) {
             return new RankingEquipoScope(false, List.of(-1L));
         }
+        // PREVENTA (SUPERVISOR_GTR): el proveedorOrigenFilter ya acota por proveedor;
+        // no se valida acceso por equipo sino que se filtra directamente por el solicitado.
+        if (proveedorScopeService.ambitoActual() == AmbitoProveedor.PREVENTA) {
+            return idEquipoSolicitado != null
+                    ? new RankingEquipoScope(true, List.of(idEquipoSolicitado))
+                    : new RankingEquipoScope(false, List.of(-1L));
+        }
         if (currentUser.tieneVisibilidadGlobalEquipos()) {
             return idEquipoSolicitado == null
                     ? new RankingEquipoScope(false, List.of(-1L))

@@ -37,6 +37,10 @@ import java.util.Set;
 // (BACKOFFICE/POSTVENTA). Usa la columna directa id_proveedor en vez de subquery por plan.
 @FilterDef(name = "proveedorFilter", parameters = @ParamDef(name = "proveedores", type = Long.class))
 @Filter(name = "proveedorFilter", condition = "id_proveedor in (:proveedores)")
+// En PREVENTA el proveedor es el de origen: los leads aún no tienen proveedor final
+// (id_proveedor), pero sí deben quedar visibles para el proveedor que los originó.
+@FilterDef(name = "proveedorOrigenFilter", parameters = @ParamDef(name = "proveedores", type = Long.class))
+@Filter(name = "proveedorOrigenFilter", condition = "id_proveedor_origen in (:proveedores)")
 public class Lead {
 
 
