@@ -74,9 +74,9 @@ export class CurrentUserProviderScopeService {
   }
 
   /** Carga (una vez) los proveedores del usuario y fija un proveedor activo válido. */
-  async load(): Promise<void> {
+  async load(): Promise<boolean> {
     if (this.loaded || !this.isProviderScoped()) {
-      return;
+      return true;
     }
     try {
       const proveedores = await firstValueFrom(
@@ -85,10 +85,12 @@ export class CurrentUserProviderScopeService {
       this.proveedoresState.set(proveedores ?? []);
       this.normalizarActivo();
       this.loaded = true;
+      return true;
     } catch {
       this.proveedoresState.set([]);
       this.activeIdState.set(null);
       this.loaded = false;
+      return false;
     }
   }
 

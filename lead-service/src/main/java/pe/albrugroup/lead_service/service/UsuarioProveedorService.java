@@ -23,7 +23,7 @@ import java.util.Set;
 
 /**
  * Administración (ADMIN) de las asignaciones empleado→proveedor sobre la tabla unificada
- * usuario_proveedor. Escritura única del scope por proveedor para BACKOFFICE y POSTVENTA.
+ * usuario_proveedor. Escritura única del scope por proveedor para BACKOFFICE, POSTVENTA y PREVENTA.
  */
 @Service
 @Transactional
@@ -32,7 +32,7 @@ public class UsuarioProveedorService {
 
     private static final Set<String> ROLES_GESTIONADOS_POR_PROVEEDOR = Set.of(
             "ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE", "MONITOR",
-            "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA"
+            "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA", "SUPERVISOR_GTR"
     );
 
     private final UsuarioProveedorRepository repository;

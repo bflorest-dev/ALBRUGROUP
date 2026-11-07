@@ -127,10 +127,13 @@ export class SupervisorGtrOperativoFacade {
     this.cargando.set(true);
     this.error.set('');
     try {
-      await this.providerScope.load();
+      const scopeLoaded = await this.providerScope.load();
+      if (!scopeLoaded) {
+        throw new Error('No se pudo consultar el scope de proveedores. Intenta nuevamente.');
+      }
       const idProveedor = this.providerScope.activeId();
       if (idProveedor == null || this.providerScope.proveedorActivo() == null) {
-        throw new Error('El supervisor no tiene un proveedor activo asignado.');
+        throw new Error('El supervisor no tiene proveedores asignados en el ámbito PREVENTA.');
       }
 
       const [equipos, leadsSinEquipo, asesores, campanas, origenes] = await Promise.all([
@@ -151,8 +154,8 @@ export class SupervisorGtrOperativoFacade {
       this.initialized = true;
       this.startRealtime();
       await this.cargarMetricasEquipos(equiposActivos);
-    } catch {
-      this.error.set('No se pudo cargar la información. Intenta nuevamente.');
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'No se pudo cargar la información. Intenta nuevamente.');
     } finally {
       this.cargando.set(false);
     }
