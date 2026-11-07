@@ -18,9 +18,9 @@ import { RegistrarExcepcionHorarioRequest } from '../../../../shared/models/sche
 import { TipoDiaNoLaborable } from '../../../../shared/models/schedule/dia-no-laborable-request';
 import { formatApiErrorMessage } from '../../../../shared/utils/api-error.utils';
 import { formatLabel } from '../../../../shared/utils/display-label';
-import { esRolDeEquipo, puedeMultiEquipo, PROVIDER_SCOPED_ROLES } from '../../../../shared/constants/multi-team-roles';
+import { ambitoProveedorPorRol, esRolDeEquipo, puedeMultiEquipo, PROVIDER_SCOPED_ROLES } from '../../../../shared/constants/multi-team-roles';
 import { AdminRrhhService } from '../../../admin/services/admin-rrhh.service';
-import { AdminEquipoService, EquipoResponse, ProveedorLite } from '../../../admin/services/admin-equipo.service';
+import { AdminEquipoService, AmbitoProveedor, EquipoResponse, ProveedorLite } from '../../../admin/services/admin-equipo.service';
 import { PersonalDirectoryRow } from '../../facades/personal-workspace.facade';
 import { PersonalScheduleFacade } from '../../facades/personal-schedule.facade';
 import { ScheduleWeekEditorComponent } from '../../../../shared/components/schedule-week-editor/schedule-week-editor.component';
@@ -361,6 +361,14 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected selectedRoles(): string[] {
     return [this.rolePrincipal(), ...this.secondaryRoles()].filter(Boolean);
+  }
+
+  protected selectedProviderScopes(): AmbitoProveedor[] {
+    return [...new Set(
+      this.selectedRoles()
+        .map((role) => ambitoProveedorPorRol(role))
+        .filter((scope): scope is AmbitoProveedor => scope !== null)
+    )];
   }
 
   protected hasTeamScopeForSelectedRoles(): boolean {
@@ -1106,7 +1114,11 @@ export class EmployeeWorkspaceDrawerComponent {
     this.providerError.set('');
     this.clearActionFeedback();
     try {
-      await firstValueFrom(this.equipos.asignarScopeProveedor(row.employee.idEmpleado, this.providerSelectedIds()));
+      await firstValueFrom(this.equipos.asignarScopeProveedor(
+        row.employee.idEmpleado,
+        this.providerSelectedIds(),
+        this.selectedProviderScopes()
+      ));
       this.subview.set('none');
       this.actionSuccess.set(this.providerSelectedIds().length ? 'Proveedores actualizados.' : 'El empleado quedó sin proveedor.');
       this.employeeChanged.emit();

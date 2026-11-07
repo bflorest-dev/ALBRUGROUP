@@ -259,7 +259,7 @@
         <section class="drawer-subview provider-management-view">
           <div class="subview-heading">
             <button class="back-button" type="button" [disabled]="isSavingProviders()" (click)="closeProviderManagement()"><i class="ti ti-arrow-left"></i>Volver</button>
-            <div><h3>Gestionar proveedores</h3><p>Asigna el ámbito de proveedores del empleado sin separar BACKOFFICE y POSTVENTA.</p></div>
+            <div><h3>Gestionar proveedores</h3><p>Asigna los proveedores requeridos por los roles seleccionados.</p></div>
           </div>
           @if (providerError()) { <p class="feedback error" role="alert">{{ providerError() }}</p> }
           @if (providerLoadError()) {

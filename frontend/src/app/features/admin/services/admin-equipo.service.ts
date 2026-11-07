@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { concatMap, from, last, Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 
 export interface EquipoResponse {
@@ -112,7 +112,7 @@ export class AdminEquipoService {
     });
   }
 
-  // --- Scope por proveedor unificado (BACKOFFICE / POSTVENTA) ---
+  // --- Scope por proveedor unificado (BACKOFFICE / POSTVENTA / PREVENTA) ---
   private readonly usuariosProveedoresUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads/usuarios`;
 
   // Todas las asignaciones del ámbito, agrupadas por empleado (para el grid).
@@ -135,9 +135,27 @@ export class AdminEquipoService {
     );
   }
 
-  /** Scope conceptual único del empleado; POSTVENTA replica internamente a BACKOFFICE. */
-  asignarScopeProveedor(empleadoId: number, proveedorIds: number[]): Observable<ProveedorLite[]> {
-    return this.asignarProveedoresUsuario(empleadoId, 'POSTVENTA', proveedorIds);
+  /**
+   * Reemplaza el scope de proveedores requerido por los roles del empleado.
+   * POSTVENTA también actualiza BACKOFFICE en el backend, por eso no se envían
+   * ambos ámbitos técnicos cuando los dos están presentes.
+   */
+  asignarScopeProveedor(
+    empleadoId: number,
+    proveedorIds: number[],
+    ambitos: AmbitoProveedor[] = ['POSTVENTA']
+  ): Observable<ProveedorLite[]> {
+    const solicitados = new Set(ambitos);
+    if (solicitados.has('POSTVENTA')) {
+      solicitados.delete('BACKOFFICE');
+    }
+    const scopes = (['POSTVENTA', 'BACKOFFICE', 'PREVENTA'] as AmbitoProveedor[])
+      .filter((ambito) => solicitados.has(ambito));
+
+    return from(scopes).pipe(
+      concatMap((ambito) => this.asignarProveedoresUsuario(empleadoId, ambito, proveedorIds)),
+      last()
+    );
   }
 
   // --- Empleados (rrhh) para elegir a quién asignar ---

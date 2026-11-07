@@ -61,7 +61,7 @@ public class UsuarioProveedorService {
 
     /**
      * Reconciliación interna del scope por proveedor después de un cambio de roles.
-     * Ambos ámbitos técnicos representan el mismo scope conceptual y deben conservar
+     * Los ámbitos técnicos representan el mismo scope conceptual y deben conservar
      * exactamente el mismo conjunto cuando todavía existe un rol por proveedor.
      */
     public void reconciliarScopePorRoles(Long idEmpleado, Set<String> roles) {
@@ -84,6 +84,7 @@ public class UsuarioProveedorService {
         List<Proveedor> proveedores = new ArrayList<>(proveedoresPorId.values());
         reemplazarProveedores(idEmpleado, AmbitoProveedor.BACKOFFICE, proveedores);
         reemplazarProveedores(idEmpleado, AmbitoProveedor.POSTVENTA, proveedores);
+        reemplazarProveedores(idEmpleado, AmbitoProveedor.PREVENTA, proveedores);
     }
 
     private void reemplazarProveedores(Long idEmpleado, AmbitoProveedor ambito, List<Proveedor> proveedores) {
