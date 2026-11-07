@@ -23,7 +23,7 @@ export interface MiProveedor {
 }
 
 /**
- * Mantiene, para el usuario actual acotado por proveedor (BACKOFFICE / POSTVENTA), la lista de
+ * Mantiene, para el usuario actual acotado por proveedor (BACKOFFICE / POSTVENTA / GTR), la lista de
  * proveedores asignados y cuál está activo. El proveedor activo se envía en cada request a /leads
  * (header X-Proveedor-Id, ver proveedorScopeInterceptor) para que backoffice/postventa nunca mezclen
  * bandejas. El selector del sidebar solo aparece cuando hay más de un proveedor.
@@ -38,18 +38,24 @@ export class CurrentUserProviderScopeService {
   private loaded = false;
 
   readonly proveedores = this.proveedoresState.asReadonly();
-  readonly activeId = this.activeIdState.asReadonly();
+  /** Con un único proveedor, queda activo incluso durante la primera sincronización del scope. */
+  readonly activeId = computed(() => {
+    const actual = this.activeIdState();
+    if (actual !== null) return actual;
+    const proveedores = this.proveedoresState();
+    return proveedores.length === 1 ? proveedores[0].id : null;
+  });
   /** El selector solo tiene sentido cuando el usuario atiende más de un proveedor. */
   readonly mostrarSelector = computed(() => this.proveedoresState().length > 1);
   readonly proveedorActivo = computed(() => {
-    const id = this.activeIdState();
+    const id = this.activeId();
     return this.proveedoresState().find((proveedor) => proveedor.id === id) ?? null;
   });
 
   constructor() {
     // Persistir el proveedor activo por navegador.
     effect(() => {
-      const id = this.activeIdState();
+      const id = this.activeId();
       if (id === null) {
         localStorage.removeItem(STORAGE_KEYS.activeProveedorId);
         return;
@@ -108,6 +114,10 @@ export class CurrentUserProviderScopeService {
     const proveedores = this.proveedoresState();
     if (proveedores.length === 0) {
       this.activeIdState.set(null);
+      return;
+    }
+    if (proveedores.length === 1) {
+      this.activeIdState.set(proveedores[0].id);
       return;
     }
     const actual = this.activeIdState();
