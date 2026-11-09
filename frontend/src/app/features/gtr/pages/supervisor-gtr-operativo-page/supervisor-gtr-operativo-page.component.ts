@@ -4,12 +4,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MessageModule } from 'primeng/message';
 import { ButtonModule } from 'primeng/button';
+import { DatePickerModule } from 'primeng/datepicker';
 import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TooltipModule } from 'primeng/tooltip';
 import { SupervisorGtrOperativoFacade } from '../../facades/supervisor-gtr-operativo.facade';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 
@@ -24,10 +26,12 @@ import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-n
     ButtonModule,
     TableModule,
     DialogModule,
+    DatePickerModule,
     SelectModule,
     InputTextModule,
     TagModule,
     ProgressSpinnerModule,
+    TooltipModule,
     PhoneNumberFieldComponent
   ],
   providers: [SupervisorGtrOperativoFacade],

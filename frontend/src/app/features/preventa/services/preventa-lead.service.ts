@@ -377,6 +377,10 @@ export class PreventaLeadService {
     return this.http.post<void>(`${this.leadUrl}/preventa/supervisor/intake`, request);
   }
 
+  registrarIngresoLeadSupervisorRetroactivo(request: LeadIntakeRetroactivoRequest): Observable<void> {
+    return this.http.post<void>(`${this.leadUrl}/preventa/supervisor/intake/retroactivo`, request);
+  }
+
   listarLeadsSinEquipo(params?: {
     fecha?: string;
     lead?: string;

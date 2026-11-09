@@ -20,6 +20,14 @@
   border-bottom: 1px solid var(--app-border-soft);
 }
 
+.supervisor-operativo__header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
 h1 {
   margin: 0;
   color: var(--app-text, #171b22);
@@ -164,6 +172,73 @@ p {
   gap: .85rem;
 }
 
+.retroactive-intake {
+  display: grid;
+  align-items: end;
+  background: var(--app-surface-soft, #f8fafc);
+  border: 1px solid var(--app-border-soft, #e5e7eb);
+  border-left: 3px solid #2563eb;
+  border-radius: .45rem;
+  gap: .85rem;
+  grid-template-columns: minmax(0, 1fr) minmax(9.5rem, .55fr);
+  padding: .75rem;
+}
+
+.retroactive-intake__context {
+  align-items: center;
+  display: flex;
+  gap: .65rem;
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.retroactive-intake__context i {
+  color: #2563eb;
+  font-size: 1.15rem;
+}
+
+.retroactive-intake__context div {
+  display: grid;
+  gap: .15rem;
+  min-width: 0;
+}
+
+.retroactive-intake__context strong {
+  color: var(--app-text, #263448);
+  font-size: .84rem;
+}
+
+.retroactive-intake__context span,
+.retroactive-intake small {
+  color: var(--app-text-muted, #5a6472);
+  font-size: .75rem;
+}
+
+.retroactive-intake label {
+  display: grid;
+  gap: .25rem;
+  min-width: 0;
+
+  > span {
+    color: var(--app-text-muted, #5a6472);
+    font-size: .82rem;
+    font-weight: 500;
+  }
+}
+
+:host ::ng-deep .retroactive-intake .p-select,
+:host ::ng-deep .retroactive-intake .p-datepicker {
+  min-width: 0;
+  width: 100%;
+}
+
+:host ::ng-deep .retroactive-intake .p-select-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 :host ::ng-deep .supervisor-intake-dialog {
   width: min(34rem, calc(100vw - 1rem)) !important;
 }
@@ -226,6 +301,15 @@ p {
   margin-top: .15rem;
 }
 
+.intake-confirmation__retroactive {
+  margin: 0;
+  padding: .7rem .8rem;
+  border-radius: .5rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  line-height: 1.45;
+}
+
 // ── Assignment dialog ────────────────────────────────────────────
 
 .asignacion-resumen {
@@ -270,5 +354,14 @@ p {
   .supervisor-operativo__header {
     flex-direction: column;
   }
+
+  .supervisor-operativo__header-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .retroactive-intake {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
 }
- 

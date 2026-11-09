@@ -3591,13 +3591,29 @@ public class LeadService {
 
     @Transactional
     public void registrarIngresoLeadSupervisor(LeadIntakeRequest request) {
+        Proveedor proveedorActivo = resolverProveedorSupervisor(request.getIdCampana());
+        registrarIngresoLeadSinEquipo(request, null, proveedorActivo);
+    }
+
+    @Transactional
+    public void registrarIngresoLeadSupervisorRetroactivo(LeadIntakeRetroactivoRequest request) {
+        Proveedor proveedorActivo = resolverProveedorSupervisor(request.getIdCampana());
+        Instant registroAt = calcularRegistroRetroactivo(
+                OperationalDateTime.today(),
+                request.getFechaRegistro(),
+                request.getHoraRegistro()
+        );
+        registrarIngresoLeadSinEquipo(request, registroAt, proveedorActivo);
+    }
+
+    private Proveedor resolverProveedorSupervisor(Long idCampana) {
         Proveedor proveedorActivo = resolverProveedorActivoPreventa();
-        Campana campana = request.getIdCampana() == null ? null : obtenerCampanaActiva(request.getIdCampana());
+        Campana campana = idCampana == null ? null : obtenerCampanaActiva(idCampana);
         if (campana != null && (campana.getProveedor() == null
                 || !proveedorActivo.getId().equals(campana.getProveedor().getId()))) {
             throw new BadRequestException("La campaña seleccionada no pertenece al proveedor activo");
         }
-        registrarIngresoLeadSinEquipo(request, null, proveedorActivo);
+        return proveedorActivo;
     }
 
     @Transactional

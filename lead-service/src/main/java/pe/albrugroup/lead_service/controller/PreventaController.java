@@ -78,6 +78,15 @@ public class PreventaController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/supervisor/intake/retroactivo")
+    @PreAuthorize("hasAuthority('CREATE_LEADS_SUPERVISOR_GTR')")
+    public ResponseEntity<Void> registrarIngresoLeadSupervisorRetroactivo(
+            @Valid @RequestBody LeadIntakeRetroactivoRequest request
+    ) {
+        leadService.registrarIngresoLeadSupervisorRetroactivo(request);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/supervisor/sin-equipo")
     @PreAuthorize("hasAuthority('CREATE_LEADS_SUPERVISOR_GTR')")
     public ResponseEntity<PageResponse<LeadSupervisorSinEquipoResponse>> listarLeadsSinEquipo(

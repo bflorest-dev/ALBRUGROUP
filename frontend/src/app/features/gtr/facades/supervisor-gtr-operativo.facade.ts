@@ -1,13 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormGroup, NonNullableFormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, NonNullableFormBuilder, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
   CampanaResponse,
   LeadGtrLookupResponse,
   LeadGtrMetricasResponse,
-  LeadIntakeRequest
+  LeadIntakeRequest,
+  LeadIntakeRetroactivoRequest
 } from '../../../shared/models/preventa/preventa.models';
 import {
   EquipoOperativoResponse,
@@ -27,6 +28,13 @@ const INTERNATIONAL_LEAD_PATTERN = /^\d{6,15}$/;
 const USERMETA_PATTERN = /^@?[A-Za-z0-9._-]+$/;
 const CLARO_PROVIDER_NAME = 'CLARO';
 const CLARO_HIDDEN_TEAM_ID = 5;
+// Ventana original: descomentar al restaurar la restricción horaria.
+// const RESTRICT_RETROACTIVE_INTAKE_BY_TIME = true;
+
+type SelectOption<T> = {
+  label: string;
+  value: T;
+};
 
 function normalizeUsermeta(value: unknown): string {
   const raw = String(value ?? '').trim();
@@ -76,6 +84,36 @@ export class SupervisorGtrOperativoFacade {
   readonly intakeDialogVisible = signal(false);
   readonly intakeConfirmationVisible = signal(false);
   readonly pendingIntakeLookup = signal<LeadGtrLookupResponse | null>(null);
+  readonly intakeMode = signal<'normal' | 'retroactivo'>('normal');
+  private readonly currentOperationalClock = signal(new Date());
+  private retroactiveWindowTimerId: number | null = null;
+  readonly retroactiveDateControl = new FormControl<string | null>(null, {
+    validators: [Validators.required]
+  });
+  readonly retroactiveHourControl = new FormControl<Date | null>(this.createTimeValue(19, 0), {
+    validators: [Validators.required]
+  });
+  readonly retroactiveDateOptions = computed<SelectOption<string>[]>(() => {
+    const now = this.currentOperationalClock();
+    const today = this.limaDateValue(now);
+    const yesterday = this.previousLimaDateValue(now);
+    return [
+      { value: yesterday, label: `Ayer — ${this.limaDateLabel(yesterday)}` },
+      { value: today, label: `Hoy — ${this.limaDateLabel(today)}` }
+    ];
+  });
+  readonly isRetroactiveIntake = computed(() => this.intakeMode() === 'retroactivo');
+  readonly canShowRetroactiveIntake = computed(() => {
+    // Temporalmente disponible fuera de la ventana 04:00-08:59 para facilitar las pruebas.
+    // Cuando se solicite restaurar la restricción, descomentar la constante y estas líneas, y quitar `return true`:
+    // if (!RESTRICT_RETROACTIVE_INTAKE_BY_TIME) return true;
+    // const hour = this.getLimaDateParts(this.currentOperationalClock()).hour;
+    // return hour >= 4 && hour < 9;
+    return true;
+  });
+  readonly intakeDialogTitle = computed(() =>
+    this.isRetroactiveIntake() ? 'Registrar lead con fecha alternativa (Supervisor)' : 'Nuevo Lead (Supervisor)'
+  );
 
   // Equipo assignment
   readonly asignacionDialogVisible = signal(false);
@@ -107,6 +145,9 @@ export class SupervisorGtrOperativoFacade {
       if (!this.initialized || idProveedor == null) return;
       void this.recargarPorProveedor(idProveedor);
     });
+
+    this.startRetroactiveWindowClock();
+    this.destroyRef.onDestroy(() => this.stopRetroactiveWindowClock());
   }
 
   // ── Computed ────────────────────────────────────────────────────────
@@ -271,17 +312,21 @@ export class SupervisorGtrOperativoFacade {
       this.error.set('Selecciona un proveedor activo antes de registrar un lead.');
       return;
     }
-    this.intakeForm.reset({
-      prefijo: PERU_PHONE_PREFIX, lead: '', usermeta: '',
-      idCampana: null, idOrigen: null
-    });
-    this.intakeCampanaId.set(null);
-    this.intakeError.set('');
-    this.pendingIntakeLookup.set(null);
-    this.intakeConfirmationVisible.set(false);
-    this.exito.set('');
-    this.error.set('');
-    this.intakeDialogVisible.set(true);
+    this.intakeMode.set('normal');
+    this.prepareIntakeDialog();
+  }
+
+  abrirRetroactiveIntakeDialog(): void {
+    if (this.providerScope.activeId() == null) {
+      this.error.set('Selecciona un proveedor activo antes de registrar un lead.');
+      return;
+    }
+    if (!this.canShowRetroactiveIntake()) {
+      this.error.set('El registro con fecha alternativa solo está disponible hasta las 09:00.');
+      return;
+    }
+    this.intakeMode.set('retroactivo');
+    this.prepareIntakeDialog();
   }
 
   intakeIdentityMessage(): string | null {
@@ -333,7 +378,7 @@ export class SupervisorGtrOperativoFacade {
   }
 
   private async submitIntakeInternal(skipLookupConfirmation: boolean): Promise<void> {
-    if (this.intakeForm.invalid || this.intakeSubmitting()) return;
+    if (this.intakeForm.invalid || !this.isRetroactiveDateValid() || !this.isRetroactiveHourValid() || this.intakeSubmitting()) return;
 
     this.intakeSubmitting.set(true);
     this.error.set('');
@@ -365,11 +410,32 @@ export class SupervisorGtrOperativoFacade {
         }
       }
 
-      await firstValueFrom(this.preventaService.registrarIngresoLeadSupervisor(request));
-      this.exito.set('Lead registrado correctamente.');
+      const isRetroactive = this.isRetroactiveIntake();
+      const retroactiveDate = this.retroactiveDateControl.value;
+      const retroactiveTime = this.toApiTime(this.retroactiveHourControl.value);
+      if (isRetroactive) {
+        if (!retroactiveDate || !retroactiveTime) {
+          this.intakeError.set('Selecciona una fecha y hora válidas para el registro alternativo.');
+          return;
+        }
+        const retroactiveRequest: LeadIntakeRetroactivoRequest = {
+          ...request,
+          fechaRegistro: retroactiveDate,
+          horaRegistro: retroactiveTime
+        };
+        await firstValueFrom(this.preventaService.registrarIngresoLeadSupervisorRetroactivo(retroactiveRequest));
+      } else {
+        await firstValueFrom(this.preventaService.registrarIngresoLeadSupervisor(request));
+      }
+      this.exito.set(
+        isRetroactive && retroactiveDate && retroactiveTime
+          ? `Lead registrado correctamente con fecha ${this.retroactiveDateLabel()} a las ${retroactiveTime}.`
+          : 'Lead registrado correctamente.'
+      );
       this.intakeDialogVisible.set(false);
       this.intakeConfirmationVisible.set(false);
       this.pendingIntakeLookup.set(null);
+      this.intakeMode.set('normal');
       await this.cargarLeadsSinEquipo(0);
     } catch (error) {
       this.intakeError.set(this.getIntakeErrorMessage(error));
@@ -420,7 +486,107 @@ export class SupervisorGtrOperativoFacade {
     }
   }
 
+  isRetroactiveDateValid(): boolean {
+    if (!this.isRetroactiveIntake()) return true;
+    const value = this.retroactiveDateControl.value;
+    return !!value && this.retroactiveDateOptions().some((option) => option.value === value);
+  }
+
+  isRetroactiveHourValid(): boolean {
+    if (!this.isRetroactiveIntake()) return true;
+    if (!this.isRetroactiveDateValid()) return false;
+    const value = this.retroactiveHourControl.value;
+    if (!value || Number.isNaN(value.getTime())) return false;
+
+    const minutes = value.getHours() * 60 + value.getMinutes();
+    const today = this.limaDateValue(this.currentOperationalClock());
+    if (this.retroactiveDateControl.value === today) {
+      const current = this.getLimaDateParts(this.currentOperationalClock());
+      return minutes <= current.hour * 60 + current.minute;
+    }
+    return minutes >= 18 * 60 && minutes <= 23 * 60 + 59;
+  }
+
+  retroactiveDateLabel(): string {
+    const selected = this.retroactiveDateControl.value;
+    return this.retroactiveDateOptions().find((option) => option.value === selected)?.label
+      ?? this.retroactiveDateOptions()[0]?.label
+      ?? 'Ayer';
+  }
+
+  retroactiveHourLabel(): string {
+    return this.toApiTime(this.retroactiveHourControl.value) ?? '19:00';
+  }
+
+  retroactiveHourHint(): string {
+    return this.retroactiveDateControl.value === this.limaDateValue(this.currentOperationalClock())
+      ? 'Desde las 00:00 hasta la hora actual de Lima'
+      : 'Entre 18:00 y 23:59';
+  }
+
+  retroactiveMinTime(): Date {
+    return this.retroactiveDateControl.value === this.limaDateValue(this.currentOperationalClock())
+      ? this.createTimeValue(0, 0)
+      : this.createTimeValue(18, 0);
+  }
+
+  retroactiveMaxTime(): Date {
+    if (this.retroactiveDateControl.value !== this.limaDateValue(this.currentOperationalClock())) {
+      return this.createTimeValue(23, 59);
+    }
+    const current = this.getLimaDateParts(this.currentOperationalClock());
+    return this.createTimeValue(current.hour, current.minute);
+  }
+
+  onRetroactiveDateChange(): void {
+    if (!this.isRetroactiveIntake()) return;
+    const current = this.getLimaDateParts(this.currentOperationalClock());
+    const selectedToday = this.retroactiveDateControl.value === this.limaDateValue(this.currentOperationalClock());
+    const currentMinutes = current.hour * 60 + current.minute;
+    const selectedMinutes = this.retroactiveHourControl.value
+      ? this.retroactiveHourControl.value.getHours() * 60 + this.retroactiveHourControl.value.getMinutes()
+      : null;
+    const valid = selectedToday
+      ? selectedMinutes !== null && selectedMinutes <= currentMinutes
+      : selectedMinutes !== null && selectedMinutes >= 18 * 60 && selectedMinutes <= 23 * 60 + 59;
+    if (!valid) {
+      this.retroactiveHourControl.setValue(
+        selectedToday ? this.createTimeValue(current.hour, current.minute) : this.createTimeValue(19, 0)
+      );
+    }
+  }
+
   // ── Validators ─────────────────────────────────────────────────────
+
+  private prepareIntakeDialog(): void {
+    this.resetIntakeForm();
+    this.intakeError.set('');
+    this.pendingIntakeLookup.set(null);
+    this.intakeConfirmationVisible.set(false);
+    this.exito.set('');
+    this.error.set('');
+    this.intakeDialogVisible.set(true);
+  }
+
+  private resetIntakeForm(): void {
+    this.intakeForm.reset({
+      prefijo: PERU_PHONE_PREFIX,
+      lead: '',
+      usermeta: '',
+      idCampana: null,
+      idOrigen: null
+    });
+    this.intakeCampanaId.set(null);
+    this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
+    this.retroactiveDateControl.reset(this.previousLimaDateValue(this.currentOperationalClock()));
+    this.retroactiveDateControl.markAsPristine();
+    this.retroactiveDateControl.markAsUntouched();
+    this.retroactiveHourControl.reset(this.createTimeValue(19, 0));
+    this.retroactiveHourControl.markAsPristine();
+    this.retroactiveHourControl.markAsUntouched();
+    this.intakeForm.markAsPristine();
+    this.intakeForm.markAsUntouched();
+  }
 
   private updateIntakeLeadValidation(prefijo?: string | null): void {
     const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
@@ -450,6 +616,92 @@ export class SupervisorGtrOperativoFacade {
       return formatApiErrorMessage(error.error, fallback);
     }
     return error instanceof Error && error.message ? error.message : fallback;
+  }
+
+  private startRetroactiveWindowClock(): void {
+    this.currentOperationalClock.set(new Date());
+    this.normalizeRetroactiveDateSelection();
+    if (this.retroactiveWindowTimerId !== null) return;
+    this.retroactiveWindowTimerId = window.setInterval(() => {
+      this.currentOperationalClock.set(new Date());
+      this.normalizeRetroactiveDateSelection();
+    }, 60_000);
+  }
+
+  private stopRetroactiveWindowClock(): void {
+    if (this.retroactiveWindowTimerId === null) return;
+    window.clearInterval(this.retroactiveWindowTimerId);
+    this.retroactiveWindowTimerId = null;
+  }
+
+  private createTimeValue(hours: number, minutes: number): Date {
+    const value = new Date();
+    value.setHours(hours, minutes, 0, 0);
+    return value;
+  }
+
+  private toApiTime(value: Date | null): string | null {
+    if (!value) return null;
+    return `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
+  }
+
+  private getLimaDateParts(date: Date): {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+  } {
+    const values = new Map(
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Lima',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+      })
+        .formatToParts(date)
+        .map((part) => [part.type, part.value])
+    );
+    return {
+      year: Number(values.get('year')),
+      month: Number(values.get('month')),
+      day: Number(values.get('day')),
+      hour: Number(values.get('hour')),
+      minute: Number(values.get('minute'))
+    };
+  }
+
+  private limaDateValue(date: Date): string {
+    const current = this.getLimaDateParts(date);
+    return `${current.year}-${String(current.month).padStart(2, '0')}-${String(current.day).padStart(2, '0')}`;
+  }
+
+  private previousLimaDateValue(date: Date): string {
+    const current = this.getLimaDateParts(date);
+    const previousDate = new Date(Date.UTC(current.year, current.month - 1, current.day - 1, 12));
+    return `${previousDate.getUTCFullYear()}-${String(previousDate.getUTCMonth() + 1).padStart(2, '0')}-${String(previousDate.getUTCDate()).padStart(2, '0')}`;
+  }
+
+  private limaDateLabel(value: string): string {
+    const date = new Date(`${value}T12:00:00Z`);
+    const label = new Intl.DateTimeFormat('es-PE', {
+      timeZone: 'UTC',
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }).format(date);
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
+  private normalizeRetroactiveDateSelection(): void {
+    const selected = this.retroactiveDateControl.value;
+    if (selected && this.retroactiveDateOptions().some((option) => option.value === selected)) return;
+    this.retroactiveDateControl.setValue(this.previousLimaDateValue(this.currentOperationalClock()));
+    this.onRetroactiveDateChange();
   }
 
   private static intakeIdentityValidator(control: AbstractControl): { identityRequired?: true; phoneIncomplete?: true } | null {
