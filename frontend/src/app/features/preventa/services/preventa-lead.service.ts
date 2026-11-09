@@ -402,12 +402,14 @@ export class PreventaLeadService {
     );
   }
 
-  registrarIngresoLeadsAlb(file: File): Observable<LeadIntakeMasivoExcelResponse> {
+  registrarIngresoLeadsAlb(file: File, idEquipo: number): Observable<LeadIntakeMasivoExcelResponse> {
     const formData = new FormData();
     formData.append('file', file);
+    const params = new HttpParams().set('idEquipo', idEquipo);
     return this.http.post<LeadIntakeMasivoExcelResponse>(
       `${this.leadUrl}/preventa/intake-masivo/alb`,
-      formData
+      formData,
+      { params }
     );
   }
 

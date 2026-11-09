@@ -3876,6 +3876,92 @@ public class LeadService {
                 ));
     }
 
+    /**
+     * Prepara el contexto de una carga ALB. Esta ruta es independiente del intake masivo Excel:
+     * el equipo destino es obligatorio y su proveedor se toma del fallback configurado.
+     */
+    @Transactional
+    public AlbIntakeContext prepararCargaAlb(Long idEquipo) {
+        Long idEquipoDestino = normalizarIdEquipoContextual(idEquipo);
+        if (idEquipoDestino == null) {
+            throw new BadRequestException("Selecciona un equipo destino para la carga ALB");
+        }
+        Proveedor proveedorDestino = resolverProveedorFallbackActivoParaAlb(idEquipoDestino);
+        return new AlbIntakeContext(idEquipoDestino, proveedorDestino);
+    }
+
+    /**
+     * Registra una fila ALB respetando la particion equipo + proveedor de destino.
+     * No se usa desde Excel para conservar el comportamiento existente de ese flujo.
+     */
+    @Transactional
+    public AlbIntakeOutcome registrarIngresoLeadAlb(
+            AlbIntakeContext contexto,
+            String prefijo,
+            String lead,
+            Origen origen,
+            String documentoSnapshot,
+            String direccionSnapshot,
+            Long idCampanaBaseMasivo,
+            List<String> advertencias
+    ) {
+        if (contexto == null || contexto.idEquipo() == null || contexto.proveedor() == null) {
+            throw new BadRequestException("No se pudo resolver el equipo y proveedor destino de la carga ALB");
+        }
+
+        String prefijoNormalizado = normalizarPrefijo(prefijo);
+        String numeroLead = normalizarLead(lead);
+        List<Lead> candidatos = leadRepository.buscarPorIdentidadParaCargaAlb(prefijoNormalizado, numeroLead);
+        if (candidatos.stream().anyMatch(item -> item.getProveedorOrigen() == null)) {
+            throw new ConflictException(
+                    "El lead ya existe, pero no tiene proveedor de origen determinable; no se puede cargar de forma segura");
+        }
+        Lead leadMismoProveedor = candidatos.stream()
+                .filter(item -> item.getProveedorOrigen() != null)
+                .filter(item -> Objects.equals(
+                        item.getProveedorOrigen().getId(), contexto.proveedor().getId()))
+                .findFirst()
+                .orElse(null);
+
+        if (leadMismoProveedor != null) {
+            boolean cambioEquipo = !Objects.equals(leadMismoProveedor.getIdEquipo(), contexto.idEquipo());
+            Lead guardado = registrarIngresoLeadAlbExistente(
+                    leadMismoProveedor,
+                    prefijoNormalizado,
+                    numeroLead,
+                    origen,
+                    documentoSnapshot,
+                    direccionSnapshot,
+                    idCampanaBaseMasivo,
+                    advertencias,
+                    contexto,
+                    cambioEquipo
+            );
+            return new AlbIntakeOutcome(guardado, cambioEquipo ? "REENCOLADO" : "REUTILIZADO");
+        }
+
+        Lead guardado = registrarLeadAlbNuevo(
+                prefijoNormalizado,
+                numeroLead,
+                origen,
+                documentoSnapshot,
+                direccionSnapshot,
+                idCampanaBaseMasivo,
+                advertencias,
+                contexto
+        );
+        return new AlbIntakeOutcome(
+                guardado,
+                candidatos.isEmpty() ? "NUEVO" : "NUEVO_POR_PROVEEDOR"
+        );
+    }
+
+    public record AlbIntakeContext(Long idEquipo, Proveedor proveedor) {
+    }
+
+    public record AlbIntakeOutcome(Lead lead, String operacion) {
+    }
+
     @Transactional
     public void asignarLead(Long idLead, LeadAsignacionRequest request) {
         asignarLeadInterno(
@@ -4801,6 +4887,110 @@ public class LeadService {
             notificarCambioLead("REGISTRO", savedLead, null, null);
         }
         return savedLead;
+    }
+
+    private Lead registrarLeadAlbNuevo(
+            String prefijo,
+            String numeroLead,
+            Origen origen,
+            String documentoSnapshot,
+            String direccionSnapshot,
+            Long idCampanaBaseMasivo,
+            List<String> advertencias,
+            AlbIntakeContext contexto
+    ) {
+        Campana campana = obtenerCampanaBaseAlb(idCampanaBaseMasivo, contexto, advertencias);
+        Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, null, origen, campana, OperationalDateTime.now());
+        aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
+        lead.setContacto(resolverContacto(prefijo, numeroLead));
+        lead.setIdEquipo(contexto.idEquipo());
+        lead.setProveedorOrigen(contexto.proveedor());
+        completarNumeroParaLlamarSiFalta(lead);
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa());
+        leadEtapaResumenService.registrarEntradaEtapa(savedLead.getId(), savedLead.getEtapa(), OperationalDateTime.now());
+        return savedLead;
+    }
+
+    private Lead registrarIngresoLeadAlbExistente(
+            Lead lead,
+            String prefijo,
+            String numeroLead,
+            Origen origen,
+            String documentoSnapshot,
+            String direccionSnapshot,
+            Long idCampanaBaseMasivo,
+            List<String> advertencias,
+            AlbIntakeContext contexto,
+            boolean cambioEquipo
+    ) {
+        Campana campana = lead.getCampana();
+        if (campana == null) {
+            campana = obtenerCampanaBaseAlb(idCampanaBaseMasivo, contexto, advertencias);
+        }
+
+        lead.setPrefijo(prefijo);
+        lead.setLead(numeroLead);
+        completarNumeroParaLlamarSiFalta(lead);
+        lead.setCampana(campana);
+        lead.setOrigen(origen);
+        lead.setLastEntryAt(OperationalDateTime.now());
+        aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
+        if (lead.getContacto() == null) {
+            lead.setContacto(resolverContacto(prefijo, numeroLead));
+        }
+        lead.setIdEquipo(contexto.idEquipo());
+        lead.setProveedorOrigen(contexto.proveedor());
+
+        if (cambioEquipo) {
+            reencolarLeadAlb(lead);
+        } else if (lead.getEtapa() == Etapa.PREVENTA && !tieneGestionHoy(lead.getId())) {
+            lead.setIdAsesorAsignado(null);
+            lead.setNombreAsesorAsignado(null);
+            lead.setIdTipificacion(null);
+            lead.setCodigoTipificacion(null);
+            lead.setIdSubtipificacion(null);
+            lead.setCodigoSubtipificacion(null);
+            lead.setEstado(EstadoSeguimiento.NUEVO);
+        }
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa());
+        return savedLead;
+    }
+
+    private void reencolarLeadAlb(Lead lead) {
+        lead.setIdAsesorAsignado(null);
+        lead.setNombreAsesorAsignado(null);
+        lead.setIdTipificacion(null);
+        lead.setCodigoTipificacion(null);
+        lead.setIdSubtipificacion(null);
+        lead.setCodigoSubtipificacion(null);
+        lead.setEsDerivado(false);
+        lead.setEstado(EstadoSeguimiento.NUEVO);
+    }
+
+    private Campana obtenerCampanaBaseAlb(
+            Long idCampanaBaseMasivo,
+            AlbIntakeContext contexto,
+            List<String> advertencias
+    ) {
+        Campana campana = obtenerCampanaBaseMasivo(idCampanaBaseMasivo, advertencias);
+        if (campana == null) {
+            return null;
+        }
+        if (campana.getProveedor() == null
+                || !Objects.equals(campana.getProveedor().getId(), contexto.proveedor().getId())) {
+            throw new ConflictException("La campaña base no pertenece al proveedor del equipo destino");
+        }
+        Long idEquipoCampana = equipoCampanaService.resolverEquipoPorCampana(campana.getId());
+        if (idEquipoCampana == null || !Objects.equals(idEquipoCampana, contexto.idEquipo())) {
+            throw new ConflictException("La campaña base no pertenece al equipo destino");
+        }
+        return campana;
     }
 
     private void registrarIngresoLeadExistente(
@@ -6248,6 +6438,28 @@ public class LeadService {
                 .map(EquipoProveedor::getProveedor)
                 .findFirst()
                 .orElse(null);
+    }
+
+    private Proveedor resolverProveedorFallbackActivoParaAlb(Long idEquipo) {
+        List<EquipoProveedor> fallbacks = equipoProveedorRepository.findByIdEquipo(idEquipo).stream()
+                .filter(EquipoProveedor::isFallbackLeadSinCampana)
+                .toList();
+        if (fallbacks.isEmpty()) {
+            throw new BadRequestException(
+                    "El equipo seleccionado no tiene un proveedor fallback configurado para la carga ALB");
+        }
+        if (fallbacks.size() > 1) {
+            throw new BadRequestException(
+                    "El equipo seleccionado tiene más de un proveedor fallback configurado para la carga ALB");
+        }
+        EquipoProveedor equipoProveedor = fallbacks.get(0);
+        Proveedor proveedor = equipoProveedor.getProveedor();
+        if (proveedor == null || proveedor.getId() == null) {
+            throw new BadRequestException("El equipo seleccionado no tiene un proveedor destino válido");
+        }
+        return proveedorRepository.findByIdAndActivoTrue(proveedor.getId())
+                .orElseThrow(() -> new BadRequestException(
+                        "El proveedor fallback del equipo no existe o está inactivo"));
     }
 
     private LeadPlanDetalleResponse toLeadPlanDetalleResponse(Plan plan) {

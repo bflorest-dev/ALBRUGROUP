@@ -1560,10 +1560,16 @@ export class GtrWorkspaceFacade {
       return;
     }
 
+    const idEquipo = await this.resolveOperationalEquipoId();
+    if (idEquipo === null) {
+      this.errorMessage.set('Selecciona un equipo destino antes de cargar la base ALB.');
+      return;
+    }
+
     this.isUploadingMasivoAlb.set(true);
     this.clearMessages();
     try {
-      const response = await firstValueFrom(this.preventaService.registrarIngresoLeadsAlb(file));
+      const response = await firstValueFrom(this.preventaService.registrarIngresoLeadsAlb(file, idEquipo));
       this.masivoExcelImport.set(response);
       this.masivoExcelResultsDialogOpen.set(true);
       this.successMessage.set(
@@ -3555,6 +3561,28 @@ export class GtrWorkspaceFacade {
       return '-';
     }
     return String(value);
+  }
+
+  equipoNombre(idEquipo?: number | null): string {
+    if (idEquipo === null || idEquipo === undefined) {
+      return '-';
+    }
+    return this.equipos().find((equipo) => equipo.id === idEquipo)?.nombre ?? `Equipo ${idEquipo}`;
+  }
+
+  masivoOperacionLabel(operacion?: string | null): string {
+    switch (operacion) {
+      case 'NUEVO':
+        return 'Nuevo';
+      case 'REUTILIZADO':
+        return 'Reutilizado';
+      case 'REENCOLADO':
+        return 'Reencolado';
+      case 'NUEVO_POR_PROVEEDOR':
+        return 'Nuevo por proveedor';
+      default:
+        return '-';
+    }
   }
 
   advisorShortName(value: unknown): string {

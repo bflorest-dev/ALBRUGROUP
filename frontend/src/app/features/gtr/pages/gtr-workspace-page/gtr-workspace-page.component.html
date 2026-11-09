@@ -275,6 +275,9 @@
                   <th>Lead</th>
                   <th>Base</th>
                   <th>Estado</th>
+                  <th>Operación</th>
+                  <th>Equipo destino</th>
+                  <th>Proveedor destino</th>
                   <th>Campaña</th>
                 </tr>
               </ng-template>
@@ -289,6 +292,9 @@
                       [value]="row.registrado ? 'Registrado' : 'Fallido'"
                     />
                   </td>
+                  <td>{{ facade.masivoOperacionLabel(row.operacion) }}</td>
+                  <td>{{ facade.equipoNombre(row.idEquipoDestino) }}</td>
+                  <td>{{ row.proveedorDestino || '-' }}</td>
                   <td>{{ row.campanaUsada || '-' }}</td>
                 </tr>
               </ng-template>

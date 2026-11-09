@@ -25,4 +25,7 @@ public class LeadIntakeMasivoExcelResultadoResponse {
     private Long idCampanaUsada;
     private String campanaUsada;
     private boolean campanaInferida;
+    private String operacion;
+    private Long idEquipoDestino;
+    private String proveedorDestino;
 }

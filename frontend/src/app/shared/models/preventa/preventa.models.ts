@@ -869,6 +869,9 @@ export interface LeadIntakeMasivoExcelResultadoResponse {
   idCampanaUsada?: number | null;
   campanaUsada?: string | null;
   campanaInferida: boolean;
+  operacion?: 'NUEVO' | 'REUTILIZADO' | 'REENCOLADO' | 'NUEVO_POR_PROVEEDOR' | null;
+  idEquipoDestino?: number | null;
+  proveedorDestino?: string | null;
 }
 
 export interface LeadIntakeMasivoExcelResponse {

@@ -180,9 +180,10 @@ public class PreventaController {
 
     @PostMapping(value = "/intake-masivo/alb", consumes = "multipart/form-data") @PreAuthorize("hasAuthority('CREATE_LEADS')")
     public ResponseEntity<LeadIntakeMasivoExcelResponse> registrarIngresoLeadsAlb(
-            @RequestPart("file") MultipartFile file
+            @RequestPart("file") MultipartFile file,
+            @RequestParam Long idEquipo
     ) {
-        var response = albIntakeService.registrarDesdeAlb(file);
+        var response = albIntakeService.registrarDesdeAlb(file, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     @PatchMapping("/{idLead}/snapshots") @PreAuthorize("hasAnyAuthority('CREATE_LEADS','UPDATE_LEADS_ASESOR')")

@@ -36,7 +36,7 @@ public class AlbIntakeService {
     private final LeadRealtimeNotifier leadRealtimeNotifier;
     private final OrigenRepository origenRepository;
 
-    public LeadIntakeMasivoExcelResponse registrarDesdeAlb(MultipartFile file) {
+    public LeadIntakeMasivoExcelResponse registrarDesdeAlb(MultipartFile file, Long idEquipo) {
         validarArchivo(file);
 
         byte[] fileBytes;
@@ -51,6 +51,7 @@ public class AlbIntakeService {
         Origen origen = origenRepository.findByCodigo(content.origenCodigo())
                 .orElseThrow(() -> new BadRequestException(
                         "Origen del archivo no encontrado: " + content.origenCodigo()));
+        LeadService.AlbIntakeContext contexto = leadService.prepararCargaAlb(idEquipo);
 
         List<LeadIntakeMasivoExcelResultadoResponse> resultados = new ArrayList<>();
         Set<String> leadsProcesados = new HashSet<>();
@@ -60,20 +61,21 @@ public class AlbIntakeService {
             fila++;
             String lead = normalizarLead(row.lead());
             if (lead.isBlank() || lead.length() != 9) {
-                resultados.add(resultadoFallido(fila, row.lead(), origen,
+                resultados.add(resultadoFallido(fila, row.lead(), origen, contexto,
                         "Lead invalido: debe ser 9 digitos"));
                 continue;
             }
             if (!leadsProcesados.add(lead)) {
-                resultados.add(resultadoFallido(fila, lead, origen,
+                resultados.add(resultadoFallido(fila, lead, origen, contexto,
                         "Lead duplicado dentro del archivo"));
                 continue;
             }
             try {
                 String prefijo = row.prefijo() != null ? row.prefijo() : PREFIJO_DEFAULT;
                 List<String> advertencias = new ArrayList<>();
-                Lead savedLead = transactionTemplate.execute(status ->
-                        leadService.registrarIngresoLeadMasivo(
+                LeadService.AlbIntakeOutcome resultado = transactionTemplate.execute(status ->
+                        leadService.registrarIngresoLeadAlb(
+                                contexto,
                                 prefijo,
                                 lead,
                                 origen,
@@ -83,11 +85,11 @@ public class AlbIntakeService {
                                 advertencias
                         )
                 );
-                resultados.add(resultadoExitoso(fila, lead, savedLead));
+                resultados.add(resultadoExitoso(fila, lead, resultado, contexto));
             } catch (BusinessException e) {
-                resultados.add(resultadoFallido(fila, lead, origen, e.getMessage()));
+                resultados.add(resultadoFallido(fila, lead, origen, contexto, e.getMessage()));
             } catch (Exception e) {
-                resultados.add(resultadoFallido(fila, lead, origen,
+                resultados.add(resultadoFallido(fila, lead, origen, contexto,
                         "Ocurrio un error inesperado"));
             }
         }
@@ -136,7 +138,13 @@ public class AlbIntakeService {
                 .build());
     }
 
-    private LeadIntakeMasivoExcelResultadoResponse resultadoExitoso(int fila, String lead, Lead savedLead) {
+    private LeadIntakeMasivoExcelResultadoResponse resultadoExitoso(
+            int fila,
+            String lead,
+            LeadService.AlbIntakeOutcome resultado,
+            LeadService.AlbIntakeContext contexto
+    ) {
+        Lead savedLead = resultado.lead();
         return LeadIntakeMasivoExcelResultadoResponse.builder()
                 .fila(fila)
                 .lead(lead)
@@ -145,11 +153,19 @@ public class AlbIntakeService {
                 .mensaje("Lead registrado correctamente")
                 .advertencias(List.of())
                 .origenUsado(savedLead.getOrigen() == null ? null : savedLead.getOrigen().getNombre())
+                .operacion(resultado.operacion())
+                .idEquipoDestino(contexto.idEquipo())
+                .proveedorDestino(contexto.proveedor().getNombre())
                 .build();
     }
 
     private LeadIntakeMasivoExcelResultadoResponse resultadoFallido(
-            int fila, String lead, Origen origen, String mensaje) {
+            int fila,
+            String lead,
+            Origen origen,
+            LeadService.AlbIntakeContext contexto,
+            String mensaje
+    ) {
         return LeadIntakeMasivoExcelResultadoResponse.builder()
                 .fila(fila)
                 .lead(lead)
@@ -157,6 +173,8 @@ public class AlbIntakeService {
                 .mensaje(mensaje)
                 .advertencias(List.of())
                 .origenUsado(origen.getNombre())
+                .idEquipoDestino(contexto.idEquipo())
+                .proveedorDestino(contexto.proveedor().getNombre())
                 .build();
     }
 }

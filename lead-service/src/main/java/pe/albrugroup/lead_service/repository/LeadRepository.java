@@ -48,6 +48,21 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("SELECT l FROM Lead l WHERE l.id = :id")
     Optional<Lead> buscarPorIdConBloqueo(@Param("id") Long id);
 
+    // La carga ALB debe comparar el proveedor de todos los leads con la misma identidad. Es una
+    // consulta nativa deliberada: el filtro Hibernate de PREVENTA limita por proveedor y no debe
+    // ocultar aquí un lead de otro proveedor que debe permanecer intacto.
+    @Query(value = """
+            SELECT *
+            FROM lead
+            WHERE prefijo = :prefijo
+              AND lead = :lead
+            ORDER BY last_entry_at DESC NULLS LAST, id DESC
+            FOR UPDATE
+            """, nativeQuery = true)
+    List<Lead> buscarPorIdentidadParaCargaAlb(
+            @Param("prefijo") String prefijo,
+            @Param("lead") String lead);
+
     Optional<Lead> findByPrefijoAndLead(String prefijo, String lead);
     // Dedup del intake tolerante a multi-titular: con varias oportunidades por teléfono+equipo
     // (hermanas), trabaja sobre la activa (lastEntryAt más reciente). El @Filter lo acota al equipo.
