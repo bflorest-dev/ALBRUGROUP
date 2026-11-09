@@ -49,6 +49,7 @@ public class FreelanceService {
     private final FreelanceVentaReenvioRepository reenvioRepository;
     private final OrigenRepository leadOrigenRepository;
     private final DistritoRepository distritoRepository;
+    private final TipoDomicilioRepository tipoDomicilioRepository;
     private final LeadMapper leadMapper;
     private final LeadService leadService;
     private final LeadSeguimientoService leadSeguimientoService;
@@ -231,9 +232,10 @@ public class FreelanceService {
         }
         Instant inicio = inicioFecha.atStartOfDay(OperationalDateTime.ZONE).toInstant();
         Instant fin = finFecha.plusDays(1).atStartOfDay(OperationalDateTime.ZONE).toInstant();
+        Long idEquipo = equipoActualObligatorio();
         List<FreelanceVentaOrigen> origenes = origenRepository
-                .findByIdFreelanceAndCreadoAtGreaterThanEqualAndCreadoAtLessThanOrderByCreadoAtDesc(
-                        currentUser.empleadoID(), inicio, fin);
+                .findByIdEquipoOrigenAndCreadoAtGreaterThanEqualAndCreadoAtLessThanOrderByCreadoAtDesc(
+                        idEquipo, inicio, fin);
         List<Fila> filas = origenes.stream()
                 .map(this::construirFila)
                 .filter(Objects::nonNull)
@@ -297,6 +299,7 @@ public class FreelanceService {
         boolean puede = puedeCorregir(lead, origen);
         FreelanceSeguimientoResponse.Detalle detalle = new FreelanceSeguimientoResponse.Detalle(
                 lead.getId(), lead.getLead(), origen.getCreadoAt(), clasificacion,
+                origen.getNombreFreelance(),
                 ultimo == null ? null : ultimo.getTipificacion(),
                 ultimo == null ? null : ultimo.getSubtipificacion(),
                 venta == null ? null : venta.getNombreAsesorUltimaGestion(),
@@ -365,6 +368,13 @@ public class FreelanceService {
         boolean esWin = proveedor.equals("WIN");
         leadMapper.updateDatosPreventa(datosRequest, datos);
         leadMapper.updateDireccion(direccionRequest, direccion);
+        if (direccionRequest.getIdTipoDomicilio() != null) {
+            TipoDomicilio tipoDomicilio = tipoDomicilioRepository.findById(direccionRequest.getIdTipoDomicilio())
+                    .orElseThrow(() -> new NotFoundException(TipoDomicilio.class, direccionRequest.getIdTipoDomicilio()));
+            direccion.setTipoDomicilio(tipoDomicilio);
+        } else {
+            direccion.setTipoDomicilio(null);
+        }
         lead.setTecnologia(esClaro ? direccionRequest.getTecnologia() : null);
         lead.setEsFullClaro(esClaro && Boolean.TRUE.equals(direccionRequest.getEsFullClaro()));
         lead.setEsJalaCobertura(esWin && Boolean.TRUE.equals(direccionRequest.getEsJalaCobertura()));

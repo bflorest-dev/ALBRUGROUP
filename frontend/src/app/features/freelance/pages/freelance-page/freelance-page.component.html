@@ -103,13 +103,14 @@
     </header>
     <div class="table-scroll">
       <table class="detail-table">
-        <thead><tr><th>Ingreso</th><th>Estado</th><th>Lead</th><th>Cliente</th><th>Documento</th><th>Proveedor / plan</th><th>Gestión Venta</th><th>Intentos</th><th></th></tr></thead>
+        <thead><tr><th>Ingreso</th><th>Estado</th><th>Lead</th><th>Registrada por</th><th>Cliente</th><th>Documento</th><th>Proveedor / plan</th><th>Gestión Venta</th><th>Intentos</th><th></th></tr></thead>
         <tbody>
           @for (row of filteredRows(); track row.idLead) {
             <tr [class.returned]="row.requiereCorreccion">
               <td><strong>{{ row.fechaRegistro | date:'dd/MM':'UTC' }}</strong><small>{{ row.fechaRegistro | date:'HH:mm':'UTC' }}</small></td>
               <td><span class="status-pill" [class]="stateClass(row.clasificacion)">{{ stateLabel(row.clasificacion) }}</span></td>
               <td class="mono">{{ row.lead }}</td>
+              <td><strong>{{ row.nombreFreelance || 'Sin identificar' }}</strong><small>Freelance</small></td>
               <td><strong>{{ row.cliente || 'Sin nombre' }}</strong><small>{{ row.celularRegistro || '—' }}</small></td>
               <td><span>{{ row.tipoDocumento || '—' }}</span><small class="mono">{{ row.numeroDocumento || '—' }}</small></td>
               <td><strong>{{ row.proveedor || '—' }}</strong><small>{{ row.plan || 'Sin plan' }}</small></td>
@@ -122,7 +123,7 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="9" class="empty large">No hay ventas que coincidan con los filtros.</td></tr>
+            <tr><td colspan="10" class="empty large">No hay ventas que coincidan con los filtros.</td></tr>
           }
         </tbody>
       </table>
@@ -132,6 +133,7 @@
 
 <app-freelance-venta-drawer
   [visible]="drawerOpen()"
+  [preferredProviderId]="providerId()"
   [mode]="correctionLeadId() ? 'corregir' : 'crear'"
   [idLead]="correctionLeadId()"
   (close)="closeDrawer()"

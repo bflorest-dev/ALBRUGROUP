@@ -9,6 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import pe.albrugroup.lead_service.security.JWTUtil;
+import pe.albrugroup.lead_service.service.DireccionCatalogoService;
 import pe.albrugroup.lead_service.service.FreelanceService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -31,6 +32,9 @@ class FreelanceControllerSecurityTest {
     @MockitoBean
     private FreelanceService freelanceService;
 
+    @MockitoBean
+    private DireccionCatalogoService direccionCatalogoService;
+
     @Test
     @WithMockUser(authorities = "READ_LEADS_GTR")
     void usuarioSinPermisoFreelanceRecibeForbidden() throws Exception {
@@ -42,6 +46,13 @@ class FreelanceControllerSecurityTest {
     @WithMockUser(authorities = "FREELANCE_READ")
     void usuarioConPermisoPuedeConsultarSeguimiento() throws Exception {
         mockMvc.perform(get("/freelance/seguimiento"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "FREELANCE_READ")
+    void usuarioFreelancePuedeConsultarCatalogosDeDireccion() throws Exception {
+        mockMvc.perform(get("/direccion/catalogo/tipos-urbanizacion"))
                 .andExpect(status().isOk());
     }
 }

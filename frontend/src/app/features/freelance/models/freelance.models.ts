@@ -114,6 +114,7 @@ export interface FreelanceSeguimientoDetalle {
   idLead: number;
   lead: string;
   fechaRegistro: string;
+  nombreFreelance?: string | null;
   clasificacion: string;
   tipificacionVenta?: string | null;
   subtipificacionVenta?: string | null;

@@ -22,13 +22,13 @@ public class DireccionCatalogoController {
     private final DireccionCatalogoService direccionCatalogoService;
 
     @GetMapping("/tipos-domicilio")
-    @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    @PreAuthorize("hasAnyAuthority('READ_LEADS_ASESOR', 'FREELANCE_READ')")
     public ResponseEntity<List<TipoDomicilioResponse>> listarTiposDomicilio(@RequestParam Long idProveedor) {
         return ResponseEntity.ok(direccionCatalogoService.listarTiposDomicilio(idProveedor));
     }
 
     @GetMapping("/tipos-urbanizacion")
-    @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    @PreAuthorize("hasAnyAuthority('READ_LEADS_ASESOR', 'FREELANCE_READ')")
     public ResponseEntity<List<String>> listarTiposUrbanizacion() {
         return ResponseEntity.ok(direccionCatalogoService.listarTiposUrbanizacion());
     }

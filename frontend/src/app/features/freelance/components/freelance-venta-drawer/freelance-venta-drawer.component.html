@@ -62,6 +62,16 @@
               <h3>Expediente completo</h3>
               <p>Datos del titular, contacto y dirección donde se instalará el servicio.</p>
             </div>
+            @if (providers().length > 1) {
+              <label class="full provider-picker">
+                <span>Proveedor</span>
+                <select formControlName="idProveedor" (change)="selectProvider($any($event.target).value)" [class.invalid]="invalid('idProveedor')">
+                  <option [ngValue]="null">Selecciona un proveedor</option>
+                  @for (provider of providers(); track provider.id) { <option [value]="provider.id">{{ provider.nombre }}</option> }
+                </select>
+                <small>Los campos y planes se ajustan al proveedor elegido.</small>
+              </label>
+            }
             <h4>Titular y contacto</h4>
             <div class="fields two-columns">
               <label><span>Tipo de documento</span><select formControlName="tipoDocumento"><option>DNI</option><option>CE</option><option>RUC</option></select></label>
@@ -106,7 +116,7 @@
                 <label><span>Provincia</span><select formControlName="idProvinciaDomicilio" (change)="selectProvince('domicilio', $any($event.target).value)" [class.invalid]="invalid('idProvinciaDomicilio')"><option [ngValue]="null">Selecciona</option>@for (item of provinciasDomicilio(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
                 <label><span>Distrito</span><select formControlName="idDistritoDomicilio" (change)="selectDistrict('domicilio', $any($event.target).value)" [class.invalid]="invalid('idDistritoDomicilio')"><option [ngValue]="null">Selecciona</option>@for (item of distritosDomicilio(); track item.id) { <option [value]="item.id">{{ item.nombre }}</option> }</select></label>
               </fieldset>
-              <label><span>Tipo de domicilio</span><select formControlName="idTipoDomicilio" [class.invalid]="invalid('idTipoDomicilio')"><option [ngValue]="null">Selecciona</option>@for (item of tipoDomicilioOptions(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+              <label><span>Tipo de domicilio</span><select formControlName="idTipoDomicilio" [disabled]="direccionCatalogosLoading()" [class.invalid]="invalid('idTipoDomicilio')"><option [ngValue]="null">{{ direccionCatalogosLoading() ? 'Cargando opciones…' : 'Selecciona' }}</option>@for (item of tipoDomicilioOptions(); track item.id) { <option [ngValue]="item.id">{{ catalogLabel(item.nombre) }}</option> }</select></label>
               <label><span>Tipo de vía <small>opcional</small></span><select formControlName="tipoVia"><option [ngValue]="null">Sin vía</option><option>CALLE</option><option>AVENIDA</option><option>JIRON</option><option>PASAJE</option><option>PROLONGACION</option></select></label>
               @if (form.controls.tipoVia.value) { <label><span>Nombre de vía</span><input formControlName="via"></label> }
               <label class="full"><span>Dirección</span><input formControlName="direccion" placeholder="Av. Principal 123" [class.invalid]="invalid('direccion')"></label>
@@ -123,7 +133,8 @@
                 <input formControlName="longitud" aria-label="Longitud" inputmode="decimal" placeholder="-77.12235645202007" [class.invalid]="invalid('longitud')">
                 @if (coordinatePasteMessage()) { <small class="coordinate-paste-message" role="alert">{{ coordinatePasteMessage() }}</small> }
               </label>
-              <label><span>Tipo de urbanización <small>opcional</small></span><select formControlName="tipoUrbanizacion"><option value="">—</option>@for (item of tipoUrbanizacionOptions(); track item) { <option [value]="item">{{ item }}</option> }</select></label>
+              <label><span>Tipo de urbanización <small>opcional</small></span><select formControlName="tipoUrbanizacion" [disabled]="direccionCatalogosLoading()"><option value="">{{ direccionCatalogosLoading() ? 'Cargando opciones…' : '—' }}</option>@for (item of tipoUrbanizacionOptions(); track item) { <option [value]="item">{{ catalogLabel(item) }}</option> }</select></label>
+              @if (direccionCatalogosError()) { <p class="catalog-error full" role="alert">{{ direccionCatalogosError() }}</p> }
               @for (field of [
                 ['urbanizacion','Urbanización'], ['numero','Número'], ['manzana','Manzana'], ['lote','Lote'],
                 ['nombreEdificio','Edificio'], ['nombreCondominio','Condominio'], ['piso','Piso'], ['interior','Interior']

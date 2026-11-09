@@ -20,6 +20,7 @@ public record FreelanceSeguimientoResponse(
             Long idLead,
             String lead,
             Instant fechaRegistro,
+            String nombreFreelance,
             String clasificacion,
             String tipificacionVenta,
             String subtipificacionVenta,

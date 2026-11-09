@@ -56,11 +56,11 @@ export class FreelancePageComponent {
 
   readonly canCreate = computed(() => {
     const providerCount = this.options()?.proveedores.length ?? 0;
-    return providerCount === 1 && !this.teamError();
+    return providerCount > 0 && !this.teamError();
   });
   readonly providerSetupMessage = computed(() => {
     const options = this.options();
-    if (!options || this.teamError() || options.proveedores.length === 1) return null;
+    if (!options || this.teamError() || options.proveedores.length > 0) return null;
     return 'Tu cuenta todavía no está configurada para registrar ventas. Solicita que te asignen un proveedor.';
   });
   readonly range = computed(() => {

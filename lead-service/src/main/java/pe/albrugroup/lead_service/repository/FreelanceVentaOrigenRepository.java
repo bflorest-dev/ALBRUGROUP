@@ -14,4 +14,6 @@ public interface FreelanceVentaOrigenRepository extends JpaRepository<FreelanceV
     Optional<FreelanceVentaOrigen> findByIdLeadAndIdFreelance(Long idLead, Long idFreelance);
     List<FreelanceVentaOrigen> findByIdFreelanceAndCreadoAtGreaterThanEqualAndCreadoAtLessThanOrderByCreadoAtDesc(
             Long idFreelance, Instant desde, Instant hasta);
+    List<FreelanceVentaOrigen> findByIdEquipoOrigenAndCreadoAtGreaterThanEqualAndCreadoAtLessThanOrderByCreadoAtDesc(
+            Long idEquipoOrigen, Instant desde, Instant hasta);
 }

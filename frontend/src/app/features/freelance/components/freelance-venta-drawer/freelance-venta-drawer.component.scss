@@ -29,6 +29,8 @@ h4 { margin: 30px 0 14px; color: #f5ac50; font-size: 12px; letter-spacing: .1em;
 .identity-grid { grid-template-columns: 190px 1fr; }
 .two-columns { grid-template-columns: repeat(2,minmax(0,1fr)); }
 .provider-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; min-width: 0; }
+.provider-picker { margin-bottom: 2px; }
+.provider-picker > small { color: #8f9aa5; font-size: 11px; font-weight: 500; }
 .provider-check { min-height: 44px; display: flex; align-items: center; gap: 10px; border: 1px solid #42505d; border-radius: 8px; background: #171e26; padding: 0 12px; cursor: pointer; }
 .provider-check input[type='checkbox'] { width: 17px; height: 17px; min-height: 0; margin: 0; accent-color: #f5ac50; }
 label { display: grid; gap: 7px; color: #e7ebef; font-size: 13px; font-weight: 650; }
@@ -65,6 +67,7 @@ input.invalid, select.invalid { border-color: #e17767; }
 :host ::ng-deep .freelance-date-field.field-invalid .p-datepicker .date-field__input { border-color: #e17767; }
 .date-field-slot { display: grid; align-content: start; gap: 6px; min-width: 0; }
 .field-error { color: #ff9f91; font-size: 11px; font-weight: 600; }
+.catalog-error { color: #ffb6aa; font-size: 12px; font-weight: 600; margin: -4px 0 0; }
 ::ng-deep .freelance-date-panel { z-index: 1400 !important; border: 1px solid #465460; border-radius: 12px; box-shadow: 0 20px 44px rgba(0,0,0,.34); }
 .return-note, .form-error { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border: 1px solid #665038; border-radius: 10px; background: #2a231c; margin: 0 auto 22px; max-width: 900px; }
 .return-note i { color: #f5ac50; font-size: 21px; }.return-note strong { display:block; }.return-note p { margin: 4px 0 0; color:#c8bbaa; }

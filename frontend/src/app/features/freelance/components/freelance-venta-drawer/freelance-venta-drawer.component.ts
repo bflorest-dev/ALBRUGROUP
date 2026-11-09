@@ -46,6 +46,7 @@ type DrawerMode = 'crear' | 'corregir';
 })
 export class FreelanceVentaDrawerComponent {
   readonly visible = input(false);
+  readonly preferredProviderId = input<number | null>(null);
   readonly mode = input<DrawerMode>('crear');
   readonly idLead = input<number | null>(null);
   readonly close = output<void>();
@@ -75,6 +76,8 @@ export class FreelanceVentaDrawerComponent {
   readonly distritosDomicilio = signal<UbigeoItem[]>([]);
   readonly tipoDomicilioOptions = signal<TipoDomicilioOption[]>([]);
   readonly tipoUrbanizacionOptions = signal<string[]>([]);
+  readonly direccionCatalogosLoading = signal(false);
+  readonly direccionCatalogosError = signal<string | null>(null);
 
   readonly form = this.fb.group({
     prefijo: ['51', [Validators.required, prefijoValidator()]],
@@ -229,6 +232,10 @@ export class FreelanceVentaDrawerComponent {
     this.form.controls.idPlan.markAsTouched();
   }
 
+  selectProvider(value: string): void {
+    this.applyProvider(value);
+  }
+
   fieldVisible(field: CampoCaptura): boolean {
     return this.configuredFields().some((item) => item.campo === field && item.visible);
   }
@@ -374,6 +381,26 @@ export class FreelanceVentaDrawerComponent {
     return 'Mbps';
   }
 
+  catalogLabel(value: string | null | undefined): string {
+    const labels: Record<string, string> = {
+      ASENTAMIENTO_HUMANO: 'Asentamiento humano',
+      ASOCIACION: 'Asociación',
+      ASOCIACION_PROVIVIENDA: 'Asociación de vivienda',
+      AGRUPACION_DE_VIVIENDA: 'Agrupación de vivienda',
+      CONJUNTO_HABITACIONAL: 'Conjunto habitacional',
+      PUEBLO_JOVEN: 'Pueblo joven',
+      URBANIZACION: 'Urbanización',
+      RESIDENCIAL: 'Residencial',
+      MULTIFAMILIAR: 'Multifamiliar',
+      CONDOMINIO_EDIFICIO_HABILITADO: 'Condominio / edificio habilitado',
+      CONDOMINIO_EDIFICIO_NO_HABILITADO: 'Condominio / edificio no habilitado',
+      EDIFICIO_RESIDENCIAL: 'Edificio residencial',
+      CENTRO_COMERCIAL: 'Centro comercial'
+    };
+    if (!value) return '';
+    return labels[value] ?? value.replaceAll('_', ' ').toLocaleLowerCase('es-PE').replace(/^\p{L}/u, (char) => char.toLocaleUpperCase('es-PE'));
+  }
+
   private load(): void {
     this.draftPersistenceEnabled = false;
     this.draftRestored.set(false);
@@ -387,7 +414,10 @@ export class FreelanceVentaDrawerComponent {
         if (this.mode() === 'corregir' && this.idLead()) {
           this.loadCorrection(this.idLead()!, draft);
         } else {
-          if (options.proveedores.length === 1) this.applyProvider(String(options.proveedores[0].id));
+          const preferred = this.preferredProviderId();
+          const preferredAllowed = preferred != null && options.proveedores.some((item) => item.id === preferred);
+          if (preferredAllowed) this.applyProvider(String(preferred));
+          else if (options.proveedores.length === 1) this.applyProvider(String(options.proveedores[0].id));
           this.restoreDraft(draft);
         }
       },
@@ -407,6 +437,10 @@ export class FreelanceVentaDrawerComponent {
     this.distritosNacimiento.set([]);
     this.provinciasDomicilio.set([]);
     this.distritosDomicilio.set([]);
+    this.tipoDomicilioOptions.set([]);
+    this.tipoUrbanizacionOptions.set([]);
+    this.direccionCatalogosLoading.set(false);
+    this.direccionCatalogosError.set(null);
     this.form.controls.prefijo.enable({ emitEvent: false });
     this.form.controls.lead.enable({ emitEvent: false });
     this.form.reset({
@@ -669,17 +703,28 @@ export class FreelanceVentaDrawerComponent {
   }
 
   private refreshDireccionCatalogos(idProveedor: number | null): void {
-    if (idProveedor) {
-      firstValueFrom(this.direccionCatalogoService.listarTiposDomicilio(idProveedor))
-        .then((tipos) => this.tipoDomicilioOptions.set(tipos))
-        .catch(() => this.tipoDomicilioOptions.set([]));
-    } else {
+    this.direccionCatalogosError.set(null);
+    if (!idProveedor) {
       this.tipoDomicilioOptions.set([]);
+      this.tipoUrbanizacionOptions.set([]);
+      this.direccionCatalogosLoading.set(false);
+      return;
     }
-    if (!this.tipoUrbanizacionOptions().length) {
+
+    this.direccionCatalogosLoading.set(true);
+    Promise.all([
+      firstValueFrom(this.direccionCatalogoService.listarTiposDomicilio(idProveedor)),
       firstValueFrom(this.direccionCatalogoService.listarTiposUrbanizacion())
-        .then((tipos) => this.tipoUrbanizacionOptions.set(tipos))
-        .catch(() => {});
-    }
+    ])
+      .then(([tiposDomicilio, tiposUrbanizacion]) => {
+        this.tipoDomicilioOptions.set(tiposDomicilio);
+        this.tipoUrbanizacionOptions.set(tiposUrbanizacion);
+      })
+      .catch(() => {
+        this.tipoDomicilioOptions.set([]);
+        this.tipoUrbanizacionOptions.set([]);
+        this.direccionCatalogosError.set('No pudimos cargar los tipos de domicilio. Intenta nuevamente.');
+      })
+      .finally(() => this.direccionCatalogosLoading.set(false));
   }
 }
