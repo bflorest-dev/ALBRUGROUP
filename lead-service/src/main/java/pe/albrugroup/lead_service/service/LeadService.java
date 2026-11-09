@@ -3597,7 +3597,7 @@ public class LeadService {
                 || !proveedorActivo.getId().equals(campana.getProveedor().getId()))) {
             throw new BadRequestException("La campaña seleccionada no pertenece al proveedor activo");
         }
-        registrarIngresoLeadSinEquipo(request, null);
+        registrarIngresoLeadSinEquipo(request, null, proveedorActivo);
     }
 
     @Transactional
@@ -3782,7 +3782,8 @@ public class LeadService {
 
     private void registrarIngresoLeadSinEquipo(
             LeadIntakeRequest request,
-            Instant registroAt
+            Instant registroAt,
+            Proveedor proveedorObjetivo
     ) {
         String prefijo = normalizarPrefijo(request.getPrefijo());
         String numeroLead = normalizarLead(request.getLead());
@@ -3792,19 +3793,24 @@ public class LeadService {
         Origen origen = resolverOrigenIntake(request.getIdOrigen(), campana != null);
         LeadIdentidad identidad = resolverIdentidadContacto(prefijo, numeroLead, usermeta);
 
+        // La identidad del contacto puede tener oportunidades para varios proveedores. En este
+        // flujo solo se puede reutilizar la PREVENTA del proveedor activo; de lo contrario un
+        // registro CLARO, por ejemplo, podría modificar accidentalmente una oportunidad WIN.
         Optional<Lead> leadPreventa = leadRepository
-                .findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(identidad.contacto().getId(), Etapa.PREVENTA);
+                .findFirstByContactoIdAndProveedorOrigenIdAndEtapaOrderByLastEntryAtDescIdDesc(
+                        identidad.contacto().getId(), proveedorObjetivo.getId(), Etapa.PREVENTA);
         if (leadPreventa.isPresent()) {
             registrarIngresoLeadExistenteSinEquipo(leadPreventa.get(), identidad, request, origen, campana, registroAt);
             return;
         }
         List<Lead> oportunidadesContacto =
-                leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(identidad.contacto().getId());
+                leadRepository.findByContactoIdAndProveedorOrigenIdOrderByLastEntryAtDescIdDesc(
+                        identidad.contacto().getId(), proveedorObjetivo.getId());
         if (!oportunidadesContacto.isEmpty()) {
             registrarAtencionGtrLeadOtraEtapaSinEquipo(oportunidadesContacto.get(0), identidad, request, origen, campana, registroAt);
             return;
         }
-        registrarLeadNuevoSinEquipo(identidad, request, origen, campana, registroAt);
+        registrarLeadNuevoSinEquipo(identidad, request, origen, campana, proveedorObjetivo, registroAt);
     }
 
     Origen resolverOrigen(String codigo) {
@@ -5073,13 +5079,14 @@ public class LeadService {
             LeadIntakeRequest request,
             Origen origen,
             Campana campana,
+            Proveedor proveedorObjetivo,
             Instant registroAt
     ) {
         Lead lead = leadMapper.toNuevoLead(
                 identidad.prefijo(), identidad.lead(), identidad.usermeta(), origen, campana, OperationalDateTime.now());
         lead.setContacto(identidad.contacto());
         lead.setIdEquipo(null);
-        lead.setProveedorOrigen(resolverProveedorOrigen(campana, null));
+        lead.setProveedorOrigen(proveedorObjetivo);
         completarNumeroParaLlamarSiFalta(lead);
 
         Lead savedLead = leadRepository.save(lead);
@@ -5106,11 +5113,10 @@ public class LeadService {
         }
         lead.setOrigen(origen);
         lead.setLastEntryAt(OperationalDateTime.now());
-        if (lead.getProveedorOrigen() == null) {
-            lead.setProveedorOrigen(resolverProveedorOrigen(campana, lead.getIdEquipo()));
-        }
 
-        if (lead.getEtapa() == Etapa.PREVENTA && !tieneGestionHoy(lead.getId())) {
+        if (lead.getIdEquipo() != null) {
+            liberarLeadParaAsignacionSupervisor(lead);
+        } else if (lead.getEtapa() == Etapa.PREVENTA && !tieneGestionHoy(lead.getId())) {
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
             lead.setIdTipificacion(null);
@@ -5124,6 +5130,19 @@ public class LeadService {
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa(), registroAt);
         notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior);
+    }
+
+    private void liberarLeadParaAsignacionSupervisor(Lead lead) {
+        lead.setIdEquipo(null);
+        lead.setIdAsesorAsignado(null);
+        lead.setNombreAsesorAsignado(null);
+        lead.setIdTipificacion(null);
+        lead.setCodigoTipificacion(null);
+        lead.setIdSubtipificacion(null);
+        lead.setCodigoSubtipificacion(null);
+        lead.setEstado(EstadoSeguimiento.NUEVO);
+        lead.setEsDerivado(false);
+        lead.setRequiereAtencionGtr(false);
     }
 
     private void registrarAtencionGtrLeadOtraEtapaSinEquipo(

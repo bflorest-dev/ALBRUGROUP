@@ -75,6 +75,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Optional<Lead> findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(Long idContacto, Etapa etapa);
     // Oportunidades del mismo contacto (acotadas al equipo por @Filter): para multi-titular.
     List<Lead> findByContactoIdOrderByLastEntryAtDescIdDesc(Long idContacto);
+    // El SUPERVISOR_GTR debe reutilizar únicamente la oportunidad PREVENTA del proveedor activo.
+    Optional<Lead> findFirstByContactoIdAndProveedorOrigenIdAndEtapaOrderByLastEntryAtDescIdDesc(
+            Long idContacto, Long idProveedorOrigen, Etapa etapa);
+    List<Lead> findByContactoIdAndProveedorOrigenIdOrderByLastEntryAtDescIdDesc(
+            Long idContacto, Long idProveedorOrigen);
 
     /** Serializa los comandos V2 que crean oportunidades para el mismo contacto. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
