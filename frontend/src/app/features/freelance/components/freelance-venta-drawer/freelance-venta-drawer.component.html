@@ -165,7 +165,7 @@
             <div class="offer-tools">
               <label class="offer-search">
                 <span>Buscar plan</span>
-                <span class="offer-search-control"><i class="ti ti-search"></i><input [value]="offerSearch()" (input)="updateOfferSearch($any($event.target).value)" placeholder="Nombre, velocidad o servicio" aria-label="Buscar plan por nombre, velocidad o servicio"></span>
+                <span class="offer-search-control"><i class="ti ti-search"></i><input [value]="offerSearch()" (input)="updateOfferSearch($any($event.target).value)" placeholder="Nombre, velocidad, servicio o precio" aria-label="Buscar plan por nombre, velocidad, servicio o precio"></span>
               </label>
               <div class="offer-filters" role="group" aria-label="Filtrar planes por servicios">
                 @for (filter of offerFilters; track filter.key) {

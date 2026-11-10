@@ -623,12 +623,26 @@ export class FreelanceVentaDrawerComponent {
       plan.velocidadPromocional,
       plan.television,
       plan.telefonia,
-      plan.minutosTelefonia
+      plan.minutosTelefonia,
+      this.planPriceSearchText(plan.precio),
+      this.planPriceSearchText(plan.precioPromocional)
     ].filter((value) => value != null).join(' ');
   }
 
+  private planPriceSearchText(value: number | null | undefined): string {
+    if (value == null) return '';
+    const fixed = value.toFixed(2);
+    const localized = value.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `${value} ${fixed} S/ ${fixed} S/ ${localized}`;
+  }
+
   private normalizePlanSearch(value: string): string {
-    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-PE').trim();
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('es-PE')
+      .replace(/(\d),(\d)/g, '$1.$2')
+      .trim();
   }
 
   private configureCoreValidators(): void {
