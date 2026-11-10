@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
+import pe.albrugroup.lead_service.entity.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.*;
 import pe.albrugroup.lead_service.entity.request.FreelanceVentaCrearRequest;
@@ -120,7 +121,7 @@ public class FreelanceService {
         Plan plan = validarPlan(request.getIdPlan(), idEquipo);
         MatrizCierre cierre = resolverCierre(plan.getProveedor().getId());
         validarContacto(request.getPrefijo(), request.getLead());
-        validarExpediente(request.getDatosPreventa(), request.getDireccion());
+        validarExpediente(request.getDatosPreventa(), request.getDireccion(), plan);
         validarIdentidadDisponible(request.getPrefijo(), request.getLead(), request.getUsermeta());
 
         Instant ahora = OperationalDateTime.now();
@@ -204,7 +205,7 @@ public class FreelanceService {
         }
         Plan plan = validarPlan(request.getIdPlan(), idEquipo);
         MatrizCierre cierre = resolverCierre(plan.getProveedor().getId());
-        validarExpediente(request.getDatosPreventa(), request.getDireccion());
+        validarExpediente(request.getDatosPreventa(), request.getDireccion(), plan);
         aplicarExpediente(lead, request.getDatosPreventa(), request.getDireccion(), plan);
         leadService.validarPreventaCompletaParaSubsanacion(lead);
         leadRepository.saveAndFlush(lead);
@@ -298,8 +299,8 @@ public class FreelanceService {
         int intentos = Math.toIntExact(reenvioRepository.countByOrigen(origen) + 1);
         boolean puede = puedeCorregir(lead, origen);
         FreelanceSeguimientoResponse.Detalle detalle = new FreelanceSeguimientoResponse.Detalle(
-                lead.getId(), lead.getLead(), origen.getCreadoAt(), clasificacion,
-                origen.getNombreFreelance(),
+                lead.getId(), lead.getLead(), origen.getCreadoAt(), origen.getNombreFreelance(),
+                clasificacion,
                 ultimo == null ? null : ultimo.getTipificacion(),
                 ultimo == null ? null : ultimo.getSubtipificacion(),
                 venta == null ? null : venta.getNombreAsesorUltimaGestion(),
@@ -476,9 +477,16 @@ public class FreelanceService {
 
     private void validarExpediente(
             pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest datos,
-            pe.albrugroup.lead_service.entity.request.LeadDireccionRequest direccion) {
+            pe.albrugroup.lead_service.entity.request.LeadDireccionRequest direccion,
+            Plan plan) {
         if (datos == null || direccion == null) {
             throw new BadRequestException("Falta completar el expediente");
+        }
+        String proveedor = plan.getProveedor() == null || plan.getProveedor().getNombre() == null
+                ? ""
+                : plan.getProveedor().getNombre().trim().toUpperCase(Locale.ROOT);
+        if (proveedor.contains("CLARO") && direccion.getTecnologia() == null) {
+            throw new BadRequestException("Falta tecnologia");
         }
         if (datos.getTipoDocumento() == null) {
             throw new BadRequestException("Falta tipoDocumento");

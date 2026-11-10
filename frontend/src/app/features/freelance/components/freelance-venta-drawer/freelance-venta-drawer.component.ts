@@ -21,6 +21,7 @@ import {
 } from '../../../bitacora/utils/bitacora-input.rules';
 import {
   FreelanceOpciones,
+  FreelancePlanOpcion,
   FreelanceVentaCrearRequest,
   FreelanceVentaPreparacion,
   FreelanceVentaReenvioRequest,
@@ -35,6 +36,7 @@ import {
 } from '../../utils/freelance-drawer-draft';
 
 type DrawerMode = 'crear' | 'corregir';
+type OfferFilter = 'TODOS' | 'INTERNET' | 'DUO' | 'TRIO';
 
 @Component({
   selector: 'app-freelance-venta-drawer',
@@ -78,6 +80,14 @@ export class FreelanceVentaDrawerComponent {
   readonly tipoUrbanizacionOptions = signal<string[]>([]);
   readonly direccionCatalogosLoading = signal(false);
   readonly direccionCatalogosError = signal<string | null>(null);
+  readonly offerFilters: readonly { key: OfferFilter; label: string }[] = [
+    { key: 'TODOS', label: 'Todos' },
+    { key: 'INTERNET', label: 'Solo internet' },
+    { key: 'DUO', label: 'Dúo' },
+    { key: 'TRIO', label: 'Trío' }
+  ];
+  readonly offerFilter = signal<OfferFilter>('TODOS');
+  readonly offerSearch = signal('');
 
   readonly form = this.fb.group({
     prefijo: ['51', [Validators.required, prefijoValidator()]],
@@ -141,16 +151,35 @@ export class FreelanceVentaDrawerComponent {
     const provider = this.selectedProvider();
     return (this.opciones()?.planes ?? []).filter((plan) => !provider || plan.idProveedor === provider);
   });
+  readonly offerFilterCounts = computed(() => {
+    const counts: Record<OfferFilter, number> = { TODOS: 0, INTERNET: 0, DUO: 0, TRIO: 0 };
+    for (const plan of this.plans()) {
+      counts.TODOS += 1;
+      counts[this.planType(plan)] += 1;
+    }
+    return counts;
+  });
+  readonly visiblePlans = computed(() => {
+    const filter = this.offerFilter();
+    const search = this.normalizePlanSearch(this.offerSearch());
+    return this.plans().filter((plan) => {
+      const matchesFilter = filter === 'TODOS' || this.planType(plan) === filter;
+      const matchesSearch = !search || this.normalizePlanSearch(this.planSearchText(plan)).includes(search);
+      return matchesFilter && matchesSearch;
+    });
+  });
   readonly title = computed(() => this.mode() === 'corregir' ? 'Corregir venta retornada' : 'Agregar venta');
   readonly todayIso = new Date().toISOString().slice(0, 10);
 
   private lastLoadKey = '';
   private departamentosPromise: Promise<UbigeoItem[]> | null = null;
   private draftPersistenceEnabled = false;
+  private coordinatePasteMessageTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.configureCoreValidators();
     this.configureNormalizers();
+    this.destroyRef.onDestroy(() => this.clearCoordinatePasteMessage());
     this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.persistDraft());
     effect(() => {
       if (!this.visible()) {
@@ -182,16 +211,16 @@ export class FreelanceVentaDrawerComponent {
   }
 
   async pasteCoordinatesFromClipboard(): Promise<void> {
-    this.coordinatePasteMessage.set(null);
+    this.clearCoordinatePasteMessage();
     if (!navigator.clipboard?.readText) {
-      this.coordinatePasteMessage.set('No pudimos acceder al portapapeles. Revisa el permiso e intenta nuevamente.');
+      this.showCoordinatePasteMessage('No pudimos acceder al portapapeles. Revisa el permiso e intenta nuevamente.');
       return;
     }
 
     try {
       const coordinates = extraerParCoordenadas(await navigator.clipboard.readText());
       if (!coordinates) {
-        this.coordinatePasteMessage.set('Copia las coordenadas en formato latitud, longitud.');
+        this.showCoordinatePasteMessage('Copia las coordenadas en formato latitud, longitud.');
         return;
       }
 
@@ -201,7 +230,7 @@ export class FreelanceVentaDrawerComponent {
       this.form.controls.latitud.updateValueAndValidity({ emitEvent: false });
       this.form.controls.longitud.updateValueAndValidity({ emitEvent: false });
     } catch {
-      this.coordinatePasteMessage.set('No pudimos acceder al portapapeles. Revisa el permiso e intenta nuevamente.');
+      this.showCoordinatePasteMessage('No pudimos acceder al portapapeles. Revisa el permiso e intenta nuevamente.');
     }
   }
 
@@ -220,20 +249,48 @@ export class FreelanceVentaDrawerComponent {
     if (providerChanged) {
       this.form.patchValue({ tecnologia: '', esFullClaro: false, esJalaCobertura: false, esZonaPintada: false }, { emitEvent: false });
       this.refreshDireccionCatalogos(id);
+      this.offerFilter.set('TODOS');
+      this.offerSearch.set('');
     }
     if (!this.isWin()) this.form.controls.parentesco.setValue('', { emitEvent: false });
     const plan = this.opciones()?.planes.find((item) => item.id === this.form.controls.idPlan.value);
     if (plan && plan.idProveedor !== id) this.form.controls.idPlan.setValue(null);
     this.applyConfiguredValidators();
+    this.applyTechnologyValidator();
   }
 
   selectPlan(id: number): void {
+    const changed = this.form.controls.idPlan.value !== id;
     this.form.controls.idPlan.setValue(id);
     this.form.controls.idPlan.markAsTouched();
+    if (changed && this.isClaro()) {
+      this.form.controls.tecnologia.reset('', { emitEvent: false });
+      this.form.controls.tecnologia.markAsUntouched();
+    }
   }
 
   selectProvider(value: string): void {
     this.applyProvider(value);
+  }
+
+  setOfferFilter(filter: OfferFilter): void {
+    this.offerFilter.set(filter);
+  }
+
+  updateOfferSearch(value: string): void {
+    this.offerSearch.set(value);
+  }
+
+  clearOfferFilters(): void {
+    this.offerFilter.set('TODOS');
+    this.offerSearch.set('');
+  }
+
+  planServiceLabel(plan: FreelancePlanOpcion): string {
+    const type = this.planType(plan);
+    if (type === 'INTERNET') return 'Solo internet';
+    if (type === 'DUO') return 'Dúo';
+    return 'Trío';
   }
 
   fieldVisible(field: CampoCaptura): boolean {
@@ -429,7 +486,7 @@ export class FreelanceVentaDrawerComponent {
     this.step.set(0);
     this.error.set(null);
     this.draftRestored.set(false);
-    this.coordinatePasteMessage.set(null);
+    this.clearCoordinatePasteMessage();
     this.discardConfirmationOpen.set(false);
     this.preparacion.set(null);
     this.selectedProvider.set(null);
@@ -481,6 +538,7 @@ export class FreelanceVentaDrawerComponent {
         });
         if (!d.tipoVia) this.form.controls.via.setValue('', { emitEvent: false });
         this.applyConfiguredValidators();
+        this.applyTechnologyValidator();
         this.form.controls.prefijo.disable();
         this.form.controls.lead.disable();
         this.restoreDraft(draft);
@@ -508,7 +566,7 @@ export class FreelanceVentaDrawerComponent {
       }
       return controls;
     }
-    if (step === 2) return ['idPlan'];
+    if (step === 2) return this.isClaro() ? ['idPlan', 'tecnologia'] : ['idPlan'];
     return [];
   }
 
@@ -541,6 +599,36 @@ export class FreelanceVentaDrawerComponent {
       control?.setValidators(validators);
       control?.updateValueAndValidity({ emitEvent: false });
     }
+  }
+
+  private applyTechnologyValidator(): void {
+    const control = this.form.controls.tecnologia;
+    control.setValidators(this.isClaro() ? [Validators.required] : []);
+    control.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private planType(plan: FreelancePlanOpcion): Exclude<OfferFilter, 'TODOS'> {
+    const hasTelevision = Boolean(plan.television?.trim()) || plan.cantidadCanales != null;
+    const hasTelefonia = Boolean(plan.telefonia?.trim()) || plan.minutosTelefonia != null;
+    if (hasTelevision && hasTelefonia) return 'TRIO';
+    if (hasTelevision || hasTelefonia) return 'DUO';
+    return 'INTERNET';
+  }
+
+  private planSearchText(plan: FreelancePlanOpcion): string {
+    return [
+      plan.nombre,
+      this.planServiceLabel(plan),
+      plan.velocidadRegular,
+      plan.velocidadPromocional,
+      plan.television,
+      plan.telefonia,
+      plan.minutosTelefonia
+    ].filter((value) => value != null).join(' ');
+  }
+
+  private normalizePlanSearch(value: string): string {
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-PE').trim();
   }
 
   private configureCoreValidators(): void {
@@ -604,6 +692,23 @@ export class FreelanceVentaDrawerComponent {
 
   private normalizarCoordenadaPayload(value: string | null | undefined): string {
     return (this.nullIfBlank(value) ?? '').replace(',', '.');
+  }
+
+  private showCoordinatePasteMessage(message: string): void {
+    this.clearCoordinatePasteMessage();
+    this.coordinatePasteMessage.set(message);
+    this.coordinatePasteMessageTimer = setTimeout(() => {
+      this.coordinatePasteMessage.set(null);
+      this.coordinatePasteMessageTimer = null;
+    }, 4500);
+  }
+
+  private clearCoordinatePasteMessage(): void {
+    if (this.coordinatePasteMessageTimer !== null) {
+      clearTimeout(this.coordinatePasteMessageTimer);
+      this.coordinatePasteMessageTimer = null;
+    }
+    this.coordinatePasteMessage.set(null);
   }
 
   private matchingDraft(): FreelanceDrawerDraft | null {

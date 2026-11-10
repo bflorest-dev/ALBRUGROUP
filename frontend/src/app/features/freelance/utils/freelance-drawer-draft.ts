@@ -14,7 +14,11 @@ export function readFreelanceDrawerDraft(): FreelanceDrawerDraft | null {
   if (!storage) return null;
 
   try {
-    const raw = storage.getItem(FREELANCE_DRAWER_DRAFT_KEY);
+    const legacyStorage = getLegacyDraftStorage();
+    const storedInLegacy = !storage.getItem(FREELANCE_DRAWER_DRAFT_KEY) && legacyStorage
+      ? legacyStorage.getItem(FREELANCE_DRAWER_DRAFT_KEY)
+      : null;
+    const raw = storage.getItem(FREELANCE_DRAWER_DRAFT_KEY) ?? storedInLegacy;
     if (!raw) return null;
     const value = JSON.parse(raw) as Partial<FreelanceDrawerDraft>;
     if (
@@ -27,12 +31,14 @@ export function readFreelanceDrawerDraft(): FreelanceDrawerDraft | null {
       clearFreelanceDrawerDraft();
       return null;
     }
-    return {
+    const draft = {
       mode: value.mode,
       idLead: value.idLead ?? null,
       step: Math.min(3, Math.max(0, Math.trunc(value.step))),
       form: value.form as Record<string, unknown>
     };
+    if (storedInLegacy) storage.setItem(FREELANCE_DRAWER_DRAFT_KEY, JSON.stringify(draft));
+    return draft;
   } catch {
     clearFreelanceDrawerDraft();
     return null;
@@ -54,12 +60,22 @@ export function clearFreelanceDrawerDraft(): void {
   if (!storage) return;
   try {
     storage.removeItem(FREELANCE_DRAWER_DRAFT_KEY);
+    getLegacyDraftStorage()?.removeItem(FREELANCE_DRAWER_DRAFT_KEY);
   } catch {
     // The drawer remains usable if the browser denies storage access.
   }
 }
 
 function getDraftStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function getLegacyDraftStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
   try {
     return window.sessionStorage;

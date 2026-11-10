@@ -21,6 +21,13 @@
       }
     </nav>
 
+    @if (coordinatePasteMessage()) {
+      <div class="coordinate-paste-toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <i class="ti ti-alert-circle" aria-hidden="true"></i>
+        <span>{{ coordinatePasteMessage() }}</span>
+      </div>
+    }
+
     <form class="drawer-body" [formGroup]="form" (ngSubmit)="submit()">
       @if (loading()) {
         <div class="loading-state"><span></span>Cargando expediente…</div>
@@ -131,7 +138,6 @@
                   </button>
                 </span>
                 <input formControlName="longitud" aria-label="Longitud" inputmode="decimal" placeholder="-77.12235645202007" [class.invalid]="invalid('longitud')">
-                @if (coordinatePasteMessage()) { <small class="coordinate-paste-message" role="alert">{{ coordinatePasteMessage() }}</small> }
               </label>
               <label><span>Tipo de urbanización <small>opcional</small></span><select formControlName="tipoUrbanizacion" [disabled]="direccionCatalogosLoading()"><option value="">{{ direccionCatalogosLoading() ? 'Cargando opciones…' : '—' }}</option>@for (item of tipoUrbanizacionOptions(); track item) { <option [value]="item">{{ catalogLabel(item) }}</option> }</select></label>
               @if (direccionCatalogosError()) { <p class="catalog-error full" role="alert">{{ direccionCatalogosError() }}</p> }
@@ -150,21 +156,53 @@
           <section class="form-section">
             <div class="section-copy offer-section-copy">
               <div>
-                <h3>Oferta comercial</h3>
-                <p>Selecciona un plan vigente del proveedor elegido para este expediente.</p>
+                <h3>Elige el plan</h3>
+                <p>Selecciona una oferta vigente del proveedor elegido para este expediente.</p>
               </div>
-              @if (isClaro()) {
-                <label class="technology-offer"><span>Tecnología <small>opcional</small></span><select formControlName="tecnologia"><option value="">Selecciona</option><option value="HFC">HFC</option><option value="FTTH">FTTH</option><option value="HIBRIDA">Híbrida</option></select></label>
-              }
+              <span class="offer-summary">{{ visiblePlans().length }} planes disponibles</span>
             </div>
+
+            <div class="offer-tools">
+              <label class="offer-search">
+                <span>Buscar plan</span>
+                <span class="offer-search-control"><i class="ti ti-search"></i><input [value]="offerSearch()" (input)="updateOfferSearch($any($event.target).value)" placeholder="Nombre, velocidad o servicio" aria-label="Buscar plan por nombre, velocidad o servicio"></span>
+              </label>
+              <div class="offer-filters" role="group" aria-label="Filtrar planes por servicios">
+                @for (filter of offerFilters; track filter.key) {
+                  <button type="button" class="offer-filter" [class.active]="offerFilter() === filter.key" (click)="setOfferFilter(filter.key)" [attr.aria-pressed]="offerFilter() === filter.key">
+                    {{ filter.label }} <span>{{ offerFilterCounts()[filter.key] }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+
+            @if (isClaro() && form.controls.idPlan.value) {
+              <div class="technology-selection" [class.invalid]="invalid('tecnologia')">
+                <div class="technology-copy">
+                  <strong>Tecnología de acceso</strong>
+                  <p>Indica la tecnología asociada al plan seleccionado.</p>
+                </div>
+                <label class="technology-field"><span>Tecnología <small>requerida</small></span><select formControlName="tecnologia" [class.invalid]="invalid('tecnologia')"><option value="">Selecciona una tecnología</option><option value="HFC">HFC</option><option value="FTTH">FTTH</option><option value="HIBRIDA">Híbrida</option></select>@if (invalid('tecnologia')) { <small class="field-error">Selecciona la tecnología para continuar.</small> }</label>
+              </div>
+            }
+
             <div class="plan-options" role="radiogroup" aria-label="Planes disponibles" [class.invalid]="invalid('idPlan')">
-              @for (plan of plans(); track plan.id) {
+              @for (plan of visiblePlans(); track plan.id) {
                 <button type="button" class="plan-option" role="radio" [attr.aria-checked]="form.controls.idPlan.value === plan.id"
                   [class.selected]="form.controls.idPlan.value === plan.id" (click)="selectPlan(plan.id)">
-                  <span class="plan-option-head"><strong>{{ plan.nombre }}</strong><span class="plan-price">
-                    @if (plan.precioPromocional != null) { <b>S/ {{ plan.precioPromocional | number:'1.2-2' }}</b><small>{{ plan.mesesPromocionPrecio ? 'por ' + plan.mesesPromocionPrecio + ' meses' : 'promocional' }}</small> }
-                    <span [class.regular-crossed]="plan.precioPromocional != null">S/ {{ plan.precio | number:'1.2-2' }} regular</span>
-                  </span></span>
+                  <span class="plan-option-head">
+                    <span class="plan-title-group"><small class="plan-kind">{{ planServiceLabel(plan) }}</small><strong>{{ plan.nombre }}</strong></span>
+                    <span class="plan-price">
+                      @if (plan.precioPromocional != null) {
+                        <span class="plan-price-main">S/ {{ plan.precioPromocional | number:'1.2-2' }}</span>
+                        <small class="plan-price-period">{{ plan.mesesPromocionPrecio ? 'por ' + plan.mesesPromocionPrecio + ' meses' : 'promocional' }}</small>
+                        <span class="plan-price-regular"><s>S/ {{ plan.precio | number:'1.2-2' }}</s> regular</span>
+                      } @else {
+                        <span class="plan-price-main">S/ {{ plan.precio | number:'1.2-2' }}</span>
+                        <span class="plan-price-regular">regular</span>
+                      }
+                    </span>
+                  </span>
                   <span class="plan-facts">
                     <span><i class="ti ti-wifi"></i><b>{{ plan.velocidadRegular ? plan.velocidadRegular + ' ' + speedUnit(plan.unidadVelocidad) : 'Sin internet' }}</b><small>velocidad regular</small></span>
                     @if (plan.velocidadPromocional) { <span><i class="ti ti-rocket"></i><b>{{ plan.velocidadPromocional }} {{ speedUnit(plan.unidadVelocidad) }}</b><small>promocional{{ plan.mesesPromocionVelocidad ? ' · ' + plan.mesesPromocionVelocidad + ' meses' : '' }}</small></span> }
@@ -182,7 +220,11 @@
                   <span class="plan-choice"><i class="ti" [class.ti-circle-check-filled]="form.controls.idPlan.value === plan.id" [class.ti-circle]="form.controls.idPlan.value !== plan.id"></i>{{ form.controls.idPlan.value === plan.id ? 'Plan seleccionado' : 'Elegir este plan' }}</span>
                 </button>
               } @empty {
-                <div class="empty-plans">No hay planes vigentes para el proveedor seleccionado.</div>
+                <div class="empty-plans">
+                  <strong>No encontramos planes con estos filtros.</strong>
+                  <span>Prueba otra búsqueda o muestra todas las ofertas vigentes.</span>
+                  <button type="button" class="secondary" (click)="clearOfferFilters()">Mostrar todos los planes</button>
+                </div>
               }
             </div>
           </section>
