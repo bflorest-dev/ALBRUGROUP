@@ -342,6 +342,7 @@
             <th>Campaña</th>
             <th>Lead</th>
             <th>Asesor mayor</th>
+            <th>Subtipificación</th>
             <th>Gestión mayor</th>
             <th>Asesor última</th>
             <th>Última gestión</th>
@@ -388,6 +389,15 @@
                   tooltipPosition="top"
                 >
                   {{ asesorCorto(row.nombreAsesorMayorTipificacion) }}
+                </span>
+              </td>
+              <td class="subtip-cell">
+                <span
+                  class="subtip-txt"
+                  [pTooltip]="row.subtipificacion || 'Sin subtipificación'"
+                  tooltipPosition="top"
+                >
+                  {{ subtipificacionSecundaria(row.subtipificacion) }}
                 </span>
               </td>
               <td>

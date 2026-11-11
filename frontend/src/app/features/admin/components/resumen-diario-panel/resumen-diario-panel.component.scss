@@ -920,6 +920,55 @@ tr.is-win .est-name {
     vertical-align: bottom;
   }
 
+  table.ranking-detalle .subtip-cell {
+    min-width: 150px;
+    max-width: 190px;
+  }
+
+  table.ranking-detalle .subtip-txt {
+    display: inline-block;
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+  }
+
+  /* El detalle de estados agrega una columna sin sacar la última gestión del primer encuadre. */
+  table.ranking-detalle.estado-detalle th,
+  table.ranking-detalle.estado-detalle td {
+    min-width: 112px;
+  }
+
+  table.ranking-detalle.estado-detalle .campaign-cell {
+    min-width: 130px;
+    max-width: 170px;
+  }
+
+  table.ranking-detalle.estado-detalle .lead-cell {
+    min-width: 120px;
+  }
+
+  table.ranking-detalle.estado-detalle .asesor-cell {
+    max-width: 130px;
+  }
+
+  table.ranking-detalle.estado-detalle .asesor-txt {
+    max-width: 130px;
+  }
+
+  table.ranking-detalle.estado-detalle .subtip-cell {
+    min-width: 140px;
+    max-width: 160px;
+  }
+
+  table.ranking-detalle.estado-detalle .subtip-txt {
+    max-width: 160px;
+  }
+
+  table.ranking-detalle.estado-detalle .time-stack {
+    max-width: 84px;
+  }
+
   table.ranking-detalle .tip-stack {
     max-width: 175px;
   }

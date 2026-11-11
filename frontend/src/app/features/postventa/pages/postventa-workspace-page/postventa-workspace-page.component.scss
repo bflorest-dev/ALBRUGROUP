@@ -363,9 +363,11 @@
 .advisor-cell {
   display: grid;
   gap: 0.08rem;
+  justify-items: center;
   line-height: 1.12;
   min-width: 0;
-  text-align: left;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .advisor-cell strong,
@@ -377,15 +379,10 @@
   white-space: nowrap;
 }
 
-.advisor-cell strong {
-  color: var(--board-ink);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
+.advisor-cell strong,
 .advisor-cell span {
-  color: var(--board-muted);
-  font-size: 0.68rem;
+  color: var(--board-ink);
+  font-size: 0.75rem;
   font-weight: 700;
 }
 

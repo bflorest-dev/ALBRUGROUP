@@ -79,6 +79,7 @@ export interface EstadoLeadDetalle {
   usermeta: string | null;
   nombreCampana: string | null;
   nombreAsesorMayorTipificacion: string | null;
+  subtipificacion: string | null;
   fechaMayorTipificacionAt: string | null;
   nombreAsesorUltimaTipificacion: string | null;
   fechaUltimaGestionAt: string | null;

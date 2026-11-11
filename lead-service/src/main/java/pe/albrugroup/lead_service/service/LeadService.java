@@ -7486,7 +7486,8 @@ public class LeadService {
                             ((Number) f[0]).longValue(),
                             (Instant) f[1],
                             (String) f[2], (String) f[3], (String) f[4],
-                            null, null, null, null))
+                            null, null, null,
+                            (String) f[5], (Instant) f[6]))
                     .sorted(Comparator.comparing(ResumenEstadoLeadDetalleResponse::fechaIngresoAt,
                             Comparator.nullsLast(Comparator.reverseOrder())))
                     .toList();
@@ -7506,8 +7507,10 @@ public class LeadService {
                         (Instant) f[1],
                         (String) f[2], (String) f[3], (String) f[4],
                         (String) f[5],
-                        (Instant) f[6],
-                        null, null))
+                        (String) f[6],
+                        (Instant) f[7],
+                        (String) f[8],
+                        (Instant) f[9]))
                 .sorted(Comparator.comparing(ResumenEstadoLeadDetalleResponse::fechaIngresoAt,
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();

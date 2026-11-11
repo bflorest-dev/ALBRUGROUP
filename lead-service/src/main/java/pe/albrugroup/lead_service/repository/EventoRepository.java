@@ -2286,15 +2286,19 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     // --- Detalle Estado Leads: devuelve los leads individuales detrás de un código de tipificación ---
     // Columnas: [0] idLead, [1] fechaIngresoAt, [2] lead, [3] usermeta, [4] nombreCampana,
-    //           [5] nombreActor (quien tipificó), [6] fechaTipificacionAt
+    //           [5] nombreActor (quien tipificó), [6] subtipificacion, [7] fechaTipificacionAt,
+    //           [8] nombreAsesorUltimaGestion, [9] fechaUltimaGestion (resumen PREVENTA)
 
     @Query(value = """
             SELECT sub.id_lead, sub.fecha_ingreso, sub.lead, sub.usermeta,
-                   sub.nombre_campana, sub.nombre_actor, sub.created_at AS fecha_tipi
+                   sub.nombre_campana, sub.nombre_actor, sub.subtipificacion,
+                   sub.created_at AS fecha_tipi,
+                   sub.nombre_asesor_ultima_gestion, sub.fecha_ultima_gestion
             FROM (
                 SELECT DISTINCT ON (e.id_lead)
                        e.id_lead, l.lead, l.usermeta, c.nombre AS nombre_campana,
-                       e.nombre_actor, e.created_at, e.tipificacion,
+                       e.nombre_actor, e.subtipificacion, e.created_at, e.tipificacion,
+                       r.nombre_asesor_ultima_gestion, r.fecha_ultima_gestion,
                        (SELECT MAX(reg.created_at) FROM evento reg
                         WHERE reg.id_lead = e.id_lead
                           AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
@@ -2302,6 +2306,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                        ) AS fecha_ingreso
                 FROM evento e
                 JOIN lead l ON l.id = e.id_lead
+                LEFT JOIN lead_etapa_resumen r
+                    ON r.id_lead = e.id_lead AND r.etapa = 'PREVENTA'
                 LEFT JOIN campana c ON c.id = l.id_campana
                 WHERE e.accion = 'TIPIFICACION'
                   AND e.etapa = 'PREVENTA'
@@ -2328,11 +2334,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     @Query(value = """
             SELECT sub.id_lead, sub.fecha_ingreso, sub.lead, sub.usermeta,
-                   sub.nombre_campana, sub.nombre_actor, sub.created_at AS fecha_tipi
+                   sub.nombre_campana, sub.nombre_actor, sub.subtipificacion,
+                   sub.created_at AS fecha_tipi,
+                   sub.nombre_asesor_ultima_gestion, sub.fecha_ultima_gestion
             FROM (
                 SELECT DISTINCT ON (e.id_lead)
                        e.id_lead, l.lead, l.usermeta, c.nombre AS nombre_campana,
-                       e.nombre_actor, e.created_at, e.tipificacion,
+                       e.nombre_actor, e.subtipificacion, e.created_at, e.tipificacion,
+                       r.nombre_asesor_ultima_gestion, r.fecha_ultima_gestion,
                        (SELECT MAX(reg.created_at) FROM evento reg
                         WHERE reg.id_lead = e.id_lead
                           AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
@@ -2340,6 +2349,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                        ) AS fecha_ingreso
                 FROM evento e
                 JOIN lead l ON l.id = e.id_lead
+                LEFT JOIN lead_etapa_resumen r
+                    ON r.id_lead = e.id_lead AND r.etapa = 'PREVENTA'
                 LEFT JOIN campana c ON c.id = l.id_campana
                 WHERE e.accion = 'TIPIFICACION'
                   AND e.etapa = 'PREVENTA'
@@ -2366,11 +2377,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     @Query(value = """
             SELECT sub.id_lead, sub.fecha_ingreso, sub.lead, sub.usermeta,
-                   sub.nombre_campana, sub.nombre_actor, sub.created_at AS fecha_tipi
+                   sub.nombre_campana, sub.nombre_actor, sub.subtipificacion,
+                   sub.created_at AS fecha_tipi,
+                   sub.nombre_asesor_ultima_gestion, sub.fecha_ultima_gestion
             FROM (
                 SELECT DISTINCT ON (e.id_lead)
                        e.id_lead, l.lead, l.usermeta, c.nombre AS nombre_campana,
-                       e.nombre_actor, e.created_at, e.tipificacion,
+                       e.nombre_actor, e.subtipificacion, e.created_at, e.tipificacion,
+                       r.nombre_asesor_ultima_gestion, r.fecha_ultima_gestion,
                        (SELECT MAX(reg.created_at) FROM evento reg
                         WHERE reg.id_lead = e.id_lead
                           AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
@@ -2378,6 +2392,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                        ) AS fecha_ingreso
                 FROM evento e
                 JOIN lead l ON l.id = e.id_lead
+                LEFT JOIN lead_etapa_resumen r
+                    ON r.id_lead = e.id_lead AND r.etapa = 'PREVENTA'
                 LEFT JOIN campana c ON c.id = l.id_campana
                 LEFT JOIN equipo_proveedor ep
                     ON ep.id_equipo = l.id_equipo AND ep.fallback_lead_sin_campana = true
@@ -2413,11 +2429,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     @Query(value = """
             SELECT l.id AS id_lead,
                    MAX(reg.created_at) AS fecha_ingreso,
-                   l.lead, l.usermeta, c.nombre AS nombre_campana
+                   l.lead, l.usermeta, c.nombre AS nombre_campana,
+                   r.nombre_asesor_ultima_gestion, r.fecha_ultima_gestion
             FROM evento reg
             JOIN lead l ON l.id = reg.id_lead
             JOIN origen o ON o.id = l.id_origen AND o.es_organico = true
             LEFT JOIN campana c ON c.id = l.id_campana
+            LEFT JOIN lead_etapa_resumen r
+                ON r.id_lead = l.id AND r.etapa = 'PREVENTA'
             WHERE reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
               AND reg.created_at >= :desde AND reg.created_at < :hasta
               AND NOT EXISTS (
@@ -2429,7 +2448,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     AND tip.tipificacion IS NOT NULL AND TRIM(tip.tipificacion) <> ''
               )
               AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
-            GROUP BY l.id, l.lead, l.usermeta, c.nombre
+            GROUP BY l.id, l.lead, l.usermeta, c.nombre,
+                     r.nombre_asesor_ultima_gestion, r.fecha_ultima_gestion
             """, nativeQuery = true)
     List<Object[]> detalleEstadoLeadsSinTipificar(
             @Param("desde") Instant desde,
