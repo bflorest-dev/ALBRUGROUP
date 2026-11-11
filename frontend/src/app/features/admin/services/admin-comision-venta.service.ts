@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
+import { PageResponse } from '../../../shared/models/common/page-response';
 import { ResumenMensualResponse } from '../../../shared/models/schedule/resumen-mensual-response';
 
 export interface ComisionVentaAsesor {
@@ -26,6 +27,40 @@ export interface ComisionVentaResponse {
   cortes: ComisionVentaCorte[];
 }
 
+export type ComisionVentaAuditEstado = 'TODOS' | 'VALIDAS' | 'NO_VALIDAS';
+
+export interface ComisionVentaDetalleLead {
+  idLead: number;
+  numeroLead: string | null;
+  numeroDocumento: string | null;
+  nombreCliente: string | null;
+  fechaInstalacion: string | null;
+  fechaVencimiento: string | null;
+  fechaLimiteEfectiva: string | null;
+  fechaPagoConsiderada: string | null;
+  tipoVencimiento: 'CONFIRMADO' | 'ESTIMADO' | 'SIN_REGISTRO' | null;
+  estadoPago: string | null;
+  estadoValidacion: 'VALIDA' | 'NO_VALIDA';
+  motivo: string;
+}
+
+export interface ComisionVentaDetalleResponse extends PageResponse<ComisionVentaDetalleLead> {
+  totalLeads: number;
+  totalValidas: number;
+  totalNoValidas: number;
+}
+
+export interface ComisionVentaAuditQuery {
+  mesCorteBase: string;
+  numeroCorte: number;
+  proveedor: 'WIN' | 'CLARO';
+  idAsesor: number;
+  fechaLimiteMorosidad?: string | null;
+  estado: ComisionVentaAuditEstado;
+  pageNumber: number;
+  pageSize: number;
+}
+
 export interface HorarioVigenteResponse {
   id: number;
   idEmpleado: number;
@@ -48,6 +83,24 @@ export class AdminComisionVentaService {
     }
     return this.http.get<ComisionVentaResponse>(
       `${this.leadsUrl}/comisiones/ventas-por-corte`,
+      { params }
+    );
+  }
+
+  obtenerDetalleVentasPorCorte(query: ComisionVentaAuditQuery): Observable<ComisionVentaDetalleResponse> {
+    let params = new HttpParams()
+      .set('mesCorteBase', query.mesCorteBase)
+      .set('numeroCorte', query.numeroCorte)
+      .set('proveedor', query.proveedor)
+      .set('idAsesor', query.idAsesor)
+      .set('estado', query.estado)
+      .set('pageNumber', query.pageNumber)
+      .set('pageSize', query.pageSize);
+    if (query.fechaLimiteMorosidad) {
+      params = params.set('fechaLimiteMorosidad', query.fechaLimiteMorosidad);
+    }
+    return this.http.get<ComisionVentaDetalleResponse>(
+      `${this.leadsUrl}/comisiones/ventas-por-corte/detalle`,
       { params }
     );
   }

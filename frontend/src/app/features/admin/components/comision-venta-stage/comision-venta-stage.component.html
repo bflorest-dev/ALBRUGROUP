@@ -128,7 +128,16 @@
             </thead>
             <tbody>
               @for (a of (proveedorActivo() === 'WIN' ? corte.asesoresWin : corte.asesoresClaro); track a.idAsesor) {
-                <tr [class.no-cuota]="!a.cumpleCuota" [class.si-cuota]="a.cumpleCuota">
+                <tr
+                  class="cv-audit-row"
+                  [class.no-cuota]="!a.cumpleCuota"
+                  [class.si-cuota]="a.cumpleCuota"
+                  tabindex="0"
+                  role="button"
+                  [attr.aria-label]="'Auditar leads de ' + a.nombreAsesor + ', ' + corte.etiqueta"
+                  (click)="abrirAuditoria($event, corte, a)"
+                  (keydown.enter)="abrirAuditoria($event, corte, a)"
+                  (keydown.space)="$event.preventDefault(); abrirAuditoria($event, corte, a)">
                   <td class="col-nombre">{{ a.nombreAsesor }}</td>
                   <td class="col-num">{{ modalidadLabel(a.modalidad) }}</td>
                   <td class="col-num cv-green">{{ a.ventasTotales }}</td>
@@ -151,3 +160,24 @@
     }
   }
 </section>
+
+@if (auditContext(); as contexto) {
+  <app-comision-venta-audit-drawer
+    [contexto]="contexto"
+    [filas]="auditRows()"
+    [cargando]="auditLoading()"
+    [error]="auditError()"
+    [estado]="auditEstado()"
+    [totalLeads]="auditTotalLeads()"
+    [totalValidas]="auditTotalValidas()"
+    [totalNoValidas]="auditTotalNoValidas()"
+    [desde]="auditDesde()"
+    [hasta]="auditHasta()"
+    [totalElementos]="auditTotalElements()"
+    [pagina]="auditPage()"
+    [totalPaginas]="auditTotalPages()"
+    (cerrar)="cerrarAuditoria()"
+    (reintentar)="reintentarAuditoria()"
+    (cambiarEstado)="cambiarEstadoAuditoria($event)"
+    (cambiarPagina)="cambiarPaginaAuditoria($event)" />
+}

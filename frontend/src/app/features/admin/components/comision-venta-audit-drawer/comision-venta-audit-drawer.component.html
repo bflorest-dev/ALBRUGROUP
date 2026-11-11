@@ -1,0 +1,148 @@
+<div class="cva-backdrop" data-theme="dark" (mousedown)="onBackdrop($event)">
+  <aside
+    class="cva-drawer"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cva-title"
+    aria-describedby="cva-description"
+    tabindex="-1">
+    <header class="cva-header">
+      <div class="cva-header__copy">
+        <div class="cva-header__meta">
+          <span class="cva-eyebrow">{{ contexto.proveedor }}</span>
+          <span>{{ contexto.etiqueta }}</span>
+        </div>
+        <h2 id="cva-title">Auditoría de leads</h2>
+        <p id="cva-description">
+          {{ contexto.nombreAsesor }} · Comprueba qué leads forman el corte y la evidencia usada para validarlos.
+        </p>
+      </div>
+      <button #closeButton type="button" class="cva-close" aria-label="Cerrar auditoría" (click)="cerrar.emit()">
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <section class="cva-summary" aria-label="Resumen del corte">
+      <div class="cva-summary__cards">
+        <div class="cva-summary__card">
+          <strong>{{ totalLeads }}</strong>
+          <span>Leads evaluados</span>
+        </div>
+        <div class="cva-summary__card cva-summary__card--valid">
+          <strong>{{ totalValidas }}</strong>
+          <span>Válidos</span>
+        </div>
+        <div class="cva-summary__card cva-summary__card--invalid">
+          <strong>{{ totalNoValidas }}</strong>
+          <span>No válidos</span>
+        </div>
+      </div>
+      <p class="cva-rule">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        Regla: pago del período 1 con fecha registrada dentro del límite efectivo.
+        @if (contexto.fechaLimiteMorosidad) {
+          <span>Límite explícito: {{ contexto.fechaLimiteMorosidad | date:'dd/MM/yyyy':'UTC' }}.</span>
+        } @else {
+          <span>Por defecto: vencimiento más 7 días.</span>
+        }
+      </p>
+    </section>
+
+    <nav class="cva-filter" aria-label="Filtrar leads por validez" role="tablist">
+      <button type="button" role="tab" [attr.aria-selected]="estado === 'TODOS'" [class.active]="estado === 'TODOS'" (click)="cambiarEstado.emit('TODOS')">
+        Todos <span>{{ totalLeads }}</span>
+      </button>
+      <button type="button" role="tab" [attr.aria-selected]="estado === 'VALIDAS'" [class.active]="estado === 'VALIDAS'" (click)="cambiarEstado.emit('VALIDAS')">
+        Válidos <span>{{ totalValidas }}</span>
+      </button>
+      <button type="button" role="tab" [attr.aria-selected]="estado === 'NO_VALIDAS'" [class.active]="estado === 'NO_VALIDAS'" (click)="cambiarEstado.emit('NO_VALIDAS')">
+        No válidos <span>{{ totalNoValidas }}</span>
+      </button>
+    </nav>
+
+    <div class="cva-content" aria-live="polite">
+      @if (cargando) {
+        <div class="cva-loading" aria-label="Cargando auditoría">
+          @for (item of [1, 2, 3, 4]; track item) { <span></span> }
+        </div>
+      } @else if (error) {
+        <div class="cva-feedback cva-feedback--error">
+          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+          <strong>No pudimos cargar el detalle</strong>
+          <p>{{ error }}</p>
+          <button type="button" (click)="reintentar.emit()">Reintentar</button>
+        </div>
+      } @else if (!filas.length) {
+        <div class="cva-feedback">
+          <i class="pi pi-inbox" aria-hidden="true"></i>
+          <strong>No hay leads en esta vista</strong>
+          <p>Prueba con otro filtro de validez.</p>
+        </div>
+      } @else {
+        <div class="cva-list">
+          @for (fila of filas; track fila.idLead) {
+            <article class="cva-lead" [class.cva-lead--valid]="fila.estadoValidacion === 'VALIDA'">
+              <header class="cva-lead__header">
+                <div>
+                  <span class="cva-lead__id">Lead {{ fila.numeroLead || fila.idLead }}</span>
+                  <strong>{{ fila.nombreCliente || 'Cliente sin nombre' }}</strong>
+                </div>
+                <span class="cva-status" [class.cva-status--valid]="fila.estadoValidacion === 'VALIDA'">
+                  {{ fila.estadoValidacion === 'VALIDA' ? 'Válido' : 'No válido' }}
+                </span>
+              </header>
+
+              <dl class="cva-fields">
+                <div>
+                  <dt>ID interno</dt>
+                  <dd>{{ fila.idLead }}</dd>
+                </div>
+                <div>
+                  <dt>Documento</dt>
+                  <dd>{{ fila.numeroDocumento || 'Sin registro' }}</dd>
+                </div>
+                <div>
+                  <dt>Instalación</dt>
+                  <dd>{{ fila.fechaInstalacion ? (fila.fechaInstalacion | date:'dd/MM/yyyy':'UTC') : 'Sin registro' }}</dd>
+                </div>
+                <div>
+                  <dt>Vencimiento período 1</dt>
+                  <dd>{{ fila.fechaVencimiento ? (fila.fechaVencimiento | date:'dd/MM/yyyy':'UTC') : 'Sin registro' }} · {{ vencimientoLabel(fila.tipoVencimiento) }}</dd>
+                </div>
+                <div>
+                  <dt>Límite efectivo</dt>
+                  <dd>{{ fila.fechaLimiteEfectiva ? (fila.fechaLimiteEfectiva | date:'dd/MM/yyyy':'UTC') : 'No calculable' }}</dd>
+                </div>
+                <div>
+                  <dt>Pago considerado</dt>
+                  <dd>{{ fila.fechaPagoConsiderada ? (fila.fechaPagoConsiderada | date:'dd/MM/yyyy':'UTC') : 'Sin pago registrado' }}</dd>
+                </div>
+                <div>
+                  <dt>Estado del pago</dt>
+                  <dd>{{ estadoPagoLabel(fila.estadoPago) }}</dd>
+                </div>
+              </dl>
+              <p class="cva-reason" [class.cva-reason--valid]="fila.estadoValidacion === 'VALIDA'">
+                <i class="pi" [class.pi-check-circle]="fila.estadoValidacion === 'VALIDA'" [class.pi-info-circle]="fila.estadoValidacion !== 'VALIDA'" aria-hidden="true"></i>
+                {{ fila.motivo }}
+              </p>
+            </article>
+          }
+        </div>
+      }
+    </div>
+
+    <footer class="cva-footer">
+      <span>Mostrando {{ desde }}–{{ hasta }} de {{ totalElementos }}</span>
+      <div>
+        <button type="button" (click)="cambiarPagina.emit(-1)" [disabled]="pagina === 0 || cargando" aria-label="Página anterior">
+          <i class="pi pi-chevron-left" aria-hidden="true"></i>
+        </button>
+        <strong>Página {{ totalPaginas === 0 ? 0 : pagina + 1 }} de {{ totalPaginas }}</strong>
+        <button type="button" (click)="cambiarPagina.emit(1)" [disabled]="pagina + 1 >= totalPaginas || cargando" aria-label="Página siguiente">
+          <i class="pi pi-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    </footer>
+  </aside>
+</div>

@@ -321,6 +321,15 @@
     background: var(--app-hover);
   }
 
+  tbody tr.cv-audit-row {
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--role-secondary, #4caf50);
+      outline-offset: -2px;
+    }
+  }
+
   // Empleados que NO cumplen cuota: desaturados y atenuados
   tbody tr.no-cuota {
     opacity: 0.4;

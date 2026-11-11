@@ -3,7 +3,10 @@ import { forkJoin, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import {
   AdminComisionVentaService,
+  ComisionVentaAuditEstado,
   ComisionVentaCorte,
+  ComisionVentaDetalleLead,
+  ComisionVentaDetalleResponse,
   ComisionVentaResponse,
   HorarioVigenteResponse
 } from '../services/admin-comision-venta.service';
@@ -49,6 +52,16 @@ export interface CorteVM {
   anioAsistencia: number;
   asesoresWin: AsesorCorteVM[];
   asesoresClaro: AsesorCorteVM[];
+}
+
+export interface ComisionVentaAuditContext {
+  proveedor: 'WIN' | 'CLARO';
+  mesCorteBase: string;
+  numeroCorte: number;
+  etiqueta: string;
+  idAsesor: number;
+  nombreAsesor: string;
+  fechaLimiteMorosidad: string | null;
 }
 
 export interface TotalAsesorVM {
@@ -102,12 +115,41 @@ export class AdminComisionVentaFacade {
   private readonly _modalidadMap = signal<Map<string, Modalidad>>(new Map());
   private readonly _loading = signal(false);
   private readonly _error = signal<string | null>(null);
+  private readonly _auditContext = signal<ComisionVentaAuditContext | null>(null);
+  private readonly _auditResponse = signal<ComisionVentaDetalleResponse | null>(null);
+  private readonly _auditLoading = signal(false);
+  private readonly _auditError = signal<string | null>(null);
+  private readonly _auditEstado = signal<ComisionVentaAuditEstado>('TODOS');
+  private readonly _auditPage = signal(0);
+  private readonly _auditPageSize = signal(12);
+  private auditRequestId = 0;
 
   readonly fechaLimiteMorosidad = signal<string | null>(null);
   readonly config = signal<ComisionConfig>(configPorDefecto());
 
   readonly isLoading = this._loading.asReadonly();
   readonly errorMessage = this._error.asReadonly();
+  readonly auditContext = this._auditContext.asReadonly();
+  readonly auditResponse = this._auditResponse.asReadonly();
+  readonly auditRows = computed<ComisionVentaDetalleLead[]>(() => this._auditResponse()?.content ?? []);
+  readonly auditLoading = this._auditLoading.asReadonly();
+  readonly auditError = this._auditError.asReadonly();
+  readonly auditEstado = this._auditEstado.asReadonly();
+  readonly auditPage = this._auditPage.asReadonly();
+  readonly auditPageSize = this._auditPageSize.asReadonly();
+  readonly auditTotalLeads = computed(() => this._auditResponse()?.totalLeads ?? 0);
+  readonly auditTotalValidas = computed(() => this._auditResponse()?.totalValidas ?? 0);
+  readonly auditTotalNoValidas = computed(() => this._auditResponse()?.totalNoValidas ?? 0);
+  readonly auditTotalElements = computed(() => this._auditResponse()?.totalElements ?? 0);
+  readonly auditTotalPages = computed(() => this._auditResponse()?.totalPages ?? 0);
+  readonly auditDesde = computed(() => {
+    const total = this.auditTotalElements();
+    return total === 0 ? 0 : this._auditPage() * this._auditPageSize() + 1;
+  });
+  readonly auditHasta = computed(() => Math.min(
+    (this._auditPage() + 1) * this._auditPageSize(),
+    this.auditTotalElements()
+  ));
 
   readonly mesLabel = computed(() => {
     const m = this._mes();
@@ -181,6 +223,7 @@ export class AdminComisionVentaFacade {
   });
 
   setFechaLimiteMorosidad(fecha: string | null): void {
+    this.invalidarAuditoria();
     this.fechaLimiteMorosidad.set(fecha);
   }
 
@@ -195,22 +238,104 @@ export class AdminComisionVentaFacade {
   }
 
   recargar(): void {
+    this.invalidarAuditoria();
     this.cargar(this.paramMesActual());
   }
 
   mesAnterior(): void {
     const m = this._mes();
-    if (m) this.cargar(paramDe(desplazar(m, -1)));
+    if (m) {
+      this.invalidarAuditoria();
+      this.cargar(paramDe(desplazar(m, -1)));
+    }
   }
 
   mesSiguiente(): void {
     const m = this._mes();
-    if (m && this.canGoNext()) this.cargar(paramDe(desplazar(m, 1)));
+    if (m && this.canGoNext()) {
+      this.invalidarAuditoria();
+      this.cargar(paramDe(desplazar(m, 1)));
+    }
+  }
+
+  abrirAuditoria(corte: CorteVM, asesor: AsesorCorteVM, proveedor: 'WIN' | 'CLARO'): void {
+    this._auditContext.set({
+      proveedor,
+      mesCorteBase: corte.mesCorteBase,
+      numeroCorte: corte.numeroCorteBase,
+      etiqueta: corte.etiqueta,
+      idAsesor: asesor.idAsesor,
+      nombreAsesor: asesor.nombreAsesor,
+      fechaLimiteMorosidad: this.fechaLimiteMorosidad()
+    });
+    this._auditEstado.set('TODOS');
+    this._auditPage.set(0);
+    this._auditResponse.set(null);
+    this._auditError.set(null);
+    this.cargarAuditoria();
+  }
+
+  cerrarAuditoria(): void {
+    this.invalidarAuditoria();
+  }
+
+  reintentarAuditoria(): void {
+    this.cargarAuditoria();
+  }
+
+  cambiarEstadoAuditoria(estado: ComisionVentaAuditEstado): void {
+    this._auditEstado.set(estado);
+    this._auditPage.set(0);
+    this.cargarAuditoria();
+  }
+
+  cambiarPaginaAuditoria(delta: number): void {
+    const destino = this._auditPage() + delta;
+    if (destino < 0 || destino >= this.auditTotalPages() || this._auditLoading()) return;
+    this._auditPage.set(destino);
+    this.cargarAuditoria();
+  }
+
+  invalidarAuditoria(): void {
+    this.auditRequestId++;
+    this._auditContext.set(null);
+    this._auditResponse.set(null);
+    this._auditError.set(null);
+    this._auditLoading.set(false);
   }
 
   private paramMesActual(): string | undefined {
     const m = this._mes();
     return m ? paramDe(m) : undefined;
+  }
+
+  private cargarAuditoria(): void {
+    const contexto = this._auditContext();
+    if (!contexto) return;
+    const requestId = ++this.auditRequestId;
+    this._auditLoading.set(true);
+    this._auditError.set(null);
+    this.service.obtenerDetalleVentasPorCorte({
+      mesCorteBase: contexto.mesCorteBase,
+      numeroCorte: contexto.numeroCorte,
+      proveedor: contexto.proveedor,
+      idAsesor: contexto.idAsesor,
+      fechaLimiteMorosidad: contexto.fechaLimiteMorosidad,
+      estado: this._auditEstado(),
+      pageNumber: this._auditPage(),
+      pageSize: this._auditPageSize()
+    }).subscribe({
+      next: (response) => {
+        if (requestId !== this.auditRequestId || this._auditContext() !== contexto) return;
+        this._auditResponse.set(response);
+        this._auditLoading.set(false);
+      },
+      error: () => {
+        if (requestId !== this.auditRequestId || this._auditContext() !== contexto) return;
+        this._auditError.set('No pudimos cargar la auditoría de leads. Intenta nuevamente.');
+        this._auditLoading.set(false);
+      }
+    });
   }
 
   private cargar(mesComision?: string): void {

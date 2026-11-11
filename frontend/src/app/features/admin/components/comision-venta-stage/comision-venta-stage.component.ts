@@ -7,6 +7,7 @@ import {
   Modalidad,
   TotalAsesorVM
 } from '../../facades/admin-comision-venta.facade';
+import { ComisionVentaAuditDrawerComponent } from '../comision-venta-audit-drawer/comision-venta-audit-drawer.component';
 
 const MODALIDAD_LABELS: Record<Modalidad, string> = {
   PART_TIME: 'Part Time',
@@ -19,7 +20,7 @@ type TabId = 'totales' | string;
 
 @Component({
   selector: 'app-comision-venta-stage',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, ComisionVentaAuditDrawerComponent],
   providers: [AdminComisionVentaFacade],
   templateUrl: './comision-venta-stage.component.html',
   styleUrl: './comision-venta-stage.component.scss',
@@ -36,6 +37,20 @@ export class ComisionVentaStageComponent implements OnInit {
   protected readonly errorMessage = this.facade.errorMessage;
   protected readonly config = this.facade.config;
   protected readonly fechaLimiteMorosidad = this.facade.fechaLimiteMorosidad;
+  protected readonly auditContext = this.facade.auditContext;
+  protected readonly auditRows = this.facade.auditRows;
+  protected readonly auditLoading = this.facade.auditLoading;
+  protected readonly auditError = this.facade.auditError;
+  protected readonly auditEstado = this.facade.auditEstado;
+  protected readonly auditTotalLeads = this.facade.auditTotalLeads;
+  protected readonly auditTotalValidas = this.facade.auditTotalValidas;
+  protected readonly auditTotalNoValidas = this.facade.auditTotalNoValidas;
+  protected readonly auditDesde = this.facade.auditDesde;
+  protected readonly auditHasta = this.facade.auditHasta;
+  protected readonly auditTotalElements = this.facade.auditTotalElements;
+  protected readonly auditPage = this.facade.auditPage;
+  protected readonly auditTotalPages = this.facade.auditTotalPages;
+  private auditOrigin: HTMLElement | null = null;
 
   protected readonly activeTab = signal<TabId>('totales');
   protected readonly proveedorActivo = signal<'WIN' | 'CLARO'>('WIN');
@@ -90,8 +105,15 @@ export class ComisionVentaStageComponent implements OnInit {
     this.facade.start();
   }
 
-  protected mesAnterior(): void { this.facade.mesAnterior(); }
-  protected mesSiguiente(): void { this.facade.mesSiguiente(); }
+  protected mesAnterior(): void {
+    this.activeTab.set('totales');
+    this.facade.mesAnterior();
+  }
+
+  protected mesSiguiente(): void {
+    this.activeTab.set('totales');
+    this.facade.mesSiguiente();
+  }
   protected recargar(): void { this.facade.recargar(); }
   protected resetConfig(): void { this.facade.resetConfig(); }
 
@@ -100,8 +122,35 @@ export class ComisionVentaStageComponent implements OnInit {
     this.facade.setFechaLimiteMorosidad(valor || null);
   }
 
-  protected selectTab(id: TabId): void { this.activeTab.set(id); }
-  protected selectProveedor(p: 'WIN' | 'CLARO'): void { this.proveedorActivo.set(p); }
+  protected selectTab(id: TabId): void {
+    this.facade.invalidarAuditoria();
+    this.activeTab.set(id);
+  }
+
+  protected selectProveedor(p: 'WIN' | 'CLARO'): void {
+    this.facade.invalidarAuditoria();
+    this.proveedorActivo.set(p);
+  }
+
+  protected abrirAuditoria(event: Event, corte: CorteVM, asesor: AsesorCorteVM): void {
+    this.auditOrigin = event.currentTarget as HTMLElement;
+    this.facade.abrirAuditoria(corte, asesor, this.proveedorActivo());
+  }
+
+  protected cerrarAuditoria(): void {
+    this.facade.cerrarAuditoria();
+    const origin = this.auditOrigin;
+    this.auditOrigin = null;
+    queueMicrotask(() => origin?.focus());
+  }
+
+  protected reintentarAuditoria(): void { this.facade.reintentarAuditoria(); }
+
+  protected cambiarEstadoAuditoria(estado: 'TODOS' | 'VALIDAS' | 'NO_VALIDAS'): void {
+    this.facade.cambiarEstadoAuditoria(estado);
+  }
+
+  protected cambiarPaginaAuditoria(delta: number): void { this.facade.cambiarPaginaAuditoria(delta); }
 
   protected modalidadLabel(m: Modalidad | null): string {
     return m ? MODALIDAD_LABELS[m] : '—';

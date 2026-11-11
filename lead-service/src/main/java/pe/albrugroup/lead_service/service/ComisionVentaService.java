@@ -7,8 +7,14 @@ import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.response.ComisionVentaResponse;
 import pe.albrugroup.lead_service.entity.response.ComisionVentaResponse.ComisionVentaAsesorResponse;
 import pe.albrugroup.lead_service.entity.response.ComisionVentaResponse.ComisionVentaCorteResponse;
+import pe.albrugroup.lead_service.entity.response.ComisionVentaDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.ComisionVentaDetalleResponse.LeadDetalle;
 import pe.albrugroup.lead_service.repository.ComisionVentaRepository;
 import pe.albrugroup.lead_service.repository.projection.ComisionVentaAsesorProjection;
+import pe.albrugroup.lead_service.repository.projection.ComisionVentaDetalleCountProjection;
+import pe.albrugroup.lead_service.repository.projection.ComisionVentaDetalleProjection;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -19,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -26,6 +33,8 @@ import java.util.Map;
 public class ComisionVentaService {
 
     private static final String PROVEEDOR_POR_DEFECTO = "WIN";
+    private static final String ESTADO_TODOS = "TODOS";
+    private static final Set<String> ESTADOS_DETALLE = Set.of(ESTADO_TODOS, "VALIDAS", "NO_VALIDAS");
     private static final Locale ES = Locale.forLanguageTag("es");
 
     private final ComisionVentaRepository comisionRepository;
@@ -61,6 +70,71 @@ public class ComisionVentaService {
                 .mesComision(mesComision.atDay(1))
                 .cortes(cortes)
                 .build();
+    }
+
+    public ComisionVentaDetalleResponse listarDetalleVentasPorCorte(
+            LocalDate mesCorteBase,
+            Integer numeroCorte,
+            String proveedorParam,
+            Long idAsesor,
+            LocalDate fechaLimiteMorosidad,
+            String estadoParam,
+            int pageNumber,
+            int pageSize
+    ) {
+        if (mesCorteBase == null || numeroCorte == null || idAsesor == null) {
+            throw new IllegalArgumentException("El mes, corte y asesor son obligatorios");
+        }
+        String proveedor = (proveedorParam == null || proveedorParam.isBlank())
+                ? PROVEEDOR_POR_DEFECTO
+                : proveedorParam.trim().toUpperCase(ES);
+        String estado = normalizarEstadoDetalle(estadoParam);
+        int pagina = Math.max(pageNumber, 0);
+        int tamanio = Math.min(Math.max(pageSize, 1), 50);
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(pagina, tamanio);
+
+        Page<ComisionVentaDetalleProjection> page = comisionRepository.detalleVentasPorCorte(
+                proveedor, mesCorteBase, numeroCorte, idAsesor, fechaLimiteMorosidad, estado, pageable);
+        ComisionVentaDetalleCountProjection counts = comisionRepository.contarDetalleVentasPorCorte(
+                proveedor, mesCorteBase, numeroCorte, idAsesor, fechaLimiteMorosidad);
+
+        List<LeadDetalle> content = page.getContent().stream()
+                .map(this::toDetalle)
+                .toList();
+        return ComisionVentaDetalleResponse.builder()
+                .totalLeads(counts == null ? 0 : counts.getTotalLeads())
+                .totalValidas(counts == null ? 0 : counts.getTotalValidas())
+                .totalNoValidas(counts == null ? 0 : counts.getTotalNoValidas())
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalPages(page.getTotalPages())
+                .totalElements(page.getTotalElements())
+                .content(content)
+                .build();
+    }
+
+    private LeadDetalle toDetalle(ComisionVentaDetalleProjection row) {
+        return LeadDetalle.builder()
+                .idLead(row.getIdLead())
+                .numeroLead(row.getNumeroLead())
+                .numeroDocumento(row.getNumeroDocumento())
+                .nombreCliente(row.getNombreCliente())
+                .fechaInstalacion(row.getFechaInstalacion())
+                .fechaVencimiento(row.getFechaVencimiento())
+                .fechaLimiteEfectiva(row.getFechaLimiteEfectiva())
+                .fechaPagoConsiderada(row.getFechaPagoConsiderada())
+                .tipoVencimiento(row.getTipoVencimiento())
+                .estadoPago(row.getEstadoPago())
+                .estadoValidacion(row.getEstadoValidacion())
+                .motivo(row.getMotivo())
+                .build();
+    }
+
+    private String normalizarEstadoDetalle(String estadoParam) {
+        String estado = estadoParam == null || estadoParam.isBlank()
+                ? ESTADO_TODOS
+                : estadoParam.trim().toUpperCase(ES);
+        return ESTADOS_DETALLE.contains(estado) ? estado : ESTADO_TODOS;
     }
 
     private void agregarCorte(
