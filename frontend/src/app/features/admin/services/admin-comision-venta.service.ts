@@ -30,9 +30,6 @@ export interface ComisionVentaResponse {
 export type ComisionVentaAuditEstado = 'TODOS' | 'VALIDAS' | 'NO_VALIDAS';
 
 export interface ComisionVentaDetalleLead {
-  idLead: number;
-  numeroLead: string | null;
-  numeroDocumento: string | null;
   nombreCliente: string | null;
   fechaInstalacion: string | null;
   fechaVencimiento: string | null;

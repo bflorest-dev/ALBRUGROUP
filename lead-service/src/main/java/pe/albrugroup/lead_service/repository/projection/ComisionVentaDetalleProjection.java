@@ -4,12 +4,6 @@ import java.time.LocalDate;
 
 public interface ComisionVentaDetalleProjection {
 
-    Long getIdLead();
-
-    String getNumeroLead();
-
-    String getNumeroDocumento();
-
     String getNombreCliente();
 
     LocalDate getFechaInstalacion();

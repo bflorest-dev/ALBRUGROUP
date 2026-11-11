@@ -32,8 +32,6 @@ class ComisionVentaServiceTest {
     @Test
     void detalleConservaConteosYMapeaEvidenciaDePago() {
         ComisionVentaDetalleProjection row = mock(ComisionVentaDetalleProjection.class);
-        when(row.getIdLead()).thenReturn(33524L);
-        when(row.getNumeroLead()).thenReturn("987654321");
         when(row.getNombreCliente()).thenReturn("Cliente de prueba");
         when(row.getEstadoValidacion()).thenReturn("NO_VALIDA");
         when(row.getMotivo()).thenReturn("No válido: sin pago registrado");
@@ -59,7 +57,6 @@ class ComisionVentaServiceTest {
         assertThat(response.totalValidas()).isEqualTo(15);
         assertThat(response.totalNoValidas()).isEqualTo(3);
         assertThat(response.content()).singleElement().satisfies(item -> {
-            assertThat(item.idLead()).isEqualTo(33524L);
             assertThat(item.motivo()).isEqualTo("No válido: sin pago registrado");
             assertThat(item.estadoValidacion()).isEqualTo("NO_VALIDA");
         });

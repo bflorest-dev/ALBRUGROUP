@@ -21,8 +21,6 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
             WITH base AS (
                 SELECT DISTINCT ON (l.id)
                        l.id AS id_lead,
-                       l.lead AS numero_lead,
-                       l.numero_documento_titular_servicio_snapshot AS numero_documento,
                        COALESCE(NULLIF(TRIM(dp.nombre_titular_servicio), ''), NULLIF(TRIM(c.nombre_conocido), '')) AS nombre_cliente,
                        cf.fecha_instalacion,
                        cf.mes_corte_base,
@@ -130,10 +128,7 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
             """;
 
     String DETALLE_SELECT = """
-            SELECT id_lead AS "idLead",
-                   numero_lead AS "numeroLead",
-                   numero_documento AS "numeroDocumento",
-                   nombre_cliente AS "nombreCliente",
+            SELECT nombre_cliente AS "nombreCliente",
                    fecha_instalacion AS "fechaInstalacion",
                    COALESCE(fecha_vencimiento_confirmado, fecha_vencimiento_estimado) AS "fechaVencimiento",
                    fecha_limite_efectiva AS "fechaLimiteEfectiva",

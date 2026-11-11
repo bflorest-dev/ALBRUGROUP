@@ -19,9 +19,6 @@ public record ComisionVentaDetalleResponse(
 
     @Builder
     public record LeadDetalle(
-            Long idLead,
-            String numeroLead,
-            String numeroDocumento,
             String nombreCliente,
             LocalDate fechaInstalacion,
             LocalDate fechaVencimiento,

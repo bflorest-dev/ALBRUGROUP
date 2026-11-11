@@ -80,11 +80,10 @@
         </div>
       } @else {
         <div class="cva-list">
-          @for (fila of filas; track fila.idLead) {
+          @for (fila of filas; track $index) {
             <article class="cva-lead" [class.cva-lead--valid]="fila.estadoValidacion === 'VALIDA'">
               <header class="cva-lead__header">
                 <div>
-                  <span class="cva-lead__id">Lead {{ fila.numeroLead || fila.idLead }}</span>
                   <strong>{{ fila.nombreCliente || 'Cliente sin nombre' }}</strong>
                 </div>
                 <span class="cva-status" [class.cva-status--valid]="fila.estadoValidacion === 'VALIDA'">
@@ -93,14 +92,6 @@
               </header>
 
               <dl class="cva-fields">
-                <div>
-                  <dt>ID interno</dt>
-                  <dd>{{ fila.idLead }}</dd>
-                </div>
-                <div>
-                  <dt>Documento</dt>
-                  <dd>{{ fila.numeroDocumento || 'Sin registro' }}</dd>
-                </div>
                 <div>
                   <dt>Instalación</dt>
                   <dd>{{ fila.fechaInstalacion ? (fila.fechaInstalacion | date:'dd/MM/yyyy':'UTC') : 'Sin registro' }}</dd>
@@ -120,6 +111,10 @@
                 <div>
                   <dt>Estado del pago</dt>
                   <dd>{{ estadoPagoLabel(fila.estadoPago) }}</dd>
+                </div>
+                <div>
+                  <dt>Resultado</dt>
+                  <dd>{{ fila.estadoValidacion === 'VALIDA' ? 'Válido' : 'No válido' }}</dd>
                 </div>
               </dl>
               <p class="cva-reason" [class.cva-reason--valid]="fila.estadoValidacion === 'VALIDA'">

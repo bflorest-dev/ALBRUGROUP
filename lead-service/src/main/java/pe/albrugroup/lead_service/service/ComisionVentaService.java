@@ -115,9 +115,6 @@ public class ComisionVentaService {
 
     private LeadDetalle toDetalle(ComisionVentaDetalleProjection row) {
         return LeadDetalle.builder()
-                .idLead(row.getIdLead())
-                .numeroLead(row.getNumeroLead())
-                .numeroDocumento(row.getNumeroDocumento())
                 .nombreCliente(row.getNombreCliente())
                 .fechaInstalacion(row.getFechaInstalacion())
                 .fechaVencimiento(row.getFechaVencimiento())
