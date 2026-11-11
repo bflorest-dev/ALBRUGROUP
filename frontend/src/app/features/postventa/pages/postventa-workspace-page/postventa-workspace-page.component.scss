@@ -359,6 +359,36 @@
   font-variant-numeric: tabular-nums;
 }
 
+// ── ASESOR VENTAS ──────────────────────────────────────────────
+.advisor-cell {
+  display: grid;
+  gap: 0.08rem;
+  line-height: 1.12;
+  min-width: 0;
+  text-align: left;
+}
+
+.advisor-cell strong,
+.advisor-cell span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.advisor-cell strong {
+  color: var(--board-ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.advisor-cell span {
+  color: var(--board-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
 // ── PLAN CELL ───────────────────────────────────────────────────
 .plan-cell {
   align-items: center;
@@ -468,9 +498,10 @@
     font-family: "Archivo", "Segoe UI", Arial, sans-serif;
   }
 
-  .postventa-table .col-install  { width: 11%; }
-  .postventa-table .col-client   { width: 19%; }
-  .postventa-table .col-plan     { width: 19%; }
+  .postventa-table .col-install  { width: 10%; }
+  .postventa-table .col-client   { width: 18%; }
+  .postventa-table .col-asesor   { width: 10%; }
+  .postventa-table .col-plan     { width: 18%; }
   .postventa-table .col-semaforo { width: 28%; }
   .postventa-table .col-gestion  { width: 13%; }
 

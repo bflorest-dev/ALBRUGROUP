@@ -87,7 +87,7 @@
 .tablecard { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
 .tablescroll { overflow-x: auto; }
 table.records {
-  width: 100%; border-collapse: collapse; min-width: 1020px;
+  width: 100%; border-collapse: collapse; min-width: 1180px;
   thead th {
     position: sticky; top: 0; background: var(--panel-2); text-align: left; font-size: 10.5px; font-weight: 700;
     letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); padding: 12px 14px;
@@ -102,6 +102,9 @@ table.records {
 }
 .cell-lead { font-weight: 600; font-size: 14.5px; }
 .sub { color: var(--ink-3); font-size: 11.5px; }
+.codes { white-space: nowrap; color: var(--ink-2); font-size: 11px; }
+.codes span { display: block; line-height: 1.5; }
+.codes b { color: var(--ink-3); font-size: 9.5px; letter-spacing: .05em; margin-right: 4px; }
 .titular { font-weight: 600; }
 .equipo { font-size: 12px; color: var(--ink-2); font-weight: 500; }
 .equipo-tip {

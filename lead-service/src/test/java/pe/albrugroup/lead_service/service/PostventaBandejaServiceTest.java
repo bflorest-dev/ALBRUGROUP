@@ -24,7 +24,7 @@ class PostventaBandejaServiceTest {
                 .lead(lead)
                 .build();
         PostventaBandejaService service = new PostventaBandejaService(
-                null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null, null
         );
 
         Method mapper = Arrays.stream(PostventaBandejaService.class.getDeclaredMethods())
@@ -34,7 +34,7 @@ class PostventaBandejaServiceTest {
         mapper.setAccessible(true);
 
         LeadPostventaBandejaResponse response = (LeadPostventaBandejaResponse) mapper.invoke(
-                service, calendario, null, null, null, null
+                service, calendario, null, null, null, null, null
         );
 
         assertThat(response.getCustomerId()).isEqualTo("12345678");

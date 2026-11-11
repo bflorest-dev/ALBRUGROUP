@@ -38,6 +38,7 @@ export interface LeadPostventaBandejaResponse {
   lead?: string | null;
   nombreCliente?: string | null;
   telefonoRegistro?: string | null;
+  nombreAsesorVentas?: string | null;
   proveedor?: string | null;
   plan?: string | null;
   montoPlanSnapshot?: number | null;

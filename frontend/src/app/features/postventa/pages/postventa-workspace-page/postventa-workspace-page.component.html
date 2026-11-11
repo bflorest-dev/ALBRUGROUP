@@ -127,6 +127,7 @@
               </button>
             </th>
             <th class="col-client">Cliente</th>
+            <th class="col-asesor">Asesor ventas</th>
             <th class="col-plan">Plan</th>
             <th class="col-semaforo">
               <div class="sem-header">
@@ -164,6 +165,20 @@
                   <span class="customer-id">Customer ID {{ row.customerId ?? '—' }}</span>
                 }
                 <span>{{ row.nombreCliente ?? '—' }}</span>
+              </div>
+            </td>
+
+            <!-- ASESOR VENTAS -->
+            <td class="col-asesor">
+              <div
+                class="advisor-cell"
+                [attr.aria-label]="'Asesor ventas: ' + (row.nombreAsesorVentas ?? 'Sin asesor ventas')"
+                [attr.title]="row.nombreAsesorVentas ?? 'Sin asesor ventas'"
+              >
+                <strong>{{ row.asesorVentasLinea1 }}</strong>
+                @if (row.asesorVentasLinea2) {
+                  <span>{{ row.asesorVentasLinea2 }}</span>
+                }
               </div>
             </td>
 
@@ -223,7 +238,7 @@
 
         <ng-template #emptymessage>
           <tr>
-            <td [attr.colspan]="5" class="empty-cell">
+            <td [attr.colspan]="6" class="empty-cell">
               No hay leads que mostrar con los filtros actuales.
             </td>
           </tr>

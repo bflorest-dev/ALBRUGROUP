@@ -17,6 +17,8 @@ export type VisualLeadPostventa = LeadPostventaBandejaResponse & {
   readonly fechaGroupSortKey: string;
   readonly clienteLinea1: string;
   readonly clienteLinea2: string;
+  readonly asesorVentasLinea1: string;
+  readonly asesorVentasLinea2: string;
 };
 
 /** Parte un nombre completo en dos lineas por palabras (mitad y mitad) para apilarlo. */
@@ -30,6 +32,18 @@ export function splitNombreDosLineas(value?: string | null): { linea1: string; l
   }
   const corte = Math.ceil(parts.length / 2);
   return { linea1: parts.slice(0, corte).join(' '), linea2: parts.slice(corte).join(' ') };
+}
+
+/** Toma el primer nombre y el primer apellido para una celda angosta. */
+export function splitNombreAsesor(value?: string | null): { linea1: string; linea2: string } {
+  const parts = (value ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return { linea1: SIN_DATO, linea2: '' };
+  }
+  if (parts.length === 1) {
+    return { linea1: parts[0], linea2: '' };
+  }
+  return { linea1: parts[0], linea2: parts[2] ?? parts[1] };
 }
 
 /** Texto + color de un estado, resuelto una sola vez por codigo (referencia estable para el template). */

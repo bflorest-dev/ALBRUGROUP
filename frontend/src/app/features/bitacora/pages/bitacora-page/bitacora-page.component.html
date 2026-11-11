@@ -35,7 +35,7 @@
         (keydown.enter)="buscarAhora()"
         autocomplete="off"
         spellcheck="false"
-        placeholder="Lead, usermeta, documento, celular o titular…"
+        placeholder="Lead, SEC, SOT, Customer ID, usermeta, documento…"
       />
       @if (f.buscando()) {
         <span class="spin" aria-label="Buscando"></span>
@@ -46,7 +46,7 @@
         <span><b>{{ f.resultados().length }}</b> {{ f.resultados().length === 1 ? 'expediente' : 'expedientes' }}</span>
         <span class="dot"></span>
       }
-      <span>búsqueda total en lead · usermeta · documento · celular · titular</span>
+      <span>búsqueda total en lead · SEC · SOT · Customer ID · usermeta · documento · celular · titular</span>
       <span class="dot"></span>
       <span class="scope-note">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 8 8 11 4.6-3 8-6 8-11V5Z"/></svg>
@@ -60,7 +60,7 @@
     @if (!f.busquedaHecha()) {
       <div class="placeholder">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <p>Escribe un dato del lead para empezar. Busca por número, usermeta, documento, celular o nombre del titular.</p>
+        <p>Escribe un dato del lead para empezar. Busca por número, SEC, SOT, Customer ID, usermeta, documento, celular o titular.</p>
       </div>
     } @else if (f.resultados().length === 0) {
       <div class="placeholder">
@@ -74,7 +74,7 @@
           <table class="records">
             <thead>
               <tr>
-                <th>Lead / Usermeta</th><th>Titular del servicio</th><th>Documento</th><th>Celular</th>
+                <th>Lead / Usermeta</th><th>Titular del servicio</th><th>Documento</th><th>Celular</th><th>SEC / SOT / Customer ID</th>
                 <th>Prov.</th><th>Etapa</th><th>Tipificación</th><th>Equipo</th><th>Creado</th><th>Última gestión</th>
               </tr>
             </thead>
@@ -88,6 +88,12 @@
                   <td class="titular">{{ row.titularServicio || '—' }}</td>
                   <td class="mono muted">{{ row.numeroDocumento || '—' }}</td>
                   <td class="mono muted">{{ row.celular || '—' }}</td>
+                  <td class="codes">
+                    @if (row.sec) { <span><b>SEC</b> <span class="mono">{{ row.sec }}</span></span> }
+                    @if (row.sot) { <span><b>SOT</b> <span class="mono">{{ row.sot }}</span></span> }
+                    @if (row.customerId) { <span><b>CID</b> <span class="mono">{{ row.customerId }}</span></span> }
+                    @if (!row.sec && !row.sot && !row.customerId) { <span class="muted">—</span> }
+                  </td>
                   <td>
                     @if (logo(row.nombreProveedor); as src) {
                       <span class="prov img"><img [src]="src" [alt]="row.nombreProveedor || ''" /></span>

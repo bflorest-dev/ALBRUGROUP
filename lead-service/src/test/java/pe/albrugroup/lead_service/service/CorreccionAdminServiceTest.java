@@ -12,6 +12,7 @@ import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.LeadCorreccionRequest;
+import pe.albrugroup.lead_service.entity.response.LeadCorreccionBusquedaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.repository.EventoRepository;
@@ -37,6 +38,27 @@ class CorreccionAdminServiceTest {
     @Mock private CurrentUser currentUser;
 
     @InjectMocks private CorreccionAdminService correccionAdminService;
+
+    @Test
+    void buscaPorCodigoDeInstalacionYExponeLosCodigosEnLaFila() {
+        Lead lead = Lead.builder()
+                .id(10L)
+                .lead("987654321")
+                .sec("123456789")
+                .sot("12345678")
+                .customerId("87654321")
+                .build();
+        when(leadRepository.buscarParaCorreccionAdmin("%123456789%", org.springframework.data.domain.PageRequest.of(0, 50)))
+                .thenReturn(List.of(lead));
+
+        List<LeadCorreccionBusquedaResponse> resultados = correccionAdminService.buscar(" 123456789 ");
+
+        assertThat(resultados).singleElement().satisfies(resultado -> {
+            assertThat(resultado.getSec()).isEqualTo("123456789");
+            assertThat(resultado.getSot()).isEqualTo("12345678");
+            assertThat(resultado.getCustomerId()).isEqualTo("87654321");
+        });
+    }
 
     @Test
     void aplicarSinCambiosNiEventosFalla() {

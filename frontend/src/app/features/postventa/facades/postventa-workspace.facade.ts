@@ -43,7 +43,7 @@ import {
   PostventaLeadService,
   SatisfaccionPostventaResponse
 } from '../services/postventa-lead.service';
-import { VisualLeadPostventa, splitNombreDosLineas } from '../models/postventa.vm';
+import { VisualLeadPostventa, splitNombreAsesor, splitNombreDosLineas } from '../models/postventa.vm';
 
 type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
 const ESTADOS_PERIODO_CERRADO = [
@@ -1106,13 +1106,16 @@ export class PostventaWorkspaceFacade {
   private withFechaGroup(row: LeadPostventaBandejaResponse): VisualLeadPostventa {
     const key = this.fechaGroupKey(row.fechaInstalacion);
     const cliente = splitNombreDosLineas(row.nombreCliente);
+    const asesorVentas = splitNombreAsesor(row.nombreAsesorVentas);
     return {
       ...row,
       fechaGroupKey: key,
       fechaGroupLabel: this.fechaGroupLabel(key),
       fechaGroupSortKey: this.fechaGroupSortKey(key),
       clienteLinea1: cliente.linea1,
-      clienteLinea2: cliente.linea2
+      clienteLinea2: cliente.linea2,
+      asesorVentasLinea1: asesorVentas.linea1,
+      asesorVentasLinea2: asesorVentas.linea2
     };
   }
 

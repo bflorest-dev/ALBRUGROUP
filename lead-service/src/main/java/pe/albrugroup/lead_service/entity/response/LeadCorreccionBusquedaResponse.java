@@ -25,6 +25,9 @@ public class LeadCorreccionBusquedaResponse {
     private String numeroDocumento;
     private String celular;
     private String titularServicio;
+    private String sec;
+    private String sot;
+    private String customerId;
     private Instant createdAt;
     private Instant lastEntryAt;
     private Etapa etapa;

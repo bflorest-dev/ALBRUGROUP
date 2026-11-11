@@ -33,6 +33,7 @@ public class LeadPostventaBandejaResponse {
     private String lead;
     private String nombreCliente;
     private String telefonoRegistro;
+    private String nombreAsesorVentas;
     private String proveedor;
     private String plan;
     private BigDecimal montoPlanSnapshot;

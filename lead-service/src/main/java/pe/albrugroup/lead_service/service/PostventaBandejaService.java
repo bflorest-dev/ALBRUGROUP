@@ -10,6 +10,7 @@ import pe.albrugroup.lead_service.entity.DatosPreventa;
 import pe.albrugroup.lead_service.entity.EncuestaPostventa;
 import pe.albrugroup.lead_service.entity.EntregaCredencialPlataforma;
 import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.LeadEtapaResumen;
 import pe.albrugroup.lead_service.entity.LeadAdicional;
 import pe.albrugroup.lead_service.entity.PeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.Plataforma;
@@ -34,6 +35,7 @@ import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EntregaCredencialPlataformaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
+import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
 
 import java.time.LocalDate;
@@ -58,6 +60,7 @@ public class PostventaBandejaService {
     private final EncuestaPostventaRepository encuestaRepository;
     private final EntregaCredencialPlataformaRepository entregaCredencialRepository;
     private final EventoRepository eventoRepository;
+    private final LeadEtapaResumenRepository leadEtapaResumenRepository;
     private final LeadRepository leadRepository;
     private final PeriodoFacturacionPostventaRepository periodoRepository;
     private final PaginationService paginationService;
@@ -122,6 +125,7 @@ public class PostventaBandejaService {
                 .toList();
 
         Map<Long, EncuestaPostventa> ultimasEncuestas = obtenerUltimasEncuestas(leadIds);
+        Map<Long, LeadEtapaResumen> asesoresVentas = obtenerAsesoresVentas(leadIds);
         Map<Long, EstadoPlataformaDigitalLead> estadosPlataforma = resolverEstadosPlataforma(leadIds);
         Map<Long, PeriodoFacturacionPostventa> periodosVigentes = obtenerPeriodosVigentes(leadIds);
         Map<Long, UltimaGestion> ultimasGestiones = obtenerUltimasGestiones(leadIds);
@@ -130,6 +134,7 @@ public class PostventaBandejaService {
                 .map(calendario -> toResponse(
                         calendario,
                         ultimasEncuestas.get(calendario.getLead().getId()),
+                        asesoresVentas.get(calendario.getLead().getId()),
                         estadosPlataforma.getOrDefault(calendario.getLead().getId(), EstadoPlataformaDigitalLead.NO_ENTREGADA),
                         periodosVigentes.get(calendario.getLead().getId()),
                         ultimasGestiones.get(calendario.getLead().getId())
@@ -152,6 +157,7 @@ public class PostventaBandejaService {
         Page<LeadPostventaBandejaResponse> responsePage = calendarios.map(calendario -> toResponse(
                 calendario,
                 ultimasEncuestas.get(calendario.getLead().getId()),
+                asesoresVentas.get(calendario.getLead().getId()),
                 estadosPlataforma.getOrDefault(calendario.getLead().getId(), EstadoPlataformaDigitalLead.NO_ENTREGADA),
                 periodosVigentes.get(calendario.getLead().getId()),
                 ultimasGestiones.get(calendario.getLead().getId())
@@ -252,6 +258,7 @@ public class PostventaBandejaService {
                 .map(Lead::getId)
                 .toList();
         Map<Long, EncuestaPostventa> ultimasEncuestas = obtenerUltimasEncuestas(leadIds);
+        Map<Long, LeadEtapaResumen> asesoresVentas = obtenerAsesoresVentas(leadIds);
         Map<Long, EstadoPlataformaDigitalLead> estadosPlataforma = resolverEstadosPlataforma(leadIds);
         Map<Long, PeriodoFacturacionPostventa> periodosVigentes = obtenerPeriodosVigentes(leadIds);
         Map<Long, UltimaGestion> ultimasGestiones = obtenerUltimasGestiones(leadIds);
@@ -261,6 +268,7 @@ public class PostventaBandejaService {
                     return toResponse(
                             calendario,
                             ultimasEncuestas.get(idLead),
+                            asesoresVentas.get(idLead),
                             estadosPlataforma.getOrDefault(idLead, EstadoPlataformaDigitalLead.NO_ENTREGADA),
                             periodosVigentes.get(idLead),
                             ultimasGestiones.get(idLead)
@@ -363,6 +371,14 @@ public class PostventaBandejaService {
         return porLead;
     }
 
+    private Map<Long, LeadEtapaResumen> obtenerAsesoresVentas(Collection<Long> leadIds) {
+        if (leadIds.isEmpty()) {
+            return Map.of();
+        }
+        return leadEtapaResumenRepository.findByIdLeadInAndEtapa(leadIds, Etapa.PREVENTA).stream()
+                .collect(Collectors.toMap(LeadEtapaResumen::getIdLead, resumen -> resumen));
+    }
+
     private Map<Long, EstadoPlataformaDigitalLead> resolverEstadosPlataforma(Collection<Long> leadIds) {
         if (leadIds.isEmpty()) {
             return Map.of();
@@ -440,6 +456,7 @@ public class PostventaBandejaService {
     private LeadPostventaBandejaResponse toResponse(
             CalendarioFacturacionPostventa calendario,
             EncuestaPostventa ultimaEncuesta,
+            LeadEtapaResumen resumenPreventa,
             EstadoPlataformaDigitalLead estadoPlataforma,
             PeriodoFacturacionPostventa periodoVigente,
             UltimaGestion ultimaGestion
@@ -458,6 +475,7 @@ public class PostventaBandejaService {
                 .lead(lead.getLead())
                 .nombreCliente(datos == null ? null : datos.getNombreTitularServicio())
                 .telefonoRegistro(datos == null ? null : datos.getCelularRegistro())
+                .nombreAsesorVentas(resumenPreventa == null ? null : resumenPreventa.getNombreAsesorMerito())
                 .proveedor(calendario.getProveedorSnapshot())
                 .plan(calendario.getPlanSnapshot())
                 .montoPlanSnapshot(calendario.getMontoPlanSnapshot())

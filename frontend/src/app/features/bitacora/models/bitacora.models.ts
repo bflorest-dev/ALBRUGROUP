@@ -13,6 +13,9 @@ export interface BitacoraBusquedaResponse {
   numeroDocumento?: string | null;
   celular?: string | null;
   titularServicio?: string | null;
+  sec?: string | null;
+  sot?: string | null;
+  customerId?: string | null;
   createdAt?: string | null;
   lastEntryAt?: string | null;
   etapa?: Etapa | string | null;
