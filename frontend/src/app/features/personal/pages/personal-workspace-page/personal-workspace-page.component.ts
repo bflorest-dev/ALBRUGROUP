@@ -31,7 +31,15 @@ export class PersonalWorkspacePageComponent {
   protected readonly expandedRoles = signal(new Set<string>());
   protected readonly expandedTeams = signal(new Set<string>());
   protected readonly creationVisible = signal(false);
+  protected readonly rolePickerVisible = signal(false);
+  protected readonly rolePickerSearch = signal('');
   protected readonly activeRole = computed(() => this.session.getActiveRole());
+  protected readonly filteredRoleOptions = computed(() => {
+    const query = this.rolePickerSearch().trim().toLocaleLowerCase('es');
+    return this.facade.roleOptions().filter((role) =>
+      !query || this.label(role).toLocaleLowerCase('es').includes(query)
+    );
+  });
 
   constructor() {
     void this.facade.initialize();
@@ -106,6 +114,21 @@ export class PersonalWorkspacePageComponent {
 
   protected label(value: string | null | undefined): string {
     return formatLabel(value);
+  }
+
+  protected openRolePicker(): void {
+    this.rolePickerSearch.set('');
+    this.rolePickerVisible.set(true);
+  }
+
+  protected closeRolePicker(): void {
+    this.rolePickerVisible.set(false);
+    this.rolePickerSearch.set('');
+  }
+
+  protected selectRoleFilter(value: string): void {
+    this.facade.roleFilter.set(value);
+    this.closeRolePicker();
   }
 
   protected initials(row: PersonalDirectoryRow): string {

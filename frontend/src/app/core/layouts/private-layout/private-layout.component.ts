@@ -326,7 +326,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
           ]
         },
         { domainId: 'operation', label: 'Operaciones', route: '/app/admin/operaciones', icon: 'pi pi-wrench', exact: true },
-        { domainId: 'operation', label: 'Base de Leads', route: '/app/admin/base-leads', icon: 'pi pi-download', exact: true }
+        { domainId: 'operation', label: 'Base de Leads', route: '/app/admin/base-leads', icon: 'pi pi-download', exact: true },
+        { domainId: 'overview', label: 'Buscador Universal', route: '/app/admin/buscador-universal', icon: 'pi pi-search', exact: true }
       ];
 
       if (this.adminDeleteLeadsVisible()) {
@@ -538,6 +539,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     }
     const order = new Map<string, number>([
       ['Dashboard', 1],
+      ['/app/admin/buscador-universal', 1.3],
       ['/app/admin/bitacora', 1.5],
       ['Finanzas', 2],
       ['/app/admin/leads-del-dia', 3],

@@ -776,3 +776,19 @@ select {
     .rebuild-action { width: 100%; }
   }
 }
+
+/* En móvil el desplazamiento sigue siendo táctil; solo retiramos el riel
+   vertical del documento para no competir con el contenido. Los controles
+   con overflow propio conservan sus indicadores cuando ayudan a descubrir
+   contenido horizontal. */
+@media (max-width: 900px) {
+  html,
+  body {
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 0;
+  }
+}

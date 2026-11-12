@@ -1,0 +1,206 @@
+<main class="buscador" data-theme="dark">
+  <header class="page-head">
+    <div>
+      <h1>Buscador Universal</h1>
+      <p>Encuentra leads cruzando todas las entidades. Busca por numero, SEC, SOT, Customer ID, usermeta, documento, celular o titular.</p>
+    </div>
+  </header>
+
+  <!-- Search bar -->
+  <div class="searchwrap">
+    <div class="search">
+      <span class="sicon"><i class="pi pi-search"></i></span>
+      <input
+        type="text"
+        [ngModel]="q()"
+        (ngModelChange)="q.set($event)"
+        (keydown)="onSearchKeydown($event)"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Lead, SEC, SOT, Customer ID, usermeta, documento, celular, titular..."
+      />
+      @if (isLoading()) {
+        <span class="spin" aria-label="Buscando"></span>
+      }
+    </div>
+    <div class="searchmeta">
+      @if (searchDone()) {
+        <span><b>{{ totalElements().toLocaleString() }}</b> {{ totalElements() === 1 ? 'lead' : 'leads' }}</span>
+        <span class="dot"></span>
+      }
+      <span>busqueda en lead · SEC · SOT · Customer ID · usermeta · documento · celular · titular</span>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <section class="control-rail" aria-label="Filtros">
+    <div class="filter-row">
+      <label class="select-field">
+        <span class="field-label">Etapa</span>
+        <p-select
+          [options]="etapaOptions"
+          [ngModel]="etapa()"
+          (ngModelChange)="etapa.set($event)"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          panelStyleClass="buscador-select-panel"
+        />
+      </label>
+
+      <label class="select-field">
+        <span class="field-label">Estado</span>
+        <p-select
+          [options]="estadoOptions"
+          [ngModel]="estado()"
+          (ngModelChange)="estado.set($event)"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          panelStyleClass="buscador-select-panel"
+        />
+      </label>
+
+      <label class="select-field">
+        <span class="field-label">Filtrar por fecha</span>
+        <p-select
+          [options]="anclaFechaOptions"
+          [ngModel]="anclaFecha()"
+          (ngModelChange)="anclaFecha.set($event)"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          panelStyleClass="buscador-select-panel"
+        />
+      </label>
+
+      <label class="date-field">
+        <span class="field-label">Desde</span>
+        <p-datepicker
+          [ngModel]="fechaDesde()"
+          (ngModelChange)="fechaDesde.set($event)"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          appendTo="body"
+          [baseZIndex]="1400"
+          panelStyleClass="buscador-calendar"
+        />
+      </label>
+
+      <label class="date-field">
+        <span class="field-label">Hasta</span>
+        <p-datepicker
+          [ngModel]="fechaHasta()"
+          (ngModelChange)="fechaHasta.set($event)"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          appendTo="body"
+          [baseZIndex]="1400"
+          panelStyleClass="buscador-calendar"
+        />
+      </label>
+
+      <button class="btn-columns" type="button" (click)="showColumnDialog.set(true)">
+        <i class="pi pi-table"></i>
+        Columnas ({{ selectedColumns().size }})
+      </button>
+
+      <button class="btn-search" type="button" [disabled]="isLoading()" (click)="buscar()">
+        @if (isLoading()) {
+          <span class="spinner"></span>
+        } @else {
+          <i class="pi pi-search"></i>
+        }
+        Buscar
+      </button>
+    </div>
+  </section>
+
+  @if (error()) {
+    <p class="catalog-status catalog-status--error" role="alert">
+      <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+      {{ error() }}
+    </p>
+  }
+
+  <!-- Results -->
+  @if (searchDone()) {
+    @if (rows().length) {
+      <section class="directory">
+        <div class="directory-scroll" tabindex="0" aria-label="Tabla de resultados">
+          <div class="table-head" [style.grid-template-columns]="'60px repeat(' + activeColumns().length + ', minmax(120px, 1fr))'">
+            <span>ID</span>
+            @for (col of activeColumns(); track col.key) {
+              <span>{{ col.label }}</span>
+            }
+          </div>
+          @for (row of rows(); track $index) {
+            <div class="data-row" [style.grid-template-columns]="'60px repeat(' + activeColumns().length + ', minmax(120px, 1fr))'">
+              <span class="mono">{{ row['id'] }}</span>
+              @for (col of activeColumns(); track col.key) {
+                <span class="cell-truncate" [title]="cellValue(row, col.key)">{{ cellValue(row, col.key) }}</span>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      @if (totalElements() > pageSize()) {
+        <nav class="pagination" aria-label="Paginas">
+          <button [disabled]="page() === 0" (click)="changePage(page() - 1)">
+            <i class="pi pi-chevron-left"></i>
+          </button>
+          <span class="mono">{{ page() + 1 }} / {{ totalPages() }}</span>
+          <button [disabled]="(page() + 1) * pageSize() >= totalElements()" (click)="changePage(page() + 1)">
+            <i class="pi pi-chevron-right"></i>
+          </button>
+        </nav>
+      }
+    } @else if (!isLoading()) {
+      <div class="placeholder">
+        <i class="pi pi-inbox" style="font-size: 2rem; color: var(--ink-3)"></i>
+        <p>Sin resultados para esta busqueda.</p>
+      </div>
+    }
+  } @else if (!isLoading()) {
+    <div class="placeholder">
+      <i class="pi pi-search" style="font-size: 2rem; color: var(--ink-3)"></i>
+      <p>Escribe un dato del lead o usa los filtros para empezar.</p>
+    </div>
+  }
+
+  <!-- Column selector dialog -->
+  <p-dialog
+    header="Seleccionar columnas"
+    [(visible)]="showColumnDialog"
+    [modal]="true"
+    [dismissableMask]="true"
+    [style]="{ width: '680px', maxHeight: '80vh' }"
+    [contentStyle]="{ overflow: 'auto' }"
+    styleClass="buscador-column-dialog"
+    appendTo="body"
+  >
+    @if (isLoadingColumns()) {
+      <div class="loading-state"><span class="spinner"></span></div>
+    } @else {
+      <div class="column-groups">
+        @for (grupo of columnGroups(); track grupo.grupo) {
+          <div class="column-group">
+            <label class="group-header" (click)="toggleAllGroup(grupo)">
+              <input type="checkbox" [checked]="isGroupAllSelected(grupo)" />
+              <strong>{{ grupo.grupo }}</strong>
+            </label>
+            <div class="group-columns">
+              @for (col of grupo.columnas; track col.key) {
+                <label class="col-check" (click)="$event.stopPropagation()">
+                  <input type="checkbox" [checked]="isColumnSelected(col.key)" (change)="toggleColumn(col.key)" />
+                  <span>{{ col.label }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </p-dialog>
+</main>

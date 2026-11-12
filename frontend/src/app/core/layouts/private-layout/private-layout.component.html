@@ -4,37 +4,39 @@
       type="button"
       class="mobile-menu-button"
       [attr.aria-expanded]="mobileMenuOpen()"
-      aria-label="Abrir menu"
+      [attr.aria-label]="mobileMenuOpen() ? 'Cerrar menu' : 'Abrir menu'"
       (click)="toggleMobileMenu()"
     >
-      <i class="pi pi-bars" aria-hidden="true"></i>
+      <i [class]="mobileMenuOpen() ? 'pi pi-times' : 'pi pi-bars'" aria-hidden="true"></i>
     </button>
     <div class="mobile-topbar__brand">
       <strong>ALBRUGROUP</strong>
       <span>{{ primaryRoleLabel() }}</span>
     </div>
-    <app-sidebar-attendance-picker
-      #mobileAttendancePicker
-      class="mobile-topbar__attendance"
-      [statusLabel]="attendanceStatusLabel()"
-      [statusColor]="attendanceStatusColor()"
-      [actions]="attendanceActions()"
-      [isLoading]="isAttendanceLoading()"
-      [errorMessage]="attendancePickerErrorMessage()"
-      [disabled]="isAttendancePickerDisabled()"
-      [hint]="attendanceHint()"
-      [tramos]="attendanceTramos()"
-      [timerText]="attendanceTimerText()"
-      [timerOver]="attendanceTimerOver()"
-      [lunchWaitVisible]="isMobileViewport() && attendanceLunchWait()"
-      [lunchDurationMinutes]="attendanceLunchDuration()"
-      [placement]="'down'"
-      [compact]="true"
-      [guidedActionId]="isMobileViewport() && logoutGuidanceActive() ? 'REGISTRAR_SALIDA' : null"
-      (actionSelected)="submitAttendanceAction($event)"
-      (retry)="attendanceFacade.reload()"
-      (guidanceCancelled)="cancelLogoutGuidance()"
-    />
+    @if (!isAlwaysOnlineRole()) {
+      <app-sidebar-attendance-picker
+        #mobileAttendancePicker
+        class="mobile-topbar__attendance"
+        [statusLabel]="attendanceStatusLabel()"
+        [statusColor]="attendanceStatusColor()"
+        [actions]="attendanceActions()"
+        [isLoading]="isAttendanceLoading()"
+        [errorMessage]="attendancePickerErrorMessage()"
+        [disabled]="isAttendancePickerDisabled()"
+        [hint]="attendanceHint()"
+        [tramos]="attendanceTramos()"
+        [timerText]="attendanceTimerText()"
+        [timerOver]="attendanceTimerOver()"
+        [lunchWaitVisible]="isMobileViewport() && attendanceLunchWait()"
+        [lunchDurationMinutes]="attendanceLunchDuration()"
+        [placement]="'down'"
+        [compact]="true"
+        [guidedActionId]="isMobileViewport() && logoutGuidanceActive() ? 'REGISTRAR_SALIDA' : null"
+        (actionSelected)="submitAttendanceAction($event)"
+        (retry)="attendanceFacade.reload()"
+        (guidanceCancelled)="cancelLogoutGuidance()"
+      />
+    }
   </header>
 
   @if (mobileMenuOpen()) {

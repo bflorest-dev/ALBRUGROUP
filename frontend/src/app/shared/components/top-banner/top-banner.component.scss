@@ -99,6 +99,13 @@
   }
 }
 
+@media (max-width: 900px) {
+  :host:empty {
+    display: none;
+    height: 0;
+  }
+}
+
 @media (max-width: 640px) {
   .top-banner {
     min-height: 3rem;

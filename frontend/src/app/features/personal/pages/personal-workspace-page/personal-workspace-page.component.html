@@ -10,9 +10,17 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <h2 class="sr-only">Gestión integral del personal, contratos, horarios, accesos, ámbitos y asistencia.</h2>
 
   <header class="page-head">
-    <div>
-      <h1>Personal</h1>
-      <p>Gestiona la vida laboral, el acceso y el ámbito operativo de cada empleado sin mezclar sus flujos.</p>
+    <div class="page-intro">
+      <div class="page-title-row">
+        <h1>Personal</h1>
+        <details class="page-summary">
+          <summary aria-label="Ver descripción de Personal" title="Ver descripción de Personal">
+            <i class="ti ti-info-circle" aria-hidden="true"></i>
+          </summary>
+          <p>Gestiona la vida laboral, el acceso y el ámbito operativo de cada empleado sin mezclar sus flujos.</p>
+        </details>
+      </div>
+      <p class="page-description">Gestiona la vida laboral, el acceso y el ámbito operativo de cada empleado sin mezclar sus flujos.</p>
     </div>
     <div class="head-actions">
       <button class="theme-button" type="button" (click)="toggleTheme()" [attr.aria-label]="theme() === 'light' ? 'Usar tema oscuro' : 'Usar tema claro'">
@@ -35,8 +43,47 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       }
     </div>
     <label class="select-field"><span class="sr-only">Rol principal</span><select [ngModel]="facade.roleFilter()" (ngModelChange)="facade.roleFilter.set($event)"><option value="">Rol principal</option>@for (role of facade.roleOptions(); track role) {<option [value]="role">{{ label(role) }}</option>}</select></label>
+    <button class="mobile-role-trigger" type="button" aria-haspopup="dialog" [attr.aria-expanded]="rolePickerVisible()" (click)="openRolePicker()">
+      <i class="ti ti-briefcase" aria-hidden="true"></i>
+      <span>{{ facade.roleFilter() ? label(facade.roleFilter()) : 'Rol principal' }}</span>
+      <i class="ti ti-chevron-down" aria-hidden="true"></i>
+    </button>
     <label class="hidden-role-toggle"><input type="checkbox" [checked]="facade.showHiddenRoles()" (change)="facade.showHiddenRoles.set($any($event.target).checked)"/><i class="ti ti-eye"></i><span>Roles ocultos</span></label>
   </section>
+
+  @if (rolePickerVisible()) {
+    <div class="role-picker-backdrop" role="presentation" (click)="closeRolePicker()">
+      <section class="role-picker" role="dialog" aria-modal="true" aria-labelledby="role-picker-title" (click)="$event.stopPropagation()" (keydown.escape)="closeRolePicker()">
+        <header class="role-picker-head">
+          <div>
+            <span class="role-picker-kicker">Filtro de personal</span>
+            <h2 id="role-picker-title">Seleccionar rol</h2>
+          </div>
+          <button class="role-picker-close" type="button" aria-label="Cerrar selección de rol" (click)="closeRolePicker()"><i class="ti ti-x" aria-hidden="true"></i></button>
+        </header>
+        <label class="role-picker-search">
+          <i class="ti ti-search" aria-hidden="true"></i>
+          <span class="sr-only">Buscar rol</span>
+          <input type="search" autofocus placeholder="Buscar rol…" [ngModel]="rolePickerSearch()" (ngModelChange)="rolePickerSearch.set($event)" />
+        </label>
+        <div class="role-picker-list" role="listbox" aria-label="Roles disponibles">
+          <button class="role-picker-option" type="button" role="option" [attr.aria-selected]="facade.roleFilter() === ''" [class.active]="facade.roleFilter() === ''" (click)="selectRoleFilter('')">
+            <span>Todos los roles</span>
+            @if (facade.roleFilter() === '') { <i class="ti ti-check" aria-hidden="true"></i> }
+          </button>
+          @for (role of filteredRoleOptions(); track role) {
+            <button class="role-picker-option" type="button" role="option" [attr.aria-selected]="facade.roleFilter() === role" [class.active]="facade.roleFilter() === role" (click)="selectRoleFilter(role)">
+              <span>{{ label(role) }}</span>
+              @if (facade.roleFilter() === role) { <i class="ti ti-check" aria-hidden="true"></i> }
+            </button>
+          }
+          @if (!filteredRoleOptions().length) {
+            <p class="role-picker-empty">No encontramos roles con ese nombre.</p>
+          }
+        </div>
+      </section>
+    </div>
+  }
 
   @if (facade.companyOptions().length) {
     <div class="company-filter-bar" role="group" aria-label="Filtrar por empresa">
