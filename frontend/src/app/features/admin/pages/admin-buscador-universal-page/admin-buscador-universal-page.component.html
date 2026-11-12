@@ -169,38 +169,47 @@
     </div>
   }
 
-  <!-- Column selector dialog -->
-  <p-dialog
-    header="Seleccionar columnas"
-    [(visible)]="showColumnDialog"
-    [modal]="true"
-    [dismissableMask]="true"
-    [style]="{ width: '680px', maxHeight: '80vh' }"
-    [contentStyle]="{ overflow: 'auto' }"
-    styleClass="buscador-column-dialog"
-    appendTo="body"
-  >
-    @if (isLoadingColumns()) {
-      <div class="loading-state"><span class="spinner"></span></div>
-    } @else {
-      <div class="column-groups">
-        @for (grupo of columnGroups(); track grupo.grupo) {
-          <div class="column-group">
-            <label class="group-header" (click)="toggleAllGroup(grupo)">
-              <input type="checkbox" [checked]="isGroupAllSelected(grupo)" />
-              <strong>{{ grupo.grupo }}</strong>
-            </label>
-            <div class="group-columns">
-              @for (col of grupo.columnas; track col.key) {
-                <label class="col-check" (click)="$event.stopPropagation()">
-                  <input type="checkbox" [checked]="isColumnSelected(col.key)" (change)="toggleColumn(col.key)" />
-                  <span>{{ col.label }}</span>
-                </label>
-              }
-            </div>
-          </div>
-        }
+  <!-- Column selector overlay -->
+  @if (showColumnDialog()) {
+    <div class="col-overlay" (click)="showColumnDialog.set(false)">
+      <div class="col-dialog" (click)="$event.stopPropagation()">
+        <div class="col-dialog-head">
+          <h2>Columnas visibles</h2>
+          <span class="col-count">{{ selectedColumns().size }} seleccionadas</span>
+          <button class="col-close" type="button" (click)="showColumnDialog.set(false)">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <div class="col-dialog-body">
+          @if (isLoadingColumns()) {
+            <div class="loading-state"><span class="spinner"></span></div>
+          } @else {
+            @for (grupo of columnGroups(); track grupo.grupo) {
+              <div class="cg">
+                <div class="cg-head" (click)="toggleAllGroup(grupo)">
+                  <div class="cg-check" [class.cg-check--on]="isGroupAllSelected(grupo)">
+                    @if (isGroupAllSelected(grupo)) {
+                      <i class="pi pi-check"></i>
+                    }
+                  </div>
+                  <span class="cg-label">{{ grupo.grupo }}</span>
+                  <span class="cg-count">{{ countGroupSelected(grupo) }}/{{ grupo.columnas.length }}</span>
+                </div>
+                <div class="cg-chips">
+                  @for (col of grupo.columnas; track col.key) {
+                    <button
+                      type="button"
+                      class="chip"
+                      [class.chip--on]="isColumnSelected(col.key)"
+                      (click)="toggleColumn(col.key)"
+                    >{{ col.label }}</button>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </div>
       </div>
-    }
-  </p-dialog>
+    </div>
+  }
 </main>

@@ -15,6 +15,8 @@ import {
   LeadAsignacionMasivaRequest,
   LeadAsignacionMasivaResponse,
   LeadAsignacionRequest,
+  LeadEquipoAsignacionMasivaRequest,
+  LeadEquipoAsignacionMasivaResponse,
   LeadAgendadoGtrResponse,
   LeadAsesorVentasResponse,
   LeadDatosPreventaRequest,
@@ -403,6 +405,15 @@ export class PreventaLeadService {
     return this.http.patch<void>(
       `${this.leadUrl}/preventa/supervisor/${idLead}/equipo`,
       { idEquipo }
+    );
+  }
+
+  asignarEquiposLeadsSupervisor(
+    request: LeadEquipoAsignacionMasivaRequest
+  ): Observable<LeadEquipoAsignacionMasivaResponse> {
+    return this.http.patch<LeadEquipoAsignacionMasivaResponse>(
+      `${this.leadUrl}/preventa/supervisor/equipo-masivo`,
+      request
     );
   }
 

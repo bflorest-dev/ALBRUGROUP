@@ -48,7 +48,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       <span>{{ facade.roleFilter() ? label(facade.roleFilter()) : 'Rol principal' }}</span>
       <i class="ti ti-chevron-down" aria-hidden="true"></i>
     </button>
-    <label class="hidden-role-toggle"><input type="checkbox" [checked]="facade.showHiddenRoles()" (change)="facade.showHiddenRoles.set($any($event.target).checked)"/><i class="ti ti-eye"></i><span>Roles ocultos</span></label>
+    <label class="hidden-role-toggle" aria-label="Mostrar roles ocultos"><input type="checkbox" [checked]="facade.showHiddenRoles()" (change)="facade.showHiddenRoles.set($any($event.target).checked)"/><i class="ti ti-eye"></i><span>Roles ocultos</span></label>
   </section>
 
   @if (rolePickerVisible()) {

@@ -858,6 +858,25 @@ export interface LeadAsignacionMasivaResponse {
   resultados: LeadAsignacionResultadoResponse[];
 }
 
+export interface LeadEquipoAsignacionMasivaRequest {
+  idsLead: number[];
+  idEquipo: number;
+}
+
+export interface LeadEquipoAsignacionResultadoResponse {
+  idLead: number;
+  asignado: boolean;
+  mensaje?: string | null;
+}
+
+export interface LeadEquipoAsignacionMasivaResponse {
+  totalSolicitados: number;
+  totalProcesados: number;
+  totalAsignados: number;
+  totalFallidos: number;
+  resultados: LeadEquipoAsignacionResultadoResponse[];
+}
+
 export interface LeadIntakeMasivoExcelResultadoResponse {
   fila: number;
   lead?: string | null;

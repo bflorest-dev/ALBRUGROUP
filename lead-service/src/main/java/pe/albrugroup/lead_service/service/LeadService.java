@@ -33,6 +33,7 @@ import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.Contacto;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
+import pe.albrugroup.lead_service.entity.request.LeadEquipoAsignacionMasivaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIdentidadCorreccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIdentidadRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
@@ -57,6 +58,8 @@ import pe.albrugroup.lead_service.entity.response.LeadAperturaVentaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPendienteResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionMasivaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionResultadoResponse;
+import pe.albrugroup.lead_service.entity.response.LeadEquipoAsignacionMasivaResponse;
+import pe.albrugroup.lead_service.entity.response.LeadEquipoAsignacionResultadoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAdicionalDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadInstalacionCorreccionCandidatoResponse;
@@ -3618,9 +3621,53 @@ public class LeadService {
 
     @Transactional
     public void asignarEquipoLead(Long idLead, Long idEquipo) {
-        if (idEquipo == null || idEquipo <= 0) {
-            throw new BadRequestException("Selecciona un equipo válido");
+        validarIdEquipoAsignacion(idEquipo);
+        asignarEquipoLeadInterno(idLead, idEquipo);
+    }
+
+    public LeadEquipoAsignacionMasivaResponse asignarEquiposLeadsSupervisor(
+            LeadEquipoAsignacionMasivaRequest request
+    ) {
+        List<Long> idsLead = normalizarIdsEquipoAsignacion(request == null ? null : request.getIdsLead());
+        Long idEquipo = request == null ? null : request.getIdEquipo();
+        validarIdEquipoAsignacion(idEquipo);
+        validarEquipoActivo(idEquipo);
+
+        List<LeadEquipoAsignacionResultadoResponse> resultados = new ArrayList<>();
+        for (Long idLead : idsLead) {
+            try {
+                ejecutarAsignacionEquipoIndependiente(idLead, idEquipo);
+                resultados.add(LeadEquipoAsignacionResultadoResponse.builder()
+                        .idLead(idLead)
+                        .asignado(true)
+                        .mensaje("Lead asignado correctamente")
+                        .build());
+            } catch (BusinessException e) {
+                resultados.add(crearResultadoEquipoFallido(idLead, e.getMessage()));
+            } catch (Exception e) {
+                resultados.add(crearResultadoEquipoFallido(idLead, "Ocurrio un error inesperado"));
+            }
         }
+
+        int totalAsignados = (int) resultados.stream()
+                .filter(LeadEquipoAsignacionResultadoResponse::isAsignado)
+                .count();
+        return LeadEquipoAsignacionMasivaResponse.builder()
+                .totalSolicitados(idsLead.size())
+                .totalProcesados(resultados.size())
+                .totalAsignados(totalAsignados)
+                .totalFallidos(resultados.size() - totalAsignados)
+                .resultados(resultados)
+                .build();
+    }
+
+    private void ejecutarAsignacionEquipoIndependiente(Long idLead, Long idEquipo) {
+        TransactionTemplate transaction = new TransactionTemplate(transactionTemplate.getTransactionManager());
+        transaction.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+        transaction.executeWithoutResult(status -> asignarEquipoLeadInterno(idLead, idEquipo));
+    }
+
+    private void asignarEquipoLeadInterno(Long idLead, Long idEquipo) {
         Lead lead = leadRepository.findById(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         if (lead.getIdEquipo() != null) {
@@ -3656,6 +3703,42 @@ public class LeadService {
         Lead savedLead = leadRepository.save(lead);
         // El equipo y las bandejas GTR consumen el contrato común de asignaciones.
         notificarCambioLead("ASIGNACION", savedLead, null, null);
+    }
+
+    private List<Long> normalizarIdsEquipoAsignacion(List<Long> idsLead) {
+        if (idsLead == null || idsLead.isEmpty()) {
+            throw new BadRequestException("Debe enviar al menos un lead para asignar");
+        }
+        if (idsLead.stream().anyMatch(id -> id == null || id <= 0)) {
+            throw new BadRequestException("Cada idLead debe ser un número válido");
+        }
+        List<Long> ids = idsLead.stream().distinct().toList();
+        if (ids.size() != idsLead.size()) {
+            throw new BadRequestException("La lista de leads no debe contener duplicados");
+        }
+        return ids;
+    }
+
+    private void validarIdEquipoAsignacion(Long idEquipo) {
+        if (idEquipo == null || idEquipo <= 0) {
+            throw new BadRequestException("Selecciona un equipo válido");
+        }
+    }
+
+    private void validarEquipoActivo(Long idEquipo) {
+        boolean activo = authEquipoClient.listarEquiposCatalogo().stream()
+                .anyMatch(equipo -> idEquipo.equals(equipo.id()) && Boolean.TRUE.equals(equipo.activo()));
+        if (!activo) {
+            throw new BadRequestException("El equipo seleccionado no está activo o no existe");
+        }
+    }
+
+    private LeadEquipoAsignacionResultadoResponse crearResultadoEquipoFallido(Long idLead, String mensaje) {
+        return LeadEquipoAsignacionResultadoResponse.builder()
+                .idLead(idLead)
+                .asignado(false)
+                .mensaje(mensaje)
+                .build();
     }
 
     public PageResponse<LeadSupervisorSinEquipoResponse> listarLeadsSinEquipo(

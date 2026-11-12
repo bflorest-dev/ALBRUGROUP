@@ -107,6 +107,14 @@ public class PreventaController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/supervisor/equipo-masivo")
+    @PreAuthorize("hasAuthority('ASSIGN_EQUIPO_LEAD')")
+    public ResponseEntity<LeadEquipoAsignacionMasivaResponse> asignarEquiposLeadsSupervisor(
+            @Valid @RequestBody LeadEquipoAsignacionMasivaRequest request
+    ) {
+        return ResponseEntity.ok(leadService.asignarEquiposLeadsSupervisor(request));
+    }
+
     @GetMapping("/correcciones/campana") @PreAuthorize("hasAuthority('CORREGIR_CAMPANA_LEAD')")
     public ResponseEntity<List<LeadCampanaCorreccionCandidatoResponse>> buscarCorreccionCampana(
             @RequestParam String lead

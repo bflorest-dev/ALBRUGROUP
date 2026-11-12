@@ -7,6 +7,7 @@ import {
   CampanaResponse,
   LeadGtrLookupResponse,
   LeadGtrMetricasResponse,
+  LeadEquipoAsignacionMasivaResponse,
   LeadIntakeRequest,
   LeadIntakeRetroactivoRequest
 } from '../../../shared/models/preventa/preventa.models';
@@ -118,8 +119,26 @@ export class SupervisorGtrOperativoFacade {
   // Equipo assignment
   readonly asignacionDialogVisible = signal(false);
   readonly leadParaAsignar = signal<LeadSupervisorSinEquipoResponse | null>(null);
+  readonly asignacionMasivaIds = signal<number[]>([]);
   readonly equipoSeleccionadoId = signal<number | null>(null);
   readonly asignandoEquipo = signal(false);
+  readonly selectedLeadIds = signal<Set<number>>(new Set());
+  readonly selectedLeadsCount = computed(() => this.selectedLeadIds().size);
+  readonly allVisibleLeadsSelected = computed(() => {
+    const leads = this.leadsSinEquipo();
+    if (leads.length === 0) return false;
+    const selected = this.selectedLeadIds();
+    return leads.every((lead) => selected.has(lead.id));
+  });
+  readonly someVisibleLeadsSelected = computed(() => {
+    const selected = this.selectedLeadIds();
+    return this.leadsSinEquipo().some((lead) => selected.has(lead.id))
+      && !this.allVisibleLeadsSelected();
+  });
+  readonly asignacionMasivaActiva = computed(() => this.asignacionMasivaIds().length > 0);
+  readonly asignacionDialogTitle = computed(() =>
+    this.asignacionMasivaActiva() ? 'Asignar equipo a leads' : 'Asignar equipo al lead'
+  );
 
   // Pagination
   readonly paginaActual = signal(0);
@@ -204,6 +223,7 @@ export class SupervisorGtrOperativoFacade {
       this.campanas.set((campanas ?? []).sort((a, b) => a.nombre.localeCompare(b.nombre)));
       this.origenes.set(origenes ?? []);
       this.intakeCampanaId.set(null);
+      this.selectedLeadIds.set(new Set());
       this.initialized = true;
       this.startRealtime();
       await this.cargarMetricasEquipos(equiposActivos);
@@ -247,6 +267,7 @@ export class SupervisorGtrOperativoFacade {
       this.campanas.set((campanas ?? []).sort((a, b) => a.nombre.localeCompare(b.nombre)));
       this.intakeCampanaId.set(null);
       this.intakeForm.controls.idCampana.setValue(null);
+      this.selectedLeadIds.set(new Set());
       await Promise.all([
         this.cargarLeadsSinEquipo(0),
         this.cargarMetricasEquipos(equiposActivos)
@@ -448,19 +469,60 @@ export class SupervisorGtrOperativoFacade {
 
   abrirAsignacionDialog(lead: LeadSupervisorSinEquipoResponse): void {
     this.leadParaAsignar.set(lead);
+    this.asignacionMasivaIds.set([]);
     this.equipoSeleccionadoId.set(null);
     this.asignacionDialogVisible.set(true);
+  }
+
+  abrirAsignacionMasivaDialog(): void {
+    const idsLead = [...this.selectedLeadIds()];
+    if (idsLead.length === 0) {
+      this.error.set('Selecciona al menos un lead para asignar.');
+      return;
+    }
+    this.leadParaAsignar.set(null);
+    this.asignacionMasivaIds.set(idsLead);
+    this.equipoSeleccionadoId.set(null);
+    this.asignacionDialogVisible.set(true);
+  }
+
+  toggleLeadSelection(idLead: number, selected: boolean): void {
+    const next = new Set(this.selectedLeadIds());
+    if (selected) {
+      next.add(idLead);
+    } else {
+      next.delete(idLead);
+    }
+    this.selectedLeadIds.set(next);
+  }
+
+  toggleVisibleLeadSelection(selected: boolean): void {
+    const next = new Set(this.selectedLeadIds());
+    for (const lead of this.leadsSinEquipo()) {
+      if (selected) {
+        next.add(lead.id);
+      } else {
+        next.delete(lead.id);
+      }
+    }
+    this.selectedLeadIds.set(next);
+  }
+
+  isLeadSelected(idLead: number): boolean {
+    return this.selectedLeadIds().has(idLead);
   }
 
   cerrarAsignacionDialog(): void {
     this.asignacionDialogVisible.set(false);
     this.leadParaAsignar.set(null);
+    this.asignacionMasivaIds.set([]);
   }
 
   async asignarEquipo(): Promise<void> {
     const lead = this.leadParaAsignar();
+    const idsLead = this.asignacionMasivaIds();
     const idEquipo = this.equipoSeleccionadoId();
-    if (!lead || !idEquipo || this.asignandoEquipo()) return;
+    if ((!lead && idsLead.length === 0) || !idEquipo || this.asignandoEquipo()) return;
     if (!this.equiposActivos().some(equipo => equipo.id === idEquipo)) {
       this.error.set('El equipo seleccionado no está disponible para este proveedor.');
       return;
@@ -470,13 +532,30 @@ export class SupervisorGtrOperativoFacade {
     this.error.set('');
     this.exito.set('');
     try {
-      await firstValueFrom(this.preventaService.asignarEquipoLead(lead.id, idEquipo));
       const equipoNombre = this.equipos().find(e => e.id === idEquipo)?.nombre ?? '';
-      this.exito.set(`Lead asignado al equipo ${equipoNombre}.`);
+      if (idsLead.length > 0) {
+        const response = await firstValueFrom(
+          this.preventaService.asignarEquiposLeadsSupervisor({ idsLead, idEquipo })
+        );
+        this.selectedLeadIds.set(new Set());
+        this.exito.set(
+          response.totalAsignados > 0
+            ? `${response.totalAsignados} lead(s) asignado(s) al equipo ${equipoNombre}.`
+            : ''
+        );
+        if (response.totalFallidos > 0) {
+          this.error.set(this.resumenFallosAsignacion(response));
+        }
+      } else {
+        await firstValueFrom(this.preventaService.asignarEquipoLead(lead!.id, idEquipo));
+        this.selectedLeadIds.set(new Set());
+        this.exito.set(`Lead asignado al equipo ${equipoNombre}.`);
+      }
       this.asignacionDialogVisible.set(false);
       this.leadParaAsignar.set(null);
+      this.asignacionMasivaIds.set([]);
       await Promise.all([
-        this.cargarLeadsSinEquipo(this.paginaActual()),
+        this.cargarLeadsSinEquipo(idsLead.length > 0 ? 0 : this.paginaActual()),
         this.cargarMetricasEquipos()
       ]);
     } catch {
@@ -484,6 +563,14 @@ export class SupervisorGtrOperativoFacade {
     } finally {
       this.asignandoEquipo.set(false);
     }
+  }
+
+  private resumenFallosAsignacion(response: LeadEquipoAsignacionMasivaResponse): string {
+    const fallos = response.resultados
+      .filter((resultado) => !resultado.asignado)
+      .map((resultado) => `Lead ${resultado.idLead}: ${resultado.mensaje ?? 'No disponible'}`)
+      .join(' · ');
+    return `${response.totalFallidos} lead(s) no se pudieron asignar. ${fallos}`;
   }
 
   isRetroactiveDateValid(): boolean {

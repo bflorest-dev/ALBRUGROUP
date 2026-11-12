@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } 
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
-import { DialogModule } from 'primeng/dialog';
 import {
   BuscadorUniversalFilter,
   BuscadorUniversalService,
@@ -12,7 +11,7 @@ import {
 
 @Component({
   selector: 'app-admin-buscador-universal-page',
-  imports: [FormsModule, SelectModule, DatePickerModule, DialogModule],
+  imports: [FormsModule, SelectModule, DatePickerModule],
   templateUrl: './admin-buscador-universal-page.component.html',
   styleUrl: './admin-buscador-universal-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -128,6 +127,10 @@ export class AdminBuscadorUniversalPageComponent implements OnInit {
 
   isGroupAllSelected(grupo: ColumnaGrupo): boolean {
     return grupo.columnas.every(c => this.selectedColumns().has(c.key));
+  }
+
+  countGroupSelected(grupo: ColumnaGrupo): number {
+    return grupo.columnas.filter(c => this.selectedColumns().has(c.key)).length;
   }
 
   buscar(): void {

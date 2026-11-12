@@ -165,6 +165,36 @@ p {
   padding: .5rem 0;
 }
 
+.supervisor-operativo__bandeja-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin-bottom: .75rem;
+}
+
+.supervisor-operativo__bandeja-header h2 {
+  margin: 0;
+}
+
+.col-check {
+  width: 3rem;
+  text-align: center;
+}
+
+.lead-selection-checkbox {
+  accent-color: #1f9d57;
+  cursor: pointer;
+  height: 1.1rem;
+  margin: 0;
+  width: 1.1rem;
+}
+
+.lead-selection-checkbox:disabled {
+  cursor: not-allowed;
+}
+
 // ── Intake form ──────────────────────────────────────────────────
 
 .intake-form {
@@ -358,6 +388,11 @@ p {
   .supervisor-operativo__header-actions {
     justify-content: flex-start;
     width: 100%;
+  }
+
+  .supervisor-operativo__bandeja-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .retroactive-intake {
