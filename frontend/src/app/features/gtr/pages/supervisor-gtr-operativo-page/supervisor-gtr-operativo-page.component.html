@@ -98,51 +98,85 @@
         (onLazyLoad)="onPageChange($event)"
         [showCurrentPageReport]="true"
         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
-        styleClass="p-datatable-sm p-datatable-striped"
+        styleClass="p-datatable-sm p-datatable-striped supervisor-leads-table"
       >
         <ng-template pTemplate="header">
           <tr>
             <th class="col-check">
-              <input
-                class="lead-selection-checkbox"
-                type="checkbox"
-                [checked]="facade.allVisibleLeadsSelected()"
-                [indeterminate]="facade.someVisibleLeadsSelected()"
+              <app-gtr-lead-select-control
+                [selected]="facade.allVisibleLeadsSelected()"
+                [partial]="facade.someVisibleLeadsSelected()"
                 [disabled]="!facade.leadsSinEquipo().length"
-                aria-label="Seleccionar todos los leads visibles"
+                ariaLabel="Seleccionar todos los leads visibles"
                 title="Seleccionar todos"
-                (change)="facade.toggleVisibleLeadSelection($any($event.target).checked)"
+                (selectionChange)="facade.toggleVisibleLeadSelection($event)"
               />
             </th>
-            <th>Lead</th>
-            <th>Usermeta</th>
-            <th>Campaña</th>
-            <th>Origen</th>
-            <th>Registro</th>
-            <th>Estado</th>
-            <th style="width: 8rem"></th>
+            <th class="col-lead">Lead</th>
+            <th class="col-provider">Proveedor</th>
+            <th class="col-campaign">Campaña</th>
+            <th class="col-origin">Origen</th>
+            <th class="col-created-at">Registro</th>
+            <th class="col-status">Estado</th>
+            <th class="col-actions">Acciones</th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-lead>
           <tr>
             <td class="col-check">
-              <input
-                class="lead-selection-checkbox"
-                type="checkbox"
-                [checked]="facade.isLeadSelected(lead.id)"
-                [attr.aria-label]="facade.isLeadSelected(lead.id) ? 'Quitar lead de la selección' : 'Seleccionar lead'"
-                (change)="facade.toggleLeadSelection(lead.id, $any($event.target).checked)"
+              <app-gtr-lead-select-control
+                [selected]="facade.isLeadSelected(lead.id)"
+                [ariaLabel]="facade.isLeadSelected(lead.id) ? 'Quitar lead de la selección' : 'Seleccionar lead'"
+                (selectionChange)="facade.toggleLeadSelection(lead.id, $event)"
               />
             </td>
-            <td>{{ lead.prefijo }}{{ lead.lead }}</td>
-            <td>{{ lead.usermeta ?? '—' }}</td>
-            <td>{{ lead.nombreCampana ?? '—' }}</td>
-            <td>{{ lead.origen ?? '—' }}</td>
-            <td>{{ lead.lastEntryAt | date:'HH:mm' }}</td>
-            <td>
+            <td class="col-lead">
+              <div class="lead-cell">
+                <strong>{{ lead.lead || '—' }}</strong>
+                <small>{{ usermetaLabel(lead.usermeta) }}</small>
+              </div>
+            </td>
+            <td class="col-provider">
+              @if (providerLogo(lead.nombreProveedorCampana); as logo) {
+                <div class="provider-cell" [title]="lead.nombreProveedorCampana ?? 'Proveedor no informado'">
+                  <img [src]="logo" [alt]="lead.nombreProveedorCampana ?? 'Proveedor'" />
+                </div>
+              } @else {
+                <span class="provider-name">{{ lead.nombreProveedorCampana ?? '—' }}</span>
+              }
+            </td>
+            <td
+              class="col-campaign"
+              [attr.title]="'Campaña: ' + (lead.nombreCampana ?? 'Sin campaña') + ' · Cuenta publicitaria: ' + (lead.nombreCuentaPublicitaria ?? '—')"
+              [attr.aria-label]="'Campaña: ' + (lead.nombreCampana ?? 'Sin campaña') + '. Cuenta publicitaria: ' + (lead.nombreCuentaPublicitaria ?? '—')"
+            >
+              <div class="campaign-cell">
+                <strong>{{ lead.nombreCampana ?? 'Sin campaña' }}</strong>
+                <small>{{ lead.nombreCuentaPublicitaria ?? 'Sin cuenta publicitaria' }}</small>
+              </div>
+            </td>
+            <td class="col-origin">
+              @if (origenVisual(lead.origen); as origin) {
+                <span
+                  class="origin-badge"
+                  [attr.data-tone]="origin.tone"
+                  [title]="origin.label"
+                  [attr.aria-label]="'Origen: ' + origin.label"
+                >
+                  <i [class]="origin.icon" aria-hidden="true"></i>
+                </span>
+              }
+            </td>
+            <td class="col-created-at">
+              <div class="datetime-stack">
+                <strong>{{ lead.lastEntryAt | date:'HH:mm' }}</strong>
+                <span>{{ lead.lastEntryAt | date:'dd/MM' }}</span>
+              </div>
+            </td>
+            <td class="col-status">
               <p-tag [value]="lead.estadoSeguimiento" [severity]="lead.estadoSeguimiento === 'NUEVO' ? 'info' : 'warn'" />
             </td>
-            <td>
+            <td class="col-actions">
               <button pButton label="Asignar" icon="pi pi-arrow-right" class="p-button-sm p-button-outlined"
                 (click)="facade.abrirAsignacionDialog(lead)"></button>
             </td>
@@ -317,28 +351,64 @@
     [header]="facade.asignacionDialogTitle()"
     [(visible)]="facade.asignacionDialogVisible"
     [modal]="true"
-    [style]="{ width: '30rem' }"
+    [style]="{ width: '36rem' }"
+    [draggable]="false"
+    [blockScroll]="true"
     [closable]="true"
+    [focusOnShow]="false"
+    styleClass="supervisor-assignment-dialog"
   >
-    @if (facade.asignacionMasivaActiva()) {
-      <div class="asignacion-resumen">
-        <span><strong>Leads seleccionados:</strong> {{ facade.asignacionMasivaIds().length }}</span>
-        <span>Se asignarán al equipo elegido y dejarán de aparecer en esta bandeja.</span>
+    <div class="assignment-dialog">
+      <div class="assignment-dialog__intro">
+        <span class="assignment-dialog__icon" aria-hidden="true">
+          <i class="pi pi-send"></i>
+        </span>
+        <div>
+          <span class="assignment-dialog__eyebrow">Distribución operativa</span>
+          <p>{{ facade.asignacionMasivaActiva() ? 'Mueve varios leads en una sola operación.' : 'Define el equipo que continuará la gestión.' }}</p>
+        </div>
       </div>
-    } @else if (facade.leadParaAsignar(); as lead) {
-      <div class="asignacion-resumen">
-        <span><strong>Lead:</strong> {{ lead.prefijo }}{{ lead.lead }}</span>
-        @if (lead.nombreCampana) {
-          <span><strong>Campaña:</strong> {{ lead.nombreCampana }}</span>
-        }
-        @if (lead.origen) {
-          <span><strong>Origen:</strong> {{ lead.origen }}</span>
-        }
-      </div>
-    }
-    <div class="asignacion-selector">
-      <label>Equipo destino</label>
+
+      @if (facade.asignacionMasivaActiva()) {
+        <section class="assignment-summary assignment-summary--bulk" aria-label="Resumen de asignación múltiple">
+          <div class="assignment-summary__count">
+            <strong>{{ facade.asignacionMasivaIds().length }}</strong>
+            <span>{{ facade.asignacionMasivaIds().length === 1 ? 'lead seleccionado' : 'leads seleccionados' }}</span>
+          </div>
+          <div class="assignment-summary__copy">
+            <strong>Asignación múltiple</strong>
+            <span>Los leads dejarán de aparecer en esta bandeja al completar la operación.</span>
+          </div>
+        </section>
+      } @else if (facade.leadParaAsignar(); as lead) {
+        <section class="assignment-lead" aria-label="Lead seleccionado">
+          <div class="assignment-lead__identity">
+            <span>Lead seleccionado</span>
+            <strong>{{ lead.lead || facade.intakeUsermetaLabel(lead.usermeta ?? '') }}</strong>
+            <small>{{ lead.usermeta ? facade.intakeUsermetaLabel(lead.usermeta) : 'Sin usermeta' }}</small>
+          </div>
+          <dl class="assignment-facts">
+            <div>
+              <dt>Campaña</dt>
+              <dd>{{ lead.nombreCampana ?? 'Sin campaña' }}</dd>
+            </div>
+            <div>
+              <dt>Origen</dt>
+              <dd>{{ lead.origen ?? 'Sin identificar' }}</dd>
+            </div>
+          </dl>
+        </section>
+      }
+
+      <div class="assignment-dialog__divider" aria-hidden="true"></div>
+
+      <div class="asignacion-selector">
+        <div class="asignacion-selector__label">
+          <label for="supervisor-assignment-team">Equipo destino</label>
+          <small>Elige dónde continuará la atención del lead.</small>
+        </div>
       <p-select
+        inputId="supervisor-assignment-team"
         [options]="facade.equiposActivos()"
         optionLabel="nombre"
         optionValue="id"
@@ -356,13 +426,33 @@
           </div>
         </ng-template>
       </p-select>
-    </div>
-    <div class="asignacion-actions">
-      <button pButton label="Asignar" icon="pi pi-check"
-        [loading]="facade.asignandoEquipo()"
-        [disabled]="!facade.equipoSeleccionadoId() || facade.asignandoEquipo()"
-        (click)="facade.asignarEquipo()"></button>
-      <button pButton label="Cancelar" class="p-button-text" (click)="facade.cerrarAsignacionDialog()"></button>
+      </div>
+
+      <div class="assignment-note">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        <span>La información del lead se conserva; solo se actualiza el equipo responsable.</span>
+      </div>
+
+      <div class="asignacion-actions">
+        <button
+          pButton
+          type="button"
+          label="Cancelar"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="facade.asignandoEquipo()"
+          (click)="facade.cerrarAsignacionDialog()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          [label]="facade.asignacionMasivaActiva() ? 'Asignar ' + facade.asignacionMasivaIds().length + ' leads' : 'Asignar lead'"
+          icon="pi pi-check"
+          [loading]="facade.asignandoEquipo()"
+          [disabled]="!facade.equipoSeleccionadoId() || facade.asignandoEquipo()"
+          (click)="facade.asignarEquipo()"
+        ></button>
+      </div>
     </div>
   </p-dialog>
 </main>

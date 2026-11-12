@@ -20,6 +20,7 @@ public class LeadSupervisorSinEquipoResponse {
     private String usermeta;
     private String nombreCampana;
     private String nombreProveedorCampana;
+    private String nombreCuentaPublicitaria;
     private String origen;
     private EstadoSeguimiento estadoSeguimiento;
 }

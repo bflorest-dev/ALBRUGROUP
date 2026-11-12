@@ -88,6 +88,7 @@ export interface LeadSupervisorSinEquipoResponse {
   usermeta: string | null;
   nombreCampana: string | null;
   nombreProveedorCampana: string | null;
+  nombreCuentaPublicitaria: string | null;
   origen: string | null;
   estadoSeguimiento: string;
 }

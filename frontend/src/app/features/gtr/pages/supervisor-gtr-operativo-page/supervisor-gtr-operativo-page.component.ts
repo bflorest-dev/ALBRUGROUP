@@ -14,6 +14,8 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TooltipModule } from 'primeng/tooltip';
 import { SupervisorGtrOperativoFacade } from '../../facades/supervisor-gtr-operativo.facade';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
+import { GtrLeadSelectControlComponent } from '../../components/gtr-lead-select-control/gtr-lead-select-control.component';
+import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
 
 @Component({
   selector: 'app-supervisor-gtr-operativo-page',
@@ -32,7 +34,8 @@ import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-n
     TagModule,
     ProgressSpinnerModule,
     TooltipModule,
-    PhoneNumberFieldComponent
+    PhoneNumberFieldComponent,
+    GtrLeadSelectControlComponent
   ],
   providers: [SupervisorGtrOperativoFacade],
   templateUrl: './supervisor-gtr-operativo-page.component.html',
@@ -41,6 +44,38 @@ import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-n
 })
 export class SupervisorGtrOperativoPageComponent implements OnInit {
   protected readonly facade = inject(SupervisorGtrOperativoFacade);
+  protected readonly providerLogo = resolveProviderLogo;
+
+  private readonly origenVisualMap: Record<string, { icon: string; label: string; tone: string }> = {
+    WHATSAPP: { icon: 'pi pi-whatsapp', label: 'WhatsApp', tone: 'whatsapp' },
+    MESSENGER: { icon: 'pi pi-facebook', label: 'Messenger', tone: 'messenger' },
+    RECONTACTO: { icon: 'pi pi-replay', label: 'Recontacto', tone: 'recontacto' },
+    PREDICTIVO: { icon: 'pi pi-phone', label: 'Predictivo', tone: 'predictivo' },
+    REFERIDO: { icon: 'pi pi-share-alt', label: 'Referido', tone: 'referido' },
+    MASIVO: { icon: 'pi pi-megaphone', label: 'Masivo', tone: 'masivo' },
+    SIN_IDENTIFICAR: { icon: 'pi pi-question-circle', label: 'Sin identificar', tone: 'desconocido' }
+  };
+
+  protected origenVisual(origen?: string | null): { icon: string; label: string; tone: string } {
+    const normalized = (origen ?? '')
+      .trim()
+      .toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '_');
+
+    return this.origenVisualMap[normalized] ?? {
+      icon: 'pi pi-question-circle',
+      label: origen?.trim() || 'Sin identificar',
+      tone: 'desconocido'
+    };
+  }
+
+  protected usermetaLabel(usermeta?: string | null): string {
+    const value = (usermeta ?? '').trim();
+    if (!value) return 'Sin usermeta';
+    return value.startsWith('@') ? value : `@${value}`;
+  }
 
   ngOnInit(): void {
     void this.facade.inicializar();

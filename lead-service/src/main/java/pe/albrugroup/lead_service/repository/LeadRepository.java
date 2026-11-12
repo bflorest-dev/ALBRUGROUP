@@ -3945,13 +3945,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 l.usermeta,
                 c.nombre,
-                p.nombre,
+                COALESCE(p.nombre, po.nombre),
+                cp.nombreCuenta,
                 l.origen.nombre,
                 l.estado
             )
             FROM Lead l
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
+            LEFT JOIN c.cuentaPublicitaria cp
+            LEFT JOIN l.proveedorOrigen po
             WHERE l.etapa = :etapa
               AND l.idEquipo IS NULL
               AND l.lastEntryAt >= :inicioDia
