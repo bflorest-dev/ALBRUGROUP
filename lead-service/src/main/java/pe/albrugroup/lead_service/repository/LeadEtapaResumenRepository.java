@@ -587,9 +587,11 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("hastaDateExcl") java.time.LocalDate hastaDateExcl
     );
 
-    // Q7 — GESTIÓN GENERAL (estados vivos acumulados): cartera que sigue en INGRESADO/PROGRAMADO/SUBSANABLE
-    // AL CIERRE del período. Ancla en ultimaTipificacionAt < :fin ("entró a ese estado antes del cierre");
-    // SIN cota inferior, porque es un acumulado de todos los cohortes. Agrupada por última tipificación.
+    // Q7 — GESTIÓN GENERAL (estados vivos acumulados): cartera que ACTUALMENTE sigue en INGRESADO/PROGRAMADO/
+    // SUBSANABLE en la etapa consultada AL CIERRE del período. Ancla en ultimaTipificacionAt < :fin ("entró a
+    // ese estado antes del cierre"); SIN cota inferior, porque es un acumulado de todos los cohortes.
+    // l.etapa = :etapa excluye leads que ya volvieron a PREVENTA u otra etapa (p.ej. rechazados subsanables
+    // que se devolvieron). Alineado con Q7b (SIN INGRESAR) que ya tenía ese filtro. Agrupada por última.
     @Query("""
             SELECT r.ultimaCodigoTipificacion, COUNT(DISTINCT l.id)
             FROM Lead l
@@ -598,6 +600,7 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             JOIN pl.proveedor pr
             WHERE pr.id = :idProveedor
               AND (:idEquipo IS NULL OR l.idEquipo = :idEquipo)
+              AND l.etapa = :etapa
               AND r.ultimaCodigoTipificacion IN :codigos
               AND r.ultimaTipificacionAt < :fin
             GROUP BY r.ultimaCodigoTipificacion
