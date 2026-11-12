@@ -34,6 +34,7 @@ import {
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import { buildTelUrl, buildWhatsAppUrl, formatLeadIdentity } from '../../../shared/utils/phone-link';
+import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
 import { personNameValidator } from '../../../shared/utils/person-name';
 import { PRIORITY_CAMPAIGN_LABEL, isPriorityCampaignName } from '../../../shared/utils/priority-campaign';
 import { providerLogo as resolveProviderLogo } from '../../../shared/utils/provider-logo';
@@ -2525,23 +2526,7 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   private getErrorMessage(error: unknown, fallback: string): string {
-    if (typeof error === 'object' && error !== null && 'error' in error) {
-      const responseError = (error as { error?: { message?: unknown; details?: unknown } }).error;
-      if (
-        typeof responseError === 'object' &&
-        responseError !== null &&
-        'message' in responseError &&
-        typeof responseError.message === 'string' &&
-        responseError.message.trim()
-      ) {
-        const details = 'details' in responseError ? responseError.details : null;
-        if (Array.isArray(details) && details.length) {
-          return `${responseError.message}: ${details.map((item) => String(item)).join(', ')}`;
-        }
-        return responseError.message;
-      }
-    }
-    return fallback;
+    return formatApiErrorMessage(error, fallback);
   }
 
   private capitalizeFirst(value: string): string {

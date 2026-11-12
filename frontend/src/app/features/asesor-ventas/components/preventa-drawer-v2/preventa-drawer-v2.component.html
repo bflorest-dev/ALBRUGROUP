@@ -286,7 +286,12 @@
         <footer class="preventa-v2__command-bar" [formGroup]="facade.tipificacionForm">
           @if (activeMessage(); as message) {
             <div class="pv2-toast" [class.error]="message.kind === 'error'" [class.warning]="message.kind === 'warning'" [attr.role]="message.kind === 'error' ? 'alert' : 'status'">
-              <i [class]="message.icon" aria-hidden="true"></i><span>{{ message.text }}</span>
+              <i [class]="message.icon" aria-hidden="true"></i>
+              <span class="pv2-toast__copy">
+                @if (message.kind === 'error') { <strong>No se pudo completar la operación</strong> }
+                <span>{{ message.text }}</span>
+                @if (message.kind === 'error') { <small>Corrige la causa indicada y vuelve a intentar.</small> }
+              </span>
             </div>
           }
           <div class="preventa-v2__command-label"><span>Resultado de gestión</span><strong>Define el desenlace</strong></div>

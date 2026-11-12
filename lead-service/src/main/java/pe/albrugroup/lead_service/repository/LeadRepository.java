@@ -202,7 +202,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<Object[]> findLeadNumerosByIds(@Param("ids") Collection<Long> ids);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapa(Long id, Long idAsesorAsignado, Etapa etapa);
     // Lead asignado al asesor en cualquier etapa: para crear oportunidades y para la
-    // tipificación informativa de un lead que sigue gestionándose en otra etapa.
+    // tipificación informativa de un lead que sigue gestionándose en otra etapa. El bloqueo
+    // serializa dos comandos simultáneos sobre la misma gestión y evita que ambos intenten
+    // crear a la vez el resumen o el seguimiento único del lead.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Lead> findByIdAndIdAsesorAsignado(Long id, Long idAsesorAsignado);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapaIn(Long id, Long idAsesorAsignado, Collection<Etapa> etapas);
     // Gestiones aparcadas del asesor: para topar cuántos leads puede tener EN_GESTION en paralelo.

@@ -3,4 +3,8 @@ export interface ApiErrorResponse {
   error: string;
   message: string;
   details?: string[];
+  code?: string;
+  constraint?: string;
+  table?: string;
+  column?: string;
 }

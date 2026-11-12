@@ -75,9 +75,15 @@
 .preventa-v2__head-actions > button, .icon-button { background: #fff; border-color: var(--pv2-line); color: var(--pv2-ink); cursor: pointer; padding: 0 .65rem; }
 .icon-button { display: grid; place-items: center; padding: 0; width: 2.25rem; }
 .preventa-v2__saving-state { background: #fff8e9; color: #9b5d0e; font-size: .68rem; font-weight: 750; padding: .42rem .55rem; }
-.pv2-toast { align-items: center; background: #eefaf5; bottom: 100%; display: flex; gap: .5rem; left: 50%; max-width: 96%; padding: .65rem 1rem; position: absolute; text-align: center; transform: translateX(-50%); width: max-content; }
+.pv2-toast { align-items: flex-start; background: #eefaf5; bottom: 100%; display: flex; gap: .55rem; left: 50%; max-width: min(42rem, calc(100vw - 2rem)); padding: .7rem 1rem; position: absolute; text-align: left; transform: translateX(-50%); width: max-content; }
+.pv2-toast > i { flex: 0 0 auto; margin-top: .1rem; }
+.pv2-toast__copy { display: grid; gap: .18rem; min-width: 0; }
+.pv2-toast__copy strong { font-size: .74rem; letter-spacing: .01em; }
+.pv2-toast__copy > span { font-size: .76rem; line-height: 1.4; overflow-wrap: anywhere; }
+.pv2-toast__copy small { color: #5d6b77; font-size: .68rem; line-height: 1.35; }
 .pv2-toast.warning { background: #fff8e9; color: #82500a; }
 .pv2-toast.error { background: #fff0f1; color: #a12d3d; }
+.pv2-toast.error .pv2-toast__copy small { color: #85404b; }
 .preventa-v2__sections { overflow: auto; padding: 1.1rem 1.35rem 1.4rem; }
 .preventa-v2__simple-guide { align-content: center; background: #fff; border: 1px solid var(--pv2-line); display: grid; margin-bottom: .75rem; min-height: 11rem; padding: clamp(1.25rem, 3vw, 2.25rem); }
 .preventa-v2__simple-guide h4 { font-size: clamp(1.15rem, 2vw, 1.55rem); letter-spacing: -.035em; margin: 0 0 .45rem; max-width: 28rem; }
