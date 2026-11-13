@@ -211,6 +211,46 @@ class MarcacionServiceTest {
     }
 
     @Test
+    void reanclaLaAsistenciaAlHorarioBaseSinCambiarLasMarcacionesReales() {
+        reloj(12, 0);
+        AjusteJornada ajuste = ampliacion(707L, LocalTime.of(7, 0), LocalTime.of(18, 0));
+        Asistencia asistencia = Asistencia.builder()
+                .id(3900L)
+                .idEmpleado(EMP)
+                .idHorario(7L)
+                .fecha(DIA)
+                .estadoActual(EstadoAsistencia.ONLINE)
+                .entradaProgramada(LocalTime.of(7, 0))
+                .salidaProgramada(LocalTime.of(18, 0))
+                .fechaHoraIngreso(LocalDateTime.of(DIA, LocalTime.of(6, 49)))
+                .ajusteJornadaActual(ajuste)
+                .origenTramoActual(OrigenTramo.JORNADA_EXTRAORDINARIA)
+                .minutosObjetivoDia(0)
+                .minutosTrabajados(0)
+                .minutosBalance(0)
+                .minutosExtra(120)
+                .minutosCompensados(0)
+                .minutosAlmuerzoTomados(0)
+                .minutosServiciosPermitidos(15)
+                .minutosServiciosAcumulados(0)
+                .excedioServicios(false)
+                .build();
+        almacen.set(asistencia);
+
+        service.reanclarAsistenciaAlHorarioBase(EMP, DIA);
+
+        assertThat(asistencia.getAjusteJornadaActual()).isNull();
+        assertThat(asistencia.getOrigenTramoActual()).isEqualTo(OrigenTramo.BASE);
+        assertThat(asistencia.getEntradaProgramada()).isEqualTo(LocalTime.of(8, 0));
+        assertThat(asistencia.getSalidaProgramada()).isEqualTo(LocalTime.of(17, 0));
+        assertThat(asistencia.getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(6, 49)));
+        assertThat(asistencia.getMinutosObjetivoDia()).isEqualTo(480);
+        assertThat(asistencia.getMinutosExtra()).isZero();
+        assertThat(asistencia.getMinutosCompensados()).isZero();
+        verify(asistenciaRepository).save(asistencia);
+    }
+
+    @Test
     void rechazaProgramarAlmuerzoParaFechaPasadaSinCrearAsistencia() {
         reloj(8, 0);
 

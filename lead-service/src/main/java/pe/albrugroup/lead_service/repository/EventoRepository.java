@@ -1288,6 +1288,65 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fin") Instant fin
     );
 
+    /**
+     * Desglose de PREVENTA para el resumen diario. La fila elegida por lead sigue la misma
+     * semántica que "Estado leads del día": primera, última o mayor tipificación del período.
+     * INGRESADOS agrega la cohorte orgánica de REGISTRO/NUEVA_OPORTUNIDAD; GESTIONADOS omite esa
+     * condición. La tipificación/subtipificación se obtiene del evento y la etapa actual del lead.
+     * Columnas: [idEquipo, completas, validas, preventas].
+     */
+    @Query(value = """
+            SELECT seleccion.id_equipo,
+                   COUNT(*) FILTER (WHERE BTRIM(seleccion.subtipificacion) = 'COMPLETA') AS completas,
+                   COUNT(*) FILTER (WHERE seleccion.etapa_actual <> 'PREVENTA') AS validas,
+                   COUNT(*) AS preventas
+            FROM (
+                SELECT DISTINCT ON (e.id_lead)
+                       l.id_equipo,
+                       e.tipificacion,
+                       e.subtipificacion,
+                       l.etapa AS etapa_actual
+                FROM evento e
+                JOIN lead l ON l.id = e.id_lead
+                LEFT JOIN equipo_proveedor ep
+                    ON ep.id_equipo = l.id_equipo AND ep.fallback_lead_sin_campana = true
+                LEFT JOIN matriz_tipificacion m
+                    ON m.id_proveedor = COALESCE(
+                        (SELECT c.id_proveedor FROM campana c WHERE c.id = l.id_campana),
+                        ep.id_proveedor)
+                    AND m.etapa = 'PREVENTA'
+                LEFT JOIN tipificacion t ON t.matriz_id = m.id AND t.codigo = e.tipificacion
+                WHERE e.accion = 'TIPIFICACION'
+                  AND e.etapa = 'PREVENTA'
+                  AND e.created_at >= :inicio
+                  AND e.created_at < :fin
+                  AND e.tipificacion IS NOT NULL
+                  AND BTRIM(e.tipificacion) <> ''
+                  AND (:ingresados = false
+                       OR (EXISTS (SELECT 1 FROM origen o
+                                   WHERE o.id = l.id_origen AND o.es_organico = true)
+                           AND EXISTS (SELECT 1 FROM evento reg
+                                       WHERE reg.id_lead = e.id_lead
+                                         AND reg.accion IN ('REGISTRO', 'NUEVA_OPORTUNIDAD')
+                                         AND reg.created_at >= :inicio
+                                         AND reg.created_at < :fin)))
+                ORDER BY e.id_lead,
+                         CASE WHEN :campo = 'PRIMERA' THEN e.created_at END ASC,
+                         CASE WHEN :campo = 'ULTIMA' THEN e.created_at END DESC,
+                         CASE WHEN :campo = 'MAYOR' THEN COALESCE(t.orden, -1) END DESC,
+                         e.created_at DESC,
+                         e.id DESC
+            ) seleccion
+            WHERE BTRIM(seleccion.tipificacion) = 'PREVENTA'
+            GROUP BY seleccion.id_equipo
+            """, nativeQuery = true)
+    List<Object[]> resumirPreventasParaResumenDiario(
+            @Param("ingresados") boolean ingresados,
+            @Param("campo") String campo,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);
 
     Optional<Evento> findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(Long idLead, Accion accion, String tipificacion);

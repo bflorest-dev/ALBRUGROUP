@@ -8,8 +8,13 @@ export function formatApiErrorMessage(errorBody: unknown, fallbackMessage: strin
     return fallbackMessage;
   }
 
-  if (!hasReadableMessage(errorBody) && 'error' in errorBody) {
-    return formatApiErrorMessage(errorBody['error'], fallbackMessage);
+  // Angular wraps the API body in HttpErrorResponse.error and puts a technical transport
+  // message in HttpErrorResponse.message. Prefer the backend's functional message first.
+  if ('error' in errorBody && errorBody['error'] !== errorBody) {
+    const nestedMessage = formatApiErrorMessage(errorBody['error'], '');
+    if (nestedMessage) {
+      return nestedMessage;
+    }
   }
 
   const message = typeof errorBody['message'] === 'string' && errorBody['message'].trim()
@@ -17,7 +22,17 @@ export function formatApiErrorMessage(errorBody: unknown, fallbackMessage: strin
     : fallbackMessage;
   const details = formatApiErrorDetails(errorBody['details']);
 
+  if (isTechnicalMessage(message)) {
+    return fallbackMessage;
+  }
+
   return details ? `${message}: ${details}` : message;
+}
+
+function isTechnicalMessage(message: string): boolean {
+  return /^Http failure (response|during parsing) for /i.test(message)
+    || /^Failed to fetch$/i.test(message)
+    || /^NetworkError/i.test(message);
 }
 
 function formatApiErrorDetails(details: unknown): string {
@@ -60,10 +75,6 @@ function toReadableKey(key: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
-}
-
-function hasReadableMessage(value: Record<string, unknown>): boolean {
-  return typeof value['message'] === 'string' && value['message'].trim().length > 0;
 }
 
 function parseJsonObject(value: string): Record<string, unknown> | null {

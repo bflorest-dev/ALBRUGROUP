@@ -223,12 +223,107 @@ th.n {
   color: var(--muted);
 }
 
-.kpi-stats {
-  display: grid;
-  grid-template-columns: 1fr 1px 1fr;
-  align-items: center;
+.kpi-context {
+  color: var(--faint);
+  font-size: 12px;
+  margin-top: -8px;
 }
 
+.kpi-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+}
+
+.kpi-total .v {
+  font-weight: 700;
+  font-size: 35px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.kpi-total .c,
+.metric-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.metric {
+  min-width: 0;
+  min-height: 82px;
+  padding: 10px 8px 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 2px;
+  color: var(--ink);
+}
+
+.metric + .metric {
+  border-left: 1px solid var(--line);
+}
+
+.metric-value {
+  font-size: 25px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.metric-help {
+  color: var(--faint);
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.metric--valid {
+  color: var(--win);
+}
+
+.metric--valid .metric-label {
+  color: var(--win);
+  opacity: 0.9;
+}
+
+/* Solo Válidas abre el detalle, porque el endpoint devuelve el conjunto con mérito. */
+button.metric.clickable {
+  appearance: none;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+button.metric.clickable:hover {
+  background: var(--win-soft);
+}
+
+button.metric.clickable:hover .metric-value {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+button.metric.clickable:focus-visible {
+  outline: 2px solid var(--win);
+  outline-offset: -2px;
+}
+
+/* Compatibilidad visual para el contenido proyectado que aún use stat en otra variante. */
 .stat {
   display: flex;
   flex-direction: column;
@@ -237,38 +332,11 @@ th.n {
   gap: 2px;
 }
 
-.stat .v {
-  font-weight: 700;
-  font-size: 35px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.stat .c {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-
-.stat.win .v {
-  color: var(--win);
-}
-
-.stat.win .c {
-  color: var(--win);
-  opacity: 0.85;
-}
-
-/* El número de preventas es un botón que abre el detalle. */
 button.stat.clickable {
   appearance: none;
   background: none;
   border: none;
   font: inherit;
-  padding: 4px 6px;
-  margin: -4px -6px;
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s;
@@ -286,91 +354,6 @@ button.stat.clickable:hover .v {
 button.stat.clickable:focus-visible {
   outline: 2px solid var(--win);
   outline-offset: 2px;
-}
-
-/* Número de preventas + ícono de aviso (aparece al ver días pasados: dato retroactivo). */
-.v-line {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 3px;
-}
-
-.ingresos-info {
-  font-size: 14px;
-  color: var(--rest);
-  cursor: help;
-  margin-top: 2px;
-
-  &:hover {
-    color: var(--ink);
-  }
-}
-
-.kpi-div {
-  width: 1px;
-  align-self: stretch;
-  background: var(--line);
-}
-
-/* Barra apilada: todo el ancho = total; verde = preventas, ámbar = otros leads. */
-.split {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.split-bar {
-  display: flex;
-  height: 13px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: var(--rest);
-}
-
-.split-bar > .seg-prev {
-  height: 100%;
-  background: var(--win);
-}
-
-.split-legend {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--muted);
-}
-
-.lg {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  white-space: nowrap;
-}
-
-.lg b {
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.lg .pct-in {
-  color: var(--win);
-  font-weight: 700;
-}
-
-.sw {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex: none;
-}
-
-.sw-prev {
-  background: var(--win);
-}
-
-.sw-rest {
-  background: var(--rest);
 }
 
 /* Acción secundaria del resumen: no compite con los KPIs y deja claro que analiza un solo día. */
@@ -627,7 +610,7 @@ tr.is-win .est-name {
 }
 
 /*
- * Modal de detalle de preventas: se renderiza en overlay (fuera del poster). Tiene la MISMA identidad
+ * Modal de detalle de válidas: se renderiza en overlay (fuera del poster). Tiene la MISMA identidad
  * oscura que el poster (paleta local, no --app-*), así que se sobreescribe el chrome del p-dialog y
  * se estila con ::ng-deep scopeado por su styleClass.
  */

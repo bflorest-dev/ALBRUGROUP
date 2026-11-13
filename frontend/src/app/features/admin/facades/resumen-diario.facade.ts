@@ -34,15 +34,15 @@ export interface ResumenEquipoInfo {
   color: string | null;
 }
 
-/** Fila del ranking con el % de preventa sobre las asignaciones (autocalc). */
+/** Fila del ranking: válidas con mérito sobre las asignaciones (autocalc). */
 export interface ResumenAsesorVista extends ResumenAsesor {
   key: string;
 }
 
-/** Tabla 1 con porcentajes derivados. */
+/** Tabla 1 con porcentajes derivados de válidas sobre el total de cada cohorte. */
 export interface ResumenIngresosGestionVista extends ResumenIngresosGestion {
-  ingresosPct: number;
-  gestionPct: number;
+  ingresosValidasPct: number;
+  gestionValidasPct: number;
 }
 
 /** Fila de la tabla 3 (estado leads) con label "N - Nombre" y % ya provisto por el backend. */
@@ -204,12 +204,12 @@ export class ResumenDiarioFacade implements OnDestroy {
     }
     return {
       ...ig,
-      ingresosPct: ig.ingresosTotal > 0 ? (ig.ingresosPreventas / ig.ingresosTotal) * 100 : 0,
-      gestionPct: ig.gestionTotal > 0 ? (ig.gestionPreventas / ig.gestionTotal) * 100 : 0
+      ingresosValidasPct: ig.ingresosTotal > 0 ? (ig.ingresosValidas / ig.ingresosTotal) * 100 : 0,
+      gestionValidasPct: ig.gestionTotal > 0 ? (ig.gestionValidas / ig.gestionTotal) * 100 : 0
     };
   });
 
-  readonly totalPreventas = computed<number>(() => this.data()?.resumen.ranking.totalPreventas ?? 0);
+  readonly totalValidas = computed<number>(() => this.data()?.resumen.ranking.totalValidas ?? 0);
 
   readonly ranking = computed<ResumenAsesorVista[]>(() => {
     const asesores = this.data()?.resumen.ranking.asesores ?? [];

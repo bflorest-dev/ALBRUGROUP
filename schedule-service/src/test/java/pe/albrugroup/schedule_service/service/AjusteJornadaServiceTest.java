@@ -41,6 +41,7 @@ class AjusteJornadaServiceTest {
     @Mock DiaNoLaborableRepository diaNoLaborableRepository;
     @Mock AttendanceRealtimeNotifier notifier;
     @Mock CurrentUser currentUser;
+    @Mock MarcacionService marcacionService;
 
     private final Clock clock = Clock.fixed(
             ZonedDateTime.of(2026, 6, 15, 8, 10, 0, 0, OperationalDateTime.ZONE).toInstant(),
@@ -64,6 +65,7 @@ class AjusteJornadaServiceTest {
                 excepcionRepository,
                 diaNoLaborableRepository,
                 resolver,
+                marcacionService,
                 notifier,
                 currentUser,
                 properties,
@@ -474,14 +476,12 @@ class AjusteJornadaServiceTest {
         service.restablecerDia(21L, fecha);
 
         assertThat(ajuste.getEstado()).isEqualTo(EstadoAjusteJornada.CANCELADO);
-        assertThat(asistencia.getInicioAlmuerzoProgramado()).isNull();
-        assertThat(asistencia.getFinAlmuerzoProgramado()).isNull();
         assertThat(asistencia.getFechaHoraInicioAlmuerzo()).isNotNull();
         assertThat(asistencia.getFechaHoraFinAlmuerzo()).isNotNull();
         verify(ajusteRepository).saveAll(List.of(ajuste));
         verify(excepcionRepository).delete(excepcion);
         verify(diaNoLaborableRepository).delete(empleado);
-        verify(asistenciaRepository).save(asistencia);
+        verify(marcacionService).reanclarAsistenciaAlHorarioBase(21L, fecha);
         verify(notifier).publishAfterCommit("HORARIO_RESTABLECIDO", "HORARIO", 21L, fecha, null);
     }
 
@@ -514,7 +514,7 @@ class AjusteJornadaServiceTest {
     }
 
     @Test
-    void restablecerDiaNoPermiteCancelarElTramoQueSeEstaTrabajando() {
+    void restablecerDiaPermiteReanclarElTramoQueSeEstaTrabajando() {
         LocalDate fecha = LocalDate.of(2026, 6, 15);
         Horario horario = horarioSemanal(fecha.minusDays(14));
         AjusteJornada ajuste = AjusteJornada.builder()
@@ -539,12 +539,12 @@ class AjusteJornadaServiceTest {
                 21L, fecha, EstadoAjusteJornada.ACTIVO)).thenReturn(List.of(ajuste));
         when(asistenciaRepository.findByIdEmpleadoAndFecha(21L, fecha)).thenReturn(Optional.of(asistencia));
 
-        assertThatThrownBy(() -> service.restablecerDia(21L, fecha))
-                .isInstanceOf(pe.albrugroup.schedule_service.exception.BadRequestException.class)
-                .hasMessageContaining("está trabajando");
+        service.restablecerDia(21L, fecha);
 
-        verify(ajusteRepository, never()).saveAll(any());
-        verify(notifier, never()).publishAfterCommit(any(), any(), any(), any(), any());
+        assertThat(ajuste.getEstado()).isEqualTo(EstadoAjusteJornada.CANCELADO);
+        verify(ajusteRepository).saveAll(List.of(ajuste));
+        verify(marcacionService).reanclarAsistenciaAlHorarioBase(21L, fecha);
+        verify(notifier).publishAfterCommit("HORARIO_RESTABLECIDO", "HORARIO", 21L, fecha, null);
     }
 
     private Asistencia asistenciaConBalance(int balance) {

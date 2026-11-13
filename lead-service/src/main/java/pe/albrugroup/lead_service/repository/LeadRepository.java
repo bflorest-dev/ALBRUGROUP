@@ -3134,6 +3134,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
             WHERE r.idAsesorMerito IS NOT NULL
+              AND r.mayorRangoCodigoTipificacion = 'PREVENTA'
+              AND (r.mayorRangoCodigoSubtipificacion IS NULL
+                   OR r.mayorRangoCodigoSubtipificacion <> 'INCOMPLETA')
               AND r.fechaMerito >= :fechaDesde
               AND r.fechaMerito < :fechaHasta
               AND l.etapa <> 'PREVENTA'

@@ -6,7 +6,7 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { TooltipModule } from 'primeng/tooltip';
 import { MetricsPeriodo } from '../../../../shared/components/period-selector/period-selector.component';
-import { localToday, resolveMetricsRange } from '../../../../shared/utils/metrics-period';
+import { resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { GestionCampoTipi, GestionModo } from '../../services/admin-gestion-campana.service';
 import {
   EstadoLeadDetalle,
@@ -48,7 +48,7 @@ export class ResumenDiarioPanelComponent implements OnInit {
   protected readonly facade = inject(ResumenDiarioFacade);
   private readonly detalleService = inject(ResumenDiarioService);
 
-  // Modal de detalle de preventas (drill-down de los contadores de los cards).
+  // Modal de detalle de válidas (drill-down del contador de válidas de los cards).
   protected readonly detalleVisible = signal(false);
   protected readonly detalleLoading = signal(false);
   protected readonly detalleError = signal(false);
@@ -234,22 +234,6 @@ export class ResumenDiarioPanelComponent implements OnInit {
     return `${dd} ${ResumenDiarioPanelComponent.MESES[mes - 1]} ${anio}`;
   }
 
-  /**
-   * true al consultar un día ANTERIOR al de hoy. Ahí la preventa de "Ingresos del día" es retroactiva
-   * (cuenta el estado ACTUAL de los leads registrados ese día), por eso muestra un aviso.
-   */
-  protected readonly esDiaPasado = computed(() => {
-    if (this.periodo() !== 'dia') {
-      return false;
-    }
-    const dia = this.dia();
-    return !!dia && dia < localToday();
-  });
-
-  protected readonly ingresosAviso =
-    'De los leads registrados este día, este número es cuántos ya son PREVENTA a la fecha de hoy. ' +
-    'Por eso puede ser mayor que "Gestión del día" y diferir de lo que se veía ese día.';
-
   constructor() {
     effect(() => {
       if (!this.externalControls()) {
@@ -284,7 +268,7 @@ export class ResumenDiarioPanelComponent implements OnInit {
     this.facade.start();
   }
 
-  /** Abre el modal con el detalle de leads detrás del contador de preventas del card indicado. */
+  /** Abre el modal con el detalle de leads detrás del contador de válidas del card indicado. */
   protected async abrirDetalle(modo: GestionModo): Promise<void> {
     this.detalleModo.set(modo);
     this.detalleVisible.set(true);

@@ -25,6 +25,7 @@ import pe.albrugroup.lead_service.entity.response.RegistroDiarioLeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionItemResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
+import pe.albrugroup.lead_service.entity.response.ResumenPreventaMetricasEquipoResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.EventoRepository;
@@ -584,6 +585,34 @@ public class EventoService {
                     return new LeadsDiariosMetricasEquipoResponse(
                             entrada.getKey(), a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9]);
                 })
+                .toList();
+    }
+
+    /**
+     * Desglosa PREVENTA para las dos filas superiores del resumen diario. A diferencia de las
+     * métricas históricas de leads del día, no usa LeadEtapaResumen para decidir qué tipificación
+     * ocurrió en el período: Evento es la fuente de verdad temporal y Lead.etapa la fuente de verdad
+     * para la etapa actual.
+     */
+    public List<ResumenPreventaMetricasEquipoResponse> obtenerResumenPreventaPorEquipo(
+            LocalDate desde, LocalDate hasta, CampoTipificacion campo, ModoConteo modo) {
+        LocalDate desdeResuelto = OperationalDateTime.resolveDate(desde);
+        LocalDate hastaResuelto = OperationalDateTime.resolveDate(hasta);
+        if (hastaResuelto.isBefore(desdeResuelto)) {
+            throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha final");
+        }
+        Instant inicio = OperationalDateTime.startOfDay(desdeResuelto);
+        Instant fin = OperationalDateTime.endExclusiveOfDay(hastaResuelto);
+        boolean ingresados = modo == ModoConteo.INGRESADOS;
+
+        return eventoRepository.resumirPreventasParaResumenDiario(
+                        ingresados, campo.name(), inicio, fin)
+                .stream()
+                .map(fila -> new ResumenPreventaMetricasEquipoResponse(
+                        (Long) fila[0],
+                        ((Number) fila[3]).longValue(),
+                        ((Number) fila[1]).longValue(),
+                        ((Number) fila[2]).longValue()))
                 .toList();
     }
 

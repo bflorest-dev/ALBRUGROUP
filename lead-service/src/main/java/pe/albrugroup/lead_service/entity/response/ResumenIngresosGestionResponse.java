@@ -1,22 +1,26 @@
 package pe.albrugroup.lead_service.entity.response;
 
 /**
- * Tabla 1 del RESUMEN DIARIO: preventas conseguidas respecto a los leads ingresados y a los
- * gestionados en el período. Las dos filas se muestran siempre (no dependen del toggle de modo).
+ * Tabla 1 del RESUMEN DIARIO. Cada fila conserva la cohorte del período y desglosa PREVENTA
+ * en tres conceptos no intercambiables:
  *
  * <ul>
- *   <li>INGRESOS DEL DÍA: {@code ingresosTotal} = leads únicos ingresados; {@code ingresosPreventas}
- *       = cuántos de esa cohorte llegaron a preventa.</li>
- *   <li>GESTIÓN DEL DÍA: {@code gestionTotal} = leads gestionados (tipificados) en el período;
- *       {@code gestionPreventas} = preventas ocurridas en el período.</li>
+ *   <li>{@code Preventas}: tipificación seleccionada = PREVENTA.</li>
+ *   <li>{@code Completas}: PREVENTA con subtipificación COMPLETA.</li>
+ *   <li>{@code Validas}: PREVENTA cuya etapa actual ya no es PREVENTA.</li>
  * </ul>
  *
- * El porcentaje (preventas / total) lo calcula el frontend.
+ * La pertenencia al período y la tipificación se leen de {@code Evento}; la etapa actual se lee de
+ * {@code Lead.etapa}. El porcentaje lo calcula el frontend.
  */
 public record ResumenIngresosGestionResponse(
         long ingresosTotal,
         long ingresosPreventas,
+        long ingresosCompletas,
+        long ingresosValidas,
         long gestionTotal,
-        long gestionPreventas
+        long gestionPreventas,
+        long gestionCompletas,
+        long gestionValidas
 ) {
 }

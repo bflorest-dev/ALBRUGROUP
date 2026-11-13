@@ -5,12 +5,19 @@ import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { GtrTipificacionRankingResponse } from '../../../shared/models/preventa/preventa.models';
 import { GestionCampoTipi, GestionModo } from './admin-gestion-campana.service';
 
-/** Tabla 1: preventas vs ingresados y vs gestionados. El % lo calcula el frontend. */
+/**
+ * Tabla 1: cada cohorte conserva su total y separa PREVENTA en tipificación, subtipificación y
+ * etapa actual. El porcentaje de válidas sobre el total lo calcula el frontend.
+ */
 export interface ResumenIngresosGestion {
   ingresosTotal: number;
   ingresosPreventas: number;
+  ingresosCompletas: number;
+  ingresosValidas: number;
   gestionTotal: number;
   gestionPreventas: number;
+  gestionCompletas: number;
+  gestionValidas: number;
 }
 
 /** Fila del ranking acotado (tabla 2). Los OJT llegan colapsados en una fila con idAsesor null. */
@@ -18,12 +25,12 @@ export interface ResumenAsesor {
   idAsesor: number | null;
   nombreAsesor: string;
   totalAsignaciones: number;
-  preventas: number;
+  validas: number;
 }
 
-/** Tabla 2: ranking + total de preventas del equipo (encabezado "TOTAL PREVENTAS: N"). */
+/** Tabla 2: ranking + total de válidas del equipo. */
 export interface ResumenRanking {
-  totalPreventas: number;
+  totalValidas: number;
   asesores: ResumenAsesor[];
 }
 
@@ -42,7 +49,7 @@ export interface ResumenSubtipCampanaCelda {
 }
 
 /**
- * Una fila del detalle de preventas detrás de un card. `lead` y `usermeta` vienen por separado; el
+ * Una fila del detalle de válidas detrás de un card. `lead` y `usermeta` vienen por separado; el
  * modal los apila en una sola columna (lead con énfasis, usermeta debajo). En INGRESADOS `rolAsesor`
  * llega nulo.
  */
@@ -177,9 +184,8 @@ export class ResumenDiarioService {
   }
 
   /**
-   * Detalle de leads detrás del contador de preventas de un card. `modo` elige el card:
-   * GESTIONADOS (preventas ocurridas en el período) o INGRESADOS (cohorte de registro cuya
-   * tipificación del `campo` es preventa).
+   * Detalle de leads detrás del contador de válidas de un card. `modo` elige el card:
+   * GESTIONADOS o INGRESADOS, con la misma semántica de cohorte del resumen.
    */
   obtenerPreventasDetalle(
     idEquipo: number | null,

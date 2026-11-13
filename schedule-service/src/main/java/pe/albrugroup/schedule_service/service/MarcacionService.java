@@ -499,6 +499,57 @@ public class MarcacionService {
 
     // ===================== Creacion / calculo =====================
 
+    /**
+     * Reancla la asistencia actual al horario base después de cancelar los ajustes propios del día.
+     * Las horas reales no se tocan; solo se corrige la referencia programada y sus acumuladores derivados.
+     */
+    @Transactional
+    public void reanclarAsistenciaAlHorarioBase(Long idEmpleado, LocalDate fecha) {
+        Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha).orElse(null);
+        if (asistencia == null) {
+            return;
+        }
+
+        JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolverSiExiste(idEmpleado, fecha).orElse(null);
+        TramoJornadaResponse base = jornada == null
+                ? null
+                : jornada.getTramos().stream()
+                .filter(tramo -> Boolean.TRUE.equals(tramo.getBase()))
+                .filter(tramo -> tramo.getInicio() != null && tramo.getFin() != null)
+                .findFirst()
+                .orElse(null);
+        VentanaAlmuerzo almuerzoBase = jornada == null || jornada.getIdHorario() == null
+                ? null
+                : horarioRepository.findById(jornada.getIdHorario())
+                .map(horario -> resolverAlmuerzoProgramado(horario, fecha))
+                .orElse(null);
+
+        asistencia.setAjusteJornadaActual(null);
+        asistencia.setOrigenTramoActual(base == null ? null : OrigenTramo.BASE);
+        asistencia.setEntradaProgramada(base == null ? null : base.getInicio().toLocalTime());
+        asistencia.setSalidaProgramada(base == null ? null : base.getFin().toLocalTime());
+        asistencia.setInicioAlmuerzoProgramado(almuerzoBase == null ? null : almuerzoBase.inicio());
+        asistencia.setFinAlmuerzoProgramado(almuerzoBase == null ? null : almuerzoBase.fin());
+
+        if (base == null) {
+            asistencia.setMinutosObjetivoDia(0);
+            asistencia.setMinutosExtra(0);
+            asistencia.setMinutosCompensados(0);
+        } else {
+            asistencia.setMinutosObjetivoDia(
+                    jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha));
+            if (asistencia.getFechaHoraSalida() != null) {
+                recalcularMinutos(asistencia);
+            } else {
+                // La jornada sigue abierta: todavía no hay minutos base cerrados que recalcular.
+                asistencia.setMinutosExtra(0);
+                asistencia.setMinutosCompensados(0);
+            }
+        }
+
+        asistenciaRepository.save(asistencia);
+    }
+
     private Asistencia crearAsistencia(Long idEmpleado, LocalDate fecha,
                                        TramoJornadaResponse tramo, JornadaEfectivaResponse jornada) {
         Horario horario = horarioRepository.findById(jornada.getIdHorario())

@@ -106,6 +106,7 @@ import pe.albrugroup.lead_service.entity.response.ResumenAsesorResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenEstadoLeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenIngresosGestionResponse;
+import pe.albrugroup.lead_service.entity.response.ResumenPreventaMetricasEquipoResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenRankingAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenRankingResponse;
 import pe.albrugroup.lead_service.entity.response.ResumenSubtipCampanaCeldaResponse;
@@ -7614,9 +7615,10 @@ public class LeadService {
     }
 
     /**
-     * Tabla 1: preventas vs ingresados y vs gestionados. Las dos filas se muestran siempre, así que se
-     * consultan ambos modos. Total ingresos = leads únicos; total gestión = leads gestionados;
-     * preventas = ventas cerradas de cada modo.
+     * Tabla 1: cada cohorte conserva su total y desglosa PREVENTA en preventas, completas y válidas.
+     * Evento determina qué tipificación/subtipificación ocurrió en el período; Lead.etapa determina
+     * si esa preventa ya es válida. Las métricas históricas de leads del día siguen aportando los
+     * denominadores de ingresados y gestionados.
      */
     private ResumenIngresosGestionResponse construirIngresosGestion(
             Long idEquipo, CampoTipificacion campo, LocalDate desde, LocalDate hasta) {
@@ -7624,48 +7626,76 @@ public class LeadService {
                 eventoService.obtenerMetricasRegistrosDiariosPorEquipo(desde, hasta, campo, ModoConteo.INGRESADOS);
         List<LeadsDiariosMetricasEquipoResponse> gestionados =
                 eventoService.obtenerMetricasRegistrosDiariosPorEquipo(desde, hasta, campo, ModoConteo.GESTIONADOS);
+        List<ResumenPreventaMetricasEquipoResponse> preventasIngresadas =
+                eventoService.obtenerResumenPreventaPorEquipo(desde, hasta, campo, ModoConteo.INGRESADOS);
+        List<ResumenPreventaMetricasEquipoResponse> preventasGestionadas =
+                eventoService.obtenerResumenPreventaPorEquipo(desde, hasta, campo, ModoConteo.GESTIONADOS);
 
         long ingresosTotal = 0;
-        long ingresosPreventas = 0;
         for (LeadsDiariosMetricasEquipoResponse m : ingresados) {
             if (idEquipo == null || idEquipo.equals(m.idEquipo())) {
                 ingresosTotal += m.leadsUnicos();
-                ingresosPreventas += m.leadsVentaCerrada();
             }
         }
         long gestionTotal = 0;
-        long gestionPreventas = 0;
         for (LeadsDiariosMetricasEquipoResponse m : gestionados) {
             if (idEquipo == null || idEquipo.equals(m.idEquipo())) {
                 gestionTotal += m.gestionados();
-                gestionPreventas += m.leadsVentaCerrada();
             }
         }
+
+        long[] ingresosDesglose = sumarDesglosePreventa(preventasIngresadas, idEquipo);
+        long[] gestionDesglose = sumarDesglosePreventa(preventasGestionadas, idEquipo);
         return new ResumenIngresosGestionResponse(
-                ingresosTotal, ingresosPreventas, gestionTotal, gestionPreventas);
+                ingresosTotal,
+                ingresosDesglose[0],
+                ingresosDesglose[1],
+                ingresosDesglose[2],
+                gestionTotal,
+                gestionDesglose[0],
+                gestionDesglose[1],
+                gestionDesglose[2]);
+    }
+
+    /** Devuelve [preventas, completas, validas] dentro del equipo o scope resuelto. */
+    private long[] sumarDesglosePreventa(
+            List<ResumenPreventaMetricasEquipoResponse> filas, Long idEquipo) {
+        long preventas = 0;
+        long completas = 0;
+        long validas = 0;
+        for (ResumenPreventaMetricasEquipoResponse fila : filas) {
+            if (idEquipo == null || idEquipo.equals(fila.idEquipo())) {
+                preventas += fila.preventas();
+                completas += fila.completas();
+                validas += fila.validas();
+            }
+        }
+        return new long[] {preventas, completas, validas};
     }
 
     /**
-     * Tabla 2: ranking acotado por asesor (total de asignaciones + preventas) con los actores OJT
-     * colapsados en una sola fila, ya que OJT no es un usuario individual.
+     * Tabla 2: ranking acotado por asesor (total de asignaciones + válidas) con los actores OJT
+     * colapsados en una sola fila, ya que OJT no es un usuario individual. El resumen no restringe
+     * el ranking a asesores con leads actualmente en PREVENTA: el mérito pertenece a la venta válida
+     * aunque el asesor ya no conserve una asignación pendiente en esa etapa.
      */
     private ResumenRankingResponse construirRankingResumen(
             Long idEquipo, ModoConteo modo, LocalDate desde, LocalDate hasta) {
         List<GtrRankingAsesorResponse> base = listarRankingGtr(
-                desde, hasta, true, idEquipo, modo, OrdenRankingAsesor.PREVENTAS_PERIODO);
+                desde, hasta, false, idEquipo, modo, OrdenRankingAsesor.PREVENTAS_PERIODO);
 
         OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         Set<Long> ojtIds = new HashSet<>(eventoRepository.idsActoresPorRolGtr(
                 "OJT", rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids()));
 
-        long totalPreventas = 0;
+        long totalValidas = 0;
         long ojtAsignaciones = 0;
         long ojtPreventas = 0;
         boolean hayOjt = false;
         List<ResumenAsesorResponse> filas = new ArrayList<>();
         for (GtrRankingAsesorResponse r : base) {
-            totalPreventas += r.getPreventasPeriodo();
+            totalValidas += r.getPreventasPeriodo();
             if (r.getIdAsesor() != null && ojtIds.contains(r.getIdAsesor())) {
                 hayOjt = true;
                 ojtAsignaciones += r.getAsignadosPeriodo();
@@ -7679,11 +7709,11 @@ public class LeadService {
         if (hayOjt) {
             filas.add(new ResumenAsesorResponse(null, "OJT", ojtAsignaciones, ojtPreventas));
         }
-        filas.sort(Comparator.comparingLong(ResumenAsesorResponse::preventas).reversed()
+        filas.sort(Comparator.comparingLong(ResumenAsesorResponse::validas).reversed()
                 .thenComparing(Comparator.comparingLong(ResumenAsesorResponse::totalAsignaciones).reversed())
                 .thenComparing(a -> a.nombreAsesor() == null ? "" : a.nombreAsesor(),
                         String.CASE_INSENSITIVE_ORDER));
-        return new ResumenRankingResponse(totalPreventas, filas);
+        return new ResumenRankingResponse(totalValidas, filas);
     }
 
     /**
