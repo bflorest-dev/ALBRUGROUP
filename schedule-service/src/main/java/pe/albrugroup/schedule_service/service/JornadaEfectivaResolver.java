@@ -258,7 +258,11 @@ public class JornadaEfectivaResolver {
         return minutosObjetivoContractual(horario, fecha);
     }
 
-    /** Objetivo base del dia, independiente de corrimientos y cambios completos puntuales. */
+    /**
+     * PROGRAMADO base del dia (concepto 2): horas asignadas en el HORARIO de ese dia (salida-entrada-almuerzo),
+     * independiente de corrimientos/cambios puntuales. NO es el objetivo contractual: ese sale de la modalidad
+     * (ver {@link #minutosObjetivoModalidad}). Nombre historico conservado por sus callers del flujo de marcacion.
+     */
     int minutosObjetivoContractual(Horario horario, LocalDate fecha) {
         Dia dia = mapearDia(fecha.getDayOfWeek());
         return horario.getDetalles().stream()
@@ -267,6 +271,39 @@ public class JornadaEfectivaResolver {
                 .findFirst()
                 .map(this::minutosObjetivoDetalle)
                 .orElse(0);
+    }
+
+    /**
+     * HORAS OBJETIVO del dia (concepto 1): horas operativas de la MODALIDAD del contrato, INDEPENDIENTES del
+     * horario. Suma salvo que el dia este LIBERADO: descanso principal del horario, feriado, vacaciones o
+     * descanso medico. PERMISO (= falta justificada) NO libera: sus horas siguen esperandose. Los descansos
+     * SECUNDARIOS tampoco liberan (cuentan al objetivo). Fuente: reworks/CasoDeUsoHorariosPlanilla.txt.
+     */
+    int minutosObjetivoModalidad(Long idEmpleado, LocalDate fecha) {
+        Horario horario = horarioRepository.findHorarioVigente(idEmpleado, fecha).orElse(null);
+        if (horario == null) {
+            return 0;
+        }
+        TipoDiaNoLaborable evento = tipoDiaLibre(idEmpleado, fecha);
+        if (evento != null && evento != TipoDiaNoLaborable.PERMISO) {
+            return 0; // feriado, vacaciones, descanso medico -> liberan el objetivo
+        }
+        return minutosObjetivoModalidad(horario, fecha);
+    }
+
+    /** Objetivo por modalidad considerando solo el descanso PRINCIPAL del horario (sin eventos de calendario). */
+    int minutosObjetivoModalidad(Horario horario, LocalDate fecha) {
+        Dia dia = mapearDia(fecha.getDayOfWeek());
+        boolean esDescansoPrincipal = horario.getDetalles().stream()
+                .anyMatch(d -> d.getDia() == dia
+                        && Boolean.FALSE.equals(d.getLaborable())
+                        && Boolean.TRUE.equals(d.getDescansoPrincipal()));
+        if (esDescansoPrincipal) {
+            return 0;
+        }
+        Integer min = horario.getPoliticaModalidad() != null
+                ? horario.getPoliticaModalidad().getMinutosOperativosDia() : null;
+        return min != null ? min : 0;
     }
 
     private int minutosObjetivoDetalle(HorarioDetalle detalle) {

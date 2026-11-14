@@ -168,7 +168,7 @@ public class ResumenMensualService {
             }
             diasLaborables++;
             Asistencia asistencia = asistenciasPorFecha.get(fecha);
-            minutosObjetivo += jornadaResolver.minutosObjetivoContractual(idEmpleado, fecha);
+            minutosObjetivo += jornadaResolver.minutosObjetivoModalidad(idEmpleado, fecha);
 
             if (asistencia == null || asistencia.getFechaHoraIngreso() == null
                     || asistencia.getFechaHoraSalida() == null) {

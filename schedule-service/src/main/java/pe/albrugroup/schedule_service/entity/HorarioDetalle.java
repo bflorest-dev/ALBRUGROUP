@@ -40,4 +40,9 @@ public class HorarioDetalle {
     @Builder.Default
     @Column(nullable = false)
     private Boolean laborable = Boolean.TRUE;
+    /** Marca el descanso base que LIBERA el objetivo. Exactamente uno por horario (entre los laborable=false).
+     *  Los demas descansos (secundarios) NO liberan objetivo: sus horas siguen esperandose. */
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean descansoPrincipal = Boolean.FALSE;
 }

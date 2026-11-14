@@ -220,6 +220,12 @@
     padding: 0 1rem 1rem;
   }
 
+  // El router-outlet es un ancla sin contenido; no debe crear una fila ni un gap propio
+  // entre el banner opcional y la vista activa.
+  .content > router-outlet {
+    display: contents;
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {

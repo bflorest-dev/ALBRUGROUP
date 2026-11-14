@@ -54,6 +54,8 @@ export class PeriodSelectorComponent implements OnDestroy {
   /** Algunas bandejas, como Programados, necesitan elegir fechas futuras. */
   readonly allowFuture = input(false);
   readonly disabled = input(false);
+  /** En hojas móviles, el segmento de día abre el calendario al tocarlo en lugar de depender del hover. */
+  readonly touchFriendly = input(false);
   readonly minDate = input<string | null>(null);
   readonly enforceSessionMinDate = input(false);
   /**
@@ -184,11 +186,21 @@ export class PeriodSelectorComponent implements OnDestroy {
     }
     this.cancelarHoverPopover();
     this.hoverSegment = null;
-    const clicked = (event.target as HTMLElement | null)?.closest('.p-togglebutton');
+    const clicked = (event.target as HTMLElement | null)?.closest('.p-togglebutton') as HTMLElement | null;
     if (!clicked) {
       return;
     }
     if (clicked === this.botonDe('dia')) {
+      if (this.touchFriendly()) {
+        // PrimeNG termina de procesar el toggle en el mismo evento; abrir después evita que ese
+        // ciclo vuelva a cerrar el popover en dispositivos táctiles.
+        setTimeout(() => {
+          if (clicked.isConnected && this.touchFriendly()) {
+            this.abrirDiaPicker(clicked);
+          }
+        });
+        return;
+      }
       this.emitirHoy();
       this.cerrar();
     } else {

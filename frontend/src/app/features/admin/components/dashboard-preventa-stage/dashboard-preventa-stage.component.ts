@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TooltipModule } from 'primeng/tooltip';
@@ -57,6 +58,7 @@ interface DashboardMetricRow {
     FormsModule,
     ButtonModule,
     CardModule,
+    DialogModule,
     MessageModule,
     SelectButtonModule,
     TooltipModule,
@@ -96,6 +98,8 @@ export class DashboardPreventaStageComponent implements OnInit {
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly operationalGateMessage = this.operationalGate.blockedMessage;
   protected readonly activeView = signal<PreventaDashboardView>('resumen');
+  protected readonly viewPickerOpen = signal(false);
+  protected readonly mobileFiltersOpen = signal(false);
   private readonly raw = signal<LeadsDiariosMetricasEquipo[]>([]);
   private readonly equipos = signal<Array<{ id: number; nombre: string; color?: string | null; activo: boolean }>>([]);
   private readonly equipoNombreById = signal<Map<number, string>>(new Map());
@@ -147,6 +151,68 @@ export class DashboardPreventaStageComponent implements OnInit {
     { label: 'Campañas', value: 'campanas' },
     { label: 'Afluencia', value: 'afluencia' }
   ];
+  protected readonly activeViewLabel = computed(
+    () => this.dashboardViewOptions.find((option) => option.value === this.activeView())?.label ?? 'Resumen'
+  );
+  protected readonly viewPickerDialogStyle = {
+    width: '100%',
+    maxWidth: '100%',
+    margin: '0'
+  };
+  protected readonly mobileFilterDialogStyle = {
+    width: '100%',
+    maxWidth: '100%',
+    margin: '0'
+  };
+  protected readonly mobileFilterCount = computed(() => {
+    let count = 1; // Período siempre está disponible.
+    if (this.showEquipoSelector()) {
+      count += 1;
+    }
+    if (this.activeView() === 'seguimiento') {
+      if (this.showProveedorSelector()) {
+        count += 1;
+      }
+    } else {
+      count += 1; // Modo.
+      if (this.activeView() !== 'afluencia') {
+        count += 1; // Tipificación.
+      }
+    }
+    return count;
+  });
+  protected readonly mobileFilterSummary = computed(() => {
+    const now = new Date();
+    const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const periodLabel = this.periodo() === 'semana'
+      ? 'Semanal'
+      : this.periodo() === 'mes'
+        ? 'Mensual'
+        : !this.dia() || this.dia() === todayIso
+          ? 'Hoy'
+          : 'Día seleccionado';
+
+    if (this.activeView() === 'seguimiento') {
+      const equipo = this.equipoOptions().find((option) => option.value === this.selectedEquipoIdVenta())?.label ?? 'Todos';
+      const proveedor = this.proveedorOptions().find((option) => option.value === this.selectedProveedorId())?.label;
+      return [equipo, proveedor, periodLabel].filter(Boolean).join(' · ');
+    }
+
+    const equipoOptions = this.activeView() === 'resumen' ? this.equipoOptionsResumen() : this.equipoOptions();
+    const equipoId = this.activeView() === 'campanas' && this.isAdminDashboard()
+      ? this.selectedEquipoIdCampanas()
+      : this.selectedEquipoId();
+    const equipo = equipoOptions.find((option) => option.value === equipoId)?.label ?? 'Equipo actual';
+    const parts = [equipo];
+    if (this.activeView() !== 'afluencia') {
+      parts.push(this.modo() === 'GESTIONADOS' ? 'Gestionados' : 'Ingresados');
+    }
+    if (this.activeView() !== 'afluencia') {
+      parts.push(this.campo() === 'PRIMERA' ? 'Primera' : this.campo() === 'MAYOR' ? 'Mayor' : 'Última');
+    }
+    parts.push(periodLabel);
+    return parts.join(' · ');
+  });
 
   /** Opciones del filtro de proveedor (Seguimiento). Se oculta si el catálogo no está disponible. */
   protected readonly proveedorOptions = computed(() => [
@@ -375,6 +441,31 @@ export class DashboardPreventaStageComponent implements OnInit {
     if (value) {
       this.activeView.set(value);
     }
+  }
+
+  protected openViewPicker(): void {
+    if (this.canDisplayOperationalData()) {
+      this.viewPickerOpen.set(true);
+    }
+  }
+
+  protected onViewPickerVisibilityChange(visible: boolean): void {
+    this.viewPickerOpen.set(visible);
+  }
+
+  protected selectViewFromPicker(value: PreventaDashboardView): void {
+    this.onViewChange(value);
+    this.viewPickerOpen.set(false);
+  }
+
+  protected openMobileFilters(): void {
+    if (this.canDisplayOperationalData()) {
+      this.mobileFiltersOpen.set(true);
+    }
+  }
+
+  protected onMobileFiltersVisibilityChange(visible: boolean): void {
+    this.mobileFiltersOpen.set(visible);
   }
 
   /** Equipo del Seguimiento (VENTA): filtra el reporte por el equipo del lead. No aplica a roles acotados. */

@@ -21,10 +21,11 @@ public class DataLoader implements CommandLineRunner {
     public void run(String... args) {
         log.info("Cargando politicas de modalidad iniciales...");
 
-        savePolitica(ModalidadContrato.PART_TIME, 24, 96, 30, 20);
-        savePolitica(ModalidadContrato.SEMI_FULL, 36, 144, 45, 25);
-        savePolitica(ModalidadContrato.FULL_TIME, 48, 192, 60, 30);
-        savePolitica(ModalidadContrato.SUPER_FULL, 54, 216, 60, 35);
+        // minutosOperativosDia: horas operativas netas/dia (sin almuerzo). Base del objetivo.
+        savePolitica(ModalidadContrato.PART_TIME, 24, 96, 30, 20, 240);
+        savePolitica(ModalidadContrato.SEMI_FULL, 36, 144, 45, 25, 360);
+        savePolitica(ModalidadContrato.FULL_TIME, 48, 192, 60, 30, 480);
+        savePolitica(ModalidadContrato.SUPER_FULL, 54, 216, 60, 35, 600);
 
         log.info("Politicas de modalidad iniciales cargadas");
     }
@@ -34,7 +35,8 @@ public class DataLoader implements CommandLineRunner {
             Integer horasObjetivoSemanal,
             Integer horasObjetivoMensual,
             Integer minutosAlmuerzo,
-            Integer minutosServicios
+            Integer minutosServicios,
+            Integer minutosOperativosDia
     ) {
         PoliticaModalidad politica = politicaModalidadRepository.findByModalidad(modalidad)
                 .orElseGet(PoliticaModalidad::new);
@@ -44,6 +46,7 @@ public class DataLoader implements CommandLineRunner {
         politica.setHorasObjetivoMensual(horasObjetivoMensual);
         politica.setMinutosAlmuerzo(minutosAlmuerzo);
         politica.setMinutosServicios(minutosServicios);
+        politica.setMinutosOperativosDia(minutosOperativosDia);
 
         politicaModalidadRepository.save(politica);
     }

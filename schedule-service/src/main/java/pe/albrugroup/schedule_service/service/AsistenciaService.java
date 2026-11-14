@@ -878,7 +878,7 @@ public class AsistenciaService implements IAsistencia {
             }
 
             diasLaborables++;
-            minutosObjetivo += jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha);
+            minutosObjetivo += jornadaEfectivaResolver.minutosObjetivoModalidad(idEmpleado, fecha);
 
             boolean sinRegistroCompleto = asistencia == null
                     || asistencia.getFechaHoraIngreso() == null
@@ -972,7 +972,7 @@ public class AsistenciaService implements IAsistencia {
                 .horaSalidaAsistencia(horaSalidaAsistencia)
                 .salidaForzada(asistencia != null && Boolean.TRUE.equals(asistencia.getSalidaForzada()))
                 .jornadaCerrada(asistencia != null && asistencia.getFechaHoraSalida() != null)
-                .minutosObjetivoDia(jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha))
+                .minutosObjetivoDia(jornadaEfectivaResolver.minutosObjetivoModalidad(idEmpleado, fecha))
                 .minutosProgramadoDia(asistencia != null && asistencia.getMinutosObjetivoDia() != null
                         ? asistencia.getMinutosObjetivoDia()
                         : programacion.minutosObjetivo())

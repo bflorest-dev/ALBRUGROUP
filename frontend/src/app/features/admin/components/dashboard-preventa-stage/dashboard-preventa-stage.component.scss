@@ -7,6 +7,18 @@
   overflow-x: clip;
 }
 
+.preventa-mobile-title {
+  display: none;
+}
+
+.metrics-view-mobile {
+  display: none;
+}
+
+.mobile-filter-dock {
+  display: none;
+}
+
 // Fila propia de controles bajo el subtítulo, pegada a la derecha (Regla 4 del sistema de diseño).
 .metrics-controls {
   display: flex;
@@ -74,6 +86,504 @@
 @media (max-width: 700px) {
   .admin-page {
     gap: 1rem;
+  }
+
+  .preventa-page-header {
+    display: none;
+  }
+
+  .preventa-mobile-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 0;
+    position: sticky;
+    top: 4rem;
+    z-index: 80;
+    margin: -0.75rem -0.75rem 0;
+    padding: 0.78rem 0.9rem 0.7rem;
+    border-bottom: 1px solid var(--app-border-soft);
+    background: color-mix(in srgb, var(--app-bg) 96%, #ffffff 4%);
+    animation: preventa-title-in 360ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+  }
+
+  .preventa-mobile-title__text {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: var(--role-primary);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .preventa-mobile-title__text {
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+
+  .preventa-mobile-title__info {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--role-accent);
+    cursor: help;
+    opacity: 0.78;
+    position: absolute;
+    right: 0.9rem;
+    transition: background-color 150ms ease, opacity 150ms ease;
+  }
+
+  .preventa-mobile-title__info:hover,
+  .preventa-mobile-title__info:focus-visible {
+    background: color-mix(in srgb, var(--role-accent) 12%, transparent);
+    opacity: 1;
+  }
+
+  .preventa-mobile-title__info i {
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+
+  .metrics-view-section-header {
+    display: none;
+  }
+
+  .metrics-view-toggle--desktop {
+    display: none;
+  }
+
+  // Los p-dialog invisibles siguen siendo hijos del grid aunque monten su overlay en body.
+  // Se vuelven transparentes para que no agreguen filas de 0px ni gaps fantasma entre la vista y el panel.
+  .admin-page > p-dialog {
+    display: contents;
+  }
+
+  :host ::ng-deep .metrics-view-card.p-card {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  :host ::ng-deep .metrics-view-card .p-card-body {
+    padding: 0;
+  }
+
+  :host ::ng-deep .metrics-view-card .p-card-content {
+    padding: 0;
+  }
+
+  .metrics-view-mobile {
+    display: block;
+    margin-top: 0;
+  }
+
+  .metrics-view-mobile__trigger {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    min-height: 3.5rem;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--role-accent) 42%, var(--app-border-soft));
+    border-radius: 0.85rem;
+    background: color-mix(in srgb, var(--role-accent) 12%, var(--app-surface));
+    color: var(--role-primary);
+    cursor: pointer;
+    text-align: left;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+  }
+
+  .metrics-view-mobile__trigger:hover,
+  .metrics-view-mobile__trigger:focus-visible {
+    border-color: color-mix(in srgb, var(--role-accent) 48%, var(--app-border-soft));
+    background: var(--app-surface);
+  }
+
+  .metrics-view-mobile__trigger:active {
+    transform: scale(0.985);
+  }
+
+  .metrics-view-mobile__trigger:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .metrics-view-mobile__meta {
+    color: var(--role-accent);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .metrics-view-mobile__value {
+    color: var(--role-primary);
+    font-size: 0.95rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .metrics-view-mobile__trigger > i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--role-accent) 12%, transparent);
+    color: var(--role-accent);
+    font-size: 0.82rem;
+  }
+
+  :host ::ng-deep .metrics-controls {
+    display: none;
+  }
+
+  .admin-page {
+    padding-bottom: 5rem;
+  }
+
+  .mobile-filter-dock {
+    display: block;
+    position: fixed;
+    right: 0.75rem;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    left: 0.75rem;
+    z-index: 90;
+    animation: mobile-filter-dock-in 420ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
+  }
+
+  .mobile-filter-dock__trigger {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    min-height: 3.35rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid color-mix(in srgb, var(--role-accent) 42%, var(--app-border-soft));
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--role-primary) 94%, #000000 6%);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.2);
+    color: #ffffff;
+    cursor: pointer;
+    text-align: left;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+  }
+
+  .mobile-filter-dock__trigger:active {
+    transform: translateY(0.1rem) scale(0.99);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+  }
+
+  .mobile-filter-dock__trigger:focus-visible {
+    outline: 2px solid var(--role-accent);
+    outline-offset: 3px;
+  }
+
+  .mobile-filter-dock__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 0.7rem;
+    background: color-mix(in srgb, var(--role-accent) 82%, #ffffff 18%);
+    color: #ffffff;
+  }
+
+  .mobile-filter-dock__copy {
+    display: grid;
+    min-width: 0;
+    gap: 0.08rem;
+  }
+
+  .mobile-filter-dock__copy strong {
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .mobile-filter-dock__copy small {
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.68rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-filter-dock__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .mobile-filter-dock__chevron {
+    color: var(--role-accent-2);
+    font-size: 0.82rem;
+  }
+
+  ::ng-deep .preventa-filter-dialog.p-dialog {
+    border-radius: 1rem 1rem 0 0;
+    overflow: hidden;
+  }
+
+  ::ng-deep .preventa-filter-dialog .p-dialog-header {
+    padding: 1rem 1rem 0.85rem;
+    border-bottom: 1px solid var(--app-border-soft);
+    background: var(--app-surface);
+  }
+
+  ::ng-deep .preventa-filter-dialog .p-dialog-close-button {
+    display: none;
+  }
+
+  ::ng-deep .preventa-filter-dialog .p-dialog-content {
+    max-height: min(72vh, 38rem);
+    overflow-y: auto;
+    padding: 0.75rem 0.9rem max(1rem, env(safe-area-inset-bottom));
+    background: var(--app-surface);
+  }
+
+  .preventa-filter-dialog__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .preventa-filter-dialog__header > div {
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  .preventa-filter-dialog__eyebrow {
+    color: var(--role-accent);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .preventa-filter-dialog__header strong {
+    color: var(--role-primary);
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .preventa-filter-dialog__count {
+    flex: 0 0 auto;
+    color: var(--app-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding-top: 0;
+  }
+
+  .preventa-filter-dialog__body {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .mobile-filter-field {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .mobile-filter-field__label {
+    color: var(--app-text-muted);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  ::ng-deep .preventa-filter-dialog .p-selectbutton {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 0.7rem;
+    background: var(--app-surface-soft);
+  }
+
+  ::ng-deep .preventa-filter-dialog .p-selectbutton > .p-togglebutton {
+    flex: 1 1 0 !important;
+    min-width: 0;
+    width: 0;
+  }
+
+  ::ng-deep .preventa-filter-dialog app-period-selector,
+  ::ng-deep .preventa-filter-dialog app-period-selector .period {
+    display: block;
+    width: 100%;
+  }
+
+  ::ng-deep .preventa-filter-dialog app-period-selector .p-selectbutton {
+    display: flex;
+    width: 100%;
+  }
+
+  ::ng-deep .preventa-filter-dialog app-period-selector .p-togglebutton {
+    flex: 1 1 0 !important;
+    min-width: 0;
+    width: 0;
+  }
+
+  ::ng-deep .preventa-filter-dialog .p-togglebutton {
+    min-height: 2.8rem;
+    padding-inline: 0.8rem;
+    font-size: 0.86rem;
+    white-space: nowrap;
+  }
+
+  :host ::ng-deep .preventa-view-dialog.p-dialog {
+    border-radius: 1rem 1rem 0 0;
+    overflow: hidden;
+  }
+
+  :host ::ng-deep .preventa-view-dialog .p-dialog-header {
+    padding: 1rem 1rem 0.85rem;
+    border-bottom: 1px solid var(--app-border-soft);
+    background: var(--app-surface);
+  }
+
+  :host ::ng-deep .preventa-view-dialog .p-dialog-content {
+    padding: 0.3rem 0.9rem max(0.9rem, env(safe-area-inset-bottom));
+    background: var(--app-surface);
+  }
+
+  .preventa-view-dialog__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .preventa-view-dialog__header > div {
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  .preventa-view-dialog__eyebrow {
+    color: var(--role-accent);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .preventa-view-dialog__header strong {
+    color: var(--role-primary);
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .preventa-view-dialog__count {
+    flex: 0 0 auto;
+    color: var(--app-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding-top: 0.1rem;
+  }
+
+  .preventa-view-dialog__options {
+    display: grid;
+    gap: 0.35rem;
+    padding-top: 0.45rem;
+  }
+
+  .preventa-view-dialog__option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 2.9rem;
+    padding: 0.65rem 0.7rem;
+    border: 1px solid transparent;
+    border-radius: 0.65rem;
+    background: transparent;
+    color: var(--role-primary);
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 650;
+    text-align: left;
+    transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+  }
+
+  .preventa-view-dialog__option:hover,
+  .preventa-view-dialog__option:focus-visible {
+    border-color: var(--app-border-soft);
+    background: var(--app-surface-soft);
+  }
+
+  .preventa-view-dialog__option:active {
+    transform: translateX(0.12rem);
+  }
+
+  .preventa-view-dialog__option.is-active {
+    border-color: color-mix(in srgb, var(--role-accent) 32%, var(--app-border-soft));
+    background: color-mix(in srgb, var(--role-accent) 10%, var(--app-surface));
+    color: var(--role-accent);
+  }
+
+  .preventa-view-dialog__option i {
+    color: var(--role-accent);
+    font-size: 0.82rem;
+  }
+
+  @keyframes preventa-title-in {
+    from {
+      opacity: 0;
+      transform: translateY(-0.4rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes mobile-filter-dock-in {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .preventa-mobile-title,
+    .mobile-filter-dock {
+      animation: none;
+    }
   }
 
   :host ::ng-deep .metrics-view-toggle__option.p-togglebutton {

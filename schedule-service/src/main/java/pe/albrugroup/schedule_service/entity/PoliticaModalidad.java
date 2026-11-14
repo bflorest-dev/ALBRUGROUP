@@ -23,4 +23,8 @@ public class PoliticaModalidad {
     private Integer minutosAlmuerzo;
     @Column(nullable = false)
     private Integer minutosServicios;
+    /** Horas operativas netas que la modalidad exige por dia laborable (sin almuerzo), en minutos.
+     *  PART=240, SEMI=360, FULL=480, SUPER=600. Base del calculo de Horas Objetivo (concepto 1). */
+    @Column(nullable = false)
+    private Integer minutosOperativosDia;
 }

@@ -1,17 +1,32 @@
 <section class="admin-page">
   <app-page-header
+    class="preventa-page-header"
     eyebrow="Dashboard"
     title="Preventa"
     description="Métricas del día por equipo de la etapa de preventa."
   />
 
+  <header class="preventa-mobile-title">
+    <h1 class="preventa-mobile-title__text">DASHBOARD PREVENTA</h1>
+    <button
+      type="button"
+      class="preventa-mobile-title__info"
+      pTooltip="Métricas del día por equipo de la etapa de preventa."
+      tooltipPosition="top"
+      aria-label="Métricas del día por equipo de la etapa de preventa."
+    >
+      <i class="pi pi-info-circle" aria-hidden="true"></i>
+    </button>
+  </header>
+
   <p-card styleClass="metrics-view-card">
     <app-section-header
+      class="metrics-view-section-header"
       title="Vista de preventa"
       description="Elige el bloque de métricas que quieres revisar."
     />
 
-    <div class="metrics-view-toggle">
+    <div class="metrics-view-toggle metrics-view-toggle--desktop">
       <p-selectButton
         class="metrics-view-toggle__control"
         [options]="dashboardViewOptions"
@@ -26,7 +41,223 @@
         styleClass="metrics-view-toggle__option"
       />
     </div>
+
+    <div class="metrics-view-mobile">
+      <button
+        type="button"
+        class="metrics-view-mobile__trigger"
+        [disabled]="!canDisplayOperationalData()"
+        [attr.aria-expanded]="viewPickerOpen()"
+        aria-haspopup="dialog"
+        (click)="openViewPicker()"
+      >
+        <span class="metrics-view-mobile__meta">Vista activa</span>
+        <span class="metrics-view-mobile__value">{{ activeViewLabel() }}</span>
+        <i class="pi pi-chevron-down" aria-hidden="true"></i>
+      </button>
+    </div>
   </p-card>
+
+  <p-dialog
+    [visible]="viewPickerOpen()"
+    (visibleChange)="onViewPickerVisibilityChange($event)"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [dismissableMask]="true"
+    [closeOnEscape]="true"
+    [style]="viewPickerDialogStyle"
+    position="bottom"
+    appendTo="body"
+    styleClass="preventa-view-dialog"
+  >
+    <ng-template pTemplate="header">
+      <div class="preventa-view-dialog__header">
+        <div>
+          <span class="preventa-view-dialog__eyebrow">Cambiar vista</span>
+          <strong>¿Qué quieres revisar?</strong>
+        </div>
+        <span class="preventa-view-dialog__count">{{ dashboardViewOptions.length }} opciones</span>
+      </div>
+    </ng-template>
+
+    <div class="preventa-view-dialog__options" role="list" aria-label="Vistas del dashboard">
+      @for (option of dashboardViewOptions; track option.value) {
+        <button
+          type="button"
+          class="preventa-view-dialog__option"
+          [class.is-active]="activeView() === option.value"
+          [attr.aria-pressed]="activeView() === option.value"
+          (click)="selectViewFromPicker(option.value)"
+        >
+          <span>{{ option.label }}</span>
+          @if (activeView() === option.value) {
+            <i class="pi pi-check" aria-hidden="true"></i>
+          } @else {
+            <i class="pi pi-arrow-right" aria-hidden="true"></i>
+          }
+        </button>
+      }
+    </div>
+  </p-dialog>
+
+  @if (canDisplayOperationalData()) {
+    <div class="mobile-filter-dock">
+      <button
+        type="button"
+        class="mobile-filter-dock__trigger"
+        [attr.aria-expanded]="mobileFiltersOpen()"
+        aria-haspopup="dialog"
+        (click)="openMobileFilters()"
+      >
+        <span class="mobile-filter-dock__icon" aria-hidden="true">
+          <i class="pi pi-sliders-h"></i>
+        </span>
+        <span class="mobile-filter-dock__copy">
+          <strong>Filtros</strong>
+          <small>{{ mobileFilterSummary() }}</small>
+        </span>
+        <span class="mobile-filter-dock__count">{{ mobileFilterCount() }}</span>
+        <i class="pi pi-chevron-up mobile-filter-dock__chevron" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <p-dialog
+      [visible]="mobileFiltersOpen()"
+      (visibleChange)="onMobileFiltersVisibilityChange($event)"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      [dismissableMask]="true"
+      [closeOnEscape]="true"
+      [style]="mobileFilterDialogStyle"
+      position="bottom"
+      appendTo="body"
+      styleClass="preventa-filter-dialog"
+    >
+      <ng-template pTemplate="header">
+        <div class="preventa-filter-dialog__header">
+          <div>
+            <span class="preventa-filter-dialog__eyebrow">Ajustar métricas</span>
+            <strong>Filtros de {{ activeViewLabel() }}</strong>
+          </div>
+          <span class="preventa-filter-dialog__count">{{ mobileFilterCount() }} activos</span>
+        </div>
+      </ng-template>
+
+      <div class="preventa-filter-dialog__body">
+        @if (showEquipoSelector()) {
+          <div class="mobile-filter-field">
+            <span class="mobile-filter-field__label">Equipo</span>
+            @switch (activeView()) {
+              @case ('resumen') {
+                <p-selectButton
+                  [options]="equipoOptionsResumen()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [ngModel]="selectedEquipoId()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (onChange)="onEquipoChange($event.value)"
+                />
+              }
+              @case ('seguimiento') {
+                <p-selectButton
+                  [options]="equipoOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [ngModel]="selectedEquipoIdVenta()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (onChange)="onEquipoVentaChange($event.value)"
+                />
+              }
+              @case ('campanas') {
+                <p-selectButton
+                  [options]="equipoOptionsCampanas()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="isAdminDashboard()"
+                  [ngModel]="isAdminDashboard() ? selectedEquipoIdCampanas() : selectedEquipoId()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (onChange)="onCampanasEquipoChange($event.value)"
+                />
+              }
+              @default {
+                <p-selectButton
+                  [options]="equipoOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [ngModel]="selectedEquipoId()"
+                  [ngModelOptions]="{ standalone: true }"
+                  (onChange)="onEquipoChange($event.value)"
+                />
+              }
+            }
+          </div>
+        }
+
+        @if (activeView() === 'seguimiento' && showProveedorSelector()) {
+          <div class="mobile-filter-field">
+            <span class="mobile-filter-field__label">Proveedor</span>
+            <p-selectButton
+              [options]="proveedorOptions()"
+              optionLabel="label"
+              optionValue="value"
+              [allowEmpty]="false"
+              [ngModel]="selectedProveedorId()"
+              [ngModelOptions]="{ standalone: true }"
+              (onChange)="onProveedorChange($event.value)"
+            />
+          </div>
+        }
+
+        @if (activeView() !== 'seguimiento') {
+          <div class="mobile-filter-field">
+            <span class="mobile-filter-field__label">Modo</span>
+            <p-selectButton
+              [options]="modoOptions"
+              optionLabel="label"
+              optionValue="value"
+              [allowEmpty]="false"
+              [ngModel]="modo()"
+              [ngModelOptions]="{ standalone: true }"
+              (onChange)="onModoChange($event.value)"
+            />
+          </div>
+        }
+
+        @if (activeView() !== 'seguimiento' && activeView() !== 'afluencia') {
+          <div class="mobile-filter-field">
+            <span class="mobile-filter-field__label">Tipificación</span>
+            <p-selectButton
+              [options]="campoOptions"
+              optionLabel="label"
+              optionValue="value"
+              [allowEmpty]="false"
+              [ngModel]="campo()"
+              [ngModelOptions]="{ standalone: true }"
+              (onChange)="onCampoChange($event.value)"
+            />
+          </div>
+        }
+
+        <div class="mobile-filter-field">
+          <span class="mobile-filter-field__label">Período</span>
+          <app-period-selector
+            [periodo]="periodo()"
+            [dia]="dia()"
+            [hasta]="hasta()"
+            [enforceSessionMinDate]="true"
+            [touchFriendly]="true"
+            (periodoChange)="onPeriodoChange($event)"
+            (rangoChange)="onRangoChange($event)"
+          />
+        </div>
+      </div>
+    </p-dialog>
+  }
 
   @if (!canDisplayOperationalData()) {
     <p-message
