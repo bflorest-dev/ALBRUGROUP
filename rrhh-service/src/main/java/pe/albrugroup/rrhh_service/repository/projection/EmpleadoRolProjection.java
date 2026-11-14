@@ -17,4 +17,5 @@ public interface EmpleadoRolProjection {
     PuestoTrabajo getPuestoTrabajo();
     EstadoOperativo getEstadoOperativo();
     String getEmpresaContratista();
+    Long getIdEmpresaContratista();
 }

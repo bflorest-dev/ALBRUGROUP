@@ -23,6 +23,9 @@ export const PROVIDER_SCOPED_ROLES: Readonly<Record<string, ProviderScope>> = {
   SUPERVISOR_GTR: 'PREVENTA'
 };
 
+/** Roles cuyo scope es por empresa contratista (no por equipo ni por proveedor). */
+export const EMPRESA_SCOPED_ROLES: readonly string[] = ['RRHH'];
+
 /** Roles operativos que pueden pertenecer a más de un equipo a la vez. */
 export const MULTI_TEAM_ROLES: readonly string[] = ['ASESOR_GTR', 'ASESOR_VENTAS'];
 

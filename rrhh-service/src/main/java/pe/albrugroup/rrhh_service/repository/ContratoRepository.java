@@ -84,7 +84,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo,
-                ec.nombre AS empresaContratista
+                ec.nombre AS empresaContratista,
+                ec.id AS idEmpresaContratista
             FROM Contrato c
             JOIN c.empleado e
             LEFT JOIN e.empresaContratista ec
@@ -109,7 +110,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo,
-                ec.nombre AS empresaContratista
+                ec.nombre AS empresaContratista,
+                ec.id AS idEmpresaContratista
             FROM Contrato c
             JOIN c.empleado e
             LEFT JOIN e.empresaContratista ec
@@ -135,7 +137,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo,
-                ec.nombre AS empresaContratista
+                ec.nombre AS empresaContratista,
+                ec.id AS idEmpresaContratista
             FROM Contrato c
             JOIN c.empleado e
             LEFT JOIN e.empresaContratista ec
@@ -158,7 +161,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo,
-                ec.nombre AS empresaContratista
+                ec.nombre AS empresaContratista,
+                ec.id AS idEmpresaContratista
             FROM Contrato c
             JOIN c.empleado e
             LEFT JOIN e.empresaContratista ec
@@ -183,7 +187,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo,
-                ec.nombre AS empresaContratista
+                ec.nombre AS empresaContratista,
+                ec.id AS idEmpresaContratista
             FROM Contrato c
             JOIN c.empleado e
             LEFT JOIN e.empresaContratista ec
@@ -205,7 +210,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo,
-                ec.nombre AS empresaContratista
+                ec.nombre AS empresaContratista,
+                ec.id AS idEmpresaContratista
             FROM Contrato c
             JOIN c.empleado e
             LEFT JOIN e.empresaContratista ec
@@ -230,7 +236,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo,
-                ec.nombre AS empresaContratista
+                ec.nombre AS empresaContratista,
+                ec.id AS idEmpresaContratista
             FROM Contrato c
             JOIN c.empleado e
             LEFT JOIN e.empresaContratista ec
@@ -255,7 +262,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
                 c.categoriaPersonal AS categoriaPersonal,
                 c.puestoTrabajo AS puestoTrabajo,
                 e.estadoOperativo AS estadoOperativo,
-                ec.nombre AS empresaContratista
+                ec.nombre AS empresaContratista,
+                ec.id AS idEmpresaContratista
             FROM Contrato c
             JOIN c.empleado e
             LEFT JOIN e.empresaContratista ec

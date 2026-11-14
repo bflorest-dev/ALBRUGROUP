@@ -4,11 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.EmpresaContratista;
+import pe.albrugroup.rrhh_service.entity.UsuarioEmpresaContratista;
+import pe.albrugroup.rrhh_service.entity.request.empresaContratista.AsignarEmpresaContratistaRequest;
 import pe.albrugroup.rrhh_service.entity.request.empresaContratista.RegistrarEmpresaContratistaRequest;
 import pe.albrugroup.rrhh_service.entity.response.EmpresaContratistaResponse;
 import pe.albrugroup.rrhh_service.exception.ConflictException;
 import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.repository.EmpresaContratistaRepository;
+import pe.albrugroup.rrhh_service.repository.UsuarioEmpresaContratistaRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpresaContratistaMapper;
 import pe.albrugroup.rrhh_service.usecase.IEmpresaContratista;
 
@@ -20,6 +23,8 @@ import java.util.List;
 public class EmpresaContratistaService implements IEmpresaContratista {
 
     private final EmpresaContratistaRepository repository;
+    private final UsuarioEmpresaContratistaRepository asignacionRepository;
+    private final EmpresaContratistaScopeService scopeService;
     private final EmpresaContratistaMapper mapper;
 
     @Override
@@ -52,6 +57,39 @@ public class EmpresaContratistaService implements IEmpresaContratista {
 
         empresaContratista.setActivo(false);
         return mapper.toResponse(empresaContratista);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmpresaContratistaResponse> misEmpresasContratistas(Long empleadoId, List<String> roles) {
+        return scopeService.misEmpresas(empleadoId, roles).stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public void asignarEmpresasContratistas(AsignarEmpresaContratistaRequest request) {
+        Long idEmpleado = request.getIdEmpleado();
+        for (Long idEmpresa : request.getIdEmpresasContratistas()) {
+            if (asignacionRepository.findByIdEmpleadoAndEmpresaContratistaId(idEmpleado, idEmpresa).isPresent()) {
+                continue;
+            }
+            EmpresaContratista empresa = repository.findById(idEmpresa)
+                    .orElseThrow(() -> new NotFoundException(EmpresaContratista.class, idEmpresa));
+            asignacionRepository.save(UsuarioEmpresaContratista.builder()
+                    .idEmpleado(idEmpleado)
+                    .empresaContratista(empresa)
+                    .activo(true)
+                    .build());
+        }
+    }
+
+    @Override
+    public void desasignarEmpresaContratista(Long idEmpleado, Long idEmpresaContratista) {
+        UsuarioEmpresaContratista asignacion = asignacionRepository
+                .findByIdEmpleadoAndEmpresaContratistaId(idEmpleado, idEmpresaContratista)
+                .orElseThrow(() -> new NotFoundException(UsuarioEmpresaContratista.class, idEmpresaContratista));
+        asignacionRepository.delete(asignacion);
     }
 }
 

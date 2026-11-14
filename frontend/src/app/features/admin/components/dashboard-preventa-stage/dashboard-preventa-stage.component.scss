@@ -86,6 +86,11 @@
 @media (max-width: 700px) {
   .admin-page {
     gap: 1rem;
+    --mobile-control-surface: var(--app-surface);
+    --mobile-control-surface-soft: color-mix(in srgb, var(--role-accent) 8%, var(--app-surface));
+    --mobile-control-border: color-mix(in srgb, var(--role-accent) 28%, var(--app-border-soft));
+    --mobile-control-radius: 0.85rem;
+    --mobile-control-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
   }
 
   .preventa-page-header {
@@ -198,20 +203,21 @@
     width: 100%;
     min-height: 3.5rem;
     padding: 0.7rem 0.85rem;
-    border: 1px solid color-mix(in srgb, var(--role-accent) 42%, var(--app-border-soft));
-    border-radius: 0.85rem;
-    background: color-mix(in srgb, var(--role-accent) 12%, var(--app-surface));
+    border: 1px solid var(--mobile-control-border);
+    border-radius: var(--mobile-control-radius);
+    background: var(--mobile-control-surface);
     color: var(--role-primary);
     cursor: pointer;
     text-align: left;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
-    transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+    box-shadow: var(--mobile-control-shadow);
+    transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
   }
 
   .metrics-view-mobile__trigger:hover,
   .metrics-view-mobile__trigger:focus-visible {
-    border-color: color-mix(in srgb, var(--role-accent) 48%, var(--app-border-soft));
-    background: var(--app-surface);
+    border-color: var(--role-accent);
+    background: var(--mobile-control-surface-soft);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.13);
   }
 
   .metrics-view-mobile__trigger:active {
@@ -245,7 +251,8 @@
     width: 1.85rem;
     height: 1.85rem;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--role-accent) 12%, transparent);
+    border: 1px solid var(--mobile-control-border);
+    background: var(--mobile-control-surface-soft);
     color: var(--role-accent);
     font-size: 0.82rem;
   }
@@ -255,16 +262,20 @@
   }
 
   .admin-page {
-    padding-bottom: 5rem;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
   }
 
   .mobile-filter-dock {
     display: block;
     position: fixed;
-    right: 0.75rem;
-    bottom: max(0.75rem, env(safe-area-inset-bottom));
-    left: 0.75rem;
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 90;
+    padding: 0.35rem max(0.75rem, env(safe-area-inset-right)) max(0.35rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+    border-top: 1px solid var(--mobile-control-border);
+    background: var(--mobile-control-surface);
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.1);
     animation: mobile-filter-dock-in 420ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
   }
 
@@ -275,25 +286,25 @@
     gap: 0.65rem;
     width: 100%;
     min-height: 3.35rem;
-    padding: 0.55rem 0.7rem;
-    border: 1px solid color-mix(in srgb, var(--role-accent) 42%, var(--app-border-soft));
-    border-radius: 1rem;
-    background: color-mix(in srgb, var(--role-primary) 94%, #000000 6%);
-    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.2);
-    color: #ffffff;
+    padding: 0.35rem 0.25rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--role-primary);
     cursor: pointer;
     text-align: left;
-    transition: transform 160ms ease, box-shadow 160ms ease;
+    transition: transform 160ms ease, opacity 160ms ease;
   }
 
   .mobile-filter-dock__trigger:active {
-    transform: translateY(0.1rem) scale(0.99);
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+    transform: translateY(0.1rem);
+    opacity: 0.82;
   }
 
   .mobile-filter-dock__trigger:focus-visible {
     outline: 2px solid var(--role-accent);
-    outline-offset: 3px;
+    outline-offset: -2px;
   }
 
   .mobile-filter-dock__icon {
@@ -303,7 +314,7 @@
     width: 2.1rem;
     height: 2.1rem;
     border-radius: 0.7rem;
-    background: color-mix(in srgb, var(--role-accent) 82%, #ffffff 18%);
+    background: var(--role-accent);
     color: #ffffff;
   }
 
@@ -314,13 +325,14 @@
   }
 
   .mobile-filter-dock__copy strong {
+    color: var(--role-primary);
     font-size: 0.85rem;
     font-weight: 800;
   }
 
   .mobile-filter-dock__copy small {
     overflow: hidden;
-    color: rgba(255, 255, 255, 0.72);
+    color: var(--app-text-muted);
     font-size: 0.68rem;
     line-height: 1.25;
     text-overflow: ellipsis;
@@ -335,37 +347,58 @@
     height: 1.5rem;
     padding: 0 0.35rem;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.14);
-    color: #ffffff;
+    border: 1px solid var(--app-border-soft);
+    background: var(--mobile-control-surface-soft);
+    color: var(--role-primary);
     font-size: 0.72rem;
     font-weight: 800;
   }
 
   .mobile-filter-dock__chevron {
-    color: var(--role-accent-2);
+    color: var(--role-accent);
     font-size: 0.82rem;
   }
 
-  ::ng-deep .preventa-filter-dialog.p-dialog {
+  ::ng-deep .preventa-filter-dialog.p-dialog,
+  ::ng-deep .preventa-view-dialog.p-dialog {
+    --mobile-control-surface: var(--app-surface);
+    --mobile-control-surface-soft: color-mix(in srgb, var(--role-accent) 8%, var(--app-surface));
+    --mobile-control-border: color-mix(in srgb, var(--role-accent) 28%, var(--app-border-soft));
     border-radius: 1rem 1rem 0 0;
     overflow: hidden;
+    background: var(--mobile-control-surface);
+    box-shadow: 0 -8px 28px rgba(15, 23, 42, 0.12);
   }
 
-  ::ng-deep .preventa-filter-dialog .p-dialog-header {
+  ::ng-deep .preventa-filter-dialog.p-dialog::before,
+  ::ng-deep .preventa-view-dialog.p-dialog::before {
+    align-self: center;
+    width: 2.4rem;
+    height: 0.22rem;
+    margin-top: 0.45rem;
+    border-radius: 999px;
+    background: var(--app-border-soft);
+    content: '';
+  }
+
+  ::ng-deep .preventa-filter-dialog .p-dialog-header,
+  ::ng-deep .preventa-view-dialog .p-dialog-header {
     padding: 1rem 1rem 0.85rem;
     border-bottom: 1px solid var(--app-border-soft);
-    background: var(--app-surface);
+    background: var(--mobile-control-surface);
   }
 
-  ::ng-deep .preventa-filter-dialog .p-dialog-close-button {
+  ::ng-deep .preventa-filter-dialog .p-dialog-close-button,
+  ::ng-deep .preventa-view-dialog .p-dialog-close-button {
     display: none;
   }
 
-  ::ng-deep .preventa-filter-dialog .p-dialog-content {
+  ::ng-deep .preventa-filter-dialog .p-dialog-content,
+  ::ng-deep .preventa-view-dialog .p-dialog-content {
     max-height: min(72vh, 38rem);
     overflow-y: auto;
     padding: 0.75rem 0.9rem max(1rem, env(safe-area-inset-bottom));
-    background: var(--app-surface);
+    background: var(--mobile-control-surface);
   }
 
   .preventa-filter-dialog__header {
@@ -403,6 +436,31 @@
     padding-top: 0;
   }
 
+  .preventa-filter-dialog__header,
+  .preventa-view-dialog__header {
+    align-items: flex-start;
+  }
+
+  .preventa-filter-dialog__eyebrow,
+  .preventa-view-dialog__eyebrow {
+    color: var(--role-accent);
+  }
+
+  .preventa-filter-dialog__header strong,
+  .preventa-view-dialog__header strong {
+    color: var(--role-primary);
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .preventa-filter-dialog__count,
+  .preventa-view-dialog__count {
+    padding-top: 0;
+    color: var(--app-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
   .preventa-filter-dialog__body {
     display: grid;
     gap: 1rem;
@@ -414,7 +472,7 @@
   }
 
   .mobile-filter-field__label {
-    color: var(--app-text-muted);
+    color: var(--role-accent);
     font-size: 0.75rem;
     font-weight: 800;
     letter-spacing: 0.06em;
@@ -426,7 +484,10 @@
     width: 100%;
     overflow-x: auto;
     border-radius: 0.7rem;
+    border: 1px solid var(--app-border-soft);
     background: var(--app-surface-soft);
+    padding: 0.2rem;
+    gap: 0.15rem;
   }
 
   ::ng-deep .preventa-filter-dialog .p-selectbutton > .p-togglebutton {
@@ -459,20 +520,18 @@
     white-space: nowrap;
   }
 
-  :host ::ng-deep .preventa-view-dialog.p-dialog {
-    border-radius: 1rem 1rem 0 0;
-    overflow: hidden;
+  ::ng-deep .preventa-filter-dialog .p-selectbutton > .p-togglebutton {
+    border: 1px solid transparent;
+    border-radius: 0.6rem;
+    background: transparent;
+    color: var(--app-text-muted);
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
   }
 
-  :host ::ng-deep .preventa-view-dialog .p-dialog-header {
-    padding: 1rem 1rem 0.85rem;
-    border-bottom: 1px solid var(--app-border-soft);
-    background: var(--app-surface);
-  }
-
-  :host ::ng-deep .preventa-view-dialog .p-dialog-content {
-    padding: 0.3rem 0.9rem max(0.9rem, env(safe-area-inset-bottom));
-    background: var(--app-surface);
+  ::ng-deep .preventa-filter-dialog .p-selectbutton > .p-togglebutton.p-togglebutton-checked {
+    border-color: var(--mobile-control-border);
+    background: var(--mobile-control-surface-soft);
+    color: var(--role-accent);
   }
 
   .preventa-view-dialog__header {
@@ -524,7 +583,7 @@
     min-height: 2.9rem;
     padding: 0.65rem 0.7rem;
     border: 1px solid transparent;
-    border-radius: 0.65rem;
+    border-radius: 0.6rem;
     background: transparent;
     color: var(--role-primary);
     font: inherit;
@@ -545,8 +604,8 @@
   }
 
   .preventa-view-dialog__option.is-active {
-    border-color: color-mix(in srgb, var(--role-accent) 32%, var(--app-border-soft));
-    background: color-mix(in srgb, var(--role-accent) 10%, var(--app-surface));
+    border-color: var(--mobile-control-border);
+    background: var(--mobile-control-surface-soft);
     color: var(--role-accent);
   }
 

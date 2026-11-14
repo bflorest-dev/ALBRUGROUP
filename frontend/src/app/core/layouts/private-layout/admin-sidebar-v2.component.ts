@@ -20,7 +20,7 @@ import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
 import { AttendanceActionId, AttendanceActionOption } from '../../../shared/models/schedule/estado-asistencia';
 import { TramoDiaVm } from '../../../shared/models/schedule/detalle-dia-response';
-import { SidebarDomainDefinition, SidebarItem, SidebarProviderOption, SidebarRoleModeOption, SidebarTeamOption } from './sidebar-item.model';
+import { SidebarDomainDefinition, SidebarEmpresaOption, SidebarItem, SidebarProviderOption, SidebarRoleModeOption, SidebarTeamOption } from './sidebar-item.model';
 import { SidebarAttendancePickerComponent } from './sidebar-attendance-picker.component';
 
 type SidebarDomain = SidebarDomainDefinition & {
@@ -76,6 +76,8 @@ export class AdminSidebarV2Component implements OnDestroy {
   readonly activeProviderId = input<number | null>(null);
   readonly teams = input<SidebarTeamOption[]>([]);
   readonly activeTeamId = input<number | null>(null);
+  readonly empresas = input<SidebarEmpresaOption[]>([]);
+  readonly activeEmpresaId = input<number | null>(null);
   readonly roleModes = input<SidebarRoleModeOption[]>([]);
   readonly activeRole = input<string | null>(null);
   readonly overlayMode = input(false);
@@ -96,6 +98,7 @@ export class AdminSidebarV2Component implements OnDestroy {
   readonly deleteLeadsToggled = output<void>();
   readonly providerSelected = output<number>();
   readonly teamSelected = output<number>();
+  readonly empresaSelected = output<number>();
   readonly roleModeSelected = output<string>();
   readonly attendanceActionSelected = output<AttendanceActionId>();
   readonly attendanceRetry = output<void>();
@@ -376,6 +379,12 @@ export class AdminSidebarV2Component implements OnDestroy {
 
   protected selectTeam(teamId: number): void {
     this.teamSelected.emit(teamId);
+    this.closePanel();
+    this.navigationDismissed.emit();
+  }
+
+  protected selectEmpresa(empresaId: number): void {
+    this.empresaSelected.emit(empresaId);
     this.closePanel();
     this.navigationDismissed.emit();
   }

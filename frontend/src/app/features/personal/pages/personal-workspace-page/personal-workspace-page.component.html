@@ -85,7 +85,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     </div>
   }
 
-  @if (facade.companyOptions().length) {
+  @if (facade.isAdmin() && facade.companyOptions().length) {
     <div class="company-filter-bar" role="group" aria-label="Filtrar por empresa">
       <button type="button" class="company-tab" [class.active]="facade.companyFilter() === null"
               (click)="facade.companyFilter.set(null)">Todas</button>

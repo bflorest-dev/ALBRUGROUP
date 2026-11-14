@@ -13,6 +13,7 @@ import { routes } from './app.routes';
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
 import { equipoScopeInterceptor } from './core/interceptors/equipo-scope.interceptor';
 import { proveedorScopeInterceptor } from './core/interceptors/proveedor-scope.interceptor';
+import { empresaScopeInterceptor } from './core/interceptors/empresa-scope.interceptor';
 import { AppVersionService } from './core/services/app-version.service';
 import { BrowserSessionService } from './core/services/browser-session.service';
 
@@ -30,7 +31,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideAnimationsAsync(),
-    provideHttpClient(withInterceptors([authTokenInterceptor, proveedorScopeInterceptor, equipoScopeInterceptor])),
+    provideHttpClient(withInterceptors([authTokenInterceptor, proveedorScopeInterceptor, equipoScopeInterceptor, empresaScopeInterceptor])),
     providePrimeNG({
       ripple: true,
       inputVariant: 'filled',

@@ -31,9 +31,11 @@ import pe.albrugroup.rrhh_service.integration.auth.dto.RegistrarUsuarioRequest;
 import pe.albrugroup.rrhh_service.integration.schedule.ScheduleServiceClient;
 import pe.albrugroup.rrhh_service.repository.ContratoRepository;
 import pe.albrugroup.rrhh_service.repository.EmpresaContratistaRepository;
+import pe.albrugroup.rrhh_service.security.EmpresaContratistaContext;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoRolMapper;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
+import pe.albrugroup.rrhh_service.repository.projection.EmpleadoRolProjection;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 
 import java.time.LocalDate;
@@ -59,6 +61,7 @@ public class EmpleadoService implements IEmpleado {
     private final PaginationService paginationService;
     private final AuthServiceClient authServiceClient;
     private final ScheduleServiceClient scheduleServiceClient;
+    private final EmpresaContratistaContext empresaContratistaContext;
 
     private static final Set<String> EMPLEADO_SORT_FIELDS = Set.of(
             "id",
@@ -106,9 +109,10 @@ public class EmpleadoService implements IEmpleado {
                                                        Long idEmpresaContratista, Origen origen, EstadoOperativo estado,
                                                        PageRequest pageRequest)
     {
+        Long empresaEfectiva = resolverEmpresaEfectiva(idEmpresaContratista);
         EstadoOperativo estadoOperativo = estado != null ? estado : EstadoOperativo.ACTIVO;
         var empleados = repository
-                .getEmpleados(q, dni, celular, distrito, banco, idEmpresaContratista, origen, estadoOperativo,
+                .getEmpleados(q, dni, celular, distrito, banco, empresaEfectiva, origen, estadoOperativo,
                         paginationService.toPageable(pageRequest, EMPLEADO_SORT_FIELDS))
                 .map(mapper::toResponse);
         return PageResponse.from(empleados);
@@ -258,20 +262,17 @@ public class EmpleadoService implements IEmpleado {
             );
         }
 
-        List<EmpleadoRolResponse> empleados;
+        List<EmpleadoRolProjection> raw;
         if (categoriasPersonal != null && !categoriasPersonal.isEmpty()) {
-            empleados = empleadoRolMapper.toResponseList(
-                    contratoRepository.findEmpleadosActivosByCategoriasPersonal(
-                            EstadoOperativo.ACTIVO, LocalDate.now(), categoriasPersonal));
+            raw = contratoRepository.findEmpleadosActivosByCategoriasPersonal(
+                    EstadoOperativo.ACTIVO, LocalDate.now(), categoriasPersonal);
         } else if (puestosTrabajo != null && !puestosTrabajo.isEmpty()) {
-            empleados = empleadoRolMapper.toResponseList(
-                    contratoRepository.findEmpleadosActivosByPuestosTrabajo(
-                            EstadoOperativo.ACTIVO, LocalDate.now(), puestosTrabajo));
+            raw = contratoRepository.findEmpleadosActivosByPuestosTrabajo(
+                    EstadoOperativo.ACTIVO, LocalDate.now(), puestosTrabajo);
         } else {
-            empleados = empleadoRolMapper.toResponseList(
-                    contratoRepository.findEmpleadosActivos(EstadoOperativo.ACTIVO, LocalDate.now()));
+            raw = contratoRepository.findEmpleadosActivos(EstadoOperativo.ACTIVO, LocalDate.now());
         }
-        return empleados;
+        return empleadoRolMapper.toResponseList(filtrarPorEmpresaScope(raw));
     }
 
     @Override
@@ -301,18 +302,17 @@ public class EmpleadoService implements IEmpleado {
             );
         }
 
+        List<EmpleadoRolProjection> raw;
         if (categoriasPersonal != null && !categoriasPersonal.isEmpty()) {
-            return empleadoRolMapper.toResponseList(
-                    contratoRepository.findEmpleadosConContratoEnRangoByCategoriasPersonal(
-                            desde, hasta, categoriasPersonal));
+            raw = contratoRepository.findEmpleadosConContratoEnRangoByCategoriasPersonal(
+                    desde, hasta, categoriasPersonal);
+        } else if (puestosTrabajo != null && !puestosTrabajo.isEmpty()) {
+            raw = contratoRepository.findEmpleadosConContratoEnRangoByPuestosTrabajo(
+                    desde, hasta, puestosTrabajo);
+        } else {
+            raw = contratoRepository.findEmpleadosConContratoEnRango(desde, hasta);
         }
-        if (puestosTrabajo != null && !puestosTrabajo.isEmpty()) {
-            return empleadoRolMapper.toResponseList(
-                    contratoRepository.findEmpleadosConContratoEnRangoByPuestosTrabajo(
-                            desde, hasta, puestosTrabajo));
-        }
-        return empleadoRolMapper.toResponseList(
-                contratoRepository.findEmpleadosConContratoEnRango(desde, hasta));
+        return empleadoRolMapper.toResponseList(filtrarPorEmpresaScope(raw));
     }
 
     @Override
@@ -345,12 +345,19 @@ public class EmpleadoService implements IEmpleado {
 
         List<Contrato> contratos = contratoRepository.findContratosSolapadosConPeriodo(desde, hasta);
 
+        Long empresaScope = empresaContratistaContext.isRestringido()
+                ? empresaContratistaContext.getEmpresaContratistaId() : null;
+
         Map<Long, List<Contrato>> porEmpleado = new LinkedHashMap<>();
         for (Contrato c : contratos) {
             PuestoTrabajo puesto = c.getPuestoTrabajo();
             if (puesto != null && puestosExcluidos.contains(puesto)) continue;
             Long idEmp = c.getEmpleado().getId();
             if (empleadosSistema.contains(idEmp)) continue;
+            if (empresaScope != null) {
+                var ec = c.getEmpleado().getEmpresaContratista();
+                if (ec == null || !empresaScope.equals(ec.getId())) continue;
+            }
             porEmpleado.computeIfAbsent(idEmp, k -> new ArrayList<>()).add(c);
         }
 
@@ -422,5 +429,25 @@ public class EmpleadoService implements IEmpleado {
         }
         return empresaContratistaRepository.findById(idEmpresaContratista)
                 .orElseThrow(() -> new NotFoundException(EmpresaContratista.class, idEmpresaContratista));
+    }
+
+    private Long resolverEmpresaEfectiva(Long idEmpresaContratistaParam) {
+        if (!empresaContratistaContext.isRestringido()) {
+            return idEmpresaContratistaParam;
+        }
+        return empresaContratistaContext.getEmpresaContratistaId();
+    }
+
+    private List<EmpleadoRolProjection> filtrarPorEmpresaScope(List<EmpleadoRolProjection> empleados) {
+        if (!empresaContratistaContext.isRestringido()) {
+            return empleados;
+        }
+        Long idEmpresa = empresaContratistaContext.getEmpresaContratistaId();
+        if (idEmpresa == null) {
+            return List.of();
+        }
+        return empleados.stream()
+                .filter(e -> idEmpresa.equals(e.getIdEmpresaContratista()))
+                .toList();
     }
 }

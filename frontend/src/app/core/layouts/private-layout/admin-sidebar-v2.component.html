@@ -234,6 +234,35 @@
             }
           </section>
         }
+
+        @if (empresas().length) {
+          <section class="admin-nav-v2__profile-group" aria-labelledby="session-empresas-title">
+            <h2 id="session-empresas-title" class="admin-nav-v2__section-label">
+              <i class="ti ti-building-factory-2" aria-hidden="true"></i>
+              <span>Empresa Contratista</span>
+            </h2>
+
+            @for (empresa of empresas(); track empresa.id) {
+              <button
+                type="button"
+                class="admin-nav-v2__profile-action"
+                [class.is-active]="empresa.id === activeEmpresaId()"
+                [attr.aria-pressed]="empresa.id === activeEmpresaId()"
+                (click)="selectEmpresa(empresa.id)"
+              >
+                <i class="ti ti-building-factory-2" aria-hidden="true"></i>
+                <span>
+                  <strong>{{ empresa.nombre }}</strong>
+                  <small>{{ empresa.id === activeEmpresaId() ? 'Empresa activa' : 'Cambiar empresa' }}</small>
+                </span>
+                <i
+                  [class]="empresa.id === activeEmpresaId() ? 'ti ti-circle-check' : 'ti ti-chevron-right'"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            }
+          </section>
+        }
       </div>
 
       <div class="admin-nav-v2__attendance">

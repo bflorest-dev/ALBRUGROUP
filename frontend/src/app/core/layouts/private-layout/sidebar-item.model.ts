@@ -29,6 +29,11 @@ export type SidebarTeamOption = {
   nombre: string;
 };
 
+export type SidebarEmpresaOption = {
+  id: number;
+  nombre: string;
+};
+
 export type SidebarRoleModeOption = {
   role: string;
   label: string;
