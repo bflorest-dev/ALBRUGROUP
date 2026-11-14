@@ -35,6 +35,9 @@
         }
         <button type="button" [class.active]="section() === 'horario'" (click)="setSection('horario')">Horario</button>
         <button type="button" [class.active]="section() === 'asistencia'" (click)="setSection('asistencia')">Asistencia</button>
+        @if (current.category === 'OPERATIVO') {
+          <button type="button" [class.active]="section() === 'metricas'" (click)="setSection('metricas')">Métricas</button>
+        }
       </nav>
     }
 
@@ -690,6 +693,8 @@
         </section>
       } @else if (section() === 'asistencia') {
         <app-personal-attendance-panel [employeeId]="current.employee.idEmpleado" />
+      } @else if (section() === 'metricas') {
+        <app-personal-metricas-panel [employeeId]="current.employee.idEmpleado" />
       }
     </div>
 

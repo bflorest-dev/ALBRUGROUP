@@ -1146,4 +1146,20 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             @Param("hastaDateExcl") LocalDate hastaDateExcl
     );
 
+    @Query("""
+            SELECT r.fechaMerito, l.etapa
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaPreventa
+            WHERE r.idAsesorMerito = :idEmpleado
+              AND r.fechaMerito IS NOT NULL
+              AND r.fechaMerito >= :inicio
+              AND r.fechaMerito < :fin
+            """)
+    List<Object[]> metricasEmpleadoPorMerito(
+            @Param("idEmpleado") Long idEmpleado,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
 }

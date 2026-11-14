@@ -33,6 +33,8 @@ import { ScheduleOverviewControlsComponent } from '../../../../shared/components
 import { SessionService } from '../../../../core/services/session.service';
 import { PersonalAttendancePanelComponent } from '../personal-attendance-panel/personal-attendance-panel.component';
 import { PersonalAttendanceFacade } from '../../facades/personal-attendance.facade';
+import { PersonalMetricasPanelComponent } from '../personal-metricas-panel/personal-metricas-panel.component';
+import { PersonalMetricasFacade } from '../../facades/personal-metricas.facade';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import {
   PersonalAccessService,
@@ -41,7 +43,7 @@ import {
   UserRoles
 } from '../../services/personal-access.service';
 
-type DrawerSection = 'resumen' | 'contrato' | 'roles' | 'horario' | 'asistencia';
+type DrawerSection = 'resumen' | 'contrato' | 'roles' | 'horario' | 'asistencia' | 'metricas';
 type DrawerSubview = 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
 type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones'>;
 type EditDataSection = 'personal' | 'contacto-ubicacion' | 'corporativo' | 'financiero';
@@ -70,8 +72,8 @@ export function canViewContractSection(activeRole: string | null): boolean {
 
 @Component({
   selector: 'app-employee-workspace-drawer',
-  imports: [DatePipe, FormsModule, ReactiveFormsModule, DateFieldComponent, ScheduleWeekEditorComponent, ScheduleDayEditorComponent, ScheduleFooterActionsComponent, ScheduleOverviewControlsComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent, PersonalAttendancePanelComponent],
-  providers: [PersonalScheduleFacade, PersonalAttendanceFacade],
+  imports: [DatePipe, FormsModule, ReactiveFormsModule, DateFieldComponent, ScheduleWeekEditorComponent, ScheduleDayEditorComponent, ScheduleFooterActionsComponent, ScheduleOverviewControlsComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent, PersonalAttendancePanelComponent, PersonalMetricasPanelComponent],
+  providers: [PersonalScheduleFacade, PersonalAttendanceFacade, PersonalMetricasFacade],
   templateUrl: './employee-workspace-drawer.component.html',
   styleUrl: './employee-workspace-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -1742,13 +1742,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN pl.internet inter
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor cp
+            LEFT JOIN l.proveedor lp
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             LEFT JOIN LeadEtapaResumen rp ON rp.idLead = l.id AND rp.etapa = :etapaPreventa
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo
                AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
-            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.matriz.etapa = l.etapa AND tAct.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
+            LEFT JOIN Tipificacion tAct ON tAct.codigo = l.codigoTipificacion AND tAct.matriz.etapa = l.etapa AND tAct.matriz.proveedor.id = COALESCE(lp.id, pp.id, fp.id, cp.id)
             LEFT JOIN Subtipificacion sAct ON sAct.tipificacion = tAct AND sAct.codigo = l.codigoSubtipificacion
             WHERE l.etapa = :etapa
               AND (
@@ -1782,17 +1783,15 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:tipoGrupo = 'TIPIFICACION'
                         AND ((:sinValor = true AND COALESCE(l.codigoTipificacion, '') = '') OR l.codigoTipificacion IN :valoresGrupo))
               )
-              AND (:excluirTipificacionesSeparadas = false
-                   OR tAct.orden IS NULL
+              AND (:filtrarTipificacionesOperativas = false
+                   OR COALESCE(TRIM(l.codigoTipificacion), '') = ''
                    OR (
-                        tAct.orden > 1
-                        AND tAct.orden < (
-                            SELECT tProg.orden
-                            FROM Tipificacion tProg
-                            WHERE tProg.codigo = :codigoProgramado
-                              AND tProg.matriz.etapa = :etapa
-                              AND tProg.matriz.proveedor.id = COALESCE(pp.id, fp.id, cp.id)
-                        )
+                        UPPER(TRIM(COALESCE(lp.nombre, pp.nombre, fp.nombre, cp.nombre))) = 'CLARO'
+                        AND UPPER(TRIM(l.codigoTipificacion)) IN ('SIN INGRESAR', 'INGRESADO')
+                   )
+                   OR (
+                        UPPER(TRIM(COALESCE(lp.nombre, pp.nombre, fp.nombre, cp.nombre))) = 'WIN'
+                        AND UPPER(TRIM(l.codigoTipificacion)) IN ('SIN INGRESAR', 'GRABADO', 'INGRESADO')
                    ))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY
@@ -1849,7 +1848,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("codigoProgramado") String codigoProgramado,
             @Param("tipificacionesFechaRechazo") Collection<String> tipificacionesFechaRechazo,
             @Param("etapaPreventa") Etapa etapaPreventa,
-            @Param("excluirTipificacionesSeparadas") boolean excluirTipificacionesSeparadas,
+            @Param("filtrarTipificacionesOperativas") boolean filtrarTipificacionesOperativas,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
             @Param("groupBy") String groupBy,

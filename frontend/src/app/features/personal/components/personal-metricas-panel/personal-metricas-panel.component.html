@@ -1,0 +1,43 @@
+<section class="metricas-panel">
+  <div class="metricas-month-selector">
+    <button type="button" class="icon-button" aria-label="Mes anterior" (click)="prevMonth()">
+      <i class="ti ti-chevron-left" aria-hidden="true"></i>
+    </button>
+    <span class="month-label">{{ monthLabel }}</span>
+    <button type="button" class="icon-button" aria-label="Mes siguiente" (click)="nextMonth()">
+      <i class="ti ti-chevron-right" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  @if (facade.isLoading()) {
+    <p class="muted">Consultando métricas…</p>
+  } @else if (facade.error()) {
+    <p class="feedback error" role="alert">{{ facade.error() }}</p>
+    <button type="button" class="ghost-button" (click)="retry()">Reintentar</button>
+  } @else if (!facade.hasData()) {
+    <p class="empty-copy">No hay preventas registradas en este periodo.</p>
+  } @else {
+    <div class="metricas-legend">
+      <span class="legend-item"><span class="legend-dot preventa"></span> Preventa</span>
+      <span class="legend-item"><span class="legend-dot instalada"></span> Instalada</span>
+    </div>
+
+    <div class="metricas-grid">
+      @for (row of facade.rows(); track row.day) {
+        <div class="day-row">
+          <span class="day-label">{{ row.day }}</span>
+          <div class="day-cells">
+            @for (celda of row.celdas; track $index) {
+              <span class="cell" [class]="celda"></span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="metricas-totals">
+      <span><strong>{{ facade.totalPreventas() }}</strong> preventas</span>
+      <span><strong>{{ facade.totalInstaladas() }}</strong> instaladas</span>
+    </div>
+  }
+</section>
