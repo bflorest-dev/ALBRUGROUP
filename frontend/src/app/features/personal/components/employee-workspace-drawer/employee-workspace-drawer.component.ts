@@ -18,7 +18,7 @@ import { RegistrarExcepcionHorarioRequest } from '../../../../shared/models/sche
 import { TipoDiaNoLaborable } from '../../../../shared/models/schedule/dia-no-laborable-request';
 import { formatApiErrorMessage } from '../../../../shared/utils/api-error.utils';
 import { formatLabel } from '../../../../shared/utils/display-label';
-import { ambitoProveedorPorRol, esRolDeEquipo, puedeMultiEquipo, PROVIDER_SCOPED_ROLES } from '../../../../shared/constants/multi-team-roles';
+import { ambitoProveedorPorRol, esRolDeEquipo, esRolDeEmpresa, puedeMultiEquipo, PROVIDER_SCOPED_ROLES } from '../../../../shared/constants/multi-team-roles';
 import { AdminRrhhService } from '../../../admin/services/admin-rrhh.service';
 import { AdminEquipoService, AmbitoProveedor, EquipoResponse, ProveedorLite } from '../../../admin/services/admin-equipo.service';
 import { PersonalDirectoryRow } from '../../facades/personal-workspace.facade';
@@ -42,19 +42,21 @@ import {
 } from '../../services/personal-access.service';
 
 type DrawerSection = 'resumen' | 'contrato' | 'roles' | 'horario' | 'asistencia';
-type DrawerSubview = 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
-type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones'>;
+type DrawerSubview = 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
+type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones'>;
 type EditDataSection = 'personal' | 'contacto-ubicacion' | 'corporativo' | 'financiero';
 
 export interface DrawerScopeCapabilities {
   team: boolean;
   provider: boolean;
+  empresa: boolean;
 }
 
 export function scopeCapabilitiesForRoles(roles: string[]): DrawerScopeCapabilities {
   return {
     team: roles.some((role) => esRolDeEquipo(role)),
-    provider: roles.some((role) => Boolean(PROVIDER_SCOPED_ROLES[role]))
+    provider: roles.some((role) => Boolean(PROVIDER_SCOPED_ROLES[role])),
+    empresa: roles.some((role) => esRolDeEmpresa(role))
   };
 }
 
@@ -152,6 +154,12 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly teamError = signal('');
   protected readonly providerSelectedIds = signal<number[]>([]);
   protected readonly providerError = signal('');
+  protected readonly empresaSelectedIds = signal<number[]>([]);
+  protected readonly empresaCurrentIds = signal<number[]>([]);
+  protected readonly empresaOptions = signal<EmpresaContratistaResponse[]>([]);
+  protected readonly empresaError = signal('');
+  protected readonly isSavingEmpresas = signal(false);
+  protected readonly isLoadingEmpresas = signal(false);
   protected readonly adjustmentSubview = computed<DayAdjustmentSubview | null>(() => {
     const current = this.subview();
     return current.startsWith('ajuste-') ? current as DayAdjustmentSubview : null;
@@ -330,7 +338,7 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected isBusy(): boolean {
-    return this.isSavingPersonal() || this.isSavingEmployeeData() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingProviders() || this.isSavingRoles() || this.scheduleFacade.isSaving() || this.scheduleFacade.isApplyingCorrection() || this.isSavingAdjustment();
+    return this.isSavingPersonal() || this.isSavingEmployeeData() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingProviders() || this.isSavingEmpresas() || this.isSavingRoles() || this.scheduleFacade.isSaving() || this.scheduleFacade.isApplyingCorrection() || this.isSavingAdjustment();
   }
 
   protected canManageTeam(row?: PersonalDirectoryRow | null): boolean {
@@ -377,6 +385,12 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected hasProviderScopeForSelectedRoles(): boolean {
     return this.canManageProviderScope();
+  }
+
+  protected hasEmpresaScopeForSelectedRoles(): boolean {
+    if (!this.canManageRoles()) return false;
+    const roles = this.selectedRoles();
+    return scopeCapabilitiesForRoles(roles).empresa;
   }
 
   protected scopeActionsDisabled(): boolean {
@@ -1126,6 +1140,71 @@ export class EmployeeWorkspaceDrawerComponent {
       this.providerError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudieron actualizar los proveedores.'));
     } finally {
       this.isSavingProviders.set(false);
+    }
+  }
+
+  protected async openEmpresaManagement(): Promise<void> {
+    const row = this.row();
+    if (!row || !this.hasEmpresaScopeForSelectedRoles() || this.scopeActionsDisabled()) return;
+    this.empresaError.set('');
+    this.isLoadingEmpresas.set(true);
+    this.clearActionFeedback();
+    this.subview.set('gestionar-empresas');
+    try {
+      const [allEmpresas, assigned] = await Promise.all([
+        firstValueFrom(this.rrhh.listarEmpresasContratistas(true)),
+        firstValueFrom(this.rrhh.listarAsignacionesEmpresaContratista(row.employee.idEmpleado))
+      ]);
+      this.empresaOptions.set(allEmpresas);
+      const ids = assigned.map((e) => e.id);
+      this.empresaSelectedIds.set(ids);
+      this.empresaCurrentIds.set(ids);
+    } catch (error) {
+      this.empresaError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudieron cargar las empresas.'));
+    } finally {
+      this.isLoadingEmpresas.set(false);
+    }
+  }
+
+  protected toggleEmpresa(empresaId: number, selected: boolean): void {
+    const current = new Set(this.empresaSelectedIds());
+    if (selected) current.add(empresaId); else current.delete(empresaId);
+    this.empresaSelectedIds.set([...current].sort((a, b) => a - b));
+  }
+
+  protected isEmpresaSelected(empresaId: number): boolean {
+    return this.empresaSelectedIds().includes(empresaId);
+  }
+
+  protected closeEmpresaManagement(): void {
+    this.empresaError.set('');
+    this.subview.set('none');
+  }
+
+  protected async saveEmpresaManagement(): Promise<void> {
+    const row = this.row();
+    if (!row || !this.hasEmpresaScopeForSelectedRoles() || this.scopeActionsDisabled()) return;
+    this.isSavingEmpresas.set(true);
+    this.empresaError.set('');
+    this.clearActionFeedback();
+    try {
+      const selected = new Set(this.empresaSelectedIds());
+      const current = new Set(this.empresaCurrentIds());
+      const toAdd = [...selected].filter((id) => !current.has(id));
+      const toRemove = [...current].filter((id) => !selected.has(id));
+      if (toAdd.length) {
+        await firstValueFrom(this.rrhh.asignarEmpresasContratistas(row.employee.idEmpleado, toAdd));
+      }
+      for (const id of toRemove) {
+        await firstValueFrom(this.rrhh.desasignarEmpresaContratista(row.employee.idEmpleado, id));
+      }
+      this.subview.set('none');
+      this.actionSuccess.set(selected.size ? 'Empresas contratistas actualizadas.' : 'El empleado quedó sin empresa contratista.');
+      this.employeeChanged.emit();
+    } catch (error) {
+      this.empresaError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudieron actualizar las empresas contratistas.'));
+    } finally {
+      this.isSavingEmpresas.set(false);
     }
   }
 

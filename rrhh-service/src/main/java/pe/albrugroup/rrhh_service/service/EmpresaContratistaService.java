@@ -68,6 +68,15 @@ public class EmpresaContratistaService implements IEmpresaContratista {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<EmpresaContratistaResponse> listarAsignacionesEmpleado(Long idEmpleado) {
+        return asignacionRepository.findByIdEmpleadoAndActivoTrueOrderByEmpresaContratistaNombreAsc(idEmpleado)
+                .stream()
+                .map(uec -> mapper.toResponse(uec.getEmpresaContratista()))
+                .toList();
+    }
+
+    @Override
     public void asignarEmpresasContratistas(AsignarEmpresaContratistaRequest request) {
         Long idEmpleado = request.getIdEmpleado();
         for (Long idEmpresa : request.getIdEmpresasContratistas()) {

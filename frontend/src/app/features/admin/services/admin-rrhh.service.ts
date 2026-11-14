@@ -189,6 +189,25 @@ export class AdminRrhhService {
     return this.http.get<EmpresaContratistaResponse[]>(this.empresasContratistasUrl, { params });
   }
 
+  listarAsignacionesEmpresaContratista(idEmpleado: number): Observable<EmpresaContratistaResponse[]> {
+    const params = new HttpParams().set('idEmpleado', idEmpleado);
+    return this.http.get<EmpresaContratistaResponse[]>(`${this.empresasContratistasUrl}/asignaciones`, { params });
+  }
+
+  asignarEmpresasContratistas(idEmpleado: number, idEmpresasContratistas: number[]): Observable<void> {
+    return this.http.post<void>(`${this.empresasContratistasUrl}/asignaciones`, {
+      idEmpleado,
+      idEmpresasContratistas
+    });
+  }
+
+  desasignarEmpresaContratista(idEmpleado: number, idEmpresaContratista: number): Observable<void> {
+    const params = new HttpParams()
+      .set('idEmpleado', idEmpleado)
+      .set('idEmpresaContratista', idEmpresaContratista);
+    return this.http.delete<void>(`${this.empresasContratistasUrl}/asignaciones`, { params });
+  }
+
   darDeBaja(empleadoId: number, request: CerrarContratoRequest): Observable<EmpleadoResponse> {
     return this.http.post<EmpleadoResponse>(`${this.empleadosUrl}/${empleadoId}/baja`, request);
   }

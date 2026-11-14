@@ -39,6 +39,11 @@ export function ambitoProveedorPorRol(rol?: string | null): ProviderScope | null
   return rol ? PROVIDER_SCOPED_ROLES[rol] ?? null : null;
 }
 
+/** True si el rol usa scope por empresa contratista. */
+export function esRolDeEmpresa(rol?: string | null): boolean {
+  return !!rol && EMPRESA_SCOPED_ROLES.includes(rol);
+}
+
 /** True si el puesto admite pertenecer a varios equipos. */
 export function puedeMultiEquipo(puestoTrabajo?: string | null): boolean {
   return !!puestoTrabajo && MULTI_TEAM_ROLES.includes(puestoTrabajo);

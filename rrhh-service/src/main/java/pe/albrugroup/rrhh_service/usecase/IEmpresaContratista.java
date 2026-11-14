@@ -16,6 +16,8 @@ public interface IEmpresaContratista {
 
     List<EmpresaContratistaResponse> misEmpresasContratistas(Long empleadoId, List<String> roles);
 
+    List<EmpresaContratistaResponse> listarAsignacionesEmpleado(Long idEmpleado);
+
     void asignarEmpresasContratistas(AsignarEmpresaContratistaRequest request);
 
     void desasignarEmpresaContratista(Long idEmpleado, Long idEmpresaContratista);

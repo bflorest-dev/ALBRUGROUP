@@ -278,6 +278,29 @@
             @if (!providerSelectedIds().length) { <p class="team-warning">Sin proveedor, el empleado no verá datos filtrados por proveedor.</p> }
           }
         </section>
+      } @else if (subview() === 'gestionar-empresas') {
+        <section class="drawer-subview empresa-management-view">
+          <div class="subview-heading">
+            <button class="back-button" type="button" [disabled]="isSavingEmpresas()" (click)="closeEmpresaManagement()"><i class="ti ti-arrow-left"></i>Volver</button>
+            <div><h3>Gestionar empresas contratistas</h3><p>Asigna las empresas contratistas requeridas por el rol RRHH.</p></div>
+          </div>
+          @if (empresaError()) { <p class="feedback error" role="alert">{{ empresaError() }}</p> }
+          @if (isLoadingEmpresas()) {
+            <p class="pending-copy">Cargando empresas contratistas…</p>
+          } @else if (!empresaOptions().length) {
+            <p class="pending-copy">No hay empresas contratistas activas disponibles para asignar.</p>
+          } @else {
+            <fieldset class="provider-checks">
+              <legend>Empresas contratistas asignadas</legend>
+              <div class="provider-checks-scroll">
+                @for (empresa of empresaOptions(); track empresa.id) {
+                  <label><input type="checkbox" [checked]="isEmpresaSelected(empresa.id)" [disabled]="isSavingEmpresas()" (change)="toggleEmpresa(empresa.id, $any($event.target).checked)" /><span><strong>{{ empresa.nombre }}</strong></span></label>
+                }
+              </div>
+            </fieldset>
+            @if (!empresaSelectedIds().length) { <p class="team-warning">Sin empresa contratista, el empleado RRHH no verá datos filtrados.</p> }
+          }
+        </section>
       } @else if (adjustmentSubview(); as adjustmentView) {
         <section class="drawer-subview day-adjustment-view">
           <div class="subview-heading">
@@ -647,7 +670,7 @@
           <section class="scope-management" aria-labelledby="scope-management-title">
             <div class="scope-management-heading"><h3 id="scope-management-title">Ámbitos operativos</h3><p>La asignación es opcional y se gestiona con todos los roles seleccionados.</p></div>
             @if (rolesDirty()) { <p class="scope-pending" role="status">Guarda los roles para habilitar la gestión de ámbitos.</p> }
-            @if (!hasTeamScopeForSelectedRoles() && !hasProviderScopeForSelectedRoles()) {
+            @if (!hasTeamScopeForSelectedRoles() && !hasProviderScopeForSelectedRoles() && !hasEmpresaScopeForSelectedRoles()) {
               <p class="muted">Los roles seleccionados no requieren un ámbito operativo.</p>
             } @else {
               <div class="scope-actions">
@@ -656,6 +679,9 @@
                 }
                 @if (hasProviderScopeForSelectedRoles()) {
                   <button class="ghost-button scope-action" type="button" [disabled]="scopeActionsDisabled()" (click)="openProviderManagement()"><i class="ti ti-building-store"></i>Gestionar proveedores</button>
+                }
+                @if (hasEmpresaScopeForSelectedRoles()) {
+                  <button class="ghost-button scope-action" type="button" [disabled]="scopeActionsDisabled()" (click)="openEmpresaManagement()"><i class="ti ti-building-factory-2"></i>Gestionar empresas contratistas</button>
                 }
               </div>
             }
@@ -688,6 +714,9 @@
       } @else if (subview() === 'gestionar-proveedores') {
         <button type="button" class="ghost-button" [disabled]="isSavingProviders()" (click)="closeProviderManagement()">Cancelar</button>
         <button type="button" class="primary-button push-right" [disabled]="isSavingProviders() || !providerOptions().length" (click)="saveProviderManagement()">{{ isSavingProviders() ? 'Guardando…' : 'Guardar proveedores' }}</button>
+      } @else if (subview() === 'gestionar-empresas') {
+        <button type="button" class="ghost-button" [disabled]="isSavingEmpresas()" (click)="closeEmpresaManagement()">Cancelar</button>
+        <button type="button" class="primary-button push-right" [disabled]="isSavingEmpresas() || !empresaOptions().length" (click)="saveEmpresaManagement()">{{ isSavingEmpresas() ? 'Guardando…' : 'Guardar empresas' }}</button>
       } @else if (subview() === 'editar-horario') {
         @if (scheduleFacade.correctionVisible()) {
           <button type="button" class="ghost-button" [disabled]="scheduleFacade.isApplyingCorrection()" (click)="cancelScheduleCorrection()">Cancelar</button>

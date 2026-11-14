@@ -73,6 +73,15 @@ public class EmpresaContratistaController {
         return ResponseEntity.ok(empresaContratistaService.misEmpresasContratistas(user.empleadoId(), roles));
     }
 
+    @Operation(summary = "Listar asignaciones de un empleado",
+            description = "Devuelve las empresas contratistas asignadas a un empleado especifico.")
+    @GetMapping("/asignaciones")
+    @PreAuthorize("hasAuthority('MANAGE_CONTRATISTA_ASSIGNMENTS')")
+    public ResponseEntity<List<EmpresaContratistaResponse>> listarAsignaciones(
+            @RequestParam @Positive Long idEmpleado) {
+        return ResponseEntity.ok(empresaContratistaService.listarAsignacionesEmpleado(idEmpleado));
+    }
+
     @Operation(summary = "Asignar empresas contratistas a un empleado",
             description = "Asigna una o mas empresas contratistas a un empleado para el scope de RRHH.")
     @PostMapping("/asignaciones")
