@@ -7,6 +7,20 @@ export interface MetricaDia {
   fecha: string;
   preventas: number;
   instaladas: number;
+  leads: MetricaLead[];
+}
+
+export interface MetricaLead {
+  idLead: number;
+  numeroLead: string | null;
+  numeroDocumento: string | null;
+  nombreCliente: string | null;
+  plan: string | null;
+  cargoFijo: number | null;
+  zona: string | null;
+  fechaInstalacion: string | null;
+  etapaActual: string | null;
+  instalada: boolean;
 }
 
 export interface MetricasEmpleadoResponse {

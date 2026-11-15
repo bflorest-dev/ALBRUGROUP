@@ -1,14 +1,16 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { PersonalMetricasService, MetricaDia } from '../services/personal-metricas.service';
+import { PersonalMetricasService, MetricaDia, MetricaLead } from '../services/personal-metricas.service';
 import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
 import { HttpErrorResponse } from '@angular/common/http';
 
 export interface MetricaDiaRow {
+  fecha: string;
   day: number;
+  weekday: string;
   preventas: number;
   instaladas: number;
-  celdas: ('instalada' | 'preventa')[];
+  leads: MetricaLead[];
 }
 
 @Injectable()
@@ -19,25 +21,41 @@ export class PersonalMetricasFacade {
 
   readonly selectedMonth = signal(this.currentMonthValue());
   readonly dias = signal<MetricaDia[]>([]);
+  readonly hasLoaded = signal(false);
   readonly isLoading = signal(false);
   readonly error = signal('');
 
-  readonly hasData = computed(() => this.dias().length > 0);
+  readonly hasActivity = computed(() => this.rows().some(row => row.preventas > 0 || row.instaladas > 0));
 
   readonly rows = computed<MetricaDiaRow[]>(() => {
-    return this.dias().map(d => {
-      const day = Number(d.fecha.split('-')[2]);
-      const celdas: ('instalada' | 'preventa')[] = [];
-      const total = Math.min(d.preventas, 12);
-      const inst = Math.min(d.instaladas, total);
-      for (let i = 0; i < inst; i++) celdas.push('instalada');
-      for (let i = inst; i < total; i++) celdas.push('preventa');
-      return { day, preventas: d.preventas, instaladas: d.instaladas, celdas };
+    const [year, month] = this.selectedMonth().split('-').map(Number);
+    const byDate = new Map(this.dias().map(day => [day.fecha, day]));
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    return Array.from({ length: daysInMonth }, (_, index) => {
+      const day = index + 1;
+      const fecha = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const metric = byDate.get(fecha);
+      const date = new Date(year, month - 1, day);
+      const weekday = new Intl.DateTimeFormat('es-PE', { weekday: 'short' })
+        .format(date)
+        .replace('.', '');
+
+      return {
+        fecha,
+        day,
+        weekday,
+        preventas: metric?.preventas ?? 0,
+        instaladas: metric?.instaladas ?? 0,
+        leads: metric?.leads ?? []
+      };
     });
   });
 
   readonly totalPreventas = computed(() => this.dias().reduce((sum, d) => sum + d.preventas, 0));
   readonly totalInstaladas = computed(() => this.dias().reduce((sum, d) => sum + d.instaladas, 0));
+  readonly activeDays = computed(() => this.rows().filter(row => row.preventas > 0 || row.instaladas > 0).length);
+  readonly maxDailyValue = computed(() => Math.max(1, ...this.rows().flatMap(row => [row.preventas, row.instaladas])));
 
   initialize(employeeId: number): void {
     this.employeeId = employeeId;
@@ -47,6 +65,7 @@ export class PersonalMetricasFacade {
   reset(): void {
     this.employeeId = 0;
     this.dias.set([]);
+    this.hasLoaded.set(false);
     this.error.set('');
     this.isLoading.set(false);
     this.selectedMonth.set(this.currentMonthValue());
@@ -72,9 +91,11 @@ export class PersonalMetricasFacade {
       const response = await firstValueFrom(
         this.service.getMetricas(this.employeeId, year, month)
       );
-      this.dias.set(response.dias);
+      this.dias.set(response.dias ?? []);
+      this.hasLoaded.set(true);
     } catch (e) {
       this.dias.set([]);
+      this.hasLoaded.set(false);
       this.error.set(e instanceof HttpErrorResponse ? formatApiErrorMessage(e, 'Error al cargar métricas') : 'Error al cargar métricas');
     } finally {
       this.isLoading.set(false);

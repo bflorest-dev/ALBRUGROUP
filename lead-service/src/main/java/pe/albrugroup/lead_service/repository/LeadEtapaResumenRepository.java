@@ -1147,13 +1147,29 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
     );
 
     @Query("""
-            SELECT r.fechaMerito, l.etapa
+            SELECT r.fechaMerito,
+                   l.etapa,
+                   l.id,
+                   l.lead,
+                   COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
+                   dp.nombreTitularServicio,
+                   COALESCE(c.planSnapshot, l.nombrePlanSnapshot, p.nombre),
+                   COALESCE(c.montoPlanSnapshot, l.precioFinal, l.precioPlanSnapshot,
+                            p.precioPromocional, p.precio),
+                   COALESCE(z.nombre, pz.nombre),
+                   c.fechaInstalacion
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaPreventa
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN l.plan p
+            LEFT JOIN l.zona z
+            LEFT JOIN p.zona pz
+            LEFT JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
             WHERE r.idAsesorMerito = :idEmpleado
               AND r.fechaMerito IS NOT NULL
               AND r.fechaMerito >= :inicio
               AND r.fechaMerito < :fin
+            ORDER BY r.fechaMerito, l.id
             """)
     List<Object[]> metricasEmpleadoPorMerito(
             @Param("idEmpleado") Long idEmpleado,

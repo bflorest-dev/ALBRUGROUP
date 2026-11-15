@@ -1,43 +1,125 @@
 <section class="metricas-panel">
-  <div class="metricas-month-selector">
-    <button type="button" class="icon-button" aria-label="Mes anterior" (click)="prevMonth()">
-      <i class="ti ti-chevron-left" aria-hidden="true"></i>
-    </button>
-    <span class="month-label">{{ monthLabel }}</span>
-    <button type="button" class="icon-button" aria-label="Mes siguiente" (click)="nextMonth()">
-      <i class="ti ti-chevron-right" aria-hidden="true"></i>
-    </button>
-  </div>
+  <header class="metricas-header">
+    <div class="metricas-title">
+      <h3>Rendimiento comercial</h3>
+      <p>Compara el flujo de preventas con las ventas que ya llegaron a instalación.</p>
+    </div>
+
+    <div class="metricas-month-selector" aria-label="Seleccionar mes">
+      <button type="button" class="month-button" aria-label="Mes anterior" (click)="prevMonth()">
+        <i class="ti ti-chevron-left" aria-hidden="true"></i>
+      </button>
+      <span class="month-label">{{ monthLabel }}</span>
+      <button type="button" class="month-button" aria-label="Mes siguiente" (click)="nextMonth()">
+        <i class="ti ti-chevron-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
 
   @if (facade.isLoading()) {
-    <p class="muted">Consultando métricas…</p>
+    <div class="metricas-loading" role="status" aria-live="polite">
+      <span class="loading-bar"></span>
+      <span>Consultando métricas del mes…</span>
+    </div>
   } @else if (facade.error()) {
-    <p class="feedback error" role="alert">{{ facade.error() }}</p>
+    <div class="feedback error" role="alert">{{ facade.error() }}</div>
     <button type="button" class="ghost-button" (click)="retry()">Reintentar</button>
-  } @else if (!facade.hasData()) {
-    <p class="empty-copy">No hay preventas registradas en este periodo.</p>
-  } @else {
-    <div class="metricas-legend">
-      <span class="legend-item"><span class="legend-dot preventa"></span> Preventa</span>
-      <span class="legend-item"><span class="legend-dot instalada"></span> Instalada</span>
+  } @else if (facade.hasLoaded()) {
+    <div class="metricas-summary" aria-label="Resumen del mes">
+      <div class="metricas-kpi metricas-kpi--preventa">
+        <span class="metricas-kpi__label"><span class="series-dot"></span>Preventas</span>
+        <strong>{{ facade.totalPreventas() }}</strong>
+      </div>
+      <div class="metricas-kpi metricas-kpi--instalada">
+        <span class="metricas-kpi__label"><span class="series-dot"></span>Instaladas</span>
+        <strong>{{ facade.totalInstaladas() }}</strong>
+      </div>
+      <div class="metricas-kpi metricas-kpi--neutral">
+        <span class="metricas-kpi__label">Días con actividad</span>
+        <strong>{{ facade.activeDays() }}<small>/{{ facade.rows().length }}</small></strong>
+      </div>
     </div>
 
-    <div class="metricas-grid">
-      @for (row of facade.rows(); track row.day) {
-        <div class="day-row">
-          <span class="day-label">{{ row.day }}</span>
-          <div class="day-cells">
-            @for (celda of row.celdas; track $index) {
-              <span class="cell" [class]="celda"></span>
-            }
-          </div>
+    @if (!facade.hasActivity()) {
+      <div class="metricas-empty" role="status">
+        <i class="ti ti-chart-line" aria-hidden="true"></i>
+        <div><strong>Sin actividad registrada</strong><span>El calendario queda listo para revisar el mes completo.</span></div>
+      </div>
+    }
+
+    <section class="metricas-chart-shell" aria-labelledby="metricas-chart-title">
+      <div class="metricas-section-heading">
+        <div>
+          <h4 id="metricas-chart-title">Flujo diario</h4>
+          <span>Pasa el cursor por un punto para revisar los leads del día.</span>
         </div>
-      }
-    </div>
+        <div class="metricas-legend" aria-label="Series del gráfico">
+          <span><i class="legend-line legend-line--preventa"></i>Preventa</span>
+          <span><i class="legend-line legend-line--instalada"></i>Instalada</span>
+        </div>
+      </div>
+      <div class="metricas-chart">
+        <p-chart
+          type="line"
+          [data]="chartData()"
+          [options]="chartOptions"
+          [responsive]="true"
+          ariaLabel="Flujo diario de preventas e instalaciones"
+        />
+      </div>
+    </section>
 
-    <div class="metricas-totals">
-      <span><strong>{{ facade.totalPreventas() }}</strong> preventas</span>
-      <span><strong>{{ facade.totalInstaladas() }}</strong> instaladas</span>
-    </div>
+    <section class="metricas-table-shell" aria-labelledby="metricas-table-title">
+      <div class="metricas-section-heading metricas-table-heading">
+        <div>
+          <h4 id="metricas-table-title">Detalle por día</h4>
+          <span>Todos los días de {{ monthLabel.toLocaleLowerCase() }}</span>
+        </div>
+        <span class="table-hint"><i class="ti ti-info-circle" aria-hidden="true"></i> La tabla conserva los días sin actividad</span>
+      </div>
+
+      <div class="metricas-table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Día</th>
+              <th scope="col">Preventas</th>
+              <th scope="col">Instaladas</th>
+              <th scope="col">Leads del punto</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of facade.rows(); track row.fecha) {
+              <tr [class.is-active]="row.preventas > 0 || row.instaladas > 0">
+                <th scope="row">
+                  <span class="day-number">{{ row.day.toString().padStart(2, '0') }}</span>
+                  <span class="day-weekday">{{ row.weekday }}</span>
+                </th>
+                <td>
+                  <div class="table-metric table-metric--preventa">
+                    <strong>{{ row.preventas }}</strong>
+                    <span class="table-bar"><i [style.width.%]="barPercent(row.preventas)"></i></span>
+                  </div>
+                </td>
+                <td>
+                  <div class="table-metric table-metric--instalada">
+                    <strong>{{ row.instaladas }}</strong>
+                    <span class="table-bar"><i [style.width.%]="barPercent(row.instaladas)"></i></span>
+                  </div>
+                </td>
+                <td class="lead-count">
+                  @if (row.leads.length) {
+                    <span>{{ row.leads.length }} {{ row.leads.length === 1 ? 'lead' : 'leads' }}</span>
+                    <span class="lead-count__hint">ver detalle en el gráfico</span>
+                  } @else {
+                    <span class="muted-cell">—</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
   }
 </section>
