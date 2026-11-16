@@ -85,15 +85,17 @@
               <th scope="col">Día</th>
               <th scope="col">Preventas</th>
               <th scope="col">Instaladas</th>
-              <th scope="col">Leads del punto</th>
+              <th scope="col">Leads</th>
             </tr>
           </thead>
           <tbody>
             @for (row of facade.rows(); track row.fecha) {
               <tr [class.is-active]="row.preventas > 0 || row.instaladas > 0">
                 <th scope="row">
-                  <span class="day-number">{{ row.day.toString().padStart(2, '0') }}</span>
-                  <span class="day-weekday">{{ row.weekday }}</span>
+                  <span class="day-cell">
+                    <span class="day-number">{{ row.day.toString().padStart(2, '0') }}</span>
+                    <span class="day-weekday">{{ row.weekday }}</span>
+                  </span>
                 </th>
                 <td>
                   <div class="table-metric table-metric--preventa">

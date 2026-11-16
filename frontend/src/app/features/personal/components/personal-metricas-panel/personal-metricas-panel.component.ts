@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, untracked } from '@angular/core';
-import { ChartData, ChartOptions, TooltipItem } from 'chart.js';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, untracked } from '@angular/core';
+import type { Chart, ChartData, ChartOptions, TooltipModel } from 'chart.js';
 import { ChartModule } from 'primeng/chart';
 import { PersonalMetricasFacade } from '../../facades/personal-metricas.facade';
 
@@ -19,6 +19,8 @@ const MONTH_NAMES = [
 export class PersonalMetricasPanelComponent {
   readonly employeeId = input(0);
   protected readonly facade = inject(PersonalMetricasFacade);
+  private readonly hostElement = inject(ElementRef<HTMLElement>);
+  private readonly componentScopeAttribute = this.findComponentScopeAttribute();
 
   protected readonly chartData = computed<ChartData<'line'>>(() => {
     const rows = this.facade.rows();
@@ -66,15 +68,8 @@ export class PersonalMetricasPanelComponent {
     plugins: {
       legend: { display: false },
       tooltip: {
-        displayColors: true,
-        padding: 12,
-        titleMarginBottom: 8,
-        bodySpacing: 5,
-        callbacks: {
-          title: items => this.tooltipTitle(items),
-          label: context => `${context.dataset.label}: ${context.formattedValue}`,
-          afterBody: items => this.tooltipDetails(items[0])
-        }
+        enabled: false,
+        external: context => this.renderExternalTooltip(context)
       }
     },
     scales: {
@@ -123,29 +118,125 @@ export class PersonalMetricasPanelComponent {
     return Math.max(0, Math.min(100, (value / this.facade.maxDailyValue()) * 100));
   }
 
-  private tooltipTitle(items: TooltipItem<'line'>[]): string {
-    const row = this.facade.rows()[items[0]?.dataIndex ?? 0];
-    if (!row) return 'Detalle del día';
-    return `Día ${row.day} · ${row.weekday}`;
+  private renderExternalTooltip(context: { chart: Chart; tooltip: TooltipModel<'line'> }): void {
+    const { chart, tooltip } = context;
+    const parent = chart.canvas.parentElement;
+    if (!parent) return;
+
+    const documentRef = chart.canvas.ownerDocument;
+    let tooltipElement = parent.querySelector<HTMLDivElement>('.metricas-chart-tooltip');
+    if (!tooltipElement) {
+      tooltipElement = this.createTooltipElement(documentRef, 'div', 'metricas-chart-tooltip') as HTMLDivElement;
+      tooltipElement.setAttribute('role', 'tooltip');
+      tooltipElement.setAttribute('aria-hidden', 'true');
+      parent.appendChild(tooltipElement);
+    }
+
+    if (tooltip.opacity === 0) {
+      tooltipElement.style.opacity = '0';
+      tooltipElement.setAttribute('aria-hidden', 'true');
+      return;
+    }
+
+    const row = this.facade.rows()[tooltip.dataPoints[0]?.dataIndex ?? -1];
+    if (!row) return;
+
+    tooltipElement.replaceChildren(
+      this.createTooltipSummary(documentRef, row),
+      this.createTooltipLeadList(documentRef, row)
+    );
+    tooltipElement.style.opacity = '1';
+    tooltipElement.setAttribute('aria-hidden', 'false');
+
+    const canvasRect = chart.canvas.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    const caretX = tooltip.caretX + canvasRect.left - parentRect.left;
+    const caretY = tooltip.caretY + canvasRect.top - parentRect.top;
+    const parentWidth = parent.clientWidth;
+    const halfWidth = Math.min(210, Math.max(80, parentWidth / 2 - 12));
+    const left = Math.max(halfWidth, Math.min(caretX, parentWidth - halfWidth));
+    const placeAbove = caretY > tooltipElement.offsetHeight + 20;
+    tooltipElement.style.left = `${left}px`;
+    tooltipElement.style.top = `${placeAbove ? caretY - tooltipElement.offsetHeight - 14 : caretY + 18}px`;
+    tooltipElement.dataset['placement'] = placeAbove ? 'above' : 'below';
   }
 
-  private tooltipDetails(item: TooltipItem<'line'> | undefined): string[] {
-    if (!item) return [];
+  private createTooltipSummary(documentRef: Document, row: ReturnType<PersonalMetricasFacade['rows']>[number]): HTMLDivElement {
+    const summary = this.createTooltipElement(documentRef, 'div', 'metricas-tooltip-summary') as HTMLDivElement;
+    summary.append(
+      this.createTooltipMetric(documentRef, 'preventa', 'Preventas', row.preventas),
+      this.createTooltipDay(documentRef, row),
+      this.createTooltipMetric(documentRef, 'instalada', 'Instaladas', row.instaladas)
+    );
+    return summary;
+  }
 
-    const row = this.facade.rows()[item.dataIndex];
-    if (!row) return [];
+  private createTooltipMetric(documentRef: Document, kind: 'preventa' | 'instalada', label: string, value: number): HTMLDivElement {
+    const metric = this.createTooltipElement(documentRef, 'div', 'metricas-tooltip-metric') as HTMLDivElement;
 
-    const leads = item.datasetIndex === 1
-      ? row.leads.filter(lead => lead.instalada)
-      : row.leads;
-    if (!leads.length) return ['Sin leads en este punto'];
+    const indicator = this.createTooltipElement(
+      documentRef,
+      'span',
+      `metricas-tooltip-indicator metricas-tooltip-indicator--${kind}`
+    );
+    indicator.setAttribute('aria-hidden', 'true');
 
-    const lines = leads.slice(0, 6).flatMap(lead => [
-      `• ${lead.numeroDocumento || 'Sin documento'} · ${lead.nombreCliente || 'Cliente sin nombre'}`,
-      `  ${lead.plan || 'Plan sin registrar'} · ${this.formatMoney(lead.cargoFijo)} · ${lead.zona || 'Zona sin registrar'}`
-    ]);
-    if (leads.length > 6) lines.push(`+ ${leads.length - 6} leads más`);
-    return lines;
+    const text = this.createTooltipElement(documentRef, 'span', '');
+    text.textContent = `${label}: ${value}`;
+    metric.append(indicator, text);
+    return metric;
+  }
+
+  private createTooltipDay(documentRef: Document, row: ReturnType<PersonalMetricasFacade['rows']>[number]): HTMLDivElement {
+    const day = this.createTooltipElement(documentRef, 'div', 'metricas-tooltip-day') as HTMLDivElement;
+    day.textContent = `Día ${row.day} · ${this.capitalize(row.weekday)}`;
+    return day;
+  }
+
+  private createTooltipLeadList(documentRef: Document, row: ReturnType<PersonalMetricasFacade['rows']>[number]): HTMLDivElement {
+    const list = this.createTooltipElement(documentRef, 'div', 'metricas-tooltip-leads') as HTMLDivElement;
+
+    if (!row.leads.length) {
+      const empty = this.createTooltipElement(
+        documentRef,
+        'div',
+        'metricas-tooltip-lead metricas-tooltip-lead--empty'
+      );
+      empty.textContent = 'Sin leads en este punto';
+      list.appendChild(empty);
+      return list;
+    }
+
+    row.leads.forEach(lead => {
+      const detail = this.createTooltipElement(documentRef, 'div', 'metricas-tooltip-lead');
+      detail.textContent = [
+        lead.numeroDocumento || 'Sin documento',
+        lead.nombreCliente || 'Cliente sin nombre',
+        lead.plan || 'Plan sin registrar',
+        this.formatMoney(lead.cargoFijo),
+        lead.zona || 'Zona sin registrar'
+      ].join(' · ');
+      list.appendChild(detail);
+    });
+
+    return list;
+  }
+
+  private createTooltipElement(documentRef: Document, tagName: 'div' | 'span', className: string): HTMLElement {
+    const element = documentRef.createElement(tagName);
+    if (className) element.className = className;
+    if (this.componentScopeAttribute) element.setAttribute(this.componentScopeAttribute, '');
+    return element;
+  }
+
+  private findComponentScopeAttribute(): string {
+    const hostAttribute = Array.from(this.hostElement.nativeElement.attributes as Attr[])
+      .find(attribute => attribute.name.startsWith('_nghost-'))?.name;
+    return hostAttribute?.replace('_nghost-', '_ngcontent-') ?? '';
+  }
+
+  private capitalize(value: string): string {
+    return value ? value[0].toUpperCase() + value.slice(1) : value;
   }
 
   private formatMoney(value: number | null): string {
