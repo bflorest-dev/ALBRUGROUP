@@ -458,7 +458,7 @@ export class GtrWorkspaceFacade {
   /** Error propio del modal de ampliacion: se muestra dentro del dialogo, nunca detras. */
   readonly extensionError = signal<string | null>(null);
   readonly intakeOrigenOptions = computed<Array<SelectOption<number>>>(() => {
-    const hasCampana = !!this.selectedIntakeCampaignId();
+    const hasCampana = this.selectedIntakeCampaignId() !== null;
     return this.origenes()
       .filter(o => o.esCampana === hasCampana)
       .map(o => ({ label: o.nombre, value: o.id }));
@@ -1242,10 +1242,7 @@ export class GtrWorkspaceFacade {
       })
     );
     this.formSubscription.add(
-      this.intakeForm.controls.idCampana.valueChanges.subscribe((idCampana) => {
-        this.selectedIntakeCampaignId.set(idCampana === null ? null : Number(idCampana));
-        this.syncIntakeOriginWithCampaign();
-      })
+      this.intakeForm.controls.idCampana.valueChanges.subscribe((idCampana) => this.onIntakeCampaignChange(idCampana))
     );
     this.formSubscription.add(
       this.tipificacionForm.controls.codigoTipificacion.valueChanges.subscribe((codigo) => {
@@ -5513,6 +5510,22 @@ export class GtrWorkspaceFacade {
     }
     const first = this.intakeOrigenOptions()[0]?.value ?? null;
     this.intakeForm.controls.idOrigen.setValue(this.selectedIntakeCampaignId() ? first : null);
+  }
+
+  onIntakeCampaignChange(value: unknown): void {
+    const candidate = this.extractSelectValue(value);
+    const parsed = candidate == null || candidate === '' ? null : Number(candidate);
+    const normalized = parsed !== null && Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+
+    this.selectedIntakeCampaignId.set(normalized);
+    this.syncIntakeOriginWithCampaign();
+  }
+
+  private extractSelectValue(value: unknown): unknown {
+    if (typeof value === 'object' && value !== null && 'id' in value) {
+      return (value as { id?: unknown }).id;
+    }
+    return value;
   }
 
   private applySnapshotIdentityDisabledState(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): void {

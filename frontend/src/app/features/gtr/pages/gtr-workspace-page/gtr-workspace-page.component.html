@@ -400,6 +400,7 @@
           optionValue="id"
           [placeholder]="facade.intakeCampaignPlaceholder()"
           [showClear]="true"
+          (onChange)="facade.onIntakeCampaignChange($any($event.value))"
           appendTo="body"
         >
           <ng-template #selectedItem let-campana>

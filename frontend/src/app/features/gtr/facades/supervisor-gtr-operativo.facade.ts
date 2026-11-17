@@ -161,10 +161,7 @@ export class SupervisorGtrOperativoFacade {
       .subscribe((prefijo) => this.updateIntakeLeadValidation(prefijo));
     this.intakeForm.controls.idCampana.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((idCampana) => {
-        this.intakeCampanaId.set(idCampana == null ? null : Number(idCampana));
-        this.syncIntakeOriginWithCampaign();
-      });
+      .subscribe((idCampana) => this.onIntakeCampaignChange(idCampana));
 
     effect(() => {
       const idProveedor = this.providerScope.activeId();
@@ -186,7 +183,7 @@ export class SupervisorGtrOperativoFacade {
   });
 
   readonly origenesDisponibles = computed(() => {
-    const tieneCampana = this.intakeCampanaId() != null;
+    const tieneCampana = this.intakeCampanaId() !== null;
     return this.origenes().filter(origen => origen.esCampana === tieneCampana);
   });
 
@@ -740,6 +737,22 @@ export class SupervisorGtrOperativoFacade {
 
     const first = this.origenesDisponibles()[0]?.id ?? null;
     this.intakeForm.controls.idOrigen.setValue(this.intakeCampanaId() ? first : null);
+  }
+
+  onIntakeCampaignChange(value: unknown): void {
+    const candidate = this.extractSelectValue(value);
+    const parsed = candidate == null || candidate === '' ? null : Number(candidate);
+    const normalized = parsed !== null && Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+
+    this.intakeCampanaId.set(normalized);
+    this.syncIntakeOriginWithCampaign();
+  }
+
+  private extractSelectValue(value: unknown): unknown {
+    if (typeof value === 'object' && value !== null && 'id' in value) {
+      return (value as { id?: unknown }).id;
+    }
+    return value;
   }
 
   private getIntakeErrorMessage(error: unknown): string {

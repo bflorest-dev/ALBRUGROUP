@@ -280,6 +280,7 @@
           optionValue="id"
           placeholder="Sin campaña"
           [showClear]="true"
+          (onChange)="facade.onIntakeCampaignChange($any($event.value))"
           [filter]="true"
           filterPlaceholder="Buscar campaña"
           appendTo="body"
