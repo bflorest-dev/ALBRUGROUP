@@ -1,0 +1,240 @@
+<div class="supervisor-historicos-page">
+  <p-card styleClass="gtr-board supervisor-historicos-board">
+    <ng-template #title>
+      <div class="historicos-header-row">
+        <h1 class="historicos-title">Histórico de leads</h1>
+        <p-tag severity="info" [value]="facade.display(facade.totalElements())" />
+        <span
+          class="historicos-help-icon"
+          tabindex="0"
+          role="img"
+          aria-label="Información del histórico de leads"
+          pTooltip="Consulta leads PREVENTA de tu proveedor y muévelos entre equipos."
+          tooltipPosition="top"
+        ><i class="pi pi-exclamation-circle" aria-hidden="true"></i></span>
+      </div>
+    </ng-template>
+
+    <form class="historicos-filter-row" [formGroup]="facade.filtersForm" (ngSubmit)="facade.search()">
+      <label class="historicos-team-field">
+        <span>Equipo actual</span>
+        <p-selectButton
+          formControlName="idEquipo"
+          [options]="facade.teamOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          ariaLabel="Equipo actual"
+          pTooltip="Selecciona todos los equipos o un equipo específico"
+          tooltipPosition="top"
+        />
+      </label>
+      <label class="historicos-period-field">
+        <span>Periodo</span>
+        <app-period-selector
+          periodo="dia"
+          [dia]="facade.filtersForm.controls.fechaDesde.value"
+          [hasta]="facade.filtersForm.controls.fechaHasta.value"
+          (rangoChange)="onRangeChange($event)"
+        />
+      </label>
+      <label>
+        <span>Mostrar leads</span>
+        <p-selectButton
+          [options]="facade.modoFechaOptions"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="facade.filtersForm.controls.modoFecha.value"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onModoFechaChange($any($event.value))"
+        />
+      </label>
+      <label>
+        <span>Tipo de tipificación</span>
+        <p-selectButton
+          [options]="facade.campoTipificacionOptions"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="facade.filtersForm.controls.campoTipificacion.value"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onCampoTipificacionChange($any($event.value))"
+        />
+      </label>
+      <label class="historicos-multiselect-field">
+        <span>Tipificaciones</span>
+        <p-multiselect
+          formControlName="tipificaciones"
+          [options]="facade.tipificaciones()"
+          optionLabel="label"
+          optionValue="value"
+          display="chip"
+          [maxSelectedLabels]="1"
+          selectedItemsLabel="{0} seleccionadas"
+          [filter]="true"
+          appendTo="body"
+          (onChange)="facade.onTipificacionesChange()"
+        />
+      </label>
+      <label class="historicos-multiselect-field">
+        <span>Subtipificaciones</span>
+        <p-multiselect
+          formControlName="subtipificaciones"
+          [options]="facade.subtipificaciones()"
+          optionLabel="label"
+          optionValue="value"
+          display="chip"
+          [maxSelectedLabels]="1"
+          selectedItemsLabel="{0} seleccionadas"
+          [filter]="true"
+          appendTo="body"
+          (onChange)="facade.onSubtipificacionesChange()"
+          (onFilter)="facade.subtipificacionFilter.set($event.filter ?? '')"
+        />
+      </label>
+    </form>
+    @if (facade.dateHelper(); as helper) {
+      <small class="historicos-date-helper">{{ helper }}</small>
+    }
+
+    <div class="board-toolbar">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-sliders-h"
+        label="Organizar"
+        severity="secondary"
+        [outlined]="true"
+        (mouseenter)="onOrganizeEnter()"
+        (mouseleave)="onOrganizeLeave(organizePopover)"
+        (click)="onOrganizeEnter(); organizePopover.toggle($event)"
+      ></button>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-building"
+        [label]="'Asignar Equipo (' + facade.selectedCount() + ')'"
+        [disabled]="!facade.selectedCount() || facade.assigning()"
+        (click)="facade.openAssignment()"
+      ></button>
+      <p-popover #organizePopover appendTo="body" styleClass="gtr-organize-popover">
+        <div class="gtr-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(organizePopover)">
+          <label><span>Agrupar por</span><p-select [options]="facade.groupingModeOptions()" optionLabel="label" optionValue="value" [ngModel]="facade.groupingMode()" (onChange)="onGroupingModeChange($event.value)" /></label>
+          @if (facade.groupingMode() !== 'SIN_AGRUPAR') {
+            <label><span>Filtrar grupo</span><p-select [options]="facade.activeGroupOptions()" optionLabel="etiqueta" [showClear]="true" [ngModel]="facade.selectedGroup()" (onChange)="onGroupChange($event.value)" /></label>
+          }
+          <label><span>Ordenar por</span><p-select [options]="facade.sortOptions()" optionLabel="label" optionValue="value" [ngModel]="facade.sortField()" (onChange)="onSortFieldChange($event.value)" /></label>
+          <label><span>Mostrar primero</span><p-select [options]="facade.sortDirectionOptions()" optionLabel="label" optionValue="value" [ngModel]="facade.sortDirection()" (onChange)="onSortDirectionChange($event.value)" /></label>
+          <button pButton type="button" label="Limpiar filtro" severity="secondary" [text]="true" [disabled]="facade.isOrganizationDefault()" (click)="facade.clearOrganization()"></button>
+        </div>
+      </p-popover>
+    </div>
+
+    @if (facade.error() || facade.success()) {
+      <div class="historicos-feedback" role="region" aria-label="Estado de la operación" aria-live="polite">
+        @if (facade.error()) { <p-message severity="error" [text]="facade.error()" /> }
+        @if (facade.success()) { <p-message severity="success" [text]="facade.success()" /> }
+      </div>
+    }
+
+    <div class="historicos-table-shell" tabindex="0" role="region" aria-label="Histórico de leads del proveedor activo">
+      <p-table
+        [value]="facade.rows()"
+        dataKey="id"
+        [loading]="facade.loading()"
+        [rowHover]="true"
+        [scrollable]="true"
+        scrollHeight="flex"
+        styleClass="p-datatable-sm gtr-table historicos-table"
+      >
+        <ng-template #header>
+          <tr>
+            <th class="col-check"><app-gtr-lead-select-control [selected]="facade.allVisibleSelected()" [partial]="facade.someVisibleSelected()" [disabled]="!facade.rows().length" ariaLabel="Seleccionar todos los leads visibles" (selectionChange)="facade.toggleSelectAllVisible($event)" /></th>
+            <th>Lead</th>
+            <th>Proveedor</th>
+            <th>Campaña</th>
+            <th>Origen</th>
+            <th>Equipo actual</th>
+            <th>{{ facade.tipificacionColumnLabel() }}</th>
+            <th>Estado</th>
+            <th>Última actividad</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr [class.row-selected]="facade.isSelected(row.id)">
+            <td class="col-check"><app-gtr-lead-select-control [selected]="facade.isSelected(row.id)" [ariaLabel]="facade.isSelected(row.id) ? 'Quitar lead de la selección' : 'Seleccionar lead'" (selectionChange)="facade.toggleSelection(row.id, $event)" /></td>
+            <td><strong class="lead-value">{{ facade.display(row.lead || row.usermeta) }}</strong><small class="cell-secondary">{{ row.usermeta ? '@' + row.usermeta : 'Sin usermeta' }}</small></td>
+            <td>@if (facade.providerLogo(row.nombreProveedorCampana ?? row.nombreProveedorEquipo); as logo) { <img class="provider-logo" [src]="logo" [alt]="facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo)" /> } @else { {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }} }</td>
+            <td class="col-campaign"><strong>{{ facade.display(row.nombreCampana) }}</strong><small class="cell-secondary">{{ facade.display(row.nombreCuentaPublicitaria) }}</small></td>
+            <td>{{ facade.display(row.origen) }}</td>
+            <td class="col-team"><span class="team-pill">{{ facade.teamName(row.idEquipo) }}</span></td>
+            <td class="col-tipifications">@if (facade.historicosTipificacionParts(row); as tip) { <div class="tip-stack"><p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.codigoTipificacion, 'tipificacion', tip.codigoSubtipificacion)" /><span class="tip-stack__line"></span><p-tag [value]="tip.subtipificacion" [styleClass]="facade.tipificacionTagClass(tip.codigoTipificacion, 'subtipificacion', tip.codigoSubtipificacion)" /></div> }</td>
+            <td><p-tag [severity]="facade.estadoSeverity(row.estadoSeguimiento)" [value]="facade.display(row.estadoSeguimiento)" /></td>
+            <td><span class="datetime-stack"><span>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM' }}</span><strong>{{ (row.lastEntryAt ?? row.createdAt) | date: 'hh:mm a' }}</strong></span></td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr><td colspan="9" class="empty-message">{{ facade.searched() ? 'No se encontraron leads con esos filtros.' : 'Indica los filtros y ejecuta la búsqueda.' }}</td></tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </p-card>
+
+  <footer class="historicos-table-footer">
+    <p-paginator
+      [first]="facade.pageNumber() * facade.pageSize()"
+      [rows]="facade.pageSize()"
+      [totalRecords]="facade.totalElements()"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="{first}–{last} de {totalRecords}"
+      styleClass="historicos-paginator"
+      (onPageChange)="facade.loadPage($event.page ?? 0, $event.rows ?? facade.pageSize())"
+    />
+    <label class="historicos-page-size">
+      <span>Filas</span>
+      <p-select
+        styleClass="historicos-page-size__control"
+        [options]="facade.pageSizeOptions"
+        [ngModel]="facade.pageSize()"
+        [ngModelOptions]="{ standalone: true }"
+        ariaLabel="Filas por página"
+        appendTo="body"
+        (onChange)="facade.loadPage(0, $any($event.value))"
+      />
+    </label>
+  </footer>
+</div>
+
+<p-dialog
+  header="Asignar leads a un equipo"
+  [visible]="facade.assignmentDialogVisible()"
+  (visibleChange)="!$event && facade.closeAssignment()"
+  [modal]="true"
+  [draggable]="false"
+  [blockScroll]="true"
+  appendTo="body"
+  styleClass="gtr-dialog supervisor-historicos-assignment-dialog"
+>
+  <div class="assignment-summary" aria-live="polite">
+    <i class="pi pi-building" aria-hidden="true"></i>
+    <div><strong>{{ facade.selectedCount() }} leads seleccionados</strong><span>La asignación libera el asesor actual, limpia la tipificación viva y deja los leads como NUEVO.</span></div>
+  </div>
+  <label class="assignment-target">
+    <span>Equipo destino</span>
+    <p-select [options]="facade.visibleTeams()" optionLabel="nombre" optionValue="id" [ngModel]="facade.selectedTeamId()" (ngModelChange)="facade.selectedTeamId.set($event)" placeholder="Selecciona un equipo activo" appendTo="body" />
+  </label>
+  @if (facade.assignmentResults(); as result) {
+    <section class="assignment-results" aria-live="polite">
+      <strong>Resultado de la asignación</strong>
+      <p>{{ result.totalMovidos }} asignados · {{ result.totalFallidos }} fallidos</p>
+      @for (item of result.resultados; track item.idLead) {
+        <div class="assignment-result" [class.assignment-result--error]="item.operacion === 'ERROR'"><span>Lead {{ item.idLead }}</span><strong>{{ item.operacion === 'MOVIDO' ? 'Asignado' : item.operacion === 'SIN_CAMBIO' ? 'Sin cambio' : 'Fallido' }}</strong><small>{{ item.mensaje }}</small></div>
+      }
+    </section>
+  }
+  <div class="dialog-actions">
+    <button pButton type="button" label="Cerrar" severity="secondary" (click)="facade.closeAssignment()"></button>
+    @if (!facade.assignmentResults()) { <button pButton type="button" label="Asignar Equipo" icon="pi pi-check" [disabled]="!facade.selectedTeamId() || facade.assigning()" [loading]="facade.assigning()" (click)="facade.assignSelected()"></button> }
+  </div>
+</p-dialog>

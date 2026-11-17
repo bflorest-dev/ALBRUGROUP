@@ -5,6 +5,9 @@
   [class.gtr-page--agendados]="facade.section() === 'agendados'"
 >
   <div class="gtr-page__main">
+  @if (isSupervisorHistoricos()) {
+    <app-supervisor-gtr-historicos-board />
+  } @else {
   <p-card styleClass="gtr-hero">
     <div class="gtr-hero__content">
       <div>
@@ -131,6 +134,7 @@
 
   @if (facade.section() === 'ranking') {
     <app-ranking-view />
+  }
   }
   </div>
 

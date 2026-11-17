@@ -2,6 +2,7 @@ package pe.albrugroup.lead_service.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.entity.request.CatalogoEstadoRequest;
 import pe.albrugroup.lead_service.entity.request.CatalogoRequest;
 import pe.albrugroup.lead_service.entity.request.ClonarMatrizRequest;
@@ -25,6 +27,9 @@ import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import java.util.List;
 import pe.albrugroup.lead_service.service.LeadService;
 import pe.albrugroup.lead_service.service.TipificacionService;
+import pe.albrugroup.lead_service.service.ProveedorScopeService;
+import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.exception.ForbiddenException;
 
 @RestController @Validated
 @RequiredArgsConstructor
@@ -33,6 +38,7 @@ public class TipificacionController {
 
     private final TipificacionService service;
     private final LeadService leadService;
+    private final ProveedorScopeService proveedorScopeService;
 
     // ADMIN: catálogo de una etapa para un proveedor concreto.
     @GetMapping("/{etapa}/catalogo") @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa)")
@@ -64,11 +70,38 @@ public class TipificacionController {
         return ResponseEntity.ok(service.getCatalogoAgregado(etapa));
     }
 
-    @GetMapping("/{etapa}/catalogo-por-proveedor") @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa)")
+    @GetMapping("/{etapa}/catalogo-por-proveedor")
+    @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa) || hasAuthority('READ_HISTORICOS_SUPERVISOR_GTR')")
     public ResponseEntity<List<CatalogoProveedorResponse>> getCatalogoPorProveedor(
             @PathVariable Etapa etapa,
-            @RequestParam(required = false) Long idProveedor) {
+            @RequestParam(required = false) Long idProveedor,
+            Authentication authentication) {
+        if (!tienePermisoTipificaciones(authentication, etapa)) {
+            validarProveedorSupervisor(etapa, idProveedor);
+        }
         return ResponseEntity.ok(service.getCatalogoPorProveedor(etapa, idProveedor));
+    }
+
+    private boolean tienePermisoTipificaciones(Authentication authentication, Etapa etapa) {
+        String permiso = switch (etapa) {
+            case PREVENTA -> "READ_TIPIFICACIONES_PREVENTA";
+            case VENTA -> "READ_TIPIFICACIONES_VENTA";
+            case POSTVENTA, COBRANZA -> "READ_TIPIFICACIONES_POSTVENTA";
+        };
+        return authentication.getAuthorities().stream().anyMatch(a -> permiso.equals(a.getAuthority()));
+    }
+
+    private void validarProveedorSupervisor(Etapa etapa, Long idProveedor) {
+        if (etapa != Etapa.PREVENTA) {
+            throw new ForbiddenException("El histórico Supervisor solo puede consultar catálogos PREVENTA");
+        }
+        if (idProveedor == null || idProveedor <= 0) {
+            throw new BadRequestException("Selecciona un proveedor activo");
+        }
+        var scope = proveedorScopeService.resolverScope(AmbitoProveedor.PREVENTA);
+        if (!scope.restringido() || scope.proveedorIds().size() != 1 || !scope.proveedorIds().contains(idProveedor)) {
+            throw new ForbiddenException("El proveedor no pertenece al scope activo del Supervisor");
+        }
     }
 
     @PutMapping("/catalogo") @PreAuthorize("hasAuthority('UPDATE_TIPIFICACIONES')")

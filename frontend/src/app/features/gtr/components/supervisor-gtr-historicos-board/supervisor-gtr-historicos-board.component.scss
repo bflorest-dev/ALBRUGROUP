@@ -1,0 +1,101 @@
+@use '../gtr-board-shared';
+
+:host { container: supervisor-historicos / inline-size; display: flex; flex-direction: column; gap: .75rem; height: 100%; min-height: 0; min-width: 0; }
+.supervisor-historicos-page { display: flex; flex: 1 1 auto; flex-direction: column; gap: .75rem; min-height: 0; }
+:host ::ng-deep .supervisor-historicos-board { border: 1px solid var(--app-border-soft); box-shadow: var(--app-shadow-soft); flex: 1 1 auto; height: auto; min-height: 0; }
+:host ::ng-deep .supervisor-historicos-board .p-card-body { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+:host ::ng-deep .supervisor-historicos-board .p-card-content { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; padding-bottom: 0; }
+.historicos-header-row { align-items: center; display: flex; gap: .65rem; min-height: 2rem; }
+.historicos-title { color: var(--role-primary); font-size: 1.35rem; font-weight: 800; letter-spacing: -.025em; line-height: 1.15; margin: 0; }
+.historicos-help-icon { align-items: center; border-radius: 50%; color: var(--app-text-muted); cursor: help; display: inline-flex; font-size: .95rem; justify-content: center; min-block-size: 1.5rem; min-inline-size: 1.5rem; outline: none; }
+.historicos-help-icon:focus-visible { box-shadow: 0 0 0 2px var(--app-surface), 0 0 0 4px var(--role-accent); }
+.historicos-filter-row { align-items: end; display: grid; gap: .7rem; grid-template-columns: minmax(15rem, 1.15fr) minmax(13rem, 1.15fr) minmax(11rem, 1fr) minmax(11rem, 1fr) minmax(11rem, 1fr) minmax(11rem, 1fr); }
+.historicos-filter-row label { color: var(--app-text-muted); display: grid; font-size: .78rem; font-weight: 800; gap: .35rem; min-width: 0; }
+.historicos-period-field app-period-selector { display: block; min-width: 0; max-width: none; width: 100%; }
+.historicos-multiselect-field { flex: 1 1 12rem; }
+.historicos-team-field { min-width: 0; }
+:host ::ng-deep .historicos-team-field .p-selectbutton { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+:host ::ng-deep .historicos-filter-row .p-selectbutton { display: flex; min-width: 0; width: 100%; }
+:host ::ng-deep .historicos-period-field .period { display: flex; min-width: 0; width: 100%; }
+:host ::ng-deep .historicos-period-field .p-selectbutton { flex: 1 1 auto; }
+:host ::ng-deep .historicos-filter-row .p-selectbutton .p-button { align-items: center; flex: 1 1 0; font-size: .72rem; line-height: 1.1; min-block-size: 2.5rem; min-width: 0; overflow: visible; padding-inline: .3rem; position: relative; text-align: center; white-space: normal; }
+:host ::ng-deep .historicos-filter-row .p-selectbutton .p-button.p-highlight,
+:host ::ng-deep .historicos-filter-row .p-selectbutton .p-button:focus-visible { z-index: 1; }
+:host ::ng-deep .historicos-team-field .p-selectbutton .p-button { font-size: .72rem; }
+:host ::ng-deep .historicos-period-field .p-selectbutton .p-button { font-size: .72rem; }
+.historicos-date-helper { color: var(--app-text-muted); display: block; font-size: .76rem; margin-top: .45rem; }
+.board-toolbar { align-items: center; border-top: 1px solid var(--app-border-soft); display: flex; flex-wrap: wrap; gap: .65rem; justify-content: flex-end; margin: .9rem 0 .75rem; padding-top: .85rem; }
+.historicos-feedback { display: grid; gap: .45rem; margin: -.15rem 0 .65rem; }
+:host ::ng-deep .historicos-feedback .p-message { margin: 0; }
+.historicos-table-shell { container-type: inline-size; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+:host ::ng-deep .historicos-table { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+:host ::ng-deep .historicos-table .p-datatable-table-container,
+:host ::ng-deep .historicos-table .p-datatable-wrapper { flex: 1 1 auto; min-height: 0; overflow-x: auto !important; overflow-y: auto !important; }
+:host ::ng-deep .historicos-table .p-datatable-table { min-width: 68rem; table-layout: fixed; width: 100%; }
+:host ::ng-deep .historicos-table th { white-space: nowrap; }
+:host ::ng-deep .historicos-table :is(th, td) { overflow: hidden; text-overflow: ellipsis; }
+:host ::ng-deep .historicos-table :is(th, td):nth-child(1) { width: 5%; }
+:host ::ng-deep .historicos-table :is(th, td):nth-child(2) { width: 9%; }
+:host ::ng-deep .historicos-table :is(th, td):nth-child(3) { width: 7%; }
+:host ::ng-deep .historicos-table :is(th, td):nth-child(4) { width: 14%; }
+:host ::ng-deep .historicos-table :is(th, td):nth-child(5) { width: 9%; }
+:host ::ng-deep .historicos-table :is(th, td):nth-child(6) { width: 15%; }
+:host ::ng-deep .historicos-table :is(th, td):nth-child(7) { width: 16%; }
+:host ::ng-deep .historicos-table :is(th, td):nth-child(8) { width: 9%; }
+:host ::ng-deep .historicos-table :is(th, td):nth-child(9) { width: 10%; }
+.cell-secondary { color: var(--app-text-muted); display: block; font-size: .72rem; margin-top: .2rem; }
+.provider-logo { block-size: 2rem; inline-size: 2rem; object-fit: contain; }
+.team-pill { background: color-mix(in srgb, var(--role-accent) 10%, white); border: 1px solid color-mix(in srgb, var(--role-accent) 25%, var(--app-border-soft)); border-radius: 999px; display: inline-flex; font-size: .75rem; font-weight: 700; padding: .28rem .55rem; white-space: nowrap; }
+.tip-stack { align-items: stretch; display: inline-grid; gap: .18rem; margin-inline: auto; min-width: 0; width: 100%; }
+.tip-stack__line { background: var(--app-border-soft); block-size: 1px; inline-size: 100%; }
+.empty-message { color: var(--app-text-muted); font-weight: 600; padding: 2rem 1rem; text-align: center; }
+.historicos-table-footer { align-items: center; background: var(--app-surface); border: 1px solid var(--app-border-soft); border-radius: .55rem; display: flex; flex: 0 0 auto; min-height: 3.35rem; padding: .35rem 8rem .35rem .75rem; position: relative; }
+:host ::ng-deep .historicos-paginator { align-items: center; border: 0; border-radius: 0; display: flex; flex-wrap: nowrap; gap: .35rem; justify-content: center; min-width: 0; padding: 0; width: 100%; }
+.historicos-page-size { align-items: center; color: var(--app-text-muted); display: inline-flex; font-size: .78rem; font-weight: 700; gap: .45rem; position: absolute; right: .75rem; top: 50%; transform: translateY(-50%); white-space: nowrap; }
+:host ::ng-deep .historicos-page-size__control { min-width: 6.4rem; width: 6.4rem; }
+.assignment-summary { align-items: flex-start; background: var(--app-surface-soft, #f4f7fb); border: 1px solid var(--app-border-soft); border-radius: .7rem; display: flex; gap: .75rem; padding: .9rem; }
+.assignment-summary i { color: var(--role-accent); font-size: 1.2rem; }
+.assignment-summary strong, .assignment-summary span { display: block; }
+.assignment-summary span { color: var(--app-text-muted); font-size: .82rem; line-height: 1.4; margin-top: .2rem; }
+.assignment-target { display: grid; gap: .35rem; margin-top: 1rem; }
+.assignment-target span { color: var(--app-text-muted); font-size: .8rem; font-weight: 800; }
+.assignment-target .p-select { width: 100%; }
+.assignment-results { border-top: 1px solid var(--app-border-soft); margin-top: 1rem; max-height: 15rem; overflow: auto; padding-top: .85rem; }
+.assignment-results > p { color: var(--app-text-muted); margin: .25rem 0 .6rem; }
+.assignment-result { border-bottom: 1px solid var(--app-border-soft); display: grid; gap: .15rem; grid-template-columns: 1fr auto; padding: .45rem 0; }
+.assignment-result small { color: var(--app-text-muted); grid-column: 1 / -1; }
+.assignment-result--error strong { color: var(--app-danger, #c0392b); }
+.dialog-actions { align-items: center; display: flex; gap: .65rem; justify-content: flex-end; margin-top: 1rem; }
+
+@container supervisor-historicos (inline-size < 1280px) {
+  .historicos-filter-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@container supervisor-historicos (inline-size < 860px) {
+  .historicos-filter-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@container supervisor-historicos (inline-size < 600px) {
+  .historicos-filter-row { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .historicos-period-field app-period-selector, .historicos-multiselect-field, .historicos-team-field { max-width: none; min-width: 0; width: 100%; }
+  .historicos-filter-row .p-selectbutton { width: 100%; }
+  .board-toolbar { align-items: stretch; flex-direction: column; }
+  .board-toolbar > button:first-child { margin-right: 0; }
+}
+
+@media (max-width: 900px) {
+  :host { height: auto; }
+  .supervisor-historicos-page { flex: none; }
+  :host ::ng-deep .supervisor-historicos-board { flex: none; height: auto; }
+  :host ::ng-deep .supervisor-historicos-board .p-card-body,
+  :host ::ng-deep .supervisor-historicos-board .p-card-content { min-height: auto; }
+  .historicos-table-shell { min-height: 24rem; }
+  .historicos-table-footer { display: grid; gap: .35rem; grid-template-columns: 1fr; justify-items: stretch; padding: .45rem .65rem; }
+  :host ::ng-deep .historicos-paginator { flex-wrap: wrap; }
+  :host ::ng-deep .historicos-paginator .p-paginator-current { flex: 1 0 100%; text-align: center; }
+  .historicos-page-size { justify-self: end; position: static; transform: none; }
+}
+
+@media (pointer: coarse) {
+  :host ::ng-deep button, :host ::ng-deep .p-select, :host ::ng-deep .p-multiselect { min-block-size: 2.75rem; }
+}

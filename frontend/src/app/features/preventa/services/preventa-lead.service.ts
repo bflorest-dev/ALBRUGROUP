@@ -12,6 +12,7 @@ import {
   CampanaResponse,
   CampoConfigItem,
   CatalogoResponse,
+  CatalogoProveedorResponse,
   LeadAsignacionMasivaRequest,
   LeadAsignacionMasivaResponse,
   LeadAsignacionRequest,
@@ -45,6 +46,8 @@ import {
   LeadIdentidadRequest,
   LeadNumeroParaLlamarRequest,
   MasivoLeadFilters,
+  SupervisorHistoricosEquipoMasivoRequest,
+  SupervisorHistoricosEquipoMasivoResponse,
   MisPreventaResponse,
   MisPreventasCuadranteResponse,
   MisPreventasResumenResponse,
@@ -350,6 +353,30 @@ export class PreventaLeadService {
     });
   }
 
+  listarLeadsHistoricosSupervisor(
+    filters: MasivoLeadFilters,
+    query: PageQuery
+  ): Observable<LeadPage<LeadGtrResponse>> {
+    return this.http.get<LeadPage<LeadGtrResponse>>(`${this.leadUrl}/preventa/supervisor/historicos/leads`, {
+      params: this.supervisorHistoricosParams(filters, query)
+    });
+  }
+
+  listarAgrupacionesHistoricosSupervisor(filters: MasivoLeadFilters): Observable<LeadGtrGroupsResponse> {
+    return this.http.get<LeadGtrGroupsResponse>(`${this.leadUrl}/preventa/supervisor/historicos/leads/agrupaciones`, {
+      params: this.supervisorHistoricosFilterParams(filters)
+    });
+  }
+
+  moverLeadsHistoricosSupervisor(
+    request: SupervisorHistoricosEquipoMasivoRequest
+  ): Observable<SupervisorHistoricosEquipoMasivoResponse> {
+    return this.http.patch<SupervisorHistoricosEquipoMasivoResponse>(
+      `${this.leadUrl}/preventa/supervisor/historicos/equipo-masivo`,
+      request
+    );
+  }
+
   registrarIngresoLead(request: LeadIntakeRequest, idEquipo?: number | null): Observable<void> {
     let params = new HttpParams();
     if (idEquipo !== null && idEquipo !== undefined) {
@@ -641,6 +668,12 @@ export class PreventaLeadService {
     return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-agregado`);
   }
 
+  getCatalogoPorProveedor(etapa: string, idProveedor?: number | null): Observable<CatalogoProveedorResponse[]> {
+    let params = new HttpParams();
+    if (idProveedor != null) params = params.set('idProveedor', idProveedor);
+    return this.http.get<CatalogoProveedorResponse[]>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-por-proveedor`, { params });
+  }
+
   listarCampanasActivas(
     idEquipo?: number | null,
     idProveedor?: number | null
@@ -844,6 +877,37 @@ export class PreventaLeadService {
     if (filters.fechaHasta) {
       params = params.set('fechaHasta', filters.fechaHasta);
     }
+    return params;
+  }
+
+  private supervisorHistoricosParams(filters: MasivoLeadFilters, query: PageQuery): HttpParams {
+    let params = this.supervisorHistoricosFilterParams(filters)
+      .set('pageNumber', query.pageNumber)
+      .set('pageSize', query.pageSize)
+      .set('sortBy', query.sortBy)
+      .set('direction', query.direction);
+    if (filters.tipoGrupo) params = params.set('tipoGrupo', filters.tipoGrupo);
+    if (filters.estado) params = params.set('estado', filters.estado);
+    if (filters.codigoTipificacion) params = params.set('codigoTipificacion', filters.codigoTipificacion);
+    if (filters.codigoSubtipificacion) params = params.set('codigoSubtipificacion', filters.codigoSubtipificacion);
+    if (filters.fechaIngreso) params = params.set('fechaIngreso', filters.fechaIngreso);
+    if (filters.sinValor) params = params.set('sinValor', true);
+    return params;
+  }
+
+  private supervisorHistoricosFilterParams(filters: MasivoLeadFilters): HttpParams {
+    let params = new HttpParams();
+    if (filters.idEquipo != null) params = params.set('idEquipo', filters.idEquipo);
+    for (const codigo of filters.codigosTipificacion ?? []) {
+      params = params.append('codigosTipificacion', codigo);
+    }
+    for (const codigo of filters.codigosSubtipificacion ?? []) {
+      params = params.append('codigosSubtipificacion', codigo);
+    }
+    if (filters.campoTipificacion) params = params.set('campoTipificacion', filters.campoTipificacion);
+    if (filters.modoFecha) params = params.set('modoFecha', filters.modoFecha);
+    if (filters.fechaDesde) params = params.set('fechaDesde', filters.fechaDesde);
+    if (filters.fechaHasta) params = params.set('fechaHasta', filters.fechaHasta);
     return params;
   }
 

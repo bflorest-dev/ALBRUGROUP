@@ -73,6 +73,60 @@ public class MasivoService {
             Long idEquipo,
             PageRequest pageRequest
     ) {
+        return listarLeadsInterno(
+                idProveedor, etapa, codigosTipificacion, codigosSubtipificacion, campoTipificacion,
+                modoFecha, fechaDesde, fechaHasta, tipoGrupo, estadoGrupo, codigoTipificacion,
+                codigoSubtipificacion, fechaIngreso, sinValor, pageRequest,
+                resolverEquiposActuales(idEquipo)
+        );
+    }
+
+    /**
+     * Histórico Supervisor: no hereda la partición por equipos del GTR. El filtro de proveedor
+     * lo aplica el Hibernate providerOriginFilter de la request y el equipo es opcional.
+     */
+    public PageResponse<LeadGtrResponse> listarLeadsSupervisor(
+            List<String> codigosTipificacion,
+            List<String> codigosSubtipificacion,
+            CampoTipificacion campoTipificacion,
+            ModoFechaMasivo modoFecha,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            TipoGrupoGtr tipoGrupo,
+            EstadoSeguimiento estadoGrupo,
+            String codigoTipificacion,
+            String codigoSubtipificacion,
+            LocalDate fechaIngreso,
+            boolean sinValor,
+            Long idEquipo,
+            PageRequest pageRequest
+    ) {
+        return listarLeadsInterno(
+                null, Etapa.PREVENTA, codigosTipificacion, codigosSubtipificacion, campoTipificacion,
+                modoFecha, fechaDesde, fechaHasta, tipoGrupo, estadoGrupo, codigoTipificacion,
+                codigoSubtipificacion, fechaIngreso, sinValor, pageRequest,
+                resolverEquiposSupervisor(idEquipo)
+        );
+    }
+
+    private PageResponse<LeadGtrResponse> listarLeadsInterno(
+            Long idProveedor,
+            Etapa etapa,
+            List<String> codigosTipificacion,
+            List<String> codigosSubtipificacion,
+            CampoTipificacion campoTipificacion,
+            ModoFechaMasivo modoFecha,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            TipoGrupoGtr tipoGrupo,
+            EstadoSeguimiento estadoGrupo,
+            String codigoTipificacion,
+            String codigoSubtipificacion,
+            LocalDate fechaIngreso,
+            boolean sinValor,
+            PageRequest pageRequest,
+            EquipoScope equipos
+    ) {
         CampoTipificacion campoResuelto = resolverCampoTipificacion(campoTipificacion);
         ModoFechaMasivo modoFechaResuelto = resolverModoFecha(modoFecha);
         validarModoFecha(modoFechaResuelto, fechaDesde);
@@ -84,7 +138,6 @@ public class MasivoService {
         boolean sortDesc = LeadOrderingRules.isDesc(pageRequest);
         var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
         RangoFechas rangoIngreso = resolverRangoIngreso(fechaIngreso);
-        EquipoScope equipos = resolverEquiposActuales(idEquipo);
         var pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPageNumber(),
                 pageRequest.getPageSize()
@@ -151,12 +204,43 @@ public class MasivoService {
             LocalDate fechaHasta,
             Long idEquipo
     ) {
+        return listarAgrupacionesInterno(
+                idProveedor, etapa, codigosTipificacion, codigosSubtipificacion, campoTipificacion,
+                modoFecha, fechaDesde, fechaHasta, resolverEquiposActuales(idEquipo)
+        );
+    }
+
+    public LeadGtrAgrupacionesResponse listarAgrupacionesSupervisor(
+            List<String> codigosTipificacion,
+            List<String> codigosSubtipificacion,
+            CampoTipificacion campoTipificacion,
+            ModoFechaMasivo modoFecha,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            Long idEquipo
+    ) {
+        return listarAgrupacionesInterno(
+                null, Etapa.PREVENTA, codigosTipificacion, codigosSubtipificacion, campoTipificacion,
+                modoFecha, fechaDesde, fechaHasta, resolverEquiposSupervisor(idEquipo)
+        );
+    }
+
+    private LeadGtrAgrupacionesResponse listarAgrupacionesInterno(
+            Long idProveedor,
+            Etapa etapa,
+            List<String> codigosTipificacion,
+            List<String> codigosSubtipificacion,
+            CampoTipificacion campoTipificacion,
+            ModoFechaMasivo modoFecha,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            EquipoScope equipos
+    ) {
         CampoTipificacion campoResuelto = resolverCampoTipificacion(campoTipificacion);
         ModoFechaMasivo modoFechaResuelto = resolverModoFecha(modoFecha);
         validarModoFecha(modoFechaResuelto, fechaDesde);
         FiltrosMasivo filtros = prepararFiltros(
                 null, Etapa.PREVENTA, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
-        EquipoScope equipos = resolverEquiposActuales(idEquipo);
         List<LeadGtrAgrupacionItemResponse> tipificaciones = mapearAgrupacionesTipificacion(
                 agruparPorCampoTipificacion(campoResuelto, filtros, equipos, modoFechaResuelto == ModoFechaMasivo.REGISTRADOS)
         );
@@ -583,6 +667,12 @@ public class MasivoService {
             throw new BadRequestException("No tienes acceso al equipo seleccionado.");
         }
         return new EquipoScope(true, List.of(idEquipoSolicitado));
+    }
+
+    private EquipoScope resolverEquiposSupervisor(Long idEquipoSolicitado) {
+        return idEquipoSolicitado == null
+                ? new EquipoScope(false, EQUIPOS_FILTRO_VACIO)
+                : new EquipoScope(true, List.of(idEquipoSolicitado));
     }
 
     private record RangoFechas(Instant inicio, Instant fin) {

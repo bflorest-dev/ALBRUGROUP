@@ -1,5 +1,5 @@
 import { DOCUMENT, DatePipe, UpperCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription, combineLatest } from 'rxjs';
@@ -21,6 +21,9 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 import { GtrAdvisorsDrawerComponent } from '../../components/gtr-advisors-drawer/gtr-advisors-drawer.component';
 import { GtrAgendadosBoardComponent } from '../../components/gtr-agendados-board/gtr-agendados-board.component';
 import { GtrHistoricosBoardComponent } from '../../components/gtr-historicos-board/gtr-historicos-board.component';
+import { SupervisorGtrHistoricosBoardComponent } from '../../components/supervisor-gtr-historicos-board/supervisor-gtr-historicos-board.component';
+import { SupervisorGtrHistoricosFacade } from '../../facades/supervisor-gtr-historicos.facade';
+import { SessionService } from '../../../../core/services/session.service';
 import { GtrLeadsBoardComponent } from '../../components/gtr-leads-board/gtr-leads-board.component';
 import { GtrEventsDialogComponent } from '../../components/gtr-events-dialog/gtr-events-dialog.component';
 import { GtrAdvisorEventsDialogComponent } from '../../components/gtr-advisor-events-dialog/gtr-advisor-events-dialog.component';
@@ -51,6 +54,7 @@ import { GtrTipificationDialogComponent } from '../../components/gtr-tipificatio
     GtrAdvisorsDrawerComponent,
     GtrAgendadosBoardComponent,
     GtrHistoricosBoardComponent,
+    SupervisorGtrHistoricosBoardComponent,
     GtrLeadsBoardComponent,
     GtrEventsDialogComponent,
     GtrAdvisorEventsDialogComponent,
@@ -58,20 +62,27 @@ import { GtrTipificationDialogComponent } from '../../components/gtr-tipificatio
     GtrScheduleExtensionDialogComponent,
     GtrTipificationDialogComponent
   ],
-  providers: [GtrWorkspaceFacade, RankingFacade],
+  providers: [GtrWorkspaceFacade, RankingFacade, SupervisorGtrHistoricosFacade],
   templateUrl: './gtr-workspace-page.component.html',
   styleUrl: './gtr-workspace-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GtrWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(GtrWorkspaceFacade);
+  protected readonly supervisorHistoricosFacade = inject(SupervisorGtrHistoricosFacade);
   private readonly rankingFacade = inject(RankingFacade);
+  private readonly sessionService = inject(SessionService);
   private readonly route = inject(ActivatedRoute);
   private readonly document = inject(DOCUMENT);
   private readonly routeSubscription = new Subscription();
   private readonly modalScrollLockClass = 'gtr-modal-scroll-lock';
+  private readonly routeSection = signal<string | null>(null);
+  private workspaceLifecycle: 'gtr' | 'supervisor' | null = null;
   private modalScrollLocked = false;
   private modalScrollTop = 0;
+  protected readonly isSupervisorHistoricos = computed(() =>
+    this.facade.section() === 'historicos' && this.sessionService.activeRole() === 'SUPERVISOR_GTR'
+  );
 
   constructor() {
     effect(() => {
@@ -81,6 +92,28 @@ export class GtrWorkspacePageComponent implements OnInit, OnDestroy {
         this.facade.masivoExcelResultsDialogOpen();
 
       this.setModalScrollLock(hasModalOpen);
+    });
+    effect(() => {
+      const section = this.routeSection();
+      const activeRole = this.sessionService.activeRole();
+      if (section == null || activeRole == null) {
+        return;
+      }
+
+      const supervisorHistoricos = section === 'historicos' && activeRole === 'SUPERVISOR_GTR';
+      const nextLifecycle: 'gtr' | 'supervisor' = supervisorHistoricos ? 'supervisor' : 'gtr';
+      if (this.workspaceLifecycle === nextLifecycle) {
+        return;
+      }
+
+      this.facade.stop();
+      this.supervisorHistoricosFacade.stop();
+      this.workspaceLifecycle = nextLifecycle;
+      if (supervisorHistoricos) {
+        void this.supervisorHistoricosFacade.start();
+      } else {
+        void this.facade.start();
+      }
     });
   }
 
@@ -94,15 +127,16 @@ export class GtrWorkspacePageComponent implements OnInit, OnDestroy {
         const section = data['section'];
         if (section === 'plataforma' || section === 'agendados' || section === 'historicos' || section === 'ranking') {
           this.facade.setSection(section);
+          this.routeSection.set(section);
         }
       })
     );
-    this.facade.start();
   }
 
   ngOnDestroy(): void {
     this.routeSubscription.unsubscribe();
     this.facade.stop();
+    this.supervisorHistoricosFacade.stop();
     this.setModalScrollLock(false);
   }
 

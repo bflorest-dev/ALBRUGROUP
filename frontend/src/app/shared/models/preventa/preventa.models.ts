@@ -246,6 +246,28 @@ export interface MasivoLeadFilters {
   sinValor?: boolean;
 }
 
+export interface SupervisorHistoricosEquipoMasivoRequest {
+  idsLead: number[];
+  idEquipo: number;
+}
+
+export interface SupervisorHistoricosEquipoResultadoResponse {
+  idLead: number;
+  movido: boolean;
+  operacion: 'MOVIDO' | 'SIN_CAMBIO' | 'ERROR' | string;
+  idEquipoAnterior?: number | null;
+  idEquipoDestino?: number | null;
+  mensaje: string;
+}
+
+export interface SupervisorHistoricosEquipoMasivoResponse {
+  totalSolicitados: number;
+  totalProcesados: number;
+  totalMovidos: number;
+  totalFallidos: number;
+  resultados: SupervisorHistoricosEquipoResultadoResponse[];
+}
+
 export interface LeadAsesorVentasResponse {
   id: number;
   fechaAsignacion?: string | null;
