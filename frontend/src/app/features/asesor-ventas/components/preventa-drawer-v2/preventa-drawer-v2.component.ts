@@ -113,6 +113,7 @@ export class PreventaDrawerV2Component implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.document.body.classList.remove('preventa-drawer-v2-open');
     this.restoreScroll();
   }
 
@@ -136,6 +137,7 @@ export class PreventaDrawerV2Component implements OnInit, OnDestroy {
   }
 
   protected syncOverlay(visible: boolean): void {
+    this.document.body.classList.toggle('preventa-drawer-v2-open', visible);
     if (visible) {
       this.document.body.style.overflow = 'hidden';
       this.document.documentElement.style.overflow = 'hidden';
