@@ -266,15 +266,30 @@ p {
   width: 16rem;
 }
 
+:host ::ng-deep .supervisor-leads-table th.col-actions {
+  text-align: center;
+}
+
 .lead-actions {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: .35rem;
+  justify-content: center;
 }
 
 .lead-actions .p-button {
-  min-height: 2.15rem;
+  align-items: center;
+  box-sizing: border-box;
+  height: 2.5rem;
+  justify-content: center;
+  min-height: 2.5rem;
+}
+
+.lead-actions__icon {
+  min-width: 2.5rem;
+  padding-inline: 0;
+  width: 2.5rem;
 }
 
 .lead-cell,

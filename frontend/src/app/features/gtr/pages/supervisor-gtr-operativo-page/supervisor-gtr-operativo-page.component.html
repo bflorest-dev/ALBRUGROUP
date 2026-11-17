@@ -178,12 +178,13 @@
             </td>
             <td class="col-actions">
               <div class="lead-actions" role="group" [attr.aria-label]="'Acciones para lead ' + (lead.lead || lead.usermeta || lead.id)">
-                <button pButton type="button" label="Gestionar" icon="pi pi-sliders-h" class="p-button-sm p-button-success"
+                <button pButton type="button" icon="pi pi-cog" severity="secondary" [outlined]="true" class="p-button-sm lead-actions__icon"
+                  pTooltip="Gestionar lead" tooltipPosition="top" aria-label="Gestionar lead"
                   (click)="gestionFacade.openDetail(lead.id)"></button>
-                <button pButton type="button" icon="pi pi-history" severity="secondary" [outlined]="true"
+                <button pButton type="button" icon="pi pi-history" severity="secondary" [outlined]="true" class="lead-actions__icon"
                   pTooltip="Ver historial" tooltipPosition="top" aria-label="Ver historial"
                   (click)="facade.abrirHistorial(lead)"></button>
-                <button pButton type="button" label="Asignar" icon="pi pi-arrow-right" severity="secondary" [outlined]="true" class="p-button-sm"
+                <button pButton type="button" label="Asignar" icon="pi pi-arrow-right" severity="success" class="p-button-sm"
                   (click)="facade.abrirAsignacionDialog(lead)"></button>
               </div>
             </td>
