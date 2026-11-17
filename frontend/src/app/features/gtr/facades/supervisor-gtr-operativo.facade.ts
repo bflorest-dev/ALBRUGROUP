@@ -9,7 +9,8 @@ import {
   LeadGtrMetricasResponse,
   LeadEquipoAsignacionMasivaResponse,
   LeadIntakeRequest,
-  LeadIntakeRetroactivoRequest
+  LeadIntakeRetroactivoRequest,
+  EventoResponse
 } from '../../../shared/models/preventa/preventa.models';
 import {
   EquipoOperativoResponse,
@@ -140,6 +141,12 @@ export class SupervisorGtrOperativoFacade {
     this.asignacionMasivaActiva() ? 'Asignar equipo a leads' : 'Asignar equipo al lead'
   );
 
+  // Historial reutilizado para la supervisión, sin abrir el drawer ni tomar el lead.
+  readonly historialDialogVisible = signal(false);
+  readonly historialLead = signal<LeadSupervisorSinEquipoResponse | null>(null);
+  readonly historialEventos = signal<EventoResponse[]>([]);
+  readonly historialCargando = signal(false);
+
   // Pagination
   readonly paginaActual = signal(0);
 
@@ -242,7 +249,18 @@ export class SupervisorGtrOperativoFacade {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (event) => {
-          if (!this.initialized || !['REGISTRO', 'REGISTRO_MASIVO', 'ASIGNACION'].includes(event.tipo)) {
+          if (!this.initialized || ![
+            'REGISTRO',
+            'REGISTRO_MASIVO',
+            'ASIGNACION',
+            'IDENTIDAD_ACTUALIZADA',
+            'SNAPSHOTS_ACTUALIZADOS',
+            'DATOS_PREVENTA_ACTUALIZADOS',
+            'DIRECCION_ACTUALIZADA',
+            'OFERTA_COMERCIAL_ACTUALIZADA',
+            'TIPIFICACION',
+            'CONTACTO'
+          ].includes(event.tipo)) {
             return;
           }
           void Promise.all([
@@ -516,6 +534,33 @@ export class SupervisorGtrOperativoFacade {
     this.asignacionDialogVisible.set(false);
     this.leadParaAsignar.set(null);
     this.asignacionMasivaIds.set([]);
+  }
+
+  async abrirHistorial(lead: LeadSupervisorSinEquipoResponse): Promise<void> {
+    this.historialLead.set(lead);
+    this.historialEventos.set([]);
+    this.historialDialogVisible.set(true);
+    this.historialCargando.set(true);
+    try {
+      const fecha = new Date().toISOString().slice(0, 10);
+      const response = await firstValueFrom(this.preventaService.listarEventosLead(lead.id, fecha, {
+        pageNumber: 0,
+        pageSize: 50,
+        sortBy: 'createdAt',
+        direction: 'desc'
+      }));
+      this.historialEventos.set(response?.content ?? []);
+    } catch {
+      this.error.set('No se pudo cargar el historial del lead.');
+    } finally {
+      this.historialCargando.set(false);
+    }
+  }
+
+  cerrarHistorial(): void {
+    this.historialDialogVisible.set(false);
+    this.historialLead.set(null);
+    this.historialEventos.set([]);
   }
 
   async asignarEquipo(): Promise<void> {

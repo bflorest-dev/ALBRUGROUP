@@ -2,6 +2,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, Validators } from '@angular/forms';
 import { Observable, Subscription, firstValueFrom, map, tap } from 'rxjs';
 import { AttendanceFacade } from '../../../core/facades/attendance.facade';
+import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { DireccionCatalogoService } from '../../../core/services/direccion-catalogo.service';
 import { AsesorVentasWorkspaceStateService } from '../../../core/services/asesor-ventas-workspace-state.service';
 import { BrowserSessionService } from '../../../core/services/browser-session.service';
@@ -122,8 +123,8 @@ export class AsesorVentasWorkspaceFacade {
   private readonly presenceService = inject(PresenceService);
   private readonly sessionService = inject(SessionService);
   private readonly workspaceState = inject(AsesorVentasWorkspaceStateService);
-  private readonly preventaService = inject(PreventaLeadService);
-  private readonly direccionCatalogoService = inject(DireccionCatalogoService);
+  protected readonly preventaService = inject(PreventaLeadService);
+  protected readonly direccionCatalogoService = inject(DireccionCatalogoService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
@@ -403,6 +404,7 @@ export class AsesorVentasWorkspaceFacade {
   }
   readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
+  readonly allowsNewOpportunity: boolean = true;
   /** El horario termino pero el asesor sigue con un lead en gestion: puede terminarlo (gracia de cierre). */
   /** Turno terminado: se muestra siempre que la salida ya paso, gestionando o no. */
   readonly wrapUpActive = computed(() => this.attendanceFacade.isPastSalida());
@@ -410,6 +412,15 @@ export class AsesorVentasWorkspaceFacade {
   readonly canFinishManagedLead = computed(
     () => this.canMutateOperationalData() || this.isManagingLead()
   );
+
+  /** Endpoints del selector de números; los contextos especializados pueden sobrescribirlos. */
+  phoneNumbersUrl(idLead: number): string {
+    return `${API_CONSTANTS.gatewayBaseUrl}/leads/${idLead}/numeros-llamada`;
+  }
+
+  phoneNumberUpdateUrl(idLead: number): string {
+    return `${API_CONSTANTS.gatewayBaseUrl}/leads/${idLead}/numero-para-llamar`;
+  }
 
 
   constructor() {
@@ -1703,7 +1714,7 @@ export class AsesorVentasWorkspaceFacade {
 
   // Catálogo de tipificaciones del proveedor efectivo del lead. En PREVENTA puede venir del plan,
   // del selector de Oferta Comercial o del fallback del equipo.
-  private async cargarCatalogoDelLead(idLead: number, idProveedor?: number | null): Promise<void> {
+  protected async cargarCatalogoDelLead(idLead: number, idProveedor?: number | null): Promise<void> {
     this.catalogo.set(await firstValueFrom(this.preventaService.getCatalogoTipificaciones(idLead, 'PREVENTA', idProveedor)));
     this.reconcileTipificacionSelectionWithCatalog();
   }
@@ -1731,7 +1742,7 @@ export class AsesorVentasWorkspaceFacade {
     }
   }
 
-  private async refreshOfferCatalogs(idPlan: number, idProveedorBase?: number | null): Promise<void> {
+  protected async refreshOfferCatalogs(idPlan: number, idProveedorBase?: number | null): Promise<void> {
     const plan = this.planes().find((item) => item.id === idPlan);
     const idProveedor = plan?.idProveedor ?? idProveedorBase ?? this.selectedOfertaProviderId() ?? null;
     const idZona = this.detail()?.idZona;
@@ -1752,7 +1763,7 @@ export class AsesorVentasWorkspaceFacade {
     this.adicionales.set(adicionales);
   }
 
-  private async refreshPlanesOferta(): Promise<void> {
+  protected async refreshPlanesOferta(): Promise<void> {
     const sequence = ++this.planOfertaLoadSequence;
     const detail = this.detail();
     const idProveedor = this.selectedOfertaProviderId();
@@ -1822,7 +1833,7 @@ export class AsesorVentasWorkspaceFacade {
     }
   }
 
-  private async ensurePlanOfertaZone(detail: LeadDetalleResponse | null): Promise<'READY' | 'FALLBACK' | 'BLOCKED'> {
+  protected async ensurePlanOfertaZone(detail: LeadDetalleResponse | null): Promise<'READY' | 'FALLBACK' | 'BLOCKED'> {
     const currentUbigeo = String(this.direccionForm.controls.ubigeoDomicilio.value ?? '').trim();
     const savedUbigeo = String(detail?.ubigeoDomicilio ?? '').trim();
     const idProveedor = this.selectedOfertaProviderId();
@@ -1867,11 +1878,11 @@ export class AsesorVentasWorkspaceFacade {
     );
   }
 
-  private async refreshProviderAdditionals(idProveedor: number): Promise<void> {
+  protected async refreshProviderAdditionals(idProveedor: number): Promise<void> {
     this.adicionales.set(await firstValueFrom(this.preventaService.listarAdicionales(idProveedor)));
   }
 
-  private async ensureProviderCamposConfig(idProveedor: number): Promise<void> {
+  protected async ensureProviderCamposConfig(idProveedor: number): Promise<void> {
     if (this.camposConfigByProviderId()[idProveedor]) {
       return;
     }
@@ -1891,7 +1902,7 @@ export class AsesorVentasWorkspaceFacade {
     };
   }
 
-  private patchForms(detail: LeadDetalleResponse): void {
+  protected patchForms(detail: LeadDetalleResponse): void {
     this.patchIdentidadForm(detail);
     this.patchDatosForm(detail);
     this.patchDireccionForm(detail);
@@ -1990,7 +2001,7 @@ export class AsesorVentasWorkspaceFacade {
     }
   }
 
-  private resolveProveedorOfertaInicial(detail: LeadDetalleResponse): number | null {
+  protected resolveProveedorOfertaInicial(detail: LeadDetalleResponse): number | null {
     const proveedorFallback = detail.proveedoresEquipo?.find((proveedor) => proveedor.fallbackLeadSinCampana)?.id;
     const planProviderName = detail.nombreProveedorPlan?.trim().toUpperCase();
     const providerFromPlan = planProviderName
@@ -2231,11 +2242,11 @@ export class AsesorVentasWorkspaceFacade {
     this.identidadForm.controls.lead.updateValueAndValidity({ emitEvent: false });
   }
 
-  private cleanObject<T extends Record<string, unknown>>(value: T): T {
+  protected cleanObject<T extends Record<string, unknown>>(value: T): T {
     return Object.fromEntries(Object.entries(value).map(([key, entryValue]) => [key, entryValue === '' ? null : entryValue])) as T;
   }
 
-  private getIdentidadRequest(detail: LeadDetalleResponse): LeadIdentidadRequest | null {
+  protected getIdentidadRequest(detail: LeadDetalleResponse): LeadIdentidadRequest | null {
     if (this.hasLeadPhone(detail)) {
       return null;
     }
@@ -2267,7 +2278,7 @@ export class AsesorVentasWorkspaceFacade {
     return null;
   }
 
-  private getOfertaRequest(): LeadOfertaComercialRequest {
+  protected getOfertaRequest(): LeadOfertaComercialRequest {
     const raw = this.ofertaForm.getRawValue();
     const adicionales = this.selectedOfertaAdditionals()
       .filter((item) => item.cantidad > 0)
@@ -2283,7 +2294,7 @@ export class AsesorVentasWorkspaceFacade {
     };
   }
 
-  private getDireccionRequest(): LeadDireccionRequest {
+  protected getDireccionRequest(): LeadDireccionRequest {
     const raw = this.direccionForm.getRawValue();
     return this.cleanObject({
       ubigeoDomicilio: raw.ubigeoDomicilio,
@@ -2382,7 +2393,7 @@ export class AsesorVentasWorkspaceFacade {
     return `Para cerrar la venta, completa estos datos. ${grupos.join('. ')}.`;
   }
 
-  private getDatosValidationMessage(): string {
+  protected getDatosValidationMessage(): string {
     const camposConNumeros: string[] = [];
     const controls = this.datosForm.controls;
 
@@ -2417,7 +2428,7 @@ export class AsesorVentasWorkspaceFacade {
     return value.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
   }
 
-  private getDireccionValidationMessage(): string {
+  protected getDireccionValidationMessage(): string {
     const missing: string[] = [];
     if (this.direccionForm.controls.idDepartamentoDomicilio.invalid) {
       missing.push('departamento');

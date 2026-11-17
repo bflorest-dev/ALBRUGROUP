@@ -8,11 +8,15 @@ import { AsesorBoardComponent } from '../../components/asesor-board/asesor-board
 import { LeadManagementDialogComponent } from '../../components/lead-management-dialog/lead-management-dialog.component';
 import { PreventaDrawerV2Component } from '../../components/preventa-drawer-v2/preventa-drawer-v2.component';
 import { AsesorVentasWorkspaceFacade } from '../../facades/asesor-ventas-workspace.facade';
+import { PREVENTA_DRAWER_FACADE } from '../../components/preventa-drawer-v2/preventa-drawer-context';
 
 @Component({
   selector: 'app-asesor-ventas-workspace-page',
   imports: [ButtonModule, CardModule, MessageModule, TagModule, AsesorBoardComponent, LeadManagementDialogComponent, PreventaDrawerV2Component],
-  providers: [AsesorVentasWorkspaceFacade],
+  providers: [
+    AsesorVentasWorkspaceFacade,
+    { provide: PREVENTA_DRAWER_FACADE, useExisting: AsesorVentasWorkspaceFacade }
+  ],
   templateUrl: './asesor-ventas-workspace-page.component.html',
   styleUrl: './asesor-ventas-workspace-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

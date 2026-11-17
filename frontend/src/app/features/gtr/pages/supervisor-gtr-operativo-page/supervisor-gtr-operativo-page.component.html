@@ -177,8 +177,15 @@
               <p-tag [value]="lead.estadoSeguimiento" [severity]="lead.estadoSeguimiento === 'NUEVO' ? 'info' : 'warn'" />
             </td>
             <td class="col-actions">
-              <button pButton label="Asignar" icon="pi pi-arrow-right" class="p-button-sm p-button-outlined"
-                (click)="facade.abrirAsignacionDialog(lead)"></button>
+              <div class="lead-actions" role="group" [attr.aria-label]="'Acciones para lead ' + (lead.lead || lead.usermeta || lead.id)">
+                <button pButton type="button" label="Gestionar" icon="pi pi-sliders-h" class="p-button-sm p-button-success"
+                  (click)="gestionFacade.openDetail(lead.id)"></button>
+                <button pButton type="button" icon="pi pi-history" severity="secondary" [outlined]="true"
+                  pTooltip="Ver historial" tooltipPosition="top" aria-label="Ver historial"
+                  (click)="facade.abrirHistorial(lead)"></button>
+                <button pButton type="button" label="Asignar" icon="pi pi-arrow-right" severity="secondary" [outlined]="true" class="p-button-sm"
+                  (click)="facade.abrirAsignacionDialog(lead)"></button>
+              </div>
             </td>
           </tr>
         </ng-template>
@@ -455,4 +462,140 @@
       </div>
     </div>
   </p-dialog>
+
+  <p-dialog
+    header="Historial del lead"
+    [visible]="facade.historialDialogVisible()"
+    (visibleChange)="!$event && facade.cerrarHistorial()"
+    [modal]="true"
+    [style]="{ width: '52rem' }"
+    [draggable]="false"
+    [blockScroll]="true"
+    [closable]="true"
+    styleClass="supervisor-history-dialog"
+  >
+    @if (facade.historialLead(); as historialLead) {
+      <div class="history-dialog__lead">
+        <strong>{{ historialLead.lead || facade.intakeUsermetaLabel(historialLead.usermeta ?? '') }}</strong>
+        <span>{{ historialLead.nombreCampana ?? 'Sin campaña' }} · {{ historialLead.origen ?? 'Sin origen' }}</span>
+      </div>
+    }
+    @if (facade.historialCargando()) {
+      <div class="history-dialog__loading"><p-progressSpinner strokeWidth="3" /></div>
+    } @else {
+      <div class="history-dialog__list">
+        @for (evento of facade.historialEventos(); track evento.id) {
+          <article class="history-event">
+            <div class="history-event__time">{{ evento.createdAt | date:'dd/MM HH:mm' }}</div>
+            <div class="history-event__body">
+              <strong>{{ evento.accion || 'Evento' }}</strong>
+              <span>{{ evento.nombreActor || 'Sistema' }}</span>
+              @if (evento.tipificacionResultado || evento.subtipificacionResultado) {
+                <small>{{ evento.tipificacionResultado || '—' }} · {{ evento.subtipificacionResultado || '—' }}</small>
+              }
+              @if (evento.comentario) { <p>{{ evento.comentario }}</p> }
+            </div>
+          </article>
+        } @empty {
+          <p class="history-dialog__empty">No hay eventos registrados para este día.</p>
+        }
+      </div>
+    }
+  </p-dialog>
+
+  <p-dialog
+    header="Gestión rápida del lead"
+    [visible]="gestionFacade.quickDialogOpen()"
+    (visibleChange)="gestionFacade.onQuickDialogVisibilityChange($event)"
+    [modal]="true"
+    [style]="{ width: '34rem' }"
+    [draggable]="false"
+    [blockScroll]="true"
+    [closable]="false"
+    [focusOnShow]="true"
+    styleClass="supervisor-quick-management-dialog"
+  >
+    @if (gestionFacade.detail(); as lead) {
+      <div class="quick-management">
+        <header class="quick-management__identity">
+          <div>
+            <h2>{{ gestionFacade.supervisorContactLabel() }}</h2>
+            <p>{{ gestionFacade.supervisorProviderLabel() }} · {{ lead.estadoSeguimiento || 'NUEVO' }}</p>
+          </div>
+        </header>
+
+        @if (gestionFacade.errorMessage()) {
+          <p-message severity="error" [text]="gestionFacade.errorMessage() ?? ''" />
+        }
+        @if (gestionFacade.successMessage()) {
+          <p-message severity="success" [text]="gestionFacade.successMessage() ?? ''" />
+        }
+
+        <section class="quick-management__contact" aria-label="Canales de contacto del lead">
+          <div class="quick-management__contact-head">
+            <div>
+              <span class="quick-management__section-label">Canales de contacto</span>
+              <strong>{{ gestionFacade.supervisorContactChannelsLabel() }}</strong>
+              @if (lead.usermeta && gestionFacade.hasLeadPhone(lead)) {
+                <small>Usuario WhatsApp: @{{ lead.usermeta.replace('@', '') }}</small>
+              }
+            </div>
+            <div class="quick-management__contact-actions">
+              @if (gestionFacade.hasLeadPhone(lead)) {
+                <button type="button" class="quick-management__icon-action" aria-label="Llamar al lead" title="Llamar" [disabled]="gestionFacade.isSaving()" (click)="gestionFacade.registrarLlamada()">
+                  <i class="pi pi-phone" aria-hidden="true"></i>
+                </button>
+              }
+              @if (gestionFacade.hasLeadChat(lead)) {
+                <button type="button" class="quick-management__icon-action is-chat" aria-label="Abrir WhatsApp" title="WhatsApp" [disabled]="gestionFacade.isSaving()" (click)="gestionFacade.registrarChat()">
+                  <i class="pi pi-whatsapp" aria-hidden="true"></i>
+                </button>
+              }
+            </div>
+          </div>
+          @if (!gestionFacade.hasLeadPhone(lead)) {
+            <div class="quick-management__identity-editor">
+              <app-phone-number-field
+                label="Agregar número de contacto"
+                [prefixControl]="gestionFacade.identidadForm.controls.prefijo"
+                [numberControl]="gestionFacade.identidadForm.controls.lead"
+                [numberMaxLength]="gestionFacade.identidadNumberMaxLength()"
+                numberPlaceholder="Número de lead"
+                [numberInvalidMessage]="gestionFacade.identidadErrorMessage() ?? ''"
+                (focusout)="gestionFacade.normalizeIdentidadLeadNumber(gestionFacade.identidadForm.controls.lead.value)"
+              />
+            </div>
+          }
+        </section>
+
+        <form class="quick-management__form" [formGroup]="gestionFacade.datosForm">
+          <label>
+            <span>Número de documento</span>
+            <input formControlName="numeroDocumentoTitularServicio" inputmode="numeric" maxlength="12" placeholder="Pendiente de completar" />
+            <small>Solo se guardará mientras el expediente todavía sea editable.</small>
+          </label>
+        </form>
+        <form class="quick-management__form" [formGroup]="gestionFacade.direccionForm">
+          <label>
+            <span>Dirección de instalación</span>
+            <input formControlName="direccion" autocomplete="street-address" placeholder="Pendiente de completar" />
+            <small>La captura rápida actualiza únicamente el snapshot operativo.</small>
+          </label>
+        </form>
+
+        <div class="quick-management__pending">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          <span>El lead seguirá visible sin equipo. Desde Gestión completa podrás editar datos, oferta y tipificarlo.</span>
+        </div>
+
+        <footer class="quick-management__actions">
+          <button pButton type="button" label="Cancelar" severity="secondary" [outlined]="true" [disabled]="gestionFacade.isSaving()" (click)="gestionFacade.requestCloseQuickDialog()"></button>
+          <button pButton type="button" label="Gestión completa" icon="pi pi-arrow-up-right" severity="secondary" [outlined]="true" [disabled]="gestionFacade.isSaving()" (click)="gestionFacade.openFullManagement()"></button>
+          <button pButton type="button" label="Guardar y cerrar" icon="pi pi-save" [loading]="gestionFacade.isSaving()" (click)="gestionFacade.saveAndCloseQuickDialog()"></button>
+        </footer>
+      </div>
+    }
+  </p-dialog>
+
+  <app-preventa-drawer-v2 />
 </main>

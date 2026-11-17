@@ -115,6 +115,96 @@ public class PreventaController {
         return ResponseEntity.ok(leadService.asignarEquiposLeadsSupervisor(request));
     }
 
+    // Gestión sin equipo: estas rutas no toman el lead ni lo asignan al Supervisor.
+    @GetMapping("/supervisor/{idLead}/detalle-gestion")
+    @PreAuthorize("hasAuthority('READ_LEAD_GESTION_SUPERVISOR_GTR')")
+    public ResponseEntity<LeadDetalleResponse> obtenerDetalleGestionSupervisorGtr(@PathVariable Long idLead) {
+        return ResponseEntity.ok(leadService.obtenerDetalleGestionSupervisorGtr(idLead));
+    }
+
+    @PatchMapping("/supervisor/{idLead}/identidad")
+    @PreAuthorize("hasAuthority('UPDATE_LEAD_GESTION_SUPERVISOR_GTR')")
+    public ResponseEntity<Void> completarIdentidadLeadSupervisorGtr(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadIdentidadRequest request
+    ) {
+        leadService.completarIdentidadLeadSupervisorGtr(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/supervisor/{idLead}/snapshots")
+    @PreAuthorize("hasAuthority('UPDATE_LEAD_GESTION_SUPERVISOR_GTR')")
+    public ResponseEntity<Void> actualizarSnapshotsLeadSupervisorGtr(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadSnapshotsRequest request
+    ) {
+        leadService.actualizarSnapshotsLeadSupervisorGtr(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/supervisor/{idLead}/datos-preventa")
+    @PreAuthorize("hasAuthority('UPDATE_LEAD_GESTION_SUPERVISOR_GTR')")
+    public ResponseEntity<Void> actualizarDatosPreventaSupervisorGtr(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadDatosPreventaRequest request
+    ) {
+        leadService.actualizarDatosPreventaSupervisorGtr(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/supervisor/{idLead}/direccion")
+    @PreAuthorize("hasAuthority('UPDATE_LEAD_GESTION_SUPERVISOR_GTR')")
+    public ResponseEntity<Void> actualizarDireccionSupervisorGtr(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadDireccionRequest request
+    ) {
+        leadService.actualizarDireccionSupervisorGtr(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/supervisor/{idLead}/oferta-comercial")
+    @PreAuthorize("hasAuthority('UPDATE_LEAD_GESTION_SUPERVISOR_GTR')")
+    public ResponseEntity<Void> actualizarOfertaComercialSupervisorGtr(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadOfertaComercialRequest request
+    ) {
+        leadService.actualizarOfertaComercialSupervisorGtr(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/supervisor/{idLead}/tipificacion")
+    @PreAuthorize("hasAuthority('TYPIFY_LEAD_GESTION_SUPERVISOR_GTR')")
+    public ResponseEntity<Void> tipificarLeadSupervisorGtr(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadTipificacionRequest request
+    ) {
+        leadService.tipificarLeadSupervisorGtr(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/supervisor/{idLead}/numeros-llamada")
+    @PreAuthorize("hasAuthority('READ_LEAD_NUMEROS_LLAMADA_SUPERVISOR_GTR')")
+    public ResponseEntity<List<NumeroLlamadaResponse>> listarNumerosLlamadaSupervisorGtr(@PathVariable Long idLead) {
+        return ResponseEntity.ok(leadService.listarNumerosLlamadaSupervisorGtr(idLead));
+    }
+
+    @PatchMapping("/supervisor/{idLead}/numero-para-llamar")
+    @PreAuthorize("hasAuthority('UPDATE_LEAD_NUMERO_LLAMADA_SUPERVISOR_GTR')")
+    public ResponseEntity<Void> actualizarNumeroParaLlamarSupervisorGtr(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadNumeroParaLlamarRequest request
+    ) {
+        leadService.actualizarNumeroParaLlamarSupervisorGtr(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/supervisor/{idLead}/contacto")
+    @PreAuthorize("hasAuthority('CONTACT_LEAD_GESTION_SUPERVISOR_GTR')")
+    public ResponseEntity<Void> registrarContactoSupervisorGtr(@PathVariable Long idLead) {
+        leadService.registrarContactoSupervisorGtr(idLead);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/correcciones/campana") @PreAuthorize("hasAuthority('CORREGIR_CAMPANA_LEAD')")
     public ResponseEntity<List<LeadCampanaCorreccionCandidatoResponse>> buscarCorreccionCampana(
             @RequestParam String lead

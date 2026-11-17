@@ -39,6 +39,8 @@
               [lead]="lead.lead"
               label="Llamar"
               [buttonWidth]="'100%'"
+              [numerosLlamadaUrl]="facade.phoneNumbersUrl(lead.id)"
+              [numeroParaLlamarUrl]="facade.phoneNumberUpdateUrl(lead.id)"
               [disabled]="!facade.canMutateOperationalData()"
               [loading]="facade.isSaving()"
               (callStarted)="facade.registrarLlamadaOperativa()"
@@ -298,8 +300,11 @@
           <label><span>Tipificación</span><select formControlName="codigoTipificacion" [disabled]="facade.isSaving() || isReadOnly()"><option value="">Selecciona</option>@for (item of facade.tipificaciones(); track item.codigo) { <option [value]="item.codigo">{{ item.codigo }} — {{ item.descripcion }}</option> }</select></label>
           <label><span>Subtipificación</span><select formControlName="codigoSubtipificacion" [disabled]="facade.isSaving() || !facade.selectedTipificacionCode() || isReadOnly()"><option value="">Selecciona</option>@for (item of facade.subtipificaciones(); track item.codigo) { <option [value]="item.codigo" [disabled]="item.disabled">{{ item.codigo }} — {{ item.descripcion }}</option> }</select></label>
           @if (requiresHour()) { <label class="preventa-v2__time"><span>Hora de agendamiento</span><input type="time" formControlName="horaProgramada" [readonly]="isReadOnly()" /></label> }
-          @if (!facade.atencionOtraEtapa()) {
+          @if (!facade.atencionOtraEtapa() && facade.allowsNewOpportunity) {
             <button class="preventa-v2__next-opportunity" type="button" [class.is-active]="createNextOpportunity()" [disabled]="facade.isSaving()" (click)="toggleNextOpportunity()"><i class="pi pi-plus-circle" aria-hidden="true"></i><span>Al cerrar, crear otra oportunidad</span></button>
+          }
+          @if (!facade.allowsNewOpportunity) {
+            <button class="preventa-v2__save-close" type="button" [disabled]="facade.isSaving()" (click)="facade.minimizeDetail()"><i class="pi pi-save" aria-hidden="true"></i>Guardar y cerrar</button>
           }
           <button class="preventa-v2__submit" type="button" [disabled]="facade.isSaving() || !facade.canMutateOperationalData()" (click)="submitTipification()"><i class="pi pi-check" aria-hidden="true"></i>{{ facade.isSaving() ? 'Guardando...' : 'Registrar tipificación' }}</button>
         </footer>

@@ -263,7 +263,18 @@ p {
 
 :host ::ng-deep .supervisor-leads-table th.col-actions,
 :host ::ng-deep .supervisor-leads-table td.col-actions {
-  width: 8.5rem;
+  width: 16rem;
+}
+
+.lead-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+
+.lead-actions .p-button {
+  min-height: 2.15rem;
 }
 
 .lead-cell,
@@ -809,6 +820,302 @@ p {
   padding-top: .95rem;
 }
 
+:host ::ng-deep .supervisor-history-dialog {
+  width: min(52rem, calc(100vw - 1rem)) !important;
+}
+
+:host ::ng-deep .supervisor-history-dialog .p-dialog-content {
+  max-height: min(34rem, calc(100dvh - 9rem));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.history-dialog__lead {
+  background: var(--app-surface-soft, #f6f8fb);
+  border: 1px solid var(--app-border-soft, #dce0e7);
+  border-radius: .55rem;
+  display: grid;
+  gap: .2rem;
+  margin-bottom: .9rem;
+  padding: .75rem .85rem;
+}
+
+.history-dialog__lead strong {
+  color: var(--app-text, #171b22);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-dialog__lead span,
+.history-event__body span,
+.history-event__body small {
+  color: var(--app-text-muted, #5a6472);
+  font-size: .76rem;
+}
+
+.history-dialog__loading {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.history-dialog__list {
+  display: grid;
+  gap: .55rem;
+}
+
+.history-event {
+  border: 1px solid var(--app-border-soft, #e2e6ec);
+  border-radius: .55rem;
+  display: grid;
+  gap: .75rem;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  padding: .7rem .8rem;
+}
+
+.history-event__time {
+  color: var(--app-text-muted, #5a6472);
+  font-family: 'Spline Sans Mono', ui-monospace, monospace;
+  font-size: .7rem;
+  padding-top: .1rem;
+}
+
+.history-event__body {
+  display: grid;
+  gap: .16rem;
+}
+
+.history-event__body strong {
+  color: var(--app-text, #263448);
+  font-size: .82rem;
+}
+
+.history-event__body p {
+  color: var(--app-text, #263448);
+  font-size: .77rem;
+  line-height: 1.4;
+  margin: .25rem 0 0;
+}
+
+.history-dialog__empty {
+  color: var(--app-text-muted, #5a6472);
+  margin: 0;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+// ── Supervisor quick management ─────────────────────────────────
+
+:host ::ng-deep .supervisor-quick-management-dialog {
+  width: min(34rem, calc(100vw - 1rem)) !important;
+}
+
+:host ::ng-deep .supervisor-quick-management-dialog .p-dialog-header {
+  align-items: flex-start;
+  padding: 1.15rem 1.25rem .85rem;
+}
+
+:host ::ng-deep .supervisor-quick-management-dialog .p-dialog-title {
+  color: var(--app-text, #171b22);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+:host ::ng-deep .supervisor-quick-management-dialog .p-dialog-content {
+  max-height: min(42rem, calc(100dvh - 7rem));
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0 1.25rem 1.15rem;
+}
+
+.quick-management {
+  display: grid;
+  gap: .95rem;
+}
+
+.quick-management__identity {
+  border-bottom: 1px solid var(--app-border-soft, #e2e6ec);
+  padding-bottom: .8rem;
+}
+
+.quick-management__identity > div {
+  display: grid;
+  gap: .18rem;
+  min-width: 0;
+}
+
+.quick-management__section-label {
+  color: #0f9f78;
+  font-size: .68rem;
+  font-weight: 850;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.quick-management__identity h2 {
+  color: var(--app-text, #171b22);
+  font-size: 1.25rem;
+  letter-spacing: -.025em;
+  margin: .12rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-management__identity p {
+  color: var(--app-text-muted, #5a6472);
+  font-size: .78rem;
+  margin: 0;
+}
+
+.quick-management__contact {
+  background: var(--app-surface-soft, #f6f8fb);
+  border: 1px solid var(--app-border-soft, #dce0e7);
+  border-radius: .7rem;
+  display: grid;
+  gap: .8rem;
+  padding: .85rem;
+}
+
+.quick-management__contact-head {
+  align-items: center;
+  display: flex;
+  gap: .75rem;
+  justify-content: space-between;
+}
+
+.quick-management__contact-head > div:first-child {
+  display: grid;
+  gap: .18rem;
+  min-width: 0;
+}
+
+.quick-management__contact-head strong {
+  color: var(--app-text, #263448);
+  font-family: 'Spline Sans Mono', ui-monospace, monospace;
+  font-size: .9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-management__contact-head small,
+.quick-management__form small {
+  color: var(--app-text-muted, #5a6472);
+  font-size: .72rem;
+  line-height: 1.35;
+}
+
+.quick-management__contact-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: .35rem;
+}
+
+.quick-management__icon-action {
+  align-items: center;
+  background: #e9f7f1;
+  border: 1px solid #b9e6d5;
+  border-radius: .5rem;
+  color: #087f61;
+  cursor: pointer;
+  display: inline-flex;
+  height: 2.15rem;
+  justify-content: center;
+  width: 2.15rem;
+}
+
+.quick-management__icon-action.is-chat {
+  background: #e4f8ec;
+  border-color: #b8ebcc;
+  color: #148447;
+}
+
+.quick-management__icon-action:hover,
+.quick-management__icon-action:focus-visible {
+  box-shadow: 0 0 0 3px rgba(15, 159, 120, .14);
+}
+
+.quick-management__identity-editor {
+  border-top: 1px solid var(--app-border-soft, #dce0e7);
+  padding-top: .75rem;
+}
+
+.quick-management__identity-editor ::ng-deep .phone-number-field {
+  width: 100%;
+}
+
+.quick-management__form {
+  display: grid;
+  gap: .35rem;
+}
+
+.quick-management__form label {
+  display: grid;
+  gap: .3rem;
+}
+
+.quick-management__form label > span {
+  color: var(--app-text, #263448);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.quick-management__form input {
+  background: #fff;
+  border: 1px solid var(--app-border-soft, #cdd6e1);
+  border-radius: .45rem;
+  color: var(--app-text, #263448);
+  font: inherit;
+  min-height: 2.55rem;
+  padding: .55rem .7rem;
+  width: 100%;
+}
+
+.quick-management__form input:focus-visible {
+  border-color: #0f9f78;
+  box-shadow: 0 0 0 3px rgba(15, 159, 120, .12);
+  outline: 0;
+}
+
+.quick-management__pending {
+  align-items: flex-start;
+  background: #f0f7ff;
+  border: 1px solid #cfe5fb;
+  border-radius: .55rem;
+  color: #245b83;
+  display: flex;
+  font-size: .74rem;
+  gap: .5rem;
+  line-height: 1.4;
+  padding: .65rem .75rem;
+}
+
+.quick-management__pending i {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+}
+
+.quick-management__actions {
+  border-top: 1px solid var(--app-border-soft, #e2e6ec);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  justify-content: flex-end;
+  padding-top: .9rem;
+}
+
+@media (max-width: 48rem) {
+  .quick-management__actions {
+    flex-direction: column-reverse;
+
+    .p-button {
+      justify-content: center;
+      width: 100%;
+    }
+  }
+}
+
 @media (max-width: 48rem) {
   .supervisor-operativo {
     padding: 1rem;
@@ -862,5 +1169,20 @@ p {
     .p-button {
       width: 100%;
     }
+  }
+
+  .lead-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lead-actions .p-button {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .history-event {
+    grid-template-columns: 1fr;
+    gap: .25rem;
   }
 }

@@ -418,6 +418,77 @@ export class PreventaLeadService {
     );
   }
 
+  obtenerDetalleGestionSupervisorGtr(idLead: number): Observable<LeadDetalleResponse> {
+    return this.http.get<LeadDetalleResponse>(
+      `${this.leadUrl}/preventa/supervisor/${idLead}/detalle-gestion`
+    );
+  }
+
+  completarIdentidadLeadSupervisorGtr(idLead: number, request: LeadIdentidadRequest): Observable<void> {
+    return this.http.patch<void>(
+      `${this.leadUrl}/preventa/supervisor/${idLead}/identidad`,
+      request
+    );
+  }
+
+  actualizarSnapshotsLeadSupervisorGtr(idLead: number, request: LeadSnapshotsRequest): Observable<void> {
+    return this.http.patch<void>(
+      `${this.leadUrl}/preventa/supervisor/${idLead}/snapshots`,
+      request
+    );
+  }
+
+  actualizarDatosPreventaSupervisorGtr(idLead: number, request: LeadDatosPreventaRequest): Observable<void> {
+    return this.http.patch<void>(
+      `${this.leadUrl}/preventa/supervisor/${idLead}/datos-preventa`,
+      request
+    );
+  }
+
+  actualizarDireccionSupervisorGtr(idLead: number, request: LeadDireccionRequest): Observable<void> {
+    return this.http.patch<void>(
+      `${this.leadUrl}/preventa/supervisor/${idLead}/direccion`,
+      request
+    );
+  }
+
+  actualizarOfertaComercialSupervisorGtr(idLead: number, request: LeadOfertaComercialRequest): Observable<void> {
+    return this.http.patch<void>(
+      `${this.leadUrl}/preventa/supervisor/${idLead}/oferta-comercial`,
+      request
+    );
+  }
+
+  tipificarLeadSupervisorGtr(idLead: number, request: LeadTipificacionRequest): Observable<void> {
+    return this.http.post<void>(
+      `${this.leadUrl}/preventa/supervisor/${idLead}/tipificacion`,
+      request
+    );
+  }
+
+  listarNumerosLlamadaSupervisorGtr(idLead: number): Observable<NumeroLlamadaResponse[]> {
+    return this.http.get<NumeroLlamadaResponse[]>(
+      `${this.leadUrl}/preventa/supervisor/${idLead}/numeros-llamada`
+    );
+  }
+
+  actualizarNumeroParaLlamarSupervisorGtr(
+    idLead: number,
+    request: LeadNumeroParaLlamarRequest
+  ): Observable<void> {
+    return this.http.patch<void>(
+      `${this.leadUrl}/preventa/supervisor/${idLead}/numero-para-llamar`,
+      request
+    );
+  }
+
+  registrarContactoSupervisorGtr(idLead: number): Observable<void> {
+    return this.http.post<void>(
+      `${this.leadUrl}/preventa/supervisor/${idLead}/contacto`,
+      {}
+    );
+  }
+
   registrarIngresoLeadsAlb(file: File, idEquipo: number): Observable<LeadIntakeMasivoExcelResponse> {
     const formData = new FormData();
     formData.append('file', file);

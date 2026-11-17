@@ -1728,6 +1728,79 @@ public class LeadService {
         return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
     }
 
+    /**
+     * Detalle de gestion para SUPERVISOR_GTR. Este flujo no toma el lead ni lo asigna al usuario:
+     * solo permite operar una PREVENTA que sigue sin equipo dentro del proveedor activo.
+     */
+    @Transactional(readOnly = true)
+    public LeadDetalleResponse obtenerDetalleGestionSupervisorGtr(Long idLead) {
+        Lead lead = obtenerLeadGestionSupervisorGtr(idLead, true);
+        Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
+                .map(Evento::getCreatedAt)
+                .orElse(null);
+        return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
+    }
+
+    @Transactional
+    public void actualizarSnapshotsLeadSupervisorGtr(Long idLead, LeadSnapshotsRequest request) {
+        obtenerLeadGestionSupervisorGtr(idLead, false);
+        actualizarSnapshotsLead(idLead, request);
+    }
+
+    @Transactional
+    public void completarIdentidadLeadSupervisorGtr(Long idLead, LeadIdentidadRequest request) {
+        obtenerLeadGestionSupervisorGtr(idLead, false);
+        completarIdentidadLead(idLead, request);
+    }
+
+    @Transactional
+    public void actualizarDatosPreventaSupervisorGtr(Long idLead, LeadDatosPreventaRequest request) {
+        Lead lead = obtenerLeadGestionSupervisorGtr(idLead, false);
+        Lead savedLead = actualizarDatosPreventaInterno(lead, request);
+        notificarCambioLead("DATOS_PREVENTA_ACTUALIZADOS", savedLead, null, null);
+    }
+
+    @Transactional
+    public void actualizarDireccionSupervisorGtr(Long idLead, LeadDireccionRequest request) {
+        Lead lead = obtenerLeadGestionSupervisorGtr(idLead, false);
+        Lead savedLead = actualizarDireccionInterno(lead, request);
+        notificarCambioLead("DIRECCION_ACTUALIZADA", savedLead, null, null);
+    }
+
+    @Transactional
+    public void actualizarOfertaComercialSupervisorGtr(Long idLead, LeadOfertaComercialRequest request) {
+        Lead lead = obtenerLeadGestionSupervisorGtr(idLead, false);
+        Lead savedLead = actualizarOfertaComercialInterno(lead, request);
+        notificarCambioLead("OFERTA_COMERCIAL_ACTUALIZADA", savedLead, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<NumeroLlamadaResponse> listarNumerosLlamadaSupervisorGtr(Long idLead) {
+        obtenerLeadGestionSupervisorGtr(idLead, false);
+        return listarNumerosLlamada(idLead);
+    }
+
+    @Transactional
+    public void actualizarNumeroParaLlamarSupervisorGtr(Long idLead, LeadNumeroParaLlamarRequest request) {
+        obtenerLeadGestionSupervisorGtr(idLead, false);
+        actualizarNumeroParaLlamar(idLead, request);
+    }
+
+    @Transactional
+    public void registrarContactoSupervisorGtr(Long idLead) {
+        Lead lead = obtenerLeadGestionSupervisorGtr(idLead, false);
+        if (lead.getEstado() != EstadoSeguimiento.NUEVO
+                && lead.getEstado() != EstadoSeguimiento.ASIGNADO
+                && lead.getEstado() != EstadoSeguimiento.EN_GESTION) {
+            throw new BadRequestException("Solo se puede registrar contacto para un lead disponible");
+        }
+        moverAEnGestionSiAplica(lead);
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoContacto(savedLead.getId(), idCampana, savedLead.getEtapa());
+        notificarCambioLead("CONTACTO", savedLead, null, null);
+    }
+
     // ── Correccion ADMIN ──────────────────────────────────────────────────────
     // Detalle sin scope de equipo/asesor: la tab de correccion es exclusiva del ADMIN y opera sobre
     // cualquier lead en cualquier etapa.
@@ -2629,6 +2702,20 @@ public class LeadService {
         if (idProveedor == null) {
             return resolverProveedorOperativoVenta(lead);
         }
+        if (lead.getIdEquipo() == null) {
+            if (proveedorScopeService.ambitoActual() == AmbitoProveedor.PREVENTA) {
+                ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(AmbitoProveedor.PREVENTA);
+                if (!scope.restringido() || scope.proveedorIds().contains(idProveedor)) {
+                    return proveedorRepository.findByIdAndActivoTrue(idProveedor)
+                            .orElseThrow(() -> new NotFoundException(Proveedor.class, idProveedor));
+                }
+            }
+            throw new BadRequestException(
+                    "El proveedor seleccionado no pertenece al alcance PREVENTA del usuario",
+                    idProveedor,
+                    Map.of()
+            );
+        }
         if (lead.getIdEquipo() == null
                 || !equipoProveedorRepository.existsByIdEquipoAndProveedorId(lead.getIdEquipo(), idProveedor)) {
             throw new BadRequestException(
@@ -2687,8 +2774,14 @@ public class LeadService {
     // el lead (no desde el usuario, que puede estar en varios equipos). En PREVENTA, el proveedor elegido
     // en Oferta Comercial puede estar aun sin guardar, por eso tiene prioridad sobre el plan persistido.
     public CatalogoResponse getCatalogoTipificacionesPorLead(Long idLead, Etapa etapa, Long idProveedorSolicitado) {
-        Lead lead = leadRepository.findById(idLead)
-                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        boolean supervisorGtr = currentUser.roles().contains("SUPERVISOR_GTR")
+                && currentUser.permisos().contains("READ_LEAD_GESTION_SUPERVISOR_GTR");
+        Lead lead = supervisorGtr
+                ? obtenerLeadGestionSupervisorGtr(idLead, false)
+                : leadRepository.findById(idLead).orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        if (supervisorGtr && etapa != Etapa.PREVENTA) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
         Long idProveedor = resolverIdProveedorMatriz(lead, etapa, idProveedorSolicitado);
         Long idTipificacionOrigen = resolverIdTipificacionOrigenFlujo(lead.getId(), etapa, idProveedor);
         return tipificacionService.getCatalogoOperativo(etapa, idProveedor, idTipificacionOrigen);
@@ -2714,6 +2807,14 @@ public class LeadService {
     }
 
     private void validarProveedorPerteneceAlEquipo(Long idEquipo, Long idProveedor) {
+        if (idEquipo == null && proveedorScopeService.ambitoActual() == AmbitoProveedor.PREVENTA) {
+            ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(AmbitoProveedor.PREVENTA);
+            if (!scope.restringido() || scope.proveedorIds().contains(idProveedor)) {
+                proveedorRepository.findByIdAndActivoTrue(idProveedor)
+                        .orElseThrow(() -> new NotFoundException(Proveedor.class, idProveedor));
+                return;
+            }
+        }
         if (idEquipo == null || !equipoProveedorRepository.existsByIdEquipoAndProveedorId(idEquipo, idProveedor)) {
             throw new BadRequestException(
                     "El proveedor seleccionado no pertenece al equipo del lead",
@@ -2732,6 +2833,16 @@ public class LeadService {
             tipificarLeadOtraEtapaInformativo(lead, request);
             return;
         }
+        tipificarLeadPreventaInterno(lead, request);
+    }
+
+    @Transactional
+    public void tipificarLeadSupervisorGtr(Long idLead, LeadTipificacionRequest request) {
+        Lead lead = obtenerLeadGestionSupervisorGtr(idLead, false);
+        tipificarLeadPreventaInterno(lead, request);
+    }
+
+    private void tipificarLeadPreventaInterno(Lead lead, LeadTipificacionRequest request) {
         Etapa etapaActual = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
@@ -6275,6 +6386,17 @@ public class LeadService {
         FechaRelevanteVenta fechaRelevante = resolverFechaRelevanteVenta(lead, resumenVenta, seguimiento);
         Proveedor proveedorFallback = lead.getProveedorOrigen();
         List<ProveedorResponse> proveedoresEquipo = listarProveedoresEquipoDetalle(lead.getIdEquipo());
+        // Una PREVENTA sin equipo no tiene equipo_proveedor del cual construir opciones. Para el
+        // contexto Supervisor el proveedor de origen sigue siendo el único proveedor operativo
+        // válido para la oferta y la matriz de tipificación.
+        if (proveedoresEquipo.isEmpty() && proveedorFallback != null) {
+            proveedoresEquipo = List.of(ProveedorResponse.builder()
+                    .id(proveedorFallback.getId())
+                    .nombre(proveedorFallback.getNombre())
+                    .activo(proveedorFallback.getActivo())
+                    .fallbackLeadSinCampana(true)
+                    .build());
+        }
         Evento ultimaProgramacionVenta = eventoRepository
                 .findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(lead.getId(), Accion.TIPIFICACION, TIPIFICACION_PROGRAMADO)
                 .orElse(null);
@@ -6896,6 +7018,42 @@ public class LeadService {
 
     private Lead obtenerLeadPreventaDelAsesor(Long idLead) {
         return obtenerLeadAsignadoEnEtapa(idLead, Etapa.PREVENTA);
+    }
+
+    /**
+     * Regla de acceso exclusiva del flujo Supervisor GTR. Se mantiene deliberadamente separada
+     * de la validacion por equipo del GTR y de la validacion por asesor: el supervisor trabaja por
+     * proveedor y solo sobre la bandeja de leads sin equipo.
+     */
+    private Lead obtenerLeadGestionSupervisorGtr(Long idLead, boolean detalleCompleto) {
+        Lead lead = detalleCompleto
+                ? leadRepository.buscarDetalleCompletoPorId(idLead).orElse(null)
+                : leadRepository.findById(idLead).orElse(null);
+        if (lead == null) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+        if (lead.getEtapa() != Etapa.PREVENTA) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+        if (lead.getIdEquipo() != null || lead.getIdAsesorAsignado() != null) {
+            throw new ConflictException("El lead ya fue asignado y no puede gestionarse desde la bandeja sin equipo");
+        }
+
+        Proveedor proveedorOrigen = lead.getProveedorOrigen();
+        if (proveedorOrigen == null || proveedorOrigen.getId() == null) {
+            throw new BadRequestException(
+                    "El lead no tiene un proveedor de origen determinable para la gestion Supervisor GTR",
+                    idLead,
+                    null
+            );
+        }
+        ProveedorScopeService.Scope scope = proveedorScopeService.resolverScope(AmbitoProveedor.PREVENTA);
+        if (scope.restringido() && !scope.proveedorIds().contains(proveedorOrigen.getId())) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+        proveedorRepository.findByIdAndActivoTrue(proveedorOrigen.getId())
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        return lead;
     }
 
     // Lead asignado al asesor actual en cualquier etapa: para crear oportunidades y para la

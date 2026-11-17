@@ -16,6 +16,9 @@ import { SupervisorGtrOperativoFacade } from '../../facades/supervisor-gtr-opera
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { GtrLeadSelectControlComponent } from '../../components/gtr-lead-select-control/gtr-lead-select-control.component';
 import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
+import { PreventaDrawerV2Component } from '../../../asesor-ventas/components/preventa-drawer-v2/preventa-drawer-v2.component';
+import { PREVENTA_DRAWER_FACADE } from '../../../asesor-ventas/components/preventa-drawer-v2/preventa-drawer-context';
+import { SupervisorGtrGestionFacade } from '../../facades/supervisor-gtr-gestion.facade';
 
 @Component({
   selector: 'app-supervisor-gtr-operativo-page',
@@ -35,15 +38,21 @@ import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/pr
     ProgressSpinnerModule,
     TooltipModule,
     PhoneNumberFieldComponent,
-    GtrLeadSelectControlComponent
+    GtrLeadSelectControlComponent,
+    PreventaDrawerV2Component
   ],
-  providers: [SupervisorGtrOperativoFacade],
+  providers: [
+    SupervisorGtrOperativoFacade,
+    SupervisorGtrGestionFacade,
+    { provide: PREVENTA_DRAWER_FACADE, useExisting: SupervisorGtrGestionFacade }
+  ],
   templateUrl: './supervisor-gtr-operativo-page.component.html',
   styleUrl: './supervisor-gtr-operativo-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SupervisorGtrOperativoPageComponent implements OnInit {
   protected readonly facade = inject(SupervisorGtrOperativoFacade);
+  protected readonly gestionFacade = inject(SupervisorGtrGestionFacade);
   protected readonly providerLogo = resolveProviderLogo;
 
   private readonly origenVisualMap: Record<string, { icon: string; label: string; tone: string }> = {

@@ -9,6 +9,7 @@ import { PlanOfertaFilterChange, PlanOfertaServiceComposition, PlanResponse, Ubi
 import { normalizePersonNameFinal, normalizePersonNameInput } from '../../../../shared/utils/person-name';
 import { PreventaLeadService } from '../../../preventa/services/preventa-lead.service';
 import { AsesorVentasWorkspaceFacade } from '../../facades/asesor-ventas-workspace.facade';
+import { PREVENTA_DRAWER_FACADE } from './preventa-drawer-context';
 
 type DrawerSection = 'personal' | 'address' | 'offer';
 
@@ -21,7 +22,7 @@ type DrawerSection = 'personal' | 'address' | 'offer';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PreventaDrawerV2Component implements OnInit, OnDestroy {
-  protected readonly facade = inject(AsesorVentasWorkspaceFacade);
+  protected readonly facade = inject(PREVENTA_DRAWER_FACADE);
   private readonly preventaService = inject(PreventaLeadService);
   private readonly document = inject(DOCUMENT);
   private readonly host = inject(ElementRef<HTMLElement>);

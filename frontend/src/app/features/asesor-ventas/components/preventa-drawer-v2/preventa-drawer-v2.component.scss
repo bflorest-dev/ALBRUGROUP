@@ -24,7 +24,7 @@
 .preventa-v2__lead-line { gap: .55rem; }
 .preventa-v2__lead-line span { color: var(--pv2-context-muted); font-size: .7rem; font-weight: 800; letter-spacing: .1em; }
 .preventa-v2__lead-line strong { font-family: 'Spline Sans Mono', ui-monospace, monospace; font-size: .77rem; }
-.preventa-v2__minimize, .preventa-v2__chat, .preventa-v2__new-from-other-stage, .preventa-v2__simple-head button, .preventa-v2__head-actions > button, .icon-button, .preventa-v2__coordinates button, .preventa-v2__coordinates a, .preventa-v2__next-opportunity, .preventa-v2__submit, .preventa-v2__additional button { border: 1px solid transparent; border-radius: 7px; font: inherit; font-size: .77rem; font-weight: 700; min-height: 2.25rem; }
+.preventa-v2__minimize, .preventa-v2__chat, .preventa-v2__new-from-other-stage, .preventa-v2__simple-head button, .preventa-v2__head-actions > button, .icon-button, .preventa-v2__coordinates button, .preventa-v2__coordinates a, .preventa-v2__next-opportunity, .preventa-v2__save-close, .preventa-v2__submit, .preventa-v2__additional button { border: 1px solid transparent; border-radius: 7px; font: inherit; font-size: .77rem; font-weight: 700; min-height: 2.25rem; }
 .preventa-v2__minimize { align-items: center; background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.18); color: #e9f1f8; cursor: pointer; display: inline-flex; font-size: .9rem; height: 2.25rem; justify-content: center; padding: 0; width: 2.25rem; }
 .preventa-v2__minimize:hover { background: rgba(255,255,255,.14); color: #fff; }
 .preventa-v2__minimize:focus-visible { outline: 2px solid #e5b15c; outline-offset: 2px; }
@@ -195,6 +195,8 @@
 .preventa-v2__time { flex-basis: 8rem !important; }
 .preventa-v2__next-opportunity { align-items: center; background: #fff; border-color: var(--pv2-line); color: var(--pv2-muted); cursor: pointer; display: inline-flex; gap: .4rem; line-height: 1.2; max-width: 11.5rem; padding: .35rem .6rem; text-align: left; }
 .preventa-v2__next-opportunity.is-active { background: #fff8e9; border-color: #e7bb6c; color: #8a5308; }
+.preventa-v2__save-close { background: #f4f7fa; border-color: var(--pv2-line); color: var(--pv2-ink); cursor: pointer; padding: 0 .8rem; white-space: nowrap; }
+.preventa-v2__save-close:hover { background: #e9eef3; }
 .preventa-v2__submit { background: var(--pv2-signal); color: #fff; cursor: pointer; padding: 0 .9rem; white-space: nowrap; }
 .preventa-v2__submit:disabled, .preventa-v2__command-bar select:disabled { cursor: not-allowed; opacity: .52; }
 
@@ -246,7 +248,7 @@
   .preventa-v2__zone-state { text-align: left; }
   .preventa-v2__coordinates { border-right: 0; }
   .preventa-v2__command-bar label { flex-basis: 100%; }
-  .preventa-v2__submit, .preventa-v2__next-opportunity { min-height: 2.65rem; width: 100%; }
+  .preventa-v2__submit, .preventa-v2__next-opportunity, .preventa-v2__save-close { min-height: 2.65rem; width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) { .preventa-v2 * { scroll-behavior: auto !important; transition: none !important; } }

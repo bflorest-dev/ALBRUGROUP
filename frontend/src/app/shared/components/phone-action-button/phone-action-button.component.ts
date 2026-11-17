@@ -45,6 +45,9 @@ export class PhoneActionButtonComponent implements OnChanges {
   @Input() buttonWidth: string | null = null;
   @Input() buttonMinWidth: string | null = null;
   @Input() toggleWidth = '2.25rem';
+  /** Permite reutilizar el control con un contexto que tenga endpoints propios. */
+  @Input() numerosLlamadaUrl: string | null = null;
+  @Input() numeroParaLlamarUrl: string | null = null;
 
   @Output() callStarted = new EventEmitter<string>();
   @Output() callError = new EventEmitter<string>();
@@ -149,7 +152,7 @@ export class PhoneActionButtonComponent implements OnChanges {
     this.isSavingNumero.set(true);
     try {
       await firstValueFrom(
-        this.http.patch<void>(`${this.leadUrl}/${this.idLead}/numero-para-llamar`, { numeroParaLlamar })
+        this.http.patch<void>(this.numeroParaLlamarUrl ?? `${this.leadUrl}/${this.idLead}/numero-para-llamar`, { numeroParaLlamar })
       );
       await this.loadNumerosLlamada(this.idLead, numeroParaLlamar);
       this.editingNumeroParaLlamar.set(false);
@@ -177,7 +180,7 @@ export class PhoneActionButtonComponent implements OnChanges {
     this.loadFailed.set(false);
     try {
       const numeros = await firstValueFrom(
-        this.http.get<NumeroLlamadaResponse[]>(`${this.leadUrl}/${idLead}/numeros-llamada`)
+        this.http.get<NumeroLlamadaResponse[]>(this.numerosLlamadaUrl ?? `${this.leadUrl}/${idLead}/numeros-llamada`)
       );
       this.numeros.set(numeros);
       this.selectedNumero.set(

@@ -48,7 +48,7 @@ public class TipificacionController {
     // usuario puede estar en varios equipos), garantizando que se muestre la misma matriz que se usará
     // al tipificar. Fail-closed: si el equipo del lead no tiene matriz, el catálogo viene vacío.
     @GetMapping("/lead/{idLead}/{etapa}/catalogo")
-    @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa)")
+    @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa) || hasAuthority('READ_LEAD_GESTION_SUPERVISOR_GTR')")
     public ResponseEntity<CatalogoResponse> getCatalogoPorLead(
             @PathVariable Long idLead,
             @PathVariable Etapa etapa,

@@ -180,6 +180,12 @@ public class DataLoader {
         savePermiso("CREATE_LEADS_GTR_ADMIN", "Puede registrar leads GTR dentro de un equipo desde Administracion", "LEAD_GTR_ADMIN", "CREATE");
         savePermiso("CREATE_LEADS_SUPERVISOR_GTR", "Puede registrar leads sin equipo (supervisor GTR)", "LEAD_SUPERVISOR_GTR", "CREATE");
         savePermiso("ASSIGN_EQUIPO_LEAD", "Puede asignar un equipo a un lead sin equipo", "LEAD_SUPERVISOR_GTR", "UPDATE");
+        savePermiso("READ_LEAD_GESTION_SUPERVISOR_GTR", "Puede consultar el detalle de gestion de leads PREVENTA sin equipo", "LEAD_GESTION_SUPERVISOR_GTR", "READ");
+        savePermiso("UPDATE_LEAD_GESTION_SUPERVISOR_GTR", "Puede actualizar datos de gestion de leads PREVENTA sin equipo", "LEAD_GESTION_SUPERVISOR_GTR", "UPDATE");
+        savePermiso("TYPIFY_LEAD_GESTION_SUPERVISOR_GTR", "Puede tipificar leads PREVENTA sin equipo desde Supervisor GTR", "LEAD_GESTION_SUPERVISOR_GTR", "TYPIFY");
+        savePermiso("READ_LEAD_NUMEROS_LLAMADA_SUPERVISOR_GTR", "Puede consultar numeros de llamada de leads sin equipo", "LEAD_NUMERO_LLAMADA_SUPERVISOR_GTR", "READ");
+        savePermiso("UPDATE_LEAD_NUMERO_LLAMADA_SUPERVISOR_GTR", "Puede actualizar el numero para llamar de leads sin equipo", "LEAD_NUMERO_LLAMADA_SUPERVISOR_GTR", "UPDATE");
+        savePermiso("CONTACT_LEAD_GESTION_SUPERVISOR_GTR", "Puede registrar llamadas y chats de leads sin equipo", "LEAD_GESTION_SUPERVISOR_GTR", "CONTACT");
         savePermiso("DELETE_LEADS", "Puede eliminar integralmente leads", "LEAD", "DELETE");
         savePermiso("CORREGIR_CAMPANA_LEAD", "Puede corregir la campana asociada a un lead y sus eventos", "LEAD", "UPDATE_CAMPAIGN");
         savePermiso("CORREGIR_MERITO_PREVENTA", "Puede corregir el asesor de merito de una preventa", "LEAD_PREVENTA_MERITO", "CORRECT");
@@ -497,8 +503,19 @@ public class DataLoader {
                 getPermiso("EXTEND_HORARIO"),
                 getPermiso("AJUSTAR_JORNADA_COMPENSABLE"),
                 getPermiso("READ_PROVEEDORES"),
+                getPermiso("READ_ZONAS"),
+                getPermiso("READ_UBIGEO"),
+                getPermiso("READ_PLANES"),
+                getPermiso("READ_ADICIONALES"),
+                getPermiso("READ_PROMOCIONES"),
                 getPermiso("CREATE_LEADS_SUPERVISOR_GTR"),
-                getPermiso("ASSIGN_EQUIPO_LEAD")
+                getPermiso("ASSIGN_EQUIPO_LEAD"),
+                getPermiso("READ_LEAD_GESTION_SUPERVISOR_GTR"),
+                getPermiso("UPDATE_LEAD_GESTION_SUPERVISOR_GTR"),
+                getPermiso("TYPIFY_LEAD_GESTION_SUPERVISOR_GTR"),
+                getPermiso("READ_LEAD_NUMEROS_LLAMADA_SUPERVISOR_GTR"),
+                getPermiso("UPDATE_LEAD_NUMERO_LLAMADA_SUPERVISOR_GTR"),
+                getPermiso("CONTACT_LEAD_GESTION_SUPERVISOR_GTR")
         );
         saveRol("SUPERVISOR_GTR", "GTR - Supervision operativa y asignacion de leads", supervisorGtrPermisos);
 
