@@ -30,6 +30,9 @@ import { GtrAdvisorEventsDialogComponent } from '../../components/gtr-advisor-ev
 import { GtrSearchDialogComponent } from '../../components/gtr-search-dialog/gtr-search-dialog.component';
 import { GtrScheduleExtensionDialogComponent } from '../../components/gtr-schedule-extension-dialog/gtr-schedule-extension-dialog.component';
 import { GtrTipificationDialogComponent } from '../../components/gtr-tipification-dialog/gtr-tipification-dialog.component';
+import { PreventaDrawerV2Component } from '../../../asesor-ventas/components/preventa-drawer-v2/preventa-drawer-v2.component';
+import { PREVENTA_DRAWER_FACADE } from '../../../asesor-ventas/components/preventa-drawer-v2/preventa-drawer-context';
+import { AsesorGtrPreventaDrawerV2Facade } from '../../facades/asesor-gtr-preventa-drawer-v2.facade';
 
 @Component({
   selector: 'app-gtr-workspace-page',
@@ -60,15 +63,23 @@ import { GtrTipificationDialogComponent } from '../../components/gtr-tipificatio
     GtrAdvisorEventsDialogComponent,
     GtrSearchDialogComponent,
     GtrScheduleExtensionDialogComponent,
-    GtrTipificationDialogComponent
+    GtrTipificationDialogComponent,
+    PreventaDrawerV2Component
   ],
-  providers: [GtrWorkspaceFacade, RankingFacade, SupervisorGtrHistoricosFacade],
+  providers: [
+    GtrWorkspaceFacade,
+    RankingFacade,
+    SupervisorGtrHistoricosFacade,
+    AsesorGtrPreventaDrawerV2Facade,
+    { provide: PREVENTA_DRAWER_FACADE, useExisting: AsesorGtrPreventaDrawerV2Facade }
+  ],
   templateUrl: './gtr-workspace-page.component.html',
   styleUrl: './gtr-workspace-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GtrWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(GtrWorkspaceFacade);
+  protected readonly asesorGtrDrawerFacade = inject(AsesorGtrPreventaDrawerV2Facade);
   protected readonly supervisorHistoricosFacade = inject(SupervisorGtrHistoricosFacade);
   private readonly rankingFacade = inject(RankingFacade);
   private readonly sessionService = inject(SessionService);
@@ -83,6 +94,57 @@ export class GtrWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly isSupervisorHistoricos = computed(() =>
     this.facade.section() === 'historicos' && this.sessionService.activeRole() === 'SUPERVISOR_GTR'
   );
+  protected readonly isAsesorGtr = computed(() => this.sessionService.activeRole() === 'ASESOR_GTR');
+  protected readonly takeoverDialogVisible = computed(() =>
+    this.isAsesorGtr()
+      ? this.asesorGtrDrawerFacade.takeoverDialogOpen()
+      : this.facade.activeDialog() === 'takeover-confirm'
+  );
+  protected readonly takeoverPending = computed(() =>
+    this.isAsesorGtr() ? this.asesorGtrDrawerFacade.pendingTakeover() : this.facade.pendingTakeover()
+  );
+
+  protected async openTipificationFromSnapshot(): Promise<void> {
+    if (!this.isAsesorGtr()) {
+      await this.facade.openTipificationFromSnapshot();
+      return;
+    }
+
+    const lead = this.facade.selectedSnapshotLead();
+    if (!lead) {
+      this.facade.errorMessage.set('Selecciona un lead antes de tipificar.');
+      return;
+    }
+    await this.asesorGtrDrawerFacade.openDetail(lead.id);
+  }
+
+  protected cancelTakeover(): void {
+    if (this.isAsesorGtr()) {
+      this.asesorGtrDrawerFacade.cancelTakeover();
+      return;
+    }
+    this.facade.cancelTakeover();
+  }
+
+  protected confirmTakeover(): void {
+    if (this.isAsesorGtr()) {
+      void this.asesorGtrDrawerFacade.confirmTakeover();
+      return;
+    }
+    void this.facade.confirmTakeover();
+  }
+
+  protected takeoverLoading(): boolean {
+    return this.isAsesorGtr()
+      ? this.asesorGtrDrawerFacade.isSaving()
+      : this.facade.isLoadingTypifyDetail();
+  }
+
+  protected takeoverCanMutate(): boolean {
+    return this.isAsesorGtr()
+      ? this.asesorGtrDrawerFacade.canMutateOperationalData()
+      : this.facade.canMutateOperationalData();
+  }
 
   constructor() {
     effect(() => {

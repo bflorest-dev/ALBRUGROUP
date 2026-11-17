@@ -2234,7 +2234,7 @@ export class AsesorVentasWorkspaceFacade {
     return (value ?? '').replace(/\D/g, '').slice(0, this.identidadNumberMaxLength());
   }
 
-  private updateIdentidadLeadValidation(prefijo?: string | null): void {
+  protected updateIdentidadLeadValidation(prefijo?: string | null): void {
     const isPeruPrefix = (prefijo ?? '').trim() === PERU_PHONE_PREFIX;
     const pattern = isPeruPrefix ? PERU_LEAD_PATTERN : INTERNATIONAL_LEAD_PATTERN;
     this.identidadNumberMaxLength.set(isPeruPrefix ? 9 : 15);

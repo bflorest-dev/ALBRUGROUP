@@ -510,7 +510,7 @@
               size="small"
               severity="secondary"
               [disabled]="!facade.canMutateOperationalData()"
-              (click)="facade.openTipificationFromSnapshot()"
+              (click)="openTipificationFromSnapshot()"
             ></button>
             <app-phone-action-button
               [idLead]="lead.id"
@@ -755,14 +755,14 @@
 
   <p-dialog
     header="Tomar gestion"
-    [visible]="facade.activeDialog() === 'takeover-confirm'"
-    (visibleChange)="!$event && facade.cancelTakeover()"
+    [visible]="takeoverDialogVisible()"
+    (visibleChange)="!$event && cancelTakeover()"
     [modal]="true"
     [draggable]="false"
     [blockScroll]="true"
     styleClass="gtr-dialog"
   >
-    @if (facade.pendingTakeover(); as pending) {
+    @if (takeoverPending(); as pending) {
       <div class="reassign-confirmation">
         @if (pending.requiresInManagement) {
           <p class="reassign-problem">
@@ -797,15 +797,15 @@
     }
 
     <div class="dialog-actions reassign-confirmation__actions">
-      <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.cancelTakeover()"></button>
+      <button pButton type="button" label="Cancelar" severity="secondary" (click)="cancelTakeover()"></button>
       <button
         pButton
         type="button"
         label="Tomar gestion"
         icon="pi pi-check"
-        [disabled]="!facade.canMutateOperationalData()"
-        [loading]="facade.isLoadingTypifyDetail()"
-        (click)="facade.confirmTakeover()"
+        [disabled]="!takeoverCanMutate()"
+        [loading]="takeoverLoading()"
+        (click)="confirmTakeover()"
       ></button>
     </div>
   </p-dialog>
@@ -818,5 +818,9 @@
 
   <app-gtr-schedule-extension-dialog />
 
-  <app-gtr-tipification-dialog />
+  @if (isAsesorGtr()) {
+    <app-preventa-drawer-v2 />
+  } @else {
+    <app-gtr-tipification-dialog />
+  }
 </section>

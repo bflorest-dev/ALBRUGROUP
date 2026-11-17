@@ -1808,6 +1808,11 @@ export class GtrWorkspaceFacade {
     await this.openTipification(lead.id);
   }
 
+  /** Refresca la bandeja GTR después de una operación realizada desde un drawer externo. */
+  async refreshAfterDrawerChange(): Promise<void> {
+    await this.reconcile();
+  }
+
   async openTipification(
     idLead: number,
     options: { confirmarReasignacion?: boolean; confirmarGestionPrevia?: boolean } = {}
