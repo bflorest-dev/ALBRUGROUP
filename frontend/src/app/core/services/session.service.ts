@@ -1,6 +1,6 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { STORAGE_KEYS } from '../constants/storage.constants';
-import { ROLE_HOME_ROUTES, resolveDefaultActiveRole } from '../constants/role.constants';
+import { homeRouteForRole, resolveDefaultActiveRole } from '../constants/role.constants';
 import { UserSession } from '../../shared/models/auth/user-session';
 import { TokenService } from './token.service';
 import { AsesorVentasWorkspaceStateService } from './asesor-ventas-workspace-state.service';
@@ -17,8 +17,7 @@ export class SessionService {
   readonly assignedRoles = computed(() => this.sessionState()?.roles ?? []);
   readonly fechaIngresoEmpleado = computed(() => this.sessionState()?.fechaIngresoEmpleado ?? null);
   readonly homeRoute = computed(() => {
-    const activeRole = this.activeRole();
-    return activeRole ? ROLE_HOME_ROUTES[activeRole] ?? '/app/admin' : '/auth/access';
+    return homeRouteForRole(this.activeRole());
   });
 
   constructor(private readonly tokenService: TokenService) {
@@ -71,7 +70,7 @@ export class SessionService {
     this.sessionState.set({
       ...session,
       activeRole: role,
-      homeRoute: ROLE_HOME_ROUTES[role] ?? session.homeRoute
+      homeRoute: homeRouteForRole(role)
     });
     return true;
   }
@@ -95,9 +94,7 @@ export class SessionService {
       activeRole: normalizedActiveRole,
       fechaIngresoEmpleado: fechaIngresoEmpleado ?? session.fechaIngresoEmpleado ?? null,
       equipos: equipos ?? session.equipos ?? [],
-      homeRoute: normalizedActiveRole
-        ? ROLE_HOME_ROUTES[normalizedActiveRole] ?? session.homeRoute
-        : session.homeRoute
+      homeRoute: homeRouteForRole(normalizedActiveRole)
     }));
   }
 
@@ -143,7 +140,7 @@ export class SessionService {
       activeRole,
       fechaIngresoEmpleado: session.fechaIngresoEmpleado ?? null,
       equipos: [...new Set(equipos.filter((id) => Number.isInteger(id) && id > 0))],
-      homeRoute: activeRole ? ROLE_HOME_ROUTES[activeRole] ?? session.homeRoute : session.homeRoute
+      homeRoute: homeRouteForRole(activeRole)
     };
   }
 }

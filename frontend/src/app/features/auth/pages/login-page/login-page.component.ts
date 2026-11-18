@@ -11,7 +11,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, filter, map, of, startWith, switchMap } from 'rxjs';
-import { ROLE_HOME_ROUTES, resolveDefaultActiveRole } from '../../../../core/constants/role.constants';
+import { homeRouteForRole, resolveDefaultActiveRole } from '../../../../core/constants/role.constants';
 import { IdleSessionService } from '../../../../core/services/idle-session.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { TokenService } from '../../../../core/services/token.service';
@@ -157,7 +157,7 @@ export class LoginPageComponent {
     const roles = response.rolesAsignados?.length ? response.rolesAsignados : response.roles;
     const primaryRole = response.rolPrincipal ?? roles[0] ?? null;
     const activeRole = response.rolActivo ?? resolveDefaultActiveRole(roles);
-    const homeRoute = activeRole ? ROLE_HOME_ROUTES[activeRole] ?? '/app/admin' : '/app/admin';
+    const homeRoute = homeRouteForRole(activeRole);
 
     this.tokenService.setTokens(response.token, response.refreshToken);
     this.sessionService.setSession({
@@ -173,7 +173,7 @@ export class LoginPageComponent {
     });
     this.idleSessionService.markActivity();
 
-    void this.router.navigate([homeRoute]);
+    void this.router.navigate([this.sessionService.getHomeRoute()]);
   }
 
   private getErrorMessage(error: HttpErrorResponse, fallbackMessage: string): string {

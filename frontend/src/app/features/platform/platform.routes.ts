@@ -56,11 +56,16 @@ import { RoleHomeRedirectComponent } from './pages/role-home-redirect/role-home-
 import { RolePlatformPageComponent } from './pages/role-platform-page/role-platform-page.component';
 import { PersonalWorkspacePageComponent } from '../personal/pages/personal-workspace-page/personal-workspace-page.component';
 import { RecruitmentSupervisorHomePageComponent } from '../recruitment-supervisor/pages/recruitment-supervisor-home-page/recruitment-supervisor-home-page.component';
+import { NoRoleWorkspacePageComponent } from './pages/no-role-workspace-page/no-role-workspace-page.component';
 
 export const PLATFORM_ROUTES: Routes = [
   {
     path: '',
     component: RoleHomeRedirectComponent
+  },
+  {
+    path: 'sin-rol',
+    component: NoRoleWorkspacePageComponent
   },
   {
     path: 'personal',

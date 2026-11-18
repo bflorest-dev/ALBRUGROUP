@@ -257,9 +257,12 @@ export class PrivateLayoutComponent implements AfterViewInit {
   );
   protected readonly themeClass = computed(() => {
     const activeRole = this.activeRole();
-    return activeRole ? ROLE_THEME_CLASS[activeRole] ?? 'theme-admin' : 'theme-admin';
+    return activeRole ? ROLE_THEME_CLASS[activeRole] ?? 'theme-monitor' : 'theme-monitor';
   });
-  protected readonly primaryRoleLabel = computed(() => formatLabel(this.activeRole()));
+  protected readonly primaryRoleLabel = computed(() => {
+    const activeRole = this.activeRole();
+    return activeRole ? formatLabel(activeRole) : 'Sin rol asignado';
+  });
   protected readonly proyeccionData = signal<ProyeccionBannerData | null>(null);
   protected readonly roleModes = computed<SidebarRoleModeOption[]>(() => {
     const session = this.session();

@@ -1,0 +1,45 @@
+<section class="no-role-page" aria-labelledby="no-role-title">
+  <div class="no-role-page__header">
+    <span class="no-role-page__status">
+      <span class="no-role-page__status-dot" aria-hidden="true"></span>
+      Acceso activo
+    </span>
+    <span class="no-role-page__code">ESPACIO OPERATIVO</span>
+  </div>
+
+  <div class="no-role-page__content">
+    <div class="no-role-page__icon" aria-hidden="true">
+      <i class="ti ti-layout-dashboard"></i>
+      <span class="no-role-page__icon-mark">?</span>
+    </div>
+
+    <div class="no-role-page__copy">
+      <h1 id="no-role-title">{{ title() }}</h1>
+      <p class="no-role-page__description">{{ description() }}</p>
+
+      <dl class="no-role-page__details">
+        <div>
+          <dt>Cuenta</dt>
+          <dd>{{ accountName() }}</dd>
+        </div>
+        <div>
+          <dt>Rol actual</dt>
+          <dd>{{ hasAssignedRole() ? roleLabel() : 'Sin asignar' }}</dd>
+        </div>
+      </dl>
+
+      <div class="no-role-page__next-step">
+        <i class="ti ti-info-circle" aria-hidden="true"></i>
+        <p>
+          Puedes marcar asistencia desde el indicador de estado del sidebar. Para habilitar tus
+          herramientas, solicita a RRHH o a un administrador que te asigne un rol operativo.
+        </p>
+      </div>
+
+      <a class="no-role-page__home-link" [routerLink]="homeRoute">
+        <i class="ti ti-home" aria-hidden="true"></i>
+        <span>Volver a este inicio</span>
+      </a>
+    </div>
+  </div>
+</section>

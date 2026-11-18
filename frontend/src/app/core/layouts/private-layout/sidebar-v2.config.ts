@@ -227,5 +227,5 @@ const ROLE_CONFIGS: Record<string, SidebarV2RoleConfig> = {
 };
 
 export function sidebarDomainsForRole(primaryRole?: string | null): SidebarDomainDefinition[] {
-  return primaryRole ? (ROLE_CONFIGS[primaryRole] ?? fallbackConfig).domains : [];
+  return (primaryRole ? ROLE_CONFIGS[primaryRole] ?? fallbackConfig : fallbackConfig).domains;
 }

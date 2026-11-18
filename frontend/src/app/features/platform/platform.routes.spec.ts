@@ -44,4 +44,11 @@ describe('rutas ADMIN de plataformas', () => {
 
     expect(route?.data?.['roles']).toEqual(['SUPERVISOR_RECLUTAMIENTO']);
   });
+
+  it('expone un inicio privado para usuarios sin rol o con rol pendiente de implementación', () => {
+    const route = PLATFORM_ROUTES.find((item) => item.path === 'sin-rol');
+
+    expect(route?.canActivate).toBeUndefined();
+    expect(route?.component?.name).toBe('NoRoleWorkspacePageComponent');
+  });
 });

@@ -19,6 +19,14 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
   MANTENIMIENTO: '/app/rrhh/asistencia'
 };
 
+export const UNASSIGNED_ROLE_HOME_ROUTE = '/app/sin-rol';
+
+export function homeRouteForRole(role?: string | null): string {
+  return role && ROLE_HOME_ROUTES[role]
+    ? ROLE_HOME_ROUTES[role]
+    : UNASSIGNED_ROLE_HOME_ROUTE;
+}
+
 export type OperationalScope = 'BACKOFFICE' | 'POSTVENTA';
 
 export const POSTVENTA_ROLE = 'ASESOR_POSTVENTA';

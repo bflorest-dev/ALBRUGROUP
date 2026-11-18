@@ -21,6 +21,12 @@ describe('sidebar V2 role configuration', () => {
     ]);
   });
 
+  it('mantiene un dominio genérico para usuarios sin rol', () => {
+    expect(sidebarDomainsForRole(null)).toEqual([
+      expect.objectContaining({ id: 'workspace', label: 'Espacio de trabajo' })
+    ]);
+  });
+
   it('trata MONITOR con el mismo sidebar de backoffice', () => {
     expect(sidebarDomainsForRole('MONITOR')).toEqual(sidebarDomainsForRole('ASESOR_BACKOFFICE'));
   });
