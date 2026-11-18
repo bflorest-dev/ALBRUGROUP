@@ -62,8 +62,8 @@ export class GestionDrawerComponent implements OnInit {
  readonly pendingMeet=computed(()=>{const next=this.pending();return next?.tipo==='ENTREVISTA'&&next.modalidad==='MEET';});
  readonly active=computed(()=>!!this.state()?.accionesDisponibles.length);
  readonly canEditDatos=computed(()=>this.p().etapa==='RECLUTAMIENTO');
- readonly hasPhone=computed(()=>!!buildTelUrl('',this.p().postulante.numeroExclusivoLlamadas||this.p().postulante.celular));
- readonly hasWhatsApp=computed(()=>!!buildWhatsAppUrl('',this.p().postulante.celular,this.p().postulante.usuarioMeta));
+ readonly hasPhone=computed(()=>this.hasContactValue(this.p().postulante.numeroExclusivoLlamadas)||this.hasContactValue(this.p().postulante.celular));
+ readonly hasWhatsApp=computed(()=>this.hasContactValue(this.p().postulante.celular)||!!normalizeUsermeta(this.p().postulante.usuarioMeta));
  readonly datosIncomplete=computed(()=>!this.p().postulante.nombres||!this.p().postulante.apellidos||!this.p().postulante.documento||!this.p().postulante.celular);
  readonly form=this.fb.nonNullable.group({
   fechaHoraGestion:[this.now(),Validators.required], modalidadContacto:['LLAMADA',Validators.required],
@@ -263,6 +263,7 @@ export class GestionDrawerComponent implements OnInit {
  }
  displayName():string {const candidate=this.p().postulante;const name=[candidate.nombres,candidate.apellidos].filter(Boolean).join(' ').trim();const meta=normalizeUsermeta(candidate.usuarioMeta);return name||(meta?`@${meta}`:'Postulante sin nombre');}
  contactReference(channel:'LLAMADA'|'WHATSAPP'):string {const candidate=this.p().postulante;const meta=normalizeUsermeta(candidate.usuarioMeta);return channel==='LLAMADA'?(candidate.numeroExclusivoLlamadas||candidate.celular||'Sin número'):(candidate.celular||(meta?`@${meta}`:'Sin contacto'));}
+ private hasContactValue(value:unknown):boolean {return String(value??'').trim().length>0;}
  title(a:GestionAccion|null):string {
   const labels:Record<GestionAccion,string>={NO_CONTACTO:'Guardar intento',SEGUIMIENTO:'Guardar seguimiento',AGENDAR:'Programar actividad',AGENDAR_MEET:'Asignar Meet',REPROGRAMAR:'Reprogramar actividad',REPROGRAMAR_MEET:'Reprogramar Meet',ASISTIO_MEET:'Registrar asistencia',INASISTENCIA:'Registrar inasistencia',CANCELAR_CITA:'Cancelar actividad',EVALUAR:'Registrar evaluación',NO_INTERESADO:'Cerrar postulación',RECHAZAR:'Rechazar postulación',APROBAR:'Aprobar postulación',ASIGNAR_GRUPO:'Asignar grupo'};
   return a?labels[a]:'Selecciona una gestión';

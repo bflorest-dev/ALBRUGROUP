@@ -1,7 +1,13 @@
 export function normalizePhoneNumber(prefix?: string | null, lead?: string | null): string {
-  const prefixDigits = (prefix ?? '').replace(/\D/g, '');
-  const leadDigits = (lead ?? '').replace(/\D/g, '');
-  return prefixDigits && leadDigits ? `${prefixDigits}${leadDigits}` : '';
+  const prefixDigits = String(prefix ?? '').replace(/\D/g, '');
+  const leadDigits = String(lead ?? '').replace(/\D/g, '');
+  if (prefixDigits && leadDigits) {
+    return `${prefixDigits}${leadDigits}`;
+  }
+
+  // Algunas vistas reciben el teléfono completo en `lead` y no manejan un prefijo separado.
+  // En ese caso el dato sigue siendo válido para tel: y wa.me.
+  return leadDigits || prefixDigits;
 }
 
 export function normalizeUsermeta(usermeta?: string | null): string {
