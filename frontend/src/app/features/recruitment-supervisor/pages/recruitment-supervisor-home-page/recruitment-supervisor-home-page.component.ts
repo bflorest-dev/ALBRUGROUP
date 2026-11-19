@@ -4,11 +4,12 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RecruitmentRealtimeService } from '../../../../core/services/recruitment-realtime.service';
 import { GrupoCapacitacionRealtimeEvent } from '../../../../shared/models/recruitment/grupo-capacitacion-realtime-event';
 import { OfertaLaboralRealtimeEvent } from '../../../../shared/models/recruitment/oferta-laboral-realtime-event';
+import { PostulantRegistrationDrawerComponent } from '../../../../shared/components/postulant-registration-drawer/postulant-registration-drawer.component';
 import { RecruitmentSupervisorFacade } from '../../facades/recruitment-supervisor.facade';
 
 @Component({
   selector: 'app-recruitment-supervisor-home-page',
-  imports: [FormsModule, ReactiveFormsModule],
+  imports: [FormsModule, ReactiveFormsModule, PostulantRegistrationDrawerComponent],
   providers: [RecruitmentSupervisorFacade],
   templateUrl: './recruitment-supervisor-home-page.component.html',
   styleUrl: './recruitment-supervisor-home-page.component.scss',

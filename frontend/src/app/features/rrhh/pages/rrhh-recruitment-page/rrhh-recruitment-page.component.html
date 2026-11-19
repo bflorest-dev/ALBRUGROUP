@@ -1,0 +1,39 @@
+<section class="rrhh-recruitment-page" aria-labelledby="rrhh-recruitment-title">
+  <header class="rrhh-recruitment-header">
+    <div class="rrhh-recruitment-header__copy">
+      <h1 id="rrhh-recruitment-title">Registro de postulantes</h1>
+      <p>Incorpora postulantes al flujo de selección y deja disponible su expediente para los equipos responsables.</p>
+    </div>
+    <button type="button" class="button button--primary" (click)="openRegister()">
+      <i class="ti ti-user-plus" aria-hidden="true"></i>
+      Registrar postulante
+    </button>
+  </header>
+
+  @if (successMessage()) {
+    <p class="rrhh-recruitment-notice" role="status"><i class="ti ti-circle-check" aria-hidden="true"></i>{{ successMessage() }}</p>
+  }
+
+  <section class="rrhh-recruitment-placeholder" aria-labelledby="rrhh-recruitment-pending-title">
+    <div>
+      <span class="rrhh-recruitment-placeholder__label">Próxima vista</span>
+      <h2 id="rrhh-recruitment-pending-title">Postulantes listos para contratación</h2>
+      <p>Esta bandeja se integrará en la siguiente etapa para consultar los postulantes que completaron capacitación y esperan contratación.</p>
+    </div>
+    <span class="rrhh-recruitment-placeholder__state">En preparación</span>
+  </section>
+</section>
+
+<app-postulant-registration-drawer
+  [visible]="drawerVisible()"
+  [offers]="offers()"
+  [defaultNegocio]="selectedNegocio()"
+  [catalogLoading]="catalogLoading()"
+  [catalogError]="catalogError()"
+  [actionState]="actionState()"
+  [actionError]="actionError()"
+  (closed)="closeDrawer()"
+  (businessChanged)="onBusinessChanged($event)"
+  (registerFull)="registerFull($event)"
+  (registerMeta)="registerMeta($event)"
+></app-postulant-registration-drawer>

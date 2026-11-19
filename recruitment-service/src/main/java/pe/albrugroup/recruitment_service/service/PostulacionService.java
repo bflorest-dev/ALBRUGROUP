@@ -176,12 +176,11 @@ public class PostulacionService {
     }
 
     public PostulacionResponse registrarPostulacionRapidaMeta(AltaMetaPostulacionRequest request) {
-        if (!currentUser.tieneRol("SUPERVISOR_RECLUTAMIENTO")) {
-            throw new ForbiddenException("El alta rápida por usuario Meta corresponde al Supervisor de Reclutamiento");
-        }
         Postulante postulante = postulanteService.crearDesdeUsuarioMeta(request.getUsuarioMeta());
+        OfertaLaboral ofertaLaboral = obtenerOfertaActivaOpcional(request.getIdOfertaLaboral());
         Postulacion postulacion = Postulacion.builder()
                 .postulante(postulante)
+                .ofertaLaboral(ofertaLaboral)
                 .idEmpleadoRegistrador(currentUser.empleadoID())
                 .origen(request.getOrigen())
                 .puestoObjetivo(request.getPuestoObjetivo())
@@ -191,6 +190,7 @@ public class PostulacionService {
                 .estado(EstadoPostulacion.EN_PROCESO)
                 .estadoBandeja(EstadoBandejaPostulacion.POSTULANTE)
                 .build();
+        validarClasificacionCompatibleConOferta(postulacion, ofertaLaboral);
 
         Postulacion guardada = postulacionRepository.save(postulacion);
         eventoService.registrarEvento(guardada, Accion.REGISTRO_POSTULACION, null, null, null, null, null, null);

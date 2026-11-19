@@ -51,6 +51,7 @@ import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-
 import { TrainingAgendaPageComponent } from '../recruiter/pages/training-agenda-page/training-agenda-page.component';
 import { ReporteAsistenciaPageComponent } from '../rrhh/asistencia/pages/reporte-asistencia-page/reporte-asistencia-page.component';
 import { RrhhPersonalPageComponent } from '../rrhh/pages/rrhh-personal-page/rrhh-personal-page.component';
+import { RrhhRecruitmentPageComponent } from '../rrhh/pages/rrhh-recruitment-page/rrhh-recruitment-page.component';
 import { FreelancePageComponent } from '../freelance/pages/freelance-page/freelance-page.component';
 import { RoleHomeRedirectComponent } from './pages/role-home-redirect/role-home-redirect.component';
 import { RolePlatformPageComponent } from './pages/role-platform-page/role-platform-page.component';
@@ -372,6 +373,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'rrhh/personal',
     component: RrhhPersonalPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['RRHH']
+    }
+  },
+  {
+    path: 'rrhh/reclutamiento',
+    component: RrhhRecruitmentPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['RRHH']

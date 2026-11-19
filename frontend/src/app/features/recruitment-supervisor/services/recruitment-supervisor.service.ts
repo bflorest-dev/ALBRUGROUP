@@ -13,6 +13,7 @@ import { PostulanteHistorialResponse } from '../../../shared/models/recruitment/
 import { ResumenSupervisorResponse } from '../../../shared/models/recruitment/resumen-supervisor-response';
 import { EmpleadoIdentidadResponse } from '../../../shared/models/rrhh/empleado-identidad-response';
 import { RecruitmentNegocio } from '../../../core/services/current-user-recruitment-negocio-scope.service';
+import { RecruitmentPostulacionService } from '../../../core/services/recruitment-postulacion.service';
 
 export type SupervisorListFilters = {
   etapa?: string;
@@ -28,6 +29,7 @@ export type SupervisorListFilters = {
 @Injectable({ providedIn: 'root' })
 export class RecruitmentSupervisorService {
   private readonly http = inject(HttpClient);
+  private readonly registrationService = inject(RecruitmentPostulacionService);
   private readonly recruitmentUrl = `${API_CONSTANTS.gatewayBaseUrl}/recruitment`;
   private readonly postulacionesUrl = `${this.recruitmentUrl}/postulaciones`;
 
@@ -59,11 +61,11 @@ export class RecruitmentSupervisorService {
   }
 
   registrarPostulacion(request: PostulacionRequest): Observable<PostulacionResponse> {
-    return this.http.post<PostulacionResponse>(this.postulacionesUrl, request);
+    return this.registrationService.registrarPostulacion(request);
   }
 
   registrarPostulacionRapidaMeta(request: AltaMetaPostulacionRequest): Observable<PostulacionResponse> {
-    return this.http.post<PostulacionResponse>(`${this.postulacionesUrl}/rapida-meta`, request);
+    return this.registrationService.registrarPostulacionRapidaMeta(request);
   }
 
   actualizarDatosPostulante(
@@ -87,8 +89,7 @@ export class RecruitmentSupervisorService {
   }
 
   listarOfertasActivas(negocio: RecruitmentNegocio): Observable<OfertaLaboralResponse[]> {
-    const params = new HttpParams().set('negocio', negocio);
-    return this.http.get<OfertaLaboralResponse[]>(`${this.recruitmentUrl}/ofertas-laborales/activas`, { params });
+    return this.registrationService.listarOfertasActivas(negocio);
   }
 
   listarIdentidadEmpleados(empleadoIds: number[]): Observable<EmpleadoIdentidadResponse[]> {

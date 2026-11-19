@@ -4,4 +4,5 @@ export interface AltaMetaPostulacionRequest {
   puestoObjetivo: string;
   negocio: string;
   fechaPostulacion: string;
+  idOfertaLaboral?: number | null;
 }

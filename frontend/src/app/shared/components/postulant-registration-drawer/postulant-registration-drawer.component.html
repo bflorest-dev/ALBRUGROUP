@@ -1,0 +1,89 @@
+@if (visible) {
+  <div class="drawer-layer" role="presentation">
+    <button type="button" class="drawer-backdrop" aria-label="Cerrar registro" (click)="close()"></button>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="postulant-registration-title">
+      <header class="drawer__header">
+        <div>
+          <span class="drawer__eyebrow">Nuevo registro</span>
+          <h2 id="postulant-registration-title">Registrar postulante</h2>
+          <p>Guarda los datos disponibles y deja lo operativo para el equipo de reclutamiento.</p>
+        </div>
+        <button type="button" class="icon-button" aria-label="Cerrar registro" (click)="close()">
+          <i class="ti ti-x" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <div class="drawer__body">
+        <form id="postulant-registration-form" class="candidate-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          @if (actionError) {
+            <div class="inline-notice inline-notice--error" role="alert">
+              <i class="ti ti-alert-circle" aria-hidden="true"></i>{{ actionError }}
+            </div>
+          }
+
+          <div class="registration-mode" aria-labelledby="registration-mode-title">
+            <div class="registration-mode__heading">
+              <strong id="registration-mode-title">¿Qué información tienes?</strong>
+              <span>Elige el punto de partida</span>
+            </div>
+            <div class="registration-mode__options" role="group" aria-label="Tipo de registro">
+              <button type="button" class="mode-option" [class.mode-option--active]="registrationMode() === 'full'" [attr.aria-pressed]="registrationMode() === 'full'" (click)="selectMode('full')">
+                <i class="ti ti-user-check" aria-hidden="true"></i>
+                <span><strong>Datos completos</strong><small>Identidad y contacto listos</small></span>
+              </button>
+              <button type="button" class="mode-option" [class.mode-option--active]="registrationMode() === 'meta'" [attr.aria-pressed]="registrationMode() === 'meta'" (click)="selectMode('meta')">
+                <i class="ti ti-brand-meta" aria-hidden="true"></i>
+                <span><strong>Solo usuario Meta</strong><small>Completar después con el reclutador</small></span>
+              </button>
+            </div>
+          </div>
+
+          @if (registrationMode() === 'meta') {
+            <div class="form-section quick-registration">
+              <div class="form-section__heading"><span>01</span><div><h3>Identificador de origen</h3><p>Registra el usuario de Meta sin bloquear la gestión posterior.</p></div></div>
+              <div class="form-grid">
+                <label class="field field--wide"><span>Usuario Meta <em>*</em></span><input [formControl]="metaForm.controls.usuarioMeta" placeholder="@usuario42" autocomplete="off" /><small>Se normalizará y guardará sin @. Debe ser único.</small></label>
+                <label class="field"><span>Origen <em>*</em></span><select [formControl]="metaForm.controls.origen"><option value="FACEBOOK">Facebook</option><option value="TIKTOK">TikTok</option><option value="INDEED">Indeed</option><option value="REFERIDO">Referido</option></select><small>De dónde provino el contacto.</small></label>
+                <label class="field"><span>Puesto objetivo <em>*</em></span><select [formControl]="metaForm.controls.puestoObjetivo">@for (option of puestoObjetivoOptions; track option.value) {<option [value]="option.value">{{ option.label }}</option>}</select></label>
+                <label class="field"><span>Negocio <em>*</em></span><select [formControl]="metaForm.controls.negocio" [disabled]="!!fixedNegocio" (change)="onBusinessChange($any($event.target).value)">@for (business of negocios; track business.value) {<option [value]="business.value">{{ business.label }}</option>}</select><small>{{ fixedNegocio ? 'Negocio activo del contexto de reclutamiento.' : 'Selecciona el negocio de esta postulación.' }}</small></label>
+                <label class="field"><span>Fecha de postulación <em>*</em></span><input type="date" [formControl]="metaForm.controls.fechaPostulacion" /><small>Fecha informada para el inicio de esta postulación.</small></label>
+                <label class="field field--wide"><span>Oferta laboral</span><select [formControl]="metaForm.controls.idOfertaLaboral"><option [ngValue]="0">Sin asociar por ahora</option>@for (offer of offers; track offer.id) {<option [ngValue]="offer.id">{{ offer.codigo }} · {{ offer.puestoObjetivo }}</option>}</select>@if (catalogLoading) {<small>Cargando ofertas activas…</small>} @else if (catalogError) {<small class="field-error">{{ catalogError }}</small>} @else {<small>La asociación puede realizarse durante el registro o después.</small>}</label>
+              </div>
+              <div class="quick-registration__note"><i class="ti ti-info-circle" aria-hidden="true"></i><span>Los nombres, documentos y teléfonos podrán completarse desde el drawer del Reclutador. WhatsApp quedará disponible con este usuario; llamar se habilitará al registrar un teléfono.</span></div>
+            </div>
+          } @else {
+            <div class="form-section">
+              <div class="form-section__heading"><span>01</span><div><h3>Identidad y contacto</h3><p>Datos mínimos para identificar y volver a contactar.</p></div></div>
+              <div class="form-grid">
+                <label class="field" [class.field--invalid]="isInvalid('nombres')"><span>Nombres <em>*</em></span><input [formControl]="form.controls.nombres" placeholder="Nombres completos" [attr.aria-invalid]="isInvalid('nombres')" /><small>Escribe los nombres tal como figuran en el documento.</small>@if (isInvalid('nombres')) {<strong class="field-error">Ingresa los nombres.</strong>}</label>
+                <label class="field" [class.field--invalid]="isInvalid('apellidos')"><span>Apellidos <em>*</em></span><input [formControl]="form.controls.apellidos" placeholder="Apellidos completos" [attr.aria-invalid]="isInvalid('apellidos')" /><small>Permite encontrar rápidamente al postulante.</small>@if (isInvalid('apellidos')) {<strong class="field-error">Ingresa los apellidos.</strong>}</label>
+                <label class="field" [class.field--invalid]="isInvalid('tipoDocumento')"><span>Tipo de documento <em>*</em></span><select [formControl]="form.controls.tipoDocumento"><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></select><small>Selecciona el tipo que usarás para identificarlo.</small></label>
+                <label class="field" [class.field--invalid]="isInvalid('documento')"><span>Número de documento <em>*</em></span><input [formControl]="form.controls.documento" placeholder="8 dígitos" inputmode="numeric" [attr.aria-invalid]="isInvalid('documento')" /><small>Debe ser único dentro del registro.</small>@if (isInvalid('documento')) {<strong class="field-error">Ingresa el documento.</strong>}</label>
+                <label class="field" [class.field--invalid]="isInvalid('celular')"><span>Celular <em>*</em></span><input [formControl]="form.controls.celular" placeholder="9 dígitos" inputmode="tel" [attr.aria-invalid]="isInvalid('celular')" /><small>Número principal para contacto.</small>@if (isInvalid('celular')) {<strong class="field-error">Ingresa el celular.</strong>}</label>
+                <label class="field"><span>Número exclusivo de llamadas</span><input [formControl]="form.controls.numeroExclusivoLlamadas" placeholder="9 dígitos (opcional)" inputmode="tel" /><small>Úsalo si las llamadas salen desde un número distinto.</small></label>
+                <label class="field" [class.field--invalid]="isInvalid('fechaNacimiento')"><span>Fecha de nacimiento <em>*</em></span><input [formControl]="form.controls.fechaNacimiento" type="date" [attr.aria-invalid]="isInvalid('fechaNacimiento')" /><small>Ayuda a validar los datos del postulante.</small>@if (isInvalid('fechaNacimiento')) {<strong class="field-error">Selecciona la fecha.</strong>}</label>
+                <label class="field" [class.field--invalid]="isInvalid('origen')"><span>Origen <em>*</em></span><select [formControl]="form.controls.origen"><option value="COMPUTRABAJO">Computrabajo</option><option value="INDEED">Indeed</option><option value="TIKTOK">TikTok</option><option value="FACEBOOK">Facebook</option><option value="LINKEDIN">LinkedIn</option><option value="REFERIDO">Referido</option></select><small>Registra de dónde llegó el postulante.</small></label>
+              </div>
+            </div>
+            <div class="form-section">
+              <div class="form-section__heading"><span>02</span><div><h3>Postulación inicial</h3><p>Define el objetivo sin exigir una oferta laboral.</p></div></div>
+              <div class="form-grid">
+                <label class="field" [class.field--invalid]="isInvalid('puestoObjetivo')"><span>Puesto objetivo <em>*</em></span><select [formControl]="form.controls.puestoObjetivo">@for (option of puestoObjetivoOptions; track option.value) {<option [value]="option.value">{{ option.label }}</option>}</select><small>El flujo actual corresponde a Asesor de ventas.</small></label>
+                <label class="field"><span>Negocio</span><select [formControl]="form.controls.negocio" [disabled]="!!fixedNegocio" (change)="onBusinessChange($any($event.target).value)">@for (business of negocios; track business.value) {<option [value]="business.value">{{ business.label }}</option>}</select><small>{{ fixedNegocio ? 'Negocio activo del contexto de reclutamiento.' : 'Puede completarse luego con información de la oferta.' }}</small></label>
+                <label class="field"><span>Modalidad</span><select [formControl]="form.controls.modalidad"><option value="">Pendiente de definir</option><option value="PART_TIME">Part time</option><option value="FULL_TIME">Full time</option><option value="SEMI_FULL">Semi full</option><option value="SUPER_FULL">Super full</option></select><small>Dato operativo que puede completar el reclutador.</small></label>
+                <label class="field"><span>Horario</span><select [formControl]="form.controls.horario"><option value="">Pendiente de definir</option><option value="MORNING">Mañana</option><option value="AFTERNOON">Tarde</option><option value="NIGHT">Noche</option></select><small>Dato operativo que puede completar el reclutador.</small></label>
+                <label class="field" [class.field--invalid]="isInvalid('fechaPostulacion')"><span>Fecha de postulación <em>*</em></span><input [formControl]="form.controls.fechaPostulacion" type="date" [attr.aria-invalid]="isInvalid('fechaPostulacion')" /><small>Fecha manual informada para el inicio de esta postulación.</small></label>
+                <label class="field"><span>Oferta laboral</span><select [formControl]="form.controls.idOfertaLaboral"><option [ngValue]="0">Sin asociar por ahora</option>@for (offer of offers; track offer.id) {<option [ngValue]="offer.id">{{ offer.codigo }} · {{ offer.puestoObjetivo }}</option>}</select>@if (catalogLoading) {<small>Cargando ofertas activas…</small>} @else if (catalogError) {<small class="field-error">{{ catalogError }}</small>} @else {<small>La asociación puede realizarse durante el registro o después.</small>}</label>
+              </div>
+            </div>
+          }
+        </form>
+      </div>
+
+      <footer class="drawer__footer">
+        @if (catalogError) {<span class="footer-hint footer-hint--error">{{ catalogError }}</span>} @else {<span class="footer-hint">Los datos operativos quedan disponibles para el equipo correspondiente.</span>}
+        <div class="drawer__footer-actions"><button type="button" class="button button--ghost" [disabled]="actionState === 'loading'" (click)="close()">Cancelar</button><button type="submit" class="button button--primary" [disabled]="actionState === 'loading'" form="postulant-registration-form">{{ saveLabel() }}</button></div>
+      </footer>
+    </aside>
+  </div>
+}

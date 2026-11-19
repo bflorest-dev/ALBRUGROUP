@@ -34,4 +34,6 @@ public class AltaMetaPostulacionRequest {
 
     @NotNull
     private LocalDate fechaPostulacion;
+
+    private Long idOfertaLaboral;
 }

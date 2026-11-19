@@ -9,6 +9,7 @@ import { PostulacionHistorialResponse } from '../../../shared/models/recruitment
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
 import { ResumenSupervisorResponse } from '../../../shared/models/recruitment/resumen-supervisor-response';
 import { AltaMetaPostulacionRequest } from '../../../shared/models/recruitment/alta-meta-postulacion-request';
+import { PostulacionRequest } from '../../../shared/models/recruitment/postulacion-request';
 import { EmpleadoIdentidadResponse } from '../../../shared/models/rrhh/empleado-identidad-response';
 import {
   RecruitmentSupervisorService,
@@ -341,6 +342,30 @@ export class RecruitmentSupervisorFacade {
     });
   }
 
+  registerPostulacion(request: PostulacionRequest): void {
+    if (this.actionState() === 'loading') return;
+
+    this.actionState.set('loading');
+    this.actionMessage.set('Registrando postulante…');
+    this.actionError.set('');
+    this.service.registrarPostulacion(request).pipe(timeout(this.requestTimeoutMs)).subscribe({
+      next: (saved) => this.completeRegistration(saved, 'Postulante registrado'),
+      error: (error: HttpErrorResponse) => this.failAction(error, 'No fue posible registrar el postulante.')
+    });
+  }
+
+  registerPostulacionRapidaMeta(request: AltaMetaPostulacionRequest): void {
+    if (this.actionState() === 'loading') return;
+
+    this.actionState.set('loading');
+    this.actionMessage.set('Registrando usuario Meta…');
+    this.actionError.set('');
+    this.service.registrarPostulacionRapidaMeta(request).pipe(timeout(this.requestTimeoutMs)).subscribe({
+      next: (saved) => this.completeRegistration(saved, 'Postulante Meta registrado'),
+      error: (error: HttpErrorResponse) => this.failAction(error, 'No fue posible registrar el usuario Meta.')
+    });
+  }
+
   private saveMeta(): void {
     this.metaForm.markAllAsTouched();
     if (this.metaForm.invalid || this.actionState() === 'loading') return;
@@ -598,6 +623,15 @@ export class RecruitmentSupervisorFacade {
     this.actionMessage.set(message);
     this.refresh();
     this.loadHistory(updated.postulante.id);
+  }
+
+  private completeRegistration(saved: PostulacionResponse, message: string): void {
+    this.selectedPostulacion.set(saved);
+    this.actionState.set('success');
+    this.actionMessage.set(message);
+    this.drawer.set('detail');
+    this.loadHistory(saved.postulante.id);
+    this.refresh();
   }
 
   private failAction(error: HttpErrorResponse, fallback: string): void {

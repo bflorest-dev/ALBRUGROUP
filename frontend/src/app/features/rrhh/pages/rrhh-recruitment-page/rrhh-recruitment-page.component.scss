@@ -1,0 +1,37 @@
+:host {
+  --recruitment-teal: #0f766e;
+  --recruitment-teal-dark: #115e59;
+  --recruitment-teal-soft: #e6f4f1;
+  --recruitment-ink: #102a2a;
+  --recruitment-muted: #607575;
+  --recruitment-line: #d8e5e2;
+  color: var(--recruitment-ink);
+  display: block;
+  height: calc(100dvh - 5.85rem);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.rrhh-recruitment-page { align-content: start; display: grid; gap: 1.25rem; grid-template-rows: auto auto; height: 100%; min-height: 0; padding: .15rem 0; }
+.rrhh-recruitment-header { align-items: center; border-bottom: 1px solid var(--recruitment-line); display: flex; gap: 1.5rem; justify-content: space-between; min-height: 5.4rem; padding: 0 0 1rem; }
+.rrhh-recruitment-header__copy { min-width: 0; }
+.rrhh-recruitment-header h1 { font-size: 1.5rem; letter-spacing: -.025em; line-height: 1.1; margin: 0; }
+.rrhh-recruitment-header p { color: var(--recruitment-muted); font-size: .78rem; line-height: 1.45; margin: .4rem 0 0; max-width: 48rem; }
+.button { align-items: center; border: 1px solid transparent; border-radius: .55rem; cursor: pointer; display: inline-flex; flex: 0 0 auto; font: inherit; font-size: .75rem; font-weight: 700; gap: .38rem; justify-content: center; min-height: 3rem; padding: .65rem 1.05rem; transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease; white-space: nowrap; }
+.button:hover { transform: translateY(-1px); }
+.button:focus-visible { outline: 3px solid rgba(15, 118, 110, .22); outline-offset: 2px; }
+.button--primary { background: var(--recruitment-teal); box-shadow: 0 5px 12px rgba(15, 118, 110, .16); color: #fff; }
+.button--primary:hover { background: var(--recruitment-teal-dark); }
+.rrhh-recruitment-notice { align-items: center; background: #eaf8f3; border: 1px solid #b9e2d5; border-radius: .55rem; color: #19735f; display: flex; font-size: .75rem; gap: .45rem; margin: 0; padding: .65rem .8rem; }
+.rrhh-recruitment-placeholder { align-items: center; background: #fff; border-top: 1px solid var(--recruitment-line); display: flex; gap: 1rem; justify-content: space-between; padding: 1.2rem 0; }
+.rrhh-recruitment-placeholder__label { color: var(--recruitment-teal); font-family: "Spline Sans Mono", monospace; font-size: .66rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.rrhh-recruitment-placeholder h2 { font-size: 1rem; margin: .25rem 0 0; }
+.rrhh-recruitment-placeholder p { color: var(--recruitment-muted); font-size: .74rem; line-height: 1.45; margin: .3rem 0 0; max-width: 54rem; }
+.rrhh-recruitment-placeholder__state { border: 1px solid #c9dad6; border-radius: .4rem; color: var(--recruitment-muted); font-size: .68rem; padding: .4rem .55rem; white-space: nowrap; }
+
+@media (max-width: 640px) {
+  :host { height: auto; min-height: calc(100dvh - 5.85rem); overflow: visible; }
+  .rrhh-recruitment-page { height: auto; min-height: calc(100dvh - 5.85rem); }
+  .rrhh-recruitment-header, .rrhh-recruitment-placeholder { align-items: flex-start; flex-direction: column; }
+  .button { width: 100%; }
+}

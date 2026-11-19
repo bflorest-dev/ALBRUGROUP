@@ -203,7 +203,20 @@
   </section>
 </section>
 
-@if (facade.drawer() !== 'none') {
+<app-postulant-registration-drawer
+  [visible]="facade.drawer() === 'register'"
+  [offers]="facade.offers()"
+  [fixedNegocio]="facade.negocioFilter()"
+  [catalogLoading]="facade.catalogLoading()"
+  [catalogError]="facade.catalogError()"
+  [actionState]="facade.actionState()"
+  [actionError]="facade.actionError()"
+  (closed)="facade.closeDrawer()"
+  (registerFull)="facade.registerPostulacion($event)"
+  (registerMeta)="facade.registerPostulacionRapidaMeta($event)"
+></app-postulant-registration-drawer>
+
+@if (facade.drawer() === 'detail' || facade.drawer() === 'edit') {
   <div class="drawer-layer" role="presentation">
     <button type="button" class="drawer-backdrop" aria-label="Cerrar ficha" (click)="facade.closeDrawer()"></button>
     <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
@@ -217,7 +230,7 @@
       </header>
 
       <div class="drawer__body">
-        @if (facade.drawer() === 'register' || facade.drawer() === 'edit') {
+        @if (facade.drawer() === 'edit') {
           <form id="candidate-form" class="candidate-form" [formGroup]="form" (ngSubmit)="facade.save()" novalidate>
             @if (facade.actionError()) {<div class="inline-notice inline-notice--error" role="alert"><i class="ti ti-alert-circle" aria-hidden="true"></i>{{ facade.actionError() }}</div>}
             @if (facade.drawer() === 'register') {
@@ -328,7 +341,7 @@
         }
       </div>
 
-      @if (facade.drawer() === 'register' || facade.drawer() === 'edit') {
+      @if (facade.drawer() === 'edit') {
         <footer class="drawer__footer">
           @if (facade.catalogError()) {<span class="footer-hint footer-hint--error">{{ facade.catalogError() }}</span>} @else {<span class="footer-hint">Los datos operativos quedan disponibles para el reclutador.</span>}
           <div class="drawer__footer-actions"><button type="button" class="button button--ghost" (click)="facade.closeDrawer()">Cancelar</button><button type="submit" class="button button--primary" [disabled]="facade.actionState() === 'loading'" form="candidate-form">{{ saveLabel() }}</button></div>
