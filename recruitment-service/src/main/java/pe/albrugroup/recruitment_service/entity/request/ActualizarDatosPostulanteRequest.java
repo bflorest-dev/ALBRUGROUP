@@ -1,6 +1,8 @@
 package pe.albrugroup.recruitment_service.entity.request;
 
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,25 +19,30 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class ActualizarDatosPostulanteRequest {
 
-    @Size(max = 255)
+    @Size(max = 120)
+    @Pattern(regexp = "^$|^[\\p{L}]+(?: [\\p{L}]+)*$")
     private String nombres;
 
-    @Size(max = 255)
+    @Size(max = 120)
+    @Pattern(regexp = "^$|^[\\p{L}]+(?: [\\p{L}]+)*$")
     private String apellidos;
 
     private Documento tipoDocumento;
 
-    @Size(max = 255)
+    @Size(max = 12)
+    @Pattern(regexp = "^$|\\d+$")
     private String documento;
 
-    @Size(max = 255)
+    @Pattern(regexp = "^$|9\\d{8}$")
     private String celular;
 
-    @Size(max = 255)
+    @Size(max = 9)
+    @Pattern(regexp = "^$|9\\d{8}$")
     private String numeroExclusivoLlamadas;
 
-    @Size(max = 255)
+    @Size(max = 80)
+    @Pattern(regexp = "^$|^@*[A-Za-z0-9._-]+$")
     private String usuarioMeta;
 
-    private LocalDate fechaNacimiento;
+    @PastOrPresent private LocalDate fechaNacimiento;
 }

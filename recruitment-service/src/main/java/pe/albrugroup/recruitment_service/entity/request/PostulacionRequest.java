@@ -2,6 +2,7 @@ package pe.albrugroup.recruitment_service.entity.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,6 +30,6 @@ public class PostulacionRequest {
     private Negocio negocio;
     private Modalidad modalidad;
     private TurnoHorario horario;
-    @NotNull private LocalDate fechaPostulacion;
+    @NotNull @PastOrPresent private LocalDate fechaPostulacion;
     @NotNull @Valid private PostulanteRequest postulante;
 }

@@ -2,6 +2,9 @@ package pe.albrugroup.recruitment_service.entity.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,7 +23,8 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class AltaMetaPostulacionRequest {
 
-    @NotBlank
+    @NotBlank @Size(max = 80)
+    @Pattern(regexp = "^@*[A-Za-z0-9._-]+$")
     private String usuarioMeta;
 
     @NotNull
@@ -32,7 +36,7 @@ public class AltaMetaPostulacionRequest {
     @NotNull
     private Negocio negocio;
 
-    @NotNull
+    @NotNull @PastOrPresent
     private LocalDate fechaPostulacion;
 
     private Long idOfertaLaboral;

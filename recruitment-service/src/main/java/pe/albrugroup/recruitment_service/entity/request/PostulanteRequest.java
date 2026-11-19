@@ -2,6 +2,9 @@ package pe.albrugroup.recruitment_service.entity.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,12 +18,32 @@ import java.time.LocalDate;
 @AllArgsConstructor @NoArgsConstructor
 public class PostulanteRequest {
 
-    @NotBlank private String nombres;
-    @NotBlank private String apellidos;
+    @NotBlank @Size(min = 2, max = 120)
+    @Pattern(regexp = "^[\\p{L}]+(?: [\\p{L}]+)*$")
+    private String nombres;
+
+    @NotBlank @Size(min = 2, max = 120)
+    @Pattern(regexp = "^[\\p{L}]+(?: [\\p{L}]+)*$")
+    private String apellidos;
+
     @NotNull private Documento tipoDocumento;
-    @NotBlank private String documento;
-    @NotBlank private String celular;
+
+    @NotBlank @Size(max = 12)
+    @Pattern(regexp = "^\\d+$")
+    private String documento;
+
+    @NotBlank
+    @Pattern(regexp = "^9\\d{8}$")
+    private String celular;
+
+    @Size(max = 9)
+    @Pattern(regexp = "^9\\d{8}$")
     private String numeroExclusivoLlamadas;
+
+    @Size(max = 80)
+    @Pattern(regexp = "^@*[A-Za-z0-9._-]+$")
     private String usuarioMeta;
-    @NotNull private LocalDate fechaNacimiento;
+
+    @NotNull @PastOrPresent
+    private LocalDate fechaNacimiento;
 }

@@ -21,9 +21,16 @@ public class PostulanteService {
     private final PostulacionMapper postulacionMapper;
 
     public Postulante crearOActualizar(PostulanteRequest request) {
+        String documento = normalizarTexto(request.getDocumento());
+        String celular = normalizarTexto(request.getCelular());
+        String numeroExclusivoLlamadas = normalizarTexto(request.getNumeroExclusivoLlamadas());
+        validarDocumento(request.getTipoDocumento(), documento);
+        validarTelefono(celular, true, "Celular");
+        validarTelefono(numeroExclusivoLlamadas, false, "Número exclusivo de llamadas");
+
         Postulante postulante = postulanteRepository.findByTipoDocumentoAndDocumento(
                         request.getTipoDocumento(),
-                        request.getDocumento()
+                        documento
                 )
                 .orElseGet(() -> {
                     Postulante nuevoPostulante = postulacionMapper.toEntity(request);
@@ -37,10 +44,10 @@ public class PostulanteService {
         postulante.setNombres(request.getNombres());
         postulante.setApellidos(request.getApellidos());
         postulante.setTipoDocumento(request.getTipoDocumento());
-        postulante.setDocumento(request.getDocumento());
-        postulante.setCelular(request.getCelular());
-        if (request.getNumeroExclusivoLlamadas() != null) {
-            postulante.setNumeroExclusivoLlamadas(request.getNumeroExclusivoLlamadas());
+        postulante.setDocumento(documento);
+        postulante.setCelular(celular);
+        if (numeroExclusivoLlamadas != null) {
+            postulante.setNumeroExclusivoLlamadas(numeroExclusivoLlamadas);
         }
         if (usuarioMeta != null) {
             postulante.setUsuarioMeta(usuarioMeta);
@@ -75,6 +82,10 @@ public class PostulanteService {
             throw new BadRequestException("Tipo y número de documento deben enviarse juntos");
         }
 
+        validarDocumento(tipoDocumento, documento);
+        validarTelefono(normalizarTexto(request.getCelular()), false, "Celular");
+        validarTelefono(normalizarTexto(request.getNumeroExclusivoLlamadas()), false, "Número exclusivo de llamadas");
+
         validarUsuarioMetaDisponible(usuarioMeta, postulante.getId());
         if (tipoDocumento != null && postulanteRepository.findByTipoDocumentoAndDocumento(tipoDocumento, documento)
                 .filter(otro -> !otro.getId().equals(postulante.getId()))
@@ -102,7 +113,13 @@ public class PostulanteService {
             return null;
         }
         String normalizado = usuarioMeta.trim().replaceFirst("^@+", "").trim();
-        return normalizado.isBlank() ? null : normalizado;
+        if (normalizado.isBlank()) {
+            return null;
+        }
+        if (normalizado.length() > 80 || !normalizado.matches("[A-Za-z0-9._-]+")) {
+            throw new BadRequestException("El usuario Meta solo puede contener letras, números, puntos, guiones o guion bajo");
+        }
+        return normalizado;
     }
 
     private void validarUsuarioMetaDisponible(String usuarioMeta, Long idPostulanteActual) {
@@ -114,6 +131,32 @@ public class PostulanteService {
                 : postulanteRepository.existsByUsuarioMetaIgnoreCaseAndIdNot(usuarioMeta, idPostulanteActual);
         if (existe) {
             throw new ConflictException("Ya existe un postulante con el usuario Meta indicado");
+        }
+    }
+
+    private void validarDocumento(Documento tipoDocumento, String documento) {
+        if (tipoDocumento == null || documento == null) {
+            return;
+        }
+        boolean valido = tipoDocumento == Documento.DNI
+                ? documento.matches("\\d{8}")
+                : documento.matches("\\d{6,12}");
+        if (!valido) {
+            throw new BadRequestException(tipoDocumento == Documento.DNI
+                    ? "El DNI debe tener exactamente 8 dígitos"
+                    : "El CE debe tener entre 6 y 12 dígitos");
+        }
+    }
+
+    private void validarTelefono(String telefono, boolean requerido, String etiqueta) {
+        if (telefono == null) {
+            if (requerido) {
+                throw new BadRequestException(etiqueta + " es obligatorio");
+            }
+            return;
+        }
+        if (!telefono.matches("9\\d{8}")) {
+            throw new BadRequestException(etiqueta + " debe tener 9 dígitos y comenzar en 9");
         }
     }
 
