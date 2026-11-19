@@ -109,10 +109,10 @@ export class GestionDrawerComponent implements OnInit {
   this.loading.set(true);this.error.set('');
   forkJoin({state:this.api.obtenerGestion(this.postulacion().id),catalog:this.api.obtenerCatalogoReclutamiento()})
    .pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
-     next:r=>{this.state.set(r.state);this.syncDatosForm(r.state.postulacion);this.catalog.set(r.catalog);this.loading.set(false);this.stale.set(false);},
+    next:r=>{this.state.set(r.state);this.syncDatosForm(r.state.postulacion);this.catalog.set(r.catalog);this.loading.set(false);this.stale.set(false);if(r.state.accionesDisponibles.includes('ASIGNAR_GRUPO'))this.loadGroups();},
     error:e=>{this.error.set(this.errorText(e));this.loading.set(false);}
    });
-  this.loadGroups();this.loadMeetSlots();this.loadHistory();
+  this.loadMeetSlots();this.loadHistory();
  }
  loadGroups():void {
   this.api.listarGruposCapacitacionAbiertos().pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({

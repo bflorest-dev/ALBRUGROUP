@@ -9,6 +9,7 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import pe.albrugroup.recruitment_service.configuration.CurrentUser;
 import pe.albrugroup.recruitment_service.entity.Evento;
+import pe.albrugroup.recruitment_service.entity.GestionReclutamiento;
 import pe.albrugroup.recruitment_service.entity.GrupoCapacitacionDetalle;
 import pe.albrugroup.recruitment_service.entity.OfertaLaboral;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
@@ -587,7 +588,7 @@ public class PostulacionService {
 
     @Transactional(readOnly = true)
     public PageResponse<PostulacionResponse> listarBandejaCapacitacion(Boolean sinGrupo, Negocio negocio, PageRequest pageRequest) {
-        Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.CAPACITACION))
+        Specification<Postulacion> spec = Specification.where(aptaParaCapacitacion())
                 .and(conNegocio(negocio))
                 .and(Boolean.TRUE.equals(sinGrupo) ? sinGrupoCapacitacion() : null);
 
@@ -597,6 +598,26 @@ public class PostulacionService {
                 )
                 .map(this::mapearPostulacionResponse);
         return PageResponse.from(postulaciones);
+    }
+
+    private Specification<Postulacion> aptaParaCapacitacion() {
+        return (root, query, builder) -> {
+            var gestionAprobada = query.subquery(Long.class);
+            Root<GestionReclutamiento> gestionRoot = gestionAprobada.from(GestionReclutamiento.class);
+            gestionAprobada.select(builder.literal(1L))
+                    .where(
+                            builder.equal(gestionRoot.get("postulacionId"), root.get("id")),
+                            builder.equal(gestionRoot.get("resultadoEvaluacion"), "APROBADO")
+                    );
+
+            return builder.or(
+                    builder.equal(root.get("etapa"), Etapa.CAPACITACION),
+                    builder.and(
+                            builder.equal(root.get("etapa"), Etapa.RECLUTAMIENTO),
+                            builder.exists(gestionAprobada)
+                    )
+            );
+        };
     }
 
     @Transactional(readOnly = true)

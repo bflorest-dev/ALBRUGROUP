@@ -6,7 +6,8 @@ import { RecruitmentRealtimeService } from '../../../../core/services/recruitmen
 import { RecruiterOperationalInboxFacade } from '../../facades/recruiter-operational-inbox.facade';
 import { GestionDrawerComponent } from '../../components/gestion-drawer/gestion-drawer.component';
 import { RecruiterPostulantesService } from '../../services/recruiter-postulantes.service';
-import { SesionMeetResponse } from '../../../../shared/models/recruitment/sesion-meet-response';
+import { SesionMeetParticipanteResponse, SesionMeetResponse } from '../../../../shared/models/recruitment/sesion-meet-response';
+import { MeetAsistencia, MeetEvaluacion } from '../../../../shared/models/recruitment/meet-batch';
 import { RecruiterTrainingGroupsFacade } from '../../facades/recruiter-training-groups.facade';
 import { RecruiterTrainingGroupsService } from '../../services/recruiter-training-groups.service';
 import { TrainingGroupFormPanelComponent } from '../../components/training-group-form-panel/training-group-form-panel.component';
@@ -34,6 +35,12 @@ export class OperationalInboxPageComponent implements OnInit {
   protected readonly meetSessions = signal<SesionMeetResponse[]>([]);
   protected readonly meetLoading = signal(false);
   protected readonly meetError = signal('');
+  protected readonly selectedMeetSessionId = signal<number | null>(null);
+  protected readonly meetAttendanceDraft = signal<Record<number, MeetAsistencia | null>>({});
+  protected readonly meetEvaluationDraft = signal<Record<number, MeetEvaluacion | null>>({});
+  protected readonly meetObservationDraft = signal<Record<number, string>>({});
+  protected readonly meetBatchState = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
+  protected readonly meetBatchMessage = signal('');
   protected readonly trainingGroupsOpen = signal(false);
   protected readonly selectedGroupPostulacionIds = signal<number[]>([]);
   protected readonly selectedTrainingGroupId = signal<number | null>(null);
@@ -254,6 +261,7 @@ export class OperationalInboxPageComponent implements OnInit {
 
   protected changeMeetDate(value: string): void {
     this.meetDate.set(value);
+    this.resetMeetSelection();
     this.loadMeetAgenda();
   }
 
@@ -261,9 +269,186 @@ export class OperationalInboxPageComponent implements OnInit {
     this.meetLoading.set(true);
     this.meetError.set('');
     this.api.listarSesionesMeet(this.meetDate(), this.negocioScope.active()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: sessions => { this.meetSessions.set(sessions); this.meetLoading.set(false); },
+      next: sessions => {
+        this.meetSessions.set(sessions);
+        if (this.selectedMeetSessionId() && !sessions.some(session => session.id === this.selectedMeetSessionId())) {
+          this.resetMeetSelection();
+        }
+        this.meetLoading.set(false);
+      },
       error: () => { this.meetSessions.set([]); this.meetLoading.set(false); this.meetError.set('No se pudo cargar la agenda Meet.'); }
     });
+  }
+
+  protected selectMeetSession(session: SesionMeetResponse): void {
+    this.selectedMeetSessionId.set(session.id);
+    this.meetBatchState.set('idle');
+    this.meetBatchMessage.set('');
+    this.meetAttendanceDraft.set({});
+    this.meetEvaluationDraft.set({});
+    this.meetObservationDraft.set({});
+  }
+
+  protected isMeetSessionSelected(session: SesionMeetResponse): boolean {
+    return this.selectedMeetSessionId() === session.id;
+  }
+
+  protected selectedMeet(): SesionMeetResponse | null {
+    const id = this.selectedMeetSessionId();
+    return id ? this.meetSessions().find(session => session.id === id) ?? null : null;
+  }
+
+  protected meetParticipants(session: SesionMeetResponse): SesionMeetParticipanteResponse[] {
+    if (session.participantes?.length) return session.participantes;
+    return session.postulaciones.map(postulacion => ({
+      idPostulacion: postulacion.id,
+      postulacion,
+      asistencia: 'PENDIENTE',
+      resultadoEvaluacion: null,
+      evaluadaAt: null,
+      responsableId: null,
+      revision: null
+    }));
+  }
+
+  protected attendanceValue(participant: SesionMeetParticipanteResponse): MeetAsistencia | null {
+    return this.meetAttendanceDraft()[participant.idPostulacion] ??
+      (participant.asistencia === 'PENDIENTE' ? null : participant.asistencia);
+  }
+
+  protected evaluationValue(participant: SesionMeetParticipanteResponse): MeetEvaluacion | null {
+    return this.meetEvaluationDraft()[participant.idPostulacion] ??
+      (participant.resultadoEvaluacion === 'APROBADO' || participant.resultadoEvaluacion === 'RECHAZADO'
+        ? participant.resultadoEvaluacion
+        : null);
+  }
+
+  protected observationValue(participant: SesionMeetParticipanteResponse): string {
+    return this.meetObservationDraft()[participant.idPostulacion] ?? '';
+  }
+
+  protected isParticipantAttended(participant: SesionMeetParticipanteResponse): boolean {
+    return this.attendanceValue(participant) === 'ASISTIO';
+  }
+
+  protected meetParticipantActionLabel(participant: SesionMeetParticipanteResponse): string {
+    return participant.asistencia === 'NO_ASISTIO' ? 'Programar nuevo Meet' : 'Reprogramar Meet';
+  }
+
+  protected openMeetParticipant(participant: SesionMeetParticipanteResponse): void {
+    this.facade.openDetail(participant.postulacion);
+  }
+
+  protected setMeetAttendance(idPostulacion: number, value: string): void {
+    const attendance = value === 'ASISTIO' || value === 'NO_ASISTIO' ? value : null;
+    this.meetAttendanceDraft.update(draft => ({ ...draft, [idPostulacion]: attendance }));
+    this.meetBatchState.set('idle');
+    this.meetBatchMessage.set('');
+  }
+
+  protected setMeetEvaluation(idPostulacion: number, value: string): void {
+    const evaluation = value === 'APROBADO' || value === 'RECHAZADO' ? value : null;
+    this.meetEvaluationDraft.update(draft => ({ ...draft, [idPostulacion]: evaluation }));
+    this.meetBatchState.set('idle');
+    this.meetBatchMessage.set('');
+  }
+
+  protected setMeetObservation(idPostulacion: number, value: string): void {
+    this.meetObservationDraft.update(draft => ({ ...draft, [idPostulacion]: value }));
+  }
+
+  protected markMeetAttendance(session: SesionMeetResponse, value: MeetAsistencia): void {
+    const next = { ...this.meetAttendanceDraft() };
+    this.meetParticipants(session).forEach(participant => {
+      if (participant.asistencia === 'PENDIENTE') next[participant.idPostulacion] = value;
+    });
+    this.meetAttendanceDraft.set(next);
+    this.meetBatchState.set('idle');
+    this.meetBatchMessage.set('');
+  }
+
+  protected submitMeetAttendance(session: SesionMeetResponse): void {
+    if (this.meetBatchState() === 'loading') return;
+    const items = this.meetParticipants(session)
+      .filter(participant => participant.asistencia === 'PENDIENTE' && this.attendanceValue(participant))
+      .map(participant => ({
+        idPostulacion: participant.idPostulacion,
+        asistencia: this.attendanceValue(participant)!,
+        observacion: this.observationValue(participant).trim() || null,
+        revisionEsperada: participant.revision
+      }));
+    if (!items.length) {
+      this.meetBatchState.set('error');
+      this.meetBatchMessage.set('Selecciona la asistencia de al menos un participante.');
+      return;
+    }
+    this.meetBatchState.set('loading');
+    this.meetBatchMessage.set('');
+    this.api.registrarAsistenciaMeetBatch(session.id, this.negocioScope.active(), { items })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: response => {
+          this.meetBatchState.set('success');
+          this.meetBatchMessage.set(`${response.procesados} asistencia${response.procesados === 1 ? '' : 's'} registrada${response.procesados === 1 ? '' : 's'}.`);
+          this.meetAttendanceDraft.set({});
+          this.facade.refresh();
+          this.loadMeetAgenda();
+        },
+        error: error => {
+          this.meetBatchState.set('error');
+          this.meetBatchMessage.set(error?.error?.message || 'No se pudo registrar la asistencia. La sesión pudo cambiar; vuelve a cargar la agenda.');
+        }
+      });
+  }
+
+  protected submitMeetEvaluation(session: SesionMeetResponse): void {
+    if (this.meetBatchState() === 'loading') return;
+    const items = this.meetParticipants(session)
+      .filter(participant => participant.asistencia === 'ASISTIO' && !participant.resultadoEvaluacion && this.evaluationValue(participant))
+      .map(participant => ({
+        idPostulacion: participant.idPostulacion,
+        resultado: this.evaluationValue(participant)!,
+        motivo: this.evaluationValue(participant)!,
+        observacion: this.observationValue(participant).trim(),
+        revisionEsperada: participant.revision
+      }));
+    if (!items.length) {
+      this.meetBatchState.set('error');
+      this.meetBatchMessage.set('Selecciona la evaluación de al menos un participante que asistió.');
+      return;
+    }
+    if (items.some(item => !item.observacion)) {
+      this.meetBatchState.set('error');
+      this.meetBatchMessage.set('Agrega una observación para cada evaluación seleccionada.');
+      return;
+    }
+    this.meetBatchState.set('loading');
+    this.meetBatchMessage.set('');
+    this.api.registrarEvaluacionMeetBatch(session.id, this.negocioScope.active(), { items })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: response => {
+          this.meetBatchState.set('success');
+          this.meetBatchMessage.set(`${response.procesados} evaluación${response.procesados === 1 ? '' : 'es'} registrada${response.procesados === 1 ? '' : 's'}.`);
+          this.meetEvaluationDraft.set({});
+          this.meetObservationDraft.set({});
+          this.facade.refresh();
+          this.loadMeetAgenda();
+        },
+        error: error => {
+          this.meetBatchState.set('error');
+          this.meetBatchMessage.set(error?.error?.message || 'No se pudo registrar la evaluación. La sesión pudo cambiar; vuelve a cargar la agenda.');
+        }
+      });
+  }
+
+  private resetMeetSelection(): void {
+    this.selectedMeetSessionId.set(null);
+    this.meetAttendanceDraft.set({});
+    this.meetEvaluationDraft.set({});
+    this.meetObservationDraft.set({});
+    this.meetBatchState.set('idle');
+    this.meetBatchMessage.set('');
   }
 
   protected meetHour(session: SesionMeetResponse): string {

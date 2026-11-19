@@ -13,6 +13,11 @@ import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/
 import { GestionReclutamiento, GestionRequest, HorarioMeet } from '../../../shared/models/recruitment/gestion-reclutamiento';
 import { ContactoPostulacionResponse } from '../../../shared/models/recruitment/contacto-postulacion-response';
 import { SesionMeetResponse } from '../../../shared/models/recruitment/sesion-meet-response';
+import {
+  MeetAsistenciaBatchRequest,
+  MeetBatchResponse,
+  MeetEvaluacionBatchRequest
+} from '../../../shared/models/recruitment/meet-batch';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { RecruitmentNegocio } from '../../../core/services/current-user-recruitment-negocio-scope.service';
 
@@ -38,6 +43,49 @@ export class RecruiterPostulantesService {
   listarSesionesMeet(fecha: string, negocio: RecruitmentNegocio): Observable<SesionMeetResponse[]> {
     const params = new HttpParams().set('fecha', fecha).set('negocio', negocio);
     return this.http.get<SesionMeetResponse[]>(`${this.recruitmentUrl}/reclutamiento/meet/sesiones`, { params });
+  }
+
+  listarSesionesMeetRango(
+    desde: string,
+    hasta: string,
+    negocio: RecruitmentNegocio,
+    estado?: string
+  ): Observable<SesionMeetResponse[]> {
+    let params = new HttpParams().set('desde', desde).set('hasta', hasta).set('negocio', negocio);
+    if (estado) params = params.set('estado', estado);
+    return this.http.get<SesionMeetResponse[]>(`${this.recruitmentUrl}/reclutamiento/meet/sesiones`, { params });
+  }
+
+  registrarAsistenciaMeetBatch(
+    idSesion: number,
+    negocio: RecruitmentNegocio,
+    request: MeetAsistenciaBatchRequest
+  ): Observable<MeetBatchResponse> {
+    const payload = {
+      items: request.items.map(item => ({
+        idPostulacion: item.idPostulacion,
+        resultado: item.asistencia,
+        observacion: item.observacion ?? null,
+        revisionEsperada: item.revisionEsperada
+      }))
+    };
+    return this.http.post<MeetBatchResponse>(
+      `${this.recruitmentUrl}/reclutamiento/meet/sesiones/${idSesion}/asistencia:batch`,
+      payload,
+      { params: new HttpParams().set('negocio', negocio) }
+    );
+  }
+
+  registrarEvaluacionMeetBatch(
+    idSesion: number,
+    negocio: RecruitmentNegocio,
+    request: MeetEvaluacionBatchRequest
+  ): Observable<MeetBatchResponse> {
+    return this.http.post<MeetBatchResponse>(
+      `${this.recruitmentUrl}/reclutamiento/meet/sesiones/${idSesion}/evaluacion:batch`,
+      request,
+      { params: new HttpParams().set('negocio', negocio) }
+    );
   }
 
   listarEmpleadosLight(empleadoIds: number[]): Observable<EmpleadoRolResponse[]> {

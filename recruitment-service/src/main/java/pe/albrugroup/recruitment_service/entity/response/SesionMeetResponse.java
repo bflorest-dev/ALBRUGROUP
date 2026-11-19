@@ -15,6 +15,7 @@ public record SesionMeetResponse(
         String horarioEtiqueta,
         String enlace,
         String estado,
-        List<PostulacionResponse> postulaciones
+        List<PostulacionResponse> postulaciones,
+        List<SesionMeetParticipanteResponse> participantes
 ) {
 }

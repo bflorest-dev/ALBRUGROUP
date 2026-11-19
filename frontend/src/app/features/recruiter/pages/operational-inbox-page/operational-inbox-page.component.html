@@ -1,30 +1,23 @@
 <section class="recruiter-operational" aria-labelledby="recruiter-operational-title">
   <header class="workspace-header">
     <div class="workspace-header__copy">
-      <span class="workspace-header__live"><span aria-hidden="true"></span> Reclutamiento en vivo</span>
-      <h1 id="recruiter-operational-title">Gestión de postulaciones</h1>
-      <p>Una sola bandeja para contactar, tipificar y hacer avanzar cada postulación.</p>
+      <div class="workspace-header__title-row">
+        <h1 id="recruiter-operational-title">Gestión de postulantes</h1>
+        <button type="button" class="workspace-header__info" aria-label="Más información sobre la gestión de postulantes">
+          <i class="ti ti-alert-circle" aria-hidden="true"></i>
+          <span class="workspace-header__info-text" role="tooltip">Gestiona contactos, Meets y grupos de capacitación desde una bandeja compartida.</span>
+        </button>
+      </div>
     </div>
     <div class="workspace-header__actions">
-      <span class="sync-status"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizado {{ dateTime(facade.lastSync().toISOString()) }}</span>
-      <button type="button" class="button button--ghost" [attr.aria-expanded]="meetAgendaOpen()" (click)="toggleMeetAgenda()">
+      <button type="button" class="button button--primary" [attr.aria-expanded]="meetAgendaOpen()" (click)="toggleMeetAgenda()">
         <i class="ti ti-calendar-event" aria-hidden="true"></i>
         {{ meetAgendaOpen() ? 'Cerrar agenda' : 'Agenda Meet' }}
       </button>
-      <button type="button" class="button button--primary" [attr.aria-expanded]="trainingGroupsOpen()" (click)="toggleTrainingGroups()">
+      <button type="button" class="button button--ghost" [attr.aria-expanded]="trainingGroupsOpen()" (click)="toggleTrainingGroups()">
         <i class="ti ti-users-group" aria-hidden="true"></i>
         {{ trainingGroupsOpen() ? 'Cerrar grupos' : 'Grupos de capacitación' }}
         @if (approvedPendingGroup().length) { <span class="button__badge">{{ approvedPendingGroup().length }}</span> }
-      </button>
-      <button
-        type="button"
-        class="button icon-button"
-        [attr.aria-busy]="facade.listLoading() || facade.catalogLoading()"
-        [attr.aria-label]="facade.listLoading() ? 'Actualizando bandeja' : 'Actualizar bandeja'"
-        title="Actualizar bandeja"
-        (click)="facade.refresh()"
-        [disabled]="facade.listLoading() || facade.catalogLoading()">
-        <i class="ti ti-refresh" aria-hidden="true"></i>
       </button>
     </div>
   </header>
@@ -50,22 +43,95 @@
       } @else {
         <div class="meet-agenda__grid">
           @for (session of meetSessions(); track session.id) {
-            <article class="meet-session">
-              <header><div><span>{{ label(session.negocio) }}</span><strong>{{ session.horarioEtiqueta }}</strong></div><b>{{ session.postulaciones.length }}</b></header>
+            <article class="meet-session" [class.meet-session--selected]="isMeetSessionSelected(session)">
+              <button type="button" class="meet-session__open" [attr.aria-pressed]="isMeetSessionSelected(session)" (click)="selectMeetSession(session)">
+                <span class="meet-session__heading"><span>{{ label(session.negocio) }}</span><strong>{{ session.horarioEtiqueta }}</strong></span>
+                <b>{{ meetParticipants(session).length }}</b>
+              </button>
               <p>{{ meetHour(session) }} · {{ label(session.estado) }}</p>
               <ul>
-                @for (postulacion of session.postulaciones; track postulacion.id) {
-                  <li><span>{{ displayName(postulacion.postulante) }}</span><small>{{ postulacion.postulante.documento || '@' + (postulacion.postulante.usuarioMeta || '') }} · {{ label(postulacion.puestoObjetivo) }}</small></li>
+                @for (participant of meetParticipants(session).slice(0, 3); track participant.idPostulacion) {
+                  <li><span>{{ displayName(participant.postulacion.postulante) }}</span><small>{{ participant.postulacion.postulante.documento || '@' + (participant.postulacion.postulante.usuarioMeta || '') }}</small></li>
                 }
               </ul>
+              <button type="button" class="button button--ghost button--small meet-session__manage" (click)="selectMeetSession(session)">
+                <i class="ti ti-list-check" aria-hidden="true"></i> Gestionar {{ meetParticipants(session).length }} participantes
+              </button>
             </article>
           }
         </div>
+        @if (selectedMeet(); as selectedSession) {
+          <section class="meet-workspace" aria-labelledby="meet-workspace-title">
+            <header class="meet-workspace__header">
+              <div>
+                <span class="workspace-header__live"><span aria-hidden="true"></span> Gestión agrupada</span>
+                <h3 id="meet-workspace-title">{{ label(selectedSession.negocio) }} · {{ selectedSession.horarioEtiqueta }}</h3>
+                <p>{{ meetParticipants(selectedSession).length }} participantes · {{ meetHour(selectedSession) }}</p>
+              </div>
+              <div class="meet-workspace__actions">
+                <button type="button" class="button button--ghost button--small" (click)="markMeetAttendance(selectedSession, 'ASISTIO')">Todos asistieron</button>
+                <button type="button" class="button button--ghost button--small" (click)="markMeetAttendance(selectedSession, 'NO_ASISTIO')">Todos no asistieron</button>
+              </div>
+            </header>
+            <div class="meet-participants" role="list" aria-label="Participantes del Meet">
+              @for (participant of meetParticipants(selectedSession); track participant.idPostulacion) {
+                <article class="meet-participant" role="listitem">
+                  <div class="meet-participant__identity">
+                    <strong>{{ displayName(participant.postulacion.postulante) }}</strong>
+                    <small>{{ participant.postulacion.postulante.documento || '@' + (participant.postulacion.postulante.usuarioMeta || '') }}</small>
+                    @if (participant.asistencia !== 'ASISTIO' && !participant.resultadoEvaluacion) {
+                      <button type="button" class="meet-participant__reschedule" (click)="openMeetParticipant(participant)" [attr.aria-label]="meetParticipantActionLabel(participant) + ' para ' + displayName(participant.postulacion.postulante)">
+                        <i class="ti ti-calendar-plus" aria-hidden="true"></i>{{ meetParticipantActionLabel(participant) }}
+                      </button>
+                    }
+                  </div>
+                  <label class="field field--compact">
+                    <span>Asistencia</span>
+                    <select [value]="attendanceValue(participant) || ''" [disabled]="participant.asistencia !== 'PENDIENTE'" (change)="setMeetAttendance(participant.idPostulacion, $any($event.target).value)">
+                      <option value="">Pendiente</option>
+                      <option value="ASISTIO">Asistió</option>
+                      <option value="NO_ASISTIO">No asistió</option>
+                    </select>
+                  </label>
+                  @if (isParticipantAttended(participant)) {
+                    <label class="field field--compact">
+                      <span>Evaluación</span>
+                      <select [value]="evaluationValue(participant) || ''" [disabled]="!!participant.resultadoEvaluacion" (change)="setMeetEvaluation(participant.idPostulacion, $any($event.target).value)">
+                        <option value="">Pendiente</option>
+                        <option value="APROBADO">Aprobar</option>
+                        <option value="RECHAZADO">Rechazar</option>
+                      </select>
+                    </label>
+                    <label class="field meet-participant__observation">
+                      <span>Observación de evaluación</span>
+                      <input type="text" maxlength="2000" placeholder="Comentario breve" [value]="observationValue(participant)" [disabled]="!!participant.resultadoEvaluacion" (input)="setMeetObservation(participant.idPostulacion, $any($event.target).value)" />
+                    </label>
+                  }
+                </article>
+              }
+            </div>
+            @if (meetBatchMessage()) {
+              <div class="inline-notice" [class.inline-notice--success]="meetBatchState() === 'success'" [class.inline-notice--error]="meetBatchState() === 'error'" role="status">
+                <i class="ti" [class.ti-check]="meetBatchState() === 'success'" [class.ti-alert-circle]="meetBatchState() === 'error'" aria-hidden="true"></i>
+                <span>{{ meetBatchMessage() }}</span>
+              </div>
+            }
+            <footer class="meet-workspace__footer">
+              <span>Guarda primero la asistencia. Después podrás evaluar a quienes asistieron.</span>
+              <div>
+                <button type="button" class="button button--ghost" [disabled]="meetBatchState() === 'loading'" (click)="submitMeetAttendance(selectedSession)">
+                  @if (meetBatchState() === 'loading') { <span class="spinner spinner--small" aria-hidden="true"></span> Procesando… } @else { Guardar asistencia }
+                </button>
+                <button type="button" class="button button--primary" [disabled]="meetBatchState() === 'loading'" (click)="submitMeetEvaluation(selectedSession)">Guardar evaluaciones</button>
+              </div>
+            </footer>
+          </section>
+        }
       }
     </section>
   }
 
-  @if (!trainingGroupsOpen()) {
+  @if (!trainingGroupsOpen() && !meetAgendaOpen()) {
   <div class="summary-grid" aria-label="Resumen de la bandeja">
     <article class="summary-card summary-card--total">
       <span class="summary-card__label">Postulaciones visibles</span>
@@ -201,7 +267,7 @@
       <footer class="table-footer"><span>{{ facade.filteredRows().length }} registros cargados</span><span class="table-footer__hint"><i class="ti ti-bolt" aria-hidden="true"></i> Bandeja compartida</span></footer>
     </div>
   </section>
-  } @else {
+  } @else if (trainingGroupsOpen()) {
     <section class="group-workspace" aria-labelledby="group-workspace-title">
       <header class="group-workspace__header">
         <div>

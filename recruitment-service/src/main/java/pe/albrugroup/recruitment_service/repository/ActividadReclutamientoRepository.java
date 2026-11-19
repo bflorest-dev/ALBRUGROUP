@@ -6,4 +6,5 @@ public interface ActividadReclutamientoRepository extends JpaRepository<Activida
  List<ActividadReclutamiento> findByPostulacionIdOrderByIdDesc(Long id);
  Optional<ActividadReclutamiento> findByPostulacionIdAndEstado(Long id,String estado);
  List<ActividadReclutamiento> findByMeetSesionIdOrderByFechaHoraAscIdAsc(Long meetSesionId);
+ Optional<ActividadReclutamiento> findByMeetSesionIdAndPostulacionId(Long meetSesionId, Long postulacionId);
 }

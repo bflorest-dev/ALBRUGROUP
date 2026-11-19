@@ -4,14 +4,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.recruitment_service.entity.HorarioMeetReclutamiento;
+import pe.albrugroup.recruitment_service.entity.GestionReclutamiento;
 import pe.albrugroup.recruitment_service.entity.SesionMeetReclutamiento;
 import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.response.HorarioMeetResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.entity.response.SesionMeetResponse;
+import pe.albrugroup.recruitment_service.entity.response.SesionMeetParticipanteResponse;
 import pe.albrugroup.recruitment_service.exception.BadRequestException;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
 import pe.albrugroup.recruitment_service.repository.ActividadReclutamientoRepository;
+import pe.albrugroup.recruitment_service.repository.GestionReclutamientoRepository;
 import pe.albrugroup.recruitment_service.repository.HorarioMeetReclutamientoRepository;
 import pe.albrugroup.recruitment_service.repository.PostulacionRepository;
 import pe.albrugroup.recruitment_service.repository.SesionMeetReclutamientoRepository;
@@ -32,6 +35,7 @@ public class MeetReclutamientoService {
     private final HorarioMeetReclutamientoRepository horarios;
     private final SesionMeetReclutamientoRepository sesiones;
     private final ActividadReclutamientoRepository actividades;
+    private final GestionReclutamientoRepository gestiones;
     private final PostulacionRepository postulaciones;
     private final PostulacionService postulacionService;
 
@@ -45,18 +49,43 @@ public class MeetReclutamientoService {
     }
 
     public List<SesionMeetResponse> listarSesiones(LocalDate fecha, Negocio negocio) {
+        LocalDate fechaConsulta = fecha == null ? LocalDate.now(LIMA) : fecha;
+        return listarSesiones(fechaConsulta, fechaConsulta, negocio, null);
+    }
+
+    public List<SesionMeetResponse> listarSesiones(
+            LocalDate desde,
+            LocalDate hasta,
+            Negocio negocio,
+            String estado
+    ) {
         if (negocio == null) {
             throw new BadRequestException("El negocio es obligatorio para consultar la agenda Meet.");
         }
-        LocalDate fechaConsulta = fecha == null ? LocalDate.now(LIMA) : fecha;
-        List<SesionMeetReclutamiento> resultado = sesiones.findByFechaAndNegocioOrderByFechaHoraInicioAsc(fechaConsulta, negocio);
+        LocalDate desdeConsulta = desde == null ? LocalDate.now(LIMA) : desde;
+        LocalDate hastaConsulta = hasta == null ? desdeConsulta : hasta;
+        if (hastaConsulta.isBefore(desdeConsulta)) {
+            throw new BadRequestException("El rango de fechas de la agenda Meet no es válido.");
+        }
+        List<SesionMeetReclutamiento> resultado = estado == null || estado.isBlank()
+                ? sesiones.findByFechaBetweenAndNegocioOrderByFechaHoraInicioAsc(desdeConsulta, hastaConsulta, negocio)
+                : sesiones.findByFechaBetweenAndNegocioAndEstadoOrderByFechaHoraInicioAsc(
+                        desdeConsulta, hastaConsulta, negocio, estado.trim().toUpperCase()
+                );
         return resultado.stream().map(this::toSesionResponse).toList();
     }
 
-    public SesionMeetResponse obtenerSesion(Long id) {
+    public SesionMeetResponse obtenerSesion(Long id, Negocio negocio) {
+        return toSesionResponse(obtenerSesionEntidad(id, negocio));
+    }
+
+    public SesionMeetReclutamiento obtenerSesionEntidad(Long id, Negocio negocio) {
         SesionMeetReclutamiento sesion = sesiones.findById(id)
                 .orElseThrow(() -> new NotFoundException(SesionMeetReclutamiento.class, id));
-        return toSesionResponse(sesion);
+        if (negocio == null || sesion.getNegocio() != negocio) {
+            throw new BadRequestException("La sesión Meet no pertenece al negocio activo.");
+        }
+        return sesion;
     }
 
     public HorarioMeetReclutamiento obtenerHorario(Long id) {
@@ -94,11 +123,23 @@ public class MeetReclutamientoService {
     }
 
     private SesionMeetResponse toSesionResponse(SesionMeetReclutamiento sesion) {
-        List<PostulacionResponse> postulacionesSesion = actividades
-                .findByMeetSesionIdOrderByFechaHoraAscIdAsc(sesion.getId())
-                .stream()
+        List<pe.albrugroup.recruitment_service.entity.ActividadReclutamiento> actividadesSesion =
+                actividades.findByMeetSesionIdOrderByFechaHoraAscIdAsc(sesion.getId());
+        List<PostulacionResponse> postulacionesSesion = actividadesSesion.stream()
                 .map(actividad -> postulacionService.obtenerPostulacion(actividad.getPostulacionId()))
                 .toList();
+        List<SesionMeetParticipanteResponse> participantes = actividadesSesion.stream().map(actividad -> {
+            GestionReclutamiento gestion = gestiones.findById(actividad.getPostulacionId()).orElse(null);
+            return new SesionMeetParticipanteResponse(
+                    actividad.getPostulacionId(),
+                    postulacionService.obtenerPostulacion(actividad.getPostulacionId()),
+                    asistencia(actividad.getEstado()),
+                    gestion == null ? null : gestion.getResultadoEvaluacion(),
+                    gestion == null ? null : gestion.getEvaluadaAt(),
+                    actividad.getResponsableId(),
+                    gestion == null ? 0L : gestion.getRevision()
+            );
+        }).toList();
         return new SesionMeetResponse(
                 sesion.getId(),
                 sesion.getNegocio(),
@@ -108,7 +149,16 @@ public class MeetReclutamientoService {
                 sesion.getHorario() == null ? "Sesión histórica" : sesion.getHorario().getEtiqueta(),
                 sesion.getEnlace(),
                 sesion.getEstado(),
-                postulacionesSesion
+                postulacionesSesion,
+                participantes
         );
+    }
+
+    private String asistencia(String estado) {
+        return switch (estado) {
+            case "REALIZADA" -> "ASISTIO";
+            case "INASISTENCIA" -> "NO_ASISTIO";
+            default -> "PENDIENTE";
+        };
     }
 }

@@ -26,5 +26,13 @@ public interface SesionMeetReclutamientoRepository extends JpaRepository<SesionM
 
     List<SesionMeetReclutamiento> findByFechaAndNegocioOrderByFechaHoraInicioAsc(LocalDate fecha, Negocio negocio);
 
+    List<SesionMeetReclutamiento> findByFechaBetweenAndNegocioOrderByFechaHoraInicioAsc(
+            LocalDate desde, LocalDate hasta, Negocio negocio
+    );
+
+    List<SesionMeetReclutamiento> findByFechaBetweenAndNegocioAndEstadoOrderByFechaHoraInicioAsc(
+            LocalDate desde, LocalDate hasta, Negocio negocio, String estado
+    );
+
     List<SesionMeetReclutamiento> findByFechaOrderByFechaHoraInicioAsc(LocalDate fecha);
 }

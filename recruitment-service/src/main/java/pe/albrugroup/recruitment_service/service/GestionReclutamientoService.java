@@ -148,6 +148,65 @@ public class GestionReclutamientoService {
   return obtener(id);
  }
 
+ @Transactional
+ public MeetBatchResponse registrarAsistenciaBatch(
+   Long idSesion,
+   Negocio negocio,
+   MeetAsistenciaBatchRequest request
+ ) {
+  meetService.obtenerSesionEntidad(idSesion, negocio);
+  validarIdsUnicos(request.items().stream().map(MeetAsistenciaBatchItemRequest::idPostulacion).toList());
+  LocalDateTime ahora = LocalDateTime.now(ZoneId.of("America/Lima"));
+
+  for (MeetAsistenciaBatchItemRequest item : request.items()) {
+   ActividadReclutamiento actividad = validarParticipanteSesion(idSesion, item.idPostulacion(), true);
+   String accion = switch (item.resultado().trim().toUpperCase()) {
+    case "ASISTIO" -> "ASISTIO_MEET";
+    case "NO_ASISTIO" -> "INASISTENCIA";
+    default -> throw new BadRequestException("El resultado de asistencia debe ser ASISTIO o NO_ASISTIO.");
+   };
+   if (!"PENDIENTE".equals(actividad.getEstado())) {
+    throw new ConflictException("La asistencia de la postulación ya fue resuelta.", item.idPostulacion());
+   }
+   registrar(item.idPostulacion(), new GestionReclutamientoRequest(
+    accion, item.revisionEsperada(), ahora, ModalidadContacto.MEET,
+    item.observacion(), null, null, null, null, null, null, null, idSesion
+   ));
+  }
+  return new MeetBatchResponse(
+   request.items().size(),
+   request.items().stream().map(MeetAsistenciaBatchItemRequest::idPostulacion).toList()
+  );
+ }
+
+ @Transactional
+ public MeetBatchResponse registrarEvaluacionBatch(
+   Long idSesion,
+   Negocio negocio,
+   MeetEvaluacionBatchRequest request
+ ) {
+  meetService.obtenerSesionEntidad(idSesion, negocio);
+  validarIdsUnicos(request.items().stream().map(MeetEvaluacionBatchItemRequest::idPostulacion).toList());
+  LocalDateTime ahora = LocalDateTime.now(ZoneId.of("America/Lima"));
+
+  for (MeetEvaluacionBatchItemRequest item : request.items()) {
+   validarParticipanteSesion(idSesion, item.idPostulacion(), false);
+   String resultado = item.resultado().trim().toUpperCase();
+   if (!resultado.equals("APROBADO") && !resultado.equals("RECHAZADO")) {
+    throw new BadRequestException("El resultado de evaluación debe ser APROBADO o RECHAZADO.");
+   }
+   registrar(item.idPostulacion(), new GestionReclutamientoRequest(
+    resultado.equals("APROBADO") ? "APROBAR" : "RECHAZAR",
+    item.revisionEsperada(), ahora, ModalidadContacto.MEET,
+    item.observacion(), item.motivo(), null, null, null, null, null, null, idSesion
+   ));
+  }
+  return new MeetBatchResponse(
+   request.items().size(),
+   request.items().stream().map(MeetEvaluacionBatchItemRequest::idPostulacion).toList()
+  );
+ }
+
  private List<String> acciones(Etapa etapa,EstadoPostulacion estado,GestionReclutamiento g,List<ActividadReclutamiento> agenda) {
   if(etapa!=Etapa.RECLUTAMIENTO || estado!=EstadoPostulacion.EN_PROCESO) return List.of();
   var result=new ArrayList<>(List.of("NO_CONTACTO","SEGUIMIENTO","NO_INTERESADO"));
@@ -242,6 +301,27 @@ public class GestionReclutamientoService {
    throw new BadRequestException("Un intento sin contacto solo puede registrarse por llamada o WhatsApp.");
   if(r.fechaHoraActividad()!=null || r.modalidadActividad()!=null || (r.referencia()!=null && !r.referencia().isBlank()))
    throw new BadRequestException("Un intento sin contacto no puede programar una próxima actividad.");
+ }
+
+ private ActividadReclutamiento validarParticipanteSesion(Long idSesion, Long idPostulacion, boolean pendiente) {
+  ActividadReclutamiento actividad = actividades.findByMeetSesionIdAndPostulacionId(idSesion, idPostulacion)
+   .orElseThrow(() -> new BadRequestException("La postulación no pertenece a la sesión Meet seleccionada."));
+  if (!"ENTREVISTA".equals(actividad.getTipo()) || !"MEET".equals(actividad.getModalidad())) {
+   throw new BadRequestException("La actividad vinculada no corresponde a un Meet.");
+  }
+  if (pendiente && !"PENDIENTE".equals(actividad.getEstado())) {
+   throw new ConflictException("La asistencia de la postulación ya fue resuelta.", idPostulacion);
+  }
+  if (!pendiente && !"REALIZADA".equals(actividad.getEstado())) {
+   throw new BadRequestException("Registra la asistencia al Meet antes de evaluar.");
+  }
+  return actividad;
+ }
+
+ private void validarIdsUnicos(List<Long> ids) {
+  if (ids.stream().distinct().count() != ids.size()) {
+   throw new BadRequestException("La operación batch contiene postulaciones repetidas.");
+  }
  }
  private GestionReclutamiento inicial(Long id) {
   var g=new GestionReclutamiento(); g.setPostulacionId(id); return g;
