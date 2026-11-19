@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import pe.albrugroup.recruitment_service.entity.GrupoCapacitacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoGrupoCapacitacion;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,6 +21,15 @@ public interface GrupoCapacitacionRepository extends JpaRepository<GrupoCapacita
 
     Page<GrupoCapacitacion> findByEstado(EstadoGrupoCapacitacion estado, Pageable pageable);
 
+    Page<GrupoCapacitacion> findByNegocio(Negocio negocio, Pageable pageable);
+
+    Page<GrupoCapacitacion> findByEstadoAndNegocio(EstadoGrupoCapacitacion estado, Negocio negocio, Pageable pageable);
+
     @EntityGraph(attributePaths = {"detalles", "detalles.postulacion", "detalles.postulacion.postulante", "detalles.postulacion.ofertaLaboral"})
     List<GrupoCapacitacion> findByFechaInicioBetweenOrderByFechaInicioAscTurnoAsc(LocalDate desde, LocalDate hasta);
+
+    @EntityGraph(attributePaths = {"detalles", "detalles.postulacion", "detalles.postulacion.postulante", "detalles.postulacion.ofertaLaboral"})
+    List<GrupoCapacitacion> findByFechaInicioBetweenAndNegocioOrderByFechaInicioAscTurnoAsc(
+            LocalDate desde, LocalDate hasta, Negocio negocio
+    );
 }

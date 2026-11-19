@@ -118,7 +118,7 @@ public class PostulacionController {
             @RequestParam(required = false) Etapa etapa,
             @RequestParam(required = false) EstadoPostulacion estado,
             @RequestParam(required = false) EstadoBandejaPostulacion estadoBandeja,
-            @RequestParam(required = false) Negocio negocio,
+            @RequestParam Negocio negocio,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
         return ResponseEntity.ok(postulacionService.listarBandejaSupervisor(etapa, estado, estadoBandeja, negocio, pageRequest));
@@ -127,7 +127,7 @@ public class PostulacionController {
     @GetMapping("/resumen-supervisor")
     @PreAuthorize("hasAuthority('READ_POSTULACIONES_SUPERVISOR')")
     public ResponseEntity<ResumenSupervisorResponse> obtenerResumenSupervisor(
-            @RequestParam(required = false) Negocio negocio
+            @RequestParam Negocio negocio
     ) {
         return ResponseEntity.ok(postulacionService.obtenerResumenSupervisor(negocio));
     }
@@ -154,18 +154,20 @@ public class PostulacionController {
     public ResponseEntity<PageResponse<PostulacionResponse>> listarBandejaReclutamiento(
             @RequestParam(required = false) EstadoBandejaPostulacion estadoBandeja,
             @RequestParam(required = false) Long idTipificacion,
+            @RequestParam Negocio negocio,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        return ResponseEntity.ok(postulacionService.listarBandejaReclutamiento(estadoBandeja, idTipificacion, pageRequest));
+        return ResponseEntity.ok(postulacionService.listarBandejaReclutamiento(estadoBandeja, idTipificacion, negocio, pageRequest));
     }
 
     @GetMapping("/bandeja/capacitacion")
     @PreAuthorize("hasAuthority('READ_POSTULACIONES_CAPACITACION')")
     public ResponseEntity<PageResponse<PostulacionResponse>> listarBandejaCapacitacion(
             @RequestParam(required = false) Boolean sinGrupo,
+            @RequestParam Negocio negocio,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        return ResponseEntity.ok(postulacionService.listarBandejaCapacitacion(sinGrupo, pageRequest));
+        return ResponseEntity.ok(postulacionService.listarBandejaCapacitacion(sinGrupo, negocio, pageRequest));
     }
 
     @GetMapping("/bandeja/contratacion")

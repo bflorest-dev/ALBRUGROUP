@@ -10,6 +10,7 @@ import { SesionMeetResponse } from '../../../../shared/models/recruitment/sesion
 import { RecruiterTrainingGroupsFacade } from '../../facades/recruiter-training-groups.facade';
 import { RecruiterTrainingGroupsService } from '../../services/recruiter-training-groups.service';
 import { TrainingGroupFormPanelComponent } from '../../components/training-group-form-panel/training-group-form-panel.component';
+import { CurrentUserRecruitmentNegocioScopeService } from '../../../../core/services/current-user-recruitment-negocio-scope.service';
 
 @Component({
   selector: 'app-recruiter-operational-inbox-page',
@@ -26,6 +27,7 @@ export class OperationalInboxPageComponent implements OnInit {
   private readonly realtime = inject(RecruitmentRealtimeService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly api = inject(RecruiterPostulantesService);
+  private readonly negocioScope = inject(CurrentUserRecruitmentNegocioScopeService);
   private readonly trainingGroupsApi = inject(RecruiterTrainingGroupsService);
   protected readonly meetAgendaOpen = signal(false);
   protected readonly meetDate = signal(this.today());
@@ -50,6 +52,15 @@ export class OperationalInboxPageComponent implements OnInit {
       if (this.trainingFacade.createSuccessMessage() && this.createGroupDrawerOpen()) {
         this.createGroupDrawerOpen.set(false);
       }
+    },
+    { allowSignalWrites: true }
+  );
+
+  private readonly reloadBusinessScopedPanels = effect(
+    () => {
+      this.negocioScope.active();
+      if (this.meetAgendaOpen()) this.loadMeetAgenda();
+      if (this.trainingGroupsOpen()) this.trainingFacade.loadGroups();
     },
     { allowSignalWrites: true }
   );
@@ -249,7 +260,7 @@ export class OperationalInboxPageComponent implements OnInit {
   protected loadMeetAgenda(): void {
     this.meetLoading.set(true);
     this.meetError.set('');
-    this.api.listarSesionesMeet(this.meetDate()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.listarSesionesMeet(this.meetDate(), this.negocioScope.active()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: sessions => { this.meetSessions.set(sessions); this.meetLoading.set(false); },
       error: () => { this.meetSessions.set([]); this.meetLoading.set(false); this.meetError.set('No se pudo cargar la agenda Meet.'); }
     });

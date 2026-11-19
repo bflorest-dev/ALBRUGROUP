@@ -29,7 +29,7 @@ public class MeetReclutamientoController {
     @PreAuthorize("hasAuthority('READ_POSTULACION')")
     public List<SesionMeetResponse> listarSesiones(
             @RequestParam(required = false) LocalDate fecha,
-            @RequestParam(required = false) Negocio negocio
+            @RequestParam Negocio negocio
     ) {
         return service.listarSesiones(fecha, negocio);
     }

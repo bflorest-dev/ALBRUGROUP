@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { finalize, timeout } from 'rxjs/operators';
@@ -13,6 +13,7 @@ import { SubtipificacionResponse } from '../../../shared/models/recruitment/subt
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { RecruiterPostulantesService } from '../services/recruiter-postulantes.service';
+import { CurrentUserRecruitmentNegocioScopeService } from '../../../core/services/current-user-recruitment-negocio-scope.service';
 
 export type RecruiterOperationalDrawer = 'none' | 'detail';
 export type RecruiterOperationalActionState = 'idle' | 'loading' | 'success' | 'error';
@@ -44,6 +45,7 @@ const EMPTY_CATALOG: CatalogoTipificacionResponse = {
 @Injectable()
 export class RecruiterOperationalInboxFacade {
   private readonly service = inject(RecruiterPostulantesService);
+  private readonly negocioScope = inject(CurrentUserRecruitmentNegocioScopeService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly requestTimeoutMs = 15000;
   private readonly statuses = ['POSTULANTE', 'SIN_CONTACTO', 'EN_GESTION', 'NO_INTERESADO', 'RECHAZADO'];
@@ -77,6 +79,7 @@ export class RecruiterOperationalInboxFacade {
   readonly contactChannel = signal<ContactChannel | null>(null);
   readonly summary = signal<OperationalSummary>(EMPTY_SUMMARY);
   private readonly trainingGroupAssignmentRequired = signal(false);
+  private initialized = false;
   readonly summaryLoading = signal(false);
   readonly searchTerm = signal('');
   readonly estadoFilter = signal('');
@@ -104,9 +107,20 @@ export class RecruiterOperationalInboxFacade {
 
   constructor() {
     this.typifyForm.valueChanges.subscribe(() => this.refreshTrainingGroupAssignmentRequirement());
+    effect(() => {
+      this.negocioScope.active();
+      if (!this.initialized) return;
+      this.rows.set([]);
+      this.trainingRows.set([]);
+      this.summary.set(EMPTY_SUMMARY);
+      this.selectedPostulacion.set(null);
+      this.drawer.set('none');
+      this.load();
+    });
   }
 
   initialize(): void {
+    this.initialized = true;
     this.loadCatalogs();
     this.load();
   }
@@ -120,7 +134,8 @@ export class RecruiterOperationalInboxFacade {
     const statuses = selectedStatus ? [selectedStatus] : this.statuses;
     const idTipificacion = this.tipificacionFilter() || undefined;
 
-    forkJoin(statuses.map((status) => this.service.listarBandejaReclutamiento(status, 0, 100, idTipificacion)))
+    const negocio = this.negocioScope.active();
+    forkJoin(statuses.map((status) => this.service.listarBandejaReclutamiento(status, negocio, 0, 100, idTipificacion)))
       .pipe(
         timeout(this.requestTimeoutMs),
         finalize(() => {
@@ -399,7 +414,7 @@ export class RecruiterOperationalInboxFacade {
   }
 
   private loadTrainingPool(): void {
-    this.service.listarBandejaCapacitacion(true, 0, 100)
+    this.service.listarBandejaCapacitacion(this.negocioScope.active(), true, 0, 100)
       .pipe(timeout(this.requestTimeoutMs))
       .subscribe({
         next: page => this.trainingRows.set(page.content),

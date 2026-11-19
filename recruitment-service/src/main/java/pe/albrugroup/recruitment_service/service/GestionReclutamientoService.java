@@ -132,7 +132,7 @@ public class GestionReclutamientoService {
    case "ASIGNAR_GRUPO" -> {
     exigirGrupo(r);
     if(!"APROBADO".equals(g.getResultadoEvaluacion())) throw new BadRequestException("Solo se pueden asignar postulantes aprobados.");
-    grupoService.agregarPostulacion(r.idGrupoCapacitacion(),AgregarPostulacionGrupoCapacitacionRequest.builder().idPostulacion(id).build());
+    grupoService.agregarPostulacion(r.idGrupoCapacitacion(),AgregarPostulacionGrupoCapacitacionRequest.builder().idPostulacion(id).build(),p.getNegocio());
     resultado="Asignado a capacitación";
    }
    default -> throw new BadRequestException("Acción de gestión inválida.");

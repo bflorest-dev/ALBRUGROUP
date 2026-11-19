@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoGrupoCapacitacion;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.enums.SalaCapacitacion;
 import pe.albrugroup.recruitment_service.entity.enums.TurnoHorario;
 
@@ -32,6 +33,9 @@ public class GrupoCapacitacion {
     private LocalDate fechaFin;
     @Enumerated(EnumType.STRING)
     private EstadoGrupoCapacitacion estado;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Negocio negocio;
 
     @OneToMany(mappedBy = "grupoCapacitacion", fetch = FetchType.LAZY)
     @Builder.Default

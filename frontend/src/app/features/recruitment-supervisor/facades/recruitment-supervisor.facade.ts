@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { of } from 'rxjs';
 import { catchError, finalize, timeout } from 'rxjs/operators';
@@ -14,6 +14,10 @@ import {
   RecruitmentSupervisorService,
   SupervisorListFilters
 } from '../services/recruitment-supervisor.service';
+import {
+  CurrentUserRecruitmentNegocioScopeService,
+  RecruitmentNegocio
+} from '../../../core/services/current-user-recruitment-negocio-scope.service';
 
 export type SupervisorDrawer = 'none' | 'register' | 'detail' | 'edit';
 export type SupervisorActionState = 'idle' | 'loading' | 'success' | 'error';
@@ -36,9 +40,11 @@ const EMPTY_SUMMARY: SupervisorSummary = {
 @Injectable()
 export class RecruitmentSupervisorFacade {
   private readonly service = inject(RecruitmentSupervisorService);
+  private readonly negocioScope = inject(CurrentUserRecruitmentNegocioScopeService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly requestTimeoutMs = 15000;
   private summaryRequestId = 0;
+  private initialized = false;
 
   readonly form = this.formBuilder.nonNullable.group({
     nombres: ['', Validators.required],
@@ -87,12 +93,36 @@ export class RecruitmentSupervisorFacade {
   readonly searchTerm = signal('');
   readonly etapaFilter = signal('');
   readonly estadoBandejaFilter = signal('');
-  readonly negocioFilter = signal('');
+  readonly negocioFilter = signal<RecruitmentNegocio>('WIN');
   readonly responsibleEmployees = signal<Record<number, EmpleadoIdentidadResponse>>({});
   readonly pageNumber = signal(0);
   readonly totalPages = signal(1);
   readonly totalElements = signal(0);
   readonly isEditing = computed(() => this.drawer() === 'edit');
+
+  constructor() {
+    effect(() => {
+      const negocio = this.negocioScope.active();
+      const changed = this.negocioFilter() !== negocio;
+      this.negocioFilter.set(negocio);
+      this.form.controls.negocio.setValue(negocio);
+      this.metaForm.controls.negocio.setValue(negocio);
+      if (this.initialized && changed) {
+        this.rows.set([]);
+        this.totalPages.set(1);
+        this.totalElements.set(0);
+        this.summary.set(EMPTY_SUMMARY);
+        this.listError.set('');
+        this.summaryError.set('');
+        this.selectedPostulacion.set(null);
+        this.history.set([]);
+        this.drawer.set('none');
+        this.load(0);
+        this.loadSummary();
+        this.offers.set([]);
+      }
+    });
+  }
 
   readonly filteredRows = computed(() => {
     const search = this.normalize(this.searchTerm());
@@ -118,6 +148,8 @@ export class RecruitmentSupervisorFacade {
   });
 
   initialize(): void {
+    this.initialized = true;
+    this.negocioFilter.set(this.negocioScope.active());
     this.load();
     this.loadSummary();
   }
@@ -131,11 +163,11 @@ export class RecruitmentSupervisorFacade {
       pageNumber,
       pageSize: 12,
       sortBy: 'updatedAt',
-      direction: 'desc'
+      direction: 'desc',
+      negocio: this.negocioFilter()
     };
     if (this.etapaFilter()) filters.etapa = this.etapaFilter();
     if (this.estadoBandejaFilter()) filters.estadoBandeja = this.estadoBandejaFilter();
-    if (this.negocioFilter()) filters.negocio = this.negocioFilter();
 
     this.service.listarPostulaciones(filters).pipe(
       timeout(this.requestTimeoutMs),
@@ -192,9 +224,9 @@ export class RecruitmentSupervisorFacade {
   }
 
   setNegocioFilter(value: string): void {
-    this.negocioFilter.set(value);
-    this.load(0);
-    this.loadSummary();
+    if (value === 'WIN' || value === 'CLARO') {
+      this.negocioScope.setActive(value);
+    }
   }
 
   openRegister(): void {
@@ -318,7 +350,7 @@ export class RecruitmentSupervisorFacade {
       usuarioMeta: value.usuarioMeta.trim(),
       origen: value.origen,
       puestoObjetivo: value.puestoObjetivo,
-      negocio: value.negocio,
+      negocio: this.negocioScope.active(),
       fechaPostulacion: value.fechaPostulacion
     };
     this.actionState.set('loading');
@@ -527,7 +559,7 @@ export class RecruitmentSupervisorFacade {
     if (!force && this.offers().length) return;
     this.catalogLoading.set(true);
     this.catalogError.set('');
-    this.service.listarOfertasActivas().pipe(
+    this.service.listarOfertasActivas(this.negocioScope.active()).pipe(
       timeout(this.requestTimeoutMs),
       finalize(() => this.catalogLoading.set(false)),
       catchError((error: HttpErrorResponse) => {
@@ -543,8 +575,7 @@ export class RecruitmentSupervisorFacade {
     const requestId = ++this.summaryRequestId;
     this.summaryLoading.set(true);
     this.summaryError.set('');
-    const negocio = this.negocioFilter() || undefined;
-    this.service.obtenerResumenSupervisor(negocio).pipe(
+    this.service.obtenerResumenSupervisor(this.negocioScope.active()).pipe(
       timeout(this.requestTimeoutMs),
       finalize(() => {
         if (requestId === this.summaryRequestId) this.summaryLoading.set(false);
@@ -587,7 +618,7 @@ export class RecruitmentSupervisorFacade {
       fechaNacimiento: '',
       origen: 'COMPUTRABAJO',
       puestoObjetivo: 'ASESOR_VENTAS',
-      negocio: '',
+      negocio: this.negocioScope.active(),
       modalidad: '',
       horario: '',
       fechaPostulacion: this.today(),
@@ -600,7 +631,7 @@ export class RecruitmentSupervisorFacade {
       usuarioMeta: '',
       origen: 'FACEBOOK',
       puestoObjetivo: 'ASESOR_VENTAS',
-      negocio: 'WIN',
+      negocio: this.negocioScope.active(),
       fechaPostulacion: this.today()
     });
   }

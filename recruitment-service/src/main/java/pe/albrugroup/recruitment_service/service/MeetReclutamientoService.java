@@ -45,10 +45,11 @@ public class MeetReclutamientoService {
     }
 
     public List<SesionMeetResponse> listarSesiones(LocalDate fecha, Negocio negocio) {
+        if (negocio == null) {
+            throw new BadRequestException("El negocio es obligatorio para consultar la agenda Meet.");
+        }
         LocalDate fechaConsulta = fecha == null ? LocalDate.now(LIMA) : fecha;
-        List<SesionMeetReclutamiento> resultado = negocio == null
-                ? sesiones.findByFechaOrderByFechaHoraInicioAsc(fechaConsulta)
-                : sesiones.findByFechaAndNegocioOrderByFechaHoraInicioAsc(fechaConsulta, negocio);
+        List<SesionMeetReclutamiento> resultado = sesiones.findByFechaAndNegocioOrderByFechaHoraInicioAsc(fechaConsulta, negocio);
         return resultado.stream().map(this::toSesionResponse).toList();
     }
 

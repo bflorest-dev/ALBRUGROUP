@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.recruitment_service.entity.enums.SalaCapacitacion;
 import pe.albrugroup.recruitment_service.entity.enums.TurnoHorario;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 
 import java.time.LocalDate;
 
@@ -23,4 +24,5 @@ public class GrupoCapacitacionRequest {
     @NotNull private TurnoHorario turno;
     @NotNull private SalaCapacitacion sala;
     @NotNull @FutureOrPresent private LocalDate fechaInicio;
+    @NotNull private Negocio negocio;
 }

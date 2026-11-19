@@ -28,5 +28,11 @@ public interface OfertaLaboralRepository extends JpaRepository<OfertaLaboral, Lo
     @EntityGraph(attributePaths = "ampliaciones")
     java.util.List<OfertaLaboral> findByEstadoOrderByCreatedAtDesc(EstadoOferta estado);
 
+    @EntityGraph(attributePaths = "ampliaciones")
+    java.util.List<OfertaLaboral> findByEstadoAndNegocioOrderByCreatedAtDesc(
+            EstadoOferta estado,
+            Negocio negocio
+    );
+
     Page<OfertaLaboral> findByEstado(EstadoOferta estado, Pageable pageable);
 }

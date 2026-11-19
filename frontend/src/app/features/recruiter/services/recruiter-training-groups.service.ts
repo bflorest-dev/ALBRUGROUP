@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { PageResponse } from '../../../shared/models/common/page-response';
@@ -11,6 +11,7 @@ import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/gr
 import { ReprogramarGrupoCapacitacionRequest } from '../../../shared/models/recruitment/reprogramar-grupo-capacitacion-request';
 import { TrasladarPostulacionesGrupoCapacitacionRequest } from '../../../shared/models/recruitment/trasladar-postulaciones-grupo-capacitacion-request';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
+import { CurrentUserRecruitmentNegocioScopeService } from '../../../core/services/current-user-recruitment-negocio-scope.service';
 
 @Injectable({
   providedIn: 'root'
@@ -19,6 +20,7 @@ export class RecruiterTrainingGroupsService {
   private readonly recruitmentUrl = `${API_CONSTANTS.gatewayBaseUrl}/recruitment`;
   private readonly rrhhUrl = `${API_CONSTANTS.gatewayBaseUrl}/rrhh`;
   private readonly groupsUrl = `${this.recruitmentUrl}/grupos-capacitacion`;
+  private readonly negocioScope = inject(CurrentUserRecruitmentNegocioScopeService);
 
   constructor(private readonly http: HttpClient) {}
 
@@ -40,24 +42,32 @@ export class RecruiterTrainingGroupsService {
     if (estado) {
       params = params.set('estado', estado);
     }
+    params = params.set('negocio', this.negocioScope.active());
 
     return this.http.get<PageResponse<GrupoCapacitacionResponse>>(this.groupsUrl, { params });
   }
 
   listarAgenda(desde: string, hasta: string): Observable<GrupoCapacitacionResponse[]> {
-    const params = new HttpParams().set('desde', desde).set('hasta', hasta);
+    const params = new HttpParams()
+      .set('desde', desde)
+      .set('hasta', hasta)
+      .set('negocio', this.negocioScope.active());
     return this.http.get<GrupoCapacitacionResponse[]>(`${this.groupsUrl}/agenda`, { params });
   }
 
   crearGrupo(request: GrupoCapacitacionRequest): Observable<GrupoCapacitacionResponse> {
-    return this.http.post<GrupoCapacitacionResponse>(this.groupsUrl, request);
+    return this.http.post<GrupoCapacitacionResponse>(this.groupsUrl, {
+      ...request,
+      negocio: this.negocioScope.active()
+    });
   }
 
   reprogramarGrupo(idGrupoCapacitacion: number, fechaInicio: string): Observable<GrupoCapacitacionResponse> {
     const request: ReprogramarGrupoCapacitacionRequest = { fechaInicio };
     return this.http.post<GrupoCapacitacionResponse>(
       `${this.groupsUrl}/${idGrupoCapacitacion}:reprogramar`,
-      request
+      request,
+      { params: { negocio: this.negocioScope.active() } }
     );
   }
 
@@ -68,7 +78,8 @@ export class RecruiterTrainingGroupsService {
     const request: AsignarPostulacionesGrupoCapacitacionRequest = { idsPostulaciones };
     return this.http.post<GrupoCapacitacionDetalleResponse[]>(
       `${this.groupsUrl}/${idGrupoCapacitacion}/postulaciones:asignar`,
-      request
+      request,
+      { params: { negocio: this.negocioScope.active() } }
     );
   }
 
@@ -80,18 +91,22 @@ export class RecruiterTrainingGroupsService {
     const request: TrasladarPostulacionesGrupoCapacitacionRequest = { idGrupoOrigen, idsPostulaciones };
     return this.http.post<GrupoCapacitacionDetalleResponse[]>(
       `${this.groupsUrl}/${idGrupoDestino}/postulaciones:mover`,
-      request
+      request,
+      { params: { negocio: this.negocioScope.active() } }
     );
   }
 
   retirarPostulacion(idGrupoCapacitacion: number, idPostulacion: number): Observable<void> {
     return this.http.delete<void>(
-      `${this.groupsUrl}/${idGrupoCapacitacion}/postulaciones/${idPostulacion}`
+      `${this.groupsUrl}/${idGrupoCapacitacion}/postulaciones/${idPostulacion}`,
+      { params: { negocio: this.negocioScope.active() } }
     );
   }
 
   obtenerGrupo(idGrupoCapacitacion: number): Observable<GrupoCapacitacionResponse> {
-    return this.http.get<GrupoCapacitacionResponse>(`${this.groupsUrl}/${idGrupoCapacitacion}`);
+    return this.http.get<GrupoCapacitacionResponse>(`${this.groupsUrl}/${idGrupoCapacitacion}`, {
+      params: { negocio: this.negocioScope.active() }
+    });
   }
 
   actualizarDetalleGrupo(
@@ -101,7 +116,8 @@ export class RecruiterTrainingGroupsService {
   ): Observable<GrupoCapacitacionDetalleResponse> {
     return this.http.patch<GrupoCapacitacionDetalleResponse>(
       `${this.groupsUrl}/${idGrupoCapacitacion}/postulaciones/${idPostulacion}`,
-      request
+      request,
+      { params: { negocio: this.negocioScope.active() } }
     );
   }
 }

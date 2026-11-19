@@ -4,4 +4,5 @@ export interface GrupoCapacitacionRequest {
   turno: string;
   sala: string;
   fechaInicio: string;
+  negocio: 'WIN' | 'CLARO';
 }

@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoOferta;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarEstadoOfertaLaboralRequest;
 import pe.albrugroup.recruitment_service.entity.request.OfertaAmpliacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.OfertaLaboralRequest;
@@ -47,8 +48,10 @@ public class OfertaLaboralController {
 
     @GetMapping("/activas")
     @PreAuthorize("hasAuthority('READ_OFERTAS_LABORALES_ACTIVAS')")
-    public ResponseEntity<List<OfertaLaboralResponse>> listarOfertasActivas() {
-        return ResponseEntity.ok(ofertaLaboralService.listarOfertasActivas());
+    public ResponseEntity<List<OfertaLaboralResponse>> listarOfertasActivas(
+            @RequestParam Negocio negocio
+    ) {
+        return ResponseEntity.ok(ofertaLaboralService.listarOfertasActivas(negocio));
     }
 
     @GetMapping

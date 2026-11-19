@@ -8,6 +8,7 @@ import lombok.Setter;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoGrupoCapacitacion;
 import pe.albrugroup.recruitment_service.entity.enums.SalaCapacitacion;
 import pe.albrugroup.recruitment_service.entity.enums.TurnoHorario;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -25,6 +26,7 @@ public class GrupoCapacitacionResponse {
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
     private EstadoGrupoCapacitacion estado;
+    private Negocio negocio;
     private Instant createdAt;
     private List<GrupoCapacitacionDetalleResponse> detalles;
 }

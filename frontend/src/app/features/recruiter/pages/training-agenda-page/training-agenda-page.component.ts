@@ -19,6 +19,7 @@ import { TrainingGroupFormPanelComponent } from '../../components/training-group
 import { RecruiterTrainingGroupsFacade } from '../../facades/recruiter-training-groups.facade';
 import { RecruiterPostulantesService } from '../../services/recruiter-postulantes.service';
 import { RecruiterTrainingGroupsService } from '../../services/recruiter-training-groups.service';
+import { CurrentUserRecruitmentNegocioScopeService } from '../../../../core/services/current-user-recruitment-negocio-scope.service';
 
 interface ChipView {
   id: number;
@@ -68,6 +69,7 @@ export class TrainingAgendaPageComponent implements OnInit {
   private readonly realtime = inject(RecruitmentRealtimeService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
+  private readonly negocioScope = inject(CurrentUserRecruitmentNegocioScopeService);
 
   /** true para el Reclutador (gestiona); false para el Capacitador (solo visualiza). */
   protected readonly canManage = this.route.snapshot.data['canManage'] !== false;
@@ -93,6 +95,17 @@ export class TrainingAgendaPageComponent implements OnInit {
   protected readonly createDrawerOpen = signal(false);
   protected readonly toastMsg = signal('');
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  private initialized = false;
+
+  private readonly reloadAgendaOnBusinessChange = effect(
+    () => {
+      this.negocioScope.active();
+      if (!this.initialized) return;
+      this.loadAgenda();
+      if (this.canManage && this.selectedGroupId() !== null) this.loadPool();
+    },
+    { allowSignalWrites: true }
+  );
 
   protected readonly months = computed<MonthView[]>(() => {
     const v = this.view();
@@ -126,6 +139,7 @@ export class TrainingAgendaPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.initialized = true;
     this.loadAgenda();
     this.realtime.watchTopic('/topic/grupos-capacitacion')
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -164,7 +178,7 @@ export class TrainingAgendaPageComponent implements OnInit {
   }
 
   private loadPool(): void {
-    this.postulantesApi.listarBandejaCapacitacion(true)
+    this.postulantesApi.listarBandejaCapacitacion(this.negocioScope.active(), true)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (page) => this.pool.set(page.content),

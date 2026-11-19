@@ -30,6 +30,7 @@ import { EquiposNavService } from '../../services/equipos-nav.service';
 import { CurrentUserProviderScopeService } from '../../services/current-user-provider-scope.service';
 import { CurrentUserTeamScopeService } from '../../services/current-user-team-scope.service';
 import { CurrentUserEmpresaScopeService } from '../../services/current-user-empresa-scope.service';
+import { CurrentUserRecruitmentNegocioScopeService } from '../../services/current-user-recruitment-negocio-scope.service';
 import { ProyeccionVentasService } from '../../services/proyeccion-ventas.service';
 import { LeadRealtimeService } from '../../../features/preventa/services/lead-realtime.service';
 import { ProyeccionBannerData } from '../../../shared/components/top-banner/top-banner.component';
@@ -164,6 +165,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
   private readonly teamScope = inject(CurrentUserTeamScopeService);
   private readonly providerScope = inject(CurrentUserProviderScopeService);
   private readonly empresaScope = inject(CurrentUserEmpresaScopeService);
+  private readonly recruitmentNegocioScope = inject(CurrentUserRecruitmentNegocioScopeService);
   private readonly proyeccionService = inject(ProyeccionVentasService);
   private readonly leadRealtime = inject(LeadRealtimeService);
   private readonly router = inject(Router);
@@ -177,6 +179,9 @@ export class PrivateLayoutComponent implements AfterViewInit {
   protected readonly empresasUsuario = this.empresaScope.empresas;
   protected readonly empresaActivaId = this.empresaScope.activeId;
   protected readonly mostrarSelectorEmpresa = this.empresaScope.mostrarSelector;
+  protected readonly negociosUsuario = this.recruitmentNegocioScope.negocios;
+  protected readonly negocioActivo = this.recruitmentNegocioScope.active;
+  protected readonly mostrarSelectorNegocio = this.recruitmentNegocioScope.mostrarSelector;
   protected readonly mobileMenuOpen = signal(false);
   private readonly currentUrl = signal(this.router.url);
   protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
@@ -731,6 +736,12 @@ export class PrivateLayoutComponent implements AfterViewInit {
     this.empresaScope.setActive(idEmpresa);
   }
 
+  protected seleccionarNegocio(negocio: string): void {
+    if (negocio === 'WIN' || negocio === 'CLARO') {
+      this.recruitmentNegocioScope.setActive(negocio);
+    }
+  }
+
   protected async seleccionarModoTrabajo(role: string): Promise<void> {
     if (!this.sessionService.hasRole(role) || role === this.activeRole()) {
       return;
@@ -867,6 +878,7 @@ export class PrivateLayoutComponent implements AfterViewInit {
     this.logoutGuidanceActive.set(false);
     this.providerScope.clear();
     this.empresaScope.clear();
+    this.recruitmentNegocioScope.clear();
     await this.authSessionService.logout();
   }
 

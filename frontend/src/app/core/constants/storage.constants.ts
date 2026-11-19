@@ -11,5 +11,6 @@ export const STORAGE_KEYS = {
   appVersion: 'albru_app_version',
   activeProveedorId: 'albru_active_proveedor_id',
   activeEquipoId: 'albru_active_equipo_id',
-  activeEmpresaContratistaId: 'albru_active_empresa_contratista_id'
+  activeEmpresaContratistaId: 'albru_active_empresa_contratista_id',
+  activeRecruitmentNegocio: 'albru_active_recruitment_negocio'
 } as const;

@@ -14,6 +14,7 @@ import { GestionReclutamiento, GestionRequest, HorarioMeet } from '../../../shar
 import { ContactoPostulacionResponse } from '../../../shared/models/recruitment/contacto-postulacion-response';
 import { SesionMeetResponse } from '../../../shared/models/recruitment/sesion-meet-response';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
+import { RecruitmentNegocio } from '../../../core/services/current-user-recruitment-negocio-scope.service';
 
 @Injectable({
   providedIn: 'root'
@@ -34,9 +35,8 @@ export class RecruiterPostulantesService {
   listarHorariosMeet(negocio:string): Observable<HorarioMeet[]> {
     return this.http.get<HorarioMeet[]>(`${this.recruitmentUrl}/reclutamiento/meet/horarios`, { params: { negocio } });
   }
-  listarSesionesMeet(fecha:string, negocio?:string): Observable<SesionMeetResponse[]> {
-    let params = new HttpParams().set('fecha', fecha);
-    if (negocio) params = params.set('negocio', negocio);
+  listarSesionesMeet(fecha: string, negocio: RecruitmentNegocio): Observable<SesionMeetResponse[]> {
+    const params = new HttpParams().set('fecha', fecha).set('negocio', negocio);
     return this.http.get<SesionMeetResponse[]>(`${this.recruitmentUrl}/reclutamiento/meet/sesiones`, { params });
   }
 
@@ -48,12 +48,14 @@ export class RecruiterPostulantesService {
 
   listarBandejaReclutamiento(
     estadoBandeja: string,
+    negocio: RecruitmentNegocio,
     pageNumber = 0,
     pageSize = 8,
     idTipificacion?: number
   ): Observable<PageResponse<PostulacionResponse>> {
     let params = new HttpParams()
       .set('estadoBandeja', estadoBandeja)
+      .set('negocio', negocio)
       .set('pageNumber', pageNumber)
       .set('pageSize', pageSize)
       .set('sortBy', 'updatedAt')
@@ -67,12 +69,14 @@ export class RecruiterPostulantesService {
   }
 
   listarBandejaCapacitacion(
+    negocio: RecruitmentNegocio,
     sinGrupo = true,
     pageNumber = 0,
     pageSize = 100
   ): Observable<PageResponse<PostulacionResponse>> {
     const params = new HttpParams()
       .set('sinGrupo', sinGrupo)
+      .set('negocio', negocio)
       .set('pageNumber', pageNumber)
       .set('pageSize', pageSize)
       .set('sortBy', 'updatedAt')

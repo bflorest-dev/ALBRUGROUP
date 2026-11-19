@@ -13,6 +13,7 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoCapacitacionPostulan
 import pe.albrugroup.recruitment_service.entity.enums.EstadoGrupoCapacitacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDetalleGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
@@ -71,12 +72,14 @@ public class GrupoCapacitacionService {
     @Transactional(readOnly = true)
     public PageResponse<GrupoCapacitacionResponse> listarGrupos(
             EstadoGrupoCapacitacion estado,
+            Negocio negocio,
             PageRequest pageRequest
     ) {
         Page<GrupoCapacitacionResponse> grupos = (estado == null
-                ? grupoCapacitacionRepository.findAll(paginationService.toPageable(pageRequest, GRUPO_SORT_FIELDS))
-                : grupoCapacitacionRepository.findByEstado(
+                ? grupoCapacitacionRepository.findByNegocio(negocio, paginationService.toPageable(pageRequest, GRUPO_SORT_FIELDS))
+                : grupoCapacitacionRepository.findByEstadoAndNegocio(
                         estado,
+                        negocio,
                         paginationService.toPageable(pageRequest, GRUPO_SORT_FIELDS)
                 ))
                 .map(grupoCapacitacionMapper::toResumenResponse);
@@ -84,30 +87,32 @@ public class GrupoCapacitacionService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<GrupoCapacitacionResponse> listarAgenda(LocalDate desde, LocalDate hasta) {
+    public java.util.List<GrupoCapacitacionResponse> listarAgenda(LocalDate desde, LocalDate hasta, Negocio negocio) {
         return grupoCapacitacionRepository
-                .findByFechaInicioBetweenOrderByFechaInicioAscTurnoAsc(desde, hasta)
+                .findByFechaInicioBetweenAndNegocioOrderByFechaInicioAscTurnoAsc(desde, hasta, negocio)
                 .stream()
                 .map(grupoCapacitacionMapper::toResumenResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public GrupoCapacitacionResponse obtenerGrupo(Long idGrupoCapacitacion) {
-        return grupoCapacitacionMapper.toResponse(obtenerGrupoConDetalles(idGrupoCapacitacion));
+    public GrupoCapacitacionResponse obtenerGrupo(Long idGrupoCapacitacion, Negocio negocio) {
+        return grupoCapacitacionMapper.toResponse(obtenerGrupoConDetalles(idGrupoCapacitacion, negocio));
     }
 
     public GrupoCapacitacionDetalleResponse agregarPostulacion(
             Long idGrupoCapacitacion,
-            AgregarPostulacionGrupoCapacitacionRequest request
+            AgregarPostulacionGrupoCapacitacionRequest request,
+            Negocio negocio
     ) {
-        GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion);
+        GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion, negocio);
         Postulacion postulacion = obtenerPostulacion(request.getIdPostulacion());
         Etapa etapaAnterior = postulacion.getEtapa();
         EstadoPostulacion estadoAnterior = postulacion.getEstado();
         EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
 
         validarGrupoDisponible(grupo);
+        validarNegocioCompatible(grupo, postulacion);
         validarPostulacionAptaParaCapacitacion(postulacion);
         validarPostulacionSinGrupoPrevio(postulacion.getId());
 
@@ -151,18 +156,20 @@ public class GrupoCapacitacionService {
 
     public java.util.List<GrupoCapacitacionDetalleResponse> agregarPostulaciones(
             Long idGrupoCapacitacion,
-            java.util.List<Long> idsPostulaciones
+            java.util.List<Long> idsPostulaciones,
+            Negocio negocio
     ) {
         return idsPostulaciones.stream()
                 .map(id -> agregarPostulacion(
                         idGrupoCapacitacion,
-                        AgregarPostulacionGrupoCapacitacionRequest.builder().idPostulacion(id).build()
+                        AgregarPostulacionGrupoCapacitacionRequest.builder().idPostulacion(id).build(),
+                        negocio
                 ))
                 .toList();
     }
 
-    public void retirarPostulacion(Long idGrupoCapacitacion, Long idPostulacion) {
-        GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion);
+    public void retirarPostulacion(Long idGrupoCapacitacion, Long idPostulacion, Negocio negocio) {
+        GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion, negocio);
         GrupoCapacitacionDetalle detalle = detalleRepository
                 .findByGrupoCapacitacionIdAndPostulacionId(idGrupoCapacitacion, idPostulacion)
                 .orElseThrow(() -> new NotFoundException(
@@ -206,13 +213,14 @@ public class GrupoCapacitacionService {
     public java.util.List<GrupoCapacitacionDetalleResponse> trasladarPostulaciones(
             Long idGrupoDestino,
             Long idGrupoOrigen,
-            java.util.List<Long> idsPostulaciones
+            java.util.List<Long> idsPostulaciones,
+            Negocio negocio
     ) {
         if (idGrupoOrigen.equals(idGrupoDestino)) {
             throw new BadRequestException("El grupo de origen y el de destino no pueden ser el mismo");
         }
-        GrupoCapacitacion origen = obtenerGrupoConDetalles(idGrupoOrigen);
-        GrupoCapacitacion destino = obtenerGrupoConDetalles(idGrupoDestino);
+        GrupoCapacitacion origen = obtenerGrupoConDetalles(idGrupoOrigen, negocio);
+        GrupoCapacitacion destino = obtenerGrupoConDetalles(idGrupoDestino, negocio);
         validarGrupoAbiertoParaMovimiento(origen);
         validarGrupoAbiertoParaMovimiento(destino);
 
@@ -224,6 +232,7 @@ public class GrupoCapacitacionService {
                             "La postulacion " + idPostulacion + " no pertenece al grupo de origen indicado"
                     ));
             Postulacion postulacion = detalle.getPostulacion();
+            validarNegocioCompatible(destino, postulacion);
             Etapa etapaAnterior = postulacion.getEtapa();
             EstadoPostulacion estadoAnterior = postulacion.getEstado();
             EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
@@ -259,8 +268,8 @@ public class GrupoCapacitacionService {
         return resultados;
     }
 
-    public GrupoCapacitacionResponse reprogramarGrupo(Long idGrupoCapacitacion, LocalDate nuevaFechaInicio) {
-        GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion);
+    public GrupoCapacitacionResponse reprogramarGrupo(Long idGrupoCapacitacion, LocalDate nuevaFechaInicio, Negocio negocio) {
+        GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion, negocio);
         validarGrupoAbiertoParaMovimiento(grupo);
 
         LocalDate fechaAnterior = grupo.getFechaInicio();
@@ -292,8 +301,10 @@ public class GrupoCapacitacionService {
     public GrupoCapacitacionDetalleResponse actualizarDetalle(
             Long idGrupoCapacitacion,
             Long idPostulacion,
-            ActualizarDetalleGrupoCapacitacionRequest request
+            ActualizarDetalleGrupoCapacitacionRequest request,
+            Negocio negocio
     ) {
+        obtenerGrupoConDetalles(idGrupoCapacitacion, negocio);
         GrupoCapacitacionDetalle detalle = detalleRepository.findByGrupoCapacitacionIdAndPostulacionId(idGrupoCapacitacion, idPostulacion)
                 .orElseThrow(() -> new NotFoundException(
                         "No existe un detalle de capacitacion para la postulacion indicada en el grupo enviado"
@@ -372,9 +383,19 @@ public class GrupoCapacitacionService {
         }
     }
 
-    private GrupoCapacitacion obtenerGrupoConDetalles(Long idGrupoCapacitacion) {
-        return grupoCapacitacionRepository.findWithDetallesById(idGrupoCapacitacion)
+    private GrupoCapacitacion obtenerGrupoConDetalles(Long idGrupoCapacitacion, Negocio negocio) {
+        GrupoCapacitacion grupo = grupoCapacitacionRepository.findWithDetallesById(idGrupoCapacitacion)
                 .orElseThrow(() -> new NotFoundException(GrupoCapacitacion.class, idGrupoCapacitacion));
+        if (negocio != null && grupo.getNegocio() != negocio) {
+            throw new BadRequestException("El grupo de capacitacion no pertenece al negocio activo");
+        }
+        return grupo;
+    }
+
+    private void validarNegocioCompatible(GrupoCapacitacion grupo, Postulacion postulacion) {
+        if (grupo.getNegocio() != postulacion.getNegocio()) {
+            throw new BadRequestException("La postulacion y el grupo deben pertenecer al mismo negocio");
+        }
     }
 
     private Postulacion obtenerPostulacion(Long idPostulacion) {

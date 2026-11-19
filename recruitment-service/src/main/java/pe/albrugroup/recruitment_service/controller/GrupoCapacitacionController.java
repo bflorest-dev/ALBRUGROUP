@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoGrupoCapacitacion;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDetalleGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AsignarPostulacionesGrupoCapacitacionRequest;
@@ -42,36 +43,40 @@ public class GrupoCapacitacionController {
     @PreAuthorize("hasAuthority('READ_GRUPOS_CAPACITACION')")
     public ResponseEntity<PageResponse<GrupoCapacitacionResponse>> listarGrupos(
             @RequestParam(required = false) EstadoGrupoCapacitacion estado,
+            @RequestParam Negocio negocio,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        return ResponseEntity.ok(grupoCapacitacionService.listarGrupos(estado, pageRequest));
+        return ResponseEntity.ok(grupoCapacitacionService.listarGrupos(estado, negocio, pageRequest));
     }
 
     @GetMapping("/agenda")
     @PreAuthorize("hasAuthority('READ_GRUPOS_CAPACITACION')")
     public ResponseEntity<java.util.List<GrupoCapacitacionResponse>> listarAgenda(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam Negocio negocio
     ) {
-        return ResponseEntity.ok(grupoCapacitacionService.listarAgenda(desde, hasta));
+        return ResponseEntity.ok(grupoCapacitacionService.listarAgenda(desde, hasta, negocio));
     }
 
     @GetMapping("/{idGrupoCapacitacion}")
     @PreAuthorize("hasAuthority('READ_GRUPOS_CAPACITACION')")
     public ResponseEntity<GrupoCapacitacionResponse> obtenerGrupo(
-            @PathVariable @Positive Long idGrupoCapacitacion
+            @PathVariable @Positive Long idGrupoCapacitacion,
+            @RequestParam Negocio negocio
     ) {
-        return ResponseEntity.ok(grupoCapacitacionService.obtenerGrupo(idGrupoCapacitacion));
+        return ResponseEntity.ok(grupoCapacitacionService.obtenerGrupo(idGrupoCapacitacion, negocio));
     }
 
     @PostMapping("/{idGrupoCapacitacion:\\d+}:reprogramar")
     @PreAuthorize("hasAuthority('UPDATE_GRUPOS_CAPACITACION')")
     public ResponseEntity<GrupoCapacitacionResponse> reprogramarGrupo(
             @PathVariable @Positive Long idGrupoCapacitacion,
-            @Valid @RequestBody ReprogramarGrupoCapacitacionRequest request
+            @Valid @RequestBody ReprogramarGrupoCapacitacionRequest request,
+            @RequestParam Negocio negocio
     ) {
         return ResponseEntity.ok(
-                grupoCapacitacionService.reprogramarGrupo(idGrupoCapacitacion, request.getFechaInicio())
+                grupoCapacitacionService.reprogramarGrupo(idGrupoCapacitacion, request.getFechaInicio(), negocio)
         );
     }
 
@@ -79,20 +84,22 @@ public class GrupoCapacitacionController {
     @PreAuthorize("hasAuthority('ASSIGN_GRUPOS_CAPACITACION')")
     public ResponseEntity<GrupoCapacitacionDetalleResponse> agregarPostulacion(
             @PathVariable @Positive Long idGrupoCapacitacion,
-            @Valid @RequestBody AgregarPostulacionGrupoCapacitacionRequest request
+            @Valid @RequestBody AgregarPostulacionGrupoCapacitacionRequest request,
+            @RequestParam Negocio negocio
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(grupoCapacitacionService.agregarPostulacion(idGrupoCapacitacion, request));
+                .body(grupoCapacitacionService.agregarPostulacion(idGrupoCapacitacion, request, negocio));
     }
 
     @PostMapping("/{idGrupoCapacitacion}/postulaciones:asignar")
     @PreAuthorize("hasAuthority('ASSIGN_GRUPOS_CAPACITACION')")
     public ResponseEntity<java.util.List<GrupoCapacitacionDetalleResponse>> asignarPostulaciones(
             @PathVariable @Positive Long idGrupoCapacitacion,
-            @Valid @RequestBody AsignarPostulacionesGrupoCapacitacionRequest request
+            @Valid @RequestBody AsignarPostulacionesGrupoCapacitacionRequest request,
+            @RequestParam Negocio negocio
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
-                grupoCapacitacionService.agregarPostulaciones(idGrupoCapacitacion, request.getIdsPostulaciones())
+                grupoCapacitacionService.agregarPostulaciones(idGrupoCapacitacion, request.getIdsPostulaciones(), negocio)
         );
     }
 
@@ -100,10 +107,11 @@ public class GrupoCapacitacionController {
     @PreAuthorize("hasAuthority('ASSIGN_GRUPOS_CAPACITACION')")
     public ResponseEntity<java.util.List<GrupoCapacitacionDetalleResponse>> trasladarPostulaciones(
             @PathVariable @Positive Long idGrupoDestino,
-            @Valid @RequestBody TrasladarPostulacionesGrupoCapacitacionRequest request
+            @Valid @RequestBody TrasladarPostulacionesGrupoCapacitacionRequest request,
+            @RequestParam Negocio negocio
     ) {
         return ResponseEntity.ok(grupoCapacitacionService.trasladarPostulaciones(
-                idGrupoDestino, request.getIdGrupoOrigen(), request.getIdsPostulaciones()
+                idGrupoDestino, request.getIdGrupoOrigen(), request.getIdsPostulaciones(), negocio
         ));
     }
 
@@ -111,9 +119,10 @@ public class GrupoCapacitacionController {
     @PreAuthorize("hasAuthority('ASSIGN_GRUPOS_CAPACITACION')")
     public ResponseEntity<Void> retirarPostulacion(
             @PathVariable @Positive Long idGrupoCapacitacion,
-            @PathVariable @Positive Long idPostulacion
+            @PathVariable @Positive Long idPostulacion,
+            @RequestParam Negocio negocio
     ) {
-        grupoCapacitacionService.retirarPostulacion(idGrupoCapacitacion, idPostulacion);
+        grupoCapacitacionService.retirarPostulacion(idGrupoCapacitacion, idPostulacion, negocio);
         return ResponseEntity.noContent().build();
     }
 
@@ -122,10 +131,11 @@ public class GrupoCapacitacionController {
     public ResponseEntity<GrupoCapacitacionDetalleResponse> actualizarDetalle(
             @PathVariable @Positive Long idGrupoCapacitacion,
             @PathVariable @Positive Long idPostulacion,
-            @Valid @RequestBody ActualizarDetalleGrupoCapacitacionRequest request
+            @Valid @RequestBody ActualizarDetalleGrupoCapacitacionRequest request,
+            @RequestParam Negocio negocio
     ) {
         return ResponseEntity.ok(
-                grupoCapacitacionService.actualizarDetalle(idGrupoCapacitacion, idPostulacion, request)
+                grupoCapacitacionService.actualizarDetalle(idGrupoCapacitacion, idPostulacion, request, negocio)
         );
     }
 }

@@ -12,12 +12,13 @@ import { PostulacionResponse } from '../../../shared/models/recruitment/postulac
 import { PostulanteHistorialResponse } from '../../../shared/models/recruitment/postulante-historial-response';
 import { ResumenSupervisorResponse } from '../../../shared/models/recruitment/resumen-supervisor-response';
 import { EmpleadoIdentidadResponse } from '../../../shared/models/rrhh/empleado-identidad-response';
+import { RecruitmentNegocio } from '../../../core/services/current-user-recruitment-negocio-scope.service';
 
 export type SupervisorListFilters = {
   etapa?: string;
   estado?: string;
   estadoBandeja?: string;
-  negocio?: string;
+  negocio?: RecruitmentNegocio;
   pageNumber?: number;
   pageSize?: number;
   sortBy?: string;
@@ -48,9 +49,8 @@ export class RecruitmentSupervisorService {
     );
   }
 
-  obtenerResumenSupervisor(negocio?: string): Observable<ResumenSupervisorResponse> {
-    let params = new HttpParams();
-    if (negocio) params = params.set('negocio', negocio);
+  obtenerResumenSupervisor(negocio: RecruitmentNegocio): Observable<ResumenSupervisorResponse> {
+    const params = new HttpParams().set('negocio', negocio);
 
     return this.http.get<ResumenSupervisorResponse>(
       `${this.postulacionesUrl}/resumen-supervisor`,
@@ -86,8 +86,9 @@ export class RecruitmentSupervisorService {
     );
   }
 
-  listarOfertasActivas(): Observable<OfertaLaboralResponse[]> {
-    return this.http.get<OfertaLaboralResponse[]>(`${this.recruitmentUrl}/ofertas-laborales/activas`);
+  listarOfertasActivas(negocio: RecruitmentNegocio): Observable<OfertaLaboralResponse[]> {
+    const params = new HttpParams().set('negocio', negocio);
+    return this.http.get<OfertaLaboralResponse[]>(`${this.recruitmentUrl}/ofertas-laborales/activas`, { params });
   }
 
   listarIdentidadEmpleados(empleadoIds: number[]): Observable<EmpleadoIdentidadResponse[]> {

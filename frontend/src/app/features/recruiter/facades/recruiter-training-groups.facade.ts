@@ -11,6 +11,7 @@ import { GrupoCapacitacionRequest } from '../../../shared/models/recruitment/gru
 import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { RecruiterTrainingGroupsService } from '../services/recruiter-training-groups.service';
+import { CurrentUserRecruitmentNegocioScopeService } from '../../../core/services/current-user-recruitment-negocio-scope.service';
 
 type GroupListRequest = {
   requestId: number;
@@ -66,6 +67,7 @@ export class RecruiterTrainingGroupsFacade {
   private readonly requestTimeoutMs = 15000;
   private readonly formBuilder = inject(FormBuilder);
   private readonly trainingGroupsService = inject(RecruiterTrainingGroupsService);
+  private readonly negocioScope = inject(CurrentUserRecruitmentNegocioScopeService);
   private nextRequestId = 1;
   private handledCreateRequestId = 0;
   private handledUpdateDetailRequestId = 0;
@@ -496,7 +498,8 @@ export class RecruiterTrainingGroupsFacade {
       idCapacitador: Number(raw.idCapacitador),
       turno: raw.turno,
       sala: raw.sala,
-      fechaInicio: raw.fechaInicio
+      fechaInicio: raw.fechaInicio,
+      negocio: this.negocioScope.active()
     };
   }
 

@@ -9,6 +9,7 @@ export interface GrupoCapacitacionResponse {
   fechaInicio: string;
   fechaFin: string | null;
   estado: string;
+  negocio: 'WIN' | 'CLARO';
   createdAt: string;
   detalles: GrupoCapacitacionDetalleResponse[];
 }

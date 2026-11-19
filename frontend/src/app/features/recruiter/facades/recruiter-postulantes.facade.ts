@@ -12,6 +12,7 @@ import { PostulacionResponse } from '../../../shared/models/recruitment/postulac
 import { SubtipificacionResponse } from '../../../shared/models/recruitment/subtipificacion-response';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
 import { RecruiterPostulantesService } from '../services/recruiter-postulantes.service';
+import { CurrentUserRecruitmentNegocioScopeService } from '../../../core/services/current-user-recruitment-negocio-scope.service';
 
 export type BandejaColumnKey =
   | 'POSTULANTE'
@@ -80,6 +81,7 @@ export class RecruiterPostulantesFacade {
   private readonly requestTimeoutMs = 15000;
   private readonly formBuilder = inject(FormBuilder);
   private readonly postulantesService = inject(RecruiterPostulantesService);
+  private readonly negocioScope = inject(CurrentUserRecruitmentNegocioScopeService);
   private nextRequestId = 1;
   private handledTypifyRequestId = 0;
 
@@ -471,7 +473,7 @@ export class RecruiterPostulantesFacade {
         filter((columnRequest) => columnRequest.requestId > 0),
         switchMap((columnRequest) =>
           this.postulantesService
-            .listarBandejaReclutamiento(column, columnRequest.pageNumber)
+            .listarBandejaReclutamiento(column, this.negocioScope.active(), columnRequest.pageNumber)
             .pipe(
               timeout(this.requestTimeoutMs),
               map(

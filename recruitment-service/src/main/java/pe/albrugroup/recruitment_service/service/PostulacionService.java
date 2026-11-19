@@ -295,7 +295,8 @@ public class PostulacionService {
                     request.getIdGrupoCapacitacion(),
                     AgregarPostulacionGrupoCapacitacionRequest.builder()
                             .idPostulacion(postulacionGuardada.getId())
-                            .build()
+                            .build(),
+                    postulacionGuardada.getNegocio()
             );
         }
 
@@ -566,12 +567,14 @@ public class PostulacionService {
     public PageResponse<PostulacionResponse> listarBandejaReclutamiento(
             EstadoBandejaPostulacion estadoBandeja,
             Long idTipificacion,
+            Negocio negocio,
             PageRequest pageRequest
     ) {
         Instant limiteReciente = Instant.now().minus(1, ChronoUnit.DAYS);
         Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.RECLUTAMIENTO))
                 .and(conEstadoBandeja(estadoBandeja))
                 .and(conTipificacion(idTipificacion))
+                .and(conNegocio(negocio))
                 .and(enProcesoOReciente(limiteReciente));
 
         Page<PostulacionResponse> postulaciones = postulacionRepository.findAll(
@@ -583,8 +586,9 @@ public class PostulacionService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<PostulacionResponse> listarBandejaCapacitacion(Boolean sinGrupo, PageRequest pageRequest) {
+    public PageResponse<PostulacionResponse> listarBandejaCapacitacion(Boolean sinGrupo, Negocio negocio, PageRequest pageRequest) {
         Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.CAPACITACION))
+                .and(conNegocio(negocio))
                 .and(Boolean.TRUE.equals(sinGrupo) ? sinGrupoCapacitacion() : null);
 
         Page<PostulacionResponse> postulaciones = postulacionRepository.findAll(

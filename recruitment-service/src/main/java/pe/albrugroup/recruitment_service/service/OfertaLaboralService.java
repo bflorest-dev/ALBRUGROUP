@@ -12,6 +12,7 @@ import pe.albrugroup.recruitment_service.configuration.CurrentUser;
 import pe.albrugroup.recruitment_service.entity.OfertaAmpliacion;
 import pe.albrugroup.recruitment_service.entity.OfertaLaboral;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoOferta;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarEstadoOfertaLaboralRequest;
 import pe.albrugroup.recruitment_service.entity.request.OfertaAmpliacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.OfertaLaboralRequest;
@@ -64,9 +65,9 @@ public class OfertaLaboralService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = CacheNames.OFERTAS_ACTIVAS, key = "'activas'")
-    public List<OfertaLaboralResponse> listarOfertasActivas() {
-        return ofertaRepository.findByEstadoOrderByCreatedAtDesc(EstadoOferta.ACTIVO).stream()
+    @Cacheable(value = CacheNames.OFERTAS_ACTIVAS, key = "'activas:' + #negocio")
+    public List<OfertaLaboralResponse> listarOfertasActivas(Negocio negocio) {
+        return ofertaRepository.findByEstadoAndNegocioOrderByCreatedAtDesc(EstadoOferta.ACTIVO, negocio).stream()
                 .map(ofertaMapper::toResponse)
                 .toList();
     }
