@@ -10,6 +10,7 @@ import pe.albrugroup.rrhh_service.entity.request.PageRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoReporteAsistenciaResponse;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoIdentidadResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
@@ -35,6 +36,7 @@ public interface IEmpleado {
     List<EmpleadoRolResponse> listarEmpleadosLight(List<CategoriaPersonal> categoriasPersonal,
                                                    List<PuestoTrabajo> puestosTrabajo,
                                                    List<Long> empleadoIds);
+    List<EmpleadoIdentidadResponse> listarIdentidadEmpleados(List<Long> empleadoIds);
     List<EmpleadoRolResponse> listarCapacitadores(String authHeader);
     List<EmpleadoRolResponse> listarEmpleadosAsistencia(LocalDate desde, LocalDate hasta,
                                                          List<CategoriaPersonal> categoriasPersonal,

@@ -29,6 +29,7 @@ import pe.albrugroup.rrhh_service.entity.request.empleado.DatosFinancierosReques
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosPersonalesRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.RegistrarEmpleadoRequest;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoReporteAsistenciaResponse;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoIdentidadResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
@@ -125,6 +126,18 @@ public class EmpleadoController {
             @RequestParam(required = false) List<Long> empleadoIds
     ) {
         return ResponseEntity.ok(empleadoService.listarEmpleadosLight(categoriasPersonal, puestosTrabajo, empleadoIds));
+    }
+
+    @Operation(
+            summary = "Resolver identidad de empleados",
+            description = "Devuelve nombres y apellidos por ID, incluyendo empleados con contratos históricos, para trazabilidad."
+    )
+    @GetMapping("/identidad")
+    @PreAuthorize("hasAnyAuthority('READ_EMPLEADOS', 'READ_HISTORIAL_POSTULANTES', 'READ_POSTULACIONES_SUPERVISOR')")
+    public ResponseEntity<List<EmpleadoIdentidadResponse>> listarIdentidadEmpleados(
+            @RequestParam List<Long> empleadoIds
+    ) {
+        return ResponseEntity.ok(empleadoService.listarIdentidadEmpleados(empleadoIds));
     }
 
     @Operation(

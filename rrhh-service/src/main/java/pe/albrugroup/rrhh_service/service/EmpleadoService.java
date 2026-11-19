@@ -18,6 +18,7 @@ import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.Contrato;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoReporteAsistenciaResponse;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoIdentidadResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
@@ -273,6 +274,22 @@ public class EmpleadoService implements IEmpleado {
             raw = contratoRepository.findEmpleadosActivos(EstadoOperativo.ACTIVO, LocalDate.now());
         }
         return empleadoRolMapper.toResponseList(filtrarPorEmpresaScope(raw));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmpleadoIdentidadResponse> listarIdentidadEmpleados(List<Long> empleadoIds) {
+        if (empleadoIds == null || empleadoIds.isEmpty()) {
+            return List.of();
+        }
+
+        return repository.findAllById(empleadoIds).stream()
+                .map(empleado -> EmpleadoIdentidadResponse.builder()
+                        .idEmpleado(empleado.getId())
+                        .nombres(empleado.getNombres())
+                        .apellidos(empleado.getApellidos())
+                        .build())
+                .toList();
     }
 
     @Override

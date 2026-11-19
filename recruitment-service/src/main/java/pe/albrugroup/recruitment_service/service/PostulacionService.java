@@ -24,6 +24,7 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
 import pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarClasificacionPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDatosPostulanteRequest;
@@ -39,6 +40,7 @@ import pe.albrugroup.recruitment_service.entity.response.ContactoPostulacionResp
 import pe.albrugroup.recruitment_service.entity.response.PostulacionHistorialResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulanteHistorialResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
+import pe.albrugroup.recruitment_service.entity.response.ResumenSupervisorResponse;
 import pe.albrugroup.recruitment_service.exception.BadRequestException;
 import pe.albrugroup.recruitment_service.exception.ConflictException;
 import pe.albrugroup.recruitment_service.exception.ForbiddenException;
@@ -49,9 +51,11 @@ import pe.albrugroup.recruitment_service.repository.PostulacionRepository;
 import pe.albrugroup.recruitment_service.repository.PostulanteRepository;
 import pe.albrugroup.recruitment_service.repository.SubtipificacionRepository;
 import pe.albrugroup.recruitment_service.repository.TipificacionRepository;
+import pe.albrugroup.recruitment_service.repository.EventoRepository;
 import pe.albrugroup.recruitment_service.service.mapper.PostulacionMapper;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -72,6 +76,7 @@ public class PostulacionService {
     private final PostulanteRepository postulanteRepository;
     private final PostulanteService postulanteService;
     private final EventoService eventoService;
+    private final EventoRepository eventoRepository;
     private final PostulacionMapper postulacionMapper;
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
@@ -82,6 +87,47 @@ public class PostulacionService {
     private final PostulacionRealtimeNotifier postulacionRealtimeNotifier;
     private final pe.albrugroup.recruitment_service.repository.GestionReclutamientoRepository gestionReclutamientoRepository;
     private final pe.albrugroup.recruitment_service.repository.ActividadReclutamientoRepository actividadReclutamientoRepository;
+
+    @Transactional(readOnly = true)
+    public ResumenSupervisorResponse obtenerResumenSupervisor(Negocio negocio) {
+        ZoneId zonaLima = ZoneId.of("America/Lima");
+        LocalDate hoy = LocalDate.now(zonaLima);
+        Instant inicioDia = hoy.atStartOfDay(zonaLima).toInstant();
+        Instant inicioMes = hoy.withDayOfMonth(1).atStartOfDay(zonaLima).toInstant();
+
+        return ResumenSupervisorResponse.builder()
+                .ingresosEsteMes(postulacionRepository.countCreatedSince(inicioMes, negocio))
+                .ingresosHoy(postulacionRepository.countCreatedSince(inicioDia, negocio))
+                .enProceso(postulacionRepository.countByEtapaAndEstado(
+                        Etapa.RECLUTAMIENTO,
+                        EstadoPostulacion.EN_PROCESO,
+                        negocio
+                ))
+                .nuevosSinGestion(postulacionRepository.countByEstadoBandeja(
+                        EstadoBandejaPostulacion.POSTULANTE,
+                        negocio
+                ))
+                .sinContacto(postulacionRepository.countByEstadoBandeja(
+                        EstadoBandejaPostulacion.SIN_CONTACTO,
+                        negocio
+                ))
+                .enGestion(postulacionRepository.countByEstadoBandeja(
+                        EstadoBandejaPostulacion.EN_GESTION,
+                        negocio
+                ))
+                .aprobadosEsteMes(eventoRepository.countByAccionSince(
+                        Accion.APROBACION_RECLUTAMIENTO,
+                        inicioMes,
+                        negocio
+                ))
+                .desaprobadosEsteMes(eventoRepository.countByAccionSince(
+                        Accion.RECHAZO_RECLUTAMIENTO,
+                        inicioMes,
+                        negocio
+                ))
+                .enCapacitacion(postulacionRepository.countByEtapa(Etapa.CAPACITACION, negocio))
+                .build();
+    }
 
     public PostulacionResponse registrarPostulacion(PostulacionRequest request) {
         OfertaLaboral ofertaLaboral = obtenerOfertaActivaOpcional(request.getIdOfertaLaboral());
@@ -490,9 +536,30 @@ public class PostulacionService {
             Etapa etapa,
             EstadoPostulacion estado,
             EstadoBandejaPostulacion estadoBandeja,
+            Negocio negocio,
             PageRequest pageRequest
     ) {
-        return listarPostulaciones(etapa, estado, estadoBandeja, pageRequest);
+        return listarPostulaciones(etapa, estado, estadoBandeja, negocio, pageRequest);
+    }
+
+    private PageResponse<PostulacionResponse> listarPostulaciones(
+            Etapa etapa,
+            EstadoPostulacion estado,
+            EstadoBandejaPostulacion estadoBandeja,
+            Negocio negocio,
+            PageRequest pageRequest
+    ) {
+        Specification<Postulacion> spec = Specification.where(conEtapa(etapa))
+                .and(conEstado(estado))
+                .and(conEstadoBandeja(estadoBandeja))
+                .and(conNegocio(negocio));
+
+        Page<PostulacionResponse> postulaciones = postulacionRepository.findAll(
+                        spec,
+                        paginationService.toPageable(pageRequest, POSTULACION_SORT_FIELDS)
+                )
+                .map(this::mapearPostulacionResponse);
+        return PageResponse.from(postulaciones);
     }
 
     @Transactional(readOnly = true)
@@ -832,6 +899,10 @@ public class PostulacionService {
 
     private Specification<Postulacion> conEstadoBandeja(EstadoBandejaPostulacion estadoBandeja) {
         return (root, query, builder) -> estadoBandeja == null ? null : builder.equal(root.get("estadoBandeja"), estadoBandeja);
+    }
+
+    private Specification<Postulacion> conNegocio(Negocio negocio) {
+        return (root, query, builder) -> negocio == null ? null : builder.equal(root.get("negocio"), negocio);
     }
 
     private Specification<Postulacion> conTipificacion(Long idTipificacion) {

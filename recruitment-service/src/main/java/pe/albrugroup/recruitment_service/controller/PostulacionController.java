@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarClasificacionPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDatosPostulanteRequest;
@@ -32,6 +33,7 @@ import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequ
 import pe.albrugroup.recruitment_service.entity.response.PageResponse;
 import pe.albrugroup.recruitment_service.entity.response.ContactoPostulacionResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
+import pe.albrugroup.recruitment_service.entity.response.ResumenSupervisorResponse;
 import pe.albrugroup.recruitment_service.service.PostulacionService;
 
 @RestController
@@ -116,9 +118,18 @@ public class PostulacionController {
             @RequestParam(required = false) Etapa etapa,
             @RequestParam(required = false) EstadoPostulacion estado,
             @RequestParam(required = false) EstadoBandejaPostulacion estadoBandeja,
+            @RequestParam(required = false) Negocio negocio,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        return ResponseEntity.ok(postulacionService.listarBandejaSupervisor(etapa, estado, estadoBandeja, pageRequest));
+        return ResponseEntity.ok(postulacionService.listarBandejaSupervisor(etapa, estado, estadoBandeja, negocio, pageRequest));
+    }
+
+    @GetMapping("/resumen-supervisor")
+    @PreAuthorize("hasAuthority('READ_POSTULACIONES_SUPERVISOR')")
+    public ResponseEntity<ResumenSupervisorResponse> obtenerResumenSupervisor(
+            @RequestParam(required = false) Negocio negocio
+    ) {
+        return ResponseEntity.ok(postulacionService.obtenerResumenSupervisor(negocio));
     }
 
     @GetMapping("/{idPostulacion}")

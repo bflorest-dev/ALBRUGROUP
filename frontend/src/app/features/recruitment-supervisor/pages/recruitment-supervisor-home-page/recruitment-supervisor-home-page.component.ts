@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RecruitmentRealtimeService } from '../../../../core/services/recruitment-realtime.service';
@@ -18,32 +18,29 @@ export class RecruitmentSupervisorHomePageComponent implements OnInit {
   protected readonly facade = inject(RecruitmentSupervisorFacade);
   protected readonly form = this.facade.form;
   protected readonly puestoObjetivoOptions = [
-    { value: 'ASESOR_VENTAS', label: 'Asesor de ventas' },
-    { value: 'SUPERVISOR_VENTAS', label: 'Supervisor de ventas' },
-    { value: 'ASESOR_POSTVENTA', label: 'Asesor de postventa' },
-    { value: 'SUPERVISOR_POSTVENTA', label: 'Supervisor de postventa' },
-    { value: 'ASESOR_BACKOFFICE', label: 'Asesor de backoffice' },
-    { value: 'SUPERVISOR_BACKOFFICE', label: 'Supervisor de backoffice' },
-    { value: 'ASESOR_GTR', label: 'Asesor GTR' },
-    { value: 'SUPERVISOR_GTR', label: 'Supervisor GTR' },
-    { value: 'RRHH', label: 'RRHH' },
-    { value: 'RECLUTADOR', label: 'Reclutador' },
-    { value: 'CAPACITADOR', label: 'Capacitador' },
-    { value: 'DESARROLLADOR', label: 'Desarrollador' },
-    { value: 'CONTADOR', label: 'Contador' },
-    { value: 'COMMUNITY', label: 'Community' },
-    { value: 'MONITOR', label: 'Monitor' }
+    { value: 'ASESOR_VENTAS', label: 'Asesor de ventas' }
+  ] as const;
+  protected readonly etapaFilterOptions = [
+    { value: '', label: 'Todos' },
+    { value: 'RECLUTAMIENTO', label: 'Postulación' },
+    { value: 'CAPACITACION', label: 'Capacitación' },
+    { value: 'CONTRATACION', label: 'Contratación' }
+  ] as const;
+  protected readonly estadoFilterOptions = [
+    { value: '', label: 'Todos' },
+    { value: 'POSTULANTE', label: 'Por revisar' },
+    { value: 'SIN_CONTACTO', label: 'Sin contacto' },
+    { value: 'EN_GESTION', label: 'En gestión' },
+    { value: 'CAPACITACION', label: 'Capacitación' }
   ] as const;
   private readonly realtime = inject(RecruitmentRealtimeService);
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly lastSync = signal(new Date());
 
   ngOnInit(): void {
     this.facade.initialize();
     this.realtime.watchTopic('/topic/postulaciones')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        this.lastSync.set(new Date());
         this.facade.handleRealtime();
       });
     this.realtime.watchTopic<OfertaLaboralRealtimeEvent>('/topic/ofertas-laborales')
@@ -64,6 +61,14 @@ export class RecruitmentSupervisorHomePageComponent implements OnInit {
 
   protected dateTime(value: string | null | undefined): string {
     return this.facade.dateTime(value);
+  }
+
+  protected compactDate(value: string | null | undefined): string {
+    return this.facade.compactDate(value);
+  }
+
+  protected compactDateTime(value: string | null | undefined): string {
+    return this.facade.compactDateTime(value);
   }
 
   protected openDetail(row: Parameters<RecruitmentSupervisorFacade['openDetail']>[0]): void {
@@ -103,5 +108,32 @@ export class RecruitmentSupervisorHomePageComponent implements OnInit {
     if (normalized.includes('UPDATE') || normalized.includes('CORREC')) return 'ti ti-pencil';
     if (normalized.includes('CAPACIT')) return 'ti ti-school';
     return 'ti ti-circle-check';
+  }
+
+  protected filterLabel(options: ReadonlyArray<{ value: string; label: string }>, value: string): string {
+    return options.find(option => option.value === value)?.label ?? options[0].label;
+  }
+
+  protected selectEtapa(value: string, menu: HTMLDetailsElement): void {
+    this.facade.setEtapaFilter(value);
+    menu.open = false;
+  }
+
+  protected selectEstado(value: string, menu: HTMLDetailsElement): void {
+    this.facade.setEstadoBandejaFilter(value);
+    menu.open = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  protected closeFilterMenus(event: MouseEvent): void {
+    const target = event.target as Node;
+    document.querySelectorAll<HTMLDetailsElement>('details.filter-select[open]').forEach(menu => {
+      if (!menu.contains(target)) menu.open = false;
+    });
+  }
+
+  @HostListener('document:keydown.escape')
+  protected closeFilterMenusOnEscape(): void {
+    document.querySelectorAll<HTMLDetailsElement>('details.filter-select[open]').forEach(menu => menu.open = false);
   }
 }

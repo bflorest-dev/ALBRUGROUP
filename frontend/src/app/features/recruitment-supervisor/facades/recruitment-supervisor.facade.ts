@@ -1,14 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { forkJoin, of } from 'rxjs';
+import { of } from 'rxjs';
 import { catchError, finalize, timeout } from 'rxjs/operators';
 import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
-import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
 import { OfertaLaboralResponse } from '../../../shared/models/recruitment/oferta-laboral-response';
 import { PostulacionHistorialResponse } from '../../../shared/models/recruitment/postulacion-historial-response';
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
+import { ResumenSupervisorResponse } from '../../../shared/models/recruitment/resumen-supervisor-response';
 import { AltaMetaPostulacionRequest } from '../../../shared/models/recruitment/alta-meta-postulacion-request';
+import { EmpleadoIdentidadResponse } from '../../../shared/models/rrhh/empleado-identidad-response';
 import {
   RecruitmentSupervisorService,
   SupervisorListFilters
@@ -18,20 +19,18 @@ export type SupervisorDrawer = 'none' | 'register' | 'detail' | 'edit';
 export type SupervisorActionState = 'idle' | 'loading' | 'success' | 'error';
 export type RegistrationMode = 'full' | 'meta';
 
-export type SupervisorSummary = {
-  total: number;
-  postulantes: number;
-  sinContacto: number;
-  enGestion: number;
-  capacitacion: number;
-};
+export type SupervisorSummary = ResumenSupervisorResponse;
 
 const EMPTY_SUMMARY: SupervisorSummary = {
-  total: 0,
-  postulantes: 0,
+  ingresosEsteMes: 0,
+  ingresosHoy: 0,
+  enProceso: 0,
+  nuevosSinGestion: 0,
   sinContacto: 0,
   enGestion: 0,
-  capacitacion: 0
+  aprobadosEsteMes: 0,
+  desaprobadosEsteMes: 0,
+  enCapacitacion: 0
 };
 
 @Injectable()
@@ -39,6 +38,7 @@ export class RecruitmentSupervisorFacade {
   private readonly service = inject(RecruitmentSupervisorService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly requestTimeoutMs = 15000;
+  private summaryRequestId = 0;
 
   readonly form = this.formBuilder.nonNullable.group({
     nombres: ['', Validators.required],
@@ -70,7 +70,6 @@ export class RecruitmentSupervisorFacade {
   readonly selectedPostulacion = signal<PostulacionResponse | null>(null);
   readonly history = signal<PostulacionHistorialResponse[]>([]);
   readonly offers = signal<OfertaLaboralResponse[]>([]);
-  readonly groups = signal<GrupoCapacitacionResponse[]>([]);
   readonly drawer = signal<SupervisorDrawer>('none');
   readonly registrationMode = signal<RegistrationMode>('full');
   readonly listLoading = signal(false);
@@ -88,6 +87,8 @@ export class RecruitmentSupervisorFacade {
   readonly searchTerm = signal('');
   readonly etapaFilter = signal('');
   readonly estadoBandejaFilter = signal('');
+  readonly negocioFilter = signal('');
+  readonly responsibleEmployees = signal<Record<number, EmpleadoIdentidadResponse>>({});
   readonly pageNumber = signal(0);
   readonly totalPages = signal(1);
   readonly totalElements = signal(0);
@@ -107,6 +108,9 @@ export class RecruitmentSupervisorFacade {
         row.puestoObjetivo,
         row.negocio ?? '',
         row.estadoBandeja,
+        row.ultimaGestionModalidad ?? '',
+        row.ultimoResultado ?? '',
+        row.proximaActividadTipo ?? '',
         row.ofertaLaboral?.codigo ?? ''
       ].join(' '));
       return haystack.includes(search);
@@ -131,6 +135,7 @@ export class RecruitmentSupervisorFacade {
     };
     if (this.etapaFilter()) filters.etapa = this.etapaFilter();
     if (this.estadoBandejaFilter()) filters.estadoBandeja = this.estadoBandejaFilter();
+    if (this.negocioFilter()) filters.negocio = this.negocioFilter();
 
     this.service.listarPostulaciones(filters).pipe(
       timeout(this.requestTimeoutMs),
@@ -141,6 +146,10 @@ export class RecruitmentSupervisorFacade {
         this.listError.set('');
         this.totalPages.set(Math.max(page.totalPages, 1));
         this.totalElements.set(page.totalElements);
+        this.loadResponsibleEmployees(page.content.flatMap(row => [
+          row.ultimaGestionResponsableId,
+          row.idEmpleadoRegistrador
+        ]));
       },
       error: (error: HttpErrorResponse) => {
         this.rows.set([]);
@@ -182,6 +191,12 @@ export class RecruitmentSupervisorFacade {
     this.load(0);
   }
 
+  setNegocioFilter(value: string): void {
+    this.negocioFilter.set(value);
+    this.load(0);
+    this.loadSummary();
+  }
+
   openRegister(): void {
     this.registrationMode.set('full');
     this.resetForm();
@@ -193,14 +208,18 @@ export class RecruitmentSupervisorFacade {
     this.loadCatalogs();
   }
 
-  openMetaRegister(): void {
-    this.registrationMode.set('meta');
-    this.resetMetaForm();
-    this.selectedPostulacion.set(null);
+  selectRegistrationMode(mode: RegistrationMode): void {
+    if (this.registrationMode() === mode) return;
+
+    this.registrationMode.set(mode);
+    if (mode === 'meta') {
+      this.resetMetaForm();
+    } else {
+      this.resetForm();
+    }
     this.actionState.set('idle');
     this.actionMessage.set('');
     this.actionError.set('');
-    this.drawer.set('register');
   }
 
   isMetaRegistration(): boolean {
@@ -335,24 +354,6 @@ export class RecruitmentSupervisorFacade {
     });
   }
 
-  assignGroup(idGrupoCapacitacion: number): void {
-    const selected = this.selectedPostulacion();
-    if (!selected || !idGrupoCapacitacion || this.actionState() === 'loading') return;
-
-    this.actionState.set('loading');
-    this.actionMessage.set('Asignando grupo…');
-    this.actionError.set('');
-    this.service.asignarGrupo(idGrupoCapacitacion, selected.id).pipe(timeout(this.requestTimeoutMs)).subscribe({
-      next: () => {
-        this.actionState.set('success');
-        this.actionMessage.set('Grupo asignado');
-        this.refresh();
-        this.loadHistory(selected.postulante.id);
-      },
-      error: (error: HttpErrorResponse) => this.failAction(error, 'No fue posible asignar el grupo.')
-    });
-  }
-
   retryHistory(): void {
     const selected = this.selectedPostulacion();
     if (selected) this.loadHistory(selected.postulante.id);
@@ -393,6 +394,98 @@ export class RecruitmentSupervisorFacade {
     return new Date(value).toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   }
 
+  compactDate(value: string | null | undefined): string {
+    if (!value) return 'Pendiente';
+    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? (() => {
+          const [year, month, day] = value.split('-').map(Number);
+          return new Date(year, month - 1, day);
+        })()
+      : new Date(value);
+    const month = parsed.toLocaleDateString('es-PE', { month: 'short' }).replace(/\./g, '').toUpperCase();
+    return `${String(parsed.getDate()).padStart(2, '0')} ${month}-${String(parsed.getFullYear()).slice(-2)}`;
+  }
+
+  compactDateTime(value: string | null | undefined): string {
+    if (!value) return 'Pendiente';
+    const parsed = new Date(value);
+    const month = parsed.toLocaleDateString('es-PE', { month: 'short' }).replace(/\./g, '').toUpperCase();
+    const time = parsed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${String(parsed.getDate()).padStart(2, '0')} ${month}, ${time}`;
+  }
+
+  recruiterName(row: PostulacionResponse): string {
+    return this.responsibleName(row.ultimaGestionResponsableId);
+  }
+
+  recruiterInitials(row: PostulacionResponse): string {
+    return this.responsibleInitials(row.ultimaGestionResponsableId);
+  }
+
+  lastManagementDate(row: PostulacionResponse): string {
+    return row.ultimaGestionAt ? this.compactDateTime(row.ultimaGestionAt) : 'Sin gestión registrada';
+  }
+
+  lastManagementDetail(row: PostulacionResponse): string {
+    if (!row.ultimaGestionAt) return 'Aún sin contacto';
+    const channel = row.ultimaGestionModalidad ? this.label(row.ultimaGestionModalidad) : 'Gestión registrada';
+    const result = row.ultimoResultado ? this.label(row.ultimoResultado) : '';
+    return result ? `${channel} · ${result}` : channel;
+  }
+
+  nextStep(row: PostulacionResponse): string {
+    if (row.proximaActividadTipo) return this.label(row.proximaActividadTipo);
+    if (row.estadoBandeja === 'POSTULANTE') return 'Pendiente de primer contacto';
+    if (row.estadoBandeja === 'SIN_CONTACTO') return 'Reintentar contacto';
+    return 'Sin próxima actividad';
+  }
+
+  nextStepDate(row: PostulacionResponse): string {
+    return row.proximaActividadAt ? this.compactDateTime(row.proximaActividadAt) : 'Sin fecha programada';
+  }
+
+  responsibleName(id: number | null | undefined): string {
+    if (!id) return 'Sin gestión registrada';
+    const employee = this.responsibleEmployees()[id];
+    return employee ? `${employee.nombres} ${employee.apellidos}`.trim() : `Empleado #${id}`;
+  }
+
+  responsibleInitials(id: number | null | undefined): string {
+    if (!id) return '—';
+    const employee = this.responsibleEmployees()[id];
+    if (!employee) return 'E';
+    return `${employee.nombres?.trim()?.[0] ?? ''}${employee.apellidos?.trim()?.[0] ?? ''}`.toUpperCase() || 'E';
+  }
+
+  eventResponsibleName(id: number | null | undefined): string {
+    return this.responsibleName(id);
+  }
+
+  eventDate(event: { fechaHoraGestion?: string | null; createdAt: string }): string {
+    return this.dateTime(event.fechaHoraGestion ?? event.createdAt);
+  }
+
+  compatibleOffers(postulacion: PostulacionResponse): OfertaLaboralResponse[] {
+    return this.offers().filter(offer =>
+      offer.puestoObjetivo === postulacion.puestoObjetivo
+      && (!postulacion.negocio || offer.negocio === postulacion.negocio)
+    );
+  }
+
+  offerAssignmentHint(postulacion: PostulacionResponse): string {
+    if (postulacion.ofertaLaboral) return `Oferta actual: ${postulacion.ofertaLaboral.codigo}`;
+    const count = this.compatibleOffers(postulacion).length;
+    return count ? 'Solo se muestran ofertas compatibles con el objetivo y negocio.' : 'No hay ofertas compatibles disponibles.';
+  }
+
+  isNewPostulacion(row: PostulacionResponse): boolean {
+    if (row.estadoBandeja !== 'POSTULANTE' || row.ultimaGestionAt || row.ultimoResultado) return false;
+    const createdAt = new Date(row.createdAt).getTime();
+    if (!Number.isFinite(createdAt)) return false;
+    const ageInHours = (Date.now() - createdAt) / (1000 * 60 * 60);
+    return ageInHours >= -1 && ageInHours <= 48;
+  }
+
   private loadHistory(idPostulante: number): void {
     this.historyLoading.set(true);
     this.historyError.set('');
@@ -400,7 +493,14 @@ export class RecruitmentSupervisorFacade {
       timeout(this.requestTimeoutMs),
       finalize(() => this.historyLoading.set(false))
     ).subscribe({
-      next: (response) => this.history.set(response.postulaciones ?? []),
+      next: (response) => {
+        const history = response.postulaciones ?? [];
+        this.history.set(history);
+        this.loadResponsibleEmployees(history.flatMap(item => [
+          item.postulacion.idEmpleadoRegistrador,
+          ...item.eventos.map(event => event.idEmpleadoResponsable)
+        ]));
+      },
       error: (error: HttpErrorResponse) => {
         this.history.set([]);
         this.historyError.set(this.errorMessage(error, 'No fue posible cargar el historial.'));
@@ -408,49 +508,56 @@ export class RecruitmentSupervisorFacade {
     });
   }
 
+  private loadResponsibleEmployees(ids: Array<number | null | undefined>): void {
+    const missingIds = [...new Set(ids.filter((id): id is number => typeof id === 'number' && Number.isInteger(id) && id > 0))]
+      .filter(id => !this.responsibleEmployees()[id]);
+    if (!missingIds.length) return;
+
+    this.service.listarIdentidadEmpleados(missingIds).pipe(timeout(this.requestTimeoutMs)).subscribe({
+      next: employees => {
+        this.responsibleEmployees.update(current => employees.reduce<Record<number, EmpleadoIdentidadResponse>>(
+          (directory, employee) => ({ ...directory, [employee.idEmpleado]: employee }),
+          { ...current }
+        ));
+      }
+    });
+  }
+
   private loadCatalogs(force = false): void {
-    if (!force && (this.offers().length || this.groups().length)) return;
+    if (!force && this.offers().length) return;
     this.catalogLoading.set(true);
     this.catalogError.set('');
-    forkJoin({ offers: this.service.listarOfertasActivas(), groups: this.service.listarGruposAbiertos() }).pipe(
+    this.service.listarOfertasActivas().pipe(
       timeout(this.requestTimeoutMs),
       finalize(() => this.catalogLoading.set(false)),
       catchError((error: HttpErrorResponse) => {
-        this.catalogError.set(this.errorMessage(error, 'No fue posible cargar ofertas y grupos.'));
-        return of(null);
+        this.catalogError.set(this.errorMessage(error, 'No fue posible cargar ofertas.'));
+        return of([] as OfertaLaboralResponse[]);
       })
-    ).subscribe((catalogs) => {
-      if (!catalogs) return;
-      this.offers.set(catalogs.offers);
-      this.groups.set(catalogs.groups.content);
+    ).subscribe((offers) => {
+      this.offers.set(offers);
     });
   }
 
   private loadSummary(): void {
+    const requestId = ++this.summaryRequestId;
     this.summaryLoading.set(true);
     this.summaryError.set('');
-    forkJoin({
-      total: this.service.listarPostulaciones({ pageSize: 1 }),
-      postulantes: this.service.listarPostulaciones({ estadoBandeja: 'POSTULANTE', pageSize: 1 }),
-      sinContacto: this.service.listarPostulaciones({ estadoBandeja: 'SIN_CONTACTO', pageSize: 1 }),
-      enGestion: this.service.listarPostulaciones({ estadoBandeja: 'EN_GESTION', pageSize: 1 }),
-      capacitacion: this.service.listarPostulaciones({ etapa: 'CAPACITACION', pageSize: 1 })
-    }).pipe(
+    const negocio = this.negocioFilter() || undefined;
+    this.service.obtenerResumenSupervisor(negocio).pipe(
       timeout(this.requestTimeoutMs),
-      finalize(() => this.summaryLoading.set(false)),
+      finalize(() => {
+        if (requestId === this.summaryRequestId) this.summaryLoading.set(false);
+      }),
       catchError((error: HttpErrorResponse) => {
-        this.summaryError.set(this.errorMessage(error, 'No fue posible cargar el resumen.'));
+        if (requestId === this.summaryRequestId) {
+          this.summaryError.set(this.errorMessage(error, 'No fue posible cargar el resumen.'));
+        }
         return of(null);
       })
     ).subscribe((summary) => {
-      if (!summary) return;
-      this.summary.set({
-        total: summary.total.totalElements,
-        postulantes: summary.postulantes.totalElements,
-        sinContacto: summary.sinContacto.totalElements,
-        enGestion: summary.enGestion.totalElements,
-        capacitacion: summary.capacitacion.totalElements
-      });
+      if (!summary || requestId !== this.summaryRequestId) return;
+      this.summary.set(summary);
     });
   }
 

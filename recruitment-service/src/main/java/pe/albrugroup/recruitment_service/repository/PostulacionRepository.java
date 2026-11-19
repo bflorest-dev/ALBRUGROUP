@@ -9,7 +9,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.repository.query.Param;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
+import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
+import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
+import pe.albrugroup.recruitment_service.entity.enums.Etapa;
+import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.List;
 
@@ -40,4 +45,44 @@ public interface PostulacionRepository extends JpaRepository<Postulacion, Long>,
             where gcd.postulacion.id = :idPostulacion
             """)
     boolean existsDetalleCapacitacionByIdPostulacion(Long idPostulacion);
+
+    @Query("""
+            select count(p)
+            from Postulacion p
+            where p.createdAt >= :inicio
+              and (:negocio is null or p.negocio = :negocio)
+            """)
+    long countCreatedSince(@Param("inicio") Instant inicio, @Param("negocio") Negocio negocio);
+
+    @Query("""
+            select count(p)
+            from Postulacion p
+            where p.etapa = :etapa
+              and p.estado = :estado
+              and (:negocio is null or p.negocio = :negocio)
+            """)
+    long countByEtapaAndEstado(
+            @Param("etapa") Etapa etapa,
+            @Param("estado") EstadoPostulacion estado,
+            @Param("negocio") Negocio negocio
+    );
+
+    @Query("""
+            select count(p)
+            from Postulacion p
+            where p.etapa = :etapa
+              and (:negocio is null or p.negocio = :negocio)
+            """)
+    long countByEtapa(@Param("etapa") Etapa etapa, @Param("negocio") Negocio negocio);
+
+    @Query("""
+            select count(p)
+            from Postulacion p
+            where p.estadoBandeja = :estadoBandeja
+              and (:negocio is null or p.negocio = :negocio)
+            """)
+    long countByEstadoBandeja(
+            @Param("estadoBandeja") EstadoBandejaPostulacion estadoBandeja,
+            @Param("negocio") Negocio negocio
+    );
 }
