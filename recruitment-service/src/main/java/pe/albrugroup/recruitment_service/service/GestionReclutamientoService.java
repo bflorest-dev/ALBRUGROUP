@@ -207,6 +207,94 @@ public class GestionReclutamientoService {
   );
  }
 
+ @Transactional
+ public MeetBatchResponse registrarGestionBatch(
+   Long idSesion,
+   Negocio negocio,
+   MeetGestionBatchRequest request
+ ) {
+  meetService.obtenerSesionEntidad(idSesion, negocio);
+  validarIdsUnicos(request.items().stream().map(MeetGestionBatchItemRequest::idPostulacion).toList());
+  LocalDateTime ahora = LocalDateTime.now(ZoneId.of("America/Lima"));
+  List<Long> procesados = new ArrayList<>();
+
+  for (MeetGestionBatchItemRequest item : request.items()) {
+   validarParticipanteSesion(idSesion, item.idPostulacion(), false);
+   String asistencia = normalizarResultado(item.asistencia());
+   String evaluacion = normalizarResultado(item.evaluacion());
+   boolean tieneAsistencia = asistencia != null;
+   boolean tieneEvaluacion = evaluacion != null;
+
+   if (!tieneAsistencia && !tieneEvaluacion) {
+    throw new BadRequestException("Completa la asistencia o la evaluación de al menos un participante.");
+   }
+   if (tieneAsistencia && !asistencia.equals("ASISTIO") && !asistencia.equals("NO_ASISTIO")) {
+    throw new BadRequestException("La asistencia debe ser ASISTIO o NO_ASISTIO.");
+   }
+   if (tieneEvaluacion && !evaluacion.equals("APROBADO") && !evaluacion.equals("RECHAZADO")) {
+    throw new BadRequestException("La evaluación debe ser APROBADO o RECHAZADO.");
+   }
+   if ("NO_ASISTIO".equals(asistencia) && tieneEvaluacion) {
+    throw new BadRequestException("Un participante que no asistió no puede tener evaluación.");
+   }
+   if ("ASISTIO".equals(asistencia) && !tieneEvaluacion) {
+    throw new BadRequestException("Completa la evaluación del participante que asistió.");
+   }
+   if (item.observacion() == null || item.observacion().isBlank()) {
+    throw new BadRequestException("Agrega una observación para cada gestión seleccionada.");
+   }
+
+   long revision = item.revisionEsperada();
+   if (tieneAsistencia) {
+    ActividadReclutamiento actividad = validarParticipanteSesion(idSesion, item.idPostulacion(), true);
+    if (!"PENDIENTE".equals(actividad.getEstado())) {
+     throw new ConflictException("La asistencia de la postulación ya fue resuelta.", item.idPostulacion());
+    }
+    GestionReclutamientoResponse asistenciaRegistrada = registrar(item.idPostulacion(), new GestionReclutamientoRequest(
+      "ASISTIO".equals(asistencia) ? "ASISTIO_MEET" : "INASISTENCIA",
+      revision,
+      ahora,
+      ModalidadContacto.MEET,
+      item.observacion(),
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      idSesion
+    ));
+    revision = asistenciaRegistrada.revision();
+   }
+
+   if (tieneEvaluacion) {
+    registrar(item.idPostulacion(), new GestionReclutamientoRequest(
+      "APROBADO".equals(evaluacion) ? "APROBAR" : "RECHAZAR",
+      revision,
+      ahora,
+      ModalidadContacto.MEET,
+      item.observacion(),
+      item.motivo() == null || item.motivo().isBlank() ? evaluacion : item.motivo(),
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      idSesion
+    ));
+   }
+   procesados.add(item.idPostulacion());
+  }
+
+  return new MeetBatchResponse(procesados.size(), procesados);
+ }
+
+ private String normalizarResultado(String resultado) {
+  return resultado == null || resultado.isBlank() ? null : resultado.trim().toUpperCase();
+ }
+
  private List<String> acciones(Etapa etapa,EstadoPostulacion estado,GestionReclutamiento g,List<ActividadReclutamiento> agenda) {
   if(etapa!=Etapa.RECLUTAMIENTO || estado!=EstadoPostulacion.EN_PROCESO) return List.of();
   var result=new ArrayList<>(List.of("NO_CONTACTO","SEGUIMIENTO","NO_INTERESADO"));

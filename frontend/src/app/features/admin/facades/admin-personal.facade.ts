@@ -2114,6 +2114,17 @@ export class AdminPersonalFacade implements OnDestroy {
     const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
 
     try {
+      if (formFechaInicio < horario.fechaInicio) {
+        await this.runCorregirHorario(
+          employee.idEmpleado,
+          horario.id,
+          baseRequest,
+          true,
+          isRetroactiveCorrection
+        );
+        return;
+      }
+
       if (
         isRetroactiveCorrection
         && formFechaInicio !== horario.fechaInicio

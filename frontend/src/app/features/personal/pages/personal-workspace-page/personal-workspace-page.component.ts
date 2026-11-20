@@ -3,7 +3,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SessionService } from '../../../../core/services/session.service';
+import { TokenService } from '../../../../core/services/token.service';
 import { formatLabel } from '../../../../shared/utils/display-label';
+import { AttendanceReportDrawerComponent } from '../../components/attendance-report-drawer/attendance-report-drawer.component';
 import { EmployeeWorkspaceDrawerComponent } from '../../components/employee-workspace-drawer/employee-workspace-drawer.component';
 import { PersonalCreationDrawerComponent } from '../../components/personal-creation-drawer/personal-creation-drawer.component';
 import {
@@ -15,7 +17,7 @@ import {
 
 @Component({
   selector: 'app-personal-workspace-page',
-  imports: [FormsModule, NgTemplateOutlet, EmployeeWorkspaceDrawerComponent, PersonalCreationDrawerComponent],
+  imports: [FormsModule, NgTemplateOutlet, AttendanceReportDrawerComponent, EmployeeWorkspaceDrawerComponent, PersonalCreationDrawerComponent],
   providers: [PersonalWorkspaceFacade],
   templateUrl: './personal-workspace-page.component.html',
   styleUrl: './personal-workspace-page.component.scss',
@@ -24,6 +26,7 @@ import {
 export class PersonalWorkspacePageComponent {
   protected readonly facade = inject(PersonalWorkspaceFacade);
   private readonly session = inject(SessionService);
+  private readonly tokenService = inject(TokenService);
   private readonly router = inject(Router);
 
   protected readonly theme = signal<'light' | 'dark'>(this.readTheme());
@@ -31,6 +34,8 @@ export class PersonalWorkspacePageComponent {
   protected readonly expandedRoles = signal(new Set<string>());
   protected readonly expandedTeams = signal(new Set<string>());
   protected readonly creationVisible = signal(false);
+  protected readonly reportDrawerVisible = signal(false);
+  protected readonly canExportAttendance = computed(() => this.tokenService.hasPermission('EXPORT_REPORTE_ASISTENCIA'));
   protected readonly rolePickerVisible = signal(false);
   protected readonly rolePickerSearch = signal('');
   protected readonly activeRole = computed(() => this.session.getActiveRole());
@@ -131,10 +136,6 @@ export class PersonalWorkspacePageComponent {
     this.closeRolePicker();
   }
 
-  protected initials(row: PersonalDirectoryRow): string {
-    return `${row.employee.nombres.charAt(0)}${row.employee.apellidos.charAt(0)}`.toUpperCase();
-  }
-
   protected preparation(row: PersonalDirectoryRow): { missing: string[]; summary: string } {
     const missing: string[] = [];
     if (!row.hasContract) missing.push('contrato');
@@ -179,6 +180,14 @@ export class PersonalWorkspacePageComponent {
 
   protected async handleEmployeeChanged(): Promise<void> {
     await this.facade.refresh();
+  }
+
+  protected openReportDrawer(): void {
+    this.reportDrawerVisible.set(true);
+  }
+
+  protected closeReportDrawer(): void {
+    this.reportDrawerVisible.set(false);
   }
 
   private toggled(current: Set<string>, key: string): Set<string> {

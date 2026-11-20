@@ -1,0 +1,212 @@
+@if (visible()) {
+  <button class="report-scrim" type="button" aria-label="Cerrar reporte" (click)="close()"></button>
+  <aside class="report-drawer" role="dialog" aria-modal="true" aria-label="Reporte de asistencias" [attr.data-theme]="theme()">
+    <header>
+      <div>
+        <h2>Reporte de asistencias</h2>
+        <p>
+          @switch (step()) {
+            @case ('select') { Selecciona los empleados a incluir en el reporte. }
+            @case ('period') { Define el periodo de tiempo a evaluar. }
+            @case ('preview') { Resumen del reporte generado. }
+          }
+        </p>
+      </div>
+      <button class="close-button" type="button" aria-label="Cerrar" (click)="close()">
+        <i class="ti ti-x" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <div class="steps-indicator">
+      <span class="step-dot" [class.active]="step() === 'select'" [class.done]="step() !== 'select'">1</span>
+      <span class="step-line" [class.done]="step() !== 'select'"></span>
+      <span class="step-dot" [class.active]="step() === 'period'" [class.done]="step() === 'preview'">2</span>
+      <span class="step-line" [class.done]="step() === 'preview'"></span>
+      <span class="step-dot" [class.active]="step() === 'preview'">3</span>
+    </div>
+
+    <div class="drawer-body">
+      @switch (step()) {
+        @case ('select') {
+          <div class="select-step">
+            <div class="select-toolbar">
+              <label class="select-search">
+                <i class="ti ti-search" aria-hidden="true"></i>
+                <input type="search" placeholder="Buscar por nombre o DNI…" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" />
+              </label>
+              <div class="select-actions">
+                <button type="button" class="text-btn" (click)="selectAll()">Seleccionar todo</button>
+                <button type="button" class="text-btn" (click)="clearAll()">Limpiar</button>
+              </div>
+            </div>
+
+            @if (selectedCount() > 0) {
+              <div class="selection-badge">
+                <i class="ti ti-users" aria-hidden="true"></i>
+                <span>{{ selectedCount() }} empleado{{ selectedCount() === 1 ? '' : 's' }} seleccionado{{ selectedCount() === 1 ? '' : 's' }}</span>
+              </div>
+            }
+
+            <div class="category-tree">
+              @for (cat of categories(); track cat.label) {
+                <div class="tree-category">
+                  <button class="tree-category-head" type="button" (click)="toggleCategory(cat.items)">
+                    <span class="tree-check" [class.checked]="cat.allSelected" [class.partial]="cat.someSelected">
+                      @if (cat.allSelected) { <i class="ti ti-check" aria-hidden="true"></i> }
+                      @else if (cat.someSelected) { <i class="ti ti-minus" aria-hidden="true"></i> }
+                    </span>
+                    <strong>{{ cat.label }}</strong>
+                    <span class="tree-count">{{ cat.items.length }}</span>
+                  </button>
+                  <div class="tree-employees">
+                    @for (item of cat.items; track item.row.employee.idEmpleado) {
+                      <button class="tree-employee" type="button" [class.selected]="item.selected" (click)="toggleEmployee(item.row.employee.idEmpleado)">
+                        <span class="tree-check" [class.checked]="item.selected">
+                          @if (item.selected) { <i class="ti ti-check" aria-hidden="true"></i> }
+                        </span>
+                        <span class="emp-info">
+                          <strong>{{ item.row.employee.apellidos }}, {{ item.row.employee.nombres }}</strong>
+                          <small>{{ item.row.employee.numeroDocumento }} · {{ item.row.primaryRole }}</small>
+                        </span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              @if (categories().length === 0) {
+                <div class="empty-hint">
+                  <i class="ti ti-search-off" aria-hidden="true"></i>
+                  <span>No se encontraron empleados.</span>
+                </div>
+              }
+            </div>
+
+            <footer class="step-footer">
+              <button class="btn-primary" type="button" [disabled]="selectedCount() === 0" (click)="goToPeriod()">
+                Siguiente
+                <i class="ti ti-arrow-right" aria-hidden="true"></i>
+              </button>
+            </footer>
+          </div>
+        }
+
+        @case ('period') {
+          <div class="period-step">
+            <div class="period-fields">
+              <label class="date-field">
+                <span>Desde</span>
+                <input type="date" [ngModel]="desde()" (ngModelChange)="desde.set($event)" />
+              </label>
+              <label class="date-field">
+                <span>Hasta</span>
+                <input type="date" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)" />
+              </label>
+            </div>
+
+            <div class="presets">
+              <span>Presets:</span>
+              <button type="button" class="preset-btn" (click)="setPreset('last-month')">Último mes</button>
+              <button type="button" class="preset-btn" (click)="setPreset('current-month')">Mes actual</button>
+              <button type="button" class="preset-btn" (click)="setPreset('last-fortnight')">Última quincena</button>
+            </div>
+
+            <div class="period-summary">
+              <i class="ti ti-users" aria-hidden="true"></i>
+              <span>{{ selectedCount() }} empleado{{ selectedCount() === 1 ? '' : 's' }} seleccionado{{ selectedCount() === 1 ? '' : 's' }}</span>
+            </div>
+
+            @if (errorMessage()) {
+              <div class="error-banner">
+                <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+                {{ errorMessage() }}
+              </div>
+            }
+
+            <footer class="step-footer">
+              <button class="btn-secondary" type="button" (click)="goBackToSelect()">
+                <i class="ti ti-arrow-left" aria-hidden="true"></i>
+                Volver
+              </button>
+              <button class="btn-primary" type="button" [disabled]="!periodValid() || loading()" (click)="generateReport()">
+                @if (loading()) {
+                  <span class="btn-spinner"></span>
+                  Generando…
+                } @else {
+                  Generar reporte
+                  <i class="ti ti-chart-bar" aria-hidden="true"></i>
+                }
+              </button>
+            </footer>
+          </div>
+        }
+
+        @case ('preview') {
+          <div class="preview-step">
+            <div class="preview-meta">
+              <span><strong>Periodo:</strong> {{ desde() }} al {{ hasta() }}</span>
+              <span><strong>Empleados:</strong> {{ selectedCount() }}</span>
+            </div>
+
+            <div class="preview-table-wrap">
+              <table class="preview-table">
+                <thead>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>DNI</th>
+                    <th class="num">Días lab.</th>
+                    <th class="num">Con reg.</th>
+                    <th class="num">Sin reg.</th>
+                    <th class="num">Tard.</th>
+                    <th class="num">Min. obj.</th>
+                    <th class="num">Min. trab.</th>
+                    <th class="num">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of selectedRows(); track row.employee.idEmpleado) {
+                    @let resumen = resumenByEmployee().get(row.employee.idEmpleado);
+                    <tr>
+                      <td class="emp-name">{{ row.employee.apellidos }}, {{ row.employee.nombres }}</td>
+                      <td>{{ row.employee.numeroDocumento }}</td>
+                      <td class="num">{{ resumen?.diasLaborables ?? '-' }}</td>
+                      <td class="num">{{ resumen?.diasConRegistro ?? '-' }}</td>
+                      <td class="num">{{ resumen?.diasSinRegistro ?? '-' }}</td>
+                      <td class="num">{{ resumen?.cantidadTardanzas ?? '-' }}</td>
+                      <td class="num">{{ resumen?.minutosObjetivo ?? '-' }}</td>
+                      <td class="num">{{ resumen?.minutosTrabajados ?? '-' }}</td>
+                      <td class="num" [class.negative]="(resumen?.minutosBalance ?? 0) < 0">{{ resumen?.minutosBalance ?? '-' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            @if (errorMessage()) {
+              <div class="error-banner">
+                <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+                {{ errorMessage() }}
+              </div>
+            }
+
+            <footer class="step-footer">
+              <button class="btn-secondary" type="button" (click)="goBackToPeriod()">
+                <i class="ti ti-arrow-left" aria-hidden="true"></i>
+                Volver
+              </button>
+              <button class="btn-primary" type="button" [disabled]="exporting()" (click)="downloadExcel()">
+                @if (exporting()) {
+                  <span class="btn-spinner"></span>
+                  Descargando…
+                } @else {
+                  <i class="ti ti-file-spreadsheet" aria-hidden="true"></i>
+                  Descargar Excel
+                }
+              </button>
+            </footer>
+          </div>
+        }
+      }
+    </div>
+  </aside>
+}

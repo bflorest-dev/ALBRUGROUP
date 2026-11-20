@@ -11,6 +11,7 @@ import pe.albrugroup.recruitment_service.entity.response.MeetBatchResponse;
 import pe.albrugroup.recruitment_service.entity.response.SesionMeetResponse;
 import pe.albrugroup.recruitment_service.entity.request.MeetAsistenciaBatchRequest;
 import pe.albrugroup.recruitment_service.entity.request.MeetEvaluacionBatchRequest;
+import pe.albrugroup.recruitment_service.entity.request.MeetGestionBatchRequest;
 import pe.albrugroup.recruitment_service.service.GestionReclutamientoService;
 import pe.albrugroup.recruitment_service.service.MeetReclutamientoService;
 
@@ -69,5 +70,15 @@ public class MeetReclutamientoController {
             @Valid @RequestBody MeetEvaluacionBatchRequest request
     ) {
         return gestionService.registrarEvaluacionBatch(idSesion, negocio, request);
+    }
+
+    @PostMapping("/sesiones/{idSesion}/gestion:batch")
+    @PreAuthorize("hasAuthority('TYPIFY_POSTULACIONES')")
+    public MeetBatchResponse registrarGestionBatch(
+            @PathVariable @Positive Long idSesion,
+            @RequestParam Negocio negocio,
+            @Valid @RequestBody MeetGestionBatchRequest request
+    ) {
+        return gestionService.registrarGestionBatch(idSesion, negocio, request);
     }
 }

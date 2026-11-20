@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable } from 'rxjs';
+import { Observable, interval } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RecruitmentRealtimeService } from '../../../../core/services/recruitment-realtime.service';
 import { RecruiterOperationalInboxFacade } from '../../facades/recruiter-operational-inbox.facade';
 import { GestionDrawerComponent } from '../../components/gestion-drawer/gestion-drawer.component';
 import { RecruiterPostulantesService } from '../../services/recruiter-postulantes.service';
 import { SesionMeetParticipanteResponse, SesionMeetResponse } from '../../../../shared/models/recruitment/sesion-meet-response';
-import { MeetAsistencia, MeetEvaluacion } from '../../../../shared/models/recruitment/meet-batch';
+import { MeetAsistencia, MeetEvaluacion, MeetGestionBatchItemRequest } from '../../../../shared/models/recruitment/meet-batch';
 import { RecruiterTrainingGroupsFacade } from '../../facades/recruiter-training-groups.facade';
 import { RecruiterTrainingGroupsService } from '../../services/recruiter-training-groups.service';
 import { TrainingGroupFormPanelComponent } from '../../components/training-group-form-panel/training-group-form-panel.component';
@@ -49,6 +49,7 @@ export class OperationalInboxPageComponent implements OnInit {
   protected readonly meetObservationDraft = signal<Record<number, string>>({});
   protected readonly meetBatchState = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   protected readonly meetBatchMessage = signal('');
+  private readonly meetClock = signal(Date.now());
   protected readonly trainingGroupsOpen = signal(false);
   protected readonly selectedGroupPostulacionIds = signal<number[]>([]);
   protected readonly selectedTrainingGroupId = signal<number | null>(null);
@@ -98,6 +99,9 @@ export class OperationalInboxPageComponent implements OnInit {
     this.realtime.watchTopic('/topic/postulaciones')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => { if (this.meetAgendaOpen()) this.loadMeetAgenda(); });
+    interval(30_000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.meetClock.set(Date.now()));
   }
 
   protected label(value: string | null | undefined): string {
@@ -338,6 +342,20 @@ export class OperationalInboxPageComponent implements OnInit {
     return id ? this.meetSessions().find(session => session.id === id) ?? null : null;
   }
 
+  protected meetHasStarted(session: SesionMeetResponse): boolean {
+    this.meetClock();
+    const startsAt = Date.parse(session.fechaHoraInicio);
+    return Number.isFinite(startsAt) && startsAt <= Date.now();
+  }
+
+  protected meetAvailabilityMessage(session: SesionMeetResponse): string {
+    const startsAt = Date.parse(session.fechaHoraInicio);
+    if (!Number.isFinite(startsAt)) {
+      return 'No se pudo determinar el horario del Meet. Vuelve a cargar la agenda antes de gestionarlo.';
+    }
+    return `Este Meet aún no inicia. Podrás registrar asistencia y evaluación cuando llegue la hora de las ${this.meetHour(session)}.`;
+  }
+
   protected meetParticipants(session: SesionMeetResponse): SesionMeetParticipanteResponse[] {
     if (session.participantes?.length) return session.participantes;
     return session.postulaciones.map(postulacion => ({
@@ -398,6 +416,11 @@ export class OperationalInboxPageComponent implements OnInit {
   }
 
   protected markMeetAttendance(session: SesionMeetResponse, value: MeetAsistencia): void {
+    if (!this.meetHasStarted(session)) {
+      this.meetBatchState.set('error');
+      this.meetBatchMessage.set(this.meetAvailabilityMessage(session));
+      return;
+    }
     const next = { ...this.meetAttendanceDraft() };
     this.meetParticipants(session).forEach(participant => {
       if (participant.asistencia === 'PENDIENTE') next[participant.idPostulacion] = value;
@@ -407,69 +430,70 @@ export class OperationalInboxPageComponent implements OnInit {
     this.meetBatchMessage.set('');
   }
 
-  protected submitMeetAttendance(session: SesionMeetResponse): void {
+  protected submitMeetWorkflow(session: SesionMeetResponse): void {
     if (this.meetBatchState() === 'loading') return;
-    const items = this.meetParticipants(session)
-      .filter(participant => participant.asistencia === 'PENDIENTE' && this.attendanceValue(participant))
-      .map(participant => ({
-        idPostulacion: participant.idPostulacion,
-        asistencia: this.attendanceValue(participant)!,
-        observacion: this.observationValue(participant).trim() || null,
-        revisionEsperada: participant.revision
-      }));
-    if (!items.length) {
+    if (!this.meetHasStarted(session)) {
       this.meetBatchState.set('error');
-      this.meetBatchMessage.set('Selecciona la asistencia de al menos un participante.');
+      this.meetBatchMessage.set(this.meetAvailabilityMessage(session));
       return;
     }
-    this.meetBatchState.set('loading');
-    this.meetBatchMessage.set('');
-    this.api.registrarAsistenciaMeetBatch(session.id, this.negocioScope.active(), { items })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: response => {
-          this.meetBatchState.set('success');
-          this.meetBatchMessage.set(`${response.procesados} asistencia${response.procesados === 1 ? '' : 's'} registrada${response.procesados === 1 ? '' : 's'}.`);
-          this.meetAttendanceDraft.set({});
-          this.facade.refresh();
-          this.loadMeetAgenda();
-        },
-        error: error => {
-          this.meetBatchState.set('error');
-          this.meetBatchMessage.set(error?.error?.message || 'No se pudo registrar la asistencia. La sesión pudo cambiar; vuelve a cargar la agenda.');
-        }
-      });
-  }
+    const items: MeetGestionBatchItemRequest[] = [];
+    const incompleteEvaluations: string[] = [];
+    const missingObservations: string[] = [];
 
-  protected submitMeetEvaluation(session: SesionMeetResponse): void {
-    if (this.meetBatchState() === 'loading') return;
-    const items = this.meetParticipants(session)
-      .filter(participant => participant.asistencia === 'ASISTIO' && !participant.resultadoEvaluacion && this.evaluationValue(participant))
-      .map(participant => ({
+    this.meetParticipants(session).forEach(participant => {
+      const asistencia = participant.asistencia === 'PENDIENTE' ? this.attendanceValue(participant) : null;
+      const evaluacion = participant.resultadoEvaluacion ? null : this.evaluationValue(participant);
+      const hasDecision = Boolean(asistencia || evaluacion);
+      if (!hasDecision) return;
+
+      const name = this.displayName(participant.postulacion.postulante);
+      if (asistencia === 'ASISTIO' && !evaluacion) incompleteEvaluations.push(name);
+      if (!asistencia && evaluacion && participant.asistencia !== 'ASISTIO') {
+        incompleteEvaluations.push(name);
+      }
+
+      const observacion = this.observationValue(participant).trim();
+      if (!observacion) missingObservations.push(name);
+      items.push({
         idPostulacion: participant.idPostulacion,
-        resultado: this.evaluationValue(participant)!,
-        motivo: this.evaluationValue(participant)!,
-        observacion: this.observationValue(participant).trim(),
-        revisionEsperada: participant.revision
-      }));
+        asistencia,
+        evaluacion,
+        motivo: evaluacion,
+        observacion,
+        revisionEsperada: participant.revision ?? 0
+      });
+    });
+
     if (!items.length) {
       this.meetBatchState.set('error');
-      this.meetBatchMessage.set('Selecciona la evaluación de al menos un participante que asistió.');
+      this.meetBatchMessage.set('Selecciona la asistencia y la evaluación de al menos un participante.');
       return;
     }
-    if (items.some(item => !item.observacion)) {
+    if (incompleteEvaluations.length) {
       this.meetBatchState.set('error');
-      this.meetBatchMessage.set('Agrega una observación para cada evaluación seleccionada.');
+      this.meetBatchMessage.set(`Completa la evaluación de: ${incompleteEvaluations.join(', ')}.`);
       return;
     }
+    if (missingObservations.length) {
+      this.meetBatchState.set('error');
+      this.meetBatchMessage.set(`Agrega una observación para: ${missingObservations.join(', ')}.`);
+      return;
+    }
+
     this.meetBatchState.set('loading');
     this.meetBatchMessage.set('');
-    this.api.registrarEvaluacionMeetBatch(session.id, this.negocioScope.active(), { items })
+    const aprobados = items.filter(item => item.evaluacion === 'APROBADO').length;
+    this.api.registrarGestionMeetBatch(session.id, this.negocioScope.active(), { items })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: response => {
           this.meetBatchState.set('success');
-          this.meetBatchMessage.set(`${response.procesados} evaluación${response.procesados === 1 ? '' : 'es'} registrada${response.procesados === 1 ? '' : 's'}.`);
+          this.meetBatchMessage.set(
+            `${response.procesados} gestión${response.procesados === 1 ? '' : 'es'} guardada${response.procesados === 1 ? '' : 's'}` +
+            (aprobados ? `. ${aprobados} aprobado${aprobados === 1 ? '' : 's'} disponible${aprobados === 1 ? '' : 's'} en Grupos de capacitación.` : '.')
+          );
+          this.meetAttendanceDraft.set({});
           this.meetEvaluationDraft.set({});
           this.meetObservationDraft.set({});
           this.facade.refresh();
@@ -477,7 +501,7 @@ export class OperationalInboxPageComponent implements OnInit {
         },
         error: error => {
           this.meetBatchState.set('error');
-          this.meetBatchMessage.set(error?.error?.message || 'No se pudo registrar la evaluación. La sesión pudo cambiar; vuelve a cargar la agenda.');
+          this.meetBatchMessage.set(error?.error?.message || 'No se pudo guardar la gestión del Meet. La sesión pudo cambiar; vuelve a cargar la agenda.');
         }
       });
   }

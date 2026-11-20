@@ -764,6 +764,17 @@ export class RrhhAsistenciaFacade {
     const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
 
     try {
+      if (formFechaInicio < horario.fechaInicio) {
+        await this.runCorregir(
+          empleado.idEmpleado,
+          horario.id,
+          baseRequest,
+          true,
+          isRetroactiveCorrection
+        );
+        return;
+      }
+
       if (isRetroactiveCorrection && formFechaInicio !== horario.fechaInicio) {
         await this.runReemplazar(empleado.idEmpleado, horario.id, baseRequest, true);
         return;

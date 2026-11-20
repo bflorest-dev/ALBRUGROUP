@@ -71,10 +71,16 @@
                 <p>{{ meetParticipants(selectedSession).length }} participantes · {{ meetHour(selectedSession) }}</p>
               </div>
               <div class="meet-workspace__actions">
-                <button type="button" class="button button--ghost button--small" (click)="markMeetAttendance(selectedSession, 'ASISTIO')">Todos asistieron</button>
-                <button type="button" class="button button--ghost button--small" (click)="markMeetAttendance(selectedSession, 'NO_ASISTIO')">Todos no asistieron</button>
+                <button type="button" class="button button--ghost button--small" [disabled]="!meetHasStarted(selectedSession) || meetBatchState() === 'loading'" (click)="markMeetAttendance(selectedSession, 'ASISTIO')">Todos asistieron</button>
+                <button type="button" class="button button--ghost button--small" [disabled]="!meetHasStarted(selectedSession) || meetBatchState() === 'loading'" (click)="markMeetAttendance(selectedSession, 'NO_ASISTIO')">Todos no asistieron</button>
               </div>
             </header>
+            @if (!meetHasStarted(selectedSession)) {
+              <div class="inline-notice inline-notice--warning" role="status">
+                <i class="ti ti-clock" aria-hidden="true"></i>
+                <span>{{ meetAvailabilityMessage(selectedSession) }}</span>
+              </div>
+            }
             <div class="meet-participants" role="list" aria-label="Participantes del Meet">
               @for (participant of meetParticipants(selectedSession); track participant.idPostulacion) {
                 <article class="meet-participant" role="listitem">
@@ -89,7 +95,7 @@
                   </div>
                   <label class="field field--compact">
                     <span>Asistencia</span>
-                    <select [value]="attendanceValue(participant) || ''" [disabled]="participant.asistencia !== 'PENDIENTE'" (change)="setMeetAttendance(participant.idPostulacion, $any($event.target).value)">
+                    <select [value]="attendanceValue(participant) || ''" [disabled]="participant.asistencia !== 'PENDIENTE' || !meetHasStarted(selectedSession)" (change)="setMeetAttendance(participant.idPostulacion, $any($event.target).value)">
                       <option value="">Pendiente</option>
                       <option value="ASISTIO">Asistió</option>
                       <option value="NO_ASISTIO">No asistió</option>
@@ -98,15 +104,17 @@
                   @if (isParticipantAttended(participant)) {
                     <label class="field field--compact">
                       <span>Evaluación</span>
-                      <select [value]="evaluationValue(participant) || ''" [disabled]="!!participant.resultadoEvaluacion" (change)="setMeetEvaluation(participant.idPostulacion, $any($event.target).value)">
+                      <select [value]="evaluationValue(participant) || ''" [disabled]="!!participant.resultadoEvaluacion || !meetHasStarted(selectedSession)" (change)="setMeetEvaluation(participant.idPostulacion, $any($event.target).value)">
                         <option value="">Pendiente</option>
                         <option value="APROBADO">Aprobar</option>
                         <option value="RECHAZADO">Rechazar</option>
                       </select>
                     </label>
+                  }
+                  @if (isParticipantAttended(participant) || attendanceValue(participant) === 'NO_ASISTIO') {
                     <label class="field meet-participant__observation">
-                      <span>Observación de evaluación</span>
-                      <input type="text" maxlength="2000" placeholder="Comentario breve" [value]="observationValue(participant)" [disabled]="!!participant.resultadoEvaluacion" (input)="setMeetObservation(participant.idPostulacion, $any($event.target).value)" />
+                      <span>{{ attendanceValue(participant) === 'NO_ASISTIO' ? 'Motivo de inasistencia' : 'Observación' }}</span>
+                      <input type="text" maxlength="2000" placeholder="Comentario breve" [value]="observationValue(participant)" [disabled]="!!participant.resultadoEvaluacion || !meetHasStarted(selectedSession)" (input)="setMeetObservation(participant.idPostulacion, $any($event.target).value)" />
                     </label>
                   }
                 </article>
@@ -119,12 +127,15 @@
               </div>
             }
             <footer class="meet-workspace__footer">
-              <span>Guarda primero la asistencia. Después podrás evaluar a quienes asistieron.</span>
+              @if (meetHasStarted(selectedSession)) {
+                <span>Selecciona asistencia y evaluación. Todo se guardará en una sola acción.</span>
+              } @else {
+                <span>La asistencia y la evaluación se habilitan cuando llegue la hora del Meet.</span>
+              }
               <div>
-                <button type="button" class="button button--ghost" [disabled]="meetBatchState() === 'loading'" (click)="submitMeetAttendance(selectedSession)">
-                  @if (meetBatchState() === 'loading') { <span class="spinner spinner--small" aria-hidden="true"></span> Procesando… } @else { Guardar asistencia }
+                <button type="button" class="button button--primary" [disabled]="meetBatchState() === 'loading' || !meetHasStarted(selectedSession)" (click)="submitMeetWorkflow(selectedSession)">
+                  @if (meetBatchState() === 'loading') { <span class="spinner spinner--small" aria-hidden="true"></span> Guardando… } @else { Guardar gestión }
                 </button>
-                <button type="button" class="button button--primary" [disabled]="meetBatchState() === 'loading'" (click)="submitMeetEvaluation(selectedSession)">Guardar evaluaciones</button>
               </div>
             </footer>
           </section>

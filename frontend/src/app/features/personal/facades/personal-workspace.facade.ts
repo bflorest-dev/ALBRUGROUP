@@ -1,10 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Injectable, OnDestroy, computed, inject, signal } from '@angular/core';
+import { catchError, firstValueFrom, of, Subscription } from 'rxjs';
+import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
+import { PresenceRealtimeService } from '../../../core/services/presence-realtime.service';
+import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
 import { SessionService } from '../../../core/services/session.service';
+import { AttendanceRealtimeEvent } from '../../../shared/models/schedule/attendance-realtime-event';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response';
 import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
+import { PresenceRealtimeEvent } from '../../../shared/models/gateway/presence-realtime-event';
 import {
   ambitoProveedorPorRol,
   ProviderScope,
@@ -21,6 +26,35 @@ import {
 } from '../services/personal-access.service';
 
 export type PersonalCategoryFilter = 'TODOS' | 'OPERATIVO' | 'ESTRUCTURAL' | 'MANTENIMIENTO' | 'INACTIVO';
+
+export type PersonalPresenceStatus =
+  | 'ONLINE'
+  | 'OFFLINE'
+  | 'ALMUERZO'
+  | 'SERVICIOS'
+  | 'PAUSA_ACTIVA'
+  | 'CAPACITACION'
+  | 'DISPONIBLE'
+  | 'CON_LEADS'
+  | 'GESTIONANDO'
+  | 'SIN_GESTIONAR'
+  | 'OCUPADO'
+  | 'SATURADO';
+
+const PERSONAL_PRESENCE_STATUSES = new Set<string>([
+  'ONLINE',
+  'OFFLINE',
+  'ALMUERZO',
+  'SERVICIOS',
+  'PAUSA_ACTIVA',
+  'CAPACITACION',
+  'DISPONIBLE',
+  'CON_LEADS',
+  'GESTIONANDO',
+  'SIN_GESTIONAR',
+  'OCUPADO',
+  'SATURADO'
+]);
 
 export interface PersonalDirectoryRow {
   employee: EmpleadoRolResponse;
@@ -141,11 +175,16 @@ function normalizeScopeLabel(value: string): string {
 type PersonalProviderAssignmentsByScope = Record<ProviderScope, PersonalProviderAssignments>;
 
 @Injectable()
-export class PersonalWorkspaceFacade {
+export class PersonalWorkspaceFacade implements OnDestroy {
   private readonly rrhh = inject(AdminRrhhService);
   private readonly teamsService = inject(AdminEquipoService);
   private readonly accessService = inject(PersonalAccessService);
   private readonly session = inject(SessionService);
+  private readonly presenceService = inject(PresenceService);
+  private readonly presenceRealtimeService = inject(PresenceRealtimeService);
+  private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
+  private readonly realtimeSubscription = new Subscription();
+  private realtimeStarted = false;
 
   readonly employees = signal<EmpleadoRolResponse[]>([]);
   readonly roleCatalog = signal<RoleCatalogItem[]>([]);
@@ -169,6 +208,9 @@ export class PersonalWorkspaceFacade {
   readonly companyFilter = signal<string | null>(null);
   readonly showHiddenRoles = signal(false);
   readonly selectedEmployeeId = signal<number | null>(null);
+  readonly connectedUserById = signal<Record<number, ConnectedUserResponse>>({});
+  readonly attendanceStateById = signal<Record<number, string | null>>({});
+  readonly isLoadingLiveState = signal(false);
 
   readonly isAdmin = computed(() => this.session.getActiveRole() === 'ADMINISTRADOR');
   readonly canReadRoles = computed(() => ['ADMINISTRADOR', 'RRHH'].includes(this.session.getActiveRole() ?? ''));
@@ -248,6 +290,47 @@ export class PersonalWorkspaceFacade {
       .sort((left, right) => this.fullName(left).localeCompare(this.fullName(right), 'es'));
   });
 
+  readonly allActiveRows = computed<PersonalDirectoryRow[]>(() => {
+    const access = this.accessByEmployeeId();
+    const teamNames = this.teamNamesByEmployeeId();
+    const teamIds = this.teamIdsByEmployeeId();
+    const providerAssignments = this.providerAssignmentsByScope();
+
+    return this.employees()
+      .filter((e) => e.estadoOperativo === 'ACTIVO')
+      .map((employee): PersonalDirectoryRow => {
+        const employeeAccess = access[employee.idEmpleado] ?? null;
+        const legacyPosition = employee.puestoTrabajo && employee.puestoTrabajo !== 'SIN_CONTRATO'
+          ? employee.puestoTrabajo
+          : null;
+        const primaryRole = employeeAccess?.rolPrincipal || legacyPosition || 'SIN_ROL';
+        const category = employee.categoriaPersonal
+          ?? (legacyPosition ? this.inferCategory(legacyPosition) : 'SIN_CATEGORIA');
+        const assignedRoles = [primaryRole, ...(employeeAccess?.rolesSecundarios ?? [])];
+        const providerEntries = assignedRoles
+          .filter((role) => Boolean(ambitoProveedorPorRol(role)))
+          .flatMap((role) => {
+            const scope = ambitoProveedorPorRol(role);
+            return scope ? providerAssignments[scope][employee.idEmpleado] ?? [] : [];
+          })
+          .filter((entry, index, entries) => entries.findIndex((candidate) => candidate.id === entry.id) === index)
+          .sort((left, right) => left.name.localeCompare(right.name, 'es'));
+        return {
+          employee,
+          access: employeeAccess,
+          category,
+          hasContract: Boolean(employee.categoriaPersonal || legacyPosition),
+          primaryRole,
+          secondaryRoles: employeeAccess?.rolesSecundarios ?? [],
+          teamNames: teamNames[employee.idEmpleado] ?? [],
+          teamIds: teamIds[employee.idEmpleado] ?? [],
+          providerIds: providerEntries.map((entry) => entry.id),
+          providerNames: providerEntries.map((entry) => entry.name)
+        };
+      })
+      .sort((left, right) => this.fullName(left).localeCompare(this.fullName(right), 'es'));
+  });
+
   readonly structuralRows = computed(() => this.rows().filter((row) => row.category === 'ESTRUCTURAL'));
   readonly maintenanceRows = computed(() => this.rows().filter((row) => row.category === 'MANTENIMIENTO'));
   readonly unclassifiedRows = computed(() => this.rows().filter((row) => row.category === 'SIN_CATEGORIA'));
@@ -294,8 +377,10 @@ export class PersonalWorkspaceFacade {
       await Promise.all([
         this.loadTeams(),
         this.canReadRoles() ? this.loadRoleDirectory() : Promise.resolve(),
-        this.canReadRoles() ? this.loadProviderScopes() : Promise.resolve()
+        this.canReadRoles() ? this.loadProviderScopes() : Promise.resolve(),
+        this.loadLiveState()
       ]);
+      this.startRealtime();
     } catch (error) {
       this.errorMessage.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo cargar el personal.'));
     } finally {
@@ -307,12 +392,160 @@ export class PersonalWorkspaceFacade {
     await this.initialize();
   }
 
+  ngOnDestroy(): void {
+    this.realtimeSubscription.unsubscribe();
+  }
+
   selectEmployee(empleadoId: number): void {
     this.selectedEmployeeId.set(empleadoId);
   }
 
   closeEmployee(): void {
     this.selectedEmployeeId.set(null);
+  }
+
+  presenceStatus(empleadoId: number): PersonalPresenceStatus {
+    const connectedUser = this.connectedUserById()[empleadoId];
+    if (!connectedUser || connectedUser.status?.toUpperCase() === 'OFFLINE') {
+      return 'OFFLINE';
+    }
+
+    const attendanceState = this.normalizePresenceStatus(this.attendanceStateById()[empleadoId]);
+    if (attendanceState && attendanceState !== 'ONLINE' && attendanceState !== 'OFFLINE') {
+      return attendanceState;
+    }
+
+    const disponibilidad = this.normalizePresenceStatus(connectedUser.disponibilidad);
+    return disponibilidad && disponibilidad !== 'ONLINE' && disponibilidad !== 'OFFLINE' && disponibilidad !== 'DISPONIBLE'
+      ? disponibilidad
+      : 'ONLINE';
+  }
+
+  presenceStatusLabel(empleadoId: number): string {
+    const status = this.presenceStatus(empleadoId);
+    switch (status) {
+      case 'PAUSA_ACTIVA': return 'PAUSA ACTIVA';
+      case 'CAPACITACION': return 'CAPACITACIÓN';
+      case 'CON_LEADS': return 'CON LEADS';
+      case 'GESTIONANDO': return 'GESTIONANDO';
+      case 'SIN_GESTIONAR': return 'SIN GESTIONAR';
+      default: return status;
+    }
+  }
+
+  private async loadLiveState(): Promise<void> {
+    const employeeIds = this.employees()
+      .filter((employee) => employee.estadoOperativo === 'ACTIVO')
+      .map((employee) => employee.idEmpleado);
+
+    this.isLoadingLiveState.set(true);
+    try {
+      if (!employeeIds.length) {
+        this.connectedUserById.set({});
+        this.attendanceStateById.set({});
+        return;
+      }
+
+      const [attendance, connected] = await Promise.all([
+        firstValueFrom(
+          this.rrhh.getEstadosMonitorEmpleados(employeeIds, this.getToday()).pipe(
+            catchError(() => of([]))
+          )
+        ),
+        firstValueFrom(
+          this.presenceService.listarUsuariosConectados().pipe(
+            catchError(() => of([] as ConnectedUserResponse[]))
+          )
+        )
+      ]);
+
+      this.attendanceStateById.set(
+        Object.fromEntries(attendance.map((state) => [state.idEmpleado, state.estadoActual ?? null]))
+      );
+      this.connectedUserById.set(
+        Object.fromEntries(connected.map((user) => [user.empleadoId, user]))
+      );
+    } finally {
+      this.isLoadingLiveState.set(false);
+    }
+  }
+
+  private startRealtime(): void {
+    if (this.realtimeStarted) {
+      return;
+    }
+
+    this.realtimeStarted = true;
+    this.realtimeSubscription.add(
+      this.attendanceRealtimeService.watchTopic('/topic/asistencia/monitor').subscribe({
+        next: (event) => this.applyAttendanceRealtimeEvent(event),
+        error: () => undefined
+      })
+    );
+    this.realtimeSubscription.add(
+      this.presenceRealtimeService.watchAll().subscribe({
+        next: (event) => this.applyPresenceRealtimeEvent(event),
+        error: () => undefined
+      })
+    );
+  }
+
+  private applyAttendanceRealtimeEvent(event: AttendanceRealtimeEvent): void {
+    if (event.fecha !== this.getToday() || !this.isActiveEmployee(event.idEmpleado)) {
+      return;
+    }
+
+    this.attendanceStateById.update((current) => ({
+      ...current,
+      [event.idEmpleado]: event.estadoActual ?? null
+    }));
+  }
+
+  private applyPresenceRealtimeEvent(event: PresenceRealtimeEvent): void {
+    if (!this.isActiveEmployee(event.empleadoId)) {
+      return;
+    }
+
+    this.connectedUserById.update((current) => {
+      if (event.tipo === 'PRESENCE_OFFLINE' || event.tipo === 'PRESENCE_EXPIRED' || !event.online) {
+        const next = { ...current };
+        delete next[event.empleadoId];
+        return next;
+      }
+
+      const existing = current[event.empleadoId];
+      return {
+        ...current,
+        [event.empleadoId]: {
+          empleadoId: event.empleadoId,
+          nombreCompleto: event.nombreCompleto ?? existing?.nombreCompleto ?? '',
+          roles: event.roles ?? existing?.roles ?? [],
+          status: 'ONLINE',
+          disponibilidad: event.disponibilidad ?? existing?.disponibilidad ?? null,
+          equipoActivoId: event.equipoActivoId ?? existing?.equipoActivoId ?? null,
+          lastSeen: event.lastSeen ?? event.occurredAt ?? existing?.lastSeen ?? null
+        }
+      };
+    });
+  }
+
+  private isActiveEmployee(empleadoId: number): boolean {
+    return this.employees().some((employee) =>
+      employee.idEmpleado === empleadoId && employee.estadoOperativo === 'ACTIVO'
+    );
+  }
+
+  private normalizePresenceStatus(value: string | null | undefined): PersonalPresenceStatus | null {
+    const normalized = value?.trim().toUpperCase();
+    if (!normalized || !PERSONAL_PRESENCE_STATUSES.has(normalized)) {
+      return null;
+    }
+    return normalized as PersonalPresenceStatus;
+  }
+
+  private getToday(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   }
 
   applyUpdatedRoles(roles: UserRoles): void {

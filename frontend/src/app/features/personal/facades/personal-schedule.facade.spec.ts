@@ -156,4 +156,64 @@ describe('PersonalScheduleFacade', () => {
     expect(facade.error()).toBe('Solo ADMINISTRADOR puede aplicar correcciones retroactivas.');
     expect(service.corregirHorario).not.toHaveBeenCalled();
   });
+
+  it('usa PATCH para mover hacia atras la fecha del horario vigente', async () => {
+    const current = schedule(1, '2020-01-01');
+    const corrected = schedule(1, '2019-12-01');
+    const service = {
+      listarHistoricoHorarios: vi.fn(() => of({ content: [current] })),
+      corregirHorario: vi.fn(() => of(corrected)),
+      reemplazarHorario: vi.fn()
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        FormBuilder,
+        PersonalScheduleFacade,
+        { provide: AdminRrhhService, useValue: service },
+        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => true, blockedMessage: () => '' }) } },
+        { provide: SessionService, useValue: { hasRole: () => true } }
+      ]
+    });
+
+    const facade = TestBed.inject(PersonalScheduleFacade);
+    facade.initialize(10, contract, current);
+    facade.form.controls.fechaInicio.setValue('2019-12-01');
+
+    expect(await facade.save()).toBe(true);
+    expect(service.corregirHorario).toHaveBeenCalledWith(
+      current.id,
+      expect.objectContaining({ fechaInicio: '2019-12-01', correccionRetroactiva: true })
+    );
+    expect(service.reemplazarHorario).not.toHaveBeenCalled();
+  });
+
+  it('mantiene PUT para reemplazar hacia adelante una vigencia retroactiva', async () => {
+    const current = schedule(1, '2020-01-01');
+    const replaced = schedule(2, '2020-01-10');
+    const service = {
+      listarHistoricoHorarios: vi.fn(() => of({ content: [current] })),
+      corregirHorario: vi.fn(),
+      reemplazarHorario: vi.fn(() => of(replaced))
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        FormBuilder,
+        PersonalScheduleFacade,
+        { provide: AdminRrhhService, useValue: service },
+        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => true, blockedMessage: () => '' }) } },
+        { provide: SessionService, useValue: { hasRole: () => true } }
+      ]
+    });
+
+    const facade = TestBed.inject(PersonalScheduleFacade);
+    facade.initialize(10, contract, current);
+    facade.form.controls.fechaInicio.setValue('2020-01-10');
+
+    expect(await facade.save()).toBe(true);
+    expect(service.reemplazarHorario).toHaveBeenCalledWith(
+      current.id,
+      expect.objectContaining({ fechaInicio: '2020-01-10', correccionRetroactiva: true })
+    );
+    expect(service.corregirHorario).not.toHaveBeenCalled();
+  });
 });

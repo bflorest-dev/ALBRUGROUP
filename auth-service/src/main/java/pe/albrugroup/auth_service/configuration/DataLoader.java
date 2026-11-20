@@ -140,6 +140,7 @@ public class DataLoader {
         savePermiso("READ_ASISTENCIAS_CUMPLIMIENTO", "Puede consultar cumplimiento de asistencia por periodos y grupos", "ASISTENCIA", "READ_COMPLIANCE");
         savePermiso("UPDATE_ASISTENCIAS", "Puede registrar movimientos de asistencia", "ASISTENCIA", "UPDATE");
         savePermiso("CORREGIR_MARCACIONES", "Puede corregir marcaciones reales desde Administracion", "ASISTENCIA", "CORRECT");
+        savePermiso("EXPORT_REPORTE_ASISTENCIA", "Puede exportar reportes de asistencia de múltiples empleados", "ASISTENCIA", "EXPORT");
 
         // LEADS - PREVENTA
         savePermiso("CREATE_CUENTA_PUBLICITARIA", "Puede registrar cuentas publicitarias", "CUENTA_PUBLICITARIA", "CREATE");
@@ -326,6 +327,7 @@ public class DataLoader {
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("READ_ASISTENCIAS"),
                 getPermiso("READ_ASISTENCIAS_CUMPLIMIENTO"),
+                getPermiso("EXPORT_REPORTE_ASISTENCIA"),
                 getPermiso("UPDATE_ASISTENCIAS"),
                 getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("AJUSTAR_JORNADA_JUSTIFICADA"),

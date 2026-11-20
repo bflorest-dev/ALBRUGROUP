@@ -24,6 +24,19 @@ export interface MeetEvaluacionBatchRequest {
   items: MeetEvaluacionBatchItemRequest[];
 }
 
+export interface MeetGestionBatchItemRequest {
+  idPostulacion: number;
+  asistencia?: MeetAsistencia | null;
+  evaluacion?: MeetEvaluacion | null;
+  motivo?: string | null;
+  observacion: string;
+  revisionEsperada: number;
+}
+
+export interface MeetGestionBatchRequest {
+  items: MeetGestionBatchItemRequest[];
+}
+
 export interface MeetBatchResponse {
   procesados: number;
   idsPostulaciones: number[];

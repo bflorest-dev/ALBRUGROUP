@@ -306,6 +306,7 @@ export class PersonalScheduleFacade {
         isRetroactiveCorrection
         && fechaInicio !== current.fechaInicio
         && current.id === this.schedule()?.id
+        && fechaInicio > current.fechaInicio
       ) {
         const replaced = await firstValueFrom(
           this.service.reemplazarHorario(current.id, {

@@ -18,7 +18,8 @@ import { ResumenReclutadorResponse } from '../../../shared/models/recruitment/re
 import {
   MeetAsistenciaBatchRequest,
   MeetBatchResponse,
-  MeetEvaluacionBatchRequest
+  MeetEvaluacionBatchRequest,
+  MeetGestionBatchRequest
 } from '../../../shared/models/recruitment/meet-batch';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 
@@ -84,6 +85,18 @@ export class RecruiterPostulantesService {
   ): Observable<MeetBatchResponse> {
     return this.http.post<MeetBatchResponse>(
       `${this.recruitmentUrl}/reclutamiento/meet/sesiones/${idSesion}/evaluacion:batch`,
+      request,
+      { params: new HttpParams().set('negocio', negocio) }
+    );
+  }
+
+  registrarGestionMeetBatch(
+    idSesion: number,
+    negocio: RecruitmentNegocio,
+    request: MeetGestionBatchRequest
+  ): Observable<MeetBatchResponse> {
+    return this.http.post<MeetBatchResponse>(
+      `${this.recruitmentUrl}/reclutamiento/meet/sesiones/${idSesion}/gestion:batch`,
       request,
       { params: new HttpParams().set('negocio', negocio) }
     );

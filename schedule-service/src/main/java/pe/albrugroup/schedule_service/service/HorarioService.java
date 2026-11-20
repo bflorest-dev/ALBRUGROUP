@@ -175,7 +175,8 @@ public class HorarioService implements IHorario {
         Horario actual = getHorarioById(idHorario);
         boolean correccionRetroactiva = validarCorreccionRetroactiva(
                 request.getCorreccionRetroactiva(),
-                request.getFechaInicio()
+                request.getFechaInicio(),
+                !request.getFechaInicio().isEqual(actual.getFechaInicio())
         );
         if (!request.getFechaInicio().isAfter(actual.getFechaInicio())) {
             throw new BadRequestException("La nueva fechaInicio debe ser posterior al horario actual");
@@ -228,9 +229,12 @@ public class HorarioService implements IHorario {
         LocalDate fechaAplicada = request.getFechaInicio() != null
                 ? request.getFechaInicio()
                 : horario.getFechaInicio();
+        boolean mueveFechaInicio = request.getFechaInicio() != null
+                && !request.getFechaInicio().isEqual(horario.getFechaInicio());
         boolean correccionRetroactiva = validarCorreccionRetroactiva(
                 request.getCorreccionRetroactiva(),
-                fechaAplicada
+                fechaAplicada,
+                mueveFechaInicio
         );
 
         if (!correccionRetroactiva && asistenciaRepository.existsByIdHorarioAndFechaHoraIngresoIsNotNull(idHorario)) {
@@ -319,10 +323,25 @@ public class HorarioService implements IHorario {
         horarioRepository.flush();
     }
 
-    private boolean validarCorreccionRetroactiva(Boolean solicitada, LocalDate fechaInicio) {
-        if (!Boolean.TRUE.equals(solicitada)) {
+    private boolean validarCorreccionRetroactiva(
+            Boolean solicitada,
+            LocalDate fechaInicio,
+            boolean mueveFechaInicio
+    ) {
+        boolean solicitadaRetroactiva = Boolean.TRUE.equals(solicitada);
+        boolean fechaHastaHoy = fechaInicio != null && !fechaInicio.isAfter(OperationalDateTime.today());
+
+        if (mueveFechaInicio && fechaHastaHoy && !currentUser.roles().contains("ADMINISTRADOR")) {
+            throw new ForbiddenException("Solo ADMINISTRADOR puede aplicar correcciones retroactivas");
+        }
+
+        if (!solicitadaRetroactiva) {
+            if (mueveFechaInicio && fechaHastaHoy) {
+                throw new ForbiddenException("La correccion retroactiva requiere autorizacion de ADMINISTRADOR");
+            }
             return false;
         }
+
         if (!currentUser.roles().contains("ADMINISTRADOR")) {
             throw new ForbiddenException("Solo ADMINISTRADOR puede aplicar correcciones retroactivas");
         }

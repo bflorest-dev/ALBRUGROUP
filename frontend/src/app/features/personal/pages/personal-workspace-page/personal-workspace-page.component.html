@@ -27,6 +27,9 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <i class="ti" [class.ti-sun]="theme() === 'light'" [class.ti-moon]="theme() === 'dark'"></i>
         <span>{{ theme() === 'light' ? 'Claro' : 'Oscuro' }}</span>
       </button>
+      @if (canExportAttendance()) {
+        <button class="secondary-action" type="button" (click)="openReportDrawer()"><i class="ti ti-file-spreadsheet"></i>Reporte asistencias</button>
+      }
       <button class="primary-action" type="button" (click)="openCreation()"><i class="ti ti-plus"></i>Nuevo empleado</button>
     </div>
   </header>
@@ -99,7 +102,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <div class="directory-meta"><span><strong class="mono">{{ facade.visibleCount() }}</strong> de <span class="mono">{{ facade.totalCount() }}</span> empleados</span><span>·</span><span>búsqueda total</span><span>·</span><span>visibilidad {{ facade.isAdmin() ? 'ADMIN' : 'RR. HH.' }}</span><button type="button" (click)="facade.refresh()"><i class="ti ti-refresh"></i>Actualizar</button></div>
 
   <section class="directory" aria-label="Directorio de empleados">
-    <div class="table-head" role="row"><span>Empleado</span><span>DNI</span><span>Categoría</span><span>Rol principal</span><span>Equipo / proveedor</span><span>Preparación</span><span>Estado</span><span class="sr-only">Acciones</span></div>
+    <div class="table-head" role="row"><span>Empleado</span><span>Categoría / rol</span><span>Equipo / proveedor</span><span>Preparación</span><span>Estado</span><span>Situación laboral</span><span class="sr-only">Acciones</span></div>
 
     @if (facade.isLoading()) {
       <div class="loading-state"><span class="spinner"></span><p>Cargando personal…</p></div>
@@ -163,13 +166,20 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
     <ng-template #employeeRow let-row>
       @let prep = preparation(row);
+      @let presenceStatus = facade.presenceStatus(row.employee.idEmpleado);
       <button class="employee-row" type="button" [class.selected]="facade.selectedEmployeeId() === row.employee.idEmpleado" (click)="facade.selectEmployee(row.employee.idEmpleado)">
-        <span class="employee-cell"><span class="avatar">{{ initials(row) }}</span><span><strong>{{ row.employee.nombres }} {{ row.employee.apellidos }}</strong>@if (row.secondaryRoles.length) {<small>+ {{ row.secondaryRoles.length }} rol secundario{{ row.secondaryRoles.length > 1 ? 's' : '' }}</small>}</span></span>
-        <span class="mono">{{ row.employee.numeroDocumento }}</span>
-        <span><span class="category-chip">{{ label(row.category) }}</span></span>
-        <span>{{ label(row.primaryRole) }}</span>
+        <span class="employee-cell">
+          <span class="presence-dot" [attr.data-status]="facade.isLoadingLiveState() ? 'LOADING' : presenceStatus" aria-hidden="true"></span>
+          <span>
+            <strong>{{ row.employee.nombres }} {{ row.employee.apellidos }}</strong>
+            <small class="mono">DNI {{ row.employee.numeroDocumento }}</small>
+            @if (row.secondaryRoles.length) {<small>+ {{ row.secondaryRoles.length }} rol secundario{{ row.secondaryRoles.length > 1 ? 's' : '' }}</small>}
+          </span>
+        </span>
+        <span class="role-cell"><span class="category-chip">{{ label(row.category) }}</span><small>{{ label(row.primaryRole) }}</small></span>
         <span class="scope-cell">@if (row.teamNames.length) {<strong>{{ row.teamNames.join(', ') }}</strong>}@if (row.providerNames.length) {<small>{{ row.providerNames.join(' · ') }}</small>}@if (!row.teamNames.length && !row.providerNames.length) {<em>Sin ámbito</em>}</span>
         <span class="preparation-cell"><span class="prep-marks"><i [class.done]="row.hasContract" [class.pending]="!row.hasContract" title="Contrato">C</i><i class="unknown" title="El horario se verifica al abrir el expediente">H</i><i [class.done]="facade.canReadRoles() && row.access?.rolPrincipal" [class.pending]="facade.canReadRoles() && !row.access?.rolPrincipal" [class.unknown]="!facade.canReadRoles()" title="Acceso">A</i><i [class.done]="scopeState(row) === 'done'" [class.pending]="scopeState(row) === 'pending'" [class.unknown]="scopeState(row) === 'unknown'" title="Ámbito">Á</i></span><small>{{ prep.summary }}</small></span>
+        <span><span class="presence-chip" [attr.data-status]="facade.isLoadingLiveState() ? 'LOADING' : presenceStatus"><i aria-hidden="true"></i>{{ facade.isLoadingLiveState() ? '—' : facade.presenceStatusLabel(row.employee.idEmpleado) }}</span></span>
         <span><span class="state-chip" [class.inactive]="row.employee.estadoOperativo === 'INACTIVO'"><i></i>{{ label(row.employee.estadoOperativo) }}</span></span>
         <span class="row-more"><i class="ti ti-dots-vertical"></i></span>
       </button>
@@ -196,5 +206,11 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     [visible]="creationVisible()"
     [theme]="theme()"
     (closed)="closeCreation($event)"
+  />
+  <app-attendance-report-drawer
+    [visible]="reportDrawerVisible()"
+    [theme]="theme()"
+    [employees]="facade.allActiveRows()"
+    (closed)="closeReportDrawer()"
   />
 </main>
