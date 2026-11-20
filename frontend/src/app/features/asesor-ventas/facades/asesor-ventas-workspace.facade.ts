@@ -138,6 +138,8 @@ export class AsesorVentasWorkspaceFacade {
   private lastAttendanceStatus: EstadoAsistencia | null = null;
   private lastNotificationAt = 0;
   private readonly operationalGate = this.operationalGateService.createGate('asesor-ventas-workspace');
+  private sharedCatalogsInFlight: Promise<void> | null = null;
+  private domicilioLocationRequest = 0;
 
   readonly pageSize = 12;
   // Tope de gestiones "aparcadas" (EN_GESTION) a la vez. Debe coincidir con MAX_GESTIONES_SIMULTANEAS
@@ -199,6 +201,7 @@ export class AsesorVentasWorkspaceFacade {
   readonly plataformasDigitales = signal<PlataformaDigitalResponse[]>([]);
   readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
   readonly distritosDomicilio = signal<UbigeoItem[]>([]);
+  readonly domicilioLocationLoading = signal(false);
   readonly isManagingLead = signal(false);
   readonly detailDialogOpen = signal(false);
   readonly activeDataTab = signal<ActiveDataTab>('datos');
@@ -531,7 +534,7 @@ export class AsesorVentasWorkspaceFacade {
     this.isLoading.set(true);
     this.clearMessages();
     try {
-      await Promise.all([this.refreshPage(false), this.refreshCatalogs()]);
+      await Promise.all([this.refreshPage(false), this.ensureDrawerCatalogs()]);
       await this.restoreManagingLeadAfterRefresh();
       this.initialized = true;
       this.operationalGate.markActivated();
@@ -799,6 +802,8 @@ export class AsesorVentasWorkspaceFacade {
   // Limpia todo el estado del modal/sesión de gestión (formularios, oportunidades, banderas). No
   // decide qué pasa con la atención de un lead en otra etapa: eso lo resuelve cada caller.
   private resetDetailSignals(): void {
+    this.domicilioLocationRequest++;
+    this.domicilioLocationLoading.set(false);
     this.detailDialogOpen.set(false);
     this.detail.set(null);
     this.oportunidadesContacto.set([]);
@@ -1309,6 +1314,7 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   async onDepartamentoDomicilioChanged(): Promise<void> {
+    const request = ++this.domicilioLocationRequest;
     const idDepartamento = this.direccionForm.controls.idDepartamentoDomicilio.value;
     this.direccionForm.patchValue({
       idProvinciaDomicilio: 0,
@@ -1317,20 +1323,39 @@ export class AsesorVentasWorkspaceFacade {
     });
     this.provinciasDomicilio.set([]);
     this.distritosDomicilio.set([]);
-    if (idDepartamento > 0) {
-      await this.loadProvinciasDomicilio(idDepartamento);
+    if (idDepartamento <= 0) {
+      this.domicilioLocationLoading.set(false);
+      return;
+    }
+    this.domicilioLocationLoading.set(true);
+    try {
+      await this.loadProvinciasDomicilio(idDepartamento, request);
+    } finally {
+      if (request === this.domicilioLocationRequest) {
+        this.domicilioLocationLoading.set(false);
+      }
     }
   }
 
   async onProvinciaDomicilioChanged(): Promise<void> {
+    const request = ++this.domicilioLocationRequest;
     const idProvincia = this.direccionForm.controls.idProvinciaDomicilio.value;
     this.direccionForm.patchValue({
       idDistritoDomicilio: 0,
       ubigeoDomicilio: ''
     });
     this.distritosDomicilio.set([]);
-    if (idProvincia > 0) {
-      await this.loadDistritosDomicilio(idProvincia);
+    if (idProvincia <= 0) {
+      this.domicilioLocationLoading.set(false);
+      return;
+    }
+    this.domicilioLocationLoading.set(true);
+    try {
+      await this.loadDistritosDomicilio(idProvincia, request);
+    } finally {
+      if (request === this.domicilioLocationRequest) {
+        this.domicilioLocationLoading.set(false);
+      }
     }
   }
 
@@ -1703,13 +1728,32 @@ export class AsesorVentasWorkspaceFacade {
   // El catálogo de tipificaciones ya no se precarga global: depende del equipo del lead y se trae por
   // lead al abrir su gestión (ver openDetail/reopenManagedLead). Los planes se consultan por oferta
   // al entrar al tab Plan, ya acotados por proveedor, zona y filtros.
-  private async refreshCatalogs(): Promise<void> {
-    const [departamentos, plataformas] = await Promise.all([
-      firstValueFrom(this.preventaService.listarDepartamentos()),
-      firstValueFrom(this.preventaService.listarPlataformasDigitales())
-    ]);
-    this.departamentos.set(departamentos);
-    this.plataformasDigitales.set(plataformas);
+  protected async ensureDrawerCatalogs(): Promise<void> {
+    if (this.departamentos().length && this.plataformasDigitales().length) {
+      return;
+    }
+    if (!this.sharedCatalogsInFlight) {
+      this.sharedCatalogsInFlight = Promise.all([
+        this.departamentos().length
+          ? Promise.resolve(this.departamentos())
+          : firstValueFrom(this.preventaService.listarDepartamentos()),
+        this.plataformasDigitales().length
+          ? Promise.resolve(this.plataformasDigitales())
+          : firstValueFrom(this.preventaService.listarPlataformasDigitales())
+      ])
+        .then(([departamentos, plataformas]) => {
+          if (!this.departamentos().length) {
+            this.departamentos.set(departamentos);
+          }
+          if (!this.plataformasDigitales().length) {
+            this.plataformasDigitales.set(plataformas);
+          }
+        })
+        .finally(() => {
+          this.sharedCatalogsInFlight = null;
+        });
+    }
+    await this.sharedCatalogsInFlight;
   }
 
   // Catálogo de tipificaciones del proveedor efectivo del lead. En PREVENTA puede venir del plan,
@@ -2452,6 +2496,8 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   private async resolveDomicilioSelection(ubigeoDomicilio: string | null): Promise<void> {
+    const request = ++this.domicilioLocationRequest;
+    this.domicilioLocationLoading.set(Boolean(ubigeoDomicilio));
     if (!ubigeoDomicilio) {
       this.provinciasDomicilio.set([]);
       this.distritosDomicilio.set([]);
@@ -2461,6 +2507,7 @@ export class AsesorVentasWorkspaceFacade {
         idDistritoDomicilio: 0
       });
       this.direccionForm.markAsPristine();
+      this.domicilioLocationLoading.set(false);
       return;
     }
 
@@ -2468,14 +2515,17 @@ export class AsesorVentasWorkspaceFacade {
       const departamentos = this.departamentos().length
         ? this.departamentos()
         : await firstValueFrom(this.preventaService.listarDepartamentos());
+      if (request !== this.domicilioLocationRequest) return;
       if (!this.departamentos().length) {
         this.departamentos.set(departamentos);
       }
 
       for (const departamento of departamentos) {
         const provincias = await firstValueFrom(this.preventaService.listarProvincias(departamento.id));
+        if (request !== this.domicilioLocationRequest) return;
         for (const provincia of provincias) {
           const distritos = await firstValueFrom(this.preventaService.listarDistritos(provincia.id));
+          if (request !== this.domicilioLocationRequest) return;
           const distrito = distritos.find((item) => item.codigo === ubigeoDomicilio);
           if (distrito) {
             this.provinciasDomicilio.set(provincias);
@@ -2492,24 +2542,41 @@ export class AsesorVentasWorkspaceFacade {
         }
       }
     } catch {
-      this.provinciasDomicilio.set([]);
-      this.distritosDomicilio.set([]);
+      if (request === this.domicilioLocationRequest) {
+        this.provinciasDomicilio.set([]);
+        this.distritosDomicilio.set([]);
+        this.errorMessage.set('No pudimos cargar la ubicación guardada. Selecciona nuevamente el departamento y la provincia.');
+      }
+    } finally {
+      if (request === this.domicilioLocationRequest) {
+        this.domicilioLocationLoading.set(false);
+      }
     }
   }
 
-  private async loadProvinciasDomicilio(idDepartamento: number): Promise<void> {
+  private async loadProvinciasDomicilio(idDepartamento: number, request: number): Promise<void> {
     try {
-      this.provinciasDomicilio.set(await firstValueFrom(this.preventaService.listarProvincias(idDepartamento)));
+      const provincias = await firstValueFrom(this.preventaService.listarProvincias(idDepartamento));
+      if (request === this.domicilioLocationRequest) {
+        this.provinciasDomicilio.set(provincias);
+      }
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar las provincias.'));
+      if (request === this.domicilioLocationRequest) {
+        this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar las provincias.'));
+      }
     }
   }
 
-  private async loadDistritosDomicilio(idProvincia: number): Promise<void> {
+  private async loadDistritosDomicilio(idProvincia: number, request: number): Promise<void> {
     try {
-      this.distritosDomicilio.set(await firstValueFrom(this.preventaService.listarDistritos(idProvincia)));
+      const distritos = await firstValueFrom(this.preventaService.listarDistritos(idProvincia));
+      if (request === this.domicilioLocationRequest) {
+        this.distritosDomicilio.set(distritos);
+      }
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar los distritos.'));
+      if (request === this.domicilioLocationRequest) {
+        this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar los distritos.'));
+      }
     }
   }
 

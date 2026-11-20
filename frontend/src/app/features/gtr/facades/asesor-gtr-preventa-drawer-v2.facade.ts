@@ -110,6 +110,7 @@ export class AsesorGtrPreventaDrawerV2Facade extends AsesorVentasWorkspaceFacade
 
       this.detail.set(detail);
       this.atencionLeadId.set(detail.atencionOtraEtapa ? idLead : null);
+      await this.ensureDrawerCatalogs();
       this.patchForms(detail);
       await this.refreshOfferCatalogs(detail.idPlan ?? 0, this.resolveProveedorOfertaInicial(detail));
       await this.cargarCatalogoDelLead(idLead, this.selectedOfertaProviderId());

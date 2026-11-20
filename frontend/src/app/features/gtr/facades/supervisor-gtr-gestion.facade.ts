@@ -81,6 +81,7 @@ export class SupervisorGtrGestionFacade extends AsesorVentasWorkspaceFacade {
     try {
       const detail = await firstValueFrom(this.supervisorService.obtenerDetalleGestionSupervisorGtr(idLead));
       this.detail.set(detail);
+      await this.ensureDrawerCatalogs();
       this.patchForms(detail);
       await this.refreshOfferCatalogs(detail.idPlan ?? 0, this.resolveProveedorOfertaInicial(detail));
       await this.cargarCatalogoDelLead(idLead, this.selectedOfertaProviderId());
