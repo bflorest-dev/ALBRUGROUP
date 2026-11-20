@@ -25,3 +25,10 @@ export interface MarcacionPatchRequest {
 export interface CorregirMarcacionesRequest {
   marcaciones: MarcacionPatchRequest[];
 }
+
+export interface CrearMarcacionAdministrativaRequest {
+  entrada: string;
+  salida: string;
+  almuerzoInicio: string | null;
+  almuerzoFin: string | null;
+}

@@ -6,7 +6,10 @@ import { OperationalGateService } from '../../../core/services/operational-gate.
 import { RrhhAsistenciaService } from '../../rrhh/asistencia/services/rrhh-asistencia.service';
 import { CumplimientoDetalleDiaResponse } from '../../../shared/models/schedule/cumplimiento-response';
 import { ReporteDiaResponse } from '../../../shared/models/schedule/reporte-dia-response';
-import { CorregirMarcacionesRequest } from '../../../shared/models/schedule/marcacion-editable-response';
+import {
+  CorregirMarcacionesRequest,
+  CrearMarcacionAdministrativaRequest
+} from '../../../shared/models/schedule/marcacion-editable-response';
 import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
 import { TokenService } from '../../../core/services/token.service';
 
@@ -192,6 +195,31 @@ export class PersonalAttendanceFacade {
       await this.loadMonth();
     } catch (error) {
       this.dayError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudieron guardar las marcaciones.'));
+    } finally {
+      this.isLoadingDay.set(false);
+    }
+  }
+
+  async createMarcacionAdministrativa(
+    date: string,
+    request: CrearMarcacionAdministrativaRequest
+  ): Promise<void> {
+    if (!this.employeeId || this.editingDay() !== date) return;
+    this.dayError.set('');
+    this.isLoadingDay.set(true);
+    const employeeId = this.employeeId;
+    try {
+      const report = await firstValueFrom(
+        this.attendanceService
+          .crearMarcacionAdministrativa(employeeId, date, request)
+          .pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      this.dayReports.update((reports) => ({ ...reports, [date]: report }));
+      this.editingDay.set(null);
+      this.expandedDay.set(null);
+      await this.loadMonth();
+    } catch (error) {
+      this.dayError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo crear la marcación real.'));
     } finally {
       this.isLoadingDay.set(false);
     }

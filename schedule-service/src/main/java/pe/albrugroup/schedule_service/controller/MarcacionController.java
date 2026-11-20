@@ -1,6 +1,7 @@
 package pe.albrugroup.schedule_service.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -17,6 +18,7 @@ import pe.albrugroup.schedule_service.configuration.CurrentUser;
 import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
 import pe.albrugroup.schedule_service.entity.request.asistencia.AjustarAlmuerzoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.CorregirMarcacionesRequest;
+import pe.albrugroup.schedule_service.entity.request.asistencia.CrearMarcacionAdministrativaRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.IniciarAlmuerzoRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
@@ -64,6 +66,17 @@ public class MarcacionController {
                                                               @RequestBody AjustarAlmuerzoRequest request) {
         return ResponseEntity.ok(marcacionService.ajustarAlmuerzoProgramado(
                 idEmpleado, OperationalDateTime.resolveDate(fecha), request.inicio(), request.fin()));
+    }
+
+    /** Crea una marcacion principal historica cuando el empleado no tiene ninguna marca real. */
+    @PostMapping("/empleados/{idEmpleado}/marcaciones/{fecha}")
+    @PreAuthorize("hasAuthority('CORREGIR_MARCACIONES')")
+    public ResponseEntity<ReporteDiaResponse> crearMarcacionAdministrativa(
+            @PathVariable @Positive Long idEmpleado,
+            @PathVariable LocalDate fecha,
+            @RequestBody CrearMarcacionAdministrativaRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                marcacionService.crearMarcacionAdministrativa(idEmpleado, fecha, request));
     }
 
     /** Correccion administrativa de marcaciones reales existentes, sin crear asistencias nuevas. */

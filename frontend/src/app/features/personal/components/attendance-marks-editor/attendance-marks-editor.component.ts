@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
-import { CorregirMarcacionesRequest, MarcacionEditableResponse } from '../../../../shared/models/schedule/marcacion-editable-response';
+import {
+  CorregirMarcacionesRequest,
+  CrearMarcacionAdministrativaRequest,
+  MarcacionEditableResponse
+} from '../../../../shared/models/schedule/marcacion-editable-response';
 import { ReporteDiaResponse } from '../../../../shared/models/schedule/reporte-dia-response';
 
 interface DraftMarcacion {
@@ -21,8 +25,13 @@ export class AttendanceMarksEditorComponent {
   readonly saving = input(false);
   readonly cancelar = output<void>();
   readonly guardar = output<CorregirMarcacionesRequest>();
+  readonly crear = output<CrearMarcacionAdministrativaRequest>();
 
   protected readonly drafts = signal<DraftMarcacion[]>([]);
+  protected readonly creationEntrada = signal('');
+  protected readonly creationSalida = signal('');
+  protected readonly creationAlmuerzoInicio = signal('');
+  protected readonly creationAlmuerzoFin = signal('');
   protected readonly error = signal('');
 
   constructor() {
@@ -33,8 +42,38 @@ export class AttendanceMarksEditorComponent {
         entrada: this.time(source.entradaReal),
         salida: this.time(source.salidaReal)
       })));
+      const tramo = report?.tramos?.find((item) => item.tipo === 'BASE' && item.inicio && item.fin)
+        ?? report?.tramos?.find((item) => item.inicio && item.fin);
+      this.creationEntrada.set(this.datetimeLocal(tramo?.inicio ?? null));
+      this.creationSalida.set(this.datetimeLocal(tramo?.fin ?? null));
+      // El almuerzo programado habilita los campos, pero no se presume que fue tomado.
+      this.creationAlmuerzoInicio.set('');
+      this.creationAlmuerzoFin.set('');
       this.error.set('');
     });
+  }
+
+  protected isCreationMode(): boolean {
+    return !!this.reporte() && !this.drafts().length;
+  }
+
+  protected hasScheduledLunch(): boolean {
+    const report = this.reporte();
+    return !!report?.inicioAlmuerzoProgramado && !!report.finAlmuerzoProgramado;
+  }
+
+  protected setCreationValue(
+    field: 'entrada' | 'salida' | 'almuerzoInicio' | 'almuerzoFin',
+    value: string
+  ): void {
+    const signals = {
+      entrada: this.creationEntrada,
+      salida: this.creationSalida,
+      almuerzoInicio: this.creationAlmuerzoInicio,
+      almuerzoFin: this.creationAlmuerzoFin
+    };
+    signals[field].set(value);
+    this.error.set('');
   }
 
   protected setTime(index: number, field: 'entrada' | 'salida', value: string): void {
@@ -77,6 +116,39 @@ export class AttendanceMarksEditorComponent {
         entrada: this.timestamp(draft.source.entradaReal, draft.entrada, report.fecha),
         salida: this.timestamp(draft.source.salidaReal, draft.salida, report.fecha)
       }))
+    });
+  }
+
+  protected submitCreation(event?: Event): void {
+    event?.preventDefault();
+    const report = this.reporte();
+    const entrada = this.creationEntrada();
+    const salida = this.creationSalida();
+    if (!report || !entrada || !salida) {
+      this.error.set('Completa la entrada y la salida para crear la marcación real.');
+      return;
+    }
+    if (salida <= entrada) {
+      this.error.set('La salida debe ser posterior a la entrada.');
+      return;
+    }
+
+    const almuerzoInicio = this.creationAlmuerzoInicio();
+    const almuerzoFin = this.creationAlmuerzoFin();
+    if (!!almuerzoInicio !== !!almuerzoFin) {
+      this.error.set('Completa el inicio y el fin del almuerzo.');
+      return;
+    }
+    if (almuerzoInicio && (almuerzoInicio < entrada || almuerzoFin > salida)) {
+      this.error.set('El almuerzo debe quedar dentro de la entrada y la salida.');
+      return;
+    }
+
+    this.crear.emit({
+      entrada: this.toRequestTimestamp(entrada),
+      salida: this.toRequestTimestamp(salida),
+      almuerzoInicio: almuerzoInicio ? this.toRequestTimestamp(almuerzoInicio) : null,
+      almuerzoFin: almuerzoFin ? this.toRequestTimestamp(almuerzoFin) : null
     });
   }
 
@@ -126,6 +198,14 @@ export class AttendanceMarksEditorComponent {
     if (!time) return original;
     const date = original?.slice(0, 10) || fallbackDate;
     return `${date}T${time}:00`;
+  }
+
+  private toRequestTimestamp(value: string): string {
+    return value.length === 16 ? `${value}:00` : value;
+  }
+
+  private datetimeLocal(value: string | null): string {
+    return value?.slice(0, 16) ?? '';
   }
 
   private time(value: string | null): string {

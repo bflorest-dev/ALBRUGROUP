@@ -23,6 +23,7 @@ import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
 import pe.albrugroup.schedule_service.entity.enums.TipoRegistroMarcacion;
 import pe.albrugroup.schedule_service.entity.request.asistencia.IniciarAlmuerzoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.CorregirMarcacionesRequest;
+import pe.albrugroup.schedule_service.entity.request.asistencia.CrearMarcacionAdministrativaRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.MarcacionPatchRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.PoliticaMarcacionResponse;
@@ -35,6 +36,8 @@ import pe.albrugroup.schedule_service.entity.response.asistencia.MarcacionEditab
 import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.TramoJornadaResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
+import pe.albrugroup.schedule_service.exception.ConflictException;
+import pe.albrugroup.schedule_service.exception.ForbiddenException;
 import pe.albrugroup.schedule_service.exception.NotFoundException;
 import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
@@ -1230,6 +1233,143 @@ public class MarcacionService {
                 cierreManual ? "CORRECCION_SALIDA_MANUAL" : "CORRECCION_ADMINISTRATIVA",
                 idEmpleado, fecha, estadoAnterior);
         return getReporteDia(idEmpleado, fecha);
+    }
+
+    /**
+     * Crea una marcacion principal historica desde administracion cuando no existe ninguna marca real.
+     * La fila resultante es una {@link Asistencia} normal y, por tanto, participa en asistencia y planilla.
+     */
+    @Transactional
+    public ReporteDiaResponse crearMarcacionAdministrativa(
+            Long idEmpleado,
+            LocalDate fecha,
+            CrearMarcacionAdministrativaRequest request
+    ) {
+        validarAdministradorParaCorreccion();
+        validarEmpleadoYFecha(idEmpleado, fecha);
+        if (fecha.isAfter(OperationalDateTime.today())) {
+            throw new BadRequestException("No se pueden crear marcaciones para una fecha futura");
+        }
+        if (request == null || request.entrada() == null || request.salida() == null) {
+            throw new BadRequestException("La marcacion administrativa requiere entrada y salida");
+        }
+        validarFechaYIntervalo(fecha, request.entrada(), request.salida());
+
+        JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolverSiExiste(idEmpleado, fecha)
+                .orElseThrow(() -> new BadRequestException("La fecha no tiene un horario efectivo"));
+        TramoJornadaResponse tramo = tramoParaMarcacionAdministrativa(jornada);
+        if (tramo == null) {
+            throw new BadRequestException("La fecha no tiene un tramo horario para registrar asistencia");
+        }
+
+        Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha).orElse(null);
+        List<AsistenciaTramo> archivados = asistencia == null
+                ? List.of()
+                : asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(asistencia.getId());
+        if (asistencia != null && (asistencia.getFechaHoraIngreso() != null
+                || asistencia.getFechaHoraSalida() != null
+                || archivados.stream().anyMatch(t -> t.getFechaHoraIngreso() != null || t.getFechaHoraSalida() != null))) {
+            throw new ConflictException(
+                    "Ya existe una marcacion real para esa fecha; utiliza la correccion de marcaciones",
+                    fecha);
+        }
+
+        if (asistencia == null) {
+            asistencia = crearAsistencia(idEmpleado, fecha, tramo, jornada);
+        }
+
+        validarAlmuerzoAdministrativo(asistencia, request, fecha);
+        EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
+        asistencia.setFechaHoraIngreso(request.entrada());
+        asistencia.setFechaHoraSalida(request.salida());
+        asistencia.setSalidaForzada(false);
+        asistencia.setEstadoActual(EstadoAsistencia.OFFLINE);
+        if (request.almuerzoInicio() != null) {
+            asistencia.setAlmuerzoRealInicio(request.almuerzoInicio());
+            asistencia.setAlmuerzoRealFin(request.almuerzoFin());
+            asistencia.setMinutosAlmuerzoTomados((int) Duration.between(
+                    request.almuerzoInicio(), request.almuerzoFin()).toMinutes());
+        }
+
+        recalcularMinutos(asistencia);
+        asistenciaRepository.save(asistencia);
+        resumenMensualService.recalcularSiCorresponde(idEmpleado, fecha);
+        publicar("ASISTENCIA_MARCACION_CREADA", "CORRECCION_ADMINISTRATIVA", idEmpleado, fecha, estadoAnterior);
+        return getReporteDia(idEmpleado, fecha);
+    }
+
+    private void validarAdministradorParaCorreccion() {
+        if (!currentUser.roles().contains("ADMINISTRADOR")) {
+            throw new ForbiddenException("Solo ADMINISTRADOR puede crear marcaciones administrativas");
+        }
+    }
+
+    private void validarEmpleadoYFecha(Long idEmpleado, LocalDate fecha) {
+        if (idEmpleado == null || idEmpleado <= 0) {
+            throw new BadRequestException("El empleado indicado no es válido");
+        }
+        if (fecha == null) {
+            throw new BadRequestException("Debes indicar la fecha de la marcación");
+        }
+    }
+
+    private void validarFechaYIntervalo(LocalDate fecha, LocalDateTime entrada, LocalDateTime salida) {
+        if (!entrada.toLocalDate().equals(fecha)) {
+            throw new BadRequestException("La entrada debe corresponder a la fecha de la asistencia");
+        }
+        if (salida.toLocalDate().isBefore(fecha) || salida.toLocalDate().isAfter(fecha.plusDays(1))) {
+            throw new BadRequestException("La salida debe corresponder al día de la asistencia");
+        }
+        validarIntervalo(entrada, salida);
+        if (fecha.equals(OperationalDateTime.today())
+                && salida.isAfter(OperationalDateTime.nowLocalDateTime())) {
+            throw new BadRequestException("La hora de salida no puede estar en el futuro");
+        }
+    }
+
+    private TramoJornadaResponse tramoParaMarcacionAdministrativa(JornadaEfectivaResponse jornada) {
+        if (jornada.getTramos() == null) {
+            return null;
+        }
+        return jornada.getTramos().stream()
+                .filter(t -> t.getInicio() != null && t.getFin() != null)
+                .filter(t -> Boolean.TRUE.equals(t.getBase())
+                        || t.getOrigen() == OrigenAjusteJornada.REEMPLAZO_BASE)
+                .findFirst()
+                .orElseGet(() -> jornada.getTramos().stream()
+                        .filter(t -> t.getInicio() != null && t.getFin() != null)
+                        .findFirst()
+                        .orElse(null));
+    }
+
+    private void validarAlmuerzoAdministrativo(
+            Asistencia asistencia,
+            CrearMarcacionAdministrativaRequest request,
+            LocalDate fecha
+    ) {
+        boolean inicioInformado = request.almuerzoInicio() != null;
+        boolean finInformado = request.almuerzoFin() != null;
+        if (inicioInformado != finInformado) {
+            throw new BadRequestException("El almuerzo debe tener inicio y fin");
+        }
+        if (!inicioInformado) {
+            return;
+        }
+        if (asistencia.getInicioAlmuerzoProgramado() == null
+                || asistencia.getFinAlmuerzoProgramado() == null) {
+            throw new BadRequestException("La fecha no tiene un almuerzo programado");
+        }
+        if (request.almuerzoInicio().toLocalDate().isBefore(fecha)
+                || request.almuerzoInicio().toLocalDate().isAfter(fecha.plusDays(1))
+                || request.almuerzoFin().toLocalDate().isBefore(fecha)
+                || request.almuerzoFin().toLocalDate().isAfter(fecha.plusDays(1))) {
+            throw new BadRequestException("El almuerzo debe corresponder al día de la asistencia");
+        }
+        validarIntervalo(request.almuerzoInicio(), request.almuerzoFin());
+        if (request.almuerzoInicio().isBefore(request.entrada())
+                || request.almuerzoFin().isAfter(request.salida())) {
+            throw new BadRequestException("El almuerzo debe quedar dentro de la marcación");
+        }
     }
 
     private void validarIntervalo(LocalDateTime ingreso, LocalDateTime salida) {

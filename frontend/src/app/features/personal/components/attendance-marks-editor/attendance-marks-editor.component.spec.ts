@@ -79,4 +79,47 @@ describe('AttendanceMarksEditorComponent', () => {
       }]
     });
   });
+
+  it('muestra el formulario de creación y emite una marcación real con almuerzo', () => {
+    const emitted = vi.fn();
+    fixture.componentInstance.crear.subscribe(emitted);
+    fixture.componentRef.setInput('reporte', {
+      ...reporteJornadaAbierta,
+      marcaciones: [],
+      tramos: [{
+        idAjuste: null,
+        tipo: 'BASE',
+        inicio: '2026-09-03T08:00:00',
+        fin: '2026-09-03T17:00:00',
+        estado: 'CUMPLIDO',
+        ingresoReal: null,
+        salidaReal: null,
+        minutosAcreditados: null
+      }],
+      inicioAlmuerzoProgramado: '2026-09-03T13:00:00',
+      finAlmuerzoProgramado: '2026-09-03T14:00:00'
+    });
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.textContent).toContain('Agregar marcación real');
+    const form = root.querySelector('form');
+    expect(form).not.toBeNull();
+    const lunchStart = root.querySelector<HTMLInputElement>('#creation-almuerzo-inicio');
+    const lunchEnd = root.querySelector<HTMLInputElement>('#creation-almuerzo-fin');
+    if (!lunchStart || !lunchEnd) throw new Error('No se encontraron los campos de almuerzo');
+    lunchStart.value = '2026-09-03T13:00';
+    lunchStart.dispatchEvent(new Event('input', { bubbles: true }));
+    lunchEnd.value = '2026-09-03T14:00';
+    lunchEnd.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+    form?.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+
+    expect(emitted).toHaveBeenCalledWith({
+      entrada: '2026-09-03T08:00:00',
+      salida: '2026-09-03T17:00:00',
+      almuerzoInicio: '2026-09-03T13:00:00',
+      almuerzoFin: '2026-09-03T14:00:00'
+    });
+  });
 });

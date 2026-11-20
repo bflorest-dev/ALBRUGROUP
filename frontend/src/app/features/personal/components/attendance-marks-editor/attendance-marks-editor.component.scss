@@ -20,6 +20,24 @@
 .marks-editor__heading span { color: var(--ink-2); font-size: 11px; }
 .marks-editor__date { color: var(--ink-3) !important; font: 600 11px 'Spline Sans Mono', ui-monospace, monospace; }
 
+.marks-editor__creation-form { display: grid; gap: 12px; }
+.marks-editor__hint { margin: 0; color: var(--ink-2); font-size: 11px; }
+.marks-editor__creation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.marks-editor__creation-grid label { display: grid; gap: 4px; color: var(--ink-3); font-size: 10px; font-weight: 700; }
+.marks-editor__creation-grid em { color: var(--danger); font-style: normal; }
+.marks-editor__creation-grid input {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font: 600 12px 'Spline Sans Mono', ui-monospace, monospace;
+}
+.marks-editor__creation-grid input:focus-visible,
+.mark-row input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.marks-editor__creation-grid input:user-invalid { border-color: var(--danger); }
+
 .marks-editor__list { display: grid; gap: 8px; }
 .mark-row {
   flex-wrap: wrap;
@@ -44,7 +62,6 @@
   color: var(--ink);
   font: 600 12px 'Spline Sans Mono', ui-monospace, monospace;
 }
-.mark-row input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
 .mark-row input:disabled { cursor: not-allowed; opacity: .6; }
 .mark-row__open,
 .mark-row__forced { font-size: 10px; font-style: normal; font-weight: 700; }
@@ -61,6 +78,7 @@
 .marks-editor__cancel:disabled { cursor: not-allowed; opacity: .55; }
 
 @media (max-width: 620px) {
+  .marks-editor__creation-grid { grid-template-columns: 1fr; }
   .mark-row { align-items: stretch; }
   .mark-row__context { flex-basis: 100%; }
   .mark-row label { flex: 1 1 100px; min-width: 0; }

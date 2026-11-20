@@ -67,7 +67,7 @@
                   <span class="attendance-day__balance"><small>Balance</small><strong [class.is-danger]="day.minutosBalance < 0">{{ balanceLabel(day.minutosBalance) }}</strong></span>
                   <i class="ti" [class.ti-chevron-down]="attendance.expandedDay() === day.fecha" [class.ti-chevron-right]="attendance.expandedDay() !== day.fecha" aria-hidden="true"></i>
                 </button>
-                @if (attendance.canEditMarcaciones()) {
+                @if (canEditDay(day)) {
                   <button
                     class="attendance-day__edit"
                     type="button"
@@ -86,6 +86,7 @@
                       [saving]="attendance.isLoadingDay()"
                       (cancelar)="cancelEditor()"
                       (guardar)="saveEditor(day.fecha, $event)"
+                      (crear)="createEditor(day.fecha, $event)"
                     />
                   } @else {
                     <app-attendance-day-report

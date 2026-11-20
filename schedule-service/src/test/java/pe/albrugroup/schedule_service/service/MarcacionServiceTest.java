@@ -27,12 +27,15 @@ import pe.albrugroup.schedule_service.entity.enums.TipoTramoDia;
 import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
 import pe.albrugroup.schedule_service.entity.enums.TipoRegistroMarcacion;
 import pe.albrugroup.schedule_service.entity.request.asistencia.CorregirMarcacionesRequest;
+import pe.albrugroup.schedule_service.entity.request.asistencia.CrearMarcacionAdministrativaRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.MarcacionPatchRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.IntervaloPresenciaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.PresenciaGapResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.ReporteDiaResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
+import pe.albrugroup.schedule_service.exception.ConflictException;
+import pe.albrugroup.schedule_service.exception.ForbiddenException;
 import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaTramoRepository;
@@ -957,6 +960,151 @@ class MarcacionServiceTest {
                         new MarcacionPatchRequest(TipoRegistroMarcacion.PRINCIPAL, 1L, null, null)
                 )))).isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("entrada o una salida");
+    }
+
+    @Test
+    void administradorCreaMarcacionRealEnDiaSinAsistencia() {
+        reloj(18, 0);
+        when(currentUser.roles()).thenReturn(List.of("ADMINISTRADOR"));
+
+        service.crearMarcacionAdministrativa(EMP, DIA, new CrearMarcacionAdministrativaRequest(
+                LocalDateTime.of(DIA, LocalTime.of(8, 0)),
+                LocalDateTime.of(DIA, LocalTime.of(17, 0)),
+                null,
+                null
+        ));
+
+        Asistencia creada = almacen.get();
+        assertThat(creada).isNotNull();
+        assertThat(creada.getIdEmpleado()).isEqualTo(EMP);
+        assertThat(creada.getFecha()).isEqualTo(DIA);
+        assertThat(creada.getIdHorario()).isEqualTo(7L);
+        assertThat(creada.getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(8, 0)));
+        assertThat(creada.getFechaHoraSalida()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(17, 0)));
+        assertThat(creada.getSalidaForzada()).isFalse();
+        assertThat(creada.getEstadoActual()).isEqualTo(EstadoAsistencia.OFFLINE);
+        verify(resumenMensualService).recalcularSiCorresponde(EMP, DIA);
+    }
+
+    @Test
+    void administradorReutilizaFilaSinMarcacionReal() {
+        reloj(18, 0);
+        when(currentUser.roles()).thenReturn(List.of("ADMINISTRADOR"));
+        Asistencia existente = Asistencia.builder()
+                .id(77L).idEmpleado(EMP).idHorario(7L).fecha(DIA)
+                .estadoActual(EstadoAsistencia.OFFLINE)
+                .entradaProgramada(LocalTime.of(8, 0)).salidaProgramada(LocalTime.of(17, 0))
+                .minutosObjetivoDia(480).minutosTrabajados(0).minutosBalance(-480)
+                .salidaForzada(false).build();
+        almacen.set(existente);
+
+        service.crearMarcacionAdministrativa(EMP, DIA, new CrearMarcacionAdministrativaRequest(
+                LocalDateTime.of(DIA, LocalTime.of(8, 0)),
+                LocalDateTime.of(DIA, LocalTime.of(17, 0)),
+                null,
+                null
+        ));
+
+        assertThat(almacen.get().getId()).isEqualTo(77L);
+        assertThat(almacen.get().getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(8, 0)));
+        assertThat(almacen.get().getFechaHoraSalida()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(17, 0)));
+    }
+
+    @Test
+    void administradorCreaMarcacionRealConAlmuerzoProgramado() {
+        reloj(18, 0);
+        when(currentUser.roles()).thenReturn(List.of("ADMINISTRADOR"));
+
+        service.crearMarcacionAdministrativa(EMP, DIA, new CrearMarcacionAdministrativaRequest(
+                LocalDateTime.of(DIA, LocalTime.of(8, 0)),
+                LocalDateTime.of(DIA, LocalTime.of(17, 0)),
+                LocalDateTime.of(DIA, LocalTime.of(13, 10)),
+                LocalDateTime.of(DIA, LocalTime.of(14, 0))
+        ));
+
+        assertThat(almacen.get().getAlmuerzoRealInicio()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(13, 10)));
+        assertThat(almacen.get().getAlmuerzoRealFin()).isEqualTo(LocalDateTime.of(DIA, LocalTime.of(14, 0)));
+        assertThat(almacen.get().getMinutosAlmuerzoTomados()).isEqualTo(50);
+    }
+
+    @Test
+    void rechazaMarcacionAdministrativaSinRolAdministrador() {
+        reloj(18, 0);
+        when(currentUser.roles()).thenReturn(List.of("RRHH"));
+
+        assertThatThrownBy(() -> service.crearMarcacionAdministrativa(EMP, DIA,
+                new CrearMarcacionAdministrativaRequest(
+                        LocalDateTime.of(DIA, LocalTime.of(8, 0)), LocalDateTime.of(DIA, LocalTime.of(17, 0)), null, null)))
+                .isInstanceOf(ForbiddenException.class);
+        assertThat(almacen.get()).isNull();
+    }
+
+    @Test
+    void rechazaFechaFuturaYDiaSinHorario() {
+        reloj(18, 0);
+        when(currentUser.roles()).thenReturn(List.of("ADMINISTRADOR"));
+        CrearMarcacionAdministrativaRequest request = new CrearMarcacionAdministrativaRequest(
+                LocalDateTime.of(DIA.plusDays(1), LocalTime.of(8, 0)),
+                LocalDateTime.of(DIA.plusDays(1), LocalTime.of(17, 0)), null, null);
+
+        assertThatThrownBy(() -> service.crearMarcacionAdministrativa(EMP, DIA.plusDays(1), request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("futura");
+
+        when(horarioRepository.findHorarioVigente(EMP, DIA)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.crearMarcacionAdministrativa(EMP, DIA,
+                new CrearMarcacionAdministrativaRequest(
+                        LocalDateTime.of(DIA, LocalTime.of(8, 0)), LocalDateTime.of(DIA, LocalTime.of(17, 0)), null, null)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("horario efectivo");
+    }
+
+    @Test
+    void rechazaCrearSobreAsistenciaConMarcacionReal() {
+        reloj(18, 0);
+        when(currentUser.roles()).thenReturn(List.of("ADMINISTRADOR"));
+        Asistencia asistencia = asistenciaOnline(LocalDateTime.of(DIA, LocalTime.of(8, 0)), 0);
+        almacen.set(asistencia);
+
+        assertThatThrownBy(() -> service.crearMarcacionAdministrativa(EMP, DIA,
+                new CrearMarcacionAdministrativaRequest(
+                        LocalDateTime.of(DIA, LocalTime.of(8, 0)), LocalDateTime.of(DIA, LocalTime.of(17, 0)), null, null)))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void rechazaAlmuerzoParcialYSinHorarioProgramado() {
+        reloj(18, 0);
+        when(currentUser.roles()).thenReturn(List.of("ADMINISTRADOR"));
+
+        assertThatThrownBy(() -> service.crearMarcacionAdministrativa(EMP, DIA,
+                new CrearMarcacionAdministrativaRequest(
+                        LocalDateTime.of(DIA, LocalTime.of(8, 0)), LocalDateTime.of(DIA, LocalTime.of(17, 0)),
+                        LocalDateTime.of(DIA, LocalTime.of(13, 0)), null)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("inicio y fin");
+
+        horarioBase(LocalTime.of(8, 0), LocalTime.of(17, 0));
+        reloj(18, 0);
+        assertThatThrownBy(() -> service.crearMarcacionAdministrativa(EMP, DIA,
+                new CrearMarcacionAdministrativaRequest(
+                        LocalDateTime.of(DIA, LocalTime.of(8, 0)), LocalDateTime.of(DIA, LocalTime.of(17, 0)),
+                        LocalDateTime.of(DIA, LocalTime.of(13, 0)), LocalDateTime.of(DIA, LocalTime.of(14, 0)))))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("almuerzo programado");
+    }
+
+    @Test
+    void rechazaAlmuerzoFueraDeLaJornadaReal() {
+        reloj(18, 0);
+        when(currentUser.roles()).thenReturn(List.of("ADMINISTRADOR"));
+
+        assertThatThrownBy(() -> service.crearMarcacionAdministrativa(EMP, DIA,
+                new CrearMarcacionAdministrativaRequest(
+                        LocalDateTime.of(DIA, LocalTime.of(8, 0)), LocalDateTime.of(DIA, LocalTime.of(17, 0)),
+                        LocalDateTime.of(DIA, LocalTime.of(7, 0)), LocalDateTime.of(DIA, LocalTime.of(7, 30)))))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("dentro");
     }
 
     // ===================== helpers =====================

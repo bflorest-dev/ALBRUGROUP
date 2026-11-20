@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { CumplimientoDetalleDiaResponse } from '../../../../shared/models/schedule/cumplimiento-response';
-import { personalAttendanceBalanceLabel, personalAttendanceDayState } from './personal-attendance-panel.component';
+import {
+  personalAttendanceBalanceLabel,
+  personalAttendanceCanEditDay,
+  personalAttendanceDayState
+} from './personal-attendance-panel.component';
 
 const baseDay: CumplimientoDetalleDiaResponse = {
   fecha: '2026-09-10',
@@ -43,5 +47,11 @@ describe('presentación de asistencia en PERSONAL', () => {
   it('mantiene el balance en cero o negativo y separa las duraciones positivas', () => {
     expect(personalAttendanceBalanceLabel(120)).toBe('0 h');
     expect(personalAttendanceBalanceLabel(-90)).toBe('−1 h 30 min');
+  });
+
+  it('solo habilita la acción para administradores con horario efectivo', () => {
+    expect(personalAttendanceCanEditDay(baseDay, true)).toBe(true);
+    expect(personalAttendanceCanEditDay({ ...baseDay, horaEntradaEstablecida: null, tramos: [] }, true)).toBe(false);
+    expect(personalAttendanceCanEditDay(baseDay, false)).toBe(false);
   });
 });

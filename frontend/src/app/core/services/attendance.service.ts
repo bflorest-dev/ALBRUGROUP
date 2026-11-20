@@ -7,7 +7,10 @@ import { ReporteDiaResponse } from '../../shared/models/schedule/reporte-dia-res
 import { ResumenMensualResponse } from '../../shared/models/schedule/resumen-mensual-response';
 import { AsistenciaMesResponse } from '../../shared/models/schedule/asistencia-mes-response';
 import { HorarioMesResponse } from '../../shared/models/schedule/horario-mes-response';
-import { CorregirMarcacionesRequest } from '../../shared/models/schedule/marcacion-editable-response';
+import {
+  CorregirMarcacionesRequest,
+  CrearMarcacionAdministrativaRequest
+} from '../../shared/models/schedule/marcacion-editable-response';
 
 @Injectable({
   providedIn: 'root'
@@ -32,6 +35,17 @@ export class AttendanceService {
 
   corregirMarcaciones(idEmpleado: number, fecha: string, request: CorregirMarcacionesRequest): Observable<ReporteDiaResponse> {
     return this.http.patch<ReporteDiaResponse>(
+      `${this.attendanceUrl}/empleados/${idEmpleado}/marcaciones/${fecha}`,
+      request
+    );
+  }
+
+  crearMarcacionAdministrativa(
+    idEmpleado: number,
+    fecha: string,
+    request: CrearMarcacionAdministrativaRequest
+  ): Observable<ReporteDiaResponse> {
+    return this.http.post<ReporteDiaResponse>(
       `${this.attendanceUrl}/empleados/${idEmpleado}/marcaciones/${fecha}`,
       request
     );

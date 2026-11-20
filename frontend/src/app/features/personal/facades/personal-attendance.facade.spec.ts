@@ -147,4 +147,30 @@ describe('PersonalAttendanceFacade', () => {
     expect(facade.editingDay()).toBeNull();
     expect(facade.expandedDay()).toBeNull();
   });
+
+  it('usa el POST administrativo para crear una marcación cuando no hay marcas reales', async () => {
+    const date = '2026-09-01';
+    const getCumplimientoDetalle = vi.fn(() => of({ empleados: [{ idEmpleado: 42, dias: [day({ fecha: date, horaEntradaAsistencia: null, horaSalidaAsistencia: null })] }] }));
+    const crearMarcacionAdministrativa = vi.fn(() => of({ idEmpleado: 42, fecha: date } as ReporteDiaResponse));
+    const facade = setup(
+      { getCumplimientoDetalle },
+      { getReporteDia: vi.fn(), crearMarcacionAdministrativa }
+    );
+
+    await facade.initialize(42);
+    facade.expandedDay.set(date);
+    facade.editingDay.set(date);
+
+    const request = {
+      entrada: `${date}T08:00:00`,
+      salida: `${date}T16:00:00`,
+      almuerzoInicio: `${date}T13:00:00`,
+      almuerzoFin: `${date}T14:00:00`
+    };
+    await facade.createMarcacionAdministrativa(date, request);
+
+    expect(crearMarcacionAdministrativa).toHaveBeenCalledWith(42, date, request);
+    expect(facade.editingDay()).toBeNull();
+    expect(facade.expandedDay()).toBeNull();
+  });
 });

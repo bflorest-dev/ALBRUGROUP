@@ -3,7 +3,10 @@ import { CumplimientoDetalleDiaResponse } from '../../../../shared/models/schedu
 import { AttendanceDayReportComponent } from '../../../rrhh/asistencia/components/attendance-day-report/attendance-day-report.component';
 import { AttendanceMarksEditorComponent } from '../attendance-marks-editor/attendance-marks-editor.component';
 import { PersonalAttendanceFacade } from '../../facades/personal-attendance.facade';
-import { CorregirMarcacionesRequest } from '../../../../shared/models/schedule/marcacion-editable-response';
+import {
+  CorregirMarcacionesRequest,
+  CrearMarcacionAdministrativaRequest
+} from '../../../../shared/models/schedule/marcacion-editable-response';
 
 export type PersonalAttendanceDayState =
   | 'libre' | 'feriado' | 'vacaciones' | 'medico' | 'permiso'
@@ -37,6 +40,13 @@ export function personalAttendanceBalanceLabel(minutes: number): string {
   if (!hours) return `−${rest} min`;
   if (!rest) return `−${hours} h`;
   return `−${hours} h ${rest} min`;
+}
+
+export function personalAttendanceCanEditDay(
+  day: CumplimientoDetalleDiaResponse,
+  canEdit: boolean
+): boolean {
+  return canEdit && (!!day.horaEntradaEstablecida || (day.tramos?.length ?? 0) > 0);
 }
 
 export function personalAttendanceDurationLabel(minutes: number): string {
@@ -95,6 +105,14 @@ export class PersonalAttendancePanelComponent {
 
   protected saveEditor(date: string, request: CorregirMarcacionesRequest): void {
     void this.attendance.saveMarcaciones(date, request);
+  }
+
+  protected createEditor(date: string, request: CrearMarcacionAdministrativaRequest): void {
+    void this.attendance.createMarcacionAdministrativa(date, request);
+  }
+
+  protected canEditDay(day: CumplimientoDetalleDiaResponse): boolean {
+    return personalAttendanceCanEditDay(day, this.attendance.canEditMarcaciones());
   }
 
   protected retryDay(): void {

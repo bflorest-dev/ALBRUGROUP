@@ -1,14 +1,73 @@
-<section class="marks-editor" aria-label="Corrección de marcaciones">
+<section class="marks-editor" aria-labelledby="marks-editor-title">
   <header class="marks-editor__heading">
     <div>
-      <strong>Corregir marcaciones</strong>
-      <span>Modifica únicamente los registros reales de este día.</span>
+      <strong id="marks-editor-title">{{ isCreationMode() ? 'Agregar marcación real' : 'Corregir marcaciones' }}</strong>
+      <span>{{ isCreationMode() ? 'Registra la jornada histórica que el empleado realizó.' : 'Modifica únicamente los registros reales de este día.' }}</span>
     </div>
     <span class="marks-editor__date">{{ reporte()?.fecha }}</span>
   </header>
 
-  @if (!drafts().length) {
-    <p class="marks-editor__empty">No hay marcaciones reales para corregir en este día.</p>
+  @if (isCreationMode()) {
+    <form class="marks-editor__creation-form" aria-describedby="marks-editor-creation-help" (submit)="submitCreation($event)">
+      <p id="marks-editor-creation-help" class="marks-editor__hint">La entrada y la salida son obligatorias. La marcación quedará registrada como real.</p>
+      <div class="marks-editor__creation-grid">
+        <label for="creation-entrada">
+          <span>Entrada <em aria-hidden="true">*</em></span>
+          <input
+            id="creation-entrada"
+            name="entrada"
+            type="datetime-local"
+            [value]="creationEntrada()"
+            required
+            (input)="setCreationValue('entrada', $any($event.target).value)"
+          />
+        </label>
+        <label for="creation-salida">
+          <span>Salida <em aria-hidden="true">*</em></span>
+          <input
+            id="creation-salida"
+            name="salida"
+            type="datetime-local"
+            [value]="creationSalida()"
+            required
+            (input)="setCreationValue('salida', $any($event.target).value)"
+          />
+        </label>
+        @if (hasScheduledLunch()) {
+          <label for="creation-almuerzo-inicio">
+            <span>Inicio de almuerzo</span>
+            <input
+              id="creation-almuerzo-inicio"
+              name="almuerzoInicio"
+              type="datetime-local"
+              [value]="creationAlmuerzoInicio()"
+              (input)="setCreationValue('almuerzoInicio', $any($event.target).value)"
+            />
+          </label>
+          <label for="creation-almuerzo-fin">
+            <span>Fin de almuerzo</span>
+            <input
+              id="creation-almuerzo-fin"
+              name="almuerzoFin"
+              type="datetime-local"
+              [value]="creationAlmuerzoFin()"
+              (input)="setCreationValue('almuerzoFin', $any($event.target).value)"
+            />
+          </label>
+        }
+      </div>
+
+      @if (error() || externalError()) {
+        <p class="marks-editor__error" role="alert"><i class="ti ti-alert-triangle" aria-hidden="true"></i>{{ error() || externalError() }}</p>
+      }
+
+      <footer class="marks-editor__actions">
+        <button type="button" class="marks-editor__cancel" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+        <button type="submit" class="marks-editor__save" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar marcación' }}</button>
+      </footer>
+    </form>
+  } @else if (!reporte()) {
+    <p class="marks-editor__empty">Cargando el detalle de este día…</p>
   } @else {
     <div class="marks-editor__list">
       @for (draft of drafts(); track draft.source.tipoRegistro + ':' + draft.source.idRegistro; let index = $index) {
@@ -46,12 +105,14 @@
     </div>
   }
 
-  @if (error() || externalError()) {
-    <p class="marks-editor__error" role="alert"><i class="ti ti-alert-triangle" aria-hidden="true"></i>{{ error() || externalError() }}</p>
-  }
+  @if (!isCreationMode() && reporte()) {
+    @if (error() || externalError()) {
+      <p class="marks-editor__error" role="alert"><i class="ti ti-alert-triangle" aria-hidden="true"></i>{{ error() || externalError() }}</p>
+    }
 
-  <footer class="marks-editor__actions">
-    <button type="button" class="marks-editor__cancel" [disabled]="saving()" (click)="cancel()">Cancelar</button>
-    <button type="button" class="marks-editor__save" [disabled]="saving() || !drafts().length" (click)="submit()">{{ saving() ? 'Guardando…' : 'Guardar cambios' }}</button>
-  </footer>
+    <footer class="marks-editor__actions">
+      <button type="button" class="marks-editor__cancel" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+      <button type="button" class="marks-editor__save" [disabled]="saving() || !drafts().length" (click)="submit()">{{ saving() ? 'Guardando…' : 'Guardar cambios' }}</button>
+    </footer>
+  }
 </section>
