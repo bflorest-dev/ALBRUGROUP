@@ -34,43 +34,71 @@
                 <i class="ti ti-search" aria-hidden="true"></i>
                 <input type="search" placeholder="Buscar por nombre o DNI…" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" />
               </label>
-              <div class="select-actions">
-                <button type="button" class="text-btn" (click)="selectAll()">Seleccionar todo</button>
-                <button type="button" class="text-btn" (click)="clearAll()">Limpiar</button>
-              </div>
+              <button type="button" class="text-btn" (click)="toggleAll()">
+                {{ allVisibleSelected() ? 'Deseleccionar todo' : 'Seleccionar todo' }}
+              </button>
+            </div>
+
+            <div class="filter-bar">
+              <label class="filter-select">
+                <span>Empresa</span>
+                <select [ngModel]="companyFilter()" (ngModelChange)="companyFilter.set($event)">
+                  <option value="">Todas</option>
+                  @for (company of companyOptions(); track company) {
+                    <option [value]="company">{{ company }}</option>
+                  }
+                </select>
+              </label>
+              <label class="filter-select">
+                <span>Rol</span>
+                <select [ngModel]="roleFilter()" (ngModelChange)="roleFilter.set($event)">
+                  <option value="">Todos</option>
+                  @for (role of roleOptions(); track role) {
+                    <option [value]="role">{{ role }}</option>
+                  }
+                </select>
+              </label>
             </div>
 
             @if (selectedCount() > 0) {
               <div class="selection-badge">
                 <i class="ti ti-users" aria-hidden="true"></i>
                 <span>{{ selectedCount() }} empleado{{ selectedCount() === 1 ? '' : 's' }} seleccionado{{ selectedCount() === 1 ? '' : 's' }}</span>
+                <span class="badge-muted">de {{ visibleCount() }} visibles</span>
               </div>
             }
 
             <div class="category-tree">
               @for (cat of categories(); track cat.label) {
                 <div class="tree-category">
-                  <button class="tree-category-head" type="button" (click)="toggleCategory(cat.items)">
-                    <span class="tree-check" [class.checked]="cat.allSelected" [class.partial]="cat.someSelected">
-                      @if (cat.allSelected) { <i class="ti ti-check" aria-hidden="true"></i> }
-                      @else if (cat.someSelected) { <i class="ti ti-minus" aria-hidden="true"></i> }
-                    </span>
-                    <strong>{{ cat.label }}</strong>
-                    <span class="tree-count">{{ cat.items.length }}</span>
-                  </button>
-                  <div class="tree-employees">
-                    @for (item of cat.items; track item.row.employee.idEmpleado) {
-                      <button class="tree-employee" type="button" [class.selected]="item.selected" (click)="toggleEmployee(item.row.employee.idEmpleado)">
-                        <span class="tree-check" [class.checked]="item.selected">
-                          @if (item.selected) { <i class="ti ti-check" aria-hidden="true"></i> }
-                        </span>
-                        <span class="emp-info">
-                          <strong>{{ item.row.employee.apellidos }}, {{ item.row.employee.nombres }}</strong>
-                          <small>{{ item.row.employee.numeroDocumento }} · {{ item.row.primaryRole }}</small>
-                        </span>
-                      </button>
-                    }
+                  <div class="tree-category-head">
+                    <button class="tree-check-btn" type="button" (click)="toggleCategorySelection(cat.items)" [attr.aria-label]="cat.allSelected ? 'Deseleccionar ' + cat.label : 'Seleccionar ' + cat.label">
+                      <span class="tree-check" [class.checked]="cat.allSelected" [class.partial]="cat.someSelected">
+                        @if (cat.allSelected) { <i class="ti ti-check" aria-hidden="true"></i> }
+                        @else if (cat.someSelected) { <i class="ti ti-minus" aria-hidden="true"></i> }
+                      </span>
+                    </button>
+                    <button class="tree-collapse-btn" type="button" (click)="toggleCategoryCollapse(cat.label)" [attr.aria-expanded]="!cat.collapsed">
+                      <i class="ti" [class.ti-chevron-down]="!cat.collapsed" [class.ti-chevron-right]="cat.collapsed" aria-hidden="true"></i>
+                      <strong>{{ cat.label }}</strong>
+                      <span class="tree-count">{{ cat.items.length }}</span>
+                    </button>
                   </div>
+                  @if (!cat.collapsed) {
+                    <div class="tree-employees">
+                      @for (item of cat.items; track item.row.employee.idEmpleado) {
+                        <button class="tree-employee" type="button" [class.selected]="item.selected" (click)="toggleEmployee(item.row.employee.idEmpleado)">
+                          <span class="tree-check" [class.checked]="item.selected">
+                            @if (item.selected) { <i class="ti ti-check" aria-hidden="true"></i> }
+                          </span>
+                          <span class="emp-info">
+                            <strong>{{ item.row.employee.apellidos }}, {{ item.row.employee.nombres }}</strong>
+                            <small>{{ item.row.employee.numeroDocumento }} · {{ item.row.primaryRole }}@if (item.row.employee.empresaContratista) { · {{ item.row.employee.empresaContratista }}}</small>
+                          </span>
+                        </button>
+                      }
+                    </div>
+                  }
                 </div>
               }
 
@@ -152,15 +180,15 @@
               <table class="preview-table">
                 <thead>
                   <tr>
-                    <th>Empleado</th>
-                    <th>DNI</th>
-                    <th class="num">Días lab.</th>
-                    <th class="num">Con reg.</th>
-                    <th class="num">Sin reg.</th>
-                    <th class="num">Tard.</th>
-                    <th class="num">Min. obj.</th>
-                    <th class="num">Min. trab.</th>
-                    <th class="num">Balance</th>
+                    <th class="th-left">Empleado</th>
+                    <th class="th-center">DNI</th>
+                    <th class="th-center"><span>Días</span><span>laborables</span></th>
+                    <th class="th-center"><span>Con</span><span>registro</span></th>
+                    <th class="th-center"><span>Sin</span><span>registro</span></th>
+                    <th class="th-center">Tardanzas</th>
+                    <th class="th-center"><span>Horas</span><span>objetivo</span></th>
+                    <th class="th-center"><span>Horas</span><span>trabajadas</span></th>
+                    <th class="th-center">Balance</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -168,14 +196,14 @@
                     @let resumen = resumenByEmployee().get(row.employee.idEmpleado);
                     <tr>
                       <td class="emp-name">{{ row.employee.apellidos }}, {{ row.employee.nombres }}</td>
-                      <td>{{ row.employee.numeroDocumento }}</td>
-                      <td class="num">{{ resumen?.diasLaborables ?? '-' }}</td>
-                      <td class="num">{{ resumen?.diasConRegistro ?? '-' }}</td>
-                      <td class="num">{{ resumen?.diasSinRegistro ?? '-' }}</td>
-                      <td class="num">{{ resumen?.cantidadTardanzas ?? '-' }}</td>
-                      <td class="num">{{ resumen?.minutosObjetivo ?? '-' }}</td>
-                      <td class="num">{{ resumen?.minutosTrabajados ?? '-' }}</td>
-                      <td class="num" [class.negative]="(resumen?.minutosBalance ?? 0) < 0">{{ resumen?.minutosBalance ?? '-' }}</td>
+                      <td class="td-center">{{ row.employee.numeroDocumento }}</td>
+                      <td class="td-center">{{ resumen?.diasLaborables ?? '-' }}</td>
+                      <td class="td-center">{{ resumen?.diasConRegistro ?? '-' }}</td>
+                      <td class="td-center">{{ resumen?.diasSinRegistro ?? '-' }}</td>
+                      <td class="td-center">{{ resumen?.cantidadTardanzas ?? '-' }}</td>
+                      <td class="td-center">{{ formatMinutes(resumen?.minutosObjetivo) }}</td>
+                      <td class="td-center">{{ formatMinutes(resumen?.minutosTrabajados) }}</td>
+                      <td class="td-center" [class.negative]="(resumen?.minutosBalance ?? 0) < 0">{{ formatMinutes(resumen?.minutosBalance) }}</td>
                     </tr>
                   }
                 </tbody>

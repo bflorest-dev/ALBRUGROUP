@@ -25,7 +25,7 @@
   position: fixed;
   z-index: 990;
   inset: 0 0 0 auto;
-  width: min(960px, calc(100vw - 48px));
+  width: min(640px, calc(100vw - 48px));
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   color: var(--drawer-ink);
@@ -207,6 +207,49 @@ header p {
   background: var(--drawer-signal-wash);
 }
 
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.filter-select {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-select span {
+  font: 600 10px 'Archivo', sans-serif;
+  color: var(--drawer-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.filter-select select {
+  height: 36px;
+  border: 1px solid var(--drawer-line);
+  border-radius: 8px;
+  background: var(--drawer-panel);
+  color: var(--drawer-ink);
+  padding: 0 10px;
+  font: 500 12px 'Archivo', sans-serif;
+  outline: 0;
+}
+
+.filter-select select:focus {
+  border-color: var(--drawer-signal);
+  box-shadow: 0 0 0 3px rgb(203 139 28 / 14%);
+}
+
+.badge-muted {
+  color: var(--drawer-muted);
+  font-weight: 500;
+  margin-left: 2px;
+}
+
 .selection-badge {
   display: flex;
   align-items: center;
@@ -234,23 +277,53 @@ header p {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 0;
+  gap: 0;
   border-bottom: 1px solid var(--drawer-line);
   background: color-mix(in srgb, var(--drawer-bg) 60%, var(--drawer-panel));
+  color: var(--drawer-ink);
+  font: 600 13px 'Archivo', sans-serif;
+}
+
+.tree-check-btn {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.tree-check-btn:hover {
+  background: var(--drawer-panel);
+}
+
+.tree-collapse-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 10px 0;
+  border: 0;
+  background: transparent;
   color: var(--drawer-ink);
   font: 600 13px 'Archivo', sans-serif;
   text-align: left;
   cursor: pointer;
 }
 
-.tree-category-head:hover {
+.tree-collapse-btn:hover {
   background: var(--drawer-panel);
 }
 
-.tree-category-head strong {
+.tree-collapse-btn strong {
   flex: 1;
+}
+
+.tree-collapse-btn i {
+  font-size: 14px;
+  color: var(--drawer-muted);
 }
 
 .tree-count {
@@ -339,9 +412,6 @@ header p {
 }
 
 /* Period step */
-.period-step {
-  max-width: 480px;
-}
 
 .period-fields {
   display: grid;
@@ -448,32 +518,45 @@ header p {
 }
 
 .preview-table th {
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: color-mix(in srgb, var(--drawer-bg) 60%, var(--drawer-panel));
   border-bottom: 1px solid var(--drawer-line);
   color: var(--drawer-muted);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
-  text-align: left;
-  white-space: nowrap;
+  vertical-align: middle;
 }
 
-.preview-table th.num,
-.preview-table td.num {
-  text-align: right;
+.preview-table th.th-left {
+  text-align: left;
+}
+
+.preview-table th.th-center {
+  text-align: center;
+  display: table-cell;
+}
+
+.preview-table th.th-center span {
+  display: block;
+  line-height: 1.3;
 }
 
 .preview-table td {
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid color-mix(in srgb, var(--drawer-line) 50%, transparent);
   white-space: nowrap;
+  font-size: 12px;
+}
+
+.preview-table td.td-center {
+  text-align: center;
 }
 
 .preview-table td.emp-name {
   font-weight: 600;
-  max-width: 200px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
