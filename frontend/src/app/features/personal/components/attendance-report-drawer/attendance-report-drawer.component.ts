@@ -269,8 +269,13 @@ export class AttendanceReportDrawerComponent {
       });
       const filename = `reporte-asistencias-${this.desde()}-${this.hasta()}.xlsx`;
       this.reportService.downloadBlob(blob, filename);
-    } catch {
-      this.errorMessage.set('Error al descargar el Excel. Intenta nuevamente.');
+    } catch (err: any) {
+      const status = err?.status;
+      if (status === 403) {
+        this.errorMessage.set('Acceso denegado. Cierra sesión y vuelve a ingresar para actualizar tus permisos.');
+      } else {
+        this.errorMessage.set('Error al descargar el Excel. Intenta nuevamente.');
+      }
     } finally {
       this.exporting.set(false);
     }

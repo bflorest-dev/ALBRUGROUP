@@ -70,6 +70,14 @@ export function canViewContractSection(activeRole: string | null): boolean {
   return activeRole === 'ADMINISTRADOR';
 }
 
+export function canEditScheduleForEmployee(
+  activeRole: string | null,
+  hasSchedule: boolean,
+  hasContract: boolean
+): boolean {
+  return hasSchedule && (hasContract || activeRole === 'ADMINISTRADOR');
+}
+
 @Component({
   selector: 'app-employee-workspace-drawer',
   imports: [DatePipe, FormsModule, ReactiveFormsModule, DateFieldComponent, ScheduleWeekEditorComponent, ScheduleDayEditorComponent, ScheduleFooterActionsComponent, ScheduleOverviewControlsComponent, ScheduleExtensionTimelineComponent, ScheduleShiftEditorComponent, LunchDayEditorComponent, PersonalAttendancePanelComponent, PersonalMetricasPanelComponent],
@@ -428,6 +436,14 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected canViewContract(): boolean {
     return canViewContractSection(this.session.getActiveRole());
+  }
+
+  protected canEditSchedule(): boolean {
+    return canEditScheduleForEmployee(
+      this.session.getActiveRole(),
+      !!this.schedule(),
+      !!this.contract()
+    );
   }
 
   protected displayValue(value: string | number | boolean | null | undefined): string {
@@ -854,7 +870,7 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected openScheduleEditor(schedule: HorarioResponse | null = this.schedule()): void {
-    if (!this.contract()) return;
+    if (!schedule || (!this.contract() && !this.session.hasRole('ADMINISTRADOR'))) return;
     this.scheduleFacade.openEditor(schedule);
     this.clearActionFeedback();
     this.subview.set('editar-horario');

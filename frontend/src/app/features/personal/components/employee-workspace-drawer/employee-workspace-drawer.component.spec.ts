@@ -1,6 +1,6 @@
 import '@angular/compiler';
 import { describe, expect, it } from 'vitest';
-import { canEditVigenteContract, canViewContractSection, scopeCapabilitiesForRoles } from './employee-workspace-drawer.component';
+import { canEditScheduleForEmployee, canEditVigenteContract, canViewContractSection, scopeCapabilitiesForRoles } from './employee-workspace-drawer.component';
 
 describe('capacidades de ámbito del drawer de PERSONAL', () => {
   it('muestra únicamente equipos para roles de equipo', () => {
@@ -26,5 +26,11 @@ describe('capacidades de ámbito del drawer de PERSONAL', () => {
     expect(canViewContractSection('ADMINISTRADOR')).toBe(true);
     expect(canViewContractSection('RRHH')).toBe(false);
     expect(canViewContractSection(null)).toBe(false);
+  });
+
+  it('permite al administrador editar un horario vigente aunque el contrato ya no esté vigente', () => {
+    expect(canEditScheduleForEmployee('ADMINISTRADOR', true, false)).toBe(true);
+    expect(canEditScheduleForEmployee('RRHH', true, false)).toBe(false);
+    expect(canEditScheduleForEmployee('ADMINISTRADOR', false, false)).toBe(false);
   });
 });

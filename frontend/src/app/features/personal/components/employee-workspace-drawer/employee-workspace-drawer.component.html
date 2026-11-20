@@ -580,7 +580,7 @@
           </div>
           @if (isLoadingEmployment()) {
             <p class="muted">Consultando horario vigente…</p>
-          } @else if (!contract()) {
+          } @else if (!contract() && !canEditSchedule()) {
             <p class="pending-copy">Registra un contrato antes de asignar el horario base.</p>
           } @else if (!schedule()) {
             <p class="pending-copy">Este empleado todavía no tiene un horario base asignado.</p>
@@ -731,7 +731,7 @@
           <button type="button" class="primary-button push-right" [disabled]="scheduleFacade.isApplyingCorrection()" (click)="applyScheduleCorrection('custom')">{{ scheduleFacade.isApplyingCorrection() ? 'Aplicando…' : 'Aplicar fecha' }}</button>
         } @else {
           <button type="button" class="ghost-button" [disabled]="scheduleFacade.isSaving()" (click)="closeScheduleEditor()">Cancelar</button>
-          <button type="button" class="primary-button push-right" [disabled]="scheduleFacade.isSaving() || !contract() || !scheduleFacade.canMutateOperationalData()" (click)="saveSchedule()">{{ scheduleFacade.isSaving() ? 'Guardando…' : (scheduleFacade.isCreatingFutureSchedule() ? 'Guardar horario futuro' : (schedule() ? 'Guardar horario' : 'Asignar horario')) }}</button>
+          <button type="button" class="primary-button push-right" [disabled]="scheduleFacade.isSaving() || (!contract() && !canEditSchedule()) || !scheduleFacade.canMutateOperationalData()" (click)="saveSchedule()">{{ scheduleFacade.isSaving() ? 'Guardando…' : (scheduleFacade.isCreatingFutureSchedule() ? 'Guardar horario futuro' : (schedule() ? 'Guardar horario' : 'Asignar horario')) }}</button>
           }
       } @else if (adjustmentSubview(); as adjustmentView) {
         <button type="button" class="ghost-button" [disabled]="isSavingAdjustment()" (click)="closeDayAdjustment()">Cancelar</button>

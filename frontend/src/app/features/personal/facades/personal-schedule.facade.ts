@@ -89,6 +89,7 @@ export class PersonalScheduleFacade {
   readonly canMutateOperationalData = this.gate.canMutateOperationalData;
   readonly blockedMessage = this.gate.blockedMessage;
   readonly canApplyRetroactiveCorrection = computed(() => this.session.hasRole('ADMINISTRADOR'));
+  readonly canEditScheduleWithoutContract = computed(() => this.session.hasRole('ADMINISTRADOR'));
 
   readonly form = this.formBuilder.nonNullable.group({
     fechaInicio: [this.tomorrow(), [Validators.required]],
@@ -122,7 +123,8 @@ export class PersonalScheduleFacade {
   });
 
   requiresLunch(): boolean {
-    return !MODALITIES_WITHOUT_LUNCH.has(this.contract?.modalidad ?? 'FULL_TIME');
+    const modalidad = this.contract?.modalidad ?? this.editingSchedule?.modalidad ?? this.schedule()?.modalidad ?? 'FULL_TIME';
+    return !MODALITIES_WITHOUT_LUNCH.has(modalidad);
   }
 
   initialize(employeeId: number, contract: ContratoResponse | null, schedule: HorarioResponse | null): void {
@@ -248,7 +250,10 @@ export class PersonalScheduleFacade {
       return false;
     }
 
-    if (!this.employeeId || !this.contract) return false;
+    if (!this.employeeId) return false;
+    const current = this.isCreatingFutureSchedule() ? null : (this.editingSchedule ?? this.schedule());
+    const canEditExistingWithoutContract = !!current && this.canEditScheduleWithoutContract();
+    if (!this.contract && !canEditExistingWithoutContract) return false;
     this.form.updateValueAndValidity({ emitEvent: false });
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -258,7 +263,6 @@ export class PersonalScheduleFacade {
 
     const raw = this.form.getRawValue();
     const fechaInicio = raw.fechaInicio;
-    const current = this.isCreatingFutureSchedule() ? null : (this.editingSchedule ?? this.schedule());
     const baseSchedule = this.schedule();
     const retroactiveSchedule = current ?? (this.isCreatingFutureSchedule() ? baseSchedule : null);
     const isRetroactiveCorrection = !!retroactiveSchedule && fechaInicio <= this.today();
@@ -270,8 +274,9 @@ export class PersonalScheduleFacade {
     this.isSaving.set(true);
     this.clearMessages();
     try {
-      const request = this.buildRequest(this.contract.modalidad);
+      const request = this.buildRequest(this.contract?.modalidad ?? current?.modalidad ?? 'FULL_TIME');
       if (!current) {
+        if (!this.contract) return false;
         if (this.isCreatingFutureSchedule() && baseSchedule && isRetroactiveCorrection) {
           if (!fechaInicio || fechaInicio <= baseSchedule.fechaInicio) {
             this.error.set('La nueva vigencia debe empezar después del inicio del horario actual.');
@@ -334,7 +339,8 @@ export class PersonalScheduleFacade {
   }
 
   async applyCorrection(action: CorrectionAction): Promise<boolean> {
-    if (!this.canMutateOperationalData() || !this.pendingCorrection || !this.employeeId || !this.contract) {
+    if (!this.canMutateOperationalData() || !this.pendingCorrection || !this.employeeId
+      || (!this.contract && !this.canEditScheduleWithoutContract())) {
       return false;
     }
 

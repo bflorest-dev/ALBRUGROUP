@@ -187,6 +187,35 @@ describe('PersonalScheduleFacade', () => {
     expect(service.reemplazarHorario).not.toHaveBeenCalled();
   });
 
+  it('permite al administrador corregir un horario existente sin contrato vigente', async () => {
+    const current = schedule(1, '2020-01-01');
+    const corrected = schedule(1, '2019-12-01');
+    const service = {
+      listarHistoricoHorarios: vi.fn(() => of({ content: [current] })),
+      corregirHorario: vi.fn(() => of(corrected)),
+      reemplazarHorario: vi.fn()
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        FormBuilder,
+        PersonalScheduleFacade,
+        { provide: AdminRrhhService, useValue: service },
+        { provide: OperationalGateService, useValue: { createGate: () => ({ canMutateOperationalData: () => true, blockedMessage: () => '' }) } },
+        { provide: SessionService, useValue: { hasRole: () => true } }
+      ]
+    });
+
+    const facade = TestBed.inject(PersonalScheduleFacade);
+    facade.initialize(10, null, current);
+    facade.form.controls.fechaInicio.setValue('2019-12-01');
+
+    expect(await facade.save()).toBe(true);
+    expect(service.corregirHorario).toHaveBeenCalledWith(
+      current.id,
+      expect.objectContaining({ fechaInicio: '2019-12-01', correccionRetroactiva: true })
+    );
+  });
+
   it('mantiene PUT para reemplazar hacia adelante una vigencia retroactiva', async () => {
     const current = schedule(1, '2020-01-01');
     const replaced = schedule(2, '2020-01-10');
