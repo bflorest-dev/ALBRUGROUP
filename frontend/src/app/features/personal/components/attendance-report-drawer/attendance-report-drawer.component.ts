@@ -47,7 +47,8 @@ export class AttendanceReportDrawerComponent {
   protected readonly selectedIds = signal(new Set<number>());
   protected readonly companyFilter = signal('');
   protected readonly roleFilter = signal('');
-  protected readonly collapsedCategories = signal(new Set<string>());
+  protected readonly collapsedCategories = signal(new Set(['Operativo', 'Estructural', 'Mantenimiento', 'Sin categoría']));
+  protected readonly showCloseConfirm = signal(false);
 
   protected readonly desde = signal(this.defaultDesde());
   protected readonly hasta = signal(this.defaultHasta());
@@ -142,9 +143,22 @@ export class AttendanceReportDrawerComponent {
     return map;
   });
 
-  protected close(): void {
+  protected requestClose(): void {
+    if (this.step() !== 'select' || this.selectedCount() > 0) {
+      this.showCloseConfirm.set(true);
+      return;
+    }
+    this.confirmClose();
+  }
+
+  protected confirmClose(): void {
+    this.showCloseConfirm.set(false);
     this.reset();
     this.closed.emit();
+  }
+
+  protected cancelClose(): void {
+    this.showCloseConfirm.set(false);
   }
 
   protected toggleEmployee(id: number): void {
@@ -276,7 +290,8 @@ export class AttendanceReportDrawerComponent {
     this.selectedIds.set(new Set());
     this.companyFilter.set('');
     this.roleFilter.set('');
-    this.collapsedCategories.set(new Set());
+    this.collapsedCategories.set(new Set(['Operativo', 'Estructural', 'Mantenimiento', 'Sin categoría']));
+    this.showCloseConfirm.set(false);
     this.desde.set(this.defaultDesde());
     this.hasta.set(this.defaultHasta());
     this.resumenData.set([]);

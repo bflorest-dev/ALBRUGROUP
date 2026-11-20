@@ -67,8 +67,8 @@
     <div class="finance-metric-ledger">
       <div class="finance-ledger-row">
         <div class="finance-ledger-label"><span>Periodo</span><strong>{{ periodTitle(period) }}</strong></div>
-        <div class="finance-metric finance-metric--reported"><span>Leads Meta</span><strong>{{ count(period?.leadsReportados) }}</strong></div>
-        <div class="finance-metric finance-metric--real"><span>Leads Reales</span><strong>{{ count(period?.leadsReales) }}</strong></div>
+        <div class="finance-metric finance-metric--reported"><span>Leads Meta</span><strong>{{ count(period?.leadsReportados) }}</strong><small>Costo {{ moneyPer(period?.costoTotal, period?.leadsReportados) }}</small></div>
+        <div class="finance-metric finance-metric--real"><span>Leads Reales</span><strong>{{ count(period?.leadsReales) }}</strong><small>Costo {{ moneyPer(period?.costoTotal, period?.leadsReales) }}</small></div>
         <div class="finance-metric"><span>Preventas</span><strong>{{ count(period?.cantidadPreventas) }}</strong><small>Costo {{ moneyPer(period?.costoTotal, period?.cantidadPreventas) }}</small></div>
         <div class="finance-metric"><span>Ventas</span><strong>{{ count(period?.cantidadVentas) }}</strong><small>Costo {{ moneyPer(period?.costoTotal, period?.cantidadVentas) }}</small></div>
         <div class="finance-metric"><span>Gasto Total</span><strong>{{ facade.money(period?.costoTotal ?? 0) }}</strong></div>
@@ -81,8 +81,8 @@
       </div>
       <div class="finance-ledger-row finance-ledger-row--monthly">
         <div class="finance-ledger-label"><span>Mes actual</span><strong>{{ monthlyTitle(monthly) }}</strong></div>
-        <div class="finance-metric finance-metric--reported"><span>Leads Meta</span><strong>{{ count(monthly?.leadsReportados) }}</strong></div>
-        <div class="finance-metric finance-metric--real"><span>Leads Reales</span><strong>{{ count(monthly?.leadsReales) }}</strong></div>
+        <div class="finance-metric finance-metric--reported"><span>Leads Meta</span><strong>{{ count(monthly?.leadsReportados) }}</strong><small>Costo {{ moneyPer(monthly?.costoTotal, monthly?.leadsReportados) }}</small></div>
+        <div class="finance-metric finance-metric--real"><span>Leads Reales</span><strong>{{ count(monthly?.leadsReales) }}</strong><small>Costo {{ moneyPer(monthly?.costoTotal, monthly?.leadsReales) }}</small></div>
         <div class="finance-metric"><span>Preventas</span><strong>{{ count(monthly?.cantidadPreventas) }}</strong><small>Costo {{ moneyPer(monthly?.costoTotal, monthly?.cantidadPreventas) }}</small></div>
         <div class="finance-metric"><span>Ventas</span><strong>{{ count(monthly?.cantidadVentas) }}</strong><small>Costo {{ moneyPer(monthly?.costoTotal, monthly?.cantidadVentas) }}</small></div>
         <div class="finance-metric"><span>Gasto Total</span><strong>{{ facade.money(monthly?.costoTotal ?? 0) }}</strong></div>

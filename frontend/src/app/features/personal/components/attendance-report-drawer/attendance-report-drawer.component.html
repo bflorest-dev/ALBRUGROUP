@@ -1,5 +1,5 @@
 @if (visible()) {
-  <button class="report-scrim" type="button" aria-label="Cerrar reporte" (click)="close()"></button>
+  <button class="report-scrim" type="button" aria-label="Cerrar reporte" (click)="requestClose()"></button>
   <aside class="report-drawer" role="dialog" aria-modal="true" aria-label="Reporte de asistencias" [attr.data-theme]="theme()">
     <header>
       <div>
@@ -12,7 +12,7 @@
           }
         </p>
       </div>
-      <button class="close-button" type="button" aria-label="Cerrar" (click)="close()">
+      <button class="close-button" type="button" aria-label="Cerrar" (click)="requestClose()">
         <i class="ti ti-x" aria-hidden="true"></i>
       </button>
     </header>
@@ -25,97 +25,94 @@
       <span class="step-dot" [class.active]="step() === 'preview'">3</span>
     </div>
 
-    <div class="drawer-body">
+    <div class="drawer-content">
       @switch (step()) {
         @case ('select') {
           <div class="select-step">
-            <div class="select-toolbar">
-              <label class="select-search">
-                <i class="ti ti-search" aria-hidden="true"></i>
-                <input type="search" placeholder="Buscar por nombre o DNI…" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" />
-              </label>
-              <button type="button" class="text-btn" (click)="toggleAll()">
-                {{ allVisibleSelected() ? 'Deseleccionar todo' : 'Seleccionar todo' }}
-              </button>
-            </div>
-
-            <div class="filter-bar">
-              <label class="filter-select">
-                <span>Empresa</span>
-                <select [ngModel]="companyFilter()" (ngModelChange)="companyFilter.set($event)">
-                  <option value="">Todas</option>
-                  @for (company of companyOptions(); track company) {
-                    <option [value]="company">{{ company }}</option>
-                  }
-                </select>
-              </label>
-              <label class="filter-select">
-                <span>Rol</span>
-                <select [ngModel]="roleFilter()" (ngModelChange)="roleFilter.set($event)">
-                  <option value="">Todos</option>
-                  @for (role of roleOptions(); track role) {
-                    <option [value]="role">{{ role }}</option>
-                  }
-                </select>
-              </label>
-            </div>
-
-            @if (selectedCount() > 0) {
-              <div class="selection-badge">
-                <i class="ti ti-users" aria-hidden="true"></i>
-                <span>{{ selectedCount() }} empleado{{ selectedCount() === 1 ? '' : 's' }} seleccionado{{ selectedCount() === 1 ? '' : 's' }}</span>
-                <span class="badge-muted">de {{ visibleCount() }} visibles</span>
+            <div class="select-controls">
+              <div class="select-toolbar">
+                <label class="select-search">
+                  <i class="ti ti-search" aria-hidden="true"></i>
+                  <input type="search" placeholder="Buscar por nombre o DNI…" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" />
+                </label>
+                <button type="button" class="text-btn" (click)="toggleAll()">
+                  {{ allVisibleSelected() ? 'Deseleccionar todo' : 'Seleccionar todo' }}
+                </button>
               </div>
-            }
 
-            <div class="category-tree">
-              @for (cat of categories(); track cat.label) {
-                <div class="tree-category">
-                  <div class="tree-category-head">
-                    <button class="tree-check-btn" type="button" (click)="toggleCategorySelection(cat.items)" [attr.aria-label]="cat.allSelected ? 'Deseleccionar ' + cat.label : 'Seleccionar ' + cat.label">
-                      <span class="tree-check" [class.checked]="cat.allSelected" [class.partial]="cat.someSelected">
-                        @if (cat.allSelected) { <i class="ti ti-check" aria-hidden="true"></i> }
-                        @else if (cat.someSelected) { <i class="ti ti-minus" aria-hidden="true"></i> }
-                      </span>
-                    </button>
-                    <button class="tree-collapse-btn" type="button" (click)="toggleCategoryCollapse(cat.label)" [attr.aria-expanded]="!cat.collapsed">
-                      <i class="ti" [class.ti-chevron-down]="!cat.collapsed" [class.ti-chevron-right]="cat.collapsed" aria-hidden="true"></i>
-                      <strong>{{ cat.label }}</strong>
-                      <span class="tree-count">{{ cat.items.length }}</span>
-                    </button>
-                  </div>
-                  @if (!cat.collapsed) {
-                    <div class="tree-employees">
-                      @for (item of cat.items; track item.row.employee.idEmpleado) {
-                        <button class="tree-employee" type="button" [class.selected]="item.selected" (click)="toggleEmployee(item.row.employee.idEmpleado)">
-                          <span class="tree-check" [class.checked]="item.selected">
-                            @if (item.selected) { <i class="ti ti-check" aria-hidden="true"></i> }
-                          </span>
-                          <span class="emp-info">
-                            <strong>{{ item.row.employee.apellidos }}, {{ item.row.employee.nombres }}</strong>
-                            <small>{{ item.row.employee.numeroDocumento }} · {{ item.row.primaryRole }}@if (item.row.employee.empresaContratista) { · {{ item.row.employee.empresaContratista }}}</small>
-                          </span>
-                        </button>
-                      }
-                    </div>
-                  }
-                </div>
-              }
+              <div class="filter-bar">
+                <label class="filter-select">
+                  <span>Empresa</span>
+                  <select [ngModel]="companyFilter()" (ngModelChange)="companyFilter.set($event)">
+                    <option value="">Todas</option>
+                    @for (company of companyOptions(); track company) {
+                      <option [value]="company">{{ company }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="filter-select">
+                  <span>Rol</span>
+                  <select [ngModel]="roleFilter()" (ngModelChange)="roleFilter.set($event)">
+                    <option value="">Todos</option>
+                    @for (role of roleOptions(); track role) {
+                      <option [value]="role">{{ role }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
 
-              @if (categories().length === 0) {
-                <div class="empty-hint">
-                  <i class="ti ti-search-off" aria-hidden="true"></i>
-                  <span>No se encontraron empleados.</span>
+              @if (selectedCount() > 0) {
+                <div class="selection-badge">
+                  <i class="ti ti-users" aria-hidden="true"></i>
+                  <span>{{ selectedCount() }} empleado{{ selectedCount() === 1 ? '' : 's' }} seleccionado{{ selectedCount() === 1 ? '' : 's' }}</span>
+                  <span class="badge-muted">de {{ visibleCount() }} visibles</span>
                 </div>
               }
             </div>
 
-            <footer class="step-footer">
-              <button class="btn-primary" type="button" [disabled]="selectedCount() === 0" (click)="goToPeriod()">
-                Siguiente
-                <i class="ti ti-arrow-right" aria-hidden="true"></i>
-              </button>
-            </footer>
+            <div class="select-scroll">
+              <div class="category-tree">
+                @for (cat of categories(); track cat.label) {
+                  <div class="tree-category">
+                    <div class="tree-category-head">
+                      <button class="tree-check-btn" type="button" (click)="toggleCategorySelection(cat.items)" [attr.aria-label]="cat.allSelected ? 'Deseleccionar ' + cat.label : 'Seleccionar ' + cat.label">
+                        <span class="tree-check" [class.checked]="cat.allSelected" [class.partial]="cat.someSelected">
+                          @if (cat.allSelected) { <i class="ti ti-check" aria-hidden="true"></i> }
+                          @else if (cat.someSelected) { <i class="ti ti-minus" aria-hidden="true"></i> }
+                        </span>
+                      </button>
+                      <button class="tree-collapse-btn" type="button" (click)="toggleCategoryCollapse(cat.label)" [attr.aria-expanded]="!cat.collapsed">
+                        <i class="ti" [class.ti-chevron-down]="!cat.collapsed" [class.ti-chevron-right]="cat.collapsed" aria-hidden="true"></i>
+                        <strong>{{ cat.label }}</strong>
+                        <span class="tree-count">{{ cat.items.length }}</span>
+                      </button>
+                    </div>
+                    @if (!cat.collapsed) {
+                      <div class="tree-employees">
+                        @for (item of cat.items; track item.row.employee.idEmpleado) {
+                          <button class="tree-employee" type="button" [class.selected]="item.selected" (click)="toggleEmployee(item.row.employee.idEmpleado)">
+                            <span class="tree-check" [class.checked]="item.selected">
+                              @if (item.selected) { <i class="ti ti-check" aria-hidden="true"></i> }
+                            </span>
+                            <span class="emp-info">
+                              <strong>{{ item.row.employee.apellidos }}, {{ item.row.employee.nombres }}</strong>
+                              <small>{{ item.row.employee.numeroDocumento }} · {{ item.row.primaryRole }}@if (item.row.employee.empresaContratista) { · {{ item.row.employee.empresaContratista }}}</small>
+                            </span>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (categories().length === 0) {
+                  <div class="empty-hint">
+                    <i class="ti ti-search-off" aria-hidden="true"></i>
+                    <span>No se encontraron empleados.</span>
+                  </div>
+                }
+              </div>
+            </div>
           </div>
         }
 
@@ -150,22 +147,6 @@
                 {{ errorMessage() }}
               </div>
             }
-
-            <footer class="step-footer">
-              <button class="btn-secondary" type="button" (click)="goBackToSelect()">
-                <i class="ti ti-arrow-left" aria-hidden="true"></i>
-                Volver
-              </button>
-              <button class="btn-primary" type="button" [disabled]="!periodValid() || loading()" (click)="generateReport()">
-                @if (loading()) {
-                  <span class="btn-spinner"></span>
-                  Generando…
-                } @else {
-                  Generar reporte
-                  <i class="ti ti-chart-bar" aria-hidden="true"></i>
-                }
-              </button>
-            </footer>
           </div>
         }
 
@@ -216,25 +197,63 @@
                 {{ errorMessage() }}
               </div>
             }
-
-            <footer class="step-footer">
-              <button class="btn-secondary" type="button" (click)="goBackToPeriod()">
-                <i class="ti ti-arrow-left" aria-hidden="true"></i>
-                Volver
-              </button>
-              <button class="btn-primary" type="button" [disabled]="exporting()" (click)="downloadExcel()">
-                @if (exporting()) {
-                  <span class="btn-spinner"></span>
-                  Descargando…
-                } @else {
-                  <i class="ti ti-file-spreadsheet" aria-hidden="true"></i>
-                  Descargar Excel
-                }
-              </button>
-            </footer>
           </div>
         }
       }
     </div>
+
+    <footer class="drawer-footer">
+      @switch (step()) {
+        @case ('select') {
+          <button class="btn-primary" type="button" [disabled]="selectedCount() === 0" (click)="goToPeriod()">
+            Siguiente
+            <i class="ti ti-arrow-right" aria-hidden="true"></i>
+          </button>
+        }
+        @case ('period') {
+          <button class="btn-secondary" type="button" (click)="goBackToSelect()">
+            <i class="ti ti-arrow-left" aria-hidden="true"></i>
+            Volver
+          </button>
+          <button class="btn-primary" type="button" [disabled]="!periodValid() || loading()" (click)="generateReport()">
+            @if (loading()) {
+              <span class="btn-spinner"></span>
+              Generando…
+            } @else {
+              Generar reporte
+              <i class="ti ti-chart-bar" aria-hidden="true"></i>
+            }
+          </button>
+        }
+        @case ('preview') {
+          <button class="btn-secondary" type="button" (click)="goBackToPeriod()">
+            <i class="ti ti-arrow-left" aria-hidden="true"></i>
+            Volver
+          </button>
+          <button class="btn-primary" type="button" [disabled]="exporting()" (click)="downloadExcel()">
+            @if (exporting()) {
+              <span class="btn-spinner"></span>
+              Descargando…
+            } @else {
+              <i class="ti ti-file-spreadsheet" aria-hidden="true"></i>
+              Descargar Excel
+            }
+          </button>
+        }
+      }
+    </footer>
+
+    @if (showCloseConfirm()) {
+      <div class="confirm-overlay">
+        <div class="confirm-dialog">
+          <i class="ti ti-alert-circle" aria-hidden="true"></i>
+          <p>Si cierras perderás la selección y los datos consultados.</p>
+          <div class="confirm-actions">
+            <button class="btn-secondary" type="button" (click)="cancelClose()">Cancelar</button>
+            <button class="btn-danger" type="button" (click)="confirmClose()">Cerrar de todos modos</button>
+          </div>
+        </div>
+      </div>
+    }
   </aside>
 }
