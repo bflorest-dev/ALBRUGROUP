@@ -78,11 +78,16 @@ export class PersonalAttendanceFacade {
       marcacionales += marcacionalDia;
       operativas += operativaDia;
 
+      // Objetivo (concepto 1): el backend ya entrega por dia 0 para los liberados (descanso principal,
+      // feriado, vacaciones, medico) y las horas de modalidad para laborables Y permisos/descansos
+      // secundarios (cuyas horas siguen debiendose). Por eso se suma SIEMPRE, no gateado por laborable:
+      // si no, un permiso (laborable=false) bajaria el objetivo, que es justo lo que NO debe pasar.
+      objetivo += Math.max(day.minutosObjetivoDia ?? 0, 0);
+
       if (day.laborable) {
         if (day.horaEntradaAsistencia) presentes += 1;
         else if (day.fecha < today) faltas += 1;
         if (day.tardanza) tardanzas += 1;
-        objetivo += Math.max(day.minutosObjetivoDia ?? 0, 0);
         programadas += programadoDia;
         // Balance del empleado = cumplido vs PROGRAMADO (su responsabilidad), solo dias ya transcurridos.
         if (day.fecha <= today) {

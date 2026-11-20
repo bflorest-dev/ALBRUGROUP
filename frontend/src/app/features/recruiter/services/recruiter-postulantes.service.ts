@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
+import { RecruitmentNegocio } from '../../../core/services/current-user-recruitment-negocio-scope.service';
 import { PageResponse } from '../../../shared/models/common/page-response';
 import { CatalogoTipificacionResponse } from '../../../shared/models/recruitment/catalogo-tipificacion-response';
 import { EventoResponse } from '../../../shared/models/recruitment/evento-response';
@@ -20,7 +21,6 @@ import {
   MeetEvaluacionBatchRequest
 } from '../../../shared/models/recruitment/meet-batch';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
-import { RecruitmentNegocio } from '../../../core/services/current-user-recruitment-negocio-scope.service';
 
 @Injectable({
   providedIn: 'root'
@@ -150,9 +150,10 @@ export class RecruiterPostulantesService {
     );
   }
 
-  listarGruposCapacitacionAbiertos(): Observable<PageResponse<GrupoCapacitacionResponse>> {
+  listarGruposCapacitacionAbiertos(negocio: RecruitmentNegocio): Observable<PageResponse<GrupoCapacitacionResponse>> {
     const params = new HttpParams()
       .set('estado', 'ABIERTO')
+      .set('negocio', negocio)
       .set('pageNumber', 0)
       .set('pageSize', 100)
       .set('sortBy', 'fechaInicio')

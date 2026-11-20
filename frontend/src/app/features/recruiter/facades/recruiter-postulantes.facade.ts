@@ -221,7 +221,7 @@ export class RecruiterPostulantesFacade {
   readonly trainingGroupsState = toSignal(
     toObservable(this.trainingGroupsRefresh).pipe(
       switchMap(() =>
-        this.postulantesService.listarGruposCapacitacionAbiertos().pipe(
+        this.postulantesService.listarGruposCapacitacionAbiertos(this.negocioScope.active()).pipe(
           timeout(this.requestTimeoutMs),
           map((page) => ({ status: 'success' as const, groups: page.content })),
           startWith({ status: 'loading' as const, groups: [] as GrupoCapacitacionResponse[] }),

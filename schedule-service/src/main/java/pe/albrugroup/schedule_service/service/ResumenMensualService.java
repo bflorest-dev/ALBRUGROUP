@@ -161,6 +161,9 @@ public class ResumenMensualService {
             boolean laborable = jornadaResolver.resolverSiExiste(idEmpleado, fecha)
                     .map(j -> Boolean.TRUE.equals(j.getLaborableBase()))
                     .orElse(false);
+            // Objetivo (concepto 1) se acumula SIEMPRE (0 para liberados; horas de modalidad para
+            // laborables Y permisos/descansos secundarios), antes del gate de laborable.
+            minutosObjetivo += jornadaResolver.minutosObjetivoModalidad(idEmpleado, fecha);
             if (!laborable) {
                 boolean tieneHorario = jornadaResolver.resolverSiExiste(idEmpleado, fecha).isPresent();
                 estados.add(tieneHorario ? "NL" : null);
@@ -168,7 +171,6 @@ public class ResumenMensualService {
             }
             diasLaborables++;
             Asistencia asistencia = asistenciasPorFecha.get(fecha);
-            minutosObjetivo += jornadaResolver.minutosObjetivoModalidad(idEmpleado, fecha);
 
             if (asistencia == null || asistencia.getFechaHoraIngreso() == null
                     || asistencia.getFechaHoraSalida() == null) {

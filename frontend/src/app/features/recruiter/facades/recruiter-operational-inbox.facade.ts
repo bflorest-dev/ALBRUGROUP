@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { finalize, timeout } from 'rxjs/operators';
 import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
 import { CatalogoTipificacionResponse } from '../../../shared/models/recruitment/catalogo-tipificacion-response';
@@ -419,15 +419,25 @@ export class RecruiterOperationalInboxFacade {
     this.catalogLoading.set(true);
     this.catalogError.set('');
     forkJoin({
-      catalogo: this.service.obtenerCatalogoReclutamiento(),
-      groups: this.service.listarGruposCapacitacionAbiertos()
+      catalogo: this.service.obtenerCatalogoReclutamiento().pipe(
+        catchError((error: HttpErrorResponse) => {
+          this.catalogError.set(this.errorMessage(error, 'No fue posible cargar las tipificaciones.'));
+          return of(EMPTY_CATALOG);
+        })
+      ),
+      groups: this.service.listarGruposCapacitacionAbiertos(this.negocioScope.active()).pipe(
+        catchError((error: HttpErrorResponse) => {
+          this.catalogError.set(this.errorMessage(error, 'No fue posible cargar los grupos de capacitación.'));
+          return of(null);
+        })
+      )
     }).pipe(
       timeout(this.requestTimeoutMs),
       finalize(() => this.catalogLoading.set(false))
     ).subscribe({
       next: (catalogs) => {
         this.catalogo.set(catalogs.catalogo);
-        this.groups.set(catalogs.groups.content);
+        this.groups.set(catalogs.groups?.content ?? []);
       },
       error: (error: HttpErrorResponse) => this.catalogError.set(this.errorMessage(error, 'No fue posible cargar los catálogos operativos.'))
     });

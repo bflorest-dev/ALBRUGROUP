@@ -191,36 +191,47 @@
 
   <section class="board" aria-labelledby="board-title">
     <div class="board__toolbar">
-      <div>
-        <h2 id="board-title">Bandeja única</h2>
-        <p>{{ facade.filteredRows().length }} registros en pantalla · Los cambios se sincronizan en tiempo real.</p>
-      </div>
+      <span id="board-title" class="board__count" aria-live="polite">{{ facade.filteredRows().length }} expedientes</span>
       <div class="board__filters" role="search" aria-label="Filtrar postulaciones">
         <label class="field field--search">
           <span>Buscar postulante</span>
-          <i class="ti ti-search" aria-hidden="true"></i>
-          <input type="search" placeholder="Nombre, documento o celular" [value]="facade.searchTerm()" (input)="facade.setSearchTerm($any($event.target).value)" />
+          <div class="field--search__control">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input type="search" placeholder="Nombre, documento o celular" [value]="facade.searchTerm()" (input)="facade.setSearchTerm($any($event.target).value)" />
+          </div>
         </label>
-        <label class="field field--compact">
-          <span>Estado</span>
-          <select [value]="facade.estadoFilter()" (change)="facade.setEstadoFilter($any($event.target).value)">
-            <option value="">Todos los estados</option>
-            <option value="POSTULANTE">Por revisar</option>
-            <option value="SIN_CONTACTO">Sin contacto</option>
-            <option value="EN_GESTION">En gestión</option>
-            <option value="NO_INTERESADO">No interesado</option>
-            <option value="RECHAZADO">Rechazado</option>
-          </select>
-        </label>
-        <label class="field field--compact">
-          <span>Tipificación</span>
-          <select [value]="facade.tipificacionFilter()" (change)="facade.setTipificacionFilter($any($event.target).value)">
-            <option value="0">Todas las tipificaciones</option>
-            @for (tipificacion of facade.tipificaciones(); track tipificacion.id) {
-              <option [value]="tipificacion.id">{{ tipificacion.codigo }}</option>
+        <details #estadoMenu class="filter-select field--compact">
+          <summary class="filter-select__summary" aria-haspopup="listbox">
+            <span class="filter-select__label">Estado</span>
+            <span class="filter-select__trigger"><strong>{{ filterLabel(estadoFilterOptions, facade.estadoFilter()) }}</strong><i class="ti ti-chevron-down" aria-hidden="true"></i></span>
+          </summary>
+          <div class="filter-select__menu" role="listbox" aria-label="Filtrar por estado">
+            @for (option of estadoFilterOptions; track option.value) {
+              <button type="button" role="option" class="filter-select__option" [class.active]="facade.estadoFilter() === option.value" [attr.aria-selected]="facade.estadoFilter() === option.value" (click)="selectEstado(option.value, estadoMenu)">
+                <span>{{ option.label }}</span>
+                @if (facade.estadoFilter() === option.value) { <i class="ti ti-check" aria-hidden="true"></i> }
+              </button>
             }
-          </select>
-        </label>
+          </div>
+        </details>
+        <details #tipificacionMenu class="filter-select field--compact">
+          <summary class="filter-select__summary" aria-haspopup="listbox">
+            <span class="filter-select__label">Tipificación</span>
+            <span class="filter-select__trigger"><strong>{{ tipificacionLabel(facade.tipificacionFilter()) }}</strong><i class="ti ti-chevron-down" aria-hidden="true"></i></span>
+          </summary>
+          <div class="filter-select__menu" role="listbox" aria-label="Filtrar por tipificación">
+            <button type="button" role="option" class="filter-select__option" [class.active]="facade.tipificacionFilter() === 0" [attr.aria-selected]="facade.tipificacionFilter() === 0" (click)="selectTipificacion(0, tipificacionMenu)">
+              <span>Todas</span>
+              @if (facade.tipificacionFilter() === 0) { <i class="ti ti-check" aria-hidden="true"></i> }
+            </button>
+            @for (tipificacion of facade.tipificaciones(); track tipificacion.id) {
+              <button type="button" role="option" class="filter-select__option" [class.active]="facade.tipificacionFilter() === tipificacion.id" [attr.aria-selected]="facade.tipificacionFilter() === tipificacion.id" (click)="selectTipificacion(tipificacion.id, tipificacionMenu)">
+                <span>{{ facade.label(tipificacion.codigo) }}</span>
+                @if (facade.tipificacionFilter() === tipificacion.id) { <i class="ti ti-check" aria-hidden="true"></i> }
+              </button>
+            }
+          </div>
+        </details>
       </div>
     </div>
 

@@ -873,12 +873,15 @@ public class AsistenciaService implements IAsistencia {
         for (LocalDate fecha = desde; !fecha.isAfter(hasta); fecha = fecha.plusDays(1)) {
             Asistencia asistencia = asistenciasPorFecha.get(fecha);
             ProgramacionDiaria programacion = resolverProgramacionMensual(idEmpleado, fecha, asistencia);
+            // Objetivo (concepto 1) se acumula SIEMPRE: minutosObjetivoModalidad devuelve 0 para los dias
+            // liberados y las horas de modalidad para laborables Y permisos/descansos secundarios (cuyas
+            // horas siguen debiendose). Gatearlo por laborable omitiria esos dias y bajaria mal el objetivo.
+            minutosObjetivo += jornadaEfectivaResolver.minutosObjetivoModalidad(idEmpleado, fecha);
             if (!programacion.laborable()) {
                 continue;
             }
 
             diasLaborables++;
-            minutosObjetivo += jornadaEfectivaResolver.minutosObjetivoModalidad(idEmpleado, fecha);
 
             boolean sinRegistroCompleto = asistencia == null
                     || asistencia.getFechaHoraIngreso() == null

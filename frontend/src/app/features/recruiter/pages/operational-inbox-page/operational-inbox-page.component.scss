@@ -32,6 +32,27 @@
 @media (max-width: 1120px) { .meet-agenda__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 780px) { .meet-agenda__heading { align-items: stretch; flex-direction: column; }.meet-agenda__grid { grid-template-columns: 1fr; max-height: 18rem; } }
 
+.board__toolbar { align-items: center; background: transparent; border: 0; border-radius: 0; gap: 1.25rem; padding: 0 0 .2rem; }
+.board__count { align-self: flex-end; color: var(--recruitment-ink); flex: 0 0 auto; font-size: 1rem; font-weight: 800; letter-spacing: -.02em; line-height: 1; margin-bottom: .55rem; white-space: nowrap; }
+.board__filters { flex: 1 1 auto; flex-wrap: wrap; justify-content: flex-end; }
+.field--search { flex: 1 1 24rem; max-width: 32rem; min-width: 20rem; }
+.field--search__control { position: relative; }
+.field--search__control i { color: var(--recruitment-teal); left: .65rem; line-height: 1; pointer-events: none; position: absolute; top: 50%; transform: translateY(-50%); }
+.field--search__control input { padding-left: 2rem; width: 100%; }
+.field--compact { flex: 0 1 10.5rem; }
+.filter-select { position: relative; }
+.filter-select__summary { cursor: pointer; display: grid; gap: .28rem; list-style: none; }
+.filter-select__summary::-webkit-details-marker, .filter-select__summary::marker { content: ''; display: none; }
+.filter-select__label { font-size: .7rem; font-weight: 700; }
+.filter-select__trigger { align-items: center; background: #fbfdfd; border: 1px solid #c9dad6; border-radius: .55rem; color: var(--recruitment-ink); display: grid; gap: .45rem; grid-template-columns: minmax(0, 1fr) auto; min-height: 2.15rem; padding: .5rem .65rem; }
+.filter-select[open] .filter-select__trigger { background: #fff; border-color: var(--recruitment-teal); box-shadow: 0 0 0 3px rgba(15, 118, 110, .13); }
+.filter-select__trigger strong { font-size: .72rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filter-select__trigger > i { color: var(--recruitment-teal-dark); font-size: .9rem; transition: transform 160ms ease; }
+.filter-select[open] .filter-select__trigger > i { transform: rotate(180deg); }
+.filter-select__menu { background: #fff; border: 1px solid #c9dad6; border-radius: .65rem; box-shadow: 0 10px 22px rgba(22, 64, 60, .16); display: grid; gap: .18rem; left: 0; min-width: 100%; padding: .28rem; position: absolute; top: calc(100% + .35rem); z-index: 20; }
+.filter-select__option { align-items: center; background: transparent; border: 0; border-radius: .4rem; color: var(--recruitment-ink); cursor: pointer; display: flex; font-size: .72rem; justify-content: space-between; min-height: 2rem; padding: .42rem .55rem; text-align: left; white-space: nowrap; }
+.filter-select__option:hover, .filter-select__option.active { background: var(--recruitment-teal-soft); color: var(--recruitment-teal-dark); }
+
 /* The page header is a working rail, not another card. */
 .workspace-header { background: transparent; border: 0; border-bottom: 1px solid var(--recruitment-line); border-radius: 0; min-height: 4.4rem; padding: .2rem .15rem .82rem; }
 .workspace-header__copy { display: flex; align-items: center; }

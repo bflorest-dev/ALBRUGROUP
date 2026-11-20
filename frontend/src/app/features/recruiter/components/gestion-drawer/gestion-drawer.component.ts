@@ -115,7 +115,13 @@ export class GestionDrawerComponent implements OnInit {
   this.loadMeetSlots();this.loadHistory();
  }
  loadGroups():void {
-  this.api.listarGruposCapacitacionAbiertos().pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
+  const negocio = this.p().negocio;
+  if (!negocio) {
+   this.groups.set([]);
+   this.error.set('No se puede cargar grupos sin negocio asociado.');
+   return;
+  }
+  this.api.listarGruposCapacitacionAbiertos(negocio as 'WIN'|'CLARO').pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
    next:r=>this.groups.set(r.content),error:()=>this.error.set('No se pudieron cargar los grupos. Pulsa Actualizar grupos para reintentar.')
   });
  }

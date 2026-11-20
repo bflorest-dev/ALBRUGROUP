@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -25,6 +25,14 @@ export class OperationalInboxPageComponent implements OnInit {
   protected readonly facade = inject(RecruiterOperationalInboxFacade);
   protected readonly trainingFacade = inject(RecruiterTrainingGroupsFacade);
   protected readonly form = this.facade.typifyForm;
+  protected readonly estadoFilterOptions = [
+    { value: '', label: 'Todos' },
+    { value: 'POSTULANTE', label: 'Por revisar' },
+    { value: 'SIN_CONTACTO', label: 'Sin contacto' },
+    { value: 'EN_GESTION', label: 'En gestión' },
+    { value: 'NO_INTERESADO', label: 'No interesado' },
+    { value: 'RECHAZADO', label: 'Rechazado' }
+  ] as const;
   private readonly realtime = inject(RecruitmentRealtimeService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly api = inject(RecruiterPostulantesService);
@@ -106,6 +114,38 @@ export class OperationalInboxPageComponent implements OnInit {
 
   protected rowStatusClass(value: string | null | undefined): string {
     return (value ?? 'pendiente').toLowerCase().replace(/_/g, '-');
+  }
+
+  protected filterLabel(options: ReadonlyArray<{ value: string; label: string }>, value: string): string {
+    return options.find(option => option.value === value)?.label ?? options[0].label;
+  }
+
+  protected tipificacionLabel(value: number): string {
+    const tipificacion = this.facade.tipificaciones().find(item => item.id === value);
+    return value === 0 ? 'Todas' : tipificacion ? this.facade.label(tipificacion.codigo) : 'Todas';
+  }
+
+  protected selectEstado(value: string, menu: HTMLDetailsElement): void {
+    this.facade.setEstadoFilter(value);
+    menu.open = false;
+  }
+
+  protected selectTipificacion(value: number, menu: HTMLDetailsElement): void {
+    this.facade.setTipificacionFilter(String(value));
+    menu.open = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  protected closeFilterMenus(event: MouseEvent): void {
+    const target = event.target as Node;
+    document.querySelectorAll<HTMLDetailsElement>('details.filter-select[open]').forEach(menu => {
+      if (!menu.contains(target)) menu.open = false;
+    });
+  }
+
+  @HostListener('document:keydown.escape')
+  protected closeFilterMenusOnEscape(): void {
+    document.querySelectorAll<HTMLDetailsElement>('details.filter-select[open]').forEach(menu => menu.open = false);
   }
 
   protected initials(nombres?: string | null, apellidos?: string | null, usuarioMeta?: string | null): string {
