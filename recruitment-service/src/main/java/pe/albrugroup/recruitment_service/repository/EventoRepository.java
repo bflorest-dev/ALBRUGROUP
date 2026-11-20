@@ -36,4 +36,38 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("inicio") Instant inicio,
             @Param("negocio") Negocio negocio
     );
+
+    @Query("""
+            select count(distinct e.postulacion.id)
+            from Evento e
+            join e.postulacion p
+            where e.accion = :accion
+              and e.createdAt >= :inicio
+              and e.createdAt < :fin
+              and p.negocio = :negocio
+            """)
+    long countDistinctPostulacionesByAccionBetween(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("negocio") Negocio negocio
+    );
+
+    @Query("""
+            select count(distinct e.postulacion.id)
+            from Evento e
+            join e.postulacion p
+            where e.accion = :accion
+              and e.tipificacion = :tipificacion
+              and e.createdAt >= :inicio
+              and e.createdAt < :fin
+              and p.negocio = :negocio
+            """)
+    long countDistinctPostulacionesByTipificacionBetween(
+            @Param("accion") Accion accion,
+            @Param("tipificacion") String tipificacion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("negocio") Negocio negocio
+    );
 }

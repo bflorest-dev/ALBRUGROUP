@@ -8,6 +8,7 @@ import { CatalogoTipificacionResponse } from '../../../shared/models/recruitment
 import { EventoResponse } from '../../../shared/models/recruitment/evento-response';
 import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
+import { ResumenReclutadorResponse } from '../../../shared/models/recruitment/resumen-reclutador-response';
 import { RegistrarContactoPostulacionRequest } from '../../../shared/models/recruitment/registrar-contacto-postulacion-request';
 import { SubtipificacionResponse } from '../../../shared/models/recruitment/subtipificacion-response';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
@@ -19,22 +20,15 @@ export type RecruiterOperationalDrawer = 'none' | 'detail';
 export type RecruiterOperationalActionState = 'idle' | 'loading' | 'success' | 'error';
 export type ContactChannel = 'LLAMADA' | 'WHATSAPP';
 
-export type OperationalSummary = {
-  total: number;
-  postulante: number;
-  sinContacto: number;
-  enGestion: number;
-  noInteresado: number;
-  rechazado: number;
-};
-
-const EMPTY_SUMMARY: OperationalSummary = {
-  total: 0,
-  postulante: 0,
-  sinContacto: 0,
-  enGestion: 0,
-  noInteresado: 0,
-  rechazado: 0
+const EMPTY_SUMMARY: ResumenReclutadorResponse = {
+  negocio: 'WIN',
+  fechaReferencia: '',
+  nuevosHoy: 0,
+  porContactar: 0,
+  sinContactoHoy: 0,
+  meetsProgramadas: 0,
+  aprobadosHoy: 0,
+  desaprobadosHoy: 0
 };
 
 const EMPTY_CATALOG: CatalogoTipificacionResponse = {
@@ -77,14 +71,14 @@ export class RecruiterOperationalInboxFacade {
   readonly actionMessage = signal('');
   readonly actionError = signal('');
   readonly contactChannel = signal<ContactChannel | null>(null);
-  readonly summary = signal<OperationalSummary>(EMPTY_SUMMARY);
+  readonly summary = signal<ResumenReclutadorResponse>(EMPTY_SUMMARY);
   private readonly trainingGroupAssignmentRequired = signal(false);
   private initialized = false;
   readonly summaryLoading = signal(false);
+  readonly summaryError = signal('');
   readonly searchTerm = signal('');
   readonly estadoFilter = signal('');
   readonly tipificacionFilter = signal(0);
-  readonly lastSync = signal(new Date());
 
   readonly tipificaciones = computed(() => this.catalogo().tipificaciones);
   readonly filteredRows = computed(() => {
@@ -113,6 +107,7 @@ export class RecruiterOperationalInboxFacade {
       this.rows.set([]);
       this.trainingRows.set([]);
       this.summary.set(EMPTY_SUMMARY);
+      this.summaryError.set('');
       this.selectedPostulacion.set(null);
       this.drawer.set('none');
       this.load();
@@ -128,7 +123,7 @@ export class RecruiterOperationalInboxFacade {
   load(): void {
     this.listLoading.set(true);
     this.listError.set('');
-    this.summaryLoading.set(true);
+    this.loadSummary();
     this.loadTrainingPool();
     const selectedStatus = this.estadoFilter();
     const statuses = selectedStatus ? [selectedStatus] : this.statuses;
@@ -140,29 +135,14 @@ export class RecruiterOperationalInboxFacade {
         timeout(this.requestTimeoutMs),
         finalize(() => {
           this.listLoading.set(false);
-          this.summaryLoading.set(false);
         })
       )
       .subscribe({
         next: (pages) => {
           const rowsById = new Map<number, PostulacionResponse>();
-          const summary = { ...EMPTY_SUMMARY };
 
           pages.forEach((page) => {
-            summary.total += page.totalElements;
             page.content.forEach((row) => rowsById.set(row.id, row));
-            page.content.forEach((row) => {
-              const key: keyof Omit<OperationalSummary, 'total'> = row.estadoBandeja === 'POSTULANTE'
-                ? 'postulante'
-                : row.estadoBandeja === 'SIN_CONTACTO'
-                  ? 'sinContacto'
-                  : row.estadoBandeja === 'EN_GESTION'
-                    ? 'enGestion'
-                    : row.estadoBandeja === 'NO_INTERESADO'
-                      ? 'noInteresado'
-                      : 'rechazado';
-              summary[key] += 1;
-            });
           });
 
           const rows = [...rowsById.values()].sort((left, right) =>
@@ -170,12 +150,9 @@ export class RecruiterOperationalInboxFacade {
           );
           this.rows.set(rows);
           this.loadResponsibleEmployees(rows);
-          this.summary.set(summary);
-          this.lastSync.set(new Date());
         },
         error: (error: HttpErrorResponse) => {
           this.rows.set([]);
-          this.summary.set(EMPTY_SUMMARY);
           this.listError.set(this.errorMessage(error, 'No fue posible cargar la bandeja operativa.'));
         }
       });
@@ -387,6 +364,21 @@ export class RecruiterOperationalInboxFacade {
       error: (error: HttpErrorResponse) => {
         this.eventos.set([]);
         this.eventsError.set(this.errorMessage(error, 'No fue posible cargar la trazabilidad.'));
+      }
+    });
+  }
+
+  private loadSummary(): void {
+    this.summaryLoading.set(true);
+    this.summaryError.set('');
+    this.service.obtenerResumenReclutador(this.negocioScope.active()).pipe(
+      timeout(this.requestTimeoutMs),
+      finalize(() => this.summaryLoading.set(false))
+    ).subscribe({
+      next: summary => this.summary.set(summary),
+      error: (error: HttpErrorResponse) => {
+        this.summary.set({ ...EMPTY_SUMMARY, negocio: this.negocioScope.active() });
+        this.summaryError.set(this.errorMessage(error, 'No fue posible cargar las métricas operativas.'));
       }
     });
   }

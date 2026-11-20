@@ -3,21 +3,23 @@
     <div class="workspace-header__copy">
       <div class="workspace-header__title-row">
         <h1 id="recruiter-operational-title">Gestión de postulantes</h1>
-        <button type="button" class="workspace-header__info" aria-label="Más información sobre la gestión de postulantes">
-          <i class="ti ti-alert-circle" aria-hidden="true"></i>
-          <span class="workspace-header__info-text" role="tooltip">Gestiona contactos, Meets y grupos de capacitación desde una bandeja compartida.</span>
-        </button>
+        <span class="workspace-header__info">
+          <button type="button" class="icon-button icon-button--help" aria-label="Ver funciones de la gestión de postulantes" aria-describedby="recruiter-operational-help">
+            <i class="ti ti-alert-circle" aria-hidden="true"></i>
+          </button>
+          <span id="recruiter-operational-help" class="workspace-header__help" role="tooltip">Gestiona contactos, Meets y grupos de capacitación desde una bandeja compartida.</span>
+        </span>
       </div>
     </div>
     <div class="workspace-header__actions">
-      <button type="button" class="button button--primary" [attr.aria-expanded]="meetAgendaOpen()" (click)="toggleMeetAgenda()">
-        <i class="ti ti-calendar-event" aria-hidden="true"></i>
-        {{ meetAgendaOpen() ? 'Cerrar agenda' : 'Agenda Meet' }}
-      </button>
       <button type="button" class="button button--ghost" [attr.aria-expanded]="trainingGroupsOpen()" (click)="toggleTrainingGroups()">
         <i class="ti ti-users-group" aria-hidden="true"></i>
-        {{ trainingGroupsOpen() ? 'Cerrar grupos' : 'Grupos de capacitación' }}
+        {{ trainingGroupsOpen() ? 'Cerrar grupos' : 'Grupos Capacitacion' }}
         @if (approvedPendingGroup().length) { <span class="button__badge">{{ approvedPendingGroup().length }}</span> }
+      </button>
+      <button type="button" class="button button--primary" [attr.aria-expanded]="meetAgendaOpen()" (click)="toggleMeetAgenda()">
+        <i class="ti ti-calendar-event" aria-hidden="true"></i>
+        {{ meetAgendaOpen() ? 'Cerrar Meets' : 'Meets Programadas' }}
       </button>
     </div>
   </header>
@@ -133,32 +135,59 @@
 
   @if (!trainingGroupsOpen() && !meetAgendaOpen()) {
   <div class="summary-grid" aria-label="Resumen de la bandeja">
-    <article class="summary-card summary-card--total">
-      <span class="summary-card__label">Postulaciones visibles</span>
-      <strong>{{ facade.summaryLoading() ? '—' : facade.summary().total }}</strong>
-      <span class="summary-card__hint">Etapa de postulación</span>
-    </article>
-    <article class="summary-card">
-      <span class="summary-card__label">Por revisar</span>
-      <strong>{{ facade.summaryLoading() ? '—' : facade.summary().postulante }}</strong>
-      <span class="summary-card__hint">Primer contacto pendiente</span>
-    </article>
-    <article class="summary-card">
-      <span class="summary-card__label">Sin contacto</span>
-      <strong>{{ facade.summaryLoading() ? '—' : facade.summary().sinContacto }}</strong>
-      <span class="summary-card__hint">Requieren seguimiento</span>
-    </article>
-    <article class="summary-card">
-      <span class="summary-card__label">En gestión</span>
-      <strong>{{ facade.summaryLoading() ? '—' : facade.summary().enGestion }}</strong>
-      <span class="summary-card__hint">Proceso activo</span>
-    </article>
-    <article class="summary-card summary-card--accent">
-      <span class="summary-card__label">Cerradas</span>
-      <strong>{{ facade.summaryLoading() ? '—' : facade.summary().noInteresado + facade.summary().rechazado }}</strong>
-      <span class="summary-card__hint">No interesados y rechazados</span>
-    </article>
+    <section class="summary-cluster" aria-labelledby="recruiter-summary-income-title">
+      <h2 id="recruiter-summary-income-title" class="summary-cluster__title">Ingresos</h2>
+      <div class="summary-cluster__metrics">
+        <article class="summary-metric">
+          <span>Nuevos hoy</span>
+          <strong>{{ facade.summaryLoading() || facade.summaryError() ? '—' : facade.summary().nuevosHoy }}</strong>
+          <small>Registrados hoy</small>
+        </article>
+        <article class="summary-metric">
+          <span>Por contactar</span>
+          <strong>{{ facade.summaryLoading() || facade.summaryError() ? '—' : facade.summary().porContactar }}</strong>
+          <small>Sin primera gestión</small>
+        </article>
+      </div>
+    </section>
+    <section class="summary-cluster" aria-labelledby="recruiter-summary-followup-title">
+      <h2 id="recruiter-summary-followup-title" class="summary-cluster__title">Seguimiento</h2>
+      <div class="summary-cluster__metrics">
+        <article class="summary-metric">
+          <span>Sin contacto hoy</span>
+          <strong>{{ facade.summaryLoading() || facade.summaryError() ? '—' : facade.summary().sinContactoHoy }}</strong>
+          <small>Intentos sin respuesta</small>
+        </article>
+        <article class="summary-metric">
+          <span>Meets programadas</span>
+          <strong>{{ facade.summaryLoading() || facade.summaryError() ? '—' : facade.summary().meetsProgramadas }}</strong>
+          <small>Participantes pendientes</small>
+        </article>
+      </div>
+    </section>
+    <section class="summary-cluster" aria-labelledby="recruiter-summary-result-title">
+      <h2 id="recruiter-summary-result-title" class="summary-cluster__title">Resultado</h2>
+      <div class="summary-cluster__metrics">
+        <article class="summary-metric summary-metric--positive">
+          <span>Aprobados hoy</span>
+          <strong>{{ facade.summaryLoading() || facade.summaryError() ? '—' : facade.summary().aprobadosHoy }}</strong>
+          <small>Listos para capacitación</small>
+        </article>
+        <article class="summary-metric summary-metric--negative">
+          <span>Desaprobados hoy</span>
+          <strong>{{ facade.summaryLoading() || facade.summaryError() ? '—' : facade.summary().desaprobadosHoy }}</strong>
+          <small>Reclutamiento cerrado</small>
+        </article>
+      </div>
+    </section>
   </div>
+  @if (facade.summaryError()) {
+    <div class="inline-notice inline-notice--error summary-notice" role="alert">
+      <i class="ti ti-alert-circle" aria-hidden="true"></i>
+      <span>{{ facade.summaryError() }}</span>
+      <button type="button" class="button button--ghost button--small" (click)="facade.load()">Reintentar métricas</button>
+    </div>
+  }
 
   <section class="board" aria-labelledby="board-title">
     <div class="board__toolbar">

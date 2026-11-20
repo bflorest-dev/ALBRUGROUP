@@ -33,6 +33,7 @@ import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequ
 import pe.albrugroup.recruitment_service.entity.response.PageResponse;
 import pe.albrugroup.recruitment_service.entity.response.ContactoPostulacionResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
+import pe.albrugroup.recruitment_service.entity.response.ResumenReclutadorResponse;
 import pe.albrugroup.recruitment_service.entity.response.ResumenSupervisorResponse;
 import pe.albrugroup.recruitment_service.service.PostulacionService;
 
@@ -130,6 +131,14 @@ public class PostulacionController {
             @RequestParam Negocio negocio
     ) {
         return ResponseEntity.ok(postulacionService.obtenerResumenSupervisor(negocio));
+    }
+
+    @GetMapping("/resumen-reclutador")
+    @PreAuthorize("hasAuthority('READ_POSTULACIONES_RECLUTAMIENTO')")
+    public ResponseEntity<ResumenReclutadorResponse> obtenerResumenReclutador(
+            @RequestParam Negocio negocio
+    ) {
+        return ResponseEntity.ok(postulacionService.obtenerResumenReclutador(negocio));
     }
 
     @GetMapping("/{idPostulacion}")

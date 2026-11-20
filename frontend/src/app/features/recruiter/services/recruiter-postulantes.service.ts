@@ -13,6 +13,7 @@ import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/
 import { GestionReclutamiento, GestionRequest, HorarioMeet } from '../../../shared/models/recruitment/gestion-reclutamiento';
 import { ContactoPostulacionResponse } from '../../../shared/models/recruitment/contacto-postulacion-response';
 import { SesionMeetResponse } from '../../../shared/models/recruitment/sesion-meet-response';
+import { ResumenReclutadorResponse } from '../../../shared/models/recruitment/resumen-reclutador-response';
 import {
   MeetAsistenciaBatchRequest,
   MeetBatchResponse,
@@ -113,6 +114,13 @@ export class RecruiterPostulantesService {
     return this.http.get<PageResponse<PostulacionResponse>>(
       `${this.postulacionesUrl}/bandeja/reclutamiento`,
       { params }
+    );
+  }
+
+  obtenerResumenReclutador(negocio: RecruitmentNegocio): Observable<ResumenReclutadorResponse> {
+    return this.http.get<ResumenReclutadorResponse>(
+      `${this.postulacionesUrl}/resumen-reclutador`,
+      { params: new HttpParams().set('negocio', negocio) }
     );
   }
 

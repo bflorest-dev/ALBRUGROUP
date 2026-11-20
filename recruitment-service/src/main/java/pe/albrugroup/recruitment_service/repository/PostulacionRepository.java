@@ -57,6 +57,19 @@ public interface PostulacionRepository extends JpaRepository<Postulacion, Long>,
     @Query("""
             select count(p)
             from Postulacion p
+            where p.createdAt >= :inicio
+              and p.createdAt < :fin
+              and p.negocio = :negocio
+            """)
+    long countCreatedBetween(
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("negocio") Negocio negocio
+    );
+
+    @Query("""
+            select count(p)
+            from Postulacion p
             where p.etapa = :etapa
               and p.estado = :estado
               and (:negocio is null or p.negocio = :negocio)

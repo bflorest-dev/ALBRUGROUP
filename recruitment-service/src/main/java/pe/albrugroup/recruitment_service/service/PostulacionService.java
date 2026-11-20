@@ -41,6 +41,7 @@ import pe.albrugroup.recruitment_service.entity.response.ContactoPostulacionResp
 import pe.albrugroup.recruitment_service.entity.response.PostulacionHistorialResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulanteHistorialResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
+import pe.albrugroup.recruitment_service.entity.response.ResumenReclutadorResponse;
 import pe.albrugroup.recruitment_service.entity.response.ResumenSupervisorResponse;
 import pe.albrugroup.recruitment_service.exception.BadRequestException;
 import pe.albrugroup.recruitment_service.exception.ConflictException;
@@ -127,6 +128,48 @@ public class PostulacionService {
                         negocio
                 ))
                 .enCapacitacion(postulacionRepository.countByEtapa(Etapa.CAPACITACION, negocio))
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public ResumenReclutadorResponse obtenerResumenReclutador(Negocio negocio) {
+        if (negocio == null) {
+            throw new BadRequestException("El negocio es obligatorio para consultar el resumen del Reclutador.");
+        }
+
+        ZoneId zonaLima = ZoneId.of("America/Lima");
+        LocalDate hoy = LocalDate.now(zonaLima);
+        Instant inicioDia = hoy.atStartOfDay(zonaLima).toInstant();
+        Instant finDia = hoy.plusDays(1).atStartOfDay(zonaLima).toInstant();
+
+        return ResumenReclutadorResponse.builder()
+                .negocio(negocio)
+                .fechaReferencia(hoy)
+                .nuevosHoy(postulacionRepository.countCreatedBetween(inicioDia, finDia, negocio))
+                .porContactar(postulacionRepository.countByEstadoBandeja(
+                        EstadoBandejaPostulacion.POSTULANTE,
+                        negocio
+                ))
+                .sinContactoHoy(eventoRepository.countDistinctPostulacionesByTipificacionBetween(
+                        Accion.TIPIFICACION,
+                        "SIN_CONTACTO",
+                        inicioDia,
+                        finDia,
+                        negocio
+                ))
+                .meetsProgramadas(actividadReclutamientoRepository.countPendingMeetParticipantsByNegocio(negocio))
+                .aprobadosHoy(eventoRepository.countDistinctPostulacionesByAccionBetween(
+                        Accion.APROBACION_RECLUTAMIENTO,
+                        inicioDia,
+                        finDia,
+                        negocio
+                ))
+                .desaprobadosHoy(eventoRepository.countDistinctPostulacionesByAccionBetween(
+                        Accion.RECHAZO_RECLUTAMIENTO,
+                        inicioDia,
+                        finDia,
+                        negocio
+                ))
                 .build();
     }
 
