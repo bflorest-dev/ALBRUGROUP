@@ -1,5 +1,5 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
-import { NonNullableFormBuilder, Validators, type FormControl } from '@angular/forms';
+import { NonNullableFormBuilder, Validators, type FormControl, type FormGroup, type ValidatorFn } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { OperationalGateService } from '../../../core/services/operational-gate.service';
@@ -53,6 +53,22 @@ export type CommunitySection =
   | 'plataformas-digitales';
 export type CommunityPageMode = 'mantenimiento' | 'metricas' | 'finanzas';
 export type CommunityAccessMode = 'community' | 'admin';
+
+export type PlanDialogMode = 'create' | 'edit';
+export type PlanType = 'ONE_PLAY' | 'TWO_PLAY' | 'THREE_PLAY';
+export type PlanService = 'internet' | 'television' | 'telefono';
+
+export type PlanTypeOption = {
+  label: string;
+  value: PlanType;
+};
+
+export type PlanServiceOption = {
+  label: string;
+  value: PlanService;
+  description: string;
+  icon: string;
+};
 
 type ZoneDialogMode = 'create' | 'edit';
 type ZoneRuleDraft = ZonaReglaResponse & { label: string };
@@ -239,8 +255,23 @@ export class CommunityWorkspaceFacade {
   readonly editPlanDialogOpen = signal(false);
   readonly activePlanId = signal<number | null>(null);
   readonly activePlanProviderName = signal('');
+  readonly activePlanOriginalName = signal('');
   readonly selectedPlanProviderId = signal(0);
   readonly selectedPlanAdditionals = signal<PlanAdditionalDraft[]>([]);
+  readonly selectedPlanType = signal<PlanType | null>(null);
+  readonly selectedPlanServices = signal<PlanService[]>([]);
+  readonly planPricePromotional = signal(false);
+  readonly planSpeedPromotional = signal(false);
+  readonly planTypeOptions: PlanTypeOption[] = [
+    { label: '1 PLAY', value: 'ONE_PLAY' },
+    { label: '2 PLAY', value: 'TWO_PLAY' },
+    { label: '3 PLAY', value: 'THREE_PLAY' }
+  ];
+  readonly planServiceOptions: PlanServiceOption[] = [
+    { label: 'Internet', value: 'internet', description: 'Velocidad y tecnología del servicio', icon: 'pi pi-wifi' },
+    { label: 'Televisión', value: 'television', description: 'Paquete y cantidad de canales', icon: 'pi pi-desktop' },
+    { label: 'Telefonía', value: 'telefono', description: 'Minutos y descripción del servicio', icon: 'pi pi-phone' }
+  ];
   readonly selectedPromotionProviderId = signal(0);
   readonly promotionDialogOpen = signal(false);
   readonly editingPromotionId = signal<number | null>(null);
@@ -300,6 +331,10 @@ export class CommunityWorkspaceFacade {
       .map((plan) => ({ ...plan, promotionOptionLabel: this.buildPromotionPlanLabel(plan) }));
   });
   readonly planNamePlaceholder = computed(() => this.planes()[0]?.nombre ?? 'Plan Fibra 200');
+  readonly selectedPlanProviderName = computed(() => {
+    const provider = this.proveedores().find((item) => item.id === this.selectedPlanProviderId());
+    return provider?.nombre ?? this.activePlanProviderName();
+  });
   readonly additionalNamePlaceholder = computed(() => this.adicionales()[0]?.nombre ?? 'Mesh WiFi');
   readonly dailyFinanceCards = computed(() => buildFinanceCards(this.dailyExpenseSummary()));
   readonly monthlyFinanceCards = computed(() => buildFinanceCards(this.monthlyExpenseSummary()));
@@ -472,8 +507,15 @@ export class CommunityWorkspaceFacade {
   private bindPromotionalMonthControl(source: FormControl<number | null>, target: FormControl<number | null>): void {
     source.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
       this.updatePromotionalMonthControl(target, value);
+      this.setPlanMonthValidators(target, this.toOptionalPositiveNumber(value) !== null);
     });
     this.updatePromotionalMonthControl(target, source.value, false);
+    this.setPlanMonthValidators(target, this.toOptionalPositiveNumber(source.value) !== null);
+  }
+
+  private setPlanMonthValidators(target: FormControl<number | null>, required: boolean): void {
+    target.setValidators(required ? [Validators.required, Validators.min(1)] : []);
+    target.updateValueAndValidity({ emitEvent: false });
   }
 
   private updatePromotionalMonthControl(target: FormControl<number | null>, sourceValue: unknown, clearWhenDisabled = true): void {
@@ -509,6 +551,172 @@ export class CommunityWorkspaceFacade {
       this.editPlanForm.controls.velocidadPromocional.value,
       false
     );
+  }
+
+  private getPlanForm(mode: PlanDialogMode): FormGroup {
+    return mode === 'create' ? this.createPlanForm : this.editPlanForm;
+  }
+
+  private applyPlanServices(mode: PlanDialogMode, services: PlanService[]): void {
+    const uniqueServices = [...new Set(services)] as PlanService[];
+    this.selectedPlanServices.set(uniqueServices);
+    const form = this.getPlanForm(mode);
+
+    if (!uniqueServices.includes('television')) {
+      form.get('televisionNombre')?.reset('', { emitEvent: false });
+      form.get('televisionCanales')?.reset(null, { emitEvent: false });
+    }
+    if (!uniqueServices.includes('telefono')) {
+      form.get('telefonoDescripcion')?.reset('', { emitEvent: false });
+      form.get('telefonoMinutos')?.reset(null, { emitEvent: false });
+    }
+
+    this.syncPlanFormBehavior(mode);
+  }
+
+  private syncPlanFormBehavior(mode: PlanDialogMode): void {
+    this.syncPlanServiceValidators(mode);
+    this.syncPlanPromotionValidators(mode);
+    this.syncPlanTechnology(mode);
+    this.syncPlanZoneControl(mode);
+    this.refreshPlanPromotionalMonthControls();
+  }
+
+  private syncPlanZoneControl(mode: PlanDialogMode): void {
+    const control = this.getPlanForm(mode).get('idZona');
+    if (!control) return;
+
+    if (this.selectedPlanProviderId() > 0) {
+      control.enable({ emitEvent: false });
+    } else {
+      control.disable({ emitEvent: false });
+    }
+  }
+
+  private syncPlanServiceValidators(mode: PlanDialogMode): void {
+    const form = this.getPlanForm(mode);
+    const type = this.selectedPlanType();
+    const services = this.selectedPlanServices();
+    const internetValidators = type ? [Validators.required, Validators.min(1)] : [];
+    const televisionValidators = type && services.includes('television') ? [Validators.required] : [];
+    const televisionChannelsValidators = type && services.includes('television')
+      ? [Validators.required, Validators.min(0)]
+      : [];
+    const phoneValidators = type && services.includes('telefono') ? [Validators.required] : [];
+    const phoneMinutesValidators = type && services.includes('telefono')
+      ? [Validators.required, Validators.min(0)]
+      : [];
+
+    this.setPlanControlValidators(form, 'internetVelocidad', internetValidators);
+    this.setPlanControlValidators(form, 'televisionNombre', televisionValidators);
+    this.setPlanControlValidators(form, 'televisionCanales', televisionChannelsValidators);
+    this.setPlanControlValidators(form, 'telefonoDescripcion', phoneValidators);
+    this.setPlanControlValidators(form, 'telefonoMinutos', phoneMinutesValidators);
+  }
+
+  private syncPlanPromotionValidators(mode: PlanDialogMode): void {
+    const form = this.getPlanForm(mode);
+    const priceValidators = this.planPricePromotional() ? [Validators.required, Validators.min(0.01)] : [Validators.min(0.01)];
+    const speedValidators = this.planSpeedPromotional() ? [Validators.required, Validators.min(1)] : [Validators.min(1)];
+    this.setPlanControlValidators(form, 'precioPromocional', priceValidators);
+    this.setPlanControlValidators(form, 'velocidadPromocional', speedValidators);
+
+    const priceValue = this.toOptionalPositiveNumber(form.get('precioPromocional')?.value);
+    const speedValue = this.toOptionalPositiveInteger(form.get('velocidadPromocional')?.value);
+    this.setPlanControlValidators(
+      form,
+      'mesesPromocionPrecio',
+      this.planPricePromotional() && priceValue !== null ? [Validators.required, Validators.min(1)] : []
+    );
+    this.setPlanControlValidators(
+      form,
+      'mesesPromocionVelocidad',
+      this.planSpeedPromotional() && speedValue !== null ? [Validators.required, Validators.min(1)] : []
+    );
+    this.refreshPlanPromotionalMonthControls();
+  }
+
+  private setPlanControlValidators(form: FormGroup, name: string, validators: ValidatorFn[]): void {
+    const control = form.get(name);
+    if (!control) return;
+    control.setValidators(validators);
+    control.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private syncPlanTechnology(mode: PlanDialogMode): void {
+    const form = this.getPlanForm(mode);
+    const providerId = mode === 'create' ? this.createPlanForm.controls.idProveedor.value : this.selectedPlanProviderId();
+    if (this.isClaroProviderId(providerId)) {
+      form.get('internetTecnologia')?.setValue('HIBRIDA', { emitEvent: false });
+    }
+  }
+
+  private isClaroProviderId(idProveedor: number | null | undefined): boolean {
+    const providerName = this.proveedores().find((provider) => provider.id === idProveedor)?.nombre;
+    return this.normalizeText(providerName).includes('CLARO');
+  }
+
+  private validatePlanForm(mode: PlanDialogMode): boolean {
+    const type = this.selectedPlanType();
+    const services = this.selectedPlanServices();
+    if (!type) {
+      this.errorMessage.set('Selecciona el tipo de plan para continuar.');
+      return false;
+    }
+
+    const expectedServiceCount = type === 'ONE_PLAY' ? 1 : type === 'TWO_PLAY' ? 2 : 3;
+    if (services.length !== expectedServiceCount) {
+      this.errorMessage.set(type === 'TWO_PLAY'
+        ? 'En un plan 2 PLAY debes seleccionar Internet y un servicio adicional.'
+        : 'La combinación de servicios no coincide con el tipo de plan seleccionado.');
+      return false;
+    }
+
+    this.syncPlanFormBehavior(mode);
+    const form = this.getPlanForm(mode);
+    if (form.invalid) {
+      this.errorMessage.set('Completa los datos obligatorios del plan.');
+      return false;
+    }
+
+    return true;
+  }
+
+  private resolvePlanType(plan: PlanResponse): PlanType | null {
+    const hasInternet = this.getPlanInternetSpeed(plan) !== null;
+    const hasTelevision = this.getPlanTelevisionName(plan) !== null || this.getPlanTelevisionChannels(plan) !== null;
+    const hasTelefono = this.getPlanPhoneDescription(plan) !== null || this.getPlanPhoneMinutes(plan) !== null;
+    if (hasInternet && hasTelevision && hasTelefono) return 'THREE_PLAY';
+    if (hasInternet && (hasTelevision || hasTelefono)) return 'TWO_PLAY';
+    if (hasInternet) return 'ONE_PLAY';
+
+    const normalizedName = this.normalizeText(plan.nombre);
+    if (/\b3\s*PLAY\b/.test(normalizedName)) return 'THREE_PLAY';
+    if (/\b2\s*PLAY\b/.test(normalizedName)) return 'TWO_PLAY';
+    if (/\b1\s*PLAY\b/.test(normalizedName)) return 'ONE_PLAY';
+    return null;
+  }
+
+  private resolvePlanServices(plan: PlanResponse, type: PlanType | null): PlanService[] {
+    const hasInternet = this.getPlanInternetSpeed(plan) !== null;
+    const hasTelevision = this.getPlanTelevisionName(plan) !== null || this.getPlanTelevisionChannels(plan) !== null;
+    const hasTelefono = this.getPlanPhoneDescription(plan) !== null || this.getPlanPhoneMinutes(plan) !== null;
+
+    if (type === 'ONE_PLAY') return ['internet'];
+    if (type === 'THREE_PLAY') return ['internet', 'television', 'telefono'];
+    if (type === 'TWO_PLAY') {
+      return ['internet', ...(hasTelevision ? ['television' as PlanService] : hasTelefono ? ['telefono' as PlanService] : [])];
+    }
+
+    return [
+      ...(hasInternet ? ['internet' as PlanService] : []),
+      ...(hasTelevision ? ['television' as PlanService] : []),
+      ...(hasTelefono ? ['telefono' as PlanService] : [])
+    ];
+  }
+
+  private normalizeText(value: unknown): string {
+    return String(value ?? '').trim().toUpperCase();
   }
 
   setAccessMode(mode: CommunityAccessMode): void {
@@ -1010,6 +1218,86 @@ export class CommunityWorkspaceFacade {
     this.additionalDialogOpen.set(false);
   }
 
+  planTypeLabel(value: PlanType | null): string {
+    return this.planTypeOptions.find((option) => option.value === value)?.label ?? '';
+  }
+
+  isPlanServiceSelected(service: PlanService): boolean {
+    return this.selectedPlanServices().includes(service);
+  }
+
+  isPlanServiceDisabled(service: PlanService): boolean {
+    const type = this.selectedPlanType();
+    if (service === 'internet') {
+      return true;
+    }
+
+    return !type || type === 'ONE_PLAY' || type === 'THREE_PLAY';
+  }
+
+  isPlanProviderClaro(mode: PlanDialogMode): boolean {
+    const providerName = mode === 'edit' ? this.activePlanProviderName() : this.selectedPlanProviderName();
+    return this.normalizeText(providerName).includes('CLARO');
+  }
+
+  changePlanType(mode: PlanDialogMode, value: PlanType | null): void {
+    this.selectedPlanType.set(value);
+    this.getPlanForm(mode).get('nombre')?.setValue(this.planTypeLabel(value));
+
+    if (!value) {
+      this.selectedPlanServices.set([]);
+      this.syncPlanFormBehavior(mode);
+      return;
+    }
+
+    const currentServices = this.selectedPlanServices();
+    const nextServices: PlanService[] = ['internet'];
+    if (value === 'THREE_PLAY') {
+      nextServices.push('television', 'telefono');
+    } else if (value === 'TWO_PLAY') {
+      if (currentServices.includes('television')) {
+        nextServices.push('television');
+      } else if (currentServices.includes('telefono')) {
+        nextServices.push('telefono');
+      }
+    }
+
+    this.applyPlanServices(mode, nextServices);
+  }
+
+  togglePlanService(mode: PlanDialogMode, service: PlanService, checked: boolean): void {
+    if (service === 'internet' || this.isPlanServiceDisabled(service) || this.selectedPlanType() !== 'TWO_PLAY') {
+      return;
+    }
+
+    const nextServices: PlanService[] = ['internet'];
+    if (checked) {
+      nextServices.push(service);
+    }
+
+    this.applyPlanServices(mode, nextServices);
+  }
+
+  togglePlanPricePromotional(mode: PlanDialogMode, enabled: boolean): void {
+    this.planPricePromotional.set(enabled);
+    const form = this.getPlanForm(mode);
+    if (!enabled) {
+      form.get('precioPromocional')?.reset(null, { emitEvent: false });
+      form.get('mesesPromocionPrecio')?.reset(null, { emitEvent: false });
+    }
+    this.syncPlanPromotionValidators(mode);
+  }
+
+  togglePlanSpeedPromotional(mode: PlanDialogMode, enabled: boolean): void {
+    this.planSpeedPromotional.set(enabled);
+    const form = this.getPlanForm(mode);
+    if (!enabled) {
+      form.get('velocidadPromocional')?.reset(null, { emitEvent: false });
+      form.get('mesesPromocionVelocidad')?.reset(null, { emitEvent: false });
+    }
+    this.syncPlanPromotionValidators(mode);
+  }
+
   openCreatePlanDialog(): void {
     if (!this.ensureCanMutate()) {
       return;
@@ -1034,9 +1322,15 @@ export class CommunityWorkspaceFacade {
       mesesPromocionVelocidad: null,
       idZona: 0
     });
-    this.refreshPlanPromotionalMonthControls();
+    this.activePlanOriginalName.set('');
+    this.activePlanProviderName.set('');
     this.selectedPlanProviderId.set(0);
     this.selectedPlanAdditionals.set([]);
+    this.selectedPlanType.set(null);
+    this.selectedPlanServices.set([]);
+    this.planPricePromotional.set(false);
+    this.planSpeedPromotional.set(false);
+    this.syncPlanFormBehavior('create');
     this.createPlanDialogOpen.set(true);
     this.clearMessages();
   }
@@ -1045,6 +1339,10 @@ export class CommunityWorkspaceFacade {
     this.createPlanDialogOpen.set(false);
     this.selectedPlanProviderId.set(0);
     this.selectedPlanAdditionals.set([]);
+    this.selectedPlanType.set(null);
+    this.selectedPlanServices.set([]);
+    this.planPricePromotional.set(false);
+    this.planSpeedPromotional.set(false);
   }
 
   openEditPlanDialog(plan: PlanResponse): void {
@@ -1054,9 +1352,11 @@ export class CommunityWorkspaceFacade {
 
     this.activePlanId.set(plan.id);
     this.activePlanProviderName.set(plan.nombreProveedor ?? '');
+    this.activePlanOriginalName.set(plan.nombre ?? '');
     this.selectedPlanProviderId.set(plan.idProveedor ?? 0);
+    const planType = this.resolvePlanType(plan);
     this.editPlanForm.reset({
-      nombre: plan.nombre ?? '',
+      nombre: this.planTypeLabel(planType),
       precio: this.toOptionalPositiveNumber(plan.precio),
       precioPromocional: this.toOptionalPositiveNumber(plan.precioPromocional),
       mesesPromocionPrecio: this.toOptionalPositiveInteger(plan.mesesPromocionPrecio),
@@ -1064,7 +1364,7 @@ export class CommunityWorkspaceFacade {
       vigenciaHasta: this.toDateInputValue(plan.vigenciaHasta),
       internetVelocidad: this.getPlanInternetSpeed(plan),
       internetUnidad: this.getPlanInternetUnit(plan) ?? 'MBPS',
-      internetTecnologia: this.getPlanInternetTechnology(plan) ?? 'FTTH',
+      internetTecnologia: this.isClaroProviderId(plan.idProveedor) ? 'HIBRIDA' : this.getPlanInternetTechnology(plan) ?? 'FTTH',
       televisionNombre: this.getPlanTelevisionName(plan) ?? '',
       televisionCanales: this.getPlanTelevisionChannels(plan),
       telefonoMinutos: this.getPlanPhoneMinutes(plan),
@@ -1083,6 +1383,11 @@ export class CommunityWorkspaceFacade {
         cantidadMaximaAdicional: adicional.cantidadMaximaAdicional ?? 0
       }))
     );
+    this.selectedPlanType.set(planType);
+    this.selectedPlanServices.set(this.resolvePlanServices(plan, planType));
+    this.planPricePromotional.set(this.toOptionalPositiveNumber(plan.precioPromocional) !== null);
+    this.planSpeedPromotional.set(this.toOptionalPositiveInteger(plan.velocidadPromocional) !== null);
+    this.syncPlanFormBehavior('edit');
     this.editPlanDialogOpen.set(true);
     this.clearMessages();
   }
@@ -1091,14 +1396,21 @@ export class CommunityWorkspaceFacade {
     this.editPlanDialogOpen.set(false);
     this.activePlanId.set(null);
     this.activePlanProviderName.set('');
+    this.activePlanOriginalName.set('');
     this.selectedPlanProviderId.set(0);
     this.selectedPlanAdditionals.set([]);
+    this.selectedPlanType.set(null);
+    this.selectedPlanServices.set([]);
+    this.planPricePromotional.set(false);
+    this.planSpeedPromotional.set(false);
   }
 
   onCreatePlanProviderChanged(): void {
     this.selectedPlanProviderId.set(this.createPlanForm.controls.idProveedor.value);
     this.createPlanForm.controls.idZona.setValue(0);
     this.selectedPlanAdditionals.set([]);
+    this.syncPlanTechnology('create');
+    this.syncPlanZoneControl('create');
   }
 
   addPlanAdditional(idAdicional: number): void {
@@ -1148,8 +1460,7 @@ export class CommunityWorkspaceFacade {
   }
 
   async submitPlan(): Promise<void> {
-    if (this.createPlanForm.invalid) {
-      this.errorMessage.set('Completa los datos obligatorios del plan.');
+    if (!this.validatePlanForm('create')) {
       return;
     }
 
@@ -1161,8 +1472,7 @@ export class CommunityWorkspaceFacade {
 
   async updatePlan(): Promise<void> {
     const idPlan = this.activePlanId();
-    if (!idPlan || this.editPlanForm.invalid) {
-      this.errorMessage.set('Indica el plan, nombre y precio para actualizar.');
+    if (!idPlan || !this.validatePlanForm('edit')) {
       return;
     }
 
@@ -1806,31 +2116,31 @@ export class CommunityWorkspaceFacade {
       idProveedor: raw.idProveedor,
       nombre: raw.nombre,
       precio: this.toOptionalPositiveNumber(raw.precio),
-      precioPromocional: this.toOptionalPositiveNumber(raw.precioPromocional),
-      mesesPromocionPrecio: this.toOptionalPositiveInteger(raw.mesesPromocionPrecio),
+      precioPromocional: this.planPricePromotional() ? this.toOptionalPositiveNumber(raw.precioPromocional) : null,
+      mesesPromocionPrecio: this.planPricePromotional() ? this.toOptionalPositiveInteger(raw.mesesPromocionPrecio) : null,
       vigenciaDesde: raw.vigenciaDesde || null,
       vigenciaHasta: raw.vigenciaHasta || null,
-      internet: this.toOptionalPositiveInteger(raw.internetVelocidad)
+      internet: this.selectedPlanServices().includes('internet') && this.toOptionalPositiveInteger(raw.internetVelocidad)
         ? {
             velocidad: this.toOptionalPositiveInteger(raw.internetVelocidad),
             unidad: raw.internetUnidad,
-            tecnologia: raw.internetTecnologia
+            tecnologia: this.isClaroProviderId(raw.idProveedor) ? 'HIBRIDA' : raw.internetTecnologia
           }
         : null,
-      television: raw.televisionNombre
+      television: this.selectedPlanServices().includes('television') && raw.televisionNombre
         ? {
             nombre: raw.televisionNombre,
             cantidadCanales: this.toOptionalNonNegativeInteger(raw.televisionCanales) ?? 0
           }
         : null,
-      telefono: raw.telefonoDescripcion
+      telefono: this.selectedPlanServices().includes('telefono') && raw.telefonoDescripcion
         ? {
             minutos: this.toOptionalNonNegativeInteger(raw.telefonoMinutos) ?? 0,
             descripcion: raw.telefonoDescripcion
           }
         : null,
-      velocidadPromocional: this.toOptionalPositiveInteger(raw.velocidadPromocional),
-      mesesPromocionVelocidad: this.toOptionalPositiveInteger(raw.mesesPromocionVelocidad),
+      velocidadPromocional: this.planSpeedPromotional() ? this.toOptionalPositiveInteger(raw.velocidadPromocional) : null,
+      mesesPromocionVelocidad: this.planSpeedPromotional() ? this.toOptionalPositiveInteger(raw.mesesPromocionVelocidad) : null,
       idZona: raw.idZona || null,
       adicionales: this.selectedPlanAdditionals().length
         ? this.selectedPlanAdditionals().map((adicional) => ({
@@ -1849,31 +2159,31 @@ export class CommunityWorkspaceFacade {
     return this.cleanObject({
       nombre: raw.nombre,
       precio: this.toOptionalPositiveNumber(raw.precio),
-      precioPromocional: this.toOptionalPositiveNumber(raw.precioPromocional),
-      mesesPromocionPrecio: this.toOptionalPositiveInteger(raw.mesesPromocionPrecio),
+      precioPromocional: this.planPricePromotional() ? this.toOptionalPositiveNumber(raw.precioPromocional) : null,
+      mesesPromocionPrecio: this.planPricePromotional() ? this.toOptionalPositiveInteger(raw.mesesPromocionPrecio) : null,
       vigenciaDesde: raw.vigenciaDesde || null,
       vigenciaHasta: raw.vigenciaHasta || null,
-      internet: this.toOptionalPositiveInteger(raw.internetVelocidad)
+      internet: this.selectedPlanServices().includes('internet') && this.toOptionalPositiveInteger(raw.internetVelocidad)
         ? {
             velocidad: this.toOptionalPositiveInteger(raw.internetVelocidad),
             unidad: raw.internetUnidad,
-            tecnologia: raw.internetTecnologia
+            tecnologia: this.isClaroProviderId(this.selectedPlanProviderId()) ? 'HIBRIDA' : raw.internetTecnologia
           }
         : null,
-      television: raw.televisionNombre
+      television: this.selectedPlanServices().includes('television') && raw.televisionNombre
         ? {
             nombre: raw.televisionNombre,
             cantidadCanales: this.toOptionalNonNegativeInteger(raw.televisionCanales) ?? 0
           }
         : null,
-      telefono: raw.telefonoDescripcion
+      telefono: this.selectedPlanServices().includes('telefono') && raw.telefonoDescripcion
         ? {
             minutos: this.toOptionalNonNegativeInteger(raw.telefonoMinutos) ?? 0,
             descripcion: raw.telefonoDescripcion
           }
         : null,
-      velocidadPromocional: this.toOptionalPositiveInteger(raw.velocidadPromocional),
-      mesesPromocionVelocidad: this.toOptionalPositiveInteger(raw.mesesPromocionVelocidad),
+      velocidadPromocional: this.planSpeedPromotional() ? this.toOptionalPositiveInteger(raw.velocidadPromocional) : null,
+      mesesPromocionVelocidad: this.planSpeedPromotional() ? this.toOptionalPositiveInteger(raw.mesesPromocionVelocidad) : null,
       idZona: raw.idZona || null,
       adicionales: this.selectedPlanAdditionals().length
         ? this.selectedPlanAdditionals().map((adicional) => ({

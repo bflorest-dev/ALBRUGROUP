@@ -1,0 +1,352 @@
+<p-drawer
+  [visible]="visible"
+  (visibleChange)="!$event && requestClose()"
+  position="right"
+  [modal]="true"
+  [closeOnEscape]="!showDiscardConfirmation"
+  [dismissible]="!showDiscardConfirmation"
+  [blockScroll]="true"
+  [showCloseIcon]="false"
+  styleClass="plan-drawer"
+>
+  <div class="plan-drawer__surface" [class]="providerAccentClass()">
+    <header class="plan-drawer__header">
+      <div class="plan-drawer__identity">
+        <span class="plan-drawer__mark" aria-hidden="true"><i class="pi pi-box"></i></span>
+        <div>
+          <span class="plan-drawer__eyebrow">Planes</span>
+          <h2>{{ title }}</h2>
+        </div>
+      </div>
+      <button pButton type="button" icon="pi pi-times" severity="secondary" [text]="true" [rounded]="true" aria-label="Cerrar" (click)="requestClose()"></button>
+    </header>
+
+    @if (showDiscardConfirmation) {
+      <div
+        class="plan-discard-confirmation"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="plan-discard-title"
+        aria-describedby="plan-discard-copy"
+      >
+        <div class="plan-discard-confirmation__card">
+          <span class="plan-discard-confirmation__icon" aria-hidden="true"><i class="pi pi-exclamation-triangle"></i></span>
+          <h3 id="plan-discard-title">¿Descartar cambios?</h3>
+          <p id="plan-discard-copy">Se perderán los cambios realizados en este plan.</p>
+          <div class="plan-discard-confirmation__actions">
+            <button pButton type="button" label="Seguir editando" severity="secondary" autofocus (click)="cancelDiscard()"></button>
+            <button pButton type="button" label="Descartar cambios" (click)="confirmDiscard()"></button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <form class="plan-form" [formGroup]="form" (input)="markChanged()" (ngSubmit)="submit()" [attr.aria-label]="title">
+      <div class="plan-form__body">
+      @if (mode === 'edit' && facade.activePlanOriginalName() && facade.activePlanOriginalName() !== form.get('nombre')?.value) {
+        <div class="plan-form__migration-note">
+          <span>Nombre anterior</span>
+          <strong>{{ facade.activePlanOriginalName() }}</strong>
+        </div>
+      }
+
+    <fieldset class="plan-form__section plan-form__section--setup">
+      <legend class="visually-hidden">Configuración del plan</legend>
+      <div class="plan-form__grid plan-form__grid--three">
+        @if (mode === 'create') {
+          <app-plan-select
+            label="Proveedor"
+            placeholder="Seleccionar proveedor"
+            [value]="facade.selectedPlanProviderId() || ''"
+            [options]="providerOptions()"
+            (selectionChange)="providerChanged($event)"
+          />
+        } @else {
+          <label>
+            <span>Proveedor</span>
+            <input pInputText type="text" [value]="facade.activePlanProviderName()" readonly />
+          </label>
+        }
+
+        <app-plan-select
+          label="Zona"
+          [placeholder]="facade.selectedPlanProviderId() ? 'Selecciona Zona' : 'Selecciona proveedor primero'"
+          [value]="facade.selectedPlanProviderId() ? (form.get('idZona')?.value || '') : ''"
+          [options]="zoneOptions()"
+          [disabled]="!facade.selectedPlanProviderId()"
+          (selectionChange)="zoneChanged($event)"
+        />
+
+        <app-plan-select
+          label="Tipo de Plan"
+          placeholder="Seleccionar tipo"
+          [value]="facade.selectedPlanType() ?? ''"
+          [options]="planTypeOptions()"
+          [disabled]="!facade.selectedPlanProviderId()"
+          (selectionChange)="changePlanType($event)"
+        />
+      </div>
+    </fieldset>
+
+    <fieldset class="plan-form__section">
+      <legend>Precio y vigencia</legend>
+      <div class="plan-form__grid plan-form__grid--two plan-form__grid--commercial">
+        <label>
+            <span>Cargo fijo</span>
+          <div class="input-prefix">
+            <span>S/</span>
+            <input pInputText type="number" min="0.01" step="0.01" formControlName="precio" placeholder="79.90" required />
+          </div>
+        </label>
+
+        <div class="plan-mode-control">
+          <span class="plan-mode-control__label">Modalidad del precio</span>
+          <div class="plan-choice-group" role="radiogroup" aria-label="Modalidad del precio">
+            <label class="plan-choice" [class.is-selected]="!facade.planPricePromotional()">
+              <input
+                type="radio"
+                [name]="'plan-price-mode-' + mode"
+                [checked]="!facade.planPricePromotional()"
+                (change)="setPriceMode(false)"
+              />
+              <span>Precio fijo</span>
+            </label>
+            <label class="plan-choice" [class.is-selected]="facade.planPricePromotional()">
+              <input
+                type="radio"
+                [name]="'plan-price-mode-' + mode"
+                [checked]="facade.planPricePromotional()"
+                (change)="setPriceMode(true)"
+              />
+              <span>Precio promocional</span>
+            </label>
+          </div>
+        </div>
+
+        @if (facade.planPricePromotional()) {
+          <div class="plan-promo-fields" [id]="'plan-price-promo-fields-' + mode">
+            <label>
+              <span>Precio promocional</span>
+              <div class="input-prefix">
+                <span>S/</span>
+                <input pInputText type="number" min="0.01" step="0.01" formControlName="precioPromocional" placeholder="59.90" required />
+              </div>
+            </label>
+            <label>
+              <span>Meses promocionales</span>
+              <input
+                pInputText
+                type="number"
+                min="1"
+                inputmode="numeric"
+                formControlName="mesesPromocionPrecio"
+                placeholder="3"
+                (keydown)="preventNonInteger($event)"
+                required
+              />
+            </label>
+          </div>
+        }
+
+        <label>
+          <span>Vigencia desde</span>
+          <input pInputText type="date" formControlName="vigenciaDesde" />
+        </label>
+        <label>
+          <span>Vigencia hasta</span>
+          <input pInputText type="date" formControlName="vigenciaHasta" />
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset class="plan-form__section plan-form__section--services">
+      <legend>Servicios</legend>
+      @if (facade.selectedPlanType()) {
+        <div class="plan-service-options" role="group" aria-label="Servicios del plan">
+          @for (service of facade.planServiceOptions; track service.value) {
+            <div class="plan-service-option" [class.is-selected]="isServiceSelected(service.value)" [class.is-locked]="isServiceDisabled(service.value)">
+              <input
+                type="checkbox"
+                [id]="serviceId(service.value)"
+                [checked]="isServiceSelected(service.value)"
+                [disabled]="isServiceDisabled(service.value)"
+                [attr.aria-describedby]="serviceId(service.value) + '-description'"
+                (change)="toggleService(service.value, $event)"
+              />
+              <label [for]="serviceId(service.value)">
+                <i [class]="service.icon" aria-hidden="true"></i>
+                <span>
+                  <strong>{{ service.label }}</strong>
+                  <small [id]="serviceId(service.value) + '-description'">{{ service.description }}</small>
+                </span>
+              </label>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="plan-form__empty">Selecciona un tipo de plan.</p>
+      }
+    </fieldset>
+
+    @if (isServiceSelected('internet')) {
+      <fieldset class="plan-form__section plan-form__section--service plan-form__section--service-internet">
+        <legend><i class="pi pi-wifi" aria-hidden="true"></i> Internet</legend>
+        <div class="plan-form__grid plan-form__grid--internet" [class.plan-form__grid--internet-compact]="facade.isPlanProviderClaro(mode)">
+          <label>
+            <span>Velocidad base</span>
+            <input pInputText type="number" min="1" inputmode="numeric" formControlName="internetVelocidad" placeholder="200" (keydown)="preventNonInteger($event)" required />
+          </label>
+
+          <app-plan-select
+            label="Unidad"
+            [value]="controlValue('internetUnidad')"
+            [options]="unitOptions"
+            (selectionChange)="setControlValue('internetUnidad', $event)"
+          />
+
+          @if (!facade.isPlanProviderClaro(mode)) {
+            <app-plan-select
+              label="Tecnología"
+              [value]="controlValue('internetTecnologia')"
+              [options]="technologyOptions"
+              (selectionChange)="setControlValue('internetTecnologia', $event)"
+            />
+          }
+
+          <div class="plan-mode-control">
+            <span class="plan-mode-control__label">Modalidad de velocidad</span>
+            <div class="plan-choice-group" role="radiogroup" aria-label="Modalidad de velocidad">
+              <label class="plan-choice" [class.is-selected]="!facade.planSpeedPromotional()">
+                <input
+                  type="radio"
+                  [name]="'plan-speed-mode-' + mode"
+                  [checked]="!facade.planSpeedPromotional()"
+                  (change)="setSpeedMode(false)"
+                />
+                <span>Velocidad fija</span>
+              </label>
+              <label class="plan-choice" [class.is-selected]="facade.planSpeedPromotional()">
+                <input
+                  type="radio"
+                  [name]="'plan-speed-mode-' + mode"
+                  [checked]="facade.planSpeedPromotional()"
+                  (change)="setSpeedMode(true)"
+                />
+                <span>Velocidad promocional</span>
+              </label>
+            </div>
+          </div>
+
+          @if (facade.planSpeedPromotional()) {
+            <div class="plan-promo-fields" [id]="'plan-speed-promo-fields-' + mode">
+              <label>
+                <span>Velocidad promocional</span>
+                <input pInputText type="number" min="1" inputmode="numeric" formControlName="velocidadPromocional" placeholder="400" (keydown)="preventNonInteger($event)" required />
+              </label>
+              <label>
+                <span>Meses promocionales</span>
+                <input
+                  pInputText
+                  type="number"
+                  min="1"
+                  inputmode="numeric"
+                  formControlName="mesesPromocionVelocidad"
+                  placeholder="3"
+                  (keydown)="preventNonInteger($event)"
+                  required
+                />
+              </label>
+            </div>
+          }
+        </div>
+      </fieldset>
+    }
+
+    @if (isServiceSelected('television')) {
+      <fieldset class="plan-form__section plan-form__section--service plan-form__section--service-television">
+        <legend><i class="pi pi-desktop" aria-hidden="true"></i> Televisión</legend>
+        <div class="plan-form__grid plan-form__grid--two">
+          <label>
+            <span>Nombre del paquete de TV</span>
+            <input pInputText type="text" formControlName="televisionNombre" placeholder="TV Full HD" required />
+          </label>
+          <label>
+            <span>Cantidad de canales</span>
+            <input pInputText type="number" min="0" inputmode="numeric" formControlName="televisionCanales" placeholder="80" (keydown)="preventNonInteger($event)" required />
+          </label>
+        </div>
+      </fieldset>
+    }
+
+    @if (isServiceSelected('telefono')) {
+      <fieldset class="plan-form__section plan-form__section--service plan-form__section--service-telefono">
+        <legend><i class="pi pi-phone" aria-hidden="true"></i> Telefonía</legend>
+        <div class="plan-form__grid plan-form__grid--two">
+          <label>
+            <span>Descripción de la telefonía</span>
+            <input pInputText type="text" formControlName="telefonoDescripcion" placeholder="Fijo ilimitado nacional" required />
+          </label>
+          <label>
+            <span>Cantidad de minutos</span>
+            <input pInputText type="number" min="0" inputmode="numeric" formControlName="telefonoMinutos" placeholder="1000" (keydown)="preventNonInteger($event)" required />
+          </label>
+        </div>
+      </fieldset>
+    }
+
+    @if (facade.selectedPlanType()) {
+      <fieldset class="plan-form__section plan-form__section--additionals">
+        <legend><i class="pi pi-plus-circle" aria-hidden="true"></i> Adicionales</legend>
+        <div class="plan-additionals__picker">
+          <app-plan-select
+            label="Agregar adicional"
+            [placeholder]="facade.canSelectPlanAdditional() ? 'Seleccionar adicional' : 'Sin adicionales'"
+            [options]="additionalOptions()"
+            [disabled]="!facade.canSelectPlanAdditional()"
+            (selectionChange)="addPlanAdditional($event)"
+          />
+        </div>
+        <div class="plan-additionals__list">
+          @for (adicional of facade.selectedPlanAdditionals(); track adicional.idAdicional) {
+            <div class="plan-additional-item">
+              <div class="plan-additional-item__header">
+                <strong>{{ adicional.nombre }}</strong>
+                <button pButton type="button" icon="pi pi-times" severity="secondary" size="small" text aria-label="Quitar adicional" (click)="removePlanAdditional(adicional.idAdicional)"></button>
+              </div>
+              <div class="plan-additional-item__controls">
+                <label class="plan-additional-field">
+                  <span>Cantidad incluida</span>
+                  <input pInputText type="number" min="0" [value]="adicional.cantidadIncluida" (input)="updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadIncluida', $any($event.target).value)" />
+                </label>
+                <label class="checkbox-row plan-additional-field plan-additional-field--toggle">
+                  <span>Permite compra</span>
+                  <span class="plan-additional-check">
+                    <input type="checkbox" [checked]="adicional.permiteCompraAdicional" (change)="updatePlanAdditionalPurchase(adicional.idAdicional, $any($event.target).checked)" />
+                    <span>Habilitado</span>
+                  </span>
+                </label>
+                <label class="plan-additional-field">
+                  <span>Máximo por compra</span>
+                  <input pInputText type="number" min="0" [value]="adicional.cantidadMaximaAdicional" (input)="updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadMaximaAdicional', $any($event.target).value)" />
+                </label>
+              </div>
+            </div>
+          } @empty {
+            <p class="plan-additionals__empty">Aún no agregas adicionales.</p>
+          }
+        </div>
+      </fieldset>
+    }
+
+    @if (facade.errorMessage()) {
+      <p-message class="plan-form__message" severity="error" [text]="facade.errorMessage() ?? ''" />
+    }
+      </div>
+
+    <div class="plan-form__actions">
+      <button pButton type="button" label="Cancelar" severity="secondary" (click)="requestClose()"></button>
+      <button pButton type="submit" icon="pi pi-save" [label]="submitLabel" [loading]="facade.isSaving()"></button>
+    </div>
+    </form>
+  </div>
+</p-drawer>

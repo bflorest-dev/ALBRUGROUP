@@ -497,8 +497,6 @@ label,
   .community-form-card .p-select,
   .community-form-card .p-multiselect,
   .compact-dialog .p-inputtext,
-  .plan-dialog .p-inputtext,
-  .plan-dialog .p-select,
   .zone-dialog .p-inputtext,
   .zone-dialog .p-select,
   .promotion-dialog .p-inputtext,
@@ -529,10 +527,6 @@ label,
 
   .zone-dialog {
     width: min(56rem, 94vw);
-  }
-
-  .plan-dialog {
-    width: min(72rem, 96vw);
   }
 
   .promotion-dialog {

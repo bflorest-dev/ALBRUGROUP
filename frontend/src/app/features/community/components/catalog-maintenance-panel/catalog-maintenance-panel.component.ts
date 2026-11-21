@@ -20,6 +20,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { CommunitySection, CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
 import { CampanaResponse } from '../../services/community-lead.service';
+import { PlanFormDialogComponent } from '../plan-form-dialog/plan-form-dialog.component';
 
 export const CATALOG_MAINTENANCE_SECTIONS: { id: CommunitySection; label: string; icon: string }[] = [
   { id: 'proveedores', label: 'Proveedores', icon: 'pi pi-building' },
@@ -52,7 +53,8 @@ export const CATALOG_MAINTENANCE_SECTIONS: { id: CommunitySection; label: string
     TagModule,
     ToggleSwitchModule,
     TooltipModule,
-    PhoneNumberFieldComponent
+    PhoneNumberFieldComponent,
+    PlanFormDialogComponent
   ],
   templateUrl: './catalog-maintenance-panel.component.html',
   styleUrl: './catalog-maintenance-panel.component.scss',
