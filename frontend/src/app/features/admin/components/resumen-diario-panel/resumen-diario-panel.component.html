@@ -5,12 +5,62 @@
 @if (facade.showErrorPlaceholder()) {
   <p-message severity="error" text="No se pudo cargar el resumen diario." styleClass="resumen-message" />
 } @else if (facade.isInitialLoading()) {
-  <div class="resumen-empty">Cargando resumen...</div>
-} @else if (facade.isEmpty()) {
-  <div class="resumen-empty">No hubo actividad en el período seleccionado.</div>
+  <article class="poster poster--skeleton" aria-busy="true" aria-label="Cargando resumen diario">
+    <header class="poster-head">
+      <div class="poster-head__left">
+        <span class="skeleton skeleton--eyebrow"></span>
+        <span class="skeleton skeleton--title"></span>
+      </div>
+      <div class="poster-head__right">
+        <span class="skeleton skeleton--team"></span>
+        <span class="skeleton skeleton--date"></span>
+        <span class="skeleton skeleton--chip"></span>
+        <span class="skeleton skeleton--chip skeleton--chip-short"></span>
+      </div>
+    </header>
+
+    <section class="kpis" aria-hidden="true">
+      @for (card of [1, 2]; track card) {
+        <div class="kpi">
+          <span class="skeleton skeleton--kpi-label"></span>
+          <span class="skeleton skeleton--kpi-context"></span>
+          <span class="skeleton skeleton--kpi-total"></span>
+          <div class="metric-grid skeleton-metric-grid">
+            @for (metric of [1, 2, 3]; track metric) {
+              <span class="skeleton skeleton--metric"></span>
+            }
+          </div>
+        </div>
+      }
+    </section>
+
+    <div class="hourly-action skeleton-action" aria-hidden="true">
+      <span class="skeleton skeleton--action"></span>
+      <span class="skeleton skeleton--hint"></span>
+    </div>
+
+    <section class="grid3" aria-hidden="true">
+      @for (panel of [1, 2, 3]; track panel) {
+        <div class="panel">
+          <div class="panel-head">
+            <span class="skeleton skeleton--panel-title"></span>
+            @if (panel === 1) {
+              <span class="skeleton skeleton--tag"></span>
+            }
+          </div>
+          <div class="panel-body skeleton-panel-body">
+            @for (row of [1, 2, 3, 4]; track row) {
+              <span class="skeleton skeleton--row"></span>
+            }
+          </div>
+        </div>
+      }
+    </section>
+  </article>
 } @else {
   <article
     class="poster"
+    [class.is-empty]="facade.isEmpty()"
     [class.is-refreshing]="facade.isRefreshing()"
     [class.is-switching]="facade.isSwitching()"
     [style.--team-accent]="teamAccent()"
@@ -36,6 +86,16 @@
       </div>
     </header>
 
+    @if (facade.isEmpty()) {
+      <div class="poster-empty-note" role="status">
+        <span class="poster-empty-note__icon" aria-hidden="true"><i class="pi pi-inbox"></i></span>
+        <div>
+          <strong>Sin actividad en este período</strong>
+          <span>No hay leads para los filtros seleccionados. Las métricas quedarán en 0 hasta que exista actividad.</span>
+        </div>
+      </div>
+    }
+
     <section class="kpis">
       @if (facade.ingresosGestion(); as ig) {
         <div class="kpi">
@@ -47,8 +107,8 @@
           <div class="metric-grid">
             <div class="metric"><span class="metric-value">{{ ig.ingresosPreventas }}</span><span class="metric-label">Preventas</span><span class="metric-help">Tipificación</span></div>
             <div class="metric"><span class="metric-value">{{ ig.ingresosCompletas }}</span><span class="metric-label">Completas</span><span class="metric-help">Subtipificación</span></div>
-            <button type="button" class="metric metric--valid clickable" (click)="abrirDetalle('INGRESADOS')"
-              title="Ver el detalle de las válidas">
+            <button type="button" class="metric metric--valid clickable" [disabled]="ig.ingresosValidas === 0" (click)="abrirDetalle('INGRESADOS')"
+              [attr.title]="ig.ingresosValidas > 0 ? 'Ver el detalle de las válidas' : 'No hay válidas en este período'">
               <span class="metric-value">{{ ig.ingresosValidas }}</span><span class="metric-label">Válidas</span><span class="metric-help">Etapa actual · {{ ig.ingresosValidasPct | number: '1.1-1' }}%</span>
             </button>
           </div>
@@ -62,8 +122,8 @@
           <div class="metric-grid">
             <div class="metric"><span class="metric-value">{{ ig.gestionPreventas }}</span><span class="metric-label">Preventas</span><span class="metric-help">Tipificación</span></div>
             <div class="metric"><span class="metric-value">{{ ig.gestionCompletas }}</span><span class="metric-label">Completas</span><span class="metric-help">Subtipificación</span></div>
-            <button type="button" class="metric metric--valid clickable" (click)="abrirDetalle('GESTIONADOS')"
-              title="Ver el detalle de las válidas">
+            <button type="button" class="metric metric--valid clickable" [disabled]="ig.gestionValidas === 0" (click)="abrirDetalle('GESTIONADOS')"
+              [attr.title]="ig.gestionValidas > 0 ? 'Ver el detalle de las válidas' : 'No hay válidas en este período'">
               <span class="metric-value">{{ ig.gestionValidas }}</span><span class="metric-label">Válidas</span><span class="metric-help">Etapa actual · {{ ig.gestionValidasPct | number: '1.1-1' }}%</span>
             </button>
           </div>
@@ -92,27 +152,35 @@
           <span class="tag">{{ facade.totalValidas() }} válidas</span>
         </div>
         <div class="panel-body">
-          <table>
-            <thead>
-              <tr><th>Asesor</th><th class="n">Asign.</th><th class="n">Vál.</th></tr>
-            </thead>
-            <tbody>
-              @for (asesor of facade.ranking(); track asesor.key) {
-                <tr
-                  class="rk-row"
-                  tabindex="0"
-                  title="Ver detalle de asignaciones y válidas"
-                  (click)="abrirDetalleRanking(asesor)"
-                  (keydown.enter)="abrirDetalleRanking(asesor)"
-                  (keydown.space)="$event.preventDefault(); abrirDetalleRanking(asesor)"
-                >
-                  <td class="rk-name">{{ asesor.nombreAsesor }}</td>
-                  <td class="n rk-total">{{ asesor.totalAsignaciones }}</td>
-                  <td class="n rk-prev" [class.zero]="asesor.validas === 0">{{ asesor.validas }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          @if (facade.ranking().length) {
+            <table>
+              <thead>
+                <tr><th>Asesor</th><th class="n">Asign.</th><th class="n">Vál.</th></tr>
+              </thead>
+              <tbody>
+                @for (asesor of facade.ranking(); track asesor.key) {
+                  <tr
+                    class="rk-row"
+                    tabindex="0"
+                    title="Ver detalle de asignaciones y válidas"
+                    (click)="abrirDetalleRanking(asesor)"
+                    (keydown.enter)="abrirDetalleRanking(asesor)"
+                    (keydown.space)="$event.preventDefault(); abrirDetalleRanking(asesor)"
+                  >
+                    <td class="rk-name">{{ asesor.nombreAsesor }}</td>
+                    <td class="n rk-total">{{ asesor.totalAsignaciones }}</td>
+                    <td class="n rk-prev" [class.zero]="asesor.validas === 0">{{ asesor.validas }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <div class="panel-empty">
+              <i class="pi pi-users" aria-hidden="true"></i>
+              <strong>Sin asesores con actividad</strong>
+              <span>El ranking aparecerá cuando haya leads asignados.</span>
+            </div>
+          }
         </div>
       </div>
 
@@ -121,28 +189,36 @@
           <h4>Estado leads del día</h4>
         </div>
         <div class="panel-body">
-          <table>
-            <tbody>
-              @for (fila of facade.estadoLeads(); track fila.key) {
-                <tr
-                  class="est-row"
-                  [class.is-win]="fila.esPreventa"
-                  tabindex="0"
-                  title="Ver detalle de este estado"
-                  (click)="abrirDetalleEstado(fila)"
-                  (keydown.enter)="abrirDetalleEstado(fila)"
-                  (keydown.space)="$event.preventDefault(); abrirDetalleEstado(fila)"
-                >
-                  <td class="est-name">
-                    {{ fila.label }}
-                    <div class="minibar"><span [style.width.%]="(fila.cantidad / facade.maxEstadoCantidad()) * 100"></span></div>
-                  </td>
-                  <td class="n">{{ fila.cantidad }}</td>
-                  <td class="n est-pct">{{ fila.porcentaje | number: '1.1-1' }}%</td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          @if (facade.estadoLeads().length) {
+            <table>
+              <tbody>
+                @for (fila of facade.estadoLeads(); track fila.key) {
+                  <tr
+                    class="est-row"
+                    [class.is-win]="fila.esPreventa"
+                    tabindex="0"
+                    title="Ver detalle de este estado"
+                    (click)="abrirDetalleEstado(fila)"
+                    (keydown.enter)="abrirDetalleEstado(fila)"
+                    (keydown.space)="$event.preventDefault(); abrirDetalleEstado(fila)"
+                  >
+                    <td class="est-name">
+                      {{ fila.label }}
+                      <div class="minibar"><span [style.width.%]="(fila.cantidad / facade.maxEstadoCantidad()) * 100"></span></div>
+                    </td>
+                    <td class="n">{{ fila.cantidad }}</td>
+                    <td class="n est-pct">{{ fila.porcentaje | number: '1.1-1' }}%</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <div class="panel-empty">
+              <i class="pi pi-chart-bar" aria-hidden="true"></i>
+              <strong>Sin estados registrados</strong>
+              <span>Los estados se mostrarán cuando haya leads en el período.</span>
+            </div>
+          }
         </div>
       </div>
 
@@ -151,38 +227,46 @@
           <h4>Gestión × campaña · subtipificaciones</h4>
         </div>
         <div class="panel-body">
-          <div class="camp-scroll">
-            <table class="camp">
-              <thead>
-                <tr>
-                  <th>Subtipificación</th>
-                  <th class="n">Total</th>
-                  @for (col of facade.gestionCampana().columnas; track col.key) {
-                    <th class="n colgrp">{{ col.nombre }}</th>
-                    <th class="n">%</th>
-                  }
-                </tr>
-              </thead>
-              <tbody>
-                @for (fila of facade.gestionCampana().filas; track fila.key) {
+          @if (facade.gestionCampana().filas.length) {
+            <div class="camp-scroll">
+              <table class="camp">
+                <thead>
                   <tr>
-                    <td class="sub">{{ fila.label }}</td>
-                    <td class="n">{{ fila.total }}</td>
-                    @for (celda of fila.celdas; track celda.key) {
-                      <td class="n colgrp">{{ celda.cantidad }}</td>
-                      <td class="n c-pct">
-                        @if (celda.cantidad > 0) {
-                          {{ celda.porcentaje | number: '1.0-0' }}%
-                        } @else {
-                          —
-                        }
-                      </td>
+                    <th>Subtipificación</th>
+                    <th class="n">Total</th>
+                    @for (col of facade.gestionCampana().columnas; track col.key) {
+                      <th class="n colgrp">{{ col.nombre }}</th>
+                      <th class="n">%</th>
                     }
                   </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  @for (fila of facade.gestionCampana().filas; track fila.key) {
+                    <tr>
+                      <td class="sub">{{ fila.label }}</td>
+                      <td class="n">{{ fila.total }}</td>
+                      @for (celda of fila.celdas; track celda.key) {
+                        <td class="n colgrp">{{ celda.cantidad }}</td>
+                        <td class="n c-pct">
+                          @if (celda.cantidad > 0) {
+                            {{ celda.porcentaje | number: '1.0-0' }}%
+                          } @else {
+                            —
+                          }
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="panel-empty">
+              <i class="pi pi-table" aria-hidden="true"></i>
+              <strong>Sin subtipificaciones</strong>
+              <span>Este desglose aparecerá cuando existan gestiones tipificadas.</span>
+            </div>
+          }
         </div>
       </div>
     </section>
