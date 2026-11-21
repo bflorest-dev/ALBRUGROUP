@@ -62,10 +62,13 @@
             (selectionChange)="providerChanged($event)"
           />
         } @else {
-          <label>
-            <span>Proveedor</span>
-            <input pInputText type="text" [value]="facade.activePlanProviderName()" readonly />
-          </label>
+          <app-plan-select
+            label="Proveedor"
+            placeholder="Seleccionar proveedor"
+            [value]="facade.selectedPlanProviderId() || ''"
+            [options]="providerOptions()"
+            [disabled]="true"
+          />
         }
 
         <app-plan-select
