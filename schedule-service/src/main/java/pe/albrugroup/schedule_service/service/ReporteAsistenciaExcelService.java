@@ -34,8 +34,9 @@ public class ReporteAsistenciaExcelService {
 
     private static final String[] RESUMEN_HEADERS = {
             "Nombre", "DNI", "Categoría", "Rol",
+            "Tardanzas", "Faltas",
             "Días laborables", "Días con registro", "Días sin registro",
-            "Tardanzas", "Min. objetivo", "Min. trabajados", "Min. balance"
+            "Min. objetivo", "Min. trabajados", "Min. balance"
     };
 
     private static final String[] DETALLE_HEADERS = {
@@ -97,10 +98,11 @@ public class ReporteAsistenciaExcelService {
             row.createCell(col++).setCellValue(info != null ? safe(info.getDni()) : "");
             row.createCell(col++).setCellValue(info != null ? safe(info.getCategoria()) : "");
             row.createCell(col++).setCellValue(info != null ? safe(info.getRol()) : "");
+            row.createCell(col++).setCellValue(safeInt(emp.getCantidadTardanzas()));
+            row.createCell(col++).setCellValue(safeInt(emp.getCantidadFaltas()));
             row.createCell(col++).setCellValue(safeInt(emp.getDiasLaborables()));
             row.createCell(col++).setCellValue(safeInt(emp.getDiasConRegistro()));
             row.createCell(col++).setCellValue(safeInt(emp.getDiasSinRegistro()));
-            row.createCell(col++).setCellValue(safeInt(emp.getCantidadTardanzas()));
             row.createCell(col++).setCellValue(safeInt(emp.getMinutosObjetivo()));
             row.createCell(col++).setCellValue(safeInt(emp.getMinutosTrabajados()));
             row.createCell(col).setCellValue(safeInt(emp.getMinutosBalance()));

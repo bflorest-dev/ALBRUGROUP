@@ -582,6 +582,11 @@ header p {
   text-overflow: ellipsis;
 }
 
+.preview-table td.td-highlight {
+  font-weight: 700;
+  color: var(--drawer-signal);
+}
+
 .preview-table td.negative {
   color: var(--drawer-danger);
   font-weight: 700;

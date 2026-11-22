@@ -163,10 +163,11 @@
                   <tr>
                     <th class="th-left">Empleado</th>
                     <th class="th-center">DNI</th>
+                    <th class="th-center">Tardanzas</th>
+                    <th class="th-center">Faltas</th>
                     <th class="th-center"><span>Días</span><span>laborables</span></th>
                     <th class="th-center"><span>Con</span><span>registro</span></th>
                     <th class="th-center"><span>Sin</span><span>registro</span></th>
-                    <th class="th-center">Tardanzas</th>
                     <th class="th-center"><span>Horas</span><span>objetivo</span></th>
                     <th class="th-center"><span>Horas</span><span>trabajadas</span></th>
                     <th class="th-center">Balance</th>
@@ -178,10 +179,11 @@
                     <tr>
                       <td class="emp-name">{{ row.employee.apellidos }}, {{ row.employee.nombres }}</td>
                       <td class="td-center">{{ row.employee.numeroDocumento }}</td>
+                      <td class="td-center td-highlight">{{ resumen?.cantidadTardanzas ?? '-' }}</td>
+                      <td class="td-center td-highlight">{{ resumen?.cantidadFaltas ?? '-' }}</td>
                       <td class="td-center">{{ resumen?.diasLaborables ?? '-' }}</td>
                       <td class="td-center">{{ resumen?.diasConRegistro ?? '-' }}</td>
                       <td class="td-center">{{ resumen?.diasSinRegistro ?? '-' }}</td>
-                      <td class="td-center">{{ resumen?.cantidadTardanzas ?? '-' }}</td>
                       <td class="td-center">{{ formatMinutes(resumen?.minutosObjetivo) }}</td>
                       <td class="td-center">{{ formatMinutes(resumen?.minutosTrabajados) }}</td>
                       <td class="td-center" [class.negative]="(resumen?.minutosBalance ?? 0) < 0">{{ formatMinutes(resumen?.minutosBalance) }}</td>

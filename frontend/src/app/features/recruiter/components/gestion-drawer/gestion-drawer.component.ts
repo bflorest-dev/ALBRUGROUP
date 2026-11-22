@@ -170,7 +170,7 @@ export class GestionDrawerComponent implements OnInit {
   this.form.reset({fechaHoraGestion:this.now(),modalidadContacto:'LLAMADA',motivo:'',observacion:'',programarReintento:false,fechaHoraActividad:'',modalidadActividad:'LLAMADA',referencia:'',idGrupoCapacitacion:0,fechaMeet:'',idHorarioMeet:0,idSesionMeet:0});
   this.action.set(null);this.contactResult.set(null);this.contactAttempt.set(null);this.contacted.set(null);this.error.set('');this.confirmation.set(null);
  }
- close():void {if(this.busy())return;if(this.form.dirty||this.action())this.confirmation.set('close');else this.closed.emit();}
+ close():void {if(this.busy())return;if(this.form.dirty||this.action()||this.contactResult())this.confirmation.set('close');else this.closed.emit();}
  confirmClose():void {this.closed.emit();}
  @HostListener('document:keydown.escape',['$event'])
  escape(event:Event):void {event.preventDefault();if(this.confirmation())this.confirmation.set(null);else this.close();}

@@ -5,6 +5,7 @@ export interface CumplimientoResumenEmpleadoResponse {
   diasSinRegistro: number;
   diasCerrados: number;
   cantidadTardanzas: number;
+  cantidadFaltas: number;
   minutosObjetivo: number;
   minutosTrabajados: number;
   minutosBalance: number;

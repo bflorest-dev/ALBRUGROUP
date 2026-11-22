@@ -13,7 +13,11 @@ import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.HorarioDetalle;
 import pe.albrugroup.schedule_service.entity.enums.Dia;
+import pe.albrugroup.schedule_service.entity.AjusteJornada;
+import pe.albrugroup.schedule_service.entity.enums.EstadoAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
+import pe.albrugroup.schedule_service.entity.enums.EstadoDia;
+import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
 import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
 import pe.albrugroup.schedule_service.entity.enums.TipoDiaNoLaborable;
 import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
@@ -62,6 +66,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -859,11 +864,17 @@ public class AsistenciaService implements IAsistencia {
             LocalDate hasta,
             Map<LocalDate, Asistencia> asistenciasPorFecha
     ) {
+        Map<LocalDate, List<AjusteJornada>> ajustesPorFecha = ajusteJornadaRepository
+                .findByIdEmpleadoAndFechaOperativaBetweenAndEstado(
+                        idEmpleado, desde, hasta, EstadoAjusteJornada.ACTIVO).stream()
+                .collect(Collectors.groupingBy(AjusteJornada::getFechaOperativa));
+
         int diasLaborables = 0;
         int diasConRegistro = 0;
         int diasSinRegistro = 0;
         int diasCerrados = 0;
         int cantidadTardanzas = 0;
+        int cantidadFaltas = 0;
         int minutosObjetivo = 0;
         int minutosTrabajados = 0;
         int minutosBalance = 0;
@@ -873,9 +884,6 @@ public class AsistenciaService implements IAsistencia {
         for (LocalDate fecha = desde; !fecha.isAfter(hasta); fecha = fecha.plusDays(1)) {
             Asistencia asistencia = asistenciasPorFecha.get(fecha);
             ProgramacionDiaria programacion = resolverProgramacionMensual(idEmpleado, fecha, asistencia);
-            // Objetivo (concepto 1) se acumula SIEMPRE: minutosObjetivoModalidad devuelve 0 para los dias
-            // liberados y las horas de modalidad para laborables Y permisos/descansos secundarios (cuyas
-            // horas siguen debiendose). Gatearlo por laborable omitiria esos dias y bajaria mal el objetivo.
             minutosObjetivo += jornadaEfectivaResolver.minutosObjetivoModalidad(idEmpleado, fecha);
             if (!programacion.laborable()) {
                 continue;
@@ -888,6 +896,7 @@ public class AsistenciaService implements IAsistencia {
                     || (asistencia.getFechaHoraSalida() == null && fecha.isBefore(OperationalDateTime.today()));
             if (sinRegistroCompleto) {
                 diasSinRegistro++;
+                cantidadFaltas++;
                 continue;
             }
 
@@ -903,7 +912,11 @@ public class AsistenciaService implements IAsistencia {
             if (Boolean.TRUE.equals(asistencia.getExcedioServicios())) {
                 cantidadDiasConExcesoServicios++;
             }
-            if (esTardanza(asistencia.getFechaHoraIngreso(), asistencia.getEntradaProgramada())) {
+
+            EstadoDia estadoDia = clasificarDia(asistencia, ajustesPorFecha.get(fecha));
+            if (estadoDia == EstadoDia.TARDANZA
+                    || estadoDia == EstadoDia.TARDANZA_COMPENSABLE
+                    || estadoDia == EstadoDia.TARDANZA_JUSTIFICADA) {
                 cantidadTardanzas++;
             }
         }
@@ -915,12 +928,26 @@ public class AsistenciaService implements IAsistencia {
                 .diasSinRegistro(diasSinRegistro)
                 .diasCerrados(diasCerrados)
                 .cantidadTardanzas(cantidadTardanzas)
+                .cantidadFaltas(cantidadFaltas)
                 .minutosObjetivo(minutosObjetivo)
                 .minutosTrabajados(minutosTrabajados)
                 .minutosBalance(minutosBalance)
                 .minutosServiciosAcumulados(minutosServiciosAcumulados)
                 .cantidadDiasConExcesoServicios(cantidadDiasConExcesoServicios)
                 .build();
+    }
+
+    private EstadoDia clasificarDia(Asistencia asistencia, List<AjusteJornada> ajustesDelDia) {
+        if (ajustesDelDia != null && ajustesDelDia.stream().anyMatch(a -> a.getRazon() == RazonAjuste.CORRIMIENTO_JUSTIFICADA)) {
+            return EstadoDia.TARDANZA_JUSTIFICADA;
+        }
+        if (ajustesDelDia != null && ajustesDelDia.stream().anyMatch(a -> a.getRazon() == RazonAjuste.CORRIMIENTO_COMPENSABLE)) {
+            return EstadoDia.TARDANZA_COMPENSABLE;
+        }
+        if (esTardanza(asistencia.getFechaHoraIngreso(), asistencia.getEntradaProgramada())) {
+            return EstadoDia.TARDANZA;
+        }
+        return EstadoDia.PRESENTE;
     }
 
     private CumplimientoDetalleEmpleadoResponse construirDetalleCumplimientoEmpleado(

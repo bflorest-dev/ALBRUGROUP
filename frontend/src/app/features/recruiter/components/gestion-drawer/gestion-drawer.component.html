@@ -2,17 +2,16 @@
 <aside class="workspace" role="dialog" aria-modal="true" aria-labelledby="candidate-name" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
  <header>
   <div class="identity">
-   <div><h2 id="candidate-name">{{ displayName() }}</h2>
-    <p>{{ label(p().puestoObjetivo) }} · {{ label(p().negocio) }} <span class="document">{{ p().postulante.tipoDocumento || 'Documento pendiente' }} {{ p().postulante.documento || '' }}</span></p>
+   <div class="identity__copy"><h2 id="candidate-name">{{ displayName() }}</h2>
+    <p><span>{{ label(p().puestoObjetivo) }}</span><span aria-hidden="true"> · </span><span>{{ label(p().negocio) }}</span><span class="document">{{ p().postulante.tipoDocumento || 'Documento pendiente' }} {{ p().postulante.documento || '' }}</span></p>
    </div>
-   <button class="icon-button" type="button" aria-label="Cerrar ficha" (click)="close()" cdkFocusInitial><i class="ti ti-x"></i></button>
-  </div>
-  <div class="contact-bar">
    <span class="badge">{{ p().etapa==='RECLUTAMIENTO'?label(p().estadoBandeja):label(p().etapa) }}</span>
-   <button type="button" class="contact-button" [disabled]="busy()||!active()||!hasPhone()" [attr.title]="hasPhone()?'Llamar al postulante':'Registra un celular o número exclusivo para habilitar llamadas'" (click)="contact('LLAMADA')"><i class="ti ti-phone" aria-hidden="true"></i><span>{{ contacting()==='LLAMADA'?'Registrando…':contacted()==='LLAMADA'?'Listo · llamar':'Llamar' }} <small>{{ contactReference('LLAMADA') }}</small></span></button>
-   <button type="button" class="contact-button" [disabled]="busy()||!active()||!hasWhatsApp()" [attr.title]="hasWhatsApp()?'Abrir WhatsApp':'Registra un celular o usuario Meta para abrir WhatsApp'" (click)="contact('WHATSAPP')"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i><span>{{ contacting()==='WHATSAPP'?'Registrando…':contacted()==='WHATSAPP'?'Listo · WhatsApp':'WhatsApp' }} <small>{{ contactReference('WHATSAPP') }}</small></span></button>
   </div>
-  <nav aria-label="Secciones de la ficha">
+  <div class="contact-bar" aria-label="Canales de contacto">
+   <button type="button" class="contact-button contact-button--call" aria-label="Llamar al postulante" [disabled]="busy()||!active()||!hasPhone()" [attr.title]="hasPhone()?'Llamar al postulante':'Registra un celular o número exclusivo para habilitar llamadas'" (click)="contact('LLAMADA')"><span class="contact-button__content" aria-hidden="true"><i class="ti ti-phone"></i><span class="contact-copy"><span class="contact-label">{{ contacting()==='LLAMADA'?'Registrando…':'Llamar' }}</span><span class="contact-number">{{ contactReference('LLAMADA') }}</span></span>@if(contacted()==='LLAMADA'){<i class="ti ti-check contact-status"></i>}</span></button>
+   <button type="button" class="contact-button contact-button--whatsapp" aria-label="Abrir WhatsApp con el postulante" [disabled]="busy()||!active()||!hasWhatsApp()" [attr.title]="hasWhatsApp()?'Abrir WhatsApp':'Registra un celular o usuario Meta para abrir WhatsApp'" (click)="contact('WHATSAPP')"><span class="contact-button__content" aria-hidden="true"><i class="ti ti-brand-whatsapp"></i><span class="contact-copy"><span class="contact-label">{{ contacting()==='WHATSAPP'?'Registrando…':'WhatsApp' }}</span><span class="contact-number">{{ contactReference('WHATSAPP') }}</span></span>@if(contacted()==='WHATSAPP'){<i class="ti ti-check contact-status"></i>}</span></button>
+  </div>
+  <nav class="drawer-tabs" aria-label="Secciones de la ficha">
    <button type="button" [class.current]="panel()==='gestion'" [attr.aria-current]="panel()==='gestion'?'page':null" (click)="panel.set('gestion')">Gestionar</button>
    <button type="button" [class.current]="panel()==='datos'" (click)="panel.set('datos')">Datos del postulante</button>
    <button type="button" [class.current]="panel()==='historial'" (click)="panel.set('historial')">Historial</button>
@@ -25,7 +24,10 @@
   @if(error()) {<div class="notice error" role="alert">{{ error() }} @if(!state()){<button type="button" (click)="load()">Reintentar carga</button>}</div>}
   @if(state(); as context) {
    @if(panel()==='gestion') {
-    <div class="last-management"><span>Última gestión</span><strong>{{ context.ultimoResultado || 'Aún sin resultado registrado' }}</strong><span>{{ date(context.ultimaGestionAt) }}</span></div>
+    <section class="last-management" aria-label="Última gestión registrada">
+     <div class="last-management__label"><i class="ti ti-history" aria-hidden="true"></i><span>Última gestión</span></div>
+     <div class="last-management__body"><strong>{{ context.ultimoResultado || 'Aún sin resultado registrado' }}</strong><time>{{ date(context.ultimaGestionAt) }}</time></div>
+    </section>
     @if(pending(); as next) {
      <section class="appointment" [class.overdue]="overdue()" aria-label="Próxima actividad">
       <div class="appointment-heading"><i class="ti ti-calendar-event"></i><h3>{{ next.tipo==='ENTREVISTA'?'Próxima entrevista':'Próximo contacto' }}</h3><span>{{ overdue()?'Pendiente de resolver':'Programado' }}</span></div>
@@ -56,9 +58,9 @@
        @if(!action()) {
         <h3>Registrar una gestión</h3><p class="intro">Elige el resultado del contacto. El siguiente paso aparecerá solo cuando corresponda.</p>
         <div class="choices" aria-label="Resultado del contacto">
-         <button type="button" [class.selected]="contactResult()==='sin'" [attr.aria-pressed]="contactResult()==='sin'" (click)="chooseContact('sin')"><i class="ti ti-phone-off"></i><span>No hubo contacto<small>No respondió o se perdió el intento</small></span></button>
-         <button type="button" [class.selected]="contactResult()==='con'" [attr.aria-pressed]="contactResult()==='con'" (click)="chooseContact('con')"><i class="ti ti-message-circle"></i><span>Hubo contacto<small>Decide el próximo paso</small></span></button>
-         <button type="button" [class.selected]="contactResult()==='no'" [attr.aria-pressed]="contactResult()==='no'" (click)="chooseContact('no')"><i class="ti ti-user-minus"></i><span>No desea continuar<small>Cierra la postulación</small></span></button>
+         <button type="button" class="choice choice--no-contact" title="Registra un intento sin respuesta y conserva la postulación en seguimiento" aria-label="No hubo contacto. Registra un intento sin respuesta" [class.selected]="contactResult()==='sin'" [attr.aria-pressed]="contactResult()==='sin'" (click)="chooseContact('sin')"><span class="choice__icon"><i class="ti ti-phone-off" aria-hidden="true"></i></span><span class="choice__label">No hubo contacto</span></button>
+         <button type="button" class="choice choice--contact" title="Define el siguiente paso de la conversación: seguimiento o Meet" aria-label="Hubo contacto. Define el siguiente paso" [class.selected]="contactResult()==='con'" [attr.aria-pressed]="contactResult()==='con'" (click)="chooseContact('con')"><span class="choice__icon"><i class="ti ti-message-circle" aria-hidden="true"></i></span><span class="choice__label">Hubo contacto</span></button>
+         <button type="button" class="choice choice--closed" title="Cierra la postulación registrando el motivo correspondiente" aria-label="No desea continuar. Cierra la postulación" [class.selected]="contactResult()==='no'" [attr.aria-pressed]="contactResult()==='no'" (click)="chooseContact('no')"><span class="choice__icon"><i class="ti ti-user-minus" aria-hidden="true"></i></span><span class="choice__label">No desea continuar</span></button>
         </div>
         @if(contactResult()==='con') {
          <div class="decision-card"><span class="step-label">Siguiente decisión</span><h4>¿Quedó acordado un Meet?</h4><p>Si todavía no hay fecha, puedes dejar seguimiento o programar una llamada posterior.</p><div class="decision-actions">@if(can('AGENDAR_MEET')){<button type="button" class="primary" (click)="choose('AGENDAR_MEET')">Sí, asignar Meet</button>}<button type="button" (click)="choose('SEGUIMIENTO')">No, continuar seguimiento</button></div></div>
@@ -108,7 +110,7 @@
         @if(invalidField()==='referencia'||invalidField()==='idGrupoCapacitacion'||invalidField()==='modalidadActividad'||invalidField()==='modalidadContacto'){<small class="field-error wide">{{ error() }}</small>}
        </form>
       } @else {
-       <div class="guidance"><i class="ti ti-route"></i><p>Primero registra el contacto. La agenda y la evaluación se habilitan según el siguiente paso.</p></div>
+       <div class="guidance flow-note" role="note"><i class="ti ti-route" aria-hidden="true"></i><p>Elige el resultado del contacto. Según tu decisión se habilitará el siguiente paso: seguimiento, Meet o cierre.</p></div>
       }
      </section>}
     }
@@ -144,7 +146,7 @@
  </main>
  <footer>
   <span role="status">{{ busy()?'Guardando gestión…':error()?'Revisa los datos: hay un error.':message()?'Listo':action()?'Gestión pendiente de guardar':'Bandeja compartida' }}</span>
-  <div><button type="button" (click)="close()" [disabled]="busy()">Cerrar</button>
+  <div><button type="button" (click)="close()" [disabled]="busy()">Cancelar</button>
     @if(action()&&panel()==='gestion'){<button type="submit" form="management-form" class="primary" [disabled]="busy()||stale()||(action()==='ASIGNAR_GRUPO'&&!groups().length)">{{ cta() }}</button>}
   </div>
  </footer>

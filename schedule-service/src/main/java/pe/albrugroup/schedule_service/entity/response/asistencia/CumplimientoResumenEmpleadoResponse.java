@@ -19,6 +19,7 @@ public class CumplimientoResumenEmpleadoResponse {
     private Integer diasSinRegistro;
     private Integer diasCerrados;
     private Integer cantidadTardanzas;
+    private Integer cantidadFaltas;
     private Integer minutosObjetivo;
     private Integer minutosTrabajados;
     private Integer minutosBalance;

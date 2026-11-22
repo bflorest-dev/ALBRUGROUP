@@ -259,28 +259,26 @@
         <div class="table-loading" role="status" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Sincronizando la bandeja…</span></div>
       }
       <div class="table-scroll">
-        <table>
+        <table class="inbox-table">
           <colgroup>
-            <col style="width: 16%" />
-            <col style="width: 10%" />
+            <col style="width: 17%" />
             <col style="width: 12%" />
-            <col style="width: 10%" />
-            <col style="width: 8%" />
-            <col style="width: 14%" />
+            <col style="width: 15%" />
+            <col style="width: 9%" />
+            <col style="width: 15%" />
+            <col style="width: 12%" />
             <col style="width: 11%" />
-            <col style="width: 10%" />
             <col style="width: 9%" />
           </colgroup>
           <thead>
             <tr>
-              <th scope="col">Postulante</th>
+              <th scope="col" class="table-heading--identity">Postulante</th>
               <th scope="col">Registro</th>
               <th scope="col">Contacto</th>
-              <th scope="col">Objetivo</th>
               <th scope="col">Estado</th>
               <th scope="col">Reclutador</th>
               <th scope="col">Última gestión</th>
-              <th scope="col">Gestión y próximo paso</th>
+              <th scope="col">Próxima Actividad</th>
               <th scope="col"><span class="sr-only">Acciones</span></th>
             </tr>
           </thead>
@@ -289,27 +287,29 @@
               <tr class="data-row" [style.background-color]="facade.isNewPostulacion(row) ? '#f4fbf9' : null" (dblclick)="facade.openDetail(row)">
                 <td data-label="Postulante">
                   <button type="button" class="person-cell" (click)="facade.openDetail(row)">
-                    <span class="person-cell__avatar">{{ initials(row.postulante.nombres, row.postulante.apellidos, row.postulante.usuarioMeta) }}</span>
                     <span><strong>{{ displayName(row.postulante) }}</strong><small>{{ row.postulante.tipoDocumento || 'Documento pendiente' }} {{ row.postulante.documento || '' }}</small></span>
                   </button>
                 </td>
-                <td data-label="Registro"><span class="date-cell">{{ facade.dateTime(row.createdAt) }}</span><small class="muted-line">{{ facade.isNewPostulacion(row) ? 'Nuevo ingreso' : 'Registrado' }}</small></td>
-                <td data-label="Contacto">
-                  <span class="contact-cell"><i class="ti ti-device-mobile" aria-hidden="true"></i>{{ row.postulante.celular || 'WhatsApp por Meta' }}</span>
-                  <small class="muted-line">{{ row.postulante.usuarioMeta ? '@' + row.postulante.usuarioMeta : 'Llamadas: ' + (row.postulante.numeroExclusivoLlamadas || 'usa celular') }}</small>
+                <td data-label="Registro" class="table-cell--center"><span class="date-cell">{{ facade.dateTime(row.createdAt) }}</span></td>
+                <td data-label="Contacto" class="table-cell--center">
+                  <span class="contact-cell"><i class="ti ti-device-mobile" aria-hidden="true"></i><span class="contact-cell__value">{{ row.postulante.celular || 'WhatsApp por Meta' }}</span></span>
+                  @if (row.postulante.usuarioMeta) {
+                    <small class="muted-line">@{{ row.postulante.usuarioMeta }}</small>
+                  } @else {
+                    <small class="muted-line contact-cell contact-cell--secondary"><i class="ti ti-phone" aria-hidden="true"></i><span class="contact-cell__value">{{ row.postulante.numeroExclusivoLlamadas || 'Sin número de llamadas' }}</span></small>
+                  }
                 </td>
-                <td data-label="Objetivo"><strong>{{ label(row.puestoObjetivo) }}</strong><small class="muted-line">{{ row.negocio ? label(row.negocio) : 'Negocio pendiente' }}</small></td>
-                <td data-label="Estado"><span class="status-badge" [class]="'status-badge status-badge--' + rowStatusClass(row.estadoBandeja)">{{ label(row.estadoBandeja) }}</span></td>
-                <td data-label="Reclutador">
-                  <span class="owner-cell"><span class="owner-cell__avatar">{{ facade.recruiterInitials(row) }}</span><span><strong [title]="facade.recruiterName(row)">{{ facade.recruiterName(row) }}</strong><small>{{ row.ultimaGestionResponsableId ? 'Última gestión registrada' : 'Pendiente de contacto' }}</small></span></span>
+                <td data-label="Estado" class="table-cell--center"><span class="status-badge" [class]="'status-badge status-badge--' + rowStatusClass(row.estadoBandeja)">{{ label(row.estadoBandeja) }}</span></td>
+                <td data-label="Reclutador" class="table-cell--center">
+                  <span class="owner-cell"><strong [title]="facade.recruiterName(row)">{{ facade.recruiterName(row) }}</strong></span>
                 </td>
-                <td data-label="Última gestión"><span class="date-cell">{{ row.ultimaGestionAt ? dateTime(row.ultimaGestionAt) : 'Sin gestión registrada' }}</span><small class="muted-line">{{ row.ultimaGestionModalidad ? label(row.ultimaGestionModalidad) : 'Aún sin contacto' }}</small></td>
-                <td data-label="Gestión y próximo paso"><span class="result-cell">{{ row.ultimoResultado || 'Pendiente de contacto' }}</span>@if(row.proximaActividadAt){<small class="muted-line">{{ label(row.proximaActividadTipo) }} · {{ dateTime(row.proximaActividadAt) }}</small>} @else {<small class="muted-line">Sin próxima actividad</small>}</td>
-                <td class="row-action"><button type="button" class="button button--ghost button--small" (click)="facade.openDetail(row)">Gestionar <i class="ti ti-arrow-up-right" aria-hidden="true"></i></button></td>
+                <td data-label="Última gestión" class="table-cell--center"><span class="date-cell">{{ row.ultimaGestionAt ? dateTime(row.ultimaGestionAt) : 'Sin gestión registrada' }}</span><small class="muted-line">{{ row.ultimaGestionModalidad ? label(row.ultimaGestionModalidad) : 'Aún sin contacto' }}</small></td>
+                <td data-label="Próxima Actividad" class="table-cell--center"><span class="result-cell">{{ row.ultimoResultado || 'Pendiente de contacto' }}</span>@if(row.proximaActividadAt){<small class="muted-line">{{ label(row.proximaActividadTipo) }} · {{ dateTime(row.proximaActividadAt) }}</small>} @else {<small class="muted-line">Sin próxima actividad</small>}</td>
+                <td class="row-action"><button type="button" class="button button--primary button--row-action" (click)="facade.openDetail(row)"><i class="ti ti-send" aria-hidden="true"></i>Gestionar</button></td>
               </tr>
             } @empty {
               @if (!facade.listLoading()) {
-                <tr><td colspan="9"><div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i><strong>No hay postulaciones con estos filtros</strong><span>Ajusta el estado o la tipificación para continuar la gestión.</span></div></td></tr>
+                <tr><td colspan="8"><div class="empty-state"><i class="ti ti-inbox" aria-hidden="true"></i><strong>No hay postulaciones con estos filtros</strong><span>Ajusta el estado o la tipificación para continuar la gestión.</span></div></td></tr>
               }
             }
           </tbody>

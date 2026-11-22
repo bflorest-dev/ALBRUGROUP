@@ -307,7 +307,9 @@ export class RecruiterOperationalInboxFacade {
     const id = row.ultimaGestionResponsableId;
     if (!id) return 'Sin gestión registrada';
     const employee = this.responsibleEmployees()[id];
-    return employee ? `${employee.nombres} ${employee.apellidos}`.trim() : `Empleado #${id}`;
+    if (!employee) return `Empleado #${id}`;
+    const words = `${employee.nombres} ${employee.apellidos}`.trim().split(/\s+/).filter(Boolean);
+    return words.length >= 3 ? `${words[0]} ${words[2]}` : words.join(' ');
   }
 
   recruiterInitials(row: PostulacionResponse): string {
