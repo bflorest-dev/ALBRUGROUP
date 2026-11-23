@@ -658,10 +658,10 @@
           </div>
         </details>
       } @else if (section() === 'roles' && canManageRoles()) {
-        <section class="access-layout">
-          <div class="access-intro"><h3>Roles asignados</h3><p>Cambiar esta configuración cerrará todas las sesiones del empleado.</p></div>
-          <label class="form-field principal-role"><span>Rol principal</span><select [ngModel]="rolePrincipal()" (ngModelChange)="changePrincipal($event)"><option value="">Seleccionar rol</option>@for (role of roleCatalog(); track role.nombre) { <option [value]="role.nombre">{{ label(role.nombre) }}</option> }</select></label>
-          <fieldset class="role-checks"><legend>Roles secundarios</legend><div class="role-checks-scroll">@for (role of roleCatalog(); track role.nombre) { @if (role.nombre !== rolePrincipal()) { <label><input type="checkbox" [checked]="isSecondarySelected(role.nombre)" (change)="toggleSecondaryRole(role.nombre, $any($event.target).checked)"/><span><strong>{{ label(role.nombre) }}</strong><small>{{ role.descripcion }}</small></span></label> } }</div></fieldset>
+        <section class="access-layout" [class.access-layout--readonly]="rolesEditingBlocked()">
+          <div class="access-intro"><h3>Roles asignados</h3><p>{{ rolesEditingBlocked() ? 'El usuario está inactivo. Recontrata al empleado antes de modificar sus roles.' : 'Cambiar esta configuración cerrará todas las sesiones del empleado.' }}</p></div>
+          <label class="form-field principal-role"><span>Rol principal</span><select [disabled]="rolesEditingBlocked()" [ngModel]="rolePrincipal()" (ngModelChange)="changePrincipal($event)"><option value="">Seleccionar rol</option>@for (role of roleCatalog(); track role.nombre) { <option [value]="role.nombre">{{ label(role.nombre) }}</option> }</select></label>
+          <fieldset class="role-checks" [disabled]="rolesEditingBlocked()"><legend>Roles secundarios</legend><div class="role-checks-scroll">@for (role of roleCatalog(); track role.nombre) { @if (role.nombre !== rolePrincipal()) { <label><input type="checkbox" [checked]="isSecondarySelected(role.nombre)" (change)="toggleSecondaryRole(role.nombre, $any($event.target).checked)"/><span><strong>{{ label(role.nombre) }}</strong><small>{{ role.descripcion }}</small></span></label> } }</div></fieldset>
           <section class="scope-management" aria-labelledby="scope-management-title">
             <div class="scope-management-heading"><h3 id="scope-management-title">Ámbitos operativos</h3><p>La asignación es opcional y se gestiona con todos los roles seleccionados.</p></div>
             @if (rolesDirty()) { <p class="scope-pending" role="status">Guarda los roles para habilitar la gestión de ámbitos.</p> }
@@ -761,7 +761,7 @@
         }
       } @else if (section() === 'roles' && canManageRoles()) {
         <button type="button" class="ghost-button" (click)="openRoleHistory()"><i class="ti ti-history"></i>Ver historial</button>
-        <button class="primary-button push-right" type="button" [disabled]="isSavingRoles()" (click)="saveRoles()">{{ isSavingRoles() ? 'Guardando…' : 'Guardar roles' }}</button>
+        <button class="primary-button push-right" type="button" [disabled]="rolesEditingBlocked() || isSavingRoles()" (click)="saveRoles()">{{ isSavingRoles() ? 'Guardando…' : 'Guardar roles' }}</button>
       }
     </footer>
   </aside>

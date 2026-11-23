@@ -399,7 +399,11 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected scopeActionsDisabled(): boolean {
-    return this.rolesDirty() || this.isSavingRoles();
+    return this.rolesEditingBlocked() || this.rolesDirty() || this.isSavingRoles();
+  }
+
+  protected rolesEditingBlocked(): boolean {
+    return this.isInactiveEmployee() || this.row()?.access?.activo === false;
   }
 
   protected fullName(): string {
@@ -1210,6 +1214,7 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected toggleSecondaryRole(role: string, selected: boolean): void {
+    if (this.rolesEditingBlocked()) return;
     const current = new Set(this.secondaryRoles());
     if (selected) current.add(role); else current.delete(role);
     current.delete(this.rolePrincipal());
@@ -1217,6 +1222,7 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected changePrincipal(role: string): void {
+    if (this.rolesEditingBlocked()) return;
     this.rolePrincipal.set(role);
     this.secondaryRoles.update((roles) => roles.filter((item) => item !== role));
   }
@@ -1228,6 +1234,10 @@ export class EmployeeWorkspaceDrawerComponent {
   protected async saveRoles(): Promise<void> {
     const row = this.row();
     const principal = this.rolePrincipal();
+    if (this.rolesEditingBlocked()) {
+      this.roleError.set('No se pueden modificar los roles de un usuario inactivo. Recontrata al empleado para volver a activar su acceso.');
+      return;
+    }
     if (!row || !principal) {
       this.roleError.set('Selecciona un rol principal.');
       return;

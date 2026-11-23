@@ -19,6 +19,7 @@ import pe.albrugroup.auth_service.entity.UsuarioRolAuditoria;
 import pe.albrugroup.auth_service.entity.request.AsignarRolesRequest;
 import pe.albrugroup.auth_service.entity.request.CambiarRolActivoRequest;
 import pe.albrugroup.auth_service.exception.BadRequestException;
+import pe.albrugroup.auth_service.exception.ConflictException;
 import pe.albrugroup.auth_service.exception.NotFoundException;
 import pe.albrugroup.auth_service.exception.UnprocessableEntityException;
 import pe.albrugroup.auth_service.repository.RolRepository;
@@ -92,6 +93,11 @@ public class RolService {
 
     public RolesUsuarioResponse asignarRoles(Long empleadoId, AsignarRolesRequest request) {
         Usuario usuario = buscarUsuario(empleadoId);
+        if (!Boolean.TRUE.equals(usuario.getActivo())) {
+            throw new ConflictException(
+                    "No se pueden modificar los roles de un usuario inactivo. Recontrata al empleado para volver a activar su acceso.",
+                    empleadoId);
+        }
         String principalNombre = normalizarRol(request.getRolPrincipal());
         List<String> secundariosEntrada = request.getRolesSecundarios() == null
                 ? List.of()

@@ -17,6 +17,7 @@ import pe.albrugroup.auth_service.entity.Usuario;
 import pe.albrugroup.auth_service.entity.UsuarioRolAuditoria;
 import pe.albrugroup.auth_service.entity.request.AsignarRolesRequest;
 import pe.albrugroup.auth_service.exception.BadRequestException;
+import pe.albrugroup.auth_service.exception.ConflictException;
 import pe.albrugroup.auth_service.exception.NotFoundException;
 import pe.albrugroup.auth_service.exception.UnprocessableEntityException;
 import pe.albrugroup.auth_service.repository.RolRepository;
@@ -106,6 +107,26 @@ class RolServiceTest {
 
         verify(usuarioRepository, never()).saveAndFlush(any());
         verify(auditoriaRepository, never()).save(any());
+        verify(refreshTokenService, never()).revokeActiveTokens(any());
+        verify(sessionInvalidationService, never()).invalidateAfterCommit(any());
+    }
+
+    @Test
+    void rechazaModificarRolesDeUsuarioInactivo() {
+        Usuario empleado = usuario(20L, postventa);
+        empleado.setActivo(false);
+        when(usuarioRepository.findByEmpleadoId(20L)).thenReturn(Optional.of(empleado));
+
+        assertThatThrownBy(() -> service.asignarRoles(20L, AsignarRolesRequest.builder()
+                .rolPrincipal("ASESOR_BACKOFFICE")
+                .rolesSecundarios(List.of())
+                .build()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("usuario inactivo")
+                .hasMessageContaining("Recontrata");
+
+        verify(rolRepository, never()).findAllByNombreIn(any());
+        verify(usuarioRepository, never()).saveAndFlush(any());
         verify(refreshTokenService, never()).revokeActiveTokens(any());
         verify(sessionInvalidationService, never()).invalidateAfterCommit(any());
     }
