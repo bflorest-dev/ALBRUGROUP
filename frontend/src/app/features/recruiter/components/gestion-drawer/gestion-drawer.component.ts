@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, OnInit, inject, input, output, signal, computed } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { A11yModule } from '@angular/cdk/a11y';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, timeout } from 'rxjs';
@@ -16,15 +16,17 @@ import { buildTelUrl, buildWhatsAppUrl, normalizeUsermeta } from '../../../../sh
 
 @Component({
  selector:'app-gestion-reclutamiento-drawer',
- imports:[ReactiveFormsModule,A11yModule],
+ imports:[FormsModule,ReactiveFormsModule,A11yModule],
  templateUrl:'./gestion-drawer.component.html',
  styleUrl:'./gestion-drawer.component.scss',
  changeDetection:ChangeDetectionStrategy.OnPush
 })
 export class GestionDrawerComponent implements OnInit {
  readonly postulacion=input.required<PostulacionResponse>();
+ readonly meetContext=input(false);
  readonly closed=output<void>();
  readonly saved=output<void>();
+ readonly meetAgendaRequested=output<string>();
  private readonly api=inject(RecruiterPostulantesService);
  private readonly realtime=inject(RecruitmentRealtimeService);
  private readonly destroyRef=inject(DestroyRef);
@@ -69,7 +71,7 @@ export class GestionDrawerComponent implements OnInit {
   fechaHoraGestion:[this.now(),Validators.required], modalidadContacto:['LLAMADA',Validators.required],
   motivo:[''], observacion:['',Validators.maxLength(2000)], programarReintento:[false],
   fechaHoraActividad:[''], modalidadActividad:['LLAMADA'], referencia:[''], idGrupoCapacitacion:[0],
-  fechaMeet:[''], idHorarioMeet:[0], idSesionMeet:[0]
+  fechaMeet:[''], fechaMeetText:[''], idHorarioMeet:[0], idSesionMeet:[0]
  });
  readonly datosForm=this.fb.nonNullable.group({
   nombres:[''],apellidos:[''],tipoDocumento:[''],documento:[''],celular:[''],numeroExclusivoLlamadas:[''],usuarioMeta:[''],fechaNacimiento:['']
@@ -87,7 +89,7 @@ export class GestionDrawerComponent implements OnInit {
   return this.catalog()?.tipificaciones.find(t=>t.codigo===code)?.subtipificaciones
    .filter(s=>s.alcance==='GENERAL'||this.p().puestoObjetivo==='ASESOR_VENTAS')??[];
  });
- readonly cta=computed(()=>this.busy()?'Procesando…':this.title(this.action()));
+ readonly cta=computed(()=>this.busy()?'Procesando…':this.action()==='NO_CONTACTO'?'Registrar contacto':this.title(this.action()));
  ngOnInit():void {
   this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(()=>{this.changed.update(v=>v+1);this.error.set('');this.invalidField.set('');});
   this.load();
@@ -167,7 +169,7 @@ export class GestionDrawerComponent implements OnInit {
   this.requestAction(null,null);
  }
  reset():void {
-  this.form.reset({fechaHoraGestion:this.now(),modalidadContacto:'LLAMADA',motivo:'',observacion:'',programarReintento:false,fechaHoraActividad:'',modalidadActividad:'LLAMADA',referencia:'',idGrupoCapacitacion:0,fechaMeet:'',idHorarioMeet:0,idSesionMeet:0});
+  this.form.reset({fechaHoraGestion:this.now(),modalidadContacto:'LLAMADA',motivo:'',observacion:'',programarReintento:false,fechaHoraActividad:'',modalidadActividad:'LLAMADA',referencia:'',idGrupoCapacitacion:0,fechaMeet:'',fechaMeetText:'',idHorarioMeet:0,idSesionMeet:0});
   this.action.set(null);this.contactResult.set(null);this.contactAttempt.set(null);this.contacted.set(null);this.error.set('');this.confirmation.set(null);
  }
  close():void {if(this.busy())return;if(this.form.dirty||this.action()||this.contactResult())this.confirmation.set('close');else this.closed.emit();}
@@ -213,7 +215,7 @@ export class GestionDrawerComponent implements OnInit {
   else if(['NO_CONTACTO','NO_INTERESADO','RECHAZAR'].includes(a)&&!r.motivo) {error='Selecciona el motivo del resultado.';field='motivo';}
   else if(needsObservation&&!r.observacion.trim()) {error='Describe el resultado de esta gestión.';field='observacion';}
   else if(r.observacion.length>2000) {error='La observación admite hasta 2000 caracteres.';field='observacion';}
-  else if(meet&&!r.fechaMeet) {error='Selecciona la fecha del Meet.';field='fechaMeet';}
+  else if(meet&&!this.parseMeetDate(r.fechaMeetText)) {error='Indica una fecha válida en formato dd/mm/aaaa.';field='fechaMeetText';}
   else if(meet&&!Number(r.idHorarioMeet)) {error='Selecciona un horario disponible.';field='idHorarioMeet';}
   else if(this.scheduled()&&(!r.fechaHoraActividad||!r.modalidadActividad)) {error='Indica fecha, hora y canal de la próxima llamada.';field=!r.fechaHoraActividad?'fechaHoraActividad':'modalidadActividad';}
   else if(this.scheduled()&&new Date(r.fechaHoraActividad).getTime()<=Date.now()) {error='La próxima llamada debe estar en el futuro.';field='fechaHoraActividad';}
@@ -245,9 +247,9 @@ export class GestionDrawerComponent implements OnInit {
    observacion:r.observacion.trim(),motivo:r.motivo||null,
    fechaHoraActividad:this.scheduled()?r.fechaHoraActividad:null,modalidadActividad:this.scheduled()?r.modalidadActividad:null,
    referencia:this.scheduled()?r.referencia.trim()||null:null,idGrupoCapacitacion:action==='ASIGNAR_GRUPO'?Number(r.idGrupoCapacitacion):null,
-   fechaMeet:meet?r.fechaMeet:null,idHorarioMeet:meet?Number(r.idHorarioMeet):null,idSesionMeet:meet?Number(r.idSesionMeet)||null:null};
+   fechaMeet:meet?this.parseMeetDate(r.fechaMeetText):null,idHorarioMeet:meet?Number(r.idHorarioMeet):null,idSesionMeet:meet?Number(r.idSesionMeet)||null:null};
   this.api.registrarGestion(this.p().id,payload).pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
-   next:s=>{this.state.set(s);this.busy.set(false);this.reset();this.message.set(s.ultimoResultado??'Gestión guardada');this.loadHistory();this.saved.emit();},
+   next:s=>{this.state.set(s);this.busy.set(false);this.reset();this.message.set(s.ultimoResultado??'Gestión guardada');this.loadHistory();this.saved.emit();this.closed.emit();},
    error:(e:HttpErrorResponse)=>{this.busy.set(false);this.error.set(this.errorText(e));if(e.status===409)this.stale.set(true);}
   });
  }
@@ -270,17 +272,85 @@ export class GestionDrawerComponent implements OnInit {
  displayName():string {const candidate=this.p().postulante;const name=[candidate.nombres,candidate.apellidos].filter(Boolean).join(' ').trim();const meta=normalizeUsermeta(candidate.usuarioMeta);return name||(meta?`@${meta}`:'Postulante sin nombre');}
  contactReference(channel:'LLAMADA'|'WHATSAPP'):string {const candidate=this.p().postulante;const meta=normalizeUsermeta(candidate.usuarioMeta);return channel==='LLAMADA'?(candidate.numeroExclusivoLlamadas||candidate.celular||'Sin número'):(candidate.celular||(meta?`@${meta}`:'Sin contacto'));}
  private hasContactValue(value:unknown):boolean {return String(value??'').trim().length>0;}
+  onMeetDateInput(event:Event):void {
+   const input=event.target as HTMLInputElement;
+   const digits=input.value.replace(/\D/g,'').slice(0,8);
+   const display=digits.length>4?`${digits.slice(0,2)}/${digits.slice(2,4)}/${digits.slice(4)}`:digits.length>2?`${digits.slice(0,2)}/${digits.slice(2)}`:digits;
+   if(input.value!==display)input.value=display;
+   this.form.controls.fechaMeetText.setValue(display,{emitEvent:false});
+   this.form.controls.fechaMeet.setValue(this.parseMeetDate(display)??'',{emitEvent:false});
+   this.error.set('');this.invalidField.set('');
+  }
+  onMeetDateBlur():void {
+   const value=this.form.controls.fechaMeetText.value;
+   if(value&&!this.parseMeetDate(value)){this.invalidField.set('fechaMeetText');this.error.set('Indica una fecha válida en formato dd/mm/aaaa.');}
+  }
+  openMeetDatePicker(input:HTMLInputElement):void {input.showPicker?.();}
+  setMeetDateFromPicker(event:Event):void {
+   const value=(event.target as HTMLInputElement).value;
+   if(!value)return;
+   const [year,month,day]=value.split('-');
+   const display=`${day}/${month}/${year}`;
+   this.form.controls.fechaMeetText.setValue(display);
+   this.form.controls.fechaMeet.setValue(value);
+   this.error.set('');this.invalidField.set('');
+  }
+  private parseMeetDate(value:string|null|undefined):string|null {
+   const match=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(value??'').trim());
+   if(!match)return null;
+   const day=Number(match[1]);const month=Number(match[2]);const year=Number(match[3]);
+   const date=new Date(year,month-1,day);
+   if(date.getFullYear()!==year||date.getMonth()!==month-1||date.getDate()!==day)return null;
+   return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  }
  title(a:GestionAccion|null):string {
-  const labels:Record<GestionAccion,string>={NO_CONTACTO:'Guardar intento',SEGUIMIENTO:'Guardar seguimiento',AGENDAR:'Programar actividad',AGENDAR_MEET:'Asignar Meet',REPROGRAMAR:'Reprogramar actividad',REPROGRAMAR_MEET:'Reprogramar Meet',ASISTIO_MEET:'Registrar asistencia',INASISTENCIA:'Registrar inasistencia',CANCELAR_CITA:'Cancelar actividad',EVALUAR:'Registrar evaluación',NO_INTERESADO:'Cerrar postulación',RECHAZAR:'Rechazar postulación',APROBAR:'Aprobar postulación',ASIGNAR_GRUPO:'Asignar grupo'};
+  const labels:Record<GestionAccion,string>={NO_CONTACTO:'Intento sin contacto',SEGUIMIENTO:'Guardar seguimiento',AGENDAR:'Programar actividad',AGENDAR_MEET:'Asignar Meet',REPROGRAMAR:'Reprogramar actividad',REPROGRAMAR_MEET:'Reprogramar Meet',ASISTIO_MEET:'Registrar asistencia',INASISTENCIA:'Registrar inasistencia',CANCELAR_CITA:'Cancelar actividad',EVALUAR:'Registrar evaluación',NO_INTERESADO:'Cerrar postulación',RECHAZAR:'Rechazar postulación',APROBAR:'Aprobar postulación',ASIGNAR_GRUPO:'Asignar grupo'};
   return a?labels[a]:'Selecciona una gestión';
  }
  label(s:string|null|undefined):string {
   const labels:Record<string,string>={RECLUTAMIENTO:'Postulación',POSTULANTE:'Por contactar',EN_GESTION:'En gestión',SIN_CONTACTO:'Sin contacto',NO_INTERESADO:'No interesado',EN_PROCESO:'En proceso',WHATSAPP:'WhatsApp',MEET:'Meet',APTO_PARA_CAPACITACION:'Apto para capacitación'};
   return !s?'Sin registrar':labels[s]??s.toLowerCase().replace(/_/g,' ').replace(/^./,x=>x.toUpperCase());
  }
+ reasonLabel():string {
+  const value=this.form.controls.motivo.value;
+  return value?this.label(value):'Seleccionar motivo';
+ }
+ selectReason(value:string,menu:HTMLDetailsElement):void {
+  this.form.controls.motivo.setValue(value);
+  this.form.controls.motivo.markAsDirty();
+  this.form.markAsDirty();
+  menu.open=false;
+ }
+ meetSlotLabel():string {
+  const value=Number(this.form.controls.idHorarioMeet.value);
+  return this.meetSlots().find(slot=>slot.id===value)?.etiqueta??'Seleccionar horario';
+ }
+ meetSlotSelected(value:number):boolean {return Number(this.form.controls.idHorarioMeet.value)===value;}
+ selectMeetSlot(value:number,menu:HTMLDetailsElement):void {
+  this.form.controls.idHorarioMeet.setValue(value);
+  this.form.controls.idHorarioMeet.markAsDirty();
+  this.form.markAsDirty();
+  this.error.set('');this.invalidField.set('');
+  menu.open=false;
+ }
  date(value:string|null|undefined):string {
   if(!value)return 'Sin registrar';
   return new Date(value.length===10?value+'T12:00:00':value).toLocaleString('es-PE',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+ }
+ appointmentDate(value:string|null|undefined):string {
+  const d=this.parseDate(value);
+  if(!d)return 'Sin fecha';
+  const months=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  return `${String(d.getDate()).padStart(2,'0')} ${months[d.getMonth()]}`;
+ }
+ appointmentTime(value:string|null|undefined):string {
+  const d=this.parseDate(value);
+  return d?new Intl.DateTimeFormat('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}).format(d):'Sin hora';
+ }
+ private parseDate(value:string|null|undefined):Date|null {
+  if(!value)return null;
+  const d=new Date(value.length===10?value+'T12:00:00':value);
+  return Number.isNaN(d.getTime())?null:d;
  }
  overdue():boolean {return !!this.pending()&&new Date(this.pending()!.fechaHora).getTime()<Date.now();}
  now():string {const d=new Date();const z=(n:number)=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'T'+z(d.getHours())+':'+z(d.getMinutes());}

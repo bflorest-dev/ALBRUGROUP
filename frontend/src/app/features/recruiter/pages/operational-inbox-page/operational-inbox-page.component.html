@@ -483,5 +483,5 @@
 }
 
 @if (facade.drawer() === 'detail' && facade.selectedPostulacion(); as selected) {
-  <app-gestion-reclutamiento-drawer [postulacion]="selected" (closed)="facade.closeDrawer()" (saved)="facade.load()" />
+  <app-gestion-reclutamiento-drawer [postulacion]="selected" [meetContext]="meetParticipantDrawerOpen()" (closed)="closeDetailDrawer()" (saved)="facade.load()" (meetAgendaRequested)="openMeetAgenda($event)" />
 }

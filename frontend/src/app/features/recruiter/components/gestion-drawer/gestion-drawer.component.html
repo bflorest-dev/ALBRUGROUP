@@ -21,7 +21,6 @@
   @if(loading()) {<div class="loading" role="status"><span class="spinner"></span>Cargando ficha de gestión…</div>}
   @if(stale()) {<div class="notice warning" role="alert"><strong>La ficha cambió durante tu gestión.</strong><p>Tu borrador está conservado. Actualiza el contexto para revisar el cambio.</p><button type="button" (click)="reloadContext()">Actualizar contexto</button></div>}
   @if(message()) {<div class="notice success" role="status"><i class="ti ti-circle-check"></i>{{ message() }}</div>}
-  @if(error()) {<div class="notice error" role="alert">{{ error() }} @if(!state()){<button type="button" (click)="load()">Reintentar carga</button>}</div>}
   @if(state(); as context) {
    @if(panel()==='gestion') {
     <section class="last-management" aria-label="Última gestión registrada">
@@ -29,16 +28,33 @@
      <div class="last-management__body"><strong>{{ context.ultimoResultado || 'Aún sin resultado registrado' }}</strong><time>{{ date(context.ultimaGestionAt) }}</time></div>
     </section>
     @if(pending(); as next) {
-     <section class="appointment" [class.overdue]="overdue()" aria-label="Próxima actividad">
-      <div class="appointment-heading"><i class="ti ti-calendar-event"></i><h3>{{ next.tipo==='ENTREVISTA'?'Próxima entrevista':'Próximo contacto' }}</h3><span>{{ overdue()?'Pendiente de resolver':'Programado' }}</span></div>
-      <strong class="appointment-date">{{ date(next.fechaHora) }}</strong><p>{{ label(next.modalidad) }} @if(next.referencia){ · {{ next.referencia }} }</p>
-       <div class="inline-actions">
-       @if(can('ASISTIO_MEET')&&overdue()){<button type="button" class="primary" (click)="choose('ASISTIO_MEET')">Confirmar asistencia</button>}
-       @if(can('REPROGRAMAR_MEET')){<button type="button" (click)="choose('REPROGRAMAR_MEET')">Reprogramar Meet</button>}
-       @if(can('INASISTENCIA')&&overdue()){<button type="button" (click)="choose('INASISTENCIA')">No asistió</button>}
-       @if(can('REPROGRAMAR')){<button type="button" (click)="choose('REPROGRAMAR')">Reprogramar llamada</button>}
-       @if(can('CANCELAR_CITA')){<button type="button" (click)="choose('CANCELAR_CITA')">Cancelar actividad</button>}
+     <section class="appointment" [class.overdue]="overdue()" [class.appointment--meet]="pendingMeet()" [class.appointment--agenda-route]="pendingMeet() && !meetContext()" aria-label="Próxima actividad">
+      <div class="appointment__summary">
+       <div class="appointment-heading">
+        <div class="appointment-heading__icon" aria-hidden="true"><i class="ti ti-calendar-event"></i></div>
+        <div class="appointment-heading__content">
+         <div class="appointment-heading__title"><h3>{{ pendingMeet() ? (overdue() ? 'Meet por gestionar' : 'Meet programada') : (next.tipo==='ENTREVISTA'?'Próxima entrevista':'Próximo contacto') }}</h3></div>
+         <strong class="appointment-date">{{ appointmentDate(next.fechaHora) }}</strong>
+         <strong class="appointment-time">{{ appointmentTime(next.fechaHora) }}</strong>
+         <p class="appointment-meta"><span class="appointment-meta__modality"><i class="ti" [class.ti-video]="pendingMeet()" [class.ti-phone]="!pendingMeet()" aria-hidden="true"></i><span>{{ label(next.modalidad) }}</span>@if(next.referencia){<span aria-hidden="true">·</span><span>{{ next.referencia }}</span>}</span><span class="appointment-status"><i class="ti" [class.ti-alert-circle]="overdue()" [class.ti-calendar-check]="!overdue()" aria-hidden="true"></i>{{ overdue() ? 'La fecha ya caducó' : 'Actividad programada' }}</span></p>
+        </div>
+       </div>
       </div>
+      @if (pendingMeet() && !meetContext()) {
+       <div class="meet-route" role="status">
+        <span class="meet-route__icon"><i class="ti ti-calendar-check" aria-hidden="true"></i></span>
+        <div class="meet-route__copy"><div class="meet-route__title"><strong>{{ overdue() ? 'Resuelve el resultado del Meet en la agenda' : 'Gestiona esta Meet desde la agenda' }}</strong><button type="button" class="meet-route__hint" aria-label="Ver acciones disponibles en la agenda" data-tooltip="Marca asistencia, reprograma o evalúa al postulante junto al resto de participantes."><i class="ti ti-info-circle" aria-hidden="true"></i></button></div><button type="button" class="meet-route__action" (click)="meetAgendaRequested.emit(next.fechaHora)"><i class="ti ti-arrow-up-right" aria-hidden="true"></i><span>Abrir agenda</span></button></div>
+       </div>
+      } @else if (pendingMeet() && meetContext()) {
+       <div class="inline-actions">
+        @if(can('REPROGRAMAR_MEET')){<button type="button" class="primary" (click)="choose('REPROGRAMAR_MEET')">Reprogramar Meet</button>}
+       </div>
+      } @else {
+       <div class="inline-actions">
+        @if(can('REPROGRAMAR')){<button type="button" (click)="choose('REPROGRAMAR')">Reprogramar llamada</button>}
+        @if(can('CANCELAR_CITA')){<button type="button" (click)="choose('CANCELAR_CITA')">Cancelar actividad</button>}
+       </div>
+      }
      </section>
     }
     @if(!active()) {
@@ -68,32 +84,31 @@
        }
       @if(action(); as current) {
        <form [formGroup]="form" (ngSubmit)="submit()" class="management-form" id="management-form">
-        <div class="form-heading"><h3>{{ title(current) }}</h3><button type="button" class="quiet" (click)="cancel()">Cambiar gestión</button></div>
+        <div class="form-heading"><h3>{{ title(current) }}</h3><button type="button" class="quiet form-back" (click)="cancel()"><i class="ti ti-arrow-left" aria-hidden="true"></i><span>Regresar</span></button></div>
          @if(current==='EVALUAR'){<p class="context-note">Confirma la asistencia al Meet y registra la evaluación. La aprobación será una decisión posterior.</p>}
          @if(current==='APROBAR'){<p class="context-note">La postulación quedará aprobada y visible como pendiente de grupo.</p>}
          @if(current==='ASIGNAR_GRUPO'){<p class="context-note">Esta acción mueve la postulación a capacitación. Puedes repetirla para cada aprobado o usar la asignación masiva.</p>}
         @if(current==='NO_CONTACTO'||current==='NO_INTERESADO'||current==='RECHAZAR'){
-         <label class="wide">Motivo <span aria-hidden="true">*</span><select formControlName="motivo" [attr.aria-invalid]="invalidField()==='motivo'"><option value="">Seleccionar motivo</option>@for(reason of reasons();track reason.id){<option [value]="reason.codigo">{{ label(reason.codigo) }}</option>}</select><small>Describe el resultado usando un motivo del proceso.</small>@if(invalidField()==='motivo'){<small class="field-error">{{ error() }}</small>}</label>
+         <div class="field-select-field wide"><span class="field-select-field__label">Motivo <span aria-hidden="true">*</span><button type="button" class="field-help" aria-label="Información sobre el motivo" data-tooltip="Selecciona la razón que explica por qué no se logró el contacto."><i class="ti ti-info-circle" aria-hidden="true"></i></button></span><details #motivoMenu class="field-select" [attr.aria-invalid]="invalidField()==='motivo'"><summary class="field-select__summary" aria-haspopup="listbox"><span class="field-select__trigger"><strong>{{ reasonLabel() }}</strong><i class="ti ti-chevron-down" aria-hidden="true"></i></span></summary><div class="field-select__menu" role="listbox" aria-label="Motivo"><button type="button" role="option" class="field-select__option" [class.active]="!form.controls.motivo.value" [attr.aria-selected]="!form.controls.motivo.value" (click)="selectReason('', motivoMenu)"><span>Seleccionar motivo</span>@if(!form.controls.motivo.value){<i class="ti ti-check" aria-hidden="true"></i>}</button>@for(reason of reasons();track reason.id){<button type="button" role="option" class="field-select__option" [class.active]="form.controls.motivo.value===reason.codigo" [attr.aria-selected]="form.controls.motivo.value===reason.codigo" (click)="selectReason(reason.codigo, motivoMenu)"><span>{{ label(reason.codigo) }}</span>@if(form.controls.motivo.value===reason.codigo){<i class="ti ti-check" aria-hidden="true"></i>}</button>}</div></details>@if(invalidField()==='motivo'){<small class="field-error">{{ error() }}</small>}</div>
         }
-        @if(current==='NO_CONTACTO') {
-         <div class="captured-contact wide" data-contact-attempt>
-          <div><i class="ti ti-clock-check" aria-hidden="true"></i><span>Intento registrado automáticamente</span></div>
-          @if(contactAttempt(); as attempt) {<strong>{{ label(attempt.channel) }} · {{ date(attempt.at) }}</strong><small>La hora y el canal vienen del botón que utilizaste arriba.</small>}
-          @else {<strong>Inicia con Llamar o WhatsApp</strong><small>Después podrás seleccionar el motivo de “No hubo contacto”.</small>}
-          @if(invalidField()==='contactAttempt'){<small class="field-error">{{ error() }}</small>}
-         </div>
-        } @else if(showManualManagementDetails(current)) {
+        @if(current!=='NO_CONTACTO' && showManualManagementDetails(current)) {
          <label>Fecha y hora de gestión <span aria-hidden="true">*</span><input type="datetime-local" formControlName="fechaHoraGestion"/><small>Cuándo ocurrió esta gestión, hora de Lima.</small>@if(invalidField()==='fechaHoraGestion'){<small class="field-error">{{ error() }}</small>}</label>
          <label>Canal de la gestión <span aria-hidden="true">*</span><select formControlName="modalidadContacto"><option value="LLAMADA">Llamada</option><option value="WHATSAPP">WhatsApp</option><option value="MEET">Meet</option><option value="PRESENCIAL">Presencial</option></select><small>Por dónde se realizó la comunicación.</small></label>
         }
         @if(current==='SEGUIMIENTO'){
-         <label class="check wide"><input type="checkbox" formControlName="programarReintento"/>Programar llamada de seguimiento</label>
+         <div class="follow-up-choice wide" role="radiogroup" aria-label="Próxima llamada de seguimiento">
+          <span class="follow-up-choice__label">Próxima llamada <button type="button" class="field-help" aria-label="Información sobre la próxima llamada" data-tooltip="Elige si quieres dejar una llamada acordada para continuar el seguimiento."><i class="ti ti-info-circle" aria-hidden="true"></i></button></span>
+          <div class="follow-up-choice__options">
+           <button type="button" role="radio" class="follow-up-option" [class.selected]="!form.controls.programarReintento.value" [attr.aria-checked]="!form.controls.programarReintento.value" (click)="form.controls.programarReintento.setValue(false);form.controls.programarReintento.markAsDirty();form.markAsDirty();changed.set(changed()+1)"><span>Sin próxima llamada</span>@if(!form.controls.programarReintento.value){<i class="ti ti-check" aria-hidden="true"></i>}</button>
+           <button type="button" role="radio" class="follow-up-option" [class.selected]="form.controls.programarReintento.value" [attr.aria-checked]="form.controls.programarReintento.value" (click)="form.controls.programarReintento.setValue(true);form.controls.programarReintento.markAsDirty();form.markAsDirty();changed.set(changed()+1)"><span>Programar llamada</span>@if(form.controls.programarReintento.value){<i class="ti ti-check" aria-hidden="true"></i>}</button>
+          </div>
+         </div>
         }
         @if(meetBooking()) {
-         <div class="schedule-block schedule-block--meet wide"><div class="schedule-heading"><i class="ti ti-video"></i><div><h3>{{ current==='REPROGRAMAR_MEET'?'Reprogramar Meet':'Asignar Meet' }}</h3><p>Elige una fecha y uno de los horarios disponibles para {{ label(p().negocio) }}.</p></div></div>
+         <div class="schedule-block schedule-block--meet wide"><div class="schedule-heading"><i class="ti ti-video"></i><div><div class="schedule-heading__title"><h3>{{ current==='REPROGRAMAR_MEET'?'Reprogramar Meet':'Asignar Meet' }}</h3><button type="button" class="field-help" aria-label="Información sobre la programación del Meet" data-tooltip="Selecciona una fecha y un horario disponible para este negocio."><i class="ti ti-info-circle" aria-hidden="true"></i></button></div></div></div>
           <div class="form-grid">
-           <label>Fecha del Meet <span aria-hidden="true">*</span><input type="date" formControlName="fechaMeet"/><small>No se permite elegir una hora libre.</small>@if(invalidField()==='fechaMeet'){<small class="field-error">{{ error() }}</small>}</label>
-           <label>Horario disponible <span aria-hidden="true">*</span><select formControlName="idHorarioMeet"><option [value]="0">Seleccionar horario</option>@for(slot of meetSlots();track slot.id){<option [value]="slot.id">{{ slot.etiqueta }}</option>}</select><small>{{ meetSlotsLoading()?'Cargando horarios…':'Horarios configurados para este negocio.' }}</small>@if(invalidField()==='idHorarioMeet'){<small class="field-error">{{ error() }}</small>}</label>
+           <label>Fecha del Meet <span aria-hidden="true">*</span><div class="date-input-wrap"><input type="text" inputmode="numeric" autocomplete="off" maxlength="10" formControlName="fechaMeetText" placeholder="dd/mm/aaaa" (input)="onMeetDateInput($event)" (blur)="onMeetDateBlur()" [attr.aria-invalid]="invalidField()==='fechaMeetText'"/><button type="button" class="date-picker-trigger" aria-label="Abrir selector de fecha" (click)="openMeetDatePicker(meetDatePicker)"><i class="ti ti-calendar" aria-hidden="true"></i></button><input #meetDatePicker type="date" class="native-date-picker" tabindex="-1" aria-hidden="true" [value]="form.controls.fechaMeet.value" (change)="setMeetDateFromPicker($event)"/></div>@if(invalidField()==='fechaMeetText'){<small class="field-error">{{ error() }}</small>}</label>
+           <div class="field-select-field"><span class="field-select-field__label">Horario disponible <span aria-hidden="true">*</span></span><details #meetSlotMenu class="field-select" [attr.aria-invalid]="invalidField()==='idHorarioMeet'"><summary class="field-select__summary" aria-haspopup="listbox"><span class="field-select__trigger"><strong>{{ meetSlotLabel() }}</strong><i class="ti ti-chevron-down" aria-hidden="true"></i></span></summary><div class="field-select__menu" role="listbox" aria-label="Horario disponible"><button type="button" role="option" class="field-select__option" [class.active]="!meetSlotSelected(0)" [attr.aria-selected]="!meetSlotSelected(0)" (click)="selectMeetSlot(0, meetSlotMenu)"><span>Seleccionar horario</span>@if(meetSlotSelected(0)){<i class="ti ti-check" aria-hidden="true"></i>}</button>@for(slot of meetSlots();track slot.id){<button type="button" role="option" class="field-select__option" [class.active]="meetSlotSelected(slot.id)" [attr.aria-selected]="meetSlotSelected(slot.id)" (click)="selectMeetSlot(slot.id, meetSlotMenu)"><span>{{ slot.etiqueta }}</span>@if(meetSlotSelected(slot.id)){<i class="ti ti-check" aria-hidden="true"></i>}</button>}</div></details>@if(invalidField()==='idHorarioMeet'){<small class="field-error">{{ error() }}</small>}</div>
           </div>
          </div>
         } @else if(scheduled()) {
@@ -106,7 +121,7 @@
          <label class="wide">Grupo de capacitación <span aria-hidden="true">*</span><select formControlName="idGrupoCapacitacion"><option [value]="0">Seleccionar grupo abierto</option>@for(g of groups();track g.id){<option [value]="g.id">{{ g.codigo }} · {{ label(g.turno) }} · {{ g.fechaInicio }}</option>}</select><small>La postulación ya está aprobada; aquí se realiza la transferencia.</small>@if(invalidField()==='idGrupoCapacitacion'){<small class="field-error">{{ error() }}</small>}</label>
          @if(!groups().length){<div class="notice warning wide">No hay grupos abiertos disponibles. Puedes dejar la postulación aprobada y asignarla después.<button type="button" (click)="loadGroups()">Actualizar grupos</button></div>}
         }
-        <label class="wide">Observación @if(['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','ASIGNAR_GRUPO','INASISTENCIA','CANCELAR_CITA'].includes(current)){<span aria-hidden="true">*</span>}<textarea rows="3" maxlength="2000" formControlName="observacion" [placeholder]="current==='NO_CONTACTO'?'Nota opcional del intento':'Resultado de la conversación y acuerdos'" [attr.aria-invalid]="invalidField()==='observacion'"></textarea><small>Contexto útil para el siguiente reclutador. El historial conservará esta decisión.</small>@if(invalidField()==='observacion'){<small class="field-error">{{ error() }}</small>}</label>
+        <div class="observation-field wide"><span class="observation-field__label">Observación @if(['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','ASIGNAR_GRUPO','INASISTENCIA','CANCELAR_CITA'].includes(current)){<span aria-hidden="true">*</span>}<button type="button" class="field-help" aria-label="Información sobre la observación" data-tooltip="Añade un contexto breve para que el siguiente reclutador entienda esta decisión."><i class="ti ti-info-circle" aria-hidden="true"></i></button></span>@if(['NO_CONTACTO','SEGUIMIENTO','AGENDAR_MEET','REPROGRAMAR_MEET','NO_INTERESADO'].includes(current)){<input type="text" maxlength="2000" formControlName="observacion" placeholder="Sin observaciones?" [attr.aria-invalid]="invalidField()==='observacion'"/>} @else {<textarea rows="3" maxlength="2000" formControlName="observacion" placeholder="Resultado de la conversación y acuerdos" [attr.aria-invalid]="invalidField()==='observacion'"></textarea>}@if(invalidField()==='observacion'){<small class="field-error">{{ error() }}</small>}</div>
         @if(invalidField()==='referencia'||invalidField()==='idGrupoCapacitacion'||invalidField()==='modalidadActividad'||invalidField()==='modalidadContacto'){<small class="field-error wide">{{ error() }}</small>}
        </form>
       } @else {
@@ -144,9 +159,12 @@
    }
   }
  </main>
- <footer>
-  <span role="status">{{ busy()?'Guardando gestión…':error()?'Revisa los datos: hay un error.':message()?'Listo':action()?'Gestión pendiente de guardar':'Bandeja compartida' }}</span>
-  <div><button type="button" (click)="close()" [disabled]="busy()">Cancelar</button>
+ <footer [class.footer--error]="!!error()">
+  <div class="footer-feedback">
+   @if(error()){<div class="footer-error" role="alert"><span>{{ error() }}</span>@if(!state()){<button type="button" (click)="load()">Reintentar carga</button>}</div>}
+   @else {<span role="status">{{ busy()?'Guardando gestión…':message()?'Listo':action()?'Gestión pendiente de guardar':'Bandeja compartida' }}</span>}
+  </div>
+  <div class="footer-actions"><button type="button" (click)="close()" [disabled]="busy()">Cancelar</button>
     @if(action()&&panel()==='gestion'){<button type="submit" form="management-form" class="primary" [disabled]="busy()||stale()||(action()==='ASIGNAR_GRUPO'&&!groups().length)">{{ cta() }}</button>}
   </div>
  </footer>

@@ -57,6 +57,7 @@ export class OperationalInboxPageComponent implements OnInit {
   protected readonly groupAssignmentMessage = signal('');
   protected readonly groupAssignmentError = signal('');
   protected readonly createGroupDrawerOpen = signal(false);
+  protected readonly meetParticipantDrawerOpen = signal(false);
   protected readonly expandedGroupId = signal<number | null>(null);
   protected readonly movingDetalleId = signal<number | null>(null);
   protected readonly moveDestinoId = signal<number | null>(null);
@@ -178,6 +179,31 @@ export class OperationalInboxPageComponent implements OnInit {
   protected toggleMeetAgenda(): void {
     this.meetAgendaOpen.update(open => !open);
     if (this.meetAgendaOpen()) this.loadMeetAgenda();
+  }
+
+  protected openMeetAgenda(fechaHora?: string): void {
+    this.meetParticipantDrawerOpen.set(false);
+    this.facade.closeDrawer();
+    const agendaDate = fechaHora ? this.dateInLima(fechaHora) : null;
+    if (agendaDate) this.meetDate.set(agendaDate);
+    this.resetMeetSelection();
+    this.meetAgendaOpen.set(true);
+    this.loadMeetAgenda();
+  }
+
+  private dateInLima(value: string): string | null {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Lima',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(date);
+    const year = parts.find(part => part.type === 'year')?.value;
+    const month = parts.find(part => part.type === 'month')?.value;
+    const day = parts.find(part => part.type === 'day')?.value;
+    return year && month && day ? `${year}-${month}-${day}` : null;
   }
 
   protected toggleTrainingGroups(): void {
@@ -394,7 +420,13 @@ export class OperationalInboxPageComponent implements OnInit {
   }
 
   protected openMeetParticipant(participant: SesionMeetParticipanteResponse): void {
+    this.meetParticipantDrawerOpen.set(true);
     this.facade.openDetail(participant.postulacion);
+  }
+
+  protected closeDetailDrawer(): void {
+    this.meetParticipantDrawerOpen.set(false);
+    this.facade.closeDrawer();
   }
 
   protected setMeetAttendance(idPostulacion: number, value: string): void {
