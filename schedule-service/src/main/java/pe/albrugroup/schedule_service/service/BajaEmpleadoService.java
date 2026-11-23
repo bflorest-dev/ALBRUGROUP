@@ -17,6 +17,7 @@ import pe.albrugroup.schedule_service.repository.HorarioRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -32,26 +33,28 @@ public class BajaEmpleadoService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    public void procesarBajaEmpleado(Long empleadoId) {
+    public void procesarBajaEmpleado(Long empleadoId, LocalDate fechaFin) {
         LocalDate hoy = OperationalDateTime.nowLocalDateTime().toLocalDate();
         LocalDateTime ahora = OperationalDateTime.nowLocalDateTime();
+        LocalDate fechaCierreHorario = fechaFin == null ? hoy : fechaFin;
 
-        cerrarHorarioVigente(empleadoId, hoy);
+        cerrarHorariosVigentes(empleadoId, fechaCierreHorario);
         cerrarAsistenciaAbierta(empleadoId, hoy, ahora);
 
         publicarBajaPostCommit(empleadoId);
     }
 
-    private void cerrarHorarioVigente(Long empleadoId, LocalDate hoy) {
-        Optional<Horario> horarioOpt = horarioRepository.findHorarioVigente(empleadoId, hoy);
-        if (horarioOpt.isEmpty()) {
-            log.info("Empleado {}: sin horario vigente al momento de la baja.", empleadoId);
+    private void cerrarHorariosVigentes(Long empleadoId, LocalDate fechaFin) {
+        List<Horario> horarios = horarioRepository.findHorariosEnRango(empleadoId, fechaFin, fechaFin);
+        if (horarios.isEmpty()) {
+            log.info("Empleado {}: sin horario vigente en la fecha de baja {}.", empleadoId, fechaFin);
             return;
         }
-        Horario horario = horarioOpt.get();
-        horario.setFechaFin(hoy);
-        horarioRepository.save(horario);
-        log.info("Empleado {}: horario {} cerrado con fechaFin={}.", empleadoId, horario.getId(), hoy);
+        horarios.forEach(horario -> {
+            horario.setFechaFin(fechaFin);
+            horarioRepository.save(horario);
+            log.info("Empleado {}: horario {} cerrado con fechaFin={}.", empleadoId, horario.getId(), fechaFin);
+        });
     }
 
     private void cerrarAsistenciaAbierta(Long empleadoId, LocalDate hoy, LocalDateTime ahora) {

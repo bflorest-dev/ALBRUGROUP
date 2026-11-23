@@ -11,6 +11,9 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import pe.albrugroup.rrhh_service.exception.AuthServiceException;
 
+import java.time.LocalDate;
+import java.util.Map;
+
 @Component
 @RequiredArgsConstructor
 public class ScheduleServiceClient {
@@ -18,8 +21,8 @@ public class ScheduleServiceClient {
     @Qualifier("scheduleRestTemplate")
     private final RestTemplate scheduleRestTemplate;
 
-    public void notificarBajaEmpleado(String authHeader, Long empleadoId) {
-        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders(authHeader));
+    public void notificarBajaEmpleado(String authHeader, Long empleadoId, LocalDate fechaFin) {
+        HttpEntity<Map<String, LocalDate>> entity = new HttpEntity<>(Map.of("fechaFin", fechaFin), buildHeaders(authHeader));
         try {
             scheduleRestTemplate.exchange(
                     "/bajas/empleado/{empleadoId}",

@@ -101,10 +101,6 @@ export class AdminRrhhService {
     return this.http.get<PageResponse<ContratoResponse>>(`${this.contratosUrl}/${empleadoId}/historico`, { params });
   }
 
-  finalizarContrato(empleadoId: number, request: CerrarContratoRequest): Observable<ContratoResponse> {
-    return this.http.patch<ContratoResponse>(`${this.contratosUrl}/${empleadoId}/cesar-contrato`, request);
-  }
-
   registrarHorario(request: RegistrarHorarioRequest): Observable<HorarioResponse> {
     return this.http.post<HorarioResponse>(this.horariosUrl, request);
   }

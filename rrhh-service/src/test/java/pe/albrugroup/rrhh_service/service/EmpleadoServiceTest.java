@@ -87,12 +87,12 @@ class EmpleadoServiceTest {
         assertThat(contrato.getFechaFin()).isEqualTo(fechaFin);
         assertThat(empleado.getEstadoOperativo()).isEqualTo(EstadoOperativo.INACTIVO);
         verify(authServiceClient, never()).deshabilitarUsuario(any(), any());
-        verify(scheduleServiceClient, never()).notificarBajaEmpleado(any(), any());
+        verify(scheduleServiceClient, never()).notificarBajaEmpleado(any(), any(), any());
 
         TransactionSynchronizationManager.getSynchronizations()
                 .forEach(TransactionSynchronization::afterCommit);
         verify(authServiceClient).deshabilitarUsuario("Bearer token", EMPLEADO_ID);
-        verify(scheduleServiceClient).notificarBajaEmpleado("Bearer token", EMPLEADO_ID);
+        verify(scheduleServiceClient).notificarBajaEmpleado("Bearer token", EMPLEADO_ID, fechaFin);
     }
 
     @Test
@@ -120,7 +120,7 @@ class EmpleadoServiceTest {
         assertThat(empleado.getEstadoOperativo()).isEqualTo(EstadoOperativo.ACTIVO);
         verify(mapper, never()).toResponse(any());
         verify(authServiceClient, never()).deshabilitarUsuario(any(), any());
-        verify(scheduleServiceClient, never()).notificarBajaEmpleado(any(), any());
+        verify(scheduleServiceClient, never()).notificarBajaEmpleado(any(), any(), any());
     }
 
     @Test

@@ -44,8 +44,8 @@ import {
 } from '../../services/personal-access.service';
 
 type DrawerSection = 'resumen' | 'contrato' | 'roles' | 'horario' | 'asistencia' | 'metricas';
-type DrawerSubview = 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
-type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'cerrar-contrato' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones'>;
+type DrawerSubview = 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
+type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones'>;
 type EditDataSection = 'personal' | 'contacto-ubicacion' | 'corporativo' | 'financiero';
 
 export interface DrawerScopeCapabilities {
@@ -146,7 +146,6 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly isDismissing = signal(false);
   protected readonly isSavingContract = signal(false);
   protected readonly isEditingContract = signal(false);
-  protected readonly isClosingContract = signal(false);
   protected readonly isSavingTeam = signal(false);
   protected readonly isSavingProviders = signal(false);
   protected readonly actionError = signal('');
@@ -284,10 +283,6 @@ export class EmployeeWorkspaceDrawerComponent {
     fechaFin: ['']
   });
 
-  protected readonly closeContractForm = this.formBuilder.nonNullable.group({
-    fechaFin: [this.today(), [Validators.required]]
-  });
-
   protected readonly dismissForm = this.formBuilder.nonNullable.group({
     fechaFin: [this.today(), [Validators.required]]
   });
@@ -348,7 +343,7 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected isBusy(): boolean {
-    return this.isSavingPersonal() || this.isSavingEmployeeData() || this.isDismissing() || this.isSavingContract() || this.isClosingContract() || this.isSavingTeam() || this.isSavingProviders() || this.isSavingEmpresas() || this.isSavingRoles() || this.scheduleFacade.isSaving() || this.scheduleFacade.isApplyingCorrection() || this.isSavingAdjustment();
+    return this.isSavingPersonal() || this.isSavingEmployeeData() || this.isDismissing() || this.isSavingContract() || this.isSavingTeam() || this.isSavingProviders() || this.isSavingEmpresas() || this.isSavingRoles() || this.scheduleFacade.isSaving() || this.scheduleFacade.isApplyingCorrection() || this.isSavingAdjustment();
   }
 
   protected canManageTeam(row?: PersonalDirectoryRow | null): boolean {
@@ -436,6 +431,10 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected canViewContract(): boolean {
     return canViewContractSection(this.session.getActiveRole());
+  }
+
+  protected isInactiveEmployee(): boolean {
+    return this.row()?.employee.estadoOperativo === 'INACTIVO';
   }
 
   protected canEditSchedule(): boolean {
@@ -706,6 +705,12 @@ export class EmployeeWorkspaceDrawerComponent {
     this.subview.set('contrato-form');
   }
 
+  protected openRehireFlow(): void {
+    if (!this.canManageRoles() || !this.isInactiveEmployee() || !this.canViewContract()) return;
+    this.section.set('contrato');
+    this.openContractForm();
+  }
+
   protected openEditContract(): void {
     const current = this.contract();
     if (!current || !this.canEditContract()) return;
@@ -819,9 +824,12 @@ export class EmployeeWorkspaceDrawerComponent {
       await this.loadContractHistory(row.employee.idEmpleado);
       this.subview.set('none');
       this.isEditingContract.set(false);
+      const rehire = !editing && this.isInactiveEmployee();
       this.actionSuccess.set(editing
         ? 'Contrato vigente actualizado. El horario continúa siendo una gestión independiente.'
-        : 'Contrato registrado. El horario continúa siendo una gestión independiente.');
+        : rehire
+          ? 'Empleado recontratado y acceso activado. El horario continúa siendo una gestión independiente.'
+          : 'Contrato registrado. El horario continúa siendo una gestión independiente.');
       this.employeeChanged.emit();
     } catch (error) {
       this.actionError.set(formatApiErrorMessage(
@@ -830,31 +838,6 @@ export class EmployeeWorkspaceDrawerComponent {
       ));
     } finally {
       this.isSavingContract.set(false);
-    }
-  }
-
-  protected openCloseContract(): void {
-    if (!this.canViewContract()) return;
-
-    this.closeContractForm.reset({ fechaFin: this.today() });
-    this.clearActionFeedback();
-    this.subview.set('cerrar-contrato');
-  }
-
-  protected async confirmCloseContract(): Promise<void> {
-    const row = this.row();
-    if (!row || !this.canViewContract() || this.closeContractForm.invalid) return;
-    this.isClosingContract.set(true);
-    this.clearActionFeedback();
-    try {
-      await firstValueFrom(this.rrhh.finalizarContrato(row.employee.idEmpleado, this.closeContractForm.getRawValue()));
-      await this.loadContractHistory(row.employee.idEmpleado);
-      this.employeeChanged.emit();
-      this.closed.emit();
-    } catch (error) {
-      this.actionError.set(formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo finalizar el contrato.'));
-    } finally {
-      this.isClosingContract.set(false);
     }
   }
 

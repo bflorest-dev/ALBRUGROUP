@@ -14,7 +14,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.request.PageRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.ActualizarContratoVigenteRequest;
-import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoBancoResponse;
@@ -91,15 +90,5 @@ public class ContratoController {
                                                  @AuthenticationPrincipal UserSession user) {
         var contrato = contratoService.registrarContrato(id, request, authHeader, user.empleadoId());
         return ResponseEntity.status(HttpStatus.CREATED).body(contrato);
-    }
-    @Operation(summary = "Finalizar contrato",
-            description = "Cierra el contrato vigente del empleado con la fecha de fin indicada.")
-    @PatchMapping("/{id}/cesar-contrato") @PreAuthorize("hasAuthority('CANCEL_CONTRATOS')")
-    public ResponseEntity<ContratoResponse> finalizarContrato(@Valid @RequestBody CerrarContratoRequest request,
-                                                            @Parameter(description = "ID del empleado", example = "10")
-                                                            @PathVariable @Positive Long id,
-                                                            @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        var contrato = contratoService.finalizarContrato(id, request, authHeader);
-        return ResponseEntity.ok(contrato);
     }
 }

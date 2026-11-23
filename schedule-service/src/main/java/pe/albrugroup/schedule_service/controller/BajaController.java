@@ -10,7 +10,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import pe.albrugroup.schedule_service.entity.request.horario.CerrarHorarioEmpleadoRequest;
 import pe.albrugroup.schedule_service.service.BajaEmpleadoService;
 
 @RestController
@@ -24,9 +26,12 @@ public class BajaController {
 
     @PostMapping("/empleado/{empleadoId}")
     @PreAuthorize("hasAuthority('CANCEL_CONTRATOS')")
-    @Operation(summary = "Procesar baja de empleado", description = "Cierra horario vigente, fuerza cierre de asistencia abierta y notifica sesion via WebSocket.")
-    public ResponseEntity<Void> procesarBaja(@PathVariable @Positive Long empleadoId) {
-        bajaEmpleadoService.procesarBajaEmpleado(empleadoId);
+    @Operation(summary = "Procesar baja de empleado", description = "Cierra los horarios vigentes en la fecha indicada, fuerza el cierre de asistencia abierta y notifica la sesion via WebSocket.")
+    public ResponseEntity<Void> procesarBaja(
+            @PathVariable @Positive Long empleadoId,
+            @RequestBody(required = false) CerrarHorarioEmpleadoRequest request
+    ) {
+        bajaEmpleadoService.procesarBajaEmpleado(empleadoId, request == null ? null : request.getFechaFin());
         return ResponseEntity.ok().build();
     }
 }

@@ -14,7 +14,6 @@ import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.PageRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.ActualizarContratoVigenteRequest;
-import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
 import pe.albrugroup.rrhh_service.entity.response.ContratoPlanillaResponse;
@@ -257,22 +256,6 @@ public class ContratoService implements IContrato {
     }
 
     @Override
-    public ContratoResponse finalizarContrato(Long idEmpleado, CerrarContratoRequest contratoCerrado, String authHeader) {
-        validarAuthorizationRequerida(authHeader);
-        LocalDate hoy = LocalDate.now();
-        LocalDate fechaFin = contratoCerrado.getFechaFin();
-        Contrato contrato = contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, hoy)
-                .orElseThrow(() -> new NotFoundException(Contrato.class, idEmpleado));
-        ContratoFechaValidator.validarFechaCierre(contrato.getFechaInicio(), fechaFin, hoy);
-        mapper.updateFechaFinContrato(contratoCerrado, contrato);
-
-        Empleado empleado = contrato.getEmpleado();
-        empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
-        programarDeshabilitacionUsuarioPostCommit(authHeader, empleado.getId());
-        return mapper.toResponse(contrato);
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public List<EmpleadoPlanillaResponse> listarEmpleadosPlanilla(YearMonth periodo) {
         List<Contrato> contratos = contratoRepository.findContratosSolapadosConPeriodo(periodo.atDay(1), periodo.atEndOfMonth());
@@ -415,13 +398,5 @@ public class ContratoService implements IContrato {
         );
     }
 
-    private void programarDeshabilitacionUsuarioPostCommit(String authHeader, Long idEmpleado) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                authServiceClient.deshabilitarUsuario(authHeader, idEmpleado);
-            }
-        });
-    }
 }
 

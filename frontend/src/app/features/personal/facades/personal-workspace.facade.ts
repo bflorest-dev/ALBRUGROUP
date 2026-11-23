@@ -200,6 +200,7 @@ export class PersonalWorkspaceFacade implements OnDestroy {
   });
   readonly providerScopeStatus = signal<'idle' | 'loading' | 'ready' | 'error'>('idle');
   readonly providerScopeError = signal('');
+  readonly accessDirectoryWarning = signal('');
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
   readonly search = signal('');
@@ -368,6 +369,7 @@ export class PersonalWorkspaceFacade implements OnDestroy {
   async initialize(): Promise<void> {
     this.isLoading.set(true);
     this.errorMessage.set('');
+    this.accessDirectoryWarning.set('');
     try {
       const [employees, activeEmployment] = await Promise.all([
         this.loadEmployeeDirectory(),
@@ -565,12 +567,20 @@ export class PersonalWorkspaceFacade implements OnDestroy {
   }
 
   private async loadRoleDirectory(): Promise<void> {
-    const [catalog, users] = await Promise.all([
-      firstValueFrom(this.accessService.listRoles()),
-      this.loadAllAccessUsers()
-    ]);
-    this.roleCatalog.set(catalog);
-    this.accessByEmployeeId.set(Object.fromEntries(users.map((item) => [item.empleadoId, item])));
+    try {
+      const [catalog, users] = await Promise.all([
+        firstValueFrom(this.accessService.listRoles()),
+        this.loadAllAccessUsers()
+      ]);
+      this.roleCatalog.set(catalog);
+      this.accessByEmployeeId.set(Object.fromEntries(users.map((item) => [item.empleadoId, item])));
+    } catch (error) {
+      this.roleCatalog.set([]);
+      this.accessByEmployeeId.set({});
+      this.accessDirectoryWarning.set(
+        formatApiErrorMessage(error as HttpErrorResponse, 'No se pudo cargar el detalle de accesos; el directorio laboral sigue disponible.')
+      );
+    }
   }
 
   private async loadProviderScopes(): Promise<void> {

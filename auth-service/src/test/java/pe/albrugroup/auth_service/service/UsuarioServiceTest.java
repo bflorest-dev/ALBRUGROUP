@@ -71,7 +71,7 @@ class UsuarioServiceTest {
 
         assertThat(existente.getRoles()).containsExactlyInAnyOrder(principal, secundario);
         assertThat(existente.getRolPrincipal()).isSameAs(principal);
-        assertThat(existente.getActivo()).isFalse();
+        assertThat(existente.getActivo()).isTrue();
         verify(refreshTokenService, never()).revokeActiveTokens(any());
     }
 

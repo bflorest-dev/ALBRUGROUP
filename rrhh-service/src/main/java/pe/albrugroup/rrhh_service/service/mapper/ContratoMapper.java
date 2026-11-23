@@ -3,7 +3,6 @@ package pe.albrugroup.rrhh_service.service.mapper;
 import org.mapstruct.*;
 import pe.albrugroup.rrhh_service.entity.Contrato;
 import pe.albrugroup.rrhh_service.entity.request.contrato.ActualizarContratoVigenteRequest;
-import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
 
@@ -17,6 +16,4 @@ public interface ContratoMapper {
     @Mapping(target = "puestoTrabajo", ignore = true)
     void updateContrato(ActualizarContratoVigenteRequest request, @MappingTarget Contrato entity);
 
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateFechaFinContrato(CerrarContratoRequest request, @MappingTarget Contrato entity);
 }

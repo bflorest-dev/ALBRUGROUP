@@ -14,7 +14,6 @@ import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Modalidad;
 import pe.albrugroup.rrhh_service.entity.enums.Regimen;
 import pe.albrugroup.rrhh_service.entity.request.contrato.ActualizarContratoVigenteRequest;
-import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
 import pe.albrugroup.rrhh_service.exception.BadRequestException;
 import pe.albrugroup.rrhh_service.exception.ConflictException;
@@ -23,7 +22,6 @@ import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.service.mapper.ContratoMapper;
 import pe.albrugroup.rrhh_service.integration.auth.AuthServiceClient;
 import pe.albrugroup.rrhh_service.integration.recruitment.RecruitmentServiceClient;
-import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
@@ -177,55 +175,6 @@ class ContratoServiceTest {
                 .hasMessageContaining("fecha de fin");
 
         verify(contratoRepository, never()).findContratosSolapadosExceptoId(any(), any(), any(), any());
-    }
-
-    @Test
-    void finalizaContratoConFechaSolicitadaYUsaLaFechaActualParaBuscarVigente() {
-        Empleado empleado = Empleado.builder()
-                .id(EMPLEADO_ID)
-                .estadoOperativo(EstadoOperativo.ACTIVO)
-                .build();
-        Contrato contrato = contratoVigente();
-        contrato.setEmpleado(empleado);
-        LocalDate fechaFin = LocalDate.now().minusDays(2);
-        CerrarContratoRequest request = CerrarContratoRequest.builder().fechaFin(fechaFin).build();
-        ContratoResponse response = new ContratoResponse();
-        when(contratoRepository.findContratoVigenteByEmpleadoId(eq(EMPLEADO_ID), any(LocalDate.class)))
-                .thenReturn(Optional.of(contrato));
-        when(mapper.toResponse(contrato)).thenReturn(response);
-
-        ContratoResponse resultado = contratoService.finalizarContrato(EMPLEADO_ID, request, "Bearer token");
-
-        assertThat(resultado).isSameAs(response);
-        assertThat(empleado.getEstadoOperativo()).isEqualTo(EstadoOperativo.INACTIVO);
-        verify(contratoRepository).findContratoVigenteByEmpleadoId(eq(EMPLEADO_ID), eq(LocalDate.now()));
-        verify(mapper).updateFechaFinContrato(request, contrato);
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(TransactionSynchronization::afterCommit);
-        verify(authServiceClient).deshabilitarUsuario("Bearer token", EMPLEADO_ID);
-    }
-
-    @Test
-    void noModificaContratoCuandoLaFechaSolicitadaEsInvalida() {
-        Empleado empleado = Empleado.builder()
-                .id(EMPLEADO_ID)
-                .estadoOperativo(EstadoOperativo.ACTIVO)
-                .build();
-        Contrato contrato = contratoVigente();
-        contrato.setEmpleado(empleado);
-        CerrarContratoRequest request = CerrarContratoRequest.builder()
-                .fechaFin(contrato.getFechaInicio().minusDays(1))
-                .build();
-        when(contratoRepository.findContratoVigenteByEmpleadoId(eq(EMPLEADO_ID), any(LocalDate.class)))
-                .thenReturn(Optional.of(contrato));
-
-        assertThatThrownBy(() -> contratoService.finalizarContrato(EMPLEADO_ID, request, "Bearer token"))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("fecha de fin");
-
-        assertThat(empleado.getEstadoOperativo()).isEqualTo(EstadoOperativo.ACTIVO);
-        verify(mapper, never()).updateFechaFinContrato(any(), any());
-        verify(authServiceClient, never()).deshabilitarUsuario(any(), any());
     }
 
     private Contrato contratoVigente() {

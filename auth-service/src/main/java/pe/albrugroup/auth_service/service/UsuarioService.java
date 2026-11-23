@@ -91,6 +91,7 @@ public class UsuarioService implements IUsuario {
         usuario.setEmail(nuevoEmail);
         usuario.setDni(request.getDni().trim());
         usuario.setNombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()));
+        usuario.setActivo(true);
         if (sincronizaFechaIngreso) {
             usuario.setFechaIngresoEmpleado(request.getFechaIngresoEmpleado());
         }

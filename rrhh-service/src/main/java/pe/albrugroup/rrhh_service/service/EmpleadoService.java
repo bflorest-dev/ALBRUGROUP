@@ -91,7 +91,7 @@ public class EmpleadoService implements IEmpleado {
                     contrato.setFechaFin(request.getFechaFin());
                 });
         empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
-        programarBajaPostCommit(authHeader, idEmpleado);
+        programarBajaPostCommit(authHeader, idEmpleado, request.getFechaFin());
         return mapper.toResponse(empleado);
     }
 
@@ -430,12 +430,12 @@ public class EmpleadoService implements IEmpleado {
         return resultado;
     }
 
-    private void programarBajaPostCommit(String authHeader, Long idEmpleado) {
+    private void programarBajaPostCommit(String authHeader, Long idEmpleado, LocalDate fechaFin) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
                 authServiceClient.deshabilitarUsuario(authHeader, idEmpleado);
-                scheduleServiceClient.notificarBajaEmpleado(authHeader, idEmpleado);
+                scheduleServiceClient.notificarBajaEmpleado(authHeader, idEmpleado, fechaFin);
             }
         });
     }
