@@ -439,6 +439,29 @@
   font-size: 1rem;
 }
 
+.gtr-assign-control {
+  align-items: stretch;
+  background: var(--p-button-primary-background, #10b981);
+  border-radius: 0.35rem;
+  display: flex;
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.gtr-assign-action {
+  border-bottom-right-radius: 0;
+  border-top-right-radius: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+}
+
+.gtr-assign-control > app-gtr-lead-tipification-preview {
+  width: 2rem;
+}
+
 @media (max-width: 1599px) {
   :host ::ng-deep .gtr-board--platform .gtr-table th.col-lead,
   :host ::ng-deep .gtr-board--platform .gtr-table td.col-lead {
@@ -496,6 +519,10 @@
     gap: 0.4rem;
     grid-template-columns: repeat(2, 2.3rem);
     width: 5rem;
+  }
+
+  .gtr-assign-control > app-gtr-lead-tipification-preview {
+    width: 1.8rem;
   }
 }
 

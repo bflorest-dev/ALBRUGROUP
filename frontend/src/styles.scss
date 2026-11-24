@@ -1,6 +1,19 @@
 @use '@tabler/icons-webfont/dist/tabler-icons.scss';
 @import 'primeicons/primeicons.css';
 
+/* The GTR preview is appended to body; keep PrimeNG's shell from adding a second card. */
+.gtr-tipification-preview-popover {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.gtr-tipification-preview-popover .p-popover-content {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
 app-employee-access-panel .team-section {
   container-type: inline-size;
 }

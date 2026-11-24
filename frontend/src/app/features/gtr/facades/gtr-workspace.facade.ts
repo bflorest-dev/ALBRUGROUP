@@ -73,6 +73,11 @@ import {
   GtrHistoricosFiltersFormValue,
   GtrHistoricosStateService
 } from '../services/gtr-historicos-state.service';
+import {
+  EMPTY_GTR_TIPIFICATION_ADVISOR_PREVIEW,
+  extractTipificationAdvisorNames,
+  GtrTipificationAdvisorPreviewState
+} from '../models/gtr-tipification-preview';
 
 type VisualLeadGtr = LeadGtrResponse & { isNew?: boolean };
 
@@ -272,6 +277,8 @@ export class GtrWorkspaceFacade {
   private readonly direccionCatalogoService = inject(DireccionCatalogoService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
+  private readonly todayTipificationAdvisorPreviewCache = signal<Record<string, GtrTipificationAdvisorPreviewState>>({});
+  private readonly todayTipificationAdvisorPreviewRequests = new Map<string, Promise<void>>();
   private attendanceRefreshId: number | null = null;
   private leadDataRefreshId: number | null = null;
   private platformRequestSeq = 0;
@@ -289,6 +296,8 @@ export class GtrWorkspaceFacade {
   private planOfertaZoneProviderId: number | null = null;
   private readonly formSubscription = new Subscription();
   private readonly operationalGate = this.operationalGateService.createGate('gtr-workspace');
+
+  private static readonly TODAY_TIPIFICATION_ADVISOR_PREVIEW_TTL_MS = 60_000;
 
   readonly pageSize = 12;
   readonly historicosPageSizeOptions = [10, 20, 50];
@@ -2110,6 +2119,111 @@ export class GtrWorkspaceFacade {
     this.selectedTipificationHistoryFilter.set(null);
     this.activeDialog.set('events');
     await this.loadEventHistory(row);
+  }
+
+  todayTipificationAdvisorPreview(idLead: number): GtrTipificationAdvisorPreviewState {
+    return this.todayTipificationAdvisorPreviewCache()[this.todayTipificationAdvisorPreviewKey(idLead)]
+      ?? EMPTY_GTR_TIPIFICATION_ADVISOR_PREVIEW;
+  }
+
+  async loadTodayTipificationAdvisorPreview(idLead: number): Promise<void> {
+    const key = this.todayTipificationAdvisorPreviewKey(idLead);
+    const current = this.todayTipificationAdvisorPreviewCache()[key];
+    const now = Date.now();
+
+    if (
+      current?.status === 'loaded' &&
+      current.updatedAt !== null &&
+      now - current.updatedAt < GtrWorkspaceFacade.TODAY_TIPIFICATION_ADVISOR_PREVIEW_TTL_MS
+    ) {
+      return;
+    }
+
+    const inFlight = this.todayTipificationAdvisorPreviewRequests.get(key);
+    if (inFlight) {
+      await inFlight;
+      return;
+    }
+
+    const request = this.fetchTodayTipificationAdvisorPreview(idLead, key, current);
+    this.todayTipificationAdvisorPreviewRequests.set(key, request);
+    try {
+      await request;
+    } finally {
+      if (this.todayTipificationAdvisorPreviewRequests.get(key) === request) {
+        this.todayTipificationAdvisorPreviewRequests.delete(key);
+      }
+    }
+  }
+
+  private async fetchTodayTipificationAdvisorPreview(
+    idLead: number,
+    key: string,
+    previous: GtrTipificationAdvisorPreviewState | undefined
+  ): Promise<void> {
+    this.todayTipificationAdvisorPreviewCache.update((cache) => ({
+      ...cache,
+      [key]: {
+        status: 'loading',
+        names: previous?.names ?? [],
+        error: null,
+        updatedAt: previous?.updatedAt ?? null
+      }
+    }));
+
+    try {
+      const events: EventoResponse[] = [];
+      let pageNumber = 0;
+
+      while (true) {
+        const page = await firstValueFrom(
+          this.preventaService.listarTipificacionesLeadPorFecha(idLead, this.today, {
+            pageNumber,
+            pageSize: 100,
+            sortBy: 'createdAt',
+            direction: 'desc'
+          })
+        );
+        events.push(...page.content);
+
+        const hasMorePages = page.content.length > 0 && (
+          pageNumber + 1 < page.totalPages ||
+          (page.totalPages === 0 && events.length < page.totalElements)
+        );
+        if (!hasMorePages) {
+          break;
+        }
+        pageNumber += 1;
+      }
+
+      this.todayTipificationAdvisorPreviewCache.update((cache) => ({
+        ...cache,
+        [key]: {
+          status: 'loaded',
+          names: extractTipificationAdvisorNames(events),
+          error: null,
+          updatedAt: Date.now()
+        }
+      }));
+    } catch (error) {
+      this.todayTipificationAdvisorPreviewCache.update((cache) => ({
+        ...cache,
+        [key]: {
+          status: 'error',
+          names: previous?.names ?? [],
+          error: this.getErrorMessage(error, 'No se pudieron cargar los asesores que gestionaron hoy.'),
+          updatedAt: previous?.updatedAt ?? null
+        }
+      }));
+    }
+  }
+
+  private todayTipificationAdvisorPreviewKey(idLead: number): string {
+    return `${idLead}:${this.today}`;
+  }
+
+  private invalidateTodayTipificationAdvisorPreviewCache(): void {
+    this.todayTipificationAdvisorPreviewCache.set({});
   }
 
   private async loadEventHistory(row: EventHistoryTarget): Promise<void> {
@@ -4284,6 +4398,7 @@ export class GtrWorkspaceFacade {
   }
 
   private async reconcile(): Promise<void> {
+    this.invalidateTodayTipificationAdvisorPreviewCache();
     if (this.isReconciling() || !this.canDisplayOperationalData()) {
       return;
     }
@@ -5648,6 +5763,7 @@ export class GtrWorkspaceFacade {
 
   private clearOperationalData(): void {
     this.operationalGate.clearActivation();
+    this.invalidateTodayTipificationAdvisorPreviewCache();
     this.initializeInFlight = false;
     this.isLoading.set(false);
     this.isReconciling.set(false);

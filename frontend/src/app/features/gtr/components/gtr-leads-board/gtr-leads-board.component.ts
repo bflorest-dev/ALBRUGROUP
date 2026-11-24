@@ -10,6 +10,7 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-lead-select-control.component';
+import { GtrLeadTipificationPreviewComponent } from '../gtr-lead-tipification-preview/gtr-lead-tipification-preview.component';
 
 @Component({
   selector: 'app-gtr-leads-board',
@@ -24,7 +25,8 @@ import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-le
     SelectModule,
     TableModule,
     TagModule,
-    GtrLeadSelectControlComponent
+    GtrLeadSelectControlComponent,
+    GtrLeadTipificationPreviewComponent
   ],
   templateUrl: './gtr-leads-board.component.html',
   styleUrl: './gtr-leads-board.component.scss',

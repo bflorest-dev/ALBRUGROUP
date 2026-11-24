@@ -1,0 +1,64 @@
+<button
+  pButton
+  type="button"
+  size="small"
+  class="gtr-assign-count"
+  [attr.aria-label]="'Ver asesores que gestionaron hoy'"
+  [attr.aria-controls]="popoverId()"
+  [attr.aria-describedby]="popoverId()"
+  [attr.aria-expanded]="popoverOpen()"
+  title="Ver asesores que gestionaron hoy"
+  (mouseenter)="onTriggerEnter($event, previewPopover)"
+  (mouseleave)="onTriggerLeave(previewPopover)"
+  (focus)="onTriggerFocus($event, previewPopover)"
+  (blur)="onTriggerBlur(previewPopover)"
+  (click)="onTriggerClick($event, previewPopover)"
+  (keydown.escape)="onEscape(previewPopover)"
+>
+  <span>{{ count() }}</span>
+</button>
+
+<p-popover
+  #previewPopover
+  [id]="popoverId()"
+  appendTo="body"
+  styleClass="gtr-tipification-preview-popover"
+  (onShow)="onPopoverShow()"
+  (onHide)="onPopoverHide()"
+>
+  <section
+    class="gtr-tipification-preview"
+    role="tooltip"
+    (mouseenter)="onPanelEnter()"
+    (mouseleave)="onPanelLeave(previewPopover)"
+    (keydown.escape)="onEscape(previewPopover)"
+  >
+    <header class="gtr-tipification-preview__header">
+      <strong>Gestionaron hoy</strong>
+      @if (state().status === 'loaded' && state().names.length) {
+        <span>{{ state().names.length }}</span>
+      }
+    </header>
+
+    @if (state().status === 'loading') {
+      <div class="gtr-tipification-preview__loading" aria-label="Cargando asesores">
+        <p-skeleton height="0.72rem"></p-skeleton>
+        <p-skeleton height="0.72rem" width="82%"></p-skeleton>
+        <p-skeleton height="0.72rem" width="64%"></p-skeleton>
+      </div>
+    } @else if (state().status === 'error') {
+      <p class="gtr-tipification-preview__message gtr-tipification-preview__message--error">
+        {{ state().error || 'No se pudo cargar la lista.' }}
+      </p>
+      <small class="gtr-tipification-preview__hint">Activa el preview nuevamente para reintentar.</small>
+    } @else if (state().names.length) {
+      <ul class="gtr-tipification-preview__names">
+        @for (name of state().names; track name) {
+          <li>{{ name }}</li>
+        }
+      </ul>
+    } @else {
+      <p class="gtr-tipification-preview__message">Sin gestiones registradas hoy.</p>
+    }
+  </section>
+</p-popover>

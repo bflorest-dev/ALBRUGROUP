@@ -341,6 +341,18 @@ export class PreventaLeadService {
     return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/eventos/lead/${idLead}`, { params });
   }
 
+  listarTipificacionesLeadPorFecha(
+    idLead: number,
+    fecha: string,
+    query: PageQuery
+  ): Observable<LeadPage<EventoResponse>> {
+    return this.listarEventosLeadFiltrados(idLead, query, {
+      accion: 'TIPIFICACION',
+      fechaDesde: fecha,
+      fechaHasta: fecha
+    });
+  }
+
   listarLeadsMasivo(filters: MasivoLeadFilters, query: PageQuery): Observable<LeadPage<LeadGtrResponse>> {
     return this.http.get<LeadPage<LeadGtrResponse>>(`${this.leadUrl}/masivo/leads`, {
       params: this.masivoParams(filters, query)

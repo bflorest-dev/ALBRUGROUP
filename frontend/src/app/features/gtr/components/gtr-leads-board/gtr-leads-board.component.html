@@ -447,21 +447,26 @@
         <td class="actions-cell col-actions">
           <div class="actions-shell">
             <div class="row-actions">
-              <button
-                pButton
-                type="button"
-                size="small"
-                class="gtr-assign-button"
-                [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
-                title="Asignar"
-                (click)="facade.openAssignment(row)"
-              >
-                <span class="gtr-assign-button__action">
+              <div class="gtr-assign-control">
+                <button
+                  pButton
+                  type="button"
+                  size="small"
+                  class="gtr-assign-action"
+                  [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+                  title="Asignar"
+                  aria-label="Asignar lead"
+                  (click)="facade.openAssignment(row)"
+                >
                   <i class="pi pi-send" aria-hidden="true"></i>
-                  <span class="gtr-assign-button__label">Asignar</span>
-                </span>
-                <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignacionesHoyPreventa ?? 0) }}</span>
-              </button>
+                </button>
+                <app-gtr-lead-tipification-preview
+                  [leadId]="row.id"
+                  [count]="row.totalAsignacionesHoyPreventa ?? 0"
+                  [state]="facade.todayTipificationAdvisorPreview(row.id)"
+                  (previewRequested)="facade.loadTodayTipificationAdvisorPreview(row.id)"
+                />
+              </div>
               <button
                 pButton
                 type="button"
