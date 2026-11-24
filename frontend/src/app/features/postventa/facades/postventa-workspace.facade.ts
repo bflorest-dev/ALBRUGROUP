@@ -823,6 +823,25 @@ export class PostventaWorkspaceFacade {
     }
     const lead = this._selectedLead();
     if (!lead) return false;
+    if (estadoExpediente === 'AUDIO_CONFORME') {
+      return new Promise<boolean>((resolve) => {
+        this.confirmationService.confirm({
+          header: 'Confirmar audio conforme',
+          message: 'Una vez marcado como Audio conforme no podra volver a modificarse. ¿Deseas continuar?',
+          icon: 'pi pi-exclamation-triangle',
+          acceptLabel: 'Si, confirmar',
+          rejectLabel: 'Cancelar',
+          acceptButtonStyleClass: 'p-button-success',
+          rejectButtonStyleClass: 'p-button-text',
+          accept: () => void this.run(
+            () => this.service.actualizarEstadoExpediente(lead.idLead, estadoExpediente),
+            'Estado de expediente actualizado.',
+            'No se pudo actualizar el estado de expediente.'
+          ).then(resolve),
+          reject: () => { void this.reloadOpenLead(); resolve(false); }
+        });
+      });
+    }
     return this.run(
       () => this.service.actualizarEstadoExpediente(lead.idLead, estadoExpediente),
       'Estado de expediente actualizado.',

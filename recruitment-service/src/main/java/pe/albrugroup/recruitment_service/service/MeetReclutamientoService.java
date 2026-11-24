@@ -124,15 +124,16 @@ public class MeetReclutamientoService {
 
     private SesionMeetResponse toSesionResponse(SesionMeetReclutamiento sesion) {
         List<pe.albrugroup.recruitment_service.entity.ActividadReclutamiento> actividadesSesion =
-                actividades.findByMeetSesionIdOrderByFechaHoraAscIdAsc(sesion.getId());
+                actividades.findLatestByMeetSesionIdOrderByFechaHoraAscIdAsc(sesion.getId());
         List<PostulacionResponse> postulacionesSesion = actividadesSesion.stream()
                 .map(actividad -> postulacionService.obtenerPostulacion(actividad.getPostulacionId()))
                 .toList();
         List<SesionMeetParticipanteResponse> participantes = actividadesSesion.stream().map(actividad -> {
+            var postulacion = postulacionService.obtenerPostulacion(actividad.getPostulacionId());
             GestionReclutamiento gestion = gestiones.findById(actividad.getPostulacionId()).orElse(null);
             return new SesionMeetParticipanteResponse(
                     actividad.getPostulacionId(),
-                    postulacionService.obtenerPostulacion(actividad.getPostulacionId()),
+                    postulacion,
                     asistencia(actividad.getEstado()),
                     gestion == null ? null : gestion.getResultadoEvaluacion(),
                     gestion == null ? null : gestion.getEvaluadaAt(),

@@ -10,6 +10,7 @@ import { GestionDrawerComponent } from '../../components/gestion-drawer/gestion-
 import { RecruiterPostulantesService } from '../../services/recruiter-postulantes.service';
 import { SesionMeetParticipanteResponse, SesionMeetResponse } from '../../../../shared/models/recruitment/sesion-meet-response';
 import { MeetAsistencia, MeetEvaluacion, MeetGestionBatchItemRequest } from '../../../../shared/models/recruitment/meet-batch';
+import { GrupoCapacitacionDetalleResponse } from '../../../../shared/models/recruitment/grupo-capacitacion-detalle-response';
 import { RecruiterTrainingGroupsFacade } from '../../facades/recruiter-training-groups.facade';
 import { RecruiterTrainingGroupsService } from '../../services/recruiter-training-groups.service';
 import { TrainingGroupFormPanelComponent } from '../../components/training-group-form-panel/training-group-form-panel.component';
@@ -32,7 +33,6 @@ export class OperationalInboxPageComponent implements OnInit {
     { value: 'POSTULANTE', label: 'Por revisar' },
     { value: 'SIN_CONTACTO', label: 'Sin contacto' },
     { value: 'EN_GESTION', label: 'En gestión' },
-    { value: 'NO_INTERESADO', label: 'No interesado' },
     { value: 'RECHAZADO', label: 'Rechazado' }
   ] as const;
   private readonly realtime = inject(RecruitmentRealtimeService);
@@ -64,6 +64,7 @@ export class OperationalInboxPageComponent implements OnInit {
   protected readonly groupAssignmentError = signal('');
   protected readonly createGroupDrawerOpen = signal(false);
   protected readonly meetParticipantDrawerOpen = signal(false);
+  protected readonly groupMemberDrawerOpen = signal(false);
   protected readonly expandedGroupId = signal<number | null>(null);
   protected readonly movingDetalleId = signal<number | null>(null);
   protected readonly moveDestinoId = signal<number | null>(null);
@@ -191,6 +192,7 @@ export class OperationalInboxPageComponent implements OnInit {
 
   protected openMeetAgenda(fechaHora?: string): void {
     this.meetParticipantDrawerOpen.set(false);
+    this.groupMemberDrawerOpen.set(false);
     this.facade.closeDrawer();
     const agendaDate = fechaHora ? this.dateInLima(fechaHora) : null;
     if (agendaDate) {
@@ -290,13 +292,31 @@ export class OperationalInboxPageComponent implements OnInit {
     return this.movingDetalleId() === detalleId;
   }
 
+  protected groupMemberName(detalle: GrupoCapacitacionDetalleResponse): string {
+    return this.displayName(detalle.postulacion.postulante);
+  }
+
+  protected groupMemberCellular(detalle: GrupoCapacitacionDetalleResponse): string {
+    return detalle.postulacion.postulante.celular || 'Sin celular';
+  }
+
+  protected groupMemberCallNumber(detalle: GrupoCapacitacionDetalleResponse): string {
+    return detalle.postulacion.postulante.numeroExclusivoLlamadas || 'Sin número exclusivo';
+  }
+
+  protected openGroupMember(detalle: GrupoCapacitacionDetalleResponse): void {
+    this.meetParticipantDrawerOpen.set(false);
+    this.groupMemberDrawerOpen.set(true);
+    this.facade.openDetail(detalle.postulacion);
+  }
+
   protected confirmMove(idGrupoOrigen: number, idPostulacion: number): void {
     const destino = this.moveDestinoId();
     if (!destino || this.groupOpBusy()) return;
     this.runGroupOp(
       this.trainingGroupsApi.trasladarPostulaciones(destino, idGrupoOrigen, [idPostulacion]),
       'Postulante trasladado al nuevo grupo.',
-      'No se pudo mover al postulante. Revisa que ambos grupos sigan abiertos.',
+      'No se pudo mover al postulante. Revisa que ambos grupos estén dentro de la ventana operativa.',
       () => {
         this.cancelMove();
         this.expandedGroupId.set(destino);
@@ -309,7 +329,7 @@ export class OperationalInboxPageComponent implements OnInit {
     this.runGroupOp(
       this.trainingGroupsApi.retirarPostulacion(idGrupoCapacitacion, idPostulacion),
       'Postulante retirado · vuelve a aprobados sin grupo.',
-      'No se pudo retirar al postulante. El grupo debe seguir abierto.'
+      'No se pudo retirar al postulante. El grupo debe estar dentro de la ventana operativa.'
     );
   }
 
@@ -501,12 +521,14 @@ export class OperationalInboxPageComponent implements OnInit {
   }
 
   protected openMeetParticipant(participant: SesionMeetParticipanteResponse): void {
+    this.groupMemberDrawerOpen.set(false);
     this.meetParticipantDrawerOpen.set(true);
     this.facade.openDetail(participant.postulacion);
   }
 
   protected closeDetailDrawer(): void {
     this.meetParticipantDrawerOpen.set(false);
+    this.groupMemberDrawerOpen.set(false);
     this.facade.closeDrawer();
   }
 
@@ -562,7 +584,6 @@ export class OperationalInboxPageComponent implements OnInit {
       if (!hasDecision) return;
 
       const name = this.displayName(participant.postulacion.postulante);
-      if (asistencia === 'ASISTIO' && !evaluacion) incompleteEvaluations.push(name);
       if (!asistencia && evaluacion && participant.asistencia !== 'ASISTIO') {
         incompleteEvaluations.push(name);
       }
@@ -585,7 +606,7 @@ export class OperationalInboxPageComponent implements OnInit {
     }
     if (incompleteEvaluations.length) {
       this.meetBatchState.set('error');
-      this.meetBatchMessage.set(`Completa la evaluación de: ${incompleteEvaluations.join(', ')}.`);
+      this.meetBatchMessage.set(`Registra primero la asistencia de: ${incompleteEvaluations.join(', ')}.`);
       return;
     }
     this.meetBatchState.set('loading');

@@ -42,7 +42,7 @@ export class RecruiterOperationalInboxFacade {
   private readonly negocioScope = inject(CurrentUserRecruitmentNegocioScopeService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly requestTimeoutMs = 15000;
-  private readonly statuses = ['POSTULANTE', 'SIN_CONTACTO', 'EN_GESTION', 'NO_INTERESADO', 'RECHAZADO'];
+  private readonly statuses = ['POSTULANTE', 'SIN_CONTACTO', 'EN_GESTION', 'RECHAZADO'];
 
   readonly typifyForm = this.formBuilder.nonNullable.group({
     idTipificacion: [0, [Validators.required, Validators.min(1)]],

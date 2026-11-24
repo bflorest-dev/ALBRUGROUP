@@ -41,6 +41,11 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class GrupoCapacitacionService {
 
+    private static final Set<EstadoGrupoCapacitacion> ESTADOS_GRUPO_OPERATIVO = Set.of(
+            EstadoGrupoCapacitacion.ABIERTO,
+            EstadoGrupoCapacitacion.EN_CURSO
+    );
+
     private static final Set<String> GRUPO_SORT_FIELDS = Set.of(
             "id", "codigo", "turno", "sala", "fechaInicio", "fechaFin", "estado", "createdAt"
     );
@@ -90,10 +95,10 @@ public class GrupoCapacitacionService {
             gruposPagina = Page.empty(pageable);
         } else {
             gruposPagina = grupoCapacitacionRepository
-                    .findByEstadoAndNegocioAndFechaInicioGreaterThanOrderByFechaInicioAscTurnoAscCreatedAtAsc(
-                            EstadoGrupoCapacitacion.ABIERTO,
+                    .findByEstadoInAndNegocioAndFechaInicioGreaterThanEqualOrderByFechaInicioAscTurnoAscCreatedAtAsc(
+                            ESTADOS_GRUPO_OPERATIVO,
                             negocio,
-                            LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE),
+                            LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE).minusDays(1),
                             pageable
                     );
         }
@@ -129,7 +134,7 @@ public class GrupoCapacitacionService {
         EstadoPostulacion estadoAnterior = postulacion.getEstado();
         EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
 
-        validarGrupoDisponible(grupo);
+        validarGrupoOperativo(grupo);
         validarNegocioCompatible(grupo, postulacion);
         validarPostulacionAptaParaCapacitacion(postulacion);
         validarPostulacionSinGrupoPrevio(postulacion.getId());
@@ -195,7 +200,7 @@ public class GrupoCapacitacionService {
                 .orElseThrow(() -> new NotFoundException(
                         "No existe un detalle de capacitacion para la postulacion indicada en el grupo enviado"
                 ));
-        validarGrupoAbiertoParaMovimiento(grupo);
+        validarGrupoOperativo(grupo);
 
         Postulacion postulacion = detalle.getPostulacion();
         Etapa etapaAnterior = postulacion.getEtapa();
@@ -242,8 +247,8 @@ public class GrupoCapacitacionService {
         }
         GrupoCapacitacion origen = obtenerGrupoConDetalles(idGrupoOrigen, negocio);
         GrupoCapacitacion destino = obtenerGrupoConDetalles(idGrupoDestino, negocio);
-        validarGrupoAbiertoParaMovimiento(origen);
-        validarGrupoAbiertoParaMovimiento(destino);
+        validarGrupoOperativo(origen);
+        validarGrupoOperativo(destino);
 
         java.util.List<GrupoCapacitacionDetalleResponse> resultados = new java.util.ArrayList<>();
         for (Long idPostulacion : idsPostulaciones) {
@@ -331,7 +336,7 @@ public class GrupoCapacitacionService {
     ) {
         grupoCapacitacionLifecycleService.sincronizarEstados();
         GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion, negocio);
-        validarGrupoAbiertoParaMovimiento(grupo);
+        validarGrupoAbiertoParaActualizacion(grupo);
         GrupoCapacitacionDetalle detalle = detalleRepository.findByGrupoCapacitacionIdAndPostulacionId(idGrupoCapacitacion, idPostulacion)
                 .orElseThrow(() -> new NotFoundException(
                         "No existe un detalle de capacitacion para la postulacion indicada en el grupo enviado"
@@ -488,19 +493,14 @@ public class GrupoCapacitacionService {
         return fechaInicio.plusWeeks(1);
     }
 
-    private void validarGrupoDisponible(GrupoCapacitacion grupo) {
-        if (grupo.getEstado() != EstadoGrupoCapacitacion.ABIERTO || !grupo.getFechaInicio().isAfter(
-                LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE)
-        )) {
-            throw new ConflictException("El grupo ya inició o dejó de estar disponible para asignaciones");
-        }
-    }
-
-    private void validarGrupoAbiertoParaMovimiento(GrupoCapacitacion grupo) {
-        if (grupo.getEstado() != EstadoGrupoCapacitacion.ABIERTO || !grupo.getFechaInicio().isAfter(
-                LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE)
-        )) {
-            throw new ConflictException("El grupo ya inició y no admite movimientos, retiros ni reprogramaciones");
+    private void validarGrupoOperativo(GrupoCapacitacion grupo) {
+        LocalDate limiteInicio = LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE).minusDays(1);
+        if (!ESTADOS_GRUPO_OPERATIVO.contains(grupo.getEstado())
+                || grupo.getFechaInicio() == null
+                || grupo.getFechaInicio().isBefore(limiteInicio)) {
+            throw new ConflictException(
+                    "El grupo solo admite asignaciones, movimientos y retiros desde un día antes de su inicio"
+            );
         }
     }
 

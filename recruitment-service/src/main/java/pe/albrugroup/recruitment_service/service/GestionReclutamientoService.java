@@ -223,8 +223,16 @@ public class GestionReclutamientoService {
    boolean tieneAsistencia = asistencia != null;
    boolean tieneEvaluacion = evaluacion != null;
 
+   ActividadReclutamiento actividad = obtenerParticipanteSesion(idSesion, item.idPostulacion());
+   if (tieneAsistencia && !"PENDIENTE".equals(actividad.getEstado())) {
+    // El formulario puede conservar una decisión antigua si otro guardado o
+    // reclutador resolvió la fila antes. Esa decisión no debe bloquear el batch.
+    asistencia = null;
+    tieneAsistencia = false;
+   }
+
    if (!tieneAsistencia && !tieneEvaluacion) {
-    throw new BadRequestException("Completa la asistencia o la evaluación de al menos un participante.");
+    continue;
    }
    if (tieneAsistencia && !asistencia.equals("ASISTIO") && !asistencia.equals("NO_ASISTIO")) {
     throw new BadRequestException("La asistencia debe ser ASISTIO o NO_ASISTIO.");
@@ -235,18 +243,11 @@ public class GestionReclutamientoService {
    if ("NO_ASISTIO".equals(asistencia) && tieneEvaluacion) {
     throw new BadRequestException("Un participante que no asistió no puede tener evaluación.");
    }
-   if ("ASISTIO".equals(asistencia) && !tieneEvaluacion) {
-    throw new BadRequestException("Completa la evaluación del participante que asistió.");
+   if (!tieneAsistencia && !"REALIZADA".equals(actividad.getEstado())) {
+    throw new BadRequestException("Registra la asistencia al Meet antes de evaluar.");
    }
-   // Cuando llegan ambas decisiones en el mismo batch, la asistencia todavía no existe
-   // como REALIZADA. Se valida la relación con la sesión y se permite resolverla primero.
-   validarParticipanteSesion(idSesion, item.idPostulacion(), tieneAsistencia);
    long revision = item.revisionEsperada();
    if (tieneAsistencia) {
-    ActividadReclutamiento actividad = validarParticipanteSesion(idSesion, item.idPostulacion(), true);
-    if (!"PENDIENTE".equals(actividad.getEstado())) {
-     throw new ConflictException("La asistencia de la postulación ya fue resuelta.", item.idPostulacion());
-    }
     GestionReclutamientoResponse asistenciaRegistrada = registrar(item.idPostulacion(), new GestionReclutamientoRequest(
       "ASISTIO".equals(asistencia) ? "ASISTIO_MEET" : "INASISTENCIA",
       revision,
@@ -323,6 +324,9 @@ public class GestionReclutamientoService {
   if(p.getNegocio()==null) throw new BadRequestException("La postulación necesita negocio para programar un Meet.");
   if(r.fechaMeet()==null||r.idHorarioMeet()==null) throw new BadRequestException("Selecciona una fecha y un horario de Meet.");
   SesionMeetReclutamiento sesion=meetService.obtenerOCrearSesion(r.idHorarioMeet(),r.fechaMeet(),p.getNegocio());
+  if (actividades.countByMeetSesionIdAndPostulanteId(sesion.getId(), p.getPostulante().getId()) > 0) {
+   throw new ConflictException("El postulante ya está asignado a este Meet.", id);
+  }
   ActividadReclutamiento a=new ActividadReclutamiento();
   a.setPostulacionId(id); a.setTipo("ENTREVISTA"); a.setModalidad(ModalidadContacto.MEET.name());
   a.setFechaHora(sesion.getFechaHoraInicio()); a.setReferencia(sesion.getEnlace()); a.setMeetSesionId(sesion.getId());
@@ -389,16 +393,21 @@ public class GestionReclutamientoService {
  }
 
  private ActividadReclutamiento validarParticipanteSesion(Long idSesion, Long idPostulacion, boolean pendiente) {
-  ActividadReclutamiento actividad = actividades.findByMeetSesionIdAndPostulacionId(idSesion, idPostulacion)
-   .orElseThrow(() -> new BadRequestException("La postulación no pertenece a la sesión Meet seleccionada."));
-  if (!"ENTREVISTA".equals(actividad.getTipo()) || !"MEET".equals(actividad.getModalidad())) {
-   throw new BadRequestException("La actividad vinculada no corresponde a un Meet.");
-  }
+  ActividadReclutamiento actividad = obtenerParticipanteSesion(idSesion, idPostulacion);
   if (pendiente && !"PENDIENTE".equals(actividad.getEstado())) {
    throw new ConflictException("La asistencia de la postulación ya fue resuelta.", idPostulacion);
   }
   if (!pendiente && !"REALIZADA".equals(actividad.getEstado())) {
    throw new BadRequestException("Registra la asistencia al Meet antes de evaluar.");
+  }
+  return actividad;
+ }
+
+ private ActividadReclutamiento obtenerParticipanteSesion(Long idSesion, Long idPostulacion) {
+  ActividadReclutamiento actividad = actividades.findByMeetSesionIdAndPostulacionId(idSesion, idPostulacion)
+   .orElseThrow(() -> new BadRequestException("La postulación no pertenece a la sesión Meet seleccionada."));
+  if (!"ENTREVISTA".equals(actividad.getTipo()) || !"MEET".equals(actividad.getModalidad())) {
+   throw new BadRequestException("La actividad vinculada no corresponde a un Meet.");
   }
   return actividad;
  }

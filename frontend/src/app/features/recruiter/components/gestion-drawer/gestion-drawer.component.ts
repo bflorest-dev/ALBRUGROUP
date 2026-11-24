@@ -24,6 +24,7 @@ import { buildTelUrl, buildWhatsAppUrl, normalizeUsermeta } from '../../../../sh
 export class GestionDrawerComponent implements OnInit {
  readonly postulacion=input.required<PostulacionResponse>();
  readonly meetContext=input(false);
+ readonly contactOnly=input(false);
  readonly closed=output<void>();
  readonly saved=output<void>();
  readonly meetAgendaRequested=output<string>();
@@ -63,6 +64,7 @@ export class GestionDrawerComponent implements OnInit {
  readonly pending=computed(()=>this.state()?.actividades.find(a=>a.estado==='PENDIENTE'));
  readonly pendingMeet=computed(()=>{const next=this.pending();return next?.tipo==='ENTREVISTA'&&next.modalidad==='MEET';});
  readonly active=computed(()=>!!this.state()?.accionesDisponibles.length);
+ readonly canContact=computed(()=>this.active()||this.contactOnly());
  readonly canEditDatos=computed(()=>this.p().etapa==='RECLUTAMIENTO');
  readonly hasPhone=computed(()=>this.hasContactValue(this.p().postulante.numeroExclusivoLlamadas)||this.hasContactValue(this.p().postulante.celular));
  readonly hasWhatsApp=computed(()=>this.hasContactValue(this.p().postulante.celular)||!!normalizeUsermeta(this.p().postulante.usuarioMeta));
@@ -252,7 +254,7 @@ export class GestionDrawerComponent implements OnInit {
   });
  }
  contact(channel:'LLAMADA'|'WHATSAPP'):void {
-  if(this.busy()||!this.active())return;
+  if(this.busy()||!this.canContact())return;
   const candidate=this.p().postulante;
   const url=channel==='LLAMADA'
    ?buildTelUrl('',candidate.numeroExclusivoLlamadas||candidate.celular)

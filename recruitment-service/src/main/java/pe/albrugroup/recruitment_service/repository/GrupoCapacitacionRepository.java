@@ -30,6 +30,10 @@ public interface GrupoCapacitacionRepository extends JpaRepository<GrupoCapacita
             EstadoGrupoCapacitacion estado, Negocio negocio, LocalDate fecha, Pageable pageable
     );
 
+    Page<GrupoCapacitacion> findByEstadoInAndNegocioAndFechaInicioGreaterThanEqualOrderByFechaInicioAscTurnoAscCreatedAtAsc(
+            Set<EstadoGrupoCapacitacion> estados, Negocio negocio, LocalDate fecha, Pageable pageable
+    );
+
     List<GrupoCapacitacion> findByEstadoInAndFechaFinBefore(
             Set<EstadoGrupoCapacitacion> estados, LocalDate fecha
     );

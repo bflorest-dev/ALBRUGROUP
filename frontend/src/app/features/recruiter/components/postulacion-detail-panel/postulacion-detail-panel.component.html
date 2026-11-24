@@ -59,7 +59,7 @@
             <span>Grupo de capacitacion</span>
             <select formControlName="idGrupoCapacitacion" [disabled]="isLoadingTrainingGroups">
               <option [value]="0">
-                {{ isLoadingTrainingGroups ? 'Cargando grupos...' : 'Seleccionar grupo abierto' }}
+                {{ isLoadingTrainingGroups ? 'Cargando grupos...' : 'Seleccionar grupo disponible' }}
               </option>
               @for (group of trainingGroups; track group.id) {
                 <option [value]="group.id">

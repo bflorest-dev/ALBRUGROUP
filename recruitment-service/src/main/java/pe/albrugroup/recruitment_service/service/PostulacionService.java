@@ -619,6 +619,7 @@ public class PostulacionService {
                 .and(conEstadoBandeja(estadoBandeja))
                 .and(conTipificacion(idTipificacion))
                 .and(conNegocio(negocio))
+                .and(excluyeEstadoBandeja(EstadoBandejaPostulacion.NO_INTERESADO))
                 .and(enProcesoOReciente(limiteReciente));
 
         Page<PostulacionResponse> postulaciones = postulacionRepository.findAll(
@@ -967,6 +968,15 @@ public class PostulacionService {
 
     private Specification<Postulacion> conEstadoBandeja(EstadoBandejaPostulacion estadoBandeja) {
         return (root, query, builder) -> estadoBandeja == null ? null : builder.equal(root.get("estadoBandeja"), estadoBandeja);
+    }
+
+    private Specification<Postulacion> excluyeEstadoBandeja(EstadoBandejaPostulacion estadoBandeja) {
+        return (root, query, builder) -> estadoBandeja == null
+                ? null
+                : builder.or(
+                        builder.isNull(root.get("estadoBandeja")),
+                        builder.notEqual(root.get("estadoBandeja"), estadoBandeja)
+                );
     }
 
     private Specification<Postulacion> conNegocio(Negocio negocio) {

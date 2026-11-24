@@ -1305,6 +1305,24 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
   protected async onEstadoExpedienteChange(nuevoEstado: string): Promise<void> {
     const detail = this.detail();
     if (!detail) return;
+    if (nuevoEstado === 'AUDIO_CONFORME') {
+      this.confirmationService.confirm({
+        header: 'Confirmar audio conforme',
+        message: 'Una vez marcado como Audio conforme no podrá volver a modificarse. ¿Deseas continuar?',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Sí, confirmar',
+        rejectLabel: 'Cancelar',
+        acceptButtonStyleClass: 'p-button-success',
+        rejectButtonStyleClass: 'p-button-text',
+        accept: async () => {
+          await this.runLeadAction('Estado de expediente actualizado.',
+            () => this.leadService.actualizarEstadoExpediente(detail.id!, nuevoEstado));
+          await this.refreshDrawerDetail(detail.id!);
+        },
+        reject: () => void this.refreshDrawerDetail(detail.id!),
+      });
+      return;
+    }
     await this.runLeadAction('Estado de expediente actualizado.',
       () => this.leadService.actualizarEstadoExpediente(detail.id!, nuevoEstado));
     await this.refreshDrawerDetail(detail.id!);

@@ -185,7 +185,7 @@
             </div>
             <footer class="meet-workspace__footer">
               @if (meetHasStarted(selectedSession)) {
-                <span>Selecciona asistencia y evaluación. Todo se guardará en una sola acción.</span>
+                <span>Guarda las asistencias marcadas. La evaluación puede registrarse después del Meet.</span>
               } @else {
                 <span>La asistencia y la evaluación se habilitan cuando llegue la hora del Meet.</span>
               }
@@ -433,8 +433,8 @@
           <div class="section-heading">
             <div>
               <span class="section-heading__signal">Destino</span>
-              <h3 id="group-destinations-title">Grupos abiertos</h3>
-              <p>Solo aparecen grupos futuros disponibles para asignar postulantes.</p>
+              <h3 id="group-destinations-title">Grupos disponibles</h3>
+              <p>Grupos con inicio desde ayer disponibles para asignar postulantes.</p>
             </div>
             <button type="button" class="button button--ghost button--small" (click)="trainingFacade.loadGroups(0, true)">Actualizar</button>
           </div>
@@ -445,7 +445,7 @@
           @if (trainingFacade.isLoadingGroups() && !trainingFacade.groups().length) {
             <div class="group-workspace__status" role="status"><span class="spinner" aria-hidden="true"></span>Cargando grupos…</div>
           } @else if (!trainingFacade.groups().length) {
-            <div class="group-workspace__empty"><i class="ti ti-folder-plus" aria-hidden="true"></i><strong>Todavía no hay grupos abiertos</strong><span>Crea el primero con “Nuevo grupo” para habilitar la asignación.</span></div>
+            <div class="group-workspace__empty"><i class="ti ti-folder-plus" aria-hidden="true"></i><strong>Todavía no hay grupos disponibles</strong><span>Crea un grupo futuro o revisa la agenda para consultar grupos anteriores.</span></div>
           } @else {
             <div class="group-cards">
               @for (group of trainingFacade.groups(); track group.id) {
@@ -479,8 +479,12 @@
                           <div class="mrow">
                             <span class="person-cell__avatar person-cell__avatar--mini">{{ initials(detalle.postulacion.postulante.nombres, detalle.postulacion.postulante.apellidos) }}</span>
                             <span class="mrow__id">
-                              <strong>{{ detalle.postulacion.postulante.nombres }} {{ detalle.postulacion.postulante.apellidos }}</strong>
+                              <strong>{{ groupMemberName(detalle) }}</strong>
                               <small>{{ detalle.postulacion.postulante.documento }}</small>
+                            </span>
+            <span class="mrow__contact">
+                              <span><i class="ti ti-device-mobile" aria-hidden="true"></i><strong>{{ groupMemberCellular(detalle) }}</strong></span>
+                              <span><i class="ti ti-phone" aria-hidden="true"></i><small>{{ groupMemberCallNumber(detalle) }}</small></span>
                             </span>
                             @if (isMoving(detalle.id)) {
                               <span class="mrow__move">
@@ -495,6 +499,7 @@
                               </span>
                             } @else {
                               <span class="mrow__act">
+                                <button type="button" class="mini mini--contact" [disabled]="groupOpBusy()" (click)="openGroupMember(detalle)" [attr.aria-label]="'Gestionar contacto de ' + groupMemberName(detalle)"><i class="ti ti-phone-call" aria-hidden="true"></i><span>Gestionar</span></button>
                                 <button type="button" class="mini" [disabled]="trainingFacade.groups().length < 2 || groupOpBusy()" (click)="startMove(detalle.id)"><i class="ti ti-arrow-right" aria-hidden="true"></i>Mover</button>
                                 <button type="button" class="mini mini--danger" [disabled]="groupOpBusy()" (click)="retirarMiembro(group.id, detalle.postulacion.id)"><i class="ti ti-x" aria-hidden="true"></i>Retirar</button>
                               </span>
@@ -554,5 +559,5 @@
 }
 
 @if (facade.drawer() === 'detail' && facade.selectedPostulacion(); as selected) {
-  <app-gestion-reclutamiento-drawer [postulacion]="selected" [meetContext]="meetParticipantDrawerOpen()" (closed)="closeDetailDrawer()" (saved)="facade.load()" (meetAgendaRequested)="openMeetAgenda($event)" />
+  <app-gestion-reclutamiento-drawer [postulacion]="selected" [meetContext]="meetParticipantDrawerOpen()" [contactOnly]="groupMemberDrawerOpen()" (closed)="closeDetailDrawer()" (saved)="facade.load()" (meetAgendaRequested)="openMeetAgenda($event)" />
 }

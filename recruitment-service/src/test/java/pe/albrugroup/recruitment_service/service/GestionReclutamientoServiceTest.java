@@ -141,4 +141,33 @@ class GestionReclutamientoServiceTest {
   assertEquals("APROBADO", gestion.getResultadoEvaluacion());
   verify(eventos, atLeastOnce()).registrarEvento(any(), any(), any(), any(), any(), any(), any(), any(), any());
  }
+
+ @Test void guardaAsistenciaSinObligarEvaluacion() {
+  escritura();
+  var sesion = new SesionMeetReclutamiento();
+  when(meetService.obtenerSesionEntidad(7L, null)).thenReturn(sesion);
+  var meet = new ActividadReclutamiento();
+  meet.setPostulacionId(1L);
+  meet.setMeetSesionId(7L);
+  meet.setTipo("ENTREVISTA");
+  meet.setModalidad("MEET");
+  meet.setEstado("PENDIENTE");
+  meet.setFechaHora(now.minusHours(1));
+  when(actividades.findByMeetSesionIdAndPostulacionId(7L, 1L)).thenReturn(Optional.of(meet));
+  when(actividades.findByPostulacionIdOrderByIdDesc(1L)).thenReturn(List.of(meet));
+  when(postulacionService.obtenerPostulacion(1L)).thenReturn(PostulacionResponse.builder()
+   .id(1L).etapa(postulacion.getEtapa()).estado(postulacion.getEstado())
+   .puestoObjetivo(postulacion.getPuestoObjetivo()).build());
+
+  var request = new MeetGestionBatchRequest(List.of(new MeetGestionBatchItemRequest(
+   1L, "ASISTIO", null, null, "", 0L
+  )));
+
+  var response = service.registrarGestionBatch(7L, null, request);
+
+  assertEquals(1, response.procesados());
+  assertEquals("REALIZADA", meet.getEstado());
+  assertNull(gestion.getResultadoEvaluacion());
+  verify(eventos, atLeastOnce()).registrarEvento(any(), any(), any(), any(), any(), any(), any(), any(), any());
+ }
 }

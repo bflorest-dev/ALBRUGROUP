@@ -50,7 +50,7 @@
             @if (estadoExpediente) {
               <div>
                 <dt>Estado expediente</dt>
-                @if (estadoExpediente !== 'AUDIO_CONFORME' && !readOnly && canMutate) {
+                @if (estadoExpediente !== 'AUDIO_CONFORME') {
                   <dd>
                     <select class="venta-v2__expediente-select" [value]="estadoExpediente" (change)="estadoExpedienteChange.emit($any($event.target).value)" [disabled]="saving">
                       <option value="EXPEDIENTE_PENDIENTE">Expediente pendiente</option>

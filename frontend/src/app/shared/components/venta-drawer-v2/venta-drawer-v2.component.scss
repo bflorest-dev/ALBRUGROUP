@@ -224,6 +224,7 @@
   font-size: .8rem;
   font-family: inherit;
   &:disabled { opacity: .5; cursor: not-allowed; }
+  option { color: #152640; background: #fff; }
 }
 
 @media (prefers-reduced-motion: reduce) {
