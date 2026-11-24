@@ -529,12 +529,13 @@
         <div>
           <span class="drawer__eyebrow"><span aria-hidden="true"></span> Nuevo grupo</span>
           <h2>Crear grupo de capacitación</h2>
-          <p>Define turno, sala y capacitador. Después asignas postulantes desde el tablero.</p>
+          <p>Define el nombre, turno, sala y capacitador.</p>
         </div>
         <button type="button" class="icon-button" (click)="closeCreateDrawer()" aria-label="Cerrar"><i class="ti ti-x" aria-hidden="true"></i></button>
       </header>
       <div class="drawer__body">
         <app-training-group-form-panel
+          [showHeading]="false"
           [groupForm]="trainingFacade.groupForm"
           [capacitadores]="trainingFacade.capacitadores()"
           [turnoOptions]="trainingFacade.turnoOptions"

@@ -212,11 +212,12 @@
   <div class="scrim" (click)="closeCreateDrawer()"></div>
   <aside class="drawer drawer--create">
     <div class="dr__h">
-      <div><h2>Nuevo grupo de capacitación</h2><p>Definí código, capacitador, turno, sala y fecha de inicio.</p></div>
+      <div><h2>Nuevo grupo de capacitación</h2><p>Define el nombre, turno, sala y capacitador.</p></div>
       <button type="button" class="dr__close" (click)="closeCreateDrawer()" aria-label="Cerrar">×</button>
     </div>
     <div class="dr__body">
       <app-training-group-form-panel
+        [showHeading]="false"
         [groupForm]="facade.groupForm"
         [capacitadores]="facade.capacitadores()"
         [turnoOptions]="facade.turnoOptions"
