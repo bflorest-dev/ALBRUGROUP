@@ -218,7 +218,6 @@ public class GestionReclutamientoService {
   List<Long> procesados = new ArrayList<>();
 
   for (MeetGestionBatchItemRequest item : request.items()) {
-   validarParticipanteSesion(idSesion, item.idPostulacion(), false);
    String asistencia = normalizarResultado(item.asistencia());
    String evaluacion = normalizarResultado(item.evaluacion());
    boolean tieneAsistencia = asistencia != null;
@@ -239,6 +238,9 @@ public class GestionReclutamientoService {
    if ("ASISTIO".equals(asistencia) && !tieneEvaluacion) {
     throw new BadRequestException("Completa la evaluación del participante que asistió.");
    }
+   // Cuando llegan ambas decisiones en el mismo batch, la asistencia todavía no existe
+   // como REALIZADA. Se valida la relación con la sesión y se permite resolverla primero.
+   validarParticipanteSesion(idSesion, item.idPostulacion(), tieneAsistencia);
    long revision = item.revisionEsperada();
    if (tieneAsistencia) {
     ActividadReclutamiento actividad = validarParticipanteSesion(idSesion, item.idPostulacion(), true);

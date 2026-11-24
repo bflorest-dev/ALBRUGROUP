@@ -10,6 +10,8 @@ import pe.albrugroup.recruitment_service.configuration.CurrentUser;
 import pe.albrugroup.recruitment_service.entity.*;
 import pe.albrugroup.recruitment_service.entity.enums.*;
 import pe.albrugroup.recruitment_service.entity.request.GestionReclutamientoRequest;
+import pe.albrugroup.recruitment_service.entity.request.MeetGestionBatchItemRequest;
+import pe.albrugroup.recruitment_service.entity.request.MeetGestionBatchRequest;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.exception.*;
 import pe.albrugroup.recruitment_service.repository.*;
@@ -29,6 +31,8 @@ class GestionReclutamientoServiceTest {
  @Mock EventoService eventos;
  @Mock PostulacionRealtimeNotifier realtime;
  @Mock CurrentUser currentUser;
+ @Mock MeetReclutamientoService meetService;
+ @Mock GrupoCapacitacionService grupoService;
  @InjectMocks GestionReclutamientoService service;
  private GestionReclutamiento gestion;
  private Postulacion postulacion;
@@ -108,5 +112,33 @@ class GestionReclutamientoServiceTest {
    "", "SIN_RESPUESTA", now.plusHours(2),ModalidadContacto.LLAMADA,null,null,null,null,null);
   assertThrows(BadRequestException.class,()->service.registrar(1L,request));
   verifyNoInteractions(eventos,tipificaciones,subtipificaciones,postulacionService);
+ }
+ @Test void guardaAsistenciaYEvaluacionEnElMismoBatch() {
+  escritura();
+  var sesion = new SesionMeetReclutamiento();
+  when(meetService.obtenerSesionEntidad(7L, null)).thenReturn(sesion);
+  var meet = new ActividadReclutamiento();
+  meet.setPostulacionId(1L);
+  meet.setMeetSesionId(7L);
+  meet.setTipo("ENTREVISTA");
+  meet.setModalidad("MEET");
+  meet.setEstado("PENDIENTE");
+  meet.setFechaHora(now.minusHours(1));
+  when(actividades.findByMeetSesionIdAndPostulacionId(7L, 1L)).thenReturn(Optional.of(meet));
+  when(actividades.findByPostulacionIdOrderByIdDesc(1L)).thenReturn(List.of(meet));
+  when(postulacionService.obtenerPostulacion(1L)).thenReturn(PostulacionResponse.builder()
+   .id(1L).etapa(postulacion.getEtapa()).estado(postulacion.getEstado())
+   .puestoObjetivo(postulacion.getPuestoObjetivo()).build());
+
+  var request = new MeetGestionBatchRequest(List.of(new MeetGestionBatchItemRequest(
+   1L, "ASISTIO", "APROBADO", "APROBADO", "", 0L
+  )));
+
+  var response = service.registrarGestionBatch(7L, null, request);
+
+  assertEquals(1, response.procesados());
+  assertEquals("REALIZADA", meet.getEstado());
+  assertEquals("APROBADO", gestion.getResultadoEvaluacion());
+  verify(eventos, atLeastOnce()).registrarEvento(any(), any(), any(), any(), any(), any(), any(), any(), any());
  }
 }
