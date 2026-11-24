@@ -214,7 +214,7 @@ export class RecruiterTrainingGroupsFacade {
     idCapacitador: [0, [Validators.required, Validators.min(1)]],
     turno: ['MORNING', [Validators.required]],
     sala: ['SALA_FIBRA', [Validators.required]],
-    fechaInicio: [this.getToday(), [Validators.required]]
+    fechaInicio: [this.getTomorrow(), [Validators.required]]
   });
 
   readonly detailForm = this.formBuilder.nonNullable.group({
@@ -486,7 +486,7 @@ export class RecruiterTrainingGroupsFacade {
       idCapacitador: 0,
       turno: 'MORNING',
       sala: 'SALA_FIBRA',
-      fechaInicio: this.getToday()
+      fechaInicio: this.getTomorrow()
     });
   }
 
@@ -518,7 +518,16 @@ export class RecruiterTrainingGroupsFacade {
   }
 
   private getToday(): string {
-    return new Date().toISOString().slice(0, 10);
+    const today = new Date();
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  }
+
+  private getTomorrow(): string {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`;
   }
 
   private getErrorMessage(error: HttpErrorResponse, fallbackMessage: string): string {

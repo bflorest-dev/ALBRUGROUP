@@ -82,6 +82,7 @@ public class DataLoader {
         savePermiso("READ_GRUPOS_CAPACITACION", "Puede listar y ver grupos de capacitacion", "GRUPO_CAPACITACION", "READ");
         savePermiso("ASSIGN_GRUPOS_CAPACITACION", "Puede asignar postulaciones a grupos de capacitacion", "GRUPO_CAPACITACION", "ASSIGN");
         savePermiso("UPDATE_GRUPOS_CAPACITACION", "Puede actualizar detalles de grupos de capacitacion", "GRUPO_CAPACITACION", "UPDATE");
+        savePermiso("UPDATE_RESULTADOS_CAPACITACION", "Puede registrar resultados de participantes durante la capacitacion", "GRUPO_CAPACITACION", "UPDATE_RESULT");
 
         // RECRUITMENT-SERVICE - EVENTOS
         savePermiso("READ_EVENTOS_RECRUITMENT", "Puede ver el historico de eventos de recruitment", "EVENTO_RECRUITMENT", "READ");
@@ -401,6 +402,7 @@ public class DataLoader {
                 getPermiso("READ_POSTULACION"),
 
                 getPermiso("READ_TIPIFICACIONES_CAPACITACION"),
+                getPermiso("UPDATE_RESULTADOS_CAPACITACION"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS")
         );

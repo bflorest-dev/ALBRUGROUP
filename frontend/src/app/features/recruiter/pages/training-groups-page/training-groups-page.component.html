@@ -27,8 +27,6 @@
     <app-training-group-list-panel
       [groups]="facade.groups()"
       [selectedGroup]="facade.selectedGroup()"
-      [estadoOptions]="facade.estadoOptions"
-      [selectedEstado]="facade.selectedEstado()"
       [currentPage]="facade.currentPage()"
       [totalPages]="facade.totalPages()"
       [isLoadingGroups]="facade.isLoadingGroups()"
@@ -41,7 +39,6 @@
       [estadoCapacitacionOptions]="facade.estadoCapacitacionOptions"
       [updateDetailErrorMessage]="facade.updateDetailErrorMessage()"
       [updateDetailSuccessMessage]="facade.updateDetailSuccessMessage()"
-      (estadoFilter)="facade.applyEstadoFilter($event)"
       (reload)="facade.loadGroups()"
       (pageChange)="facade.loadGroups($event)"
       (openDetail)="facade.openDetail($event)"

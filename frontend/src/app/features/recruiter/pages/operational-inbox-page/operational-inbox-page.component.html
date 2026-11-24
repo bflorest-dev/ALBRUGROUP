@@ -434,7 +434,7 @@
             <div>
               <span class="section-heading__signal">Destino</span>
               <h3 id="group-destinations-title">Grupos abiertos</h3>
-              <p>Pulsa “Asignar aquí” para enviar la selección, o abre un grupo para mover o retirar.</p>
+              <p>Solo aparecen grupos futuros disponibles para asignar postulantes.</p>
             </div>
             <button type="button" class="button button--ghost button--small" (click)="trainingFacade.loadGroups(0, true)">Actualizar</button>
           </div>
@@ -507,6 +507,13 @@
                 </article>
               }
             </div>
+            @if (trainingFacade.totalPages() > 1) {
+              <nav class="group-pagination" aria-label="Paginación de grupos disponibles">
+                <button type="button" class="button button--ghost button--small" [disabled]="trainingFacade.currentPage() === 0" (click)="trainingFacade.loadGroups(trainingFacade.currentPage() - 1)">Anterior</button>
+                <span>Página {{ trainingFacade.currentPage() + 1 }} de {{ trainingFacade.totalPages() }}</span>
+                <button type="button" class="button button--ghost button--small" [disabled]="trainingFacade.currentPage() + 1 >= trainingFacade.totalPages()" (click)="trainingFacade.loadGroups(trainingFacade.currentPage() + 1)">Siguiente</button>
+              </nav>
+            }
           }
         </section>
       </div>

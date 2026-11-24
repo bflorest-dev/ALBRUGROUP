@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { PageResponse } from '../../../shared/models/common/page-response';
 import { ActualizarDetalleGrupoCapacitacionRequest } from '../../../shared/models/recruitment/actualizar-detalle-grupo-capacitacion-request';
+import { ActualizarResultadoCapacitacionRequest } from '../../../shared/models/recruitment/actualizar-resultado-capacitacion-request';
 import { AsignarPostulacionesGrupoCapacitacionRequest } from '../../../shared/models/recruitment/asignar-postulaciones-grupo-capacitacion-request';
 import { GrupoCapacitacionRequest } from '../../../shared/models/recruitment/grupo-capacitacion-request';
 import { GrupoCapacitacionDetalleResponse } from '../../../shared/models/recruitment/grupo-capacitacion-detalle-response';
@@ -36,8 +37,8 @@ export class RecruiterTrainingGroupsService {
     let params = new HttpParams()
       .set('pageNumber', pageNumber)
       .set('pageSize', pageSize)
-      .set('sortBy', 'createdAt')
-      .set('direction', 'desc');
+      .set('sortBy', 'fechaInicio')
+      .set('direction', 'asc');
 
     if (estado) {
       params = params.set('estado', estado);
@@ -116,6 +117,18 @@ export class RecruiterTrainingGroupsService {
   ): Observable<GrupoCapacitacionDetalleResponse> {
     return this.http.patch<GrupoCapacitacionDetalleResponse>(
       `${this.groupsUrl}/${idGrupoCapacitacion}/postulaciones/${idPostulacion}`,
+      request,
+      { params: { negocio: this.negocioScope.active() } }
+    );
+  }
+
+  actualizarResultadoCapacitacion(
+    idGrupoCapacitacion: number,
+    idPostulacion: number,
+    request: ActualizarResultadoCapacitacionRequest
+  ): Observable<GrupoCapacitacionDetalleResponse> {
+    return this.http.patch<GrupoCapacitacionDetalleResponse>(
+      `${this.groupsUrl}/${idGrupoCapacitacion}/postulaciones/${idPostulacion}:resultado`,
       request,
       { params: { negocio: this.negocioScope.active() } }
     );

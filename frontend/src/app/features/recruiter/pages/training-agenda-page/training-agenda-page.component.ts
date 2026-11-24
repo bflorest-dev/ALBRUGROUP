@@ -82,6 +82,8 @@ export class TrainingAgendaPageComponent implements OnInit {
   protected readonly errorMsg = signal('');
 
   protected readonly selectedGroupId = signal<number | null>(null);
+  protected readonly selectedGroupDetail = signal<GrupoCapacitacionResponse | null>(null);
+  protected readonly selectedGroupDetailLoading = signal(false);
   protected readonly pool = signal<PostulacionResponse[]>([]);
   protected readonly selectedPoolIds = signal<number[]>([]);
   protected readonly movingDetalleId = signal<number | null>(null);
@@ -89,6 +91,11 @@ export class TrainingAgendaPageComponent implements OnInit {
   protected readonly opBusy = signal(false);
   protected readonly opMsg = signal('');
   protected readonly opError = signal('');
+  protected readonly resultDraft = signal<Record<number, string>>({});
+  protected readonly resultBusy = signal<number | null>(null);
+  protected readonly resultMessage = signal('');
+  protected readonly resultError = signal('');
+  protected readonly resultOptions = ['ASIGNADO', 'EN_CAPACITACION', 'APROBADO', 'DESAPROBADO'];
 
   protected readonly dragGroupId = signal<number | null>(null);
   protected readonly dragOverDate = signal<string | null>(null);
@@ -118,11 +125,11 @@ export class TrainingAgendaPageComponent implements OnInit {
   });
 
   protected readonly selectedGroup = computed(
-    () => this.agenda().find((g) => g.id === this.selectedGroupId()) ?? null
+    () => this.selectedGroupDetail() ?? this.agenda().find((g) => g.id === this.selectedGroupId()) ?? null
   );
 
   protected readonly moveTargets = computed(() =>
-    this.agenda().filter((g) => g.estado === 'ABIERTO' && g.id !== this.selectedGroupId())
+    this.agenda().filter((g) => g.estado === 'ABIERTO' && g.fechaInicio > this.todayIso && g.id !== this.selectedGroupId())
   );
 
   constructor() {
@@ -162,6 +169,7 @@ export class TrainingAgendaPageComponent implements OnInit {
         next: (grupos) => {
           this.agenda.set(grupos);
           this.loading.set(false);
+          this.refreshSelectedGroupDetail();
         },
         error: () => {
           this.loading.set(false);
@@ -239,7 +247,7 @@ export class TrainingAgendaPageComponent implements OnInit {
     const id = this.dragGroupId();
     this.dragOverDate.set(null);
     this.dragGroupId.set(null);
-    if (!this.canManage || id === null || cell.out || cell.past || this.opBusy()) {
+    if (!this.canManage || id === null || cell.out || cell.dateStr <= this.todayIso || this.opBusy()) {
       return;
     }
     const grupo = this.agenda().find((g) => g.id === id);
@@ -265,18 +273,46 @@ export class TrainingAgendaPageComponent implements OnInit {
   // ---- drawer de gestión ----
   protected openGroup(chip: ChipView): void {
     this.selectedGroupId.set(chip.id);
+    this.selectedGroupDetail.set(null);
     this.selectedPoolIds.set([]);
     this.cancelMove();
     this.opMsg.set('');
     this.opError.set('');
-    if (this.canManage) {
-      this.loadPool();
-    }
+    this.loadSelectedGroupDetail(chip.id);
+    if (this.canManage) this.loadPool();
   }
 
   protected closeGroup(): void {
     this.selectedGroupId.set(null);
+    this.selectedGroupDetail.set(null);
+    this.selectedGroupDetailLoading.set(false);
     this.cancelMove();
+  }
+
+  private refreshSelectedGroupDetail(): void {
+    const groupId = this.selectedGroupId();
+    if (groupId !== null) this.loadSelectedGroupDetail(groupId);
+  }
+
+  private loadSelectedGroupDetail(groupId: number): void {
+    this.selectedGroupDetailLoading.set(true);
+    this.groupsApi.obtenerGrupo(groupId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (grupo) => {
+          if (this.selectedGroupId() === groupId) {
+            this.selectedGroupDetail.set(grupo);
+            this.selectedGroupDetailLoading.set(false);
+          }
+        },
+        error: () => {
+          if (this.selectedGroupId() === groupId) {
+            this.selectedGroupDetail.set(null);
+            this.selectedGroupDetailLoading.set(false);
+            this.opError.set('No fue posible cargar el detalle del grupo.');
+          }
+        }
+      });
   }
 
   protected togglePool(idPostulacion: number): void {
@@ -345,6 +381,37 @@ export class TrainingAgendaPageComponent implements OnInit {
       'Postulante retirado · vuelve a aprobados sin grupo.',
       'No se pudo retirar al postulante. El grupo debe estar Abierto.'
     );
+  }
+
+  protected resultValue(detalle: { id: number; estadoCapacitacion: string }): string {
+    return this.resultDraft()[detalle.id] ?? detalle.estadoCapacitacion;
+  }
+
+  protected setResultValue(idDetalle: number, value: string): void {
+    this.resultDraft.update(current => ({ ...current, [idDetalle]: value }));
+    this.resultMessage.set('');
+    this.resultError.set('');
+  }
+
+  protected saveTrainingResult(grupo: GrupoCapacitacionResponse, detalle: { id: number; postulacion: { id: number; }; estadoCapacitacion: string }): void {
+    if (this.canManage || grupo.estado !== 'EN_CURSO' || this.resultBusy() !== null) return;
+    this.resultBusy.set(detalle.id);
+    this.resultMessage.set('');
+    this.resultError.set('');
+    this.groupsApi.actualizarResultadoCapacitacion(grupo.id, detalle.postulacion.id, {
+      estadoCapacitacion: this.resultValue(detalle),
+      fechaResultado: this.iso(new Date())
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.resultBusy.set(null);
+        this.resultMessage.set('Resultado guardado.');
+        this.loadAgenda();
+      },
+      error: () => {
+        this.resultBusy.set(null);
+        this.resultError.set('No se pudo guardar el resultado del participante.');
+      }
+    });
   }
 
   private runOp(
@@ -427,14 +494,18 @@ export class TrainingAgendaPageComponent implements OnInit {
       .join(' ');
   }
 
-  protected nombreCompleto(postulacion: PostulacionResponse): string {
-    const p = postulacion.postulante;
-    return `${p.nombres} ${p.apellidos}`.trim();
+  protected nombreCompleto(postulacion: PostulacionResponse | null | undefined): string {
+    const p = postulacion?.postulante;
+    return p ? `${p.nombres} ${p.apellidos}`.trim() : 'Postulante sin datos';
   }
 
-  protected iniciales(postulacion: PostulacionResponse): string {
-    const p = postulacion.postulante;
-    return `${p.nombres.charAt(0)}${p.apellidos.charAt(0)}`.toUpperCase();
+  protected iniciales(postulacion: PostulacionResponse | null | undefined): string {
+    const p = postulacion?.postulante;
+    return p ? `${p.nombres.charAt(0)}${p.apellidos.charAt(0)}`.toUpperCase() : '?';
+  }
+
+  protected documento(postulacion: PostulacionResponse | null | undefined): string {
+    return postulacion?.postulante?.documento || 'Documento pendiente';
   }
 
   protected fmtLong(dateStr: string): string {
@@ -493,7 +564,7 @@ export class TrainingAgendaPageComponent implements OnInit {
       estadoClass: this.estadoClass(g.estado),
       turnoClass: g.turno === 'AFTERNOON' ? 't' : g.turno === 'NIGHT' ? 'n' : '',
       count: g.detalles?.length ?? 0,
-      draggable: this.canManage && g.estado === 'ABIERTO',
+      draggable: this.canManage && g.estado === 'ABIERTO' && g.fechaInicio > this.todayIso,
       nombres
     };
   }

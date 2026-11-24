@@ -144,6 +144,7 @@
 .group-destinations { align-content: start; background: #fff; border: 1px solid var(--recruitment-line); border-radius: .75rem; display: grid; gap: .6rem; min-height: 0; overflow: auto; padding: .85rem; scrollbar-color: #a8c7c1 transparent; scrollbar-width: thin; }
 .group-destinations .section-heading h3 { font-size: .92rem; margin: .2rem 0 0; }.group-destinations .section-heading p { color: var(--recruitment-muted); font-size: .69rem; line-height: 1.35; margin: .22rem 0 0; }
 .group-cards { align-content: start; display: grid; gap: .55rem; }
+.group-pagination { align-items: center; display: flex; gap: .6rem; justify-content: space-between; padding-top: .35rem; }.group-pagination span { color: var(--recruitment-muted); font-size: .68rem; }
 .gcard { background: #fff; border: 1px solid #e0ebe9; border-radius: .7rem; overflow: hidden; transition: border-color 160ms ease, box-shadow 160ms ease; }
 .gcard--open { border-color: #b9ded7; box-shadow: 0 1px 0 rgba(15, 118, 110, .04); }
 .gcard__top { align-items: center; background: transparent; border: 0; color: inherit; cursor: pointer; display: grid; font: inherit; gap: .6rem; grid-template-columns: auto minmax(0, 1fr) auto; padding: .6rem .7rem; text-align: left; width: 100%; }

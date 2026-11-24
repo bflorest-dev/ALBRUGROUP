@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoGrupoCapacitacion;
 import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDetalleGrupoCapacitacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.ActualizarResultadoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AsignarPostulacionesGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.GrupoCapacitacionRequest;
@@ -136,6 +137,21 @@ public class GrupoCapacitacionController {
     ) {
         return ResponseEntity.ok(
                 grupoCapacitacionService.actualizarDetalle(idGrupoCapacitacion, idPostulacion, request, negocio)
+        );
+    }
+
+    @PatchMapping("/{idGrupoCapacitacion}/postulaciones/{idPostulacion}:resultado")
+    @PreAuthorize("hasAuthority('UPDATE_RESULTADOS_CAPACITACION')")
+    public ResponseEntity<GrupoCapacitacionDetalleResponse> actualizarResultadoCapacitacion(
+            @PathVariable @Positive Long idGrupoCapacitacion,
+            @PathVariable @Positive Long idPostulacion,
+            @Valid @RequestBody ActualizarResultadoCapacitacionRequest request,
+            @RequestParam Negocio negocio
+    ) {
+        return ResponseEntity.ok(
+                grupoCapacitacionService.actualizarResultadoCapacitacion(
+                        idGrupoCapacitacion, idPostulacion, request, negocio
+                )
         );
     }
 }

@@ -6,13 +6,6 @@
     </div>
 
     <div class="toolbar">
-      <select [value]="selectedEstado ?? ''" (change)="emitEstadoFilter($event)">
-        <option value="">Todos los estados</option>
-        @for (option of estadoOptions; track option) {
-          <option [value]="option">{{ toLabel(option) }}</option>
-        }
-      </select>
-
       <button type="button" class="ghost-button" (click)="reload.emit()">Recargar</button>
     </div>
   </div>
@@ -69,7 +62,7 @@
       </button>
     </div>
   } @else {
-    <p class="helper-text">No hay grupos para mostrar. Crea un grupo abierto para continuar.</p>
+    <p class="helper-text">No hay grupos abiertos con fecha futura. Crea un grupo para continuar.</p>
   }
 </section>
 

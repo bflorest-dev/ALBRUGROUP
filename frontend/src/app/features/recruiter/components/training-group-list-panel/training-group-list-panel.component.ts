@@ -13,8 +13,6 @@ import { GrupoCapacitacionResponse } from '../../../../shared/models/recruitment
 export class TrainingGroupListPanelComponent {
   @Input({ required: true }) groups: GrupoCapacitacionResponse[] = [];
   @Input({ required: true }) selectedGroup: GrupoCapacitacionResponse | null = null;
-  @Input({ required: true }) estadoOptions: string[] = [];
-  @Input({ required: true }) selectedEstado: string | null = null;
   @Input({ required: true }) currentPage = 0;
   @Input({ required: true }) totalPages = 1;
   @Input({ required: true }) isLoadingGroups = false;
@@ -28,7 +26,6 @@ export class TrainingGroupListPanelComponent {
   @Input({ required: true }) updateDetailErrorMessage = '';
   @Input({ required: true }) updateDetailSuccessMessage = '';
 
-  @Output() readonly estadoFilter = new EventEmitter<string>();
   @Output() readonly reload = new EventEmitter<void>();
   @Output() readonly pageChange = new EventEmitter<number>();
   @Output() readonly openDetail = new EventEmitter<number>();
@@ -36,10 +33,6 @@ export class TrainingGroupListPanelComponent {
   @Output() readonly editDetail = new EventEmitter<GrupoCapacitacionDetalleResponse>();
   @Output() readonly cancelDetailEdit = new EventEmitter<void>();
   @Output() readonly submitDetailUpdate = new EventEmitter<void>();
-
-  protected emitEstadoFilter(event: Event): void {
-    this.estadoFilter.emit((event.target as HTMLSelectElement).value);
-  }
 
   protected toLabel(value: string | null | undefined): string {
     if (!value) {

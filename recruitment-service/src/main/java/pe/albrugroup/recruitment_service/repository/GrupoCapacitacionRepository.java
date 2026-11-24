@@ -11,6 +11,7 @@ import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface GrupoCapacitacionRepository extends JpaRepository<GrupoCapacitacion, Long> {
 
@@ -24,6 +25,18 @@ public interface GrupoCapacitacionRepository extends JpaRepository<GrupoCapacita
     Page<GrupoCapacitacion> findByNegocio(Negocio negocio, Pageable pageable);
 
     Page<GrupoCapacitacion> findByEstadoAndNegocio(EstadoGrupoCapacitacion estado, Negocio negocio, Pageable pageable);
+
+    Page<GrupoCapacitacion> findByEstadoAndNegocioAndFechaInicioGreaterThanOrderByFechaInicioAscTurnoAscCreatedAtAsc(
+            EstadoGrupoCapacitacion estado, Negocio negocio, LocalDate fecha, Pageable pageable
+    );
+
+    List<GrupoCapacitacion> findByEstadoInAndFechaFinBefore(
+            Set<EstadoGrupoCapacitacion> estados, LocalDate fecha
+    );
+
+    List<GrupoCapacitacion> findByEstadoAndFechaInicioLessThanEqualAndFechaFinGreaterThanEqual(
+            EstadoGrupoCapacitacion estado, LocalDate fechaInicio, LocalDate fechaFin
+    );
 
     @EntityGraph(attributePaths = {"detalles", "detalles.postulacion", "detalles.postulacion.postulante", "detalles.postulacion.ofertaLaboral"})
     List<GrupoCapacitacion> findByFechaInicioBetweenOrderByFechaInicioAscTurnoAsc(LocalDate desde, LocalDate hasta);

@@ -16,6 +16,7 @@ import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDetalleGrupoCapacitacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.ActualizarResultadoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.GrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
@@ -32,6 +33,7 @@ import pe.albrugroup.recruitment_service.repository.PostulacionRepository;
 import pe.albrugroup.recruitment_service.service.mapper.GrupoCapacitacionMapper;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Set;
 
 @Service
@@ -52,8 +54,13 @@ public class GrupoCapacitacionService {
     private final PaginationService paginationService;
     private final PostulacionRealtimeNotifier postulacionRealtimeNotifier;
     private final GrupoCapacitacionRealtimeNotifier grupoCapacitacionRealtimeNotifier;
+    private final GrupoCapacitacionLifecycleService grupoCapacitacionLifecycleService;
 
     public GrupoCapacitacionResponse crearGrupo(GrupoCapacitacionRequest request) {
+        grupoCapacitacionLifecycleService.sincronizarEstados();
+        if (!request.getFechaInicio().isAfter(LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE))) {
+            throw new BadRequestException("La fecha de inicio debe ser futura para mantener el grupo disponible");
+        }
         validarCodigoGrupoUnico(request.getCodigo());
 
         GrupoCapacitacion grupo = grupoCapacitacionMapper.toEntity(request);
@@ -69,25 +76,35 @@ public class GrupoCapacitacionService {
         return grupoCapacitacionMapper.toResponse(grupoGuardado);
     }
 
-    @Transactional(readOnly = true)
     public PageResponse<GrupoCapacitacionResponse> listarGrupos(
             EstadoGrupoCapacitacion estado,
             Negocio negocio,
             PageRequest pageRequest
     ) {
-        Page<GrupoCapacitacionResponse> grupos = (estado == null
-                ? grupoCapacitacionRepository.findByNegocio(negocio, paginationService.toPageable(pageRequest, GRUPO_SORT_FIELDS))
-                : grupoCapacitacionRepository.findByEstadoAndNegocio(
-                        estado,
-                        negocio,
-                        paginationService.toPageable(pageRequest, GRUPO_SORT_FIELDS)
-                ))
+        grupoCapacitacionLifecycleService.sincronizarEstados();
+        org.springframework.data.domain.Pageable pageable = paginationService.toPageable(
+                pageRequest, GRUPO_SORT_FIELDS
+        );
+        Page<GrupoCapacitacion> gruposPagina;
+        if (estado != null && estado != EstadoGrupoCapacitacion.ABIERTO) {
+            gruposPagina = Page.empty(pageable);
+        } else {
+            gruposPagina = grupoCapacitacionRepository
+                    .findByEstadoAndNegocioAndFechaInicioGreaterThanOrderByFechaInicioAscTurnoAscCreatedAtAsc(
+                            EstadoGrupoCapacitacion.ABIERTO,
+                            negocio,
+                            LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE),
+                            pageable
+                    );
+        }
+
+        Page<GrupoCapacitacionResponse> grupos = gruposPagina
                 .map(grupoCapacitacionMapper::toResumenResponse);
         return PageResponse.from(grupos);
     }
 
-    @Transactional(readOnly = true)
     public java.util.List<GrupoCapacitacionResponse> listarAgenda(LocalDate desde, LocalDate hasta, Negocio negocio) {
+        grupoCapacitacionLifecycleService.sincronizarEstados();
         return grupoCapacitacionRepository
                 .findByFechaInicioBetweenAndNegocioOrderByFechaInicioAscTurnoAsc(desde, hasta, negocio)
                 .stream()
@@ -95,8 +112,8 @@ public class GrupoCapacitacionService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
     public GrupoCapacitacionResponse obtenerGrupo(Long idGrupoCapacitacion, Negocio negocio) {
+        grupoCapacitacionLifecycleService.sincronizarEstados();
         return grupoCapacitacionMapper.toResponse(obtenerGrupoConDetalles(idGrupoCapacitacion, negocio));
     }
 
@@ -105,6 +122,7 @@ public class GrupoCapacitacionService {
             AgregarPostulacionGrupoCapacitacionRequest request,
             Negocio negocio
     ) {
+        grupoCapacitacionLifecycleService.sincronizarEstados();
         GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion, negocio);
         Postulacion postulacion = obtenerPostulacion(request.getIdPostulacion());
         Etapa etapaAnterior = postulacion.getEtapa();
@@ -159,6 +177,7 @@ public class GrupoCapacitacionService {
             java.util.List<Long> idsPostulaciones,
             Negocio negocio
     ) {
+        grupoCapacitacionLifecycleService.sincronizarEstados();
         return idsPostulaciones.stream()
                 .map(id -> agregarPostulacion(
                         idGrupoCapacitacion,
@@ -169,6 +188,7 @@ public class GrupoCapacitacionService {
     }
 
     public void retirarPostulacion(Long idGrupoCapacitacion, Long idPostulacion, Negocio negocio) {
+        grupoCapacitacionLifecycleService.sincronizarEstados();
         GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion, negocio);
         GrupoCapacitacionDetalle detalle = detalleRepository
                 .findByGrupoCapacitacionIdAndPostulacionId(idGrupoCapacitacion, idPostulacion)
@@ -216,6 +236,7 @@ public class GrupoCapacitacionService {
             java.util.List<Long> idsPostulaciones,
             Negocio negocio
     ) {
+        grupoCapacitacionLifecycleService.sincronizarEstados();
         if (idGrupoOrigen.equals(idGrupoDestino)) {
             throw new BadRequestException("El grupo de origen y el de destino no pueden ser el mismo");
         }
@@ -269,10 +290,14 @@ public class GrupoCapacitacionService {
     }
 
     public GrupoCapacitacionResponse reprogramarGrupo(Long idGrupoCapacitacion, LocalDate nuevaFechaInicio, Negocio negocio) {
+        grupoCapacitacionLifecycleService.sincronizarEstados();
         GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion, negocio);
-        validarGrupoAbiertoParaMovimiento(grupo);
+        validarGrupoAbiertoParaActualizacion(grupo);
 
         LocalDate fechaAnterior = grupo.getFechaInicio();
+        if (!nuevaFechaInicio.isAfter(LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE))) {
+            throw new BadRequestException("La nueva fecha de inicio debe ser futura");
+        }
         if (!nuevaFechaInicio.equals(fechaAnterior)) {
             grupo.setFechaInicio(nuevaFechaInicio);
             grupo.setFechaFin(calcularFechaFin(nuevaFechaInicio));
@@ -304,7 +329,9 @@ public class GrupoCapacitacionService {
             ActualizarDetalleGrupoCapacitacionRequest request,
             Negocio negocio
     ) {
-        obtenerGrupoConDetalles(idGrupoCapacitacion, negocio);
+        grupoCapacitacionLifecycleService.sincronizarEstados();
+        GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion, negocio);
+        validarGrupoAbiertoParaMovimiento(grupo);
         GrupoCapacitacionDetalle detalle = detalleRepository.findByGrupoCapacitacionIdAndPostulacionId(idGrupoCapacitacion, idPostulacion)
                 .orElseThrow(() -> new NotFoundException(
                         "No existe un detalle de capacitacion para la postulacion indicada en el grupo enviado"
@@ -351,6 +378,54 @@ public class GrupoCapacitacionService {
                 "ACTUALIZACION_GRUPO_CAPACITACION",
                 "CAPACITACION",
                 detalleGuardado.getGrupoCapacitacion()
+        );
+        return grupoCapacitacionMapper.toResponse(detalleGuardado);
+    }
+
+    public GrupoCapacitacionDetalleResponse actualizarResultadoCapacitacion(
+            Long idGrupoCapacitacion,
+            Long idPostulacion,
+            ActualizarResultadoCapacitacionRequest request,
+            Negocio negocio
+    ) {
+        grupoCapacitacionLifecycleService.sincronizarEstados();
+        GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion, negocio);
+        validarGrupoEnCurso(grupo);
+
+        if (request.getEstadoCapacitacion() == EstadoCapacitacionPostulante.RETIRADO) {
+            throw new BadRequestException("El Capacitador no puede retirar postulantes desde este endpoint");
+        }
+
+        GrupoCapacitacionDetalle detalle = detalleRepository
+                .findByGrupoCapacitacionIdAndPostulacionId(idGrupoCapacitacion, idPostulacion)
+                .orElseThrow(() -> new NotFoundException(
+                        "No existe un detalle de capacitacion para la postulacion indicada en el grupo enviado"
+                ));
+
+        Postulacion postulacion = detalle.getPostulacion();
+        Etapa etapaAnterior = postulacion.getEtapa();
+        EstadoPostulacion estadoAnterior = postulacion.getEstado();
+        EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
+
+        detalle.setEstadoCapacitacion(request.getEstadoCapacitacion());
+        detalle.setFechaResultado(request.getFechaResultado() != null
+                ? request.getFechaResultado()
+                : LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE));
+
+        GrupoCapacitacionDetalle detalleGuardado = detalleRepository.save(detalle);
+        registrarEventoResultadoCapacitacion(detalleGuardado);
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_DETALLE_CAPACITACION",
+                "CAPACITACION",
+                postulacion,
+                etapaAnterior,
+                estadoAnterior,
+                estadoBandejaAnterior,
+                grupo.getId(),
+                postulacion.getPuestoObjetivo()
+        );
+        grupoCapacitacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_GRUPO_CAPACITACION", "CAPACITACION", grupo
         );
         return grupoCapacitacionMapper.toResponse(detalleGuardado);
     }
@@ -414,16 +489,32 @@ public class GrupoCapacitacionService {
     }
 
     private void validarGrupoDisponible(GrupoCapacitacion grupo) {
-        if (grupo.getEstado() == EstadoGrupoCapacitacion.CERRADO || grupo.getEstado() == EstadoGrupoCapacitacion.ANULADO) {
-            throw new BadRequestException("No se pueden agregar postulaciones a un grupo de capacitacion cerrado o anulado");
+        if (grupo.getEstado() != EstadoGrupoCapacitacion.ABIERTO || !grupo.getFechaInicio().isAfter(
+                LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE)
+        )) {
+            throw new ConflictException("El grupo ya inició o dejó de estar disponible para asignaciones");
         }
     }
 
     private void validarGrupoAbiertoParaMovimiento(GrupoCapacitacion grupo) {
-        if (grupo.getEstado() != EstadoGrupoCapacitacion.ABIERTO) {
-            throw new BadRequestException(
-                    "Solo se pueden mover o retirar postulantes mientras el grupo esta ABIERTO (aun no inicia)"
-            );
+        if (grupo.getEstado() != EstadoGrupoCapacitacion.ABIERTO || !grupo.getFechaInicio().isAfter(
+                LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE)
+        )) {
+            throw new ConflictException("El grupo ya inició y no admite movimientos, retiros ni reprogramaciones");
+        }
+    }
+
+    private void validarGrupoAbiertoParaActualizacion(GrupoCapacitacion grupo) {
+        if (grupo.getEstado() != EstadoGrupoCapacitacion.ABIERTO || !grupo.getFechaInicio().isAfter(
+                LocalDate.now(GrupoCapacitacionLifecycleService.LIMA_ZONE)
+        )) {
+            throw new ConflictException("Los datos administrativos solo se pueden actualizar antes del inicio del grupo");
+        }
+    }
+
+    private void validarGrupoEnCurso(GrupoCapacitacion grupo) {
+        if (grupo.getEstado() != EstadoGrupoCapacitacion.EN_CURSO) {
+            throw new ConflictException("Solo se pueden registrar resultados mientras el grupo está EN_CURSO");
         }
     }
 

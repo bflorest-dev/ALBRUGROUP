@@ -112,20 +112,24 @@
 
       @if (opMsg()) { <div class="banner banner--ok">{{ opMsg() }}</div> }
       @if (opError()) { <div class="banner banner--error">{{ opError() }}</div> }
+      @if (resultMessage()) { <div class="banner banner--ok">{{ resultMessage() }}</div> }
+      @if (resultError()) { <div class="banner banner--error">{{ resultError() }}</div> }
 
       <div class="sec">
         <div class="sec__h">
           <h3>Postulantes asignados</h3>
           <small>{{ grupo.detalles.length }} asignado{{ grupo.detalles.length === 1 ? '' : 's' }}</small>
         </div>
-        @if (grupo.detalles.length) {
+        @if (selectedGroupDetailLoading()) {
+          <p class="empty-note">Cargando participantes…</p>
+        } @else if (grupo.detalles.length) {
           <div class="mrows">
             @for (detalle of grupo.detalles; track detalle.id) {
               <div class="mrow">
                 <span class="av">{{ iniciales(detalle.postulacion) }}</span>
                 <div class="mrow__id">
                   <strong>{{ nombreCompleto(detalle.postulacion) }}</strong>
-                  <small>DNI {{ detalle.postulacion.postulante.documento }} · {{ label(detalle.estadoCapacitacion) }}</small>
+                  <small>DNI {{ documento(detalle.postulacion) }} · {{ label(detalle.estadoCapacitacion) }}</small>
                 </div>
                 @if (canManage && grupo.estado === 'ABIERTO') {
                   <div class="mrow__act">
@@ -147,6 +151,15 @@
                   </div>
                 } @else if (canManage) {
                   <small class="muted">grupo iniciado</small>
+                } @else if (grupo.estado === 'EN_CURSO') {
+                  <div class="mrow__result">
+                    <select [value]="resultValue(detalle)" (change)="setResultValue(detalle.id, $any($event.target).value)" aria-label="Resultado de capacitación">
+                      @for (option of resultOptions; track option) { <option [value]="option">{{ label(option) }}</option> }
+                    </select>
+                    <button type="button" class="mini" [disabled]="resultBusy() !== null" (click)="saveTrainingResult(grupo, detalle)">
+                      {{ resultBusy() === detalle.id ? 'Guardando…' : 'Guardar' }}
+                    </button>
+                  </div>
                 }
               </div>
             }

@@ -1,6 +1,6 @@
 package pe.albrugroup.recruitment_service.entity.request;
 
-import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -23,6 +23,6 @@ public class GrupoCapacitacionRequest {
     @NotNull @Positive private Long idCapacitador;
     @NotNull private TurnoHorario turno;
     @NotNull private SalaCapacitacion sala;
-    @NotNull @FutureOrPresent private LocalDate fechaInicio;
+    @NotNull @Future private LocalDate fechaInicio;
     @NotNull private Negocio negocio;
 }
