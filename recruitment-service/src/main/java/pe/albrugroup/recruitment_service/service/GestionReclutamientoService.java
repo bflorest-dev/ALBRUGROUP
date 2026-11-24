@@ -98,32 +98,31 @@ public class GestionReclutamientoService {
    case "INASISTENCIA" -> {
     exigirMeetPendiente(pendiente);
     if(pendiente.getFechaHora().isAfter(r.fechaHoraGestion())) throw new BadRequestException("No puedes registrar inasistencia antes del Meet.");
-    exigirObservacion(r); cerrar(pendiente,"INASISTENCIA");
-    registrarEvento(p,Accion.INASISTENCIA_MEET,ModalidadContacto.MEET,"No asistió al Meet · "+r.observacion().trim(),r.fechaHoraGestion());
+    cerrar(pendiente,"INASISTENCIA");
+    registrarEvento(p,Accion.INASISTENCIA_MEET,ModalidadContacto.MEET,"No asistió al Meet"+detalleObservacion(r.observacion()),r.fechaHoraGestion());
     resultado="Inasistencia registrada";
    }
    case "CANCELAR_CITA" -> {
     if(pendiente==null) throw new BadRequestException("No hay una actividad pendiente.");
-    exigirObservacion(r); cerrar(pendiente,"CANCELADA");
-    registrarEvento(p,Accion.REPROGRAMACION_RECLUTAMIENTO,pendienteModalidad(pendiente),"Actividad cancelada · "+r.observacion().trim(),r.fechaHoraGestion());
+    cerrar(pendiente,"CANCELADA");
+    registrarEvento(p,Accion.REPROGRAMACION_RECLUTAMIENTO,pendienteModalidad(pendiente),"Actividad cancelada"+detalleObservacion(r.observacion()),r.fechaHoraGestion());
     resultado="Actividad cancelada";
    }
    case "EVALUAR" -> {
     if(!tieneMeetAsistido(agenda)) throw new BadRequestException("Registra la asistencia al Meet antes de evaluar.");
-    exigirObservacion(r); g.setEvaluadaAt(r.fechaHoraGestion());
-    registrarEvento(p,Accion.EVALUACION_RECLUTAMIENTO,ModalidadContacto.MEET,"Evaluación del Meet registrada · "+r.observacion().trim(),r.fechaHoraGestion());
+    g.setEvaluadaAt(r.fechaHoraGestion());
+    registrarEvento(p,Accion.EVALUACION_RECLUTAMIENTO,ModalidadContacto.MEET,"Evaluación del Meet registrada"+detalleObservacion(r.observacion()),r.fechaHoraGestion());
     resultado="Evaluación realizada";
    }
    case "APROBAR" -> {
-    exigirObservacion(r);
      if(!tieneMeetAsistido(agenda)) throw new BadRequestException("Registra la asistencia al Meet antes de aprobar.");
     tipificar(id,"RECLUTADO","APROBADO_PENDIENTE_GRUPO",r); g.setResultadoEvaluacion("APROBADO");
-    registrarEvento(p,Accion.APROBACION_RECLUTAMIENTO,ModalidadContacto.MEET,"Postulante aprobado · pendiente de grupo · "+r.observacion().trim(),r.fechaHoraGestion());
+    registrarEvento(p,Accion.APROBACION_RECLUTAMIENTO,ModalidadContacto.MEET,"Postulante aprobado · pendiente de grupo"+detalleObservacion(r.observacion()),r.fechaHoraGestion());
     resultado="Aprobado · pendiente de grupo";
    }
    case "RECHAZAR" -> {
-    exigirObservacion(r); tipificar(id,"RECHAZADO",r.motivo(),r); g.setResultadoEvaluacion("RECHAZADO"); cerrar(pendiente,"CANCELADA");
-    registrarEvento(p,Accion.RECHAZO_RECLUTAMIENTO,r.modalidadContacto(),"Postulación rechazada · "+r.observacion().trim(),r.fechaHoraGestion());
+    tipificar(id,"RECHAZADO",r.motivo(),r); g.setResultadoEvaluacion("RECHAZADO"); cerrar(pendiente,"CANCELADA");
+    registrarEvento(p,Accion.RECHAZO_RECLUTAMIENTO,r.modalidadContacto(),"Postulación rechazada"+detalleObservacion(r.observacion()),r.fechaHoraGestion());
     resultado="Postulación rechazada";
    }
    case "NO_INTERESADO" -> {
@@ -240,10 +239,6 @@ public class GestionReclutamientoService {
    if ("ASISTIO".equals(asistencia) && !tieneEvaluacion) {
     throw new BadRequestException("Completa la evaluación del participante que asistió.");
    }
-   if (item.observacion() == null || item.observacion().isBlank()) {
-    throw new BadRequestException("Agrega una observación para cada gestión seleccionada.");
-   }
-
    long revision = item.revisionEsperada();
    if (tieneAsistencia) {
     ActividadReclutamiento actividad = validarParticipanteSesion(idSesion, item.idPostulacion(), true);
@@ -380,8 +375,8 @@ public class GestionReclutamientoService {
  private void cerrar(ActividadReclutamiento a,String estado) {
   if(a!=null) { a.setEstado(estado); actividades.saveAndFlush(a); }
  }
- private void exigirObservacion(GestionReclutamientoRequest r) {
-  if(r.observacion()==null || r.observacion().isBlank()) throw new BadRequestException("Describe el resultado de esta gestión.");
+ private String detalleObservacion(String observacion) {
+  return observacion == null || observacion.isBlank() ? "" : " · " + observacion.trim();
  }
  private void validarNoContacto(GestionReclutamientoRequest r) {
   if(!r.accion().equals("NO_CONTACTO")) return;

@@ -554,7 +554,6 @@ export class OperationalInboxPageComponent implements OnInit {
     }
     const items: MeetGestionBatchItemRequest[] = [];
     const incompleteEvaluations: string[] = [];
-    const missingObservations: string[] = [];
 
     this.meetParticipants(session).forEach(participant => {
       const asistencia = participant.asistencia === 'PENDIENTE' ? this.attendanceValue(participant) : null;
@@ -569,7 +568,6 @@ export class OperationalInboxPageComponent implements OnInit {
       }
 
       const observacion = this.observationValue(participant).trim();
-      if (!observacion) missingObservations.push(name);
       items.push({
         idPostulacion: participant.idPostulacion,
         asistencia,
@@ -590,12 +588,6 @@ export class OperationalInboxPageComponent implements OnInit {
       this.meetBatchMessage.set(`Completa la evaluación de: ${incompleteEvaluations.join(', ')}.`);
       return;
     }
-    if (missingObservations.length) {
-      this.meetBatchState.set('error');
-      this.meetBatchMessage.set(`Agrega una observación para: ${missingObservations.join(', ')}.`);
-      return;
-    }
-
     this.meetBatchState.set('loading');
     this.meetBatchMessage.set('');
     const aprobados = items.filter(item => item.evaluacion === 'APROBADO').length;

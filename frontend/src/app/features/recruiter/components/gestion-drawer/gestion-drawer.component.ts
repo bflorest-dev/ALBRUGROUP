@@ -207,13 +207,11 @@ export class GestionDrawerComponent implements OnInit {
   const a=this.action();const r=this.form.getRawValue();
   this.form.markAllAsTouched();
   const meet=['AGENDAR_MEET','REPROGRAMAR_MEET'].includes(a??'');
-  const needsObservation=['EVALUAR','RECHAZAR','NO_INTERESADO','APROBAR','INASISTENCIA','CANCELAR_CITA','ASIGNAR_GRUPO'].includes(a??'');
   let error='';let field='';
   if(!a||!this.can(a)) {error='Selecciona una acción disponible para esta postulación.';}
   else if(['NO_CONTACTO','SEGUIMIENTO','AGENDAR_MEET','REPROGRAMAR_MEET','NO_INTERESADO'].includes(a??'')&&!this.contactAttempt()) {error='Inicia el contacto con Llamar o WhatsApp para registrar la hora y el canal automáticamente.';field='contactAttempt';}
   else if(a!=='NO_CONTACTO'&&this.showManualManagementDetails(a!)&&!r.fechaHoraGestion) {error='Indica cuándo ocurrió esta gestión.';field='fechaHoraGestion';}
   else if(['NO_CONTACTO','NO_INTERESADO','RECHAZAR'].includes(a)&&!r.motivo) {error='Selecciona el motivo del resultado.';field='motivo';}
-  else if(needsObservation&&!r.observacion.trim()) {error='Describe el resultado de esta gestión.';field='observacion';}
   else if(r.observacion.length>2000) {error='La observación admite hasta 2000 caracteres.';field='observacion';}
   else if(meet&&!this.parseMeetDate(r.fechaMeetText)) {error='Indica una fecha válida en formato dd/mm/aaaa.';field='fechaMeetText';}
   else if(meet&&!Number(r.idHorarioMeet)) {error='Selecciona un horario disponible.';field='idHorarioMeet';}

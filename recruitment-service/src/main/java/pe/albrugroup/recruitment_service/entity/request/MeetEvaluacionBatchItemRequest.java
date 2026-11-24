@@ -10,7 +10,7 @@ public record MeetEvaluacionBatchItemRequest(
         @NotNull @Positive Long idPostulacion,
         @NotBlank String resultado,
         @NotBlank @Size(max = 100) String motivo,
-        @NotBlank @Size(max = 2000) String observacion,
+        @Size(max = 2000) String observacion,
         @NotNull @PositiveOrZero Long revisionEsperada
 ) {
 }
