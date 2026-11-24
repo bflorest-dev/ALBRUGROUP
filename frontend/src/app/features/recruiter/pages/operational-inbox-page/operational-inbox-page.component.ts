@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, interval } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { DatePickerModule } from 'primeng/datepicker';
+import { Popover, PopoverModule } from 'primeng/popover';
 import { RecruitmentRealtimeService } from '../../../../core/services/recruitment-realtime.service';
 import { RecruiterOperationalInboxFacade } from '../../facades/recruiter-operational-inbox.facade';
 import { GestionDrawerComponent } from '../../components/gestion-drawer/gestion-drawer.component';
@@ -15,7 +17,7 @@ import { CurrentUserRecruitmentNegocioScopeService } from '../../../../core/serv
 
 @Component({
   selector: 'app-recruiter-operational-inbox-page',
-  imports: [FormsModule, ReactiveFormsModule, GestionDrawerComponent, TrainingGroupFormPanelComponent],
+  imports: [FormsModule, ReactiveFormsModule, DatePickerModule, PopoverModule, GestionDrawerComponent, TrainingGroupFormPanelComponent],
   providers: [RecruiterOperationalInboxFacade, RecruiterTrainingGroupsFacade],
   templateUrl: './operational-inbox-page.component.html',
   styleUrl: './operational-inbox-page.component.scss',
@@ -40,13 +42,17 @@ export class OperationalInboxPageComponent implements OnInit {
   private readonly trainingGroupsApi = inject(RecruiterTrainingGroupsService);
   protected readonly meetAgendaOpen = signal(false);
   protected readonly meetDate = signal(this.today());
+  protected readonly meetCalendarDate = signal(this.parseLocalDate(this.today()));
+  protected readonly meetDatePickerOpen = signal(false);
   protected readonly meetSessions = signal<SesionMeetResponse[]>([]);
+  protected readonly activeMeetCount = computed(() => this.meetSessions().length);
   protected readonly meetLoading = signal(false);
   protected readonly meetError = signal('');
   protected readonly selectedMeetSessionId = signal<number | null>(null);
   protected readonly meetAttendanceDraft = signal<Record<number, MeetAsistencia | null>>({});
   protected readonly meetEvaluationDraft = signal<Record<number, MeetEvaluacion | null>>({});
   protected readonly meetObservationDraft = signal<Record<number, string>>({});
+  protected readonly meetBulkAttendanceSelection = signal<MeetAsistencia | null>(null);
   protected readonly meetBatchState = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   protected readonly meetBatchMessage = signal('');
   private readonly meetClock = signal(Date.now());
@@ -63,6 +69,7 @@ export class OperationalInboxPageComponent implements OnInit {
   protected readonly moveDestinoId = signal<number | null>(null);
   protected readonly groupOpBusy = signal(false);
   private trainingGroupsInitialized = false;
+  private readonly meetDatePopover = viewChild.required<Popover>('meetDatePopover');
 
   private readonly closeDrawerOnCreate = effect(
     () => {
@@ -76,7 +83,7 @@ export class OperationalInboxPageComponent implements OnInit {
   private readonly reloadBusinessScopedPanels = effect(
     () => {
       this.negocioScope.active();
-      if (this.meetAgendaOpen()) this.loadMeetAgenda();
+      this.loadMeetAgenda();
       if (this.trainingGroupsOpen()) this.trainingFacade.loadGroups();
     },
     { allowSignalWrites: true }
@@ -99,7 +106,7 @@ export class OperationalInboxPageComponent implements OnInit {
       });
     this.realtime.watchTopic('/topic/postulaciones')
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => { if (this.meetAgendaOpen()) this.loadMeetAgenda(); });
+      .subscribe(() => this.loadMeetAgenda());
     interval(30_000)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.meetClock.set(Date.now()));
@@ -178,6 +185,7 @@ export class OperationalInboxPageComponent implements OnInit {
 
   protected toggleMeetAgenda(): void {
     this.meetAgendaOpen.update(open => !open);
+    if (this.meetAgendaOpen()) this.trainingGroupsOpen.set(false);
     if (this.meetAgendaOpen()) this.loadMeetAgenda();
   }
 
@@ -185,7 +193,10 @@ export class OperationalInboxPageComponent implements OnInit {
     this.meetParticipantDrawerOpen.set(false);
     this.facade.closeDrawer();
     const agendaDate = fechaHora ? this.dateInLima(fechaHora) : null;
-    if (agendaDate) this.meetDate.set(agendaDate);
+    if (agendaDate) {
+      this.meetDate.set(agendaDate);
+      this.meetCalendarDate.set(this.parseLocalDate(agendaDate));
+    }
     this.resetMeetSelection();
     this.meetAgendaOpen.set(true);
     this.loadMeetAgenda();
@@ -208,6 +219,7 @@ export class OperationalInboxPageComponent implements OnInit {
 
   protected toggleTrainingGroups(): void {
     this.trainingGroupsOpen.update(open => !open);
+    if (this.trainingGroupsOpen()) this.meetAgendaOpen.set(false);
     if (this.trainingGroupsOpen() && !this.trainingGroupsInitialized) {
       this.trainingGroupsInitialized = true;
       this.trainingFacade.initialize();
@@ -329,8 +341,42 @@ export class OperationalInboxPageComponent implements OnInit {
     return this.label(value);
   }
 
+  protected meetDateLabel(): string {
+    const selected = this.meetDate();
+    if (selected === this.today()) return 'Hoy';
+    return new Intl.DateTimeFormat('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })
+      .format(this.meetCalendarDate())
+      .replace(/\./g, '');
+  }
+
+  protected toggleMeetDatePicker(event: MouseEvent): void {
+    if (this.meetDatePickerOpen()) {
+      this.meetDatePopover().hide();
+      return;
+    }
+    this.meetDatePopover().show(event, event.currentTarget as HTMLElement);
+    this.meetDatePickerOpen.set(true);
+  }
+
+  protected onMeetDatePopoverHide(): void {
+    this.meetDatePickerOpen.set(false);
+  }
+
+  protected onMeetDatePopoverShow(): void {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => this.centerMeetDatePopover());
+    });
+  }
+
+  protected onMeetDatePicked(value: Date | null): void {
+    if (!(value instanceof Date) || Number.isNaN(value.getTime())) return;
+    this.changeMeetDate(this.formatLocalDate(value));
+    this.meetDatePopover().hide();
+  }
+
   protected changeMeetDate(value: string): void {
     this.meetDate.set(value);
+    this.meetCalendarDate.set(this.parseLocalDate(value));
     this.resetMeetSelection();
     this.loadMeetAgenda();
   }
@@ -357,6 +403,7 @@ export class OperationalInboxPageComponent implements OnInit {
     this.meetAttendanceDraft.set({});
     this.meetEvaluationDraft.set({});
     this.meetObservationDraft.set({});
+    this.meetBulkAttendanceSelection.set(null);
   }
 
   protected isMeetSessionSelected(session: SesionMeetResponse): boolean {
@@ -415,6 +462,40 @@ export class OperationalInboxPageComponent implements OnInit {
     return this.attendanceValue(participant) === 'ASISTIO';
   }
 
+  protected meetParticipantStatusLabel(participant: SesionMeetParticipanteResponse): string {
+    const evaluation = this.evaluationValue(participant);
+    const attendance = this.attendanceValue(participant);
+    if (evaluation === 'APROBADO') return 'Aprobado';
+    if (evaluation === 'RECHAZADO') return 'Desaprobado';
+    if (attendance === 'ASISTIO') return 'Asistió';
+    if (attendance === 'NO_ASISTIO') return 'No asistió';
+    return 'Pendiente';
+  }
+
+  protected meetParticipantStatusClass(participant: SesionMeetParticipanteResponse): string {
+    const evaluation = this.evaluationValue(participant);
+    const attendance = this.attendanceValue(participant);
+    if (evaluation === 'APROBADO') {
+      return 'meet-session__status meet-session__status--positive';
+    }
+    if (evaluation === 'RECHAZADO' || attendance === 'NO_ASISTIO') {
+      return 'meet-session__status meet-session__status--negative';
+    }
+    if (attendance === 'ASISTIO') {
+      return 'meet-session__status meet-session__status--attention';
+    }
+    return 'meet-session__status';
+  }
+
+  protected meetParticipantStatusIcon(participant: SesionMeetParticipanteResponse): string {
+    const evaluation = this.evaluationValue(participant);
+    const attendance = this.attendanceValue(participant);
+    if (evaluation === 'APROBADO') return 'ti-check';
+    if (evaluation === 'RECHAZADO' || attendance === 'NO_ASISTIO') return 'ti-x';
+    if (attendance === 'ASISTIO') return 'ti-help-circle';
+    return 'ti-clock';
+  }
+
   protected meetParticipantActionLabel(participant: SesionMeetParticipanteResponse): string {
     return participant.asistencia === 'NO_ASISTIO' ? 'Programar nuevo Meet' : 'Reprogramar Meet';
   }
@@ -432,6 +513,7 @@ export class OperationalInboxPageComponent implements OnInit {
   protected setMeetAttendance(idPostulacion: number, value: string): void {
     const attendance = value === 'ASISTIO' || value === 'NO_ASISTIO' ? value : null;
     this.meetAttendanceDraft.update(draft => ({ ...draft, [idPostulacion]: attendance }));
+    this.meetBulkAttendanceSelection.set(null);
     this.meetBatchState.set('idle');
     this.meetBatchMessage.set('');
   }
@@ -458,6 +540,7 @@ export class OperationalInboxPageComponent implements OnInit {
       if (participant.asistencia === 'PENDIENTE') next[participant.idPostulacion] = value;
     });
     this.meetAttendanceDraft.set(next);
+    this.meetBulkAttendanceSelection.set(value);
     this.meetBatchState.set('idle');
     this.meetBatchMessage.set('');
   }
@@ -528,6 +611,7 @@ export class OperationalInboxPageComponent implements OnInit {
           this.meetAttendanceDraft.set({});
           this.meetEvaluationDraft.set({});
           this.meetObservationDraft.set({});
+          this.meetBulkAttendanceSelection.set(null);
           this.facade.refresh();
           this.loadMeetAgenda();
         },
@@ -543,6 +627,7 @@ export class OperationalInboxPageComponent implements OnInit {
     this.meetAttendanceDraft.set({});
     this.meetEvaluationDraft.set({});
     this.meetObservationDraft.set({});
+    this.meetBulkAttendanceSelection.set(null);
     this.meetBatchState.set('idle');
     this.meetBatchMessage.set('');
   }
@@ -551,9 +636,60 @@ export class OperationalInboxPageComponent implements OnInit {
     return new Date(session.fechaHoraInicio).toLocaleTimeString('es-PE', { hour: 'numeric', minute: '2-digit' });
   }
 
+  protected meetWorkspaceTitle(session: SesionMeetResponse): string {
+    return `MEET - ${this.label(session.negocio).toUpperCase()} - ${this.meetHourTitle(session)}`;
+  }
+
+  protected meetHourTitle(session: SesionMeetResponse): string {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'America/Lima'
+    }).format(new Date(session.fechaHoraInicio));
+  }
+
   private today(): string {
     const date = new Date();
     const pad = (value: number) => String(value).padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  private parseLocalDate(value: string): Date {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  private formatLocalDate(date: Date): string {
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  private centerMeetDatePopover(): void {
+    const popover = this.meetDatePopover() as unknown as { container?: HTMLElement | null };
+    const container = popover.container;
+    const target = document.querySelector<HTMLElement>('.meet-agenda__date-trigger');
+    if (!container || !target) return;
+
+    const margin = 8;
+    const targetRect = target.getBoundingClientRect();
+    const panelWidth = container.offsetWidth;
+    const minLeft = window.scrollX + margin;
+    const maxLeft = window.scrollX + window.innerWidth - panelWidth - margin;
+    const left = Math.min(
+      Math.max(targetRect.left + window.scrollX + targetRect.width / 2 - panelWidth / 2, minLeft),
+      maxLeft,
+    );
+    const topBelow = targetRect.bottom + window.scrollY + margin;
+    const topAbove = targetRect.top + window.scrollY - container.offsetHeight - margin;
+    const maxBottom = window.scrollY + window.innerHeight - margin;
+
+    container.style.left = `${left}px`;
+    container.style.top = `${topBelow + container.offsetHeight <= maxBottom ? topBelow : Math.max(window.scrollY + margin, topAbove)}px`;
+
+    const targetCenter = targetRect.left + window.scrollX + targetRect.width / 2;
+    const arrowLeft = targetCenter - left;
+    container.style.setProperty('--p-popover-arrow-offset', '0px');
+    container.style.setProperty('--p-popover-arrow-left', `${arrowLeft}px`);
   }
 }

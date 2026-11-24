@@ -12,29 +12,58 @@
       </div>
     </div>
     <div class="workspace-header__actions">
-      <button type="button" class="button button--ghost" [attr.aria-expanded]="trainingGroupsOpen()" (click)="toggleTrainingGroups()">
+      @if (!meetAgendaOpen()) {
+      <button type="button" class="button button--ghost workspace-header__action workspace-header__action--groups" [class.button--active]="trainingGroupsOpen()" [attr.aria-expanded]="trainingGroupsOpen()" [attr.aria-pressed]="trainingGroupsOpen()" (click)="toggleTrainingGroups()">
         <i class="ti ti-users-group" aria-hidden="true"></i>
-        {{ trainingGroupsOpen() ? 'Cerrar grupos' : 'Grupos Capacitacion' }}
+        Grupos Capacitacion
         @if (approvedPendingGroup().length) { <span class="button__badge">{{ approvedPendingGroup().length }}</span> }
       </button>
-      <button type="button" class="button button--primary" [attr.aria-expanded]="meetAgendaOpen()" (click)="toggleMeetAgenda()">
+      }
+      @if (!trainingGroupsOpen()) {
+      <button type="button" class="button button--primary workspace-header__action workspace-header__action--meets" [class.button--active]="meetAgendaOpen()" [attr.aria-expanded]="meetAgendaOpen()" [attr.aria-pressed]="meetAgendaOpen()" (click)="toggleMeetAgenda()">
         <i class="ti ti-calendar-event" aria-hidden="true"></i>
-        {{ meetAgendaOpen() ? 'Cerrar Meets' : 'Meets Programadas' }}
+        Meets Programadas
+        @if (activeMeetCount()) { <span class="button__badge">{{ activeMeetCount() }}</span> }
       </button>
+      }
     </div>
   </header>
 
   @if (meetAgendaOpen()) {
     <section class="meet-agenda" aria-labelledby="meet-agenda-title">
       <div class="meet-agenda__heading">
-        <div>
-          <span class="workspace-header__live"><span aria-hidden="true"></span> Agenda operativa</span>
-          <h2 id="meet-agenda-title">Postulantes por Meet</h2>
-          <p>La lista se agrupa automáticamente por negocio, fecha y franja horaria.</p>
+        <div class="meet-agenda__title">
+          <span class="meet-agenda__title-icon" aria-hidden="true"><i class="ti ti-calendar-event"></i></span>
+          <div>
+            <h2 id="meet-agenda-title">Agenda de Meets</h2>
+            <p>Revisa participantes, asistencia y evaluación por cada horario.</p>
+          </div>
         </div>
-        <label class="field field--compact">Fecha de Meet
-          <input type="date" [value]="meetDate()" (change)="changeMeetDate($any($event.target).value)" />
-        </label>
+        <div class="meet-agenda__date" [class.meet-agenda__date--open]="meetDatePickerOpen()">
+          <span class="meet-agenda__date-label">
+            <span class="meet-agenda__date-icon"><i class="ti ti-calendar" aria-hidden="true"></i></span>
+            <span>Consultar fecha</span>
+          </span>
+          <button
+            class="meet-agenda__date-trigger"
+            type="button"
+            [attr.aria-expanded]="meetDatePickerOpen()"
+            aria-haspopup="dialog"
+            (click)="toggleMeetDatePicker($event)"
+          >
+            <span>{{ meetDateLabel() }}</span>
+            <i class="ti ti-calendar-event" aria-hidden="true"></i>
+          </button>
+        </div>
+        <p-popover #meetDatePopover appendTo="body" styleClass="meet-date-popover" (onShow)="onMeetDatePopoverShow()" (onHide)="onMeetDatePopoverHide()">
+          <p-datepicker
+            [inline]="true"
+            selectionMode="single"
+            [ngModel]="meetCalendarDate()"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="onMeetDatePicked($event)"
+          />
+        </p-popover>
       </div>
       @if (meetLoading()) {
         <div class="meet-agenda__status" role="status"><span class="spinner" aria-hidden="true"></span>Actualizando agenda…</div>
@@ -45,20 +74,40 @@
       } @else {
         <div class="meet-agenda__grid">
           @for (session of meetSessions(); track session.id) {
-            <article class="meet-session" [class.meet-session--selected]="isMeetSessionSelected(session)">
-              <button type="button" class="meet-session__open" [attr.aria-pressed]="isMeetSessionSelected(session)" (click)="selectMeetSession(session)">
-                <span class="meet-session__heading"><span>{{ label(session.negocio) }}</span><strong>{{ session.horarioEtiqueta }}</strong></span>
-                <b>{{ meetParticipants(session).length }}</b>
-              </button>
-              <p>{{ meetHour(session) }} · {{ label(session.estado) }}</p>
+            <article
+              class="meet-session"
+              role="button"
+              tabindex="0"
+              [class.meet-session--selected]="isMeetSessionSelected(session)"
+              [class.meet-session--claro]="session.negocio === 'CLARO'"
+              [class.meet-session--win]="session.negocio === 'WIN'"
+              [attr.aria-pressed]="isMeetSessionSelected(session)"
+              (click)="selectMeetSession(session)"
+              (keydown.enter)="selectMeetSession(session)"
+              (keydown.space)="$event.preventDefault(); selectMeetSession(session)"
+            >
+              <div class="meet-session__open">
+                <span class="meet-session__business">{{ label(session.negocio) }}</span>
+                <strong class="meet-session__time">{{ session.horarioEtiqueta }}</strong>
+                <span class="meet-session__count"><strong>{{ meetParticipants(session).length }}</strong><small>participantes</small></span>
+              </div>
               <ul>
-                @for (participant of meetParticipants(session).slice(0, 3); track participant.idPostulacion) {
-                  <li><span>{{ displayName(participant.postulacion.postulante) }}</span><small>{{ participant.postulacion.postulante.documento || '@' + (participant.postulacion.postulante.usuarioMeta || '') }}</small></li>
+                @for (participant of meetParticipants(session); track participant.idPostulacion) {
+                  <li>
+                    <span class="meet-session__participant">
+                      <span><strong>{{ displayName(participant.postulacion.postulante) }}</strong><small>{{ participant.postulacion.postulante.documento || '@' + (participant.postulacion.postulante.usuarioMeta || '') }}</small></span>
+                      <em
+                        [class]="meetParticipantStatusClass(participant)"
+                        [attr.title]="meetParticipantStatusLabel(participant)"
+                        [attr.aria-label]="meetParticipantStatusLabel(participant)"
+                      >
+                        <i class="ti" [class]="meetParticipantStatusIcon(participant)" aria-hidden="true"></i>
+                        <span class="sr-only">{{ meetParticipantStatusLabel(participant) }}</span>
+                      </em>
+                    </span>
+                  </li>
                 }
               </ul>
-              <button type="button" class="button button--ghost button--small meet-session__manage" (click)="selectMeetSession(session)">
-                <i class="ti ti-list-check" aria-hidden="true"></i> Gestionar {{ meetParticipants(session).length }} participantes
-              </button>
             </article>
           }
         </div>
@@ -67,65 +116,73 @@
             <header class="meet-workspace__header">
               <div>
                 <span class="workspace-header__live"><span aria-hidden="true"></span> Gestión agrupada</span>
-                <h3 id="meet-workspace-title">{{ label(selectedSession.negocio) }} · {{ selectedSession.horarioEtiqueta }}</h3>
-                <p>{{ meetParticipants(selectedSession).length }} participantes · {{ meetHour(selectedSession) }}</p>
+                <h3 id="meet-workspace-title">{{ meetWorkspaceTitle(selectedSession) }}</h3>
+                <p>{{ meetParticipants(selectedSession).length }} postulantes</p>
               </div>
               <div class="meet-workspace__actions">
-                <button type="button" class="button button--ghost button--small" [disabled]="!meetHasStarted(selectedSession) || meetBatchState() === 'loading'" (click)="markMeetAttendance(selectedSession, 'ASISTIO')">Todos asistieron</button>
-                <button type="button" class="button button--ghost button--small" [disabled]="!meetHasStarted(selectedSession) || meetBatchState() === 'loading'" (click)="markMeetAttendance(selectedSession, 'NO_ASISTIO')">Todos no asistieron</button>
+                <button type="button" class="button button--small meet-workspace__quick-action meet-workspace__quick-action--present" [class.is-selected]="meetBulkAttendanceSelection() === 'ASISTIO'" [attr.aria-pressed]="meetBulkAttendanceSelection() === 'ASISTIO'" [disabled]="!meetHasStarted(selectedSession) || meetBatchState() === 'loading'" (click)="markMeetAttendance(selectedSession, 'ASISTIO')">
+                  <i class="ti ti-check" aria-hidden="true"></i><span>Todos asistieron</span>
+                  @if (meetBulkAttendanceSelection() === 'ASISTIO') { <i class="ti ti-check quick-status" aria-hidden="true"></i> }
+                </button>
+                <button type="button" class="button button--small meet-workspace__quick-action meet-workspace__quick-action--absent" [class.is-selected]="meetBulkAttendanceSelection() === 'NO_ASISTIO'" [attr.aria-pressed]="meetBulkAttendanceSelection() === 'NO_ASISTIO'" [disabled]="!meetHasStarted(selectedSession) || meetBatchState() === 'loading'" (click)="markMeetAttendance(selectedSession, 'NO_ASISTIO')">
+                  <i class="ti ti-x" aria-hidden="true"></i><span>Nadie asistió</span>
+                  @if (meetBulkAttendanceSelection() === 'NO_ASISTIO') { <i class="ti ti-check quick-status" aria-hidden="true"></i> }
+                </button>
               </div>
             </header>
-            @if (!meetHasStarted(selectedSession)) {
-              <div class="inline-notice inline-notice--warning" role="status">
-                <i class="ti ti-clock" aria-hidden="true"></i>
-                <span>{{ meetAvailabilityMessage(selectedSession) }}</span>
-              </div>
-            }
-            <div class="meet-participants" role="list" aria-label="Participantes del Meet">
-              @for (participant of meetParticipants(selectedSession); track participant.idPostulacion) {
-                <article class="meet-participant" role="listitem">
-                  <div class="meet-participant__identity">
-                    <strong>{{ displayName(participant.postulacion.postulante) }}</strong>
-                    <small>{{ participant.postulacion.postulante.documento || '@' + (participant.postulacion.postulante.usuarioMeta || '') }}</small>
-                    @if (participant.asistencia !== 'ASISTIO' && !participant.resultadoEvaluacion) {
-                      <button type="button" class="meet-participant__reschedule" (click)="openMeetParticipant(participant)" [attr.aria-label]="meetParticipantActionLabel(participant) + ' para ' + displayName(participant.postulacion.postulante)">
-                        <i class="ti ti-calendar-plus" aria-hidden="true"></i>{{ meetParticipantActionLabel(participant) }}
-                      </button>
+            <div class="meet-workspace__body">
+              @if (!meetHasStarted(selectedSession)) {
+                <div class="inline-notice inline-notice--warning" role="status">
+                  <i class="ti ti-clock" aria-hidden="true"></i>
+                  <span>{{ meetAvailabilityMessage(selectedSession) }}</span>
+                </div>
+              }
+              <div class="meet-participants" role="list" aria-label="Participantes del Meet">
+                @for (participant of meetParticipants(selectedSession); track participant.idPostulacion) {
+                  <article class="meet-participant" role="listitem">
+                    <div class="meet-participant__identity">
+                      <strong>{{ displayName(participant.postulacion.postulante) }}</strong>
+                      <small>{{ participant.postulacion.postulante.documento || '@' + (participant.postulacion.postulante.usuarioMeta || '') }}</small>
+                      @if (participant.asistencia !== 'ASISTIO' && !participant.resultadoEvaluacion) {
+                        <button type="button" class="meet-participant__reschedule" (click)="openMeetParticipant(participant)" [attr.aria-label]="meetParticipantActionLabel(participant) + ' para ' + displayName(participant.postulacion.postulante)">
+                          <i class="ti ti-calendar-plus" aria-hidden="true"></i>{{ meetParticipantActionLabel(participant) }}
+                        </button>
+                      }
+                    </div>
+                    <div class="field field--compact">
+                      <span>Asistencia</span>
+                      <div class="segmented-control" role="radiogroup" aria-label="Asistencia">
+                        <button type="button" role="radio" [class.selected]="attendanceValue(participant) === null" [attr.aria-checked]="attendanceValue(participant) === null" [disabled]="participant.asistencia !== 'PENDIENTE' || !meetHasStarted(selectedSession)" (click)="setMeetAttendance(participant.idPostulacion, '')">Pendiente</button>
+                        <button type="button" role="radio" [class.selected]="attendanceValue(participant) === 'ASISTIO'" [attr.aria-checked]="attendanceValue(participant) === 'ASISTIO'" [disabled]="participant.asistencia !== 'PENDIENTE' || !meetHasStarted(selectedSession)" (click)="setMeetAttendance(participant.idPostulacion, 'ASISTIO')">Asistió</button>
+                        <button type="button" role="radio" [class.selected]="attendanceValue(participant) === 'NO_ASISTIO'" [attr.aria-checked]="attendanceValue(participant) === 'NO_ASISTIO'" [disabled]="participant.asistencia !== 'PENDIENTE' || !meetHasStarted(selectedSession)" (click)="setMeetAttendance(participant.idPostulacion, 'NO_ASISTIO')">No asistió</button>
+                      </div>
+                    </div>
+                    @if (isParticipantAttended(participant)) {
+                      <div class="field field--compact">
+                        <span>Evaluación</span>
+                        <div class="segmented-control segmented-control--evaluation" role="radiogroup" aria-label="Evaluación">
+                          <button type="button" role="radio" [class.selected]="evaluationValue(participant) === null" [attr.aria-checked]="evaluationValue(participant) === null" [disabled]="!!participant.resultadoEvaluacion || !meetHasStarted(selectedSession)" (click)="setMeetEvaluation(participant.idPostulacion, '')">Pendiente</button>
+                          <button type="button" role="radio" [class.selected]="evaluationValue(participant) === 'APROBADO'" [attr.aria-checked]="evaluationValue(participant) === 'APROBADO'" [disabled]="!!participant.resultadoEvaluacion || !meetHasStarted(selectedSession)" (click)="setMeetEvaluation(participant.idPostulacion, 'APROBADO')">Aprobar</button>
+                          <button type="button" role="radio" [class.selected]="evaluationValue(participant) === 'RECHAZADO'" [attr.aria-checked]="evaluationValue(participant) === 'RECHAZADO'" [disabled]="!!participant.resultadoEvaluacion || !meetHasStarted(selectedSession)" (click)="setMeetEvaluation(participant.idPostulacion, 'RECHAZADO')">Rechazar</button>
+                        </div>
+                      </div>
                     }
-                  </div>
-                  <label class="field field--compact">
-                    <span>Asistencia</span>
-                    <select [value]="attendanceValue(participant) || ''" [disabled]="participant.asistencia !== 'PENDIENTE' || !meetHasStarted(selectedSession)" (change)="setMeetAttendance(participant.idPostulacion, $any($event.target).value)">
-                      <option value="">Pendiente</option>
-                      <option value="ASISTIO">Asistió</option>
-                      <option value="NO_ASISTIO">No asistió</option>
-                    </select>
-                  </label>
-                  @if (isParticipantAttended(participant)) {
-                    <label class="field field--compact">
-                      <span>Evaluación</span>
-                      <select [value]="evaluationValue(participant) || ''" [disabled]="!!participant.resultadoEvaluacion || !meetHasStarted(selectedSession)" (change)="setMeetEvaluation(participant.idPostulacion, $any($event.target).value)">
-                        <option value="">Pendiente</option>
-                        <option value="APROBADO">Aprobar</option>
-                        <option value="RECHAZADO">Rechazar</option>
-                      </select>
-                    </label>
-                  }
-                  @if (isParticipantAttended(participant) || attendanceValue(participant) === 'NO_ASISTIO') {
-                    <label class="field meet-participant__observation">
-                      <span>{{ attendanceValue(participant) === 'NO_ASISTIO' ? 'Motivo de inasistencia' : 'Observación' }}</span>
-                      <input type="text" maxlength="2000" placeholder="Comentario breve" [value]="observationValue(participant)" [disabled]="!!participant.resultadoEvaluacion || !meetHasStarted(selectedSession)" (input)="setMeetObservation(participant.idPostulacion, $any($event.target).value)" />
-                    </label>
-                  }
-                </article>
+                    @if (isParticipantAttended(participant) || attendanceValue(participant) === 'NO_ASISTIO') {
+                      <label class="field meet-participant__observation">
+                        <span>{{ attendanceValue(participant) === 'NO_ASISTIO' ? 'Motivo de inasistencia' : 'Observación' }}</span>
+                        <input type="text" maxlength="2000" placeholder="Comentario" [value]="observationValue(participant)" [disabled]="!!participant.resultadoEvaluacion || !meetHasStarted(selectedSession)" (input)="setMeetObservation(participant.idPostulacion, $any($event.target).value)" />
+                      </label>
+                    }
+                  </article>
+                }
+              </div>
+              @if (meetBatchMessage()) {
+                <div class="inline-notice" [class.inline-notice--success]="meetBatchState() === 'success'" [class.inline-notice--error]="meetBatchState() === 'error'" role="status">
+                  <i class="ti" [class.ti-check]="meetBatchState() === 'success'" [class.ti-alert-circle]="meetBatchState() === 'error'" aria-hidden="true"></i>
+                  <span>{{ meetBatchMessage() }}</span>
+                </div>
               }
             </div>
-            @if (meetBatchMessage()) {
-              <div class="inline-notice" [class.inline-notice--success]="meetBatchState() === 'success'" [class.inline-notice--error]="meetBatchState() === 'error'" role="status">
-                <i class="ti" [class.ti-check]="meetBatchState() === 'success'" [class.ti-alert-circle]="meetBatchState() === 'error'" aria-hidden="true"></i>
-                <span>{{ meetBatchMessage() }}</span>
-              </div>
-            }
             <footer class="meet-workspace__footer">
               @if (meetHasStarted(selectedSession)) {
                 <span>Selecciona asistencia y evaluación. Todo se guardará en una sola acción.</span>
@@ -138,6 +195,12 @@
                 </button>
               </div>
             </footer>
+          </section>
+        } @else {
+          <section class="meet-agenda__placeholder" aria-label="Detalle de Meet">
+            <span class="meet-agenda__placeholder-icon" aria-hidden="true"><i class="ti ti-list-check"></i></span>
+            <strong>Selecciona una Meet</strong>
+            <span>Elige un horario para revisar participantes y gestionar asistencia, evaluación o reprogramación.</span>
           </section>
         }
       }
