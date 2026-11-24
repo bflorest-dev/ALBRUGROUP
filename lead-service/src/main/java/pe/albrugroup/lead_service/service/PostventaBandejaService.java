@@ -491,6 +491,7 @@ public class PostventaBandejaService {
                 .estadoPago(resolverEstadoPago(periodoVigente))
                 .estadoServicio(resolverEstadoServicio(ultimaEncuesta))
                 .estadoPlataformaDigital(estadoPlataforma)
+                .estadoExpediente(lead.getEstadoExpediente())
                 .numeroPeriodoVigente(periodoVigente == null ? null : periodoVigente.getNumeroPeriodo())
                 .ultimoGestor(ultimaGestion == null ? null : ultimaGestion.nombreGestor())
                 .ultimaGestion(ultimaGestion == null ? null : ultimaGestion.fechaGestion())

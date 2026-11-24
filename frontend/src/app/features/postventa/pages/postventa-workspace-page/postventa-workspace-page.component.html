@@ -223,6 +223,12 @@
                      [pTooltip]="'Servicio: ' + semLabel(row.estadoServicio)" tooltipPosition="top">
                   {{ semAbrev(row.estadoServicio) }}
                 </div>
+                @if (row.estadoExpediente) {
+                  <div class="semaforo__seg" [class]="semColor(row.estadoExpediente)"
+                       [pTooltip]="'Expediente: ' + semLabel(row.estadoExpediente)" tooltipPosition="top">
+                    {{ semAbrev(row.estadoExpediente) }}
+                  </div>
+                }
               </div>
             </td>
 

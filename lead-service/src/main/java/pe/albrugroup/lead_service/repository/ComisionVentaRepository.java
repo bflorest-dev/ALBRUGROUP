@@ -27,7 +27,8 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
                        cf.numero_corte_base,
                        pf.numero_periodo,
                        pf.fecha_vencimiento_confirmado,
-                       pf.fecha_vencimiento_estimado
+                       pf.fecha_vencimiento_estimado,
+                       l.estado_expediente
                 FROM lead l
                 JOIN calendario_facturacion_postventa cf ON cf.id_lead = l.id
                 JOIN lead_seguimiento ls ON ls.id_lead = l.id
@@ -93,12 +94,18 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
             ), classified AS (
                 SELECT e.*,
                        CASE
+                           WHEN e.estado_expediente IS NOT NULL
+                                AND e.estado_expediente <> 'AUDIO_CONFORME'
+                           THEN 'NO_VALIDA'
                            WHEN e.numero_periodo IS NOT NULL
                                 AND e.fecha_pago_valida IS NOT NULL
                            THEN 'VALIDA'
                            ELSE 'NO_VALIDA'
                        END AS estado_validacion,
                        CASE
+                           WHEN e.estado_expediente IS NOT NULL
+                                AND e.estado_expediente <> 'AUDIO_CONFORME'
+                               THEN 'No válido: expediente no conforme'
                            WHEN e.numero_periodo IS NULL
                                THEN 'No válido: sin período de pago 1'
                            WHEN :fechaLimiteMorosidad IS NULL
@@ -186,6 +193,7 @@ public interface ComisionVentaRepository extends JpaRepository<Lead, Long> {
                             COALESCE(pf_m.fecha_vencimiento_confirmado, pf_m.fecha_vencimiento_estimado) + INTERVAL '7 days'
                         )
               )
+              AND (l.estado_expediente = 'AUDIO_CONFORME' OR l.estado_expediente IS NULL)
               AND cf.proveedor_snapshot = :proveedor
               AND cf.activo = true
               AND (

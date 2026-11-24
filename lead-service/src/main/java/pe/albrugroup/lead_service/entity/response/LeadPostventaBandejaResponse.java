@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoCredencialesPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoExpediente;
 import pe.albrugroup.lead_service.entity.enums.EstadoPagoPeriodoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPlataformaDigitalLead;
 import pe.albrugroup.lead_service.entity.enums.EstadoServicioPostventa;
@@ -49,6 +50,7 @@ public class LeadPostventaBandejaResponse {
     private EstadoPagoPeriodoPostventa estadoPago;
     private EstadoServicioPostventa estadoServicio;
     private EstadoPlataformaDigitalLead estadoPlataformaDigital;
+    private EstadoExpediente estadoExpediente;
     private Integer numeroPeriodoVigente;
     private String ultimoGestor;
     private Instant ultimaGestion;

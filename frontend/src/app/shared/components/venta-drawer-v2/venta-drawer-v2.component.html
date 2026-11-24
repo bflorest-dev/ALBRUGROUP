@@ -47,6 +47,24 @@
               <div><dt>Fecha relevante</dt><dd>{{ relevantDate() }}</dd></div>
               <div><dt>Asesor de ventas</dt><dd>{{ salesAdvisor() }}</dd></div>
             }
+            @if (estadoExpediente) {
+              <div>
+                <dt>Estado expediente</dt>
+                @if (estadoExpediente !== 'AUDIO_CONFORME' && !readOnly && canMutate) {
+                  <dd>
+                    <select class="venta-v2__expediente-select" [value]="estadoExpediente" (change)="estadoExpedienteChange.emit($any($event.target).value)" [disabled]="saving">
+                      <option value="EXPEDIENTE_PENDIENTE">Expediente pendiente</option>
+                      <option value="AUDIO_OBSERVADO">Audio observado</option>
+                      <option value="SERVICIO_DESACTIVO">Servicio desactivo</option>
+                      <option value="SERVICIO_SUSPENDIDO">Servicio suspendido</option>
+                      <option value="AUDIO_CONFORME">Audio conforme</option>
+                    </select>
+                  </dd>
+                } @else {
+                  <dd>{{ expedienteDisplayLabel(estadoExpediente) }}</dd>
+                }
+              </div>
+            }
           </dl>
         </div>
       </aside>

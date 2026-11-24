@@ -153,7 +153,28 @@
                   <span class="postventa-v2__sem-label">Servicio</span>
                   <span class="postventa-v2__sem-value">{{ semLabel(lead.estadoServicio) }}</span>
                 </div>
+                @if (lead.estadoExpediente) {
+                  <div class="postventa-v2__semaforo">
+                    <span class="postventa-v2__sem-dot" [class]="semColor(lead.estadoExpediente)"></span>
+                    <span class="postventa-v2__sem-label">Expediente</span>
+                    <span class="postventa-v2__sem-value">{{ semLabel(lead.estadoExpediente) }}</span>
+                  </div>
+                }
               </div>
+              @if (lead.estadoExpediente && lead.estadoExpediente !== 'AUDIO_CONFORME' && !facade.consultaOnly()) {
+                <div class="postventa-v2__expediente-edit">
+                  <label class="postventa-v2__expediente-label">Estado expediente</label>
+                  <div class="postventa-v2__expediente-row">
+                    <select class="postventa-v2__expediente-select" [ngModel]="lead.estadoExpediente" (ngModelChange)="cambiarEstadoExpediente($event)" [disabled]="facade.saving()">
+                      <option value="EXPEDIENTE_PENDIENTE">Expediente pendiente</option>
+                      <option value="AUDIO_OBSERVADO">Audio observado</option>
+                      <option value="SERVICIO_DESACTIVO">Servicio desactivo</option>
+                      <option value="SERVICIO_SUSPENDIDO">Servicio suspendido</option>
+                      <option value="AUDIO_CONFORME">Audio conforme</option>
+                    </select>
+                  </div>
+                </div>
+              }
             </dl>
           </div>
         }

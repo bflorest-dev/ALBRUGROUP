@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import pe.albrugroup.lead_service.entity.request.LeadEstadoExpedienteRequest;
 import pe.albrugroup.lead_service.entity.request.LeadNumeroParaLlamarRequest;
 import pe.albrugroup.lead_service.entity.response.NumeroLlamadaResponse;
 import pe.albrugroup.lead_service.service.LeadService;
@@ -38,6 +39,16 @@ public class LeadController {
             @Valid @RequestBody LeadNumeroParaLlamarRequest request
     ) {
         leadService.actualizarNumeroParaLlamar(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{idLead}/estado-expediente")
+    @PreAuthorize("hasAuthority('UPDATE_ESTADO_EXPEDIENTE')")
+    public ResponseEntity<Void> actualizarEstadoExpediente(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadEstadoExpedienteRequest request
+    ) {
+        leadService.actualizarEstadoExpediente(idLead, request);
         return ResponseEntity.noContent().build();
     }
 }

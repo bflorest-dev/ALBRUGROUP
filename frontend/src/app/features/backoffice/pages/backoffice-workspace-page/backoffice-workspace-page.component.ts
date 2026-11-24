@@ -85,6 +85,7 @@ type VisualLeadVenta = LeadVentaResponse & {
   idAsesorInstalador?: number | null;
   nombreAsesorInstalador?: string | null;
   estadoClientePostventa?: string | null;
+  estadoExpediente?: string | null;
   etapaActual?: string | null;
 };
 type CorreccionInstalacionRow = LeadInstalacionCorreccionCandidatoResponse & { isNew?: boolean };
@@ -1238,6 +1239,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected showCallError(message: string): void {
     this.notify('error', message);
+  }
+
+  protected async onEstadoExpedienteChange(nuevoEstado: string): Promise<void> {
+    const detail = this.detail();
+    if (!detail) return;
+    await this.saveAction(
+      () => this.leadService.actualizarEstadoExpediente(detail.id!, nuevoEstado),
+      'Estado de expediente actualizado.',
+      () => this.reconcile(detail.id!)
+    );
   }
 
   protected async registrarChat(): Promise<void> {
@@ -2588,6 +2599,23 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return 'secondary';
   }
 
+  protected expedienteSeverity(estado: string | null | undefined): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+    if (estado === 'AUDIO_CONFORME') return 'success';
+    if (estado === 'EXPEDIENTE_PENDIENTE') return 'warn';
+    return 'danger';
+  }
+
+  protected expedienteLabel(estado: string | null | undefined): string {
+    const labels: Record<string, string> = {
+      AUDIO_CONFORME: 'Audio conforme',
+      AUDIO_OBSERVADO: 'Audio observado',
+      SERVICIO_DESACTIVO: 'Servicio desactivo',
+      SERVICIO_SUSPENDIDO: 'Servicio suspendido',
+      EXPEDIENTE_PENDIENTE: 'Exp. pendiente'
+    };
+    return labels[estado ?? ''] ?? estado ?? '—';
+  }
+
   protected onTipificacionSelected(codigo: string | null): void {
     this.selectedTipificacionCode.set(codigo ?? '');
     this.selectedSubtipificacionCode.set('');
@@ -3441,7 +3469,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       createdAt: row.fechaTipificacionInstalado ?? null,
       fechaUltimaGestion: row.fechaTipificacionInstalado ?? null,
       nombreAsesorMeritoPreventa: row.nombreAsesorMeritoPreventa ?? null,
-      nombreAsesorUltimaGestion: row.nombreAsesorInstalador ?? null
+      nombreAsesorUltimaGestion: row.nombreAsesorInstalador ?? null,
+      estadoExpediente: row.estadoExpediente ?? null
     };
   }
 

@@ -128,6 +128,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   @Input() historyLoading = false;
   @Input() historyError: string | null = null;
   @Input() saveChanges: (() => Promise<boolean>) | null = null;
+  @Input() estadoExpediente: string | null = null;
 
   @Output() closeRequested = new EventEmitter<void>();
   @Output() callStarted = new EventEmitter<void>();
@@ -147,6 +148,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   @Output() tipifyRequested = new EventEmitter<void>();
   @Output() postventaConfirmationAction = new EventEmitter<VentaPostventaConfirmationAction>();
   @Output() retryHistory = new EventEmitter<void>();
+  @Output() estadoExpedienteChange = new EventEmitter<string>();
 
   protected readonly activeTab = signal<VentaDrawerTab>('datos');
   protected readonly summaryOpen = signal(true);
@@ -741,6 +743,17 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   private stripTrailingCoordinateZeros(value: string): string {
     if (!value.includes('.')) return value;
     return value.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+  }
+
+  protected expedienteDisplayLabel(estado: string): string {
+    const labels: Record<string, string> = {
+      AUDIO_CONFORME: 'Audio conforme',
+      AUDIO_OBSERVADO: 'Audio observado',
+      SERVICIO_DESACTIVO: 'Servicio desactivo',
+      SERVICIO_SUSPENDIDO: 'Servicio suspendido',
+      EXPEDIENTE_PENDIENTE: 'Expediente pendiente'
+    };
+    return labels[estado] ?? estado;
   }
 
   protected pickerDate(value: unknown): Date | null {

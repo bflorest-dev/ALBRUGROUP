@@ -92,6 +92,12 @@ const ESTADO_BADGES: Record<string, EstadoBadge> = {
   // Resumen de satisfaccion (StatusSatisfaccion)
   POCO_SATISFECHO: { label: 'Poco satisfecho', severity: 'warn' },
   NADA_SATISFECHO: { label: 'Nada satisfecho', severity: 'danger' },
+  // Expediente
+  AUDIO_CONFORME: { label: 'Audio conforme', severity: 'success' },
+  AUDIO_OBSERVADO: { label: 'Audio observado', severity: 'danger' },
+  SERVICIO_DESACTIVO: { label: 'Servicio desactivo', severity: 'danger' },
+  SERVICIO_SUSPENDIDO: { label: 'Servicio suspendido', severity: 'danger' },
+  EXPEDIENTE_PENDIENTE: { label: 'Expediente pendiente', severity: 'warn' },
   // Entregas / credenciales
   ACTIVA: { label: 'Activa', severity: 'success' },
   CANCELADA: { label: 'Cancelada', severity: 'secondary' },
@@ -154,7 +160,12 @@ const SEM_COLOR_MAP: Record<string, SemaforoColor> = {
   SIN_CALIFICAR: 'sem--gray',
   INSATISFECHO: 'sem--red',
   SATISFECHO: 'sem--green',
-  MUY_SATISFECHO: 'sem--purple'
+  MUY_SATISFECHO: 'sem--purple',
+  AUDIO_CONFORME: 'sem--green',
+  AUDIO_OBSERVADO: 'sem--red',
+  SERVICIO_DESACTIVO: 'sem--red',
+  SERVICIO_SUSPENDIDO: 'sem--red',
+  EXPEDIENTE_PENDIENTE: 'sem--yellow'
 };
 
 const SEM_ABREV_MAP: Record<string, string> = {
@@ -171,7 +182,12 @@ const SEM_ABREV_MAP: Record<string, string> = {
   SIN_CALIFICAR: 'S/C',
   INSATISFECHO: 'Insatis.',
   SATISFECHO: 'Satisf.',
-  MUY_SATISFECHO: 'Muy sat.'
+  MUY_SATISFECHO: 'Muy sat.',
+  AUDIO_CONFORME: 'Conf.',
+  AUDIO_OBSERVADO: 'Observ.',
+  SERVICIO_DESACTIVO: 'Desact.',
+  SERVICIO_SUSPENDIDO: 'Susp.',
+  EXPEDIENTE_PENDIENTE: 'Pend.'
 };
 
 const SEM_LABEL_MAP: Record<string, string> = {
@@ -188,7 +204,12 @@ const SEM_LABEL_MAP: Record<string, string> = {
   SIN_CALIFICAR: 'Sin calificar',
   INSATISFECHO: 'Insatisfecho',
   SATISFECHO: 'Satisfecho',
-  MUY_SATISFECHO: 'Muy satisfecho'
+  MUY_SATISFECHO: 'Muy satisfecho',
+  AUDIO_CONFORME: 'Audio conforme',
+  AUDIO_OBSERVADO: 'Audio observado',
+  SERVICIO_DESACTIVO: 'Servicio desactivo',
+  SERVICIO_SUSPENDIDO: 'Servicio suspendido',
+  EXPEDIENTE_PENDIENTE: 'Expediente pendiente'
 };
 
 export function semColor(value: unknown): SemaforoColor {

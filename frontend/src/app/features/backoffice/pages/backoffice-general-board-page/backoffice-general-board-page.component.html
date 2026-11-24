@@ -533,6 +533,8 @@
   (tipifyRequested)="tipificar()"
   (postventaConfirmationAction)="resolvePostventaConfirmation($event)"
   (retryHistory)="retryHistorial()"
+  [estadoExpediente]="detail()?.estadoExpediente ?? null"
+  (estadoExpedienteChange)="onEstadoExpedienteChange($event)"
 />
 
 @if (actionMessage(); as message) {

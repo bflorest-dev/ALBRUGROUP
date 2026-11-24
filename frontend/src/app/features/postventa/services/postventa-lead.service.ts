@@ -54,6 +54,7 @@ export interface LeadPostventaBandejaResponse {
   estadoPago?: EstadoPagoPeriodoPostventa | string | null;
   estadoServicio?: EstadoServicioPostventa | string | null;
   estadoPlataformaDigital?: string | null;
+  estadoExpediente?: string | null;
   numeroPeriodoVigente?: number | null;
   ultimoGestor?: string | null;
   ultimaGestion?: string | null;
@@ -395,6 +396,10 @@ export class PostventaLeadService {
 
   asignarPromocionPostventa(idLead: number, idPromocion: number | null, etapa: 'PREVENTA' | 'POSTVENTA' = 'POSTVENTA'): Observable<void> {
     return this.http.patch<void>(`${this.leadUrl}/postventa/${idLead}/promocion`, { idPromocion, etapa });
+  }
+
+  actualizarEstadoExpediente(idLead: number, estadoExpediente: string): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/${idLead}/estado-expediente`, { estadoExpediente });
   }
 
   private pageParams(query: PostventaBandejaQuery): HttpParams {

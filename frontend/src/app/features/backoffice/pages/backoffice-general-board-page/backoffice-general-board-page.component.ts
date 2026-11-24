@@ -1302,6 +1302,14 @@ export class BackofficeGeneralBoardPageComponent implements OnInit {
     this.actionMessage.set(message);
   }
 
+  protected async onEstadoExpedienteChange(nuevoEstado: string): Promise<void> {
+    const detail = this.detail();
+    if (!detail) return;
+    await this.runLeadAction('Estado de expediente actualizado.',
+      () => this.leadService.actualizarEstadoExpediente(detail.id!, nuevoEstado));
+    await this.refreshDrawerDetail(detail.id!);
+  }
+
   private async runLeadAction(success: string, action: () => import('rxjs').Observable<void>): Promise<void> {
     this.actionMessage.set(null);
     try {

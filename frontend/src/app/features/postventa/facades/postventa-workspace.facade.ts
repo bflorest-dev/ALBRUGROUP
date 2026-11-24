@@ -816,6 +816,20 @@ export class PostventaWorkspaceFacade {
     );
   }
 
+  async actualizarEstadoExpediente(estadoExpediente: string): Promise<boolean> {
+    if (this._consultaOnly()) {
+      this.notify('warn', 'Este lead esta abierto en modo consulta.');
+      return false;
+    }
+    const lead = this._selectedLead();
+    if (!lead) return false;
+    return this.run(
+      () => this.service.actualizarEstadoExpediente(lead.idLead, estadoExpediente),
+      'Estado de expediente actualizado.',
+      'No se pudo actualizar el estado de expediente.'
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Contacto externo (abre la app del sistema y registra el evento de contacto)
   // ---------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoExpediente;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 
@@ -34,5 +35,6 @@ public class LeadInstaladoBackofficeResponse {
     private Long idAsesorInstalador;
     private String nombreAsesorInstalador;
     private EstadoClientePostventa estadoClientePostventa;
+    private EstadoExpediente estadoExpediente;
     private Etapa etapaActual;
 }

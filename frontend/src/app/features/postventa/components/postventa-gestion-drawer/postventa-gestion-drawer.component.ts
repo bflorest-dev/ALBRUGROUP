@@ -144,4 +144,8 @@ export class PostventaGestionDrawerComponent {
     const ok = await this.facade.asignarPromocion(this.selectedPromoPostventaId(), 'POSTVENTA');
     if (ok) this.editingPromoPostventa.set(false);
   }
+
+  protected cambiarEstadoExpediente(nuevoEstado: string): void {
+    this.facade.actualizarEstadoExpediente(nuevoEstado);
+  }
 }

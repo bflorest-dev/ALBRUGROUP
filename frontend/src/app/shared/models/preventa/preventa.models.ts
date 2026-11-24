@@ -435,6 +435,7 @@ export interface LeadInstaladoBackofficeResponse {
   idAsesorInstalador?: number | null;
   nombreAsesorInstalador?: string | null;
   estadoClientePostventa?: string | null;
+  estadoExpediente?: string | null;
   etapaActual?: Etapa | string | null;
 }
 
@@ -630,6 +631,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   esFullClaro?: boolean | null;
   esJalaCobertura?: boolean | null;
   esZonaPintada?: boolean | null;
+  estadoExpediente?: string | null;
 }
 
 /** Resultado de una operación transaccional exclusiva del Drawer PREVENTA V2. */

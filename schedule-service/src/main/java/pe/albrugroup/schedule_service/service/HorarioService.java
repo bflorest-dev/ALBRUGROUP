@@ -52,6 +52,7 @@ public class HorarioService implements IHorario {
     private final HorarioMapper mapper;
     private final CurrentUser currentUser;
     private final AttendanceRealtimeNotifier attendanceRealtimeNotifier;
+    private final MarcacionService marcacionService;
 
     @Override
     @Transactional
@@ -384,6 +385,8 @@ public class HorarioService implements IHorario {
         ExcepcionHorario excepcion = mapper.toExcepcion(request);
         excepcion.setHorario(horario);
         ExcepcionHorario savedExcepcion = excepcionHorarioRepository.save(excepcion);
+        marcacionService.sincronizarAsistenciaConJornadaEfectiva(
+                horario.getIdEmpleado(), savedExcepcion.getFecha());
         attendanceRealtimeNotifier.publishAfterCommit(
                 "EXCEPCION_HORARIO_AFECTADA",
                 "EXCEPCION",
@@ -408,8 +411,15 @@ public class HorarioService implements IHorario {
                     throw new ConflictException("Ya existe una excepcion para esta fecha", request.getFecha());
                 });
 
+        LocalDate fechaAnterior = excepcion.getFecha();
         mapper.updateExcepcion(request, excepcion);
         ExcepcionHorario savedExcepcion = excepcionHorarioRepository.save(excepcion);
+        marcacionService.sincronizarAsistenciaConJornadaEfectiva(
+                horario.getIdEmpleado(), fechaAnterior);
+        if (!fechaAnterior.equals(savedExcepcion.getFecha())) {
+            marcacionService.sincronizarAsistenciaConJornadaEfectiva(
+                    horario.getIdEmpleado(), savedExcepcion.getFecha());
+        }
         attendanceRealtimeNotifier.publishAfterCommit(
                 "EXCEPCION_HORARIO_AFECTADA",
                 "EXCEPCION",
@@ -458,6 +468,7 @@ public class HorarioService implements IHorario {
         Long idEmpleado = excepcion.getHorario().getIdEmpleado();
         LocalDate fecha = excepcion.getFecha();
         excepcionHorarioRepository.delete(excepcion);
+        marcacionService.sincronizarAsistenciaConJornadaEfectiva(idEmpleado, fecha);
         attendanceRealtimeNotifier.publishAfterCommit(
                 "EXCEPCION_HORARIO_AFECTADA",
                 "EXCEPCION",

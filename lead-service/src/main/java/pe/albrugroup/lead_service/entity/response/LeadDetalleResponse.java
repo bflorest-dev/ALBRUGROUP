@@ -8,6 +8,7 @@ import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.Parentesco;
+import pe.albrugroup.lead_service.entity.enums.EstadoExpediente;
 import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 import pe.albrugroup.lead_service.entity.enums.TipoUrbanizacion;
@@ -133,4 +134,5 @@ public class LeadDetalleResponse {
     private boolean esFullClaro;
     private boolean esJalaCobertura;
     private boolean esZonaPintada;
+    private EstadoExpediente estadoExpediente;
 }

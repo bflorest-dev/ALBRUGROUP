@@ -745,6 +745,9 @@
           <td class="col-estado">
             @if (isFechaInstalacionSection() && !isSearchMode()) {
               <p-tag [severity]="postventaStatusSeverity(row.estadoClientePostventa)" [value]="display(row.estadoClientePostventa)" />
+              @if (row.estadoExpediente) {
+                <p-tag [severity]="expedienteSeverity(row.estadoExpediente)" [value]="expedienteLabel(row.estadoExpediente)" styleClass="ml-1" />
+              }
             } @else {
               <p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" />
             }
@@ -979,6 +982,8 @@
       (tipifyRequested)="tipificar()"
       (postventaConfirmationAction)="resolvePostventaConfirmation($event)"
       (retryHistory)="retryHistorial()"
+      [estadoExpediente]="detail()?.estadoExpediente ?? null"
+      (estadoExpedienteChange)="onEstadoExpedienteChange($event)"
   />
   <p-drawer
     [visible]="correctionDrawerOpen()"

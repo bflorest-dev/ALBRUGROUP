@@ -12,6 +12,7 @@ import pe.albrugroup.schedule_service.entity.AjusteJornada;
 import pe.albrugroup.schedule_service.entity.Asistencia;
 import pe.albrugroup.schedule_service.entity.AsistenciaTramo;
 import pe.albrugroup.schedule_service.entity.DiaNoLaborable;
+import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.enums.AlcanceDiaNoLaborable;
 import pe.albrugroup.schedule_service.entity.enums.TipoDiaNoLaborable;
 import pe.albrugroup.schedule_service.entity.Horario;
@@ -23,6 +24,7 @@ import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
 import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
+import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.enums.TipoTramoDia;
 import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
 import pe.albrugroup.schedule_service.entity.enums.TipoRegistroMarcacion;
@@ -251,6 +253,34 @@ class MarcacionServiceTest {
         assertThat(asistencia.getMinutosExtra()).isZero();
         assertThat(asistencia.getMinutosCompensados()).isZero();
         verify(asistenciaRepository).save(asistencia);
+    }
+
+    @Test
+    void sincronizaLaAsistenciaConUnaExcepcionDeHorarioRetroactiva() {
+        reloj(12, 0);
+        ExcepcionHorario excepcion = ExcepcionHorario.builder()
+                .id(901L)
+                .horario(horario)
+                .fecha(DIA)
+                .tipo(TipoExcepcionHorario.CAMBIO_COMPLETO)
+                .horaEntrada(LocalTime.of(18, 0))
+                .horaSalida(LocalTime.of(21, 0))
+                .laborable(true)
+                .motivo("Correccion retroactiva")
+                .build();
+        when(excepcionRepository.findByHorarioIdAndFecha(7L, DIA)).thenReturn(Optional.of(excepcion));
+
+        Asistencia asistencia = asistenciaOnline(LocalDateTime.of(DIA, LocalTime.of(17, 59)), 0);
+        almacen.set(asistencia);
+
+        service.sincronizarAsistenciaConJornadaEfectiva(EMP, DIA);
+
+        assertThat(asistencia.getEntradaProgramada()).isEqualTo(LocalTime.of(18, 0));
+        assertThat(asistencia.getSalidaProgramada()).isEqualTo(LocalTime.of(21, 0));
+        assertThat(asistencia.getInicioAlmuerzoProgramado()).isNull();
+        assertThat(asistencia.getFinAlmuerzoProgramado()).isNull();
+        assertThat(asistencia.getMinutosObjetivoDia()).isEqualTo(480);
+        verify(resumenMensualService).recalcularSiCorresponde(EMP, DIA);
     }
 
     @Test
@@ -1118,7 +1148,7 @@ class MarcacionServiceTest {
                 horarioRepository, excepcionRepository, ajusteRepository, diaNoLaborableRepository, clock);
         service = new MarcacionService(asistenciaRepository, asistenciaTramoRepository, ajusteRepository,
                 sesionEstadoRepository, resolver, parametroAsistenciaResolver, horarioRepository,
-                presenciaTramoService, resumenMensualService, currentUser, notifier);
+                excepcionRepository, presenciaTramoService, resumenMensualService, currentUser, notifier);
     }
 
     /** Reconfigura el horario base (sin almuerzo) y re-stubea los repos de horario para esa jornada. */

@@ -19,6 +19,7 @@ import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.CampoFechaListadoVenta;
 import pe.albrugroup.lead_service.entity.enums.CriterioZona;
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoExpediente;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.AmbitoProveedor;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -38,6 +39,7 @@ import pe.albrugroup.lead_service.entity.request.LeadIdentidadCorreccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIdentidadRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
+import pe.albrugroup.lead_service.entity.request.LeadEstadoExpedienteRequest;
 import pe.albrugroup.lead_service.entity.request.LeadNumeroParaLlamarRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaAdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
@@ -2559,6 +2561,26 @@ public class LeadService {
     }
 
     @Transactional
+    public void actualizarEstadoExpediente(Long idLead, LeadEstadoExpedienteRequest request) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+
+        if (!esProveedorPlanClaro(lead)) {
+            throw new BadRequestException("El estado de expediente solo aplica para leads del proveedor CLARO");
+        }
+        if (lead.getEtapa() != Etapa.POSTVENTA && lead.getEtapa() != Etapa.COBRANZA) {
+            throw new BadRequestException("El lead debe estar en etapa POSTVENTA o COBRANZA");
+        }
+        if (lead.getEstadoExpediente() == EstadoExpediente.AUDIO_CONFORME) {
+            throw new BadRequestException("El estado de expediente ya es AUDIO_CONFORME y no puede modificarse");
+        }
+
+        lead.setEstadoExpediente(request.getEstadoExpediente());
+        Lead savedLead = leadRepository.save(lead);
+        notificarCambioLead("ESTADO_EXPEDIENTE_ACTUALIZADO", savedLead, null, null, true);
+    }
+
+    @Transactional
     public void eliminarLeadIntegral(Long idLead) {
         Lead lead = leadRepository.findById(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
@@ -3368,6 +3390,9 @@ public class LeadService {
         lead.setDiaCorteFacturacion(resolverDiaCorteFacturacion(proveedor, fechaInstalacion));
         lead.setMesesPermanenciaSnapshot(proveedor.getMesesPermanencia());
         lead.setEstadoClientePostventa(EstadoClientePostventa.ACTIVO);
+        if (esProveedorPlanClaro(lead)) {
+            lead.setEstadoExpediente(EstadoExpediente.EXPEDIENTE_PENDIENTE);
+        }
     }
 
     /**
@@ -6527,7 +6552,8 @@ public class LeadService {
                 lead.getTecnologia(),
                 lead.isEsFullClaro(),
                 lead.isEsJalaCobertura(),
-                lead.isEsZonaPintada()
+                lead.isEsZonaPintada(),
+                lead.getEstadoExpediente()
         );
     }
 

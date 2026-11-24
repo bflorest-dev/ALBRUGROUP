@@ -2468,6 +2468,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 e.idActor,
                 e.nombreActor,
                 l.estadoClientePostventa,
+                l.estadoExpediente,
                 l.etapa
             )
             FROM Lead l

@@ -437,6 +437,9 @@ public class SubsanacionService {
         lead.setCreatedAt(createdAt);
         lead.setMesesPermanenciaSnapshot(contexto.plan().getProveedor().getMesesPermanencia());
         lead.setEstadoClientePostventa(EstadoClientePostventa.ACTIVO);
+        if ("CLARO".equals(contexto.plan().getProveedor().getNombre().trim().toUpperCase(Locale.ROOT))) {
+            lead.setEstadoExpediente(EstadoExpediente.EXPEDIENTE_PENDIENTE);
+        }
         lead.setDiaCorteFacturacion(null);
     }
 

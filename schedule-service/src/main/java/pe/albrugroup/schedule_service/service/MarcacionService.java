@@ -8,6 +8,7 @@ import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
 import pe.albrugroup.schedule_service.entity.AjusteJornada;
 import pe.albrugroup.schedule_service.entity.Asistencia;
 import pe.albrugroup.schedule_service.entity.AsistenciaTramo;
+import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.SesionEstado;
 import pe.albrugroup.schedule_service.entity.enums.Dia;
@@ -42,6 +43,7 @@ import pe.albrugroup.schedule_service.exception.NotFoundException;
 import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaTramoRepository;
+import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
 import pe.albrugroup.schedule_service.repository.HorarioRepository;
 import pe.albrugroup.schedule_service.repository.SesionEstadoRepository;
 import pe.albrugroup.schedule_service.service.ParametroAsistenciaResolver.EffectiveParams;
@@ -82,6 +84,7 @@ public class MarcacionService {
     private final JornadaEfectivaResolver jornadaEfectivaResolver;
     private final ParametroAsistenciaResolver parametroAsistenciaResolver;
     private final HorarioRepository horarioRepository;
+    private final ExcepcionHorarioRepository excepcionHorarioRepository;
     private final PresenciaTramoService presenciaTramoService;
     private final ResumenMensualService resumenMensualService;
     private final CurrentUser currentUser;
@@ -508,27 +511,56 @@ public class MarcacionService {
      */
     @Transactional
     public void reanclarAsistenciaAlHorarioBase(Long idEmpleado, LocalDate fecha) {
+        sincronizarAsistenciaConJornadaEfectiva(idEmpleado, fecha);
+    }
+
+    /**
+     * Sincroniza la fila materializada de asistencia con la jornada efectiva vigente.
+     *
+     * Las excepciones se persisten en {@code excepcion_horario}, pero los reportes historicos y el
+     * resumen mensual tambien leen {@code asistencia.entrada_programada}/{@code salida_programada}.
+     * Sin esta reconciliacion una correccion retroactiva queda guardada en el horario, pero la tardanza
+     * del dia y la del mes siguen calculandose contra el horario anterior.
+     */
+    @Transactional
+    public void sincronizarAsistenciaConJornadaEfectiva(Long idEmpleado, LocalDate fecha) {
         Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha).orElse(null);
-        if (asistencia == null) {
+        if (asistencia != null) {
+            JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolverSiExiste(idEmpleado, fecha).orElse(null);
+            sincronizarReferenciaProgramada(asistencia, jornada);
+            asistenciaRepository.save(asistencia);
+        }
+
+        // El resumen de meses cerrados es un snapshot materializado. Debe reconstruirse incluso si
+        // todavía no existe una fila de asistencia: una excepcion puede cambiar la laborabilidad del dia.
+        resumenMensualService.recalcularSiCorresponde(idEmpleado, fecha);
+    }
+
+    private void sincronizarReferenciaProgramada(Asistencia asistencia, JornadaEfectivaResponse jornada) {
+        if (jornada == null) {
             return;
         }
 
-        JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolverSiExiste(idEmpleado, fecha).orElse(null);
         TramoJornadaResponse base = jornada == null
                 ? null
                 : jornada.getTramos().stream()
-                .filter(tramo -> Boolean.TRUE.equals(tramo.getBase()))
+                .filter(tramo -> Boolean.TRUE.equals(tramo.getBase())
+                        || tramo.getOrigen() == OrigenAjusteJornada.REEMPLAZO_BASE)
                 .filter(tramo -> tramo.getInicio() != null && tramo.getFin() != null)
                 .findFirst()
                 .orElse(null);
-        VentanaAlmuerzo almuerzoBase = jornada == null || jornada.getIdHorario() == null
+        Horario horario = jornada.getIdHorario() == null
                 ? null
-                : horarioRepository.findById(jornada.getIdHorario())
-                .map(horario -> resolverAlmuerzoProgramado(horario, fecha))
-                .orElse(null);
+                : horarioRepository.findById(jornada.getIdHorario()).orElse(null);
+        VentanaAlmuerzo almuerzoBase = horario == null
+                ? null
+                : resolverAlmuerzoEfectivo(horario, asistencia.getFecha());
 
-        asistencia.setAjusteJornadaActual(null);
-        asistencia.setOrigenTramoActual(base == null ? null : OrigenTramo.BASE);
+        asistencia.setIdHorario(jornada.getIdHorario());
+        asistencia.setAjusteJornadaActual(base == null || base.getIdAjuste() == null
+                ? null
+                : ajusteJornadaRepository.findById(base.getIdAjuste()).orElse(null));
+        asistencia.setOrigenTramoActual(base == null ? null : mapOrigenTramo(base));
         asistencia.setEntradaProgramada(base == null ? null : base.getInicio().toLocalTime());
         asistencia.setSalidaProgramada(base == null ? null : base.getFin().toLocalTime());
         asistencia.setInicioAlmuerzoProgramado(almuerzoBase == null ? null : almuerzoBase.inicio());
@@ -538,9 +570,11 @@ public class MarcacionService {
             asistencia.setMinutosObjetivoDia(0);
             asistencia.setMinutosExtra(0);
             asistencia.setMinutosCompensados(0);
+            asistencia.setMinutosBalance(0);
         } else {
             asistencia.setMinutosObjetivoDia(
-                    jornadaEfectivaResolver.minutosObjetivoContractual(idEmpleado, fecha));
+                    jornadaEfectivaResolver.minutosObjetivoContractual(
+                            asistencia.getIdEmpleado(), asistencia.getFecha()));
             if (asistencia.getFechaHoraSalida() != null) {
                 recalcularMinutos(asistencia);
             } else {
@@ -551,6 +585,19 @@ public class MarcacionService {
         }
 
         asistenciaRepository.save(asistencia);
+    }
+
+    private VentanaAlmuerzo resolverAlmuerzoEfectivo(Horario horario, LocalDate fecha) {
+        ExcepcionHorario excepcion = excepcionHorarioRepository
+                .findByHorarioIdAndFecha(horario.getId(), fecha)
+                .orElse(null);
+        if (excepcion != null) {
+            if (excepcion.getInicioAlmuerzo() == null || excepcion.getFinAlmuerzo() == null) {
+                return null;
+            }
+            return new VentanaAlmuerzo(excepcion.getInicioAlmuerzo(), excepcion.getFinAlmuerzo());
+        }
+        return resolverAlmuerzoProgramado(horario, fecha);
     }
 
     private Asistencia crearAsistencia(Long idEmpleado, LocalDate fecha,
