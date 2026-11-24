@@ -502,15 +502,32 @@ class AjusteJornadaServiceTest {
     }
 
     @Test
-    void restablecerDiaRechazaUnaFechaPasadaSinModificarNada() {
+    void restablecerDiaRechazaUnaFechaPasadaParaNoAdministrador() {
         LocalDate fecha = LocalDate.of(2026, 6, 14);
+        when(currentUser.roles()).thenReturn(List.of("RRHH"));
 
         assertThatThrownBy(() -> service.restablecerDia(21L, fecha))
                 .isInstanceOf(pe.albrugroup.schedule_service.exception.BadRequestException.class)
-                .hasMessageContaining("hoy o una fecha futura");
+                .hasMessageContaining("Solo ADMINISTRADOR");
 
         verifyNoInteractions(ajusteRepository, asistenciaRepository, excepcionRepository, diaNoLaborableRepository);
         verify(notifier, never()).publishAfterCommit(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void restablecerDiaPermiteUnaFechaPasadaParaAdministrador() {
+        LocalDate fecha = LocalDate.of(2026, 6, 14);
+        when(currentUser.roles()).thenReturn(List.of("ADMINISTRADOR"));
+        when(ajusteRepository.findForUpdateByIdEmpleadoAndFechaOperativaAndEstado(
+                21L, fecha, EstadoAjusteJornada.ACTIVO)).thenReturn(List.of());
+        when(asistenciaRepository.findByIdEmpleadoAndFecha(21L, fecha)).thenReturn(Optional.empty());
+        when(horarioRepository.findHorarioVigente(21L, fecha)).thenReturn(Optional.empty());
+        when(diaNoLaborableRepository.findFirstByAlcanceAndRefIdAndFecha(
+                AlcanceDiaNoLaborable.EMPLEADO, 21L, fecha)).thenReturn(Optional.empty());
+
+        service.restablecerDia(21L, fecha);
+
+        verify(notifier).publishAfterCommit("HORARIO_RESTABLECIDO", "HORARIO", 21L, fecha, null);
     }
 
     @Test

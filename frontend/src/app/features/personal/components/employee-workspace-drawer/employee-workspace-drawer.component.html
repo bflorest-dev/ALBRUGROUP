@@ -452,10 +452,41 @@
             />
           }
         </section>
+      } @else if (subview() === 'seleccionar-dia') {
+        <section class="drawer-subview schedule-day-picker-view">
+          <div class="subview-heading">
+            <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left" aria-hidden="true"></i>Volver</button>
+            <div><h3 id="specific-schedule-day-title">Elegir fecha específica</h3><p>Consulta cualquier fecha dentro de la vigencia del horario para reprogramar solo ese día.</p></div>
+          </div>
+          <form id="specific-schedule-day-form" class="specific-schedule-day-picker" aria-labelledby="specific-schedule-day-title" (ngSubmit)="confirmSpecificScheduleDate()">
+            <div class="specific-schedule-day-picker__intro">
+              <i class="ti ti-calendar-search" aria-hidden="true"></i>
+              <div><strong>¿Qué día necesitas corregir?</strong><p>Las fechas pasadas están disponibles para ADMINISTRADOR. La fecha debe tener un horario vigente.</p></div>
+            </div>
+            <app-date-field
+              [ngModel]="specificScheduleDate()"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="onSpecificScheduleDateChange($event)"
+              label="Fecha a reprogramar"
+              inputId="drawer-reprogramar-fecha"
+              placeholder="dd/mm/aaaa"
+              [min]="scheduleFacade.canApplyRetroactiveCorrection() ? null : today()"
+              panelStyleClass="drawer-reprogramar-date-panel"
+              [baseZIndex]="1400"
+            />
+            <p class="specific-schedule-day-picker__hint">El cambio no modifica el horario semanal de los demás días.</p>
+            @if (specificScheduleDateError()) { <p class="feedback error" role="alert">{{ specificScheduleDateError() }}</p> }
+            @if (specificScheduleDayError()) { <p class="feedback error" role="alert">{{ specificScheduleDayError() }}</p> }
+            @if (isLoadingSpecificScheduleDay()) { <p class="muted" role="status" aria-live="polite">Consultando la jornada seleccionada…</p> }
+          </form>
+        </section>
       } @else if (subview() === 'editar-dia-opciones') {
         <section class="drawer-subview schedule-day-view">
           <div class="subview-heading">
-            <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left" aria-hidden="true"></i>Volver</button>
+            <div class="subview-heading__actions">
+              <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left" aria-hidden="true"></i>Volver</button>
+              <button class="back-button" type="button" (click)="openSpecificDayPicker()"><i class="ti ti-calendar-search" aria-hidden="true"></i>Elegir otra fecha</button>
+            </div>
             <div><h3>Reprogramar día</h3><p>Gestiona los cambios de una sola fecha sin alterar el horario semanal.</p></div>
           </div>
           @if (resetDayConfirming()) {
@@ -488,7 +519,10 @@
       } @else if (subview() === 'editar-dia') {
         <section class="drawer-subview schedule-day-view">
           <div class="subview-heading">
-            <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left" aria-hidden="true"></i>Volver</button>
+            <div class="subview-heading__actions">
+              <button class="back-button" type="button" (click)="closeSubview()"><i class="ti ti-arrow-left" aria-hidden="true"></i>Volver</button>
+              <button class="back-button" type="button" (click)="openSpecificDayPicker()"><i class="ti ti-calendar-search" aria-hidden="true"></i>Elegir otra fecha</button>
+            </div>
             <div><h3>Reprogramar día</h3><p>Modifica solo la jornada de la fecha seleccionada. El horario de los demás días permanecerá igual.</p></div>
           </div>
           <app-schedule-day-editor
@@ -730,6 +764,9 @@
           [disabled]="isSavingAdjustment() || isLoadingAdjustment() || (adjustmentView === 'ajuste-dia-libre' && !adjustmentDayOffDate()) || ((adjustmentView === 'ajuste-jornada-extra' || adjustmentView === 'ajuste-compensar-falta') && (!adjustmentExtraEntrada() || !adjustmentExtraSalida()))"
           (click)="saveDayAdjustment()"
         >{{ isSavingAdjustment() ? 'Guardando…' : (adjustmentView === 'ajuste-almuerzo' ? 'Guardar almuerzo' : adjustmentView === 'ajuste-corrimiento' ? 'Correr horario' : adjustmentView === 'ajuste-dia-libre' ? 'Declarar día libre' : 'Guardar ajuste') }}</button>
+      } @else if (subview() === 'seleccionar-dia') {
+        <button type="button" class="ghost-button" (click)="closeSubview()">Cancelar</button>
+        <button type="submit" form="specific-schedule-day-form" class="primary-button push-right" [disabled]="isLoadingSpecificScheduleDay()">{{ isLoadingSpecificScheduleDay() ? 'Consultando…' : 'Continuar' }}</button>
       } @else if (subview() === 'editar-dia-opciones') {
         <button type="button" class="ghost-button" [disabled]="isSavingAdjustment()" (click)="closeSubview()">Volver al horario</button>
       } @else if (subview() === 'editar-dia') {
@@ -751,7 +788,7 @@
       } @else if (section() === 'horario') {
         @if (schedule()) {
           <app-schedule-footer-actions
-            [canReprogram]="!!selectedScheduleDay() && scheduleFacade.canMutateOperationalData() && selectedScheduleDay()!.fecha >= today()"
+            [canReprogram]="scheduleFacade.canMutateOperationalData() && (!selectedScheduleDay() || selectedScheduleDay()!.fecha >= today() || scheduleFacade.canApplyRetroactiveCorrection())"
             [canAdd]="!!contract() && scheduleFacade.canMutateOperationalData()"
             (reprogramRequested)="openSelectedDayEditor()"
             (addRequested)="openFutureSchedule()"

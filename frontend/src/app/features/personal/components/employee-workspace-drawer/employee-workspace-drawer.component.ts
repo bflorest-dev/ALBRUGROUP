@@ -44,8 +44,8 @@ import {
 } from '../../services/personal-access.service';
 
 type DrawerSection = 'resumen' | 'contrato' | 'roles' | 'horario' | 'asistencia' | 'metricas';
-type DrawerSubview = 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
-type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'editar-dia' | 'editar-dia-opciones'>;
+type DrawerSubview = 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'seleccionar-dia' | 'editar-dia' | 'editar-dia-opciones' | 'ajuste-extra' | 'ajuste-compensacion' | 'ajuste-corrimiento' | 'ajuste-jornada-extra' | 'ajuste-compensar-falta' | 'ajuste-almuerzo' | 'ajuste-dia-libre';
+type DayAdjustmentSubview = Exclude<DrawerSubview, 'none' | 'mostrar-datos' | 'editar-datos' | 'confirmar-baja' | 'contrato-form' | 'gestionar-equipo' | 'gestionar-proveedores' | 'gestionar-empresas' | 'historial-roles' | 'editar-horario' | 'seleccionar-dia' | 'editar-dia' | 'editar-dia-opciones'>;
 type EditDataSection = 'personal' | 'contacto-ubicacion' | 'corporativo' | 'financiero';
 
 export interface DrawerScopeCapabilities {
@@ -181,10 +181,17 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly adjustmentError = this.scheduleFacade.adjustmentError;
   protected readonly adjustmentReportError = this.scheduleFacade.adjustmentReportError;
   protected readonly adjustmentSuccess = this.scheduleFacade.adjustmentSuccess;
+  protected readonly specificScheduleDay = this.scheduleFacade.specificScheduleDay;
+  protected readonly isLoadingSpecificScheduleDay = this.scheduleFacade.isLoadingSpecificScheduleDay;
+  protected readonly specificScheduleDayError = this.scheduleFacade.specificScheduleDayError;
+  protected readonly specificScheduleDate = signal('');
+  protected readonly specificScheduleDateError = signal('');
   protected readonly selectedScheduleDayDate = signal<string | null>(null);
   protected readonly resetDayConfirming = signal(false);
   protected readonly selectedScheduleDay = computed<JornadaEfectivaPeriodoDiaResponse | null>(() => {
     const date = this.selectedScheduleDayDate();
+    const specific = this.specificScheduleDay();
+    if (specific && specific.fecha === date) return specific;
     return date
       ? this.scheduleFacade.jornadaPeriodo()?.dias.find((day) => day.fecha === date) ?? null
       : null;
@@ -192,7 +199,8 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly selectedDayHasChanges = computed(() => Boolean(this.selectedScheduleDay()?.cambios.length));
   protected readonly selectedDayCanReset = computed(() => {
     const day = this.selectedScheduleDay();
-    if (!day || !this.scheduleFacade.canMutateOperationalData() || day.fecha < this.today()) return false;
+    if (!day || !this.scheduleFacade.canMutateOperationalData()) return false;
+    if (day.fecha < this.today() && !this.scheduleFacade.canApplyRetroactiveCorrection()) return false;
     return day.cambios.some((change) =>
       change.tipo !== 'DIA_NO_LABORABLE' || change.alcance === 'EMPLEADO'
     );
@@ -200,7 +208,9 @@ export class EmployeeWorkspaceDrawerComponent {
   protected readonly selectedDayResetReason = computed(() => {
     const day = this.selectedScheduleDay();
     if (!day) return 'Selecciona un día del horario semanal.';
-    if (day.fecha < this.today()) return 'Las fechas pasadas se pueden consultar, pero no modificar.';
+    if (day.fecha < this.today() && !this.scheduleFacade.canApplyRetroactiveCorrection()) {
+      return 'Las fechas pasadas se pueden consultar, pero no modificar.';
+    }
     if (!this.scheduleFacade.canMutateOperationalData()) return this.scheduleFacade.blockedMessage();
     if (this.selectedDayCanReset()) return '';
     if (day.cambios.length) return 'Este día solo tiene un descanso global y no se puede quitar desde aquí.';
@@ -299,6 +309,8 @@ export class EmployeeWorkspaceDrawerComponent {
       this.activeEmployeeId = row.employee.idEmpleado;
       this.section.set('resumen');
       this.subview.set('none');
+      this.specificScheduleDate.set('');
+      this.specificScheduleDateError.set('');
       this.selectedScheduleDayDate.set(null);
       this.resetDayConfirming.set(false);
       this.isEditingContract.set(false);
@@ -909,6 +921,7 @@ export class EmployeeWorkspaceDrawerComponent {
   }
 
   protected onWeeklyDaySelected(day: JornadaEfectivaPeriodoDiaResponse): void {
+    this.scheduleFacade.clearSpecificScheduleDay();
     this.selectedScheduleDayDate.set(day.fecha);
     this.resetDayConfirming.set(false);
     this.clearActionFeedback();
@@ -916,15 +929,53 @@ export class EmployeeWorkspaceDrawerComponent {
 
   protected openSelectedDayEditor(): void {
     const day = this.selectedScheduleDay();
-    if (!day) return;
-    if (day.fecha < this.today()) {
-      this.actionError.set('Las fechas pasadas se pueden consultar, pero no modificar.');
+    if (!day) {
+      this.openSpecificDayPicker();
+      return;
+    }
+    if (day.fecha < this.today() && !this.scheduleFacade.canApplyRetroactiveCorrection()) {
+      this.actionError.set('Solo ADMINISTRADOR puede modificar fechas pasadas.');
       return;
     }
     this.clearActionFeedback();
     this.resetDayConfirming.set(false);
     this.scheduleFacade.adjustmentDate.set(day.fecha);
     this.subview.set(this.selectedDayHasChanges() ? 'editar-dia-opciones' : 'editar-dia');
+  }
+
+  protected openSpecificDayPicker(): void {
+    this.specificScheduleDate.set('');
+    this.specificScheduleDateError.set('');
+    this.scheduleFacade.clearSpecificScheduleDay();
+    this.selectedScheduleDayDate.set(null);
+    this.resetDayConfirming.set(false);
+    this.clearActionFeedback();
+    this.subview.set('seleccionar-dia');
+  }
+
+  protected onSpecificScheduleDateChange(value: string): void {
+    this.specificScheduleDate.set(value);
+    this.specificScheduleDateError.set('');
+    this.scheduleFacade.clearSpecificScheduleDay();
+  }
+
+  protected async confirmSpecificScheduleDate(): Promise<void> {
+    const date = this.specificScheduleDate();
+    if (!date) {
+      this.specificScheduleDateError.set('Selecciona la fecha que deseas reprogramar.');
+      return;
+    }
+    if (date < this.today() && !this.scheduleFacade.canApplyRetroactiveCorrection()) {
+      this.specificScheduleDateError.set('Solo ADMINISTRADOR puede modificar fechas pasadas.');
+      return;
+    }
+    const day = await this.scheduleFacade.loadSpecificScheduleDay(date, this.row()?.employee.idEmpleado);
+    if (!day) return;
+    this.selectedScheduleDayDate.set(day.fecha);
+    this.resetDayConfirming.set(false);
+    this.clearActionFeedback();
+    this.scheduleFacade.adjustmentDate.set(day.fecha);
+    this.subview.set(day.cambios.length ? 'editar-dia-opciones' : 'editar-dia');
   }
 
   protected openSingleDayEditor(): void {

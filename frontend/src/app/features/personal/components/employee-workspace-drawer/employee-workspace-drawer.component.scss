@@ -278,6 +278,13 @@ dd { margin: 4px 0 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere
 .day-adjustment-view app-lunch-day-editor { display: block; width: 100%; }
 
 .schedule-editor-view { max-width: none; }
+.specific-schedule-day-picker { display: grid; gap: 16px; max-width: 520px; }
+.specific-schedule-day-picker__intro { display: flex; gap: 12px; align-items: flex-start; padding: 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.specific-schedule-day-picker__intro > i { flex: 0 0 auto; margin-top: 2px; color: var(--focus); font-size: 18px; }
+.specific-schedule-day-picker__intro strong { display: block; margin-bottom: 4px; font-size: 13px; }
+.specific-schedule-day-picker__intro p,
+.specific-schedule-day-picker__hint { margin: 0; color: var(--ink-2); font-size: 12px; line-height: 1.45; }
+.specific-schedule-day-picker app-date-field { display: block; max-width: 280px; }
 .schedule-conflict { display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; margin-bottom: 18px; padding: 14px; border: 1px solid var(--signal-line); background: var(--signal-wash); border-radius: 10px; }
 .schedule-conflict__icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; background: color-mix(in srgb, var(--signal) 16%, transparent); color: var(--signal); font-size: 17px; }
 .schedule-conflict h4 { margin: 1px 0 4px; font-size: 14px; }
@@ -294,6 +301,7 @@ dd { margin: 4px 0 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere
 
 .drawer-subview { min-height: 100%; }
 .subview-heading { display: grid; gap: 16px; margin-bottom: 22px; }
+.subview-heading__actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .subview-heading h3, .danger-view h3 { margin: 0 0 5px; font-size: 18px; letter-spacing: -.015em; }
 .subview-heading p, .danger-view p { margin: 0; line-height: 1.55; }
 .back-button { width: fit-content; border: 0; background: transparent; color: var(--focus); padding: 0; display: inline-flex; align-items: center; gap: 6px; font: 700 12px 'Archivo'; }

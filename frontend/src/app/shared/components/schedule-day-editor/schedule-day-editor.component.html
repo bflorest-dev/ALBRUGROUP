@@ -28,7 +28,7 @@
 
     <div class="day-editor__options">
       <button type="button" class="day-editor__option day-editor__option--primary" [disabled]="!canMutate()" (click)="editRequested.emit()">
-        <span><strong>Agregar cambio</strong><small>Modifica la jornada o agrega un ajuste para este día.</small></span>
+        <span><strong>{{ fullChangeExists() ? 'Editar cambio' : 'Agregar cambio' }}</strong><small>{{ fullChangeExists() ? 'Corrige la jornada registrada para esta fecha.' : 'Modifica la jornada o agrega un ajuste para este día.' }}</small></span>
         <i class="ti ti-chevron-right" aria-hidden="true"></i>
       </button>
       <button type="button" class="day-editor__option day-editor__option--reset" [disabled]="!canReset() || saving()" (click)="resetRequested.emit()">

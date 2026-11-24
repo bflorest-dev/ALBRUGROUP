@@ -88,13 +88,18 @@ export class ScheduleDayEditorComponent {
       change.tipo === 'EXCEPCION_HORARIO' && change.codigo === 'CAMBIO_COMPLETO'));
   }
 
+  protected existingFullChange(): JornadaEfectivaPeriodoDiaResponse['cambios'][number] | null {
+    return this.day()?.cambios.find((change) =>
+      change.tipo === 'EXCEPCION_HORARIO' && change.codigo === 'CAMBIO_COMPLETO'
+    ) ?? null;
+  }
+
   protected calendarOverrideExists(): boolean {
     return Boolean(this.day()?.cambios.some((change) => change.tipo === 'DIA_NO_LABORABLE'));
   }
 
   protected editorBlockedMessage(): string {
     if (!this.day()?.idHorario) return 'Este día no tiene un horario vigente sobre el que se pueda aplicar un cambio.';
-    if (this.fullChangeExists()) return 'Ya existe un cambio completo para este día. Restablece primero el horario base.';
     if (this.calendarOverrideExists()) return 'Este día está marcado como no laborable. Usa “Habilitar jornada” o restablece el permiso del empleado antes de cambiar su horario.';
     return '';
   }
@@ -113,7 +118,7 @@ export class ScheduleDayEditorComponent {
       this.formError.set('La hora de salida debe ser posterior a la hora de entrada.');
       return;
     }
-    if (this.fullChangeExists() || this.calendarOverrideExists()) {
+    if (this.calendarOverrideExists()) {
       this.formError.set(this.editorBlockedMessage());
       return;
     }
@@ -172,7 +177,7 @@ export class ScheduleDayEditorComponent {
     this.inicioAlmuerzo.set(lunchStart);
     this.finAlmuerzo.set(lunchEnd);
     this.tieneAlmuerzo.set(Boolean(lunchStart && lunchEnd));
-    this.motivo.set('');
+    this.motivo.set(this.existingFullChange()?.motivo ?? '');
     this.formError.set('');
   }
 

@@ -13,7 +13,10 @@ import { CorregirHorarioRequest } from '../../../shared/models/schedule/corregir
 import { DeclararDiaNoLaborableRequest, TipoDiaNoLaborable } from '../../../shared/models/schedule/dia-no-laborable-request';
 import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
 import { AjusteJornadaRequest, JornadaEfectivaResponse, RazonAjuste, RegistrarAjusteV2Request } from '../../../shared/models/schedule/jornada-efectiva-response';
-import { JornadaEfectivaPeriodoResponse } from '../../../shared/models/schedule/jornada-efectiva-periodo-response';
+import {
+  JornadaEfectivaPeriodoDiaResponse,
+  JornadaEfectivaPeriodoResponse
+} from '../../../shared/models/schedule/jornada-efectiva-periodo-response';
 import { ReporteDiaResponse } from '../../../shared/models/schedule/reporte-dia-response';
 import { RegistrarExcepcionHorarioRequest } from '../../../shared/models/schedule/registrar-excepcion-horario-request';
 import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
@@ -59,6 +62,9 @@ export class PersonalScheduleFacade {
   readonly jornadaPeriodo = signal<JornadaEfectivaPeriodoResponse | null>(null);
   readonly isLoadingJornadaPeriodo = signal(false);
   readonly jornadaPeriodoError = signal('');
+  readonly specificScheduleDay = signal<JornadaEfectivaPeriodoDiaResponse | null>(null);
+  readonly isLoadingSpecificScheduleDay = signal(false);
+  readonly specificScheduleDayError = signal('');
   readonly showEffectiveChanges = signal(true);
   readonly history = signal<HorarioResponse[]>([]);
   readonly isLoadingHistory = signal(false);
@@ -133,6 +139,7 @@ export class PersonalScheduleFacade {
     this.schedule.set(schedule);
     this.jornadaPeriodo.set(null);
     this.jornadaPeriodoError.set('');
+    this.clearSpecificScheduleDay();
     this.showEffectiveChanges.set(true);
     this.editingSchedule = schedule;
     this.isCreatingFutureSchedule.set(false);
@@ -154,6 +161,7 @@ export class PersonalScheduleFacade {
     this.jornadaPeriodo.set(null);
     this.isLoadingJornadaPeriodo.set(false);
     this.jornadaPeriodoError.set('');
+    this.clearSpecificScheduleDay();
     this.showEffectiveChanges.set(true);
     this.history.set([]);
     this.historyError.set('');
@@ -238,6 +246,44 @@ export class PersonalScheduleFacade {
     } finally {
       this.isLoadingJornadaPeriodo.set(false);
     }
+  }
+
+  async loadSpecificScheduleDay(
+    fecha: string,
+    employeeId = this.employeeId
+  ): Promise<JornadaEfectivaPeriodoDiaResponse | null> {
+    if (!employeeId || !fecha) return null;
+    this.isLoadingSpecificScheduleDay.set(true);
+    this.specificScheduleDayError.set('');
+    try {
+      const periodo = await firstValueFrom(
+        this.adjustmentService
+          .getJornadaPeriodo(employeeId, fecha, fecha)
+          .pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      const day = periodo.dias.find((item) => item.fecha === fecha) ?? null;
+      if (!day?.idHorario) {
+        this.specificScheduleDay.set(null);
+        this.specificScheduleDayError.set('La fecha seleccionada no tiene un horario vigente.');
+        return null;
+      }
+      this.specificScheduleDay.set(day);
+      return day;
+    } catch (error) {
+      this.specificScheduleDay.set(null);
+      this.specificScheduleDayError.set(
+        formatApiErrorMessage(error as HttpErrorResponse, 'No fue posible cargar el horario de esa fecha.')
+      );
+      return null;
+    } finally {
+      this.isLoadingSpecificScheduleDay.set(false);
+    }
+  }
+
+  clearSpecificScheduleDay(): void {
+    this.specificScheduleDay.set(null);
+    this.isLoadingSpecificScheduleDay.set(false);
+    this.specificScheduleDayError.set('');
   }
 
   setShowEffectiveChanges(value: boolean): void {
@@ -511,21 +557,43 @@ export class PersonalScheduleFacade {
     request: RegistrarExcepcionHorarioRequest
   ): Promise<boolean> {
     if (!this.canMutateOperationalData() || !this.employeeId) return false;
-    if (!fecha || fecha < this.today()) {
-      this.adjustmentError.set('Solo puedes modificar hoy o una fecha futura.');
+    if (!fecha) {
+      this.adjustmentError.set('Selecciona la fecha que deseas reprogramar.');
       return false;
     }
-    const day = this.jornadaPeriodo()?.dias.find((item) => item.fecha === fecha);
-    if (!day?.idHorario) {
+    if (fecha < this.today() && !this.canApplyRetroactiveCorrection()) {
+      this.adjustmentError.set('Solo ADMINISTRADOR puede modificar fechas pasadas.');
+      return false;
+    }
+    const day = this.specificScheduleDay()?.fecha === fecha
+      ? this.specificScheduleDay()
+      : this.jornadaPeriodo()?.dias.find((item) => item.fecha === fecha) ?? null;
+    const idHorario = day?.idHorario;
+    if (!day || !idHorario) {
       this.adjustmentError.set('Este día no tiene un horario vigente sobre el que se pueda aplicar el cambio.');
       return false;
     }
     this.startAdjustmentSave();
     this.adjustmentDate.set(fecha);
     try {
-      await firstValueFrom(
-        this.service.registrarExcepcionHorario(day.idHorario, request).pipe(timeout(REQUEST_TIMEOUT_MS))
+      const existingException = day.cambios.find((change) =>
+        change.tipo === 'EXCEPCION_HORARIO' && change.codigo === 'CAMBIO_COMPLETO'
       );
+      if (existingException) {
+        if (!existingException.id) {
+          this.adjustmentError.set('La excepción existente no tiene un identificador válido para actualizarse.');
+          return false;
+        }
+        await firstValueFrom(
+          this.service
+            .actualizarExcepcionHorario(idHorario, existingException.id, request)
+            .pipe(timeout(REQUEST_TIMEOUT_MS))
+        );
+      } else {
+        await firstValueFrom(
+          this.service.registrarExcepcionHorario(idHorario, request).pipe(timeout(REQUEST_TIMEOUT_MS))
+        );
+      }
       this.adjustmentSuccess.set('El cambio del día fue guardado.');
       await this.finishAdjustmentMutation(fecha);
       return true;
@@ -539,8 +607,12 @@ export class PersonalScheduleFacade {
 
   async resetDay(fecha: string): Promise<boolean> {
     if (!this.canMutateOperationalData() || !this.employeeId) return false;
-    if (!fecha || fecha < this.today()) {
-      this.adjustmentError.set('Solo puedes restablecer hoy o una fecha futura.');
+    if (!fecha) {
+      this.adjustmentError.set('Selecciona la fecha que deseas restablecer.');
+      return false;
+    }
+    if (fecha < this.today() && !this.canApplyRetroactiveCorrection()) {
+      this.adjustmentError.set('Solo ADMINISTRADOR puede restablecer fechas pasadas.');
       return false;
     }
     this.startAdjustmentSave();
@@ -598,9 +670,11 @@ export class PersonalScheduleFacade {
     if (!this.employeeId) return;
     try {
       this.schedule.set(await firstValueFrom(this.service.getHorarioVigente(this.employeeId).pipe(timeout(REQUEST_TIMEOUT_MS))));
+      const specificDate = this.specificScheduleDay()?.fecha;
       await Promise.all([
         this.loadHistory(this.employeeId),
-        this.loadJornadaPeriodo(this.employeeId)
+        this.loadJornadaPeriodo(this.employeeId),
+        specificDate ? this.loadSpecificScheduleDay(specificDate, this.employeeId) : Promise.resolve(null)
       ]);
     } finally {
       await this.loadDayAdjustment(this.employeeId, fecha);

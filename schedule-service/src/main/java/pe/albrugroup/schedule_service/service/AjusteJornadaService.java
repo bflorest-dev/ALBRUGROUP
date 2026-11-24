@@ -615,8 +615,8 @@ public class AjusteJornadaService {
         if (fecha == null) {
             throw new BadRequestException("Debes indicar la fecha que deseas restablecer");
         }
-        if (fecha.isBefore(hoy)) {
-            throw new BadRequestException("Solo puedes restablecer hoy o una fecha futura");
+        if (fecha.isBefore(hoy) && !currentUser.roles().contains("ADMINISTRADOR")) {
+            throw new BadRequestException("Solo ADMINISTRADOR puede restablecer fechas pasadas");
         }
 
         List<AjusteJornada> activos = ajusteRepository
