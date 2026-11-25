@@ -77,6 +77,28 @@
 .postventa-v2__expediente-row select option { color: #152640; background: #fff; }
 .postventa-v2__expediente-select:disabled { opacity: .5; cursor: not-allowed; }
 
+.postventa-v2__expediente-inline-confirm {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-top: .3rem;
+  font-size: .72rem;
+  color: #f0c040;
+  span { flex: 1; }
+}
+.postventa-v2__expediente-btn {
+  padding: .15rem .5rem;
+  border: none;
+  border-radius: .2rem;
+  font-size: .72rem;
+  font-family: inherit;
+  cursor: pointer;
+  &--yes { background: #4caf50; color: #fff; }
+  &--yes:hover { background: #43a047; }
+  &--no { background: rgba(255,255,255,.12); color: #ccc; }
+  &--no:hover { background: rgba(255,255,255,.2); }
+}
+
 .sem--green { background: #34d399; }
 .sem--yellow { background: #fbbf24; }
 .sem--red { background: #f87171; }

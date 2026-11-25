@@ -145,7 +145,26 @@ export class PostventaGestionDrawerComponent {
     if (ok) this.editingPromoPostventa.set(false);
   }
 
-  protected cambiarEstadoExpediente(nuevoEstado: string): void {
-    this.facade.actualizarEstadoExpediente(nuevoEstado);
+  protected pendingExpedienteConfirm = false;
+
+  protected onExpedienteSelectChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const lead = this.facade.selectedLead();
+    if (select.value === 'AUDIO_CONFORME') {
+      select.value = lead?.estadoExpediente ?? 'EXPEDIENTE_PENDIENTE';
+      this.pendingExpedienteConfirm = true;
+      return;
+    }
+    this.pendingExpedienteConfirm = false;
+    this.facade.actualizarEstadoExpediente(select.value);
+  }
+
+  protected confirmExpediente(): void {
+    this.pendingExpedienteConfirm = false;
+    this.facade.actualizarEstadoExpediente('AUDIO_CONFORME');
+  }
+
+  protected cancelExpediente(): void {
+    this.pendingExpedienteConfirm = false;
   }
 }

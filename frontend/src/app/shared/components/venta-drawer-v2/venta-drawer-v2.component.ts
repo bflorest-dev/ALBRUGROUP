@@ -149,6 +149,7 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   @Output() postventaConfirmationAction = new EventEmitter<VentaPostventaConfirmationAction>();
   @Output() retryHistory = new EventEmitter<void>();
   @Output() estadoExpedienteChange = new EventEmitter<string>();
+  protected pendingExpedienteConfirm = false;
 
   protected readonly activeTab = signal<VentaDrawerTab>('datos');
   protected readonly summaryOpen = signal(true);
@@ -743,6 +744,27 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
   private stripTrailingCoordinateZeros(value: string): string {
     if (!value.includes('.')) return value;
     return value.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+  }
+
+  protected onExpedienteSelectChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const newValue = select.value;
+    if (newValue === 'AUDIO_CONFORME') {
+      select.value = this.estadoExpediente!;
+      this.pendingExpedienteConfirm = true;
+      return;
+    }
+    this.pendingExpedienteConfirm = false;
+    this.estadoExpedienteChange.emit(newValue);
+  }
+
+  protected confirmExpediente(): void {
+    this.pendingExpedienteConfirm = false;
+    this.estadoExpedienteChange.emit('AUDIO_CONFORME');
+  }
+
+  protected cancelExpediente(): void {
+    this.pendingExpedienteConfirm = false;
   }
 
   protected expedienteDisplayLabel(estado: string): string {

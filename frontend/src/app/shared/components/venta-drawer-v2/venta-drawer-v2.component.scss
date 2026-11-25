@@ -227,6 +227,28 @@
   option { color: #152640; background: #fff; }
 }
 
+.venta-v2__expediente-inline-confirm {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-top: .3rem;
+  font-size: .72rem;
+  color: #f0c040;
+  span { flex: 1; }
+}
+.venta-v2__expediente-btn {
+  padding: .15rem .5rem;
+  border: none;
+  border-radius: .2rem;
+  font-size: .72rem;
+  font-family: inherit;
+  cursor: pointer;
+  &--yes { background: #4caf50; color: #fff; }
+  &--yes:hover { background: #43a047; }
+  &--no { background: rgba(255,255,255,.12); color: #ccc; }
+  &--no:hover { background: rgba(255,255,255,.2); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .venta-v2__summary, .venta-v2__summary-toggle { transition: none; }
   .venta-v2__backdrop { backdrop-filter: none; }

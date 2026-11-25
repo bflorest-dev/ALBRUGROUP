@@ -165,13 +165,20 @@
                 <div class="postventa-v2__expediente-edit">
                   <label class="postventa-v2__expediente-label">Estado expediente</label>
                   <div class="postventa-v2__expediente-row">
-                    <select class="postventa-v2__expediente-select" [ngModel]="lead.estadoExpediente" (ngModelChange)="cambiarEstadoExpediente($event)" [disabled]="facade.saving()">
+                    <select class="postventa-v2__expediente-select" [value]="lead.estadoExpediente" (change)="onExpedienteSelectChange($event)" [disabled]="facade.saving() || pendingExpedienteConfirm">
                       <option value="EXPEDIENTE_PENDIENTE">Expediente pendiente</option>
                       <option value="AUDIO_OBSERVADO">Audio observado</option>
                       <option value="SERVICIO_DESACTIVO">Servicio desactivo</option>
                       <option value="SERVICIO_SUSPENDIDO">Servicio suspendido</option>
                       <option value="AUDIO_CONFORME">Audio conforme</option>
                     </select>
+                    @if (pendingExpedienteConfirm) {
+                      <div class="postventa-v2__expediente-inline-confirm">
+                        <span>¿Confirmar? No podrá revertirse.</span>
+                        <button class="postventa-v2__expediente-btn postventa-v2__expediente-btn--yes" (click)="confirmExpediente()">Sí</button>
+                        <button class="postventa-v2__expediente-btn postventa-v2__expediente-btn--no" (click)="cancelExpediente()">No</button>
+                      </div>
+                    }
                   </div>
                 </div>
               }

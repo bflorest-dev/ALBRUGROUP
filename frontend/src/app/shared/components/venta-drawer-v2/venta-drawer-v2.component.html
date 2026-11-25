@@ -52,13 +52,20 @@
                 <dt>Estado expediente</dt>
                 @if (estadoExpediente !== 'AUDIO_CONFORME') {
                   <dd>
-                    <select class="venta-v2__expediente-select" [value]="estadoExpediente" (change)="estadoExpedienteChange.emit($any($event.target).value)" [disabled]="saving">
+                    <select class="venta-v2__expediente-select" [value]="estadoExpediente" (change)="onExpedienteSelectChange($event)" [disabled]="saving || pendingExpedienteConfirm">
                       <option value="EXPEDIENTE_PENDIENTE">Expediente pendiente</option>
                       <option value="AUDIO_OBSERVADO">Audio observado</option>
                       <option value="SERVICIO_DESACTIVO">Servicio desactivo</option>
                       <option value="SERVICIO_SUSPENDIDO">Servicio suspendido</option>
                       <option value="AUDIO_CONFORME">Audio conforme</option>
                     </select>
+                    @if (pendingExpedienteConfirm) {
+                      <div class="venta-v2__expediente-inline-confirm">
+                        <span>¿Confirmar? No podrá revertirse.</span>
+                        <button class="venta-v2__expediente-btn venta-v2__expediente-btn--yes" (click)="confirmExpediente()">Sí</button>
+                        <button class="venta-v2__expediente-btn venta-v2__expediente-btn--no" (click)="cancelExpediente()">No</button>
+                      </div>
+                    }
                   </dd>
                 } @else {
                   <dd>{{ expedienteDisplayLabel(estadoExpediente) }}</dd>

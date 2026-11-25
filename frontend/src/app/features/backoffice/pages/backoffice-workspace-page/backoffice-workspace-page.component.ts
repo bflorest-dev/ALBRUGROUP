@@ -1244,24 +1244,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected async onEstadoExpedienteChange(nuevoEstado: string): Promise<void> {
     const detail = this.detail();
     if (!detail) return;
-    if (nuevoEstado === 'AUDIO_CONFORME') {
-      this.confirmationService.confirm({
-        header: 'Confirmar audio conforme',
-        message: 'Una vez marcado como Audio conforme no podrá volver a modificarse. ¿Deseas continuar?',
-        icon: 'pi pi-exclamation-triangle',
-        acceptLabel: 'Sí, confirmar',
-        rejectLabel: 'Cancelar',
-        acceptButtonStyleClass: 'p-button-success',
-        rejectButtonStyleClass: 'p-button-text',
-        accept: () => void this.saveAction(
-          () => this.leadService.actualizarEstadoExpediente(detail.id!, nuevoEstado),
-          'Estado de expediente actualizado.',
-          () => this.reconcile(detail.id!)
-        ),
-        reject: () => void this.reconcile(detail.id!),
-      });
-      return;
-    }
     await this.saveAction(
       () => this.leadService.actualizarEstadoExpediente(detail.id!, nuevoEstado),
       'Estado de expediente actualizado.',
