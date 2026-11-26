@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, Input, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
@@ -19,6 +19,7 @@ export class PhoneNumberFieldComponent {
   @Input() prefixPlaceholder = '51';
   @Input() numberPlaceholder = 'Numero';
   @Input() numberInvalidMessage = '';
+  @Output() prefixChange = new EventEmitter<string>();
 
   focusNumber(): void {
     window.setTimeout(() => {
@@ -36,6 +37,7 @@ export class PhoneNumberFieldComponent {
     input.value = digits;
     this.prefixControl.setValue(digits ? `+${digits}` : '');
     this.prefixControl.markAsTouched();
+    this.prefixChange.emit(digits ? `+${digits}` : '');
   }
 
   protected onNumberInput(event: Event): void {

@@ -1239,15 +1239,15 @@ export class GtrWorkspaceFacade {
 
   constructor(@Inject(DOCUMENT) private readonly document: Document) {
     this.restoreHistoricosState();
-    this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
+    this.refreshIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
     this.formSubscription.add(
       this.intakeForm.controls.prefijo.valueChanges.subscribe((prefijo) => {
-        this.updateIntakeLeadValidation(prefijo);
+        this.refreshIntakeLeadValidation(prefijo);
       })
     );
     this.formSubscription.add(
       this.snapshotForm.controls.prefijo.valueChanges.subscribe((prefijo) => {
-        this.updateSnapshotLeadValidation(prefijo);
+        this.refreshSnapshotLeadValidation(prefijo);
       })
     );
     this.formSubscription.add(
@@ -1463,7 +1463,7 @@ export class GtrWorkspaceFacade {
     }
     this.isIntakeSubmitting.set(true);
     try {
-      this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
+      this.refreshIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
       if (this.intakeForm.invalid || !this.isRetroactiveDateValid() || !this.isRetroactiveHourValid()) {
         this.intakeForm.markAllAsTouched();
         if (this.isRetroactiveIntake()) {
@@ -5611,7 +5611,7 @@ export class GtrWorkspaceFacade {
       idOrigen: null
     });
     this.selectedIntakeCampaignId.set(null);
-    this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
+    this.refreshIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
     this.retroactiveDateControl.reset(this.previousLimaDateValue(this.currentOperationalClock()));
     this.retroactiveDateControl.markAsPristine();
     this.retroactiveDateControl.markAsUntouched();
@@ -5668,7 +5668,7 @@ export class GtrWorkspaceFacade {
     } else {
       usermetaControl.enable({ emitEvent: false });
     }
-    this.updateSnapshotLeadValidation(prefijoControl.value);
+    this.refreshSnapshotLeadValidation(prefijoControl.value);
   }
 
   private enableSnapshotIdentityControls(): void {
@@ -5709,7 +5709,7 @@ export class GtrWorkspaceFacade {
     return updatedSnapshot ? 'Snapshot inicial actualizado.' : 'Sin cambios para guardar.';
   }
 
-  private updateIntakeLeadValidation(prefijo?: string | null): void {
+  refreshIntakeLeadValidation(prefijo?: string | null): void {
     const leadControl = this.intakeForm.controls.lead;
     const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
 
@@ -5721,7 +5721,7 @@ export class GtrWorkspaceFacade {
     this.intakeForm.updateValueAndValidity({ emitEvent: false });
   }
 
-  private updateSnapshotLeadValidation(prefijo?: string | null): void {
+  refreshSnapshotLeadValidation(prefijo?: string | null): void {
     const leadControl = this.snapshotForm.controls.lead;
     const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
 

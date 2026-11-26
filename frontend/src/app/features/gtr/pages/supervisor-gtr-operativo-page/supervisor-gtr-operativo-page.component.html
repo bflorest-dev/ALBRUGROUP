@@ -259,6 +259,7 @@
         [numberMaxLength]="facade.intakeNumberMaxLength()"
         numberPlaceholder="Número de lead"
         [numberInvalidMessage]="facade.intakeNumberInvalidMessage()"
+        (prefixChange)="facade.refreshIntakeLeadValidation($event)"
       />
       <div class="intake-form__row">
         <label>Usuario WhatsApp (opcional)</label>

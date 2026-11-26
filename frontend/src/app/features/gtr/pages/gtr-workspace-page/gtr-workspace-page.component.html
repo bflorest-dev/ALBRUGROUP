@@ -372,6 +372,7 @@
         [numberMaxLength]="facade.intakeNumberMaxLength()"
         numberPlaceholder="Numero de lead"
         [numberInvalidMessage]="facade.intakeNumberInvalidMessage()"
+        (prefixChange)="facade.refreshIntakeLeadValidation($event)"
       />
       <label class="wide">
         <span>Usuario WhatsApp (opcional)</span>
@@ -550,6 +551,7 @@
             [numberMaxLength]="facade.snapshotNumberMaxLength()"
             numberPlaceholder="Numero de lead"
             [numberInvalidMessage]="facade.snapshotIdentityErrorMessage() ?? facade.intakeNumberInvalidMessage()"
+            (prefixChange)="facade.refreshSnapshotLeadValidation($event)"
             (focusout)="facade.normalizeSnapshotLeadNumber(facade.snapshotForm.controls.lead.value)"
           />
         } @else {

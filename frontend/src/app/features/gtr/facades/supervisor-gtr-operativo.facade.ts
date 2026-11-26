@@ -155,10 +155,10 @@ export class SupervisorGtrOperativoFacade {
   private realtimeStarted = false;
 
   constructor() {
-    this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
+    this.refreshIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
     this.intakeForm.controls.prefijo.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((prefijo) => this.updateIntakeLeadValidation(prefijo));
+      .subscribe((prefijo) => this.refreshIntakeLeadValidation(prefijo));
     this.intakeForm.controls.idCampana.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((idCampana) => this.onIntakeCampaignChange(idCampana));
@@ -706,7 +706,7 @@ export class SupervisorGtrOperativoFacade {
       idOrigen: null
     });
     this.intakeCampanaId.set(null);
-    this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
+    this.refreshIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
     this.retroactiveDateControl.reset(this.previousLimaDateValue(this.currentOperationalClock()));
     this.retroactiveDateControl.markAsPristine();
     this.retroactiveDateControl.markAsUntouched();
@@ -717,7 +717,7 @@ export class SupervisorGtrOperativoFacade {
     this.intakeForm.markAsUntouched();
   }
 
-  private updateIntakeLeadValidation(prefijo?: string | null): void {
+  refreshIntakeLeadValidation(prefijo?: string | null): void {
     const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
     const leadControl = this.intakeForm.controls.lead;
     this.intakeNumberMaxLength.set(isPeruPrefix ? 9 : 10);
