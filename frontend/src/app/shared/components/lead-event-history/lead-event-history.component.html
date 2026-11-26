@@ -1,6 +1,6 @@
 <div class="elh-wrap">
 
-  @if (!loading() && uniqueEventTypes().length > 1) {
+  @if (showFilterChips() && !loading() && uniqueEventTypes().length > 1) {
     <div class="elh-filters" aria-label="Filtrar por tipo de evento">
       <button
         type="button"
@@ -28,7 +28,7 @@
     </colgroup>
     <thead class="elh-thead">
       <tr>
-        <th class="elh-th">Evento</th>
+        <th class="elh-th elh-th--event">Evento</th>
         <th class="elh-th">Asesor</th>
         <th class="elh-th">Detalle</th>
         <th class="elh-th"><span class="sr-only">Nota</span></th>

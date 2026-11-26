@@ -7,92 +7,73 @@
   styleClass="gtr-dialog gtr-dialog--events"
 >
   <ng-template #header>
-    <span class="events-dialog-title">Historial del lead</span>
+    <div class="gdlg-header">
+      <strong class="gdlg-title">Historial del lead</strong>
+      @if (facade.activeEventsLead(); as lead) {
+        <span class="gdlg-lead-id">{{ facade.leadIdentity(lead) }}</span>
+      }
+    </div>
   </ng-template>
 
-  @if (facade.activeEventsLead(); as lead) {
-    <p class="wide helper">Lead {{ facade.leadIdentity(lead) }}</p>
-  }
-
-  <div class="history-toolbar" aria-label="Tipo de historial">
-    <div class="history-mode-tags">
+  <div class="gdlg-toolbar" aria-label="Navegación del historial">
+    <div class="gdlg-chip-group">
       <button
-        type="button"
-        class="history-mode-tag"
-        [class.history-mode-tag--selected]="facade.leadHistoryModeSelected('eventos-dia')"
+        type="button" class="gdlg-chip"
+        [class.gdlg-chip--active]="facade.leadHistoryModeSelected('eventos-dia')"
         (click)="facade.setLeadHistoryMode('eventos-dia')"
-      >
-        <p-tag value="Eventos del dia" severity="secondary" />
-      </button>
+      >Eventos del día</button>
       <button
-        type="button"
-        class="history-mode-tag"
-        [class.history-mode-tag--selected]="facade.leadHistoryModeSelected('tipificacion')"
+        type="button" class="gdlg-chip"
+        [class.gdlg-chip--active]="facade.leadHistoryModeSelected('tipificacion')"
         [disabled]="facade.isLoadingTipificationHistory()"
         (click)="facade.setLeadHistoryMode('tipificacion')"
-      >
-        <p-tag value="Por tipificacion" severity="info" />
-      </button>
+      >Por tipificación</button>
       <button
-        type="button"
-        class="history-mode-tag"
-        [class.history-mode-tag--selected]="facade.leadHistoryModeSelected('asesor')"
+        type="button" class="gdlg-chip"
+        [class.gdlg-chip--active]="facade.leadHistoryModeSelected('asesor')"
         [disabled]="facade.isLoadingTipificationHistory()"
         (click)="facade.setLeadHistoryMode('asesor')"
-      >
-        <p-tag value="Por asesor" severity="info" />
-      </button>
+      >Por asesor</button>
     </div>
 
-    @if (facade.leadHistoryMode() === 'eventos-dia' && facade.activeEventsLead(); as lead) {
-      @if (lead.tieneMultiplesRegistrosDia || lead.tieneRegistrosMismaCampanaDia) {
-        <div class="history-filter-tags" aria-label="Alertas del dia">
+    <div class="gdlg-chip-group gdlg-chip-group--right">
+      @if (facade.leadHistoryMode() === 'eventos-dia') {
+        @if (eventFilterOptions().length > 1) {
+          <button type="button" class="gdlg-chip" [class.gdlg-chip--active]="!activeEventFilter()"
+            (click)="activeEventFilter.set(null)">Todos</button>
+          @for (type of eventFilterOptions(); track type) {
+            <button type="button" class="gdlg-chip gdlg-chip--{{ type }}"
+              [class.gdlg-chip--active]="activeEventFilter() === type"
+              (click)="activeEventFilter.set(activeEventFilter() === type ? null : type)"
+            >{{ eventFilterLabels[type] ?? type }}</button>
+          }
+        }
+        @if (facade.activeEventsLead(); as lead) {
           @if (lead.tieneMultiplesRegistrosDia) {
-            <button
-              type="button"
-              class="event-alert-button"
-              [class.event-alert-button--selected]="facade.selectedEventAnomalyFilter() === 'multiple-records'"
+            <button type="button" class="gdlg-chip gdlg-chip--danger"
+              [class.gdlg-chip--active]="facade.selectedEventAnomalyFilter() === 'multiple-records'"
               (click)="facade.toggleEventAnomalyFilter('multiple-records')"
-            >
-              <p-tag value="Multiples registros" [styleClass]="facade.eventAnomalyTagClass('multiple-records', 'danger')" />
-            </button>
+            >Múltiples registros</button>
           }
           @if (lead.tieneRegistrosMismaCampanaDia) {
-            <button
-              type="button"
-              class="event-alert-button"
-              [class.event-alert-button--selected]="facade.selectedEventAnomalyFilter() === 'same-campaign'"
+            <button type="button" class="gdlg-chip gdlg-chip--violet"
+              [class.gdlg-chip--active]="facade.selectedEventAnomalyFilter() === 'same-campaign'"
               (click)="facade.toggleEventAnomalyFilter('same-campaign')"
-            >
-              <p-tag value="Misma campana" [styleClass]="facade.eventAnomalyTagClass('same-campaign', 'violet')" />
-            </button>
+            >Misma campaña</button>
           }
-        </div>
-      }
-    }
-
-    @if (facade.leadHistoryMode() !== 'eventos-dia') {
-      <div class="history-filter-tags" aria-label="Filtros del historial">
-        <button
-          type="button"
-          class="history-filter-tag"
-          [class.history-filter-tag--selected]="!facade.selectedTipificationHistoryFilter()"
-          (click)="facade.toggleTipificationHistoryFilter(null)"
-        >
-          <p-tag value="Todos" severity="secondary" />
-        </button>
-        @for (option of facade.tipificationHistoryGroupOptions(); track option.value) {
-          <button
-            type="button"
-            class="history-filter-tag"
-            [class.history-filter-tag--selected]="facade.tipificationHistoryFilterSelected(option.value)"
-            (click)="facade.toggleTipificationHistoryFilter(option.value)"
-          >
-            <p-tag [value]="option.label + ' (' + option.count + ')'" severity="info" />
-          </button>
         }
-      </div>
-    }
+      } @else {
+        <button type="button" class="gdlg-chip"
+          [class.gdlg-chip--active]="!facade.selectedTipificationHistoryFilter()"
+          (click)="facade.toggleTipificationHistoryFilter(null)">Todos</button>
+        @for (option of facade.tipificationHistoryGroupOptions(); track option.value) {
+          <button type="button" class="gdlg-chip"
+            [class.gdlg-chip--active]="facade.tipificationHistoryFilterSelected(option.value)"
+            (click)="facade.toggleTipificationHistoryFilter(option.value)"
+          >{{ option.label }} ({{ option.count }})</button>
+        }
+      }
+    </div>
   </div>
 
   @if (facade.leadHistoryMode() === 'eventos-dia') {
@@ -100,6 +81,9 @@
       [events]="facade.filteredEventRows()"
       [loading]="facade.isLoadingEvents()"
       [summarize]="eventSummary"
+      [showFilterChips]="false"
+      [selectedFilter]="activeEventFilter()"
+      (selectedFilterChange)="activeEventFilter.set($event)"
     />
   } @else {
     <p-table
@@ -110,11 +94,11 @@
     >
       <ng-template #header>
         <tr>
-          <th>Fecha</th>
-          <th>Tipificacion</th>
-          <th>Subtipificacion</th>
+          <th [style]="{ width: '120px' }">Fecha</th>
+          <th [style]="{ width: '18%' }">Tipificacion</th>
+          <th [style]="{ width: '22%' }">Subtipificacion</th>
           <th>Asesor</th>
-          <th>Comentario</th>
+          <th [style]="{ width: '48px' }">Nota</th>
         </tr>
       </ng-template>
 
@@ -124,7 +108,7 @@
             <td>{{ evento.createdAt | date: 'dd/MM hh:mm a' }}</td>
             <td>{{ facade.display(evento.tipificacion) }}</td>
             <td>{{ facade.display(evento.subtipificacion) }}</td>
-            <td>{{ facade.tipificationHistoryAdvisor(evento) | uppercase }}</td>
+            <td>{{ truncateAdvisor(facade.tipificationHistoryAdvisor(evento)) | uppercase }}</td>
             <td>
               <app-gtr-event-comment-popover [comment]="evento.comentario" />
             </td>

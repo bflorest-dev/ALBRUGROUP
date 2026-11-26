@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { EventoResponse } from '../../models/preventa/preventa.models';
@@ -17,8 +17,10 @@ export class LeadEventHistoryComponent {
   readonly emptyMessage = input<string>('No hay eventos para el día.');
   readonly summarize = input<((e: EventoResponse) => string) | null>(null);
 
+  readonly showFilterChips = input<boolean>(true);
+  readonly selectedFilter = model<string | null>(null);
+
   protected readonly skeletonRows = [1, 2, 3, 4];
-  protected readonly selectedFilter = signal<string | null>(null);
 
   protected readonly uniqueEventTypes = computed(() => {
     const seen = new Set<string>();
@@ -51,7 +53,12 @@ export class LeadEventHistoryComponent {
     const tipParts = [tipificacion, subtipificacion].filter(Boolean);
 
     if (accion === 'TIPIFICACION') return tipParts.length ? tipParts.join(' / ') : '-';
-    if (accion === 'ASIGNACION') return evento.nombreAsesorAsignado?.trim() || '-';
+    if (accion === 'ASIGNACION') {
+      const name = evento.nombreAsesorAsignado?.trim();
+      if (!name) return '-';
+      const parts = name.split(/\s+/);
+      return parts.length >= 3 ? `${parts[0]} ${parts[2]}` : name;
+    }
     if (tipParts.length) return tipParts.join(' / ');
     if ((accion === 'REGISTRO' || accion === 'REGISTRO_MASIVO') && evento.idCampana) return `Campaña ${evento.idCampana}`;
     return '-';
@@ -69,7 +76,10 @@ export class LeadEventHistoryComponent {
 
   protected actorName(evento: EventoResponse): string {
     const name = evento.nombreActor?.trim();
-    return name ? name.toUpperCase() : '-';
+    if (!name) return '-';
+    const parts = name.split(/\s+/);
+    const display = parts.length >= 3 ? `${parts[0]} ${parts[2]}` : name;
+    return display.toUpperCase();
   }
 
   protected hasComment(evento: EventoResponse): boolean {

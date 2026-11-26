@@ -70,9 +70,9 @@
   width: 100%;
 }
 
-// Column widths — event and note are fixed, asesor and detail share the rest
-.elh-col--event  { width: 128px; }
-.elh-col--asesor { width: 28%; }
+// Column widths — event and asesor get ~25% each, detail takes the rest
+.elh-col--event  { width: 22%; }
+.elh-col--asesor { width: 25%; }
 .elh-col--detail { width: auto; }
 .elh-col--note   { width: 36px; }
 
@@ -83,7 +83,7 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   padding: 0.4rem 0.6rem;
-  text-align: left;
+  text-align: center;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -104,8 +104,14 @@
   background: var(--app-surface-hover, #f9fafb);
 }
 
+// — Event header centered —
+.elh-th--event { text-align: center; }
+
 // — Event cell: badge + time stacked inside a wrapper —
+.elh-td--event { text-align: center; }
+
 .elh-event-stack {
+  align-items: center;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -113,7 +119,6 @@
 
 // — Event badge —
 .elh-badge {
-  align-self: flex-start;
   border-radius: 0.35rem;
   display: inline-block;
   font-size: 0.68rem;
@@ -140,6 +145,7 @@
 
 // — Asesor cell —
 .elh-td--asesor {
+  text-align: center;
   vertical-align: middle;
 }
 
@@ -148,12 +154,16 @@
   font-size: 0.75rem;
   font-weight: 700;
   overflow: hidden;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 // — Detail cell: micro-label + value stacked inside a wrapper —
+.elh-td--detail { text-align: center; }
+
 .elh-detail-stack {
+  align-items: center;
   display: flex;
   flex-direction: column;
   gap: 0.1rem;

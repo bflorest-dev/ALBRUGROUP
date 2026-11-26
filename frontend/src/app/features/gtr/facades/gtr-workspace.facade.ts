@@ -3811,6 +3811,13 @@ export class GtrWorkspaceFacade {
       return tipParts.length ? tipParts.join(' / ') : '-';
     }
 
+    if (accion === 'ASIGNACION') {
+      const name = evento.nombreAsesorAsignado?.trim();
+      if (!name) return '-';
+      const parts = name.split(/\s+/);
+      return parts.length >= 3 ? `${parts[0]} ${parts[2]}` : name;
+    }
+
     if (accion === 'REGISTRO' || accion === 'REGISTRO_MASIVO') {
       return this.eventCampaignLabel(evento) ?? '-';
     }

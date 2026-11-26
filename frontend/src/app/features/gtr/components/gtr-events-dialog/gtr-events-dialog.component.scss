@@ -1,147 +1,174 @@
-.events-dialog-title {
-  align-items: center;
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.helper {
-  color: var(--app-text-muted);
-}
-
-.wide {
-  grid-column: 1 / -1;
-}
-
-.history-toolbar {
-  display: grid;
-  gap: 0.75rem;
-  margin-bottom: 0.9rem;
-}
-
-.history-mode-tags,
-.history-filter-tags {
-  align-items: center;
+// — Header —
+.gdlg-header {
+  align-items: baseline;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.history-mode-tag,
-.history-filter-tag {
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-  max-width: 100%;
-  min-width: 0;
-  padding: 0;
-}
-
-.history-mode-tag:disabled {
-  cursor: wait;
-  opacity: 0.58;
-}
-
-.history-mode-tag:focus-visible,
-.history-filter-tag:focus-visible {
-  border-radius: 0.45rem;
-  outline: 2px solid var(--role-accent);
-  outline-offset: 2px;
-}
-
-:host ::ng-deep .history-mode-tag .p-tag,
-:host ::ng-deep .history-filter-tag .p-tag {
-  max-width: min(18rem, 100%);
-}
-
-:host ::ng-deep .history-mode-tag .p-tag-value,
-:host ::ng-deep .history-filter-tag .p-tag-value {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-:host ::ng-deep .history-mode-tag--selected .p-tag,
-:host ::ng-deep .history-filter-tag--selected .p-tag {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px color-mix(in srgb, var(--role-accent) 72%, transparent 28%);
-}
-
-.event-alert-button {
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-  padding: 0;
-}
-
-.event-alert-button:focus-visible {
-  border-radius: 0.45rem;
-  outline: 2px solid var(--role-accent);
-  outline-offset: 2px;
-}
-
-:host ::ng-deep .event-alert-tag {
-  border-radius: 0.35rem;
-  color: #ffffff;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0;
-  opacity: 0.72;
-  transition:
-    box-shadow 0.16s ease,
-    opacity 0.16s ease,
-    transform 0.16s ease;
-}
-
-:host ::ng-deep .event-alert-tag--danger {
-  background: #dc2626;
-}
-
-:host ::ng-deep .event-alert-tag--violet {
-  background: #7c3aed;
-}
-
-:host ::ng-deep .event-alert-tag--selected {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px color-mix(in srgb, var(--role-accent) 72%, transparent 28%);
-  opacity: 1;
-  transform: translateY(-1px);
-}
-
-.event-detail {
-  align-items: center;
-  display: flex;
-  gap: 0.4rem;
-  justify-content: space-between;
-}
-
-.event-detail__summary {
   flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 0.6rem;
   min-width: 0;
 }
 
-// Tabla base (la tabla de eventos no usa tipificaciones)
-:host ::ng-deep .gtr-table td,
-:host ::ng-deep .gtr-table th {
-  text-align: center;
-  vertical-align: middle;
-  white-space: normal;
-}
-
-:host ::ng-deep .gtr-table th {
-  color: var(--app-text-muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-:host ::ng-deep .gtr-table td {
+.gdlg-title {
   color: var(--app-text);
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
 }
 
+.gdlg-lead-id {
+  color: var(--app-text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+// — Header: positioning context + square top-right corner for the fold —
+:host ::ng-deep .gtr-dialog--events .p-dialog-header {
+  border-bottom: 1px solid var(--app-border, #e5e7eb);
+  border-top-right-radius: 0 !important;
+  overflow: visible;
+  padding: 0.65rem 1.25rem;
+  position: relative;
+}
+
+// Square top-right corner on the outer dialog so the fold sits flush
+:host ::ng-deep .gtr-dialog--events {
+  border-top-right-radius: 0 !important;
+}
+
+// — Close button: folded paper corner on the modal itself —
+:host ::ng-deep .gtr-dialog--events .p-dialog-close-button {
+  background: linear-gradient(to bottom left, #dc2626 50%, transparent 50%) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  height: 56px !important;
+  outline: 0 !important;
+  padding: 0 !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: 0 !important;
+  transition: filter 0.15s !important;
+  width: 56px !important;
+
+  svg {
+    fill: #fff !important;
+    height: 14px !important;
+    position: absolute !important;
+    right: 9px !important;
+    top: 9px !important;
+    width: 14px !important;
+  }
+
+  &:hover { filter: brightness(0.85) !important; }
+  &:focus-visible { filter: brightness(0.85) !important; }
+}
+
+// — Toolbar: 2-column grid, chips centered per group —
+.gdlg-toolbar {
+  display: grid;
+  gap: 0;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 0.9rem;
+  margin-top: 0.6rem;
+}
+
+.gdlg-chip-group {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+  padding: 0.3rem 0.5rem;
+}
+
+.gdlg-chip-group--right {
+  border-left: 1px solid var(--app-border, #e5e7eb);
+}
+
+// — Chips —
+.gdlg-chip {
+  background: transparent;
+  border: 1.5px solid var(--app-border, #e5e7eb);
+  border-radius: 999px;
+  color: var(--app-text-muted, #6b7280);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.2em 0.75em;
+  text-transform: uppercase;
+  transition:
+    background 0.14s,
+    border-color 0.14s,
+    color 0.14s;
+
+  &:hover:not(:disabled) {
+    border-color: var(--app-text-muted, #6b7280);
+    color: var(--app-text, #111827);
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.5;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--role-accent);
+    outline-offset: 2px;
+  }
+}
+
+.gdlg-chip--active {
+  background: var(--app-text, #111827);
+  border-color: var(--app-text, #111827);
+  color: #fff;
+}
+
+.gdlg-chip--tipificacion.gdlg-chip--active { background: #1d4ed8; border-color: #1d4ed8; }
+.gdlg-chip--registro.gdlg-chip--active     { background: #15803d; border-color: #15803d; }
+.gdlg-chip--asignacion.gdlg-chip--active   { background: #92400e; border-color: #92400e; }
+.gdlg-chip--contacto.gdlg-chip--active     { background: #475569; border-color: #475569; }
+
+.gdlg-chip--danger                        { border-color: #dc2626; color: #dc2626; }
+.gdlg-chip--danger.gdlg-chip--active      { background: #dc2626; border-color: #dc2626; color: #fff; }
+.gdlg-chip--violet                        { border-color: #7c3aed; color: #7c3aed; }
+.gdlg-chip--violet.gdlg-chip--active      { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+
+// — Tabla base (historial por tipificación / asesor) —
+:host ::ng-deep .gtr-table.p-datatable .p-datatable-thead > tr > th {
+  background: transparent !important;
+  border-bottom: 1px solid var(--app-border, #e5e7eb) !important;
+  color: var(--app-text-muted, #6b7280) !important;
+  font-size: 0.7rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  padding: 0.4rem 0.6rem !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+:host ::ng-deep .gtr-table.p-datatable .p-datatable-tbody > tr > td {
+  border-bottom: 1px solid var(--app-border, #e5e7eb) !important;
+  color: var(--app-text, #111827) !important;
+  font-size: 0.82rem !important;
+  padding: 0.5rem 0.6rem !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  white-space: normal !important;
+}
+
+:host ::ng-deep .gtr-table.p-datatable .p-datatable-tbody > tr:last-child > td {
+  border-bottom: 0 !important;
+}
+
+:host ::ng-deep .gtr-table.p-datatable .p-datatable-tbody > tr:hover > td {
+  background: var(--app-surface-hover, #f9fafb) !important;
+}
+
+// — Dialog widths —
 :host ::ng-deep .gtr-dialog {
   width: min(34rem, calc(100vw - 1rem));
 }
