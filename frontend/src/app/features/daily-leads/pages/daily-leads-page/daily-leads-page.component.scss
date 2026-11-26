@@ -409,15 +409,6 @@
     padding: 0 0.4rem;
   }
 
-  &__events-title {
-    font-weight: 800;
-  }
-
-  &__events-lead {
-    color: var(--app-text-muted);
-    margin: 0 0 1rem;
-  }
-
   &__event-comment {
     max-width: 16rem;
     min-width: 0;
@@ -584,14 +575,75 @@
   vertical-align: middle;
 }
 
+// — Events dialog header layout —
+.dlead-dlg-header {
+  align-items: baseline;
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.dlead-dlg-title {
+  color: var(--app-text);
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.dlead-dlg-lead-id {
+  color: var(--app-text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
 :host ::ng-deep .daily-leads-events-dialog {
+  border-top-right-radius: 0 !important;
   width: min(56rem, calc(100vw - 1rem));
+}
+
+:host ::ng-deep .daily-leads-events-dialog .p-dialog-header {
+  border-bottom: 1px solid var(--app-border, #e5e7eb);
+  border-top-right-radius: 0 !important;
+  overflow: visible;
+  padding: 0.65rem 1.25rem;
+  position: relative;
+}
+
+:host ::ng-deep .daily-leads-events-dialog .p-dialog-close-button {
+  background: linear-gradient(to bottom left, #dc2626 50%, transparent 50%) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  height: 56px !important;
+  outline: 0 !important;
+  padding: 0 !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: 0 !important;
+  transition: filter 0.15s !important;
+  width: 56px !important;
+
+  svg {
+    fill: #fff !important;
+    height: 14px !important;
+    position: absolute !important;
+    right: 9px !important;
+    top: 9px !important;
+    width: 14px !important;
+  }
+
+  &:hover { filter: brightness(0.85) !important; }
+  &:focus-visible { filter: brightness(0.85) !important; }
 }
 
 :host ::ng-deep .daily-leads-events-dialog .p-dialog-content {
   max-height: calc(100dvh - 7rem);
   overflow: auto;
   overscroll-behavior: contain;
+  padding-top: 0.75rem;
 }
 
 @container (max-width: 100rem) {

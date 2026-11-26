@@ -1016,7 +1016,10 @@ export class DailyLeadsFacade {
     }
 
     if (accion === 'ASIGNACION') {
-      return evento.nombreAsesorAsignado?.trim() || 'Sin asesor asignado';
+      const name = evento.nombreAsesorAsignado?.trim();
+      if (!name) return 'Sin asesor asignado';
+      const parts = name.split(/\s+/);
+      return parts.length >= 3 ? `${parts[0]} ${parts[2]}` : name;
     }
 
     if (tipParts.length) {

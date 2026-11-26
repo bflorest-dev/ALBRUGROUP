@@ -812,12 +812,13 @@
     styleClass="daily-leads-events-dialog"
   >
     <ng-template #header>
-      <span class="daily-leads__events-title">Historial de eventos del dia</span>
+      <div class="dlead-dlg-header">
+        <strong class="dlead-dlg-title">Historial del lead</strong>
+        @if (facade.activeHistoryLead(); as lead) {
+          <span class="dlead-dlg-lead-id">{{ lead.leadDisplay }}</span>
+        }
+      </div>
     </ng-template>
-
-    @if (facade.activeHistoryLead(); as lead) {
-      <p class="daily-leads__events-lead">Lead {{ lead.leadDisplay }}</p>
-    }
 
     <app-lead-event-history
       [events]="facade.eventRows()"
