@@ -26,7 +26,7 @@ import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
 
 const PERU_PHONE_PREFIX = '+51';
 const PERU_LEAD_PATTERN = /^9\d{8}$/;
-const INTERNATIONAL_LEAD_PATTERN = /^\d{6,15}$/;
+const INTERNATIONAL_LEAD_PATTERN = /^\d{6,10}$/;
 const USERMETA_PATTERN = /^@?[A-Za-z0-9._-]+$/;
 const CLARO_PROVIDER_NAME = 'CLARO';
 const CLARO_HIDDEN_TEAM_ID = 5;
@@ -73,7 +73,7 @@ export class SupervisorGtrOperativoFacade {
   readonly intakeNumberInvalidMessage = computed(() =>
     this.intakeNumberMaxLength() === 9
       ? 'Ingresa un celular válido de 9 dígitos que empiece con 9.'
-      : 'Ingresa un número válido para el prefijo seleccionado.'
+      : 'Ingresa un número válido de 6 a 10 dígitos para el prefijo seleccionado.'
   );
   readonly intakeForm = this.fb.group({
     prefijo: [PERU_PHONE_PREFIX, [Validators.pattern(/^\+\d{1,3}$/)]],
@@ -720,7 +720,7 @@ export class SupervisorGtrOperativoFacade {
   private updateIntakeLeadValidation(prefijo?: string | null): void {
     const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
     const leadControl = this.intakeForm.controls.lead;
-    this.intakeNumberMaxLength.set(isPeruPrefix ? 9 : 15);
+    this.intakeNumberMaxLength.set(isPeruPrefix ? 9 : 10);
     leadControl.setValidators([
       Validators.pattern(isPeruPrefix ? PERU_LEAD_PATTERN : INTERNATIONAL_LEAD_PATTERN)
     ]);

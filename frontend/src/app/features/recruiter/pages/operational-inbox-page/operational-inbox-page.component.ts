@@ -64,7 +64,7 @@ export class OperationalInboxPageComponent implements OnInit {
   protected readonly groupAssignmentError = signal('');
   protected readonly createGroupDrawerOpen = signal(false);
   protected readonly meetParticipantDrawerOpen = signal(false);
-  protected readonly groupMemberDrawerOpen = signal(false);
+  protected readonly contactOnlyDrawerOpen = signal(false);
   protected readonly expandedGroupId = signal<number | null>(null);
   protected readonly movingDetalleId = signal<number | null>(null);
   protected readonly moveDestinoId = signal<number | null>(null);
@@ -192,7 +192,7 @@ export class OperationalInboxPageComponent implements OnInit {
 
   protected openMeetAgenda(fechaHora?: string): void {
     this.meetParticipantDrawerOpen.set(false);
-    this.groupMemberDrawerOpen.set(false);
+    this.contactOnlyDrawerOpen.set(false);
     this.facade.closeDrawer();
     const agendaDate = fechaHora ? this.dateInLima(fechaHora) : null;
     if (agendaDate) {
@@ -306,7 +306,7 @@ export class OperationalInboxPageComponent implements OnInit {
 
   protected openGroupMember(detalle: GrupoCapacitacionDetalleResponse): void {
     this.meetParticipantDrawerOpen.set(false);
-    this.groupMemberDrawerOpen.set(true);
+    this.contactOnlyDrawerOpen.set(true);
     this.facade.openDetail(detalle.postulacion);
   }
 
@@ -521,14 +521,14 @@ export class OperationalInboxPageComponent implements OnInit {
   }
 
   protected openMeetParticipant(participant: SesionMeetParticipanteResponse): void {
-    this.groupMemberDrawerOpen.set(false);
+    this.contactOnlyDrawerOpen.set(true);
     this.meetParticipantDrawerOpen.set(true);
     this.facade.openDetail(participant.postulacion);
   }
 
   protected closeDetailDrawer(): void {
     this.meetParticipantDrawerOpen.set(false);
-    this.groupMemberDrawerOpen.set(false);
+    this.contactOnlyDrawerOpen.set(false);
     this.facade.closeDrawer();
   }
 

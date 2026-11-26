@@ -60,15 +60,25 @@ export class GestionDrawerComponent implements OnInit {
  readonly contacting=signal<'LLAMADA'|'WHATSAPP'|null>(null);
  readonly contacted=signal<'LLAMADA'|'WHATSAPP'|null>(null);
  readonly contactAttempt=signal<{channel:'LLAMADA'|'WHATSAPP';at:string}|null>(null);
- readonly p=computed(()=>this.state()?.postulacion??this.postulacion());
+ readonly p=computed(()=>{
+  const input=this.postulacion();
+  const loaded=this.state()?.postulacion;
+  if(!loaded)return input;
+  // Al abrir desde la agenda, la respuesta de gestión puede llegar con un
+  // postulante parcial. Conservamos la identidad que ya tenemos en la fila
+  // para no dejar el encabezado vacío ni perder los canales de contacto.
+  if(this.contactOnly()&&!this.hasCandidateIdentity(loaded.postulante))return {...loaded,postulante:input.postulante};
+  return loaded;
+ });
+ readonly candidate=computed(()=>this.hasCandidateIdentity(this.p().postulante)?this.p().postulante:this.postulacion().postulante);
  readonly pending=computed(()=>this.state()?.actividades.find(a=>a.estado==='PENDIENTE'));
  readonly pendingMeet=computed(()=>{const next=this.pending();return next?.tipo==='ENTREVISTA'&&next.modalidad==='MEET';});
  readonly active=computed(()=>!!this.state()?.accionesDisponibles.length);
  readonly canContact=computed(()=>this.active()||this.contactOnly());
  readonly canEditDatos=computed(()=>this.p().etapa==='RECLUTAMIENTO');
- readonly hasPhone=computed(()=>this.hasContactValue(this.p().postulante.numeroExclusivoLlamadas)||this.hasContactValue(this.p().postulante.celular));
- readonly hasWhatsApp=computed(()=>this.hasContactValue(this.p().postulante.celular)||!!normalizeUsermeta(this.p().postulante.usuarioMeta));
- readonly datosIncomplete=computed(()=>!this.p().postulante.nombres||!this.p().postulante.apellidos||!this.p().postulante.documento||!this.p().postulante.celular);
+ readonly hasPhone=computed(()=>this.hasContactValue(this.candidate().numeroExclusivoLlamadas)||this.hasContactValue(this.candidate().celular));
+ readonly hasWhatsApp=computed(()=>this.hasContactValue(this.candidate().celular)||!!normalizeUsermeta(this.candidate().usuarioMeta));
+ readonly datosIncomplete=computed(()=>!this.candidate().nombres||!this.candidate().apellidos||!this.candidate().documento||!this.candidate().celular);
  readonly form=this.fb.nonNullable.group({
   fechaHoraGestion:[this.now(),Validators.required], modalidadContacto:['LLAMADA',Validators.required],
   motivo:[''], observacion:['',Validators.maxLength(2000)], programarReintento:[false],
@@ -81,6 +91,11 @@ export class GestionDrawerComponent implements OnInit {
  readonly changed=signal(0);
  readonly meetBooking=computed(()=>{this.changed();return ['AGENDAR_MEET','REPROGRAMAR_MEET'].includes(this.action()??'');});
  readonly scheduled=computed(()=>{this.changed();return ['AGENDAR','REPROGRAMAR'].includes(this.action()??'')||(this.action()==='SEGUIMIENTO'&&this.form.controls.programarReintento.value);});
+ private hasCandidateIdentity(candidate:PostulacionResponse['postulante']|null|undefined):boolean {
+  if(!candidate)return false;
+  return [candidate.nombres,candidate.apellidos,candidate.documento,candidate.celular,candidate.usuarioMeta]
+   .some(value=>typeof value==='string'&&value.trim().length>0);
+ }
   showManualManagementDetails(action:GestionAccion):boolean {
    // La gestión empieza desde Llamar o WhatsApp. La fecha/canal del contacto
    // son automáticos; solo la próxima actividad mantiene fecha y hora editables.
@@ -269,8 +284,8 @@ export class GestionDrawerComponent implements OnInit {
     error:e=>{this.busy.set(false);this.contacting.set(null);this.error.set(this.errorText(e));}
    });
  }
- displayName():string {const candidate=this.p().postulante;const name=[candidate.nombres,candidate.apellidos].filter(Boolean).join(' ').trim();const meta=normalizeUsermeta(candidate.usuarioMeta);return name||(meta?`@${meta}`:'Postulante sin nombre');}
- contactReference(channel:'LLAMADA'|'WHATSAPP'):string {const candidate=this.p().postulante;const meta=normalizeUsermeta(candidate.usuarioMeta);return channel==='LLAMADA'?(candidate.numeroExclusivoLlamadas||candidate.celular||'Sin número'):(candidate.celular||(meta?`@${meta}`:'Sin contacto'));}
+ displayName():string {const candidate=this.candidate();const name=[candidate.nombres,candidate.apellidos].filter(Boolean).join(' ').trim();const meta=normalizeUsermeta(candidate.usuarioMeta);return name||(meta?`@${meta}`:'Postulante sin nombre');}
+ contactReference(channel:'LLAMADA'|'WHATSAPP'):string {const candidate=this.candidate();const meta=normalizeUsermeta(candidate.usuarioMeta);return channel==='LLAMADA'?(candidate.numeroExclusivoLlamadas||candidate.celular||'Sin número'):(candidate.celular||(meta?`@${meta}`:'Sin contacto'));}
  private hasContactValue(value:unknown):boolean {return String(value??'').trim().length>0;}
   onMeetDateInput(event:Event):void {
    const input=event.target as HTMLInputElement;

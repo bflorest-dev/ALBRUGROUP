@@ -588,6 +588,12 @@
   width: min(56rem, calc(100vw - 1rem));
 }
 
+:host ::ng-deep .daily-leads-events-dialog .p-dialog-content {
+  max-height: calc(100dvh - 7rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
 @container (max-width: 100rem) {
   .daily-leads {
     padding: 1rem;

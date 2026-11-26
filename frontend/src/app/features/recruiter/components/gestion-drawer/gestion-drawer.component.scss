@@ -88,6 +88,15 @@ footer{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-ite
 .appointment--agenda-route .meet-route__action{box-sizing:border-box;min-width:0;overflow-wrap:anywhere;white-space:normal}
 @media(max-width:640px){.appointment--agenda-route .meet-route{height:auto}.appointment--agenda-route .meet-route__action{width:100%}}
 
+/* En el contexto de la agenda, la reprogramación es una acción lateral del Meet,
+   no una fila suelta debajo de la información. */
+.appointment--meet-context{align-items:center;display:grid;gap:18px;grid-template-columns:minmax(0,1fr) auto}
+.appointment--meet-context .appointment__summary{min-width:0}
+.appointment--meet-context .inline-actions{align-items:center;justify-content:flex-end;margin:0}
+.appointment--meet-context .inline-actions button{min-height:40px;white-space:nowrap}
+.appointment--meet-context .inline-actions .primary{background:#e5f3ee;border-color:#b7d9cc;color:var(--teal)}
+@media(max-width:560px){.appointment--meet-context{display:block}.appointment--meet-context .inline-actions{justify-content:flex-start;margin-top:16px}.appointment--meet-context .inline-actions button{width:100%}}
+
 /* El resultado de un intento se mantiene compacto y usa el mismo selector visual de la bandeja. */
 .management-form{margin-top:8px}
 .form-back{align-items:center;display:inline-flex;gap:6px}

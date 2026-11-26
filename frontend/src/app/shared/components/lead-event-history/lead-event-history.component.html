@@ -1,0 +1,92 @@
+<div class="elh-wrap">
+
+  @if (!loading() && uniqueEventTypes().length > 1) {
+    <div class="elh-filters" aria-label="Filtrar por tipo de evento">
+      <button
+        type="button"
+        class="elh-filter-chip"
+        [class.elh-filter-chip--active]="!selectedFilter()"
+        (click)="toggleFilter(null)"
+      >Todos</button>
+      @for (type of uniqueEventTypes(); track type) {
+        <button
+          type="button"
+          class="elh-filter-chip elh-filter-chip--{{ type }}"
+          [class.elh-filter-chip--active]="selectedFilter() === type"
+          (click)="toggleFilter(type)"
+        >{{ eventLabel(type) }}</button>
+      }
+    </div>
+  }
+
+  <table class="elh-table">
+    <colgroup>
+      <col class="elh-col elh-col--event" />
+      <col class="elh-col elh-col--asesor" />
+      <col class="elh-col elh-col--detail" />
+      <col class="elh-col elh-col--note" />
+    </colgroup>
+    <thead class="elh-thead">
+      <tr>
+        <th class="elh-th">Evento</th>
+        <th class="elh-th">Asesor</th>
+        <th class="elh-th">Detalle</th>
+        <th class="elh-th"><span class="sr-only">Nota</span></th>
+      </tr>
+    </thead>
+    <tbody class="elh-tbody">
+      @if (loading()) {
+        @for (row of skeletonRows; track row) {
+          <tr class="elh-row elh-row--skeleton">
+            <td class="elh-td">
+              <div class="elh-event-stack">
+                <p-skeleton width="6.5rem" height="1.4rem" borderRadius="0.35rem" />
+                <p-skeleton width="3.5rem" height="0.75rem" />
+              </div>
+            </td>
+            <td class="elh-td"><p-skeleton width="8rem" height="0.9rem" /></td>
+            <td class="elh-td"><p-skeleton width="60%" height="0.9rem" /></td>
+            <td class="elh-td"></td>
+          </tr>
+        }
+      } @else if (!filteredEvents().length) {
+        <tr><td class="elh-empty" colspan="4">{{ emptyMessage() }}</td></tr>
+      } @else {
+        @for (evento of filteredEvents(); track evento.id) {
+          <tr class="elh-row">
+            <td class="elh-td elh-td--event">
+              <div class="elh-event-stack">
+                <span class="elh-badge elh-badge--{{ eventType(evento.accion) }}">{{ eventLabel(evento.accion) }}</span>
+                <time class="elh-event-time">{{ evento.createdAt | date: 'hh:mm a' }}</time>
+              </div>
+            </td>
+            <td class="elh-td elh-td--asesor">
+              <strong class="elh-actor-name">{{ actorName(evento) }}</strong>
+            </td>
+            <td class="elh-td elh-td--detail">
+              <div class="elh-detail-stack">
+                @if (detailLabel(evento.accion); as label) {
+                  <span class="elh-detail-label">{{ label }}</span>
+                }
+                <span class="elh-detail-value">{{ summary(evento) }}</span>
+              </div>
+            </td>
+            <td class="elh-td elh-td--note">
+              @if (hasComment(evento)) {
+                <button
+                  type="button"
+                  class="elh-note-btn"
+                  [pTooltip]="evento.comentario ?? ''"
+                  tooltipPosition="left"
+                  aria-label="Ver comentario"
+                >
+                  <i class="ti ti-message-circle" aria-hidden="true"></i>
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

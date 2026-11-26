@@ -96,54 +96,11 @@
   </div>
 
   @if (facade.leadHistoryMode() === 'eventos-dia') {
-    <p-table
-      [value]="facade.filteredEventRows()"
-      [rowHover]="true"
-      [tableStyle]="{ 'min-width': '680px' }"
-      styleClass="p-datatable-sm gtr-table"
-    >
-      <ng-template #header>
-        <tr>
-          <th>Hora</th>
-          <th>Evento</th>
-          <th>Responsable</th>
-          <th>Detalle</th>
-        </tr>
-      </ng-template>
-
-      <ng-template #body let-evento>
-        @if (!facade.isLoadingEvents()) {
-          <tr>
-            <td>{{ evento.createdAt | date: 'hh:mm a' }}</td>
-            <td><p-tag [value]="facade.display(evento.accion)" severity="secondary" /></td>
-            <td>{{ facade.display(evento.nombreActor) | uppercase }}</td>
-            <td>
-              <div class="event-detail">
-                <span class="event-detail__summary">{{ facade.eventSummary(evento) }}</span>
-                <app-gtr-event-comment-popover [comment]="evento.comentario" />
-              </div>
-            </td>
-          </tr>
-        }
-      </ng-template>
-
-      <ng-template #emptymessage>
-        @if (facade.isLoadingEvents()) {
-          @for (row of [1, 2, 3, 4]; track row) {
-            <tr>
-              <td><p-skeleton width="4.25rem" height="1rem" /></td>
-              <td><p-skeleton width="6.5rem" height="1.5rem" borderRadius="999px" /></td>
-              <td><p-skeleton width="8rem" height="1rem" /></td>
-              <td><p-skeleton width="100%" height="1rem" /></td>
-            </tr>
-          }
-        } @else {
-          <tr>
-            <td colspan="4">No hay eventos para el dia.</td>
-          </tr>
-        }
-      </ng-template>
-    </p-table>
+    <app-lead-event-history
+      [events]="facade.filteredEventRows()"
+      [loading]="facade.isLoadingEvents()"
+      [summarize]="eventSummary"
+    />
   } @else {
     <p-table
       [value]="facade.filteredTipificationHistoryRows()"

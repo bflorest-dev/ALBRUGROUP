@@ -1,4 +1,4 @@
-import { DatePipe, UpperCasePipe } from '@angular/common';
+import { UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, effect, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -16,14 +16,15 @@ import { DateFieldComponent } from '../../../../shared/components/date-field/dat
 import { PhoneActionButtonComponent } from '../../../../shared/components/phone-action-button/phone-action-button.component';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
+import { LeadEventHistoryComponent } from '../../../../shared/components/lead-event-history/lead-event-history.component';
 import { DailyLeadsMetricsBarComponent } from '../../components/daily-leads-metrics-bar/daily-leads-metrics-bar.component';
 import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
+import { EventoResponse } from '../../../../shared/models/preventa/preventa.models';
 
 @Component({
   selector: 'app-daily-leads-page',
   standalone: true,
   imports: [
-    DatePipe,
     UpperCasePipe,
     FormsModule,
     ReactiveFormsModule,
@@ -42,6 +43,7 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
     PhoneActionButtonComponent,
     PhoneNumberFieldComponent,
     TipificationStackComponent,
+    LeadEventHistoryComponent,
     DailyLeadsMetricsBarComponent
   ],
   providers: [DailyLeadsFacade],
@@ -51,6 +53,7 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
 })
 export class DailyLeadsPageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(DailyLeadsFacade);
+  protected readonly eventSummary = (e: EventoResponse) => this.facade.eventSummary(e);
   protected readonly visibleTipificationColumnOptions: { label: string; value: 'primera' | 'mayor' | 'ultima' }[] = [
     { label: 'Ultima', value: 'ultima' },
     { label: 'Mayor', value: 'mayor' },

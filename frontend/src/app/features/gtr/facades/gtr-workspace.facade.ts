@@ -222,7 +222,7 @@ type LoadError = {
 
 const PERU_PHONE_PREFIX = '+51';
 const PERU_LEAD_PATTERN = /^9\d{8}$/;
-const INTERNATIONAL_LEAD_PATTERN = /^\d{6,15}$/;
+const INTERNATIONAL_LEAD_PATTERN = /^\d{6,10}$/;
 const USERMETA_PATTERN = /^@?[A-Za-z0-9._-]+$/;
 const RESTRICT_RETROACTIVE_INTAKE_BY_TIME = true;
 const DEFAULT_PLAN_OFERTA_FILTERS: PlanOfertaFilterState = {
@@ -887,7 +887,7 @@ export class GtrWorkspaceFacade {
   readonly intakeNumberInvalidMessage = computed(() =>
     this.intakeNumberMaxLength() === 9
       ? 'Ingresa un celular valido de 9 digitos que empiece con 9.'
-      : 'Ingresa un numero valido para el prefijo seleccionado.'
+      : 'Ingresa un numero valido de 6 a 10 digitos para el prefijo seleccionado.'
   );
   intakeIdentityMessage(): string | null {
     if (!this.intakeForm.touched && !this.intakeForm.dirty) {
@@ -5713,7 +5713,7 @@ export class GtrWorkspaceFacade {
     const leadControl = this.intakeForm.controls.lead;
     const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
 
-    this.intakeNumberMaxLength.set(isPeruPrefix ? 9 : 15);
+    this.intakeNumberMaxLength.set(isPeruPrefix ? 9 : 10);
     leadControl.setValidators([
       Validators.pattern(isPeruPrefix ? PERU_LEAD_PATTERN : INTERNATIONAL_LEAD_PATTERN)
     ]);
@@ -5725,7 +5725,7 @@ export class GtrWorkspaceFacade {
     const leadControl = this.snapshotForm.controls.lead;
     const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
 
-    this.snapshotNumberMaxLength.set(isPeruPrefix ? 9 : 15);
+    this.snapshotNumberMaxLength.set(isPeruPrefix ? 9 : 10);
     leadControl.setValidators([
       Validators.pattern(isPeruPrefix ? PERU_LEAD_PATTERN : INTERNATIONAL_LEAD_PATTERN)
     ]);

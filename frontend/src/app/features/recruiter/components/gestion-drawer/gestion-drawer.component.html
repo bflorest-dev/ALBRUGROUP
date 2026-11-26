@@ -3,7 +3,7 @@
  <header>
   <div class="identity">
    <div class="identity__copy"><h2 id="candidate-name">{{ displayName() }}</h2>
-    <p><span>{{ label(p().puestoObjetivo) }}</span><span aria-hidden="true"> · </span><span>{{ label(p().negocio) }}</span><span class="document">{{ p().postulante.tipoDocumento || 'Documento pendiente' }} {{ p().postulante.documento || '' }}</span></p>
+    <p><span>{{ label(p().puestoObjetivo) }}</span><span aria-hidden="true"> · </span><span>{{ label(p().negocio) }}</span><span class="document">{{ candidate().tipoDocumento || 'Documento pendiente' }} {{ candidate().documento || '' }}</span></p>
    </div>
    <span class="badge">{{ p().etapa==='RECLUTAMIENTO'?label(p().estadoBandeja):label(p().etapa) }}</span>
   </div>
@@ -28,7 +28,7 @@
      <div class="last-management__body"><strong>{{ context.ultimoResultado || 'Aún sin resultado registrado' }}</strong><time>{{ date(context.ultimaGestionAt) }}</time></div>
     </section>
     @if(pending(); as next) {
-     <section class="appointment" [class.overdue]="overdue()" [class.appointment--meet]="pendingMeet()" [class.appointment--agenda-route]="pendingMeet() && !meetContext()" aria-label="Próxima actividad">
+     <section class="appointment" [class.overdue]="overdue()" [class.appointment--meet]="pendingMeet()" [class.appointment--agenda-route]="pendingMeet() && !meetContext()" [class.appointment--meet-context]="pendingMeet() && meetContext()" aria-label="Próxima actividad">
       <div class="appointment__summary">
        <div class="appointment-heading">
         <div class="appointment-heading__icon" aria-hidden="true"><i class="ti ti-calendar-event"></i></div>

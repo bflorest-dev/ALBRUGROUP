@@ -95,7 +95,7 @@
                 @for (participant of meetParticipants(session); track participant.idPostulacion) {
                   <li>
                     <span class="meet-session__participant">
-                      <span><strong>{{ displayName(participant.postulacion.postulante) }}</strong><small>{{ participant.postulacion.postulante.documento || '@' + (participant.postulacion.postulante.usuarioMeta || '') }}</small></span>
+                      <span><strong>{{ displayName(participant.postulacion.postulante) }}</strong><span class="meet-session__participant-meta"><small>{{ participant.postulacion.postulante.documento || '@' + (participant.postulacion.postulante.usuarioMeta || '') }}</small><small class="meet-session__participant-contact"><i class="ti ti-device-mobile" aria-hidden="true"></i>{{ participant.postulacion.postulante.celular || participant.postulacion.postulante.numeroExclusivoLlamadas || 'Sin celular' }}</small></span></span>
                       <em
                         [class]="meetParticipantStatusClass(participant)"
                         [attr.title]="meetParticipantStatusLabel(participant)"
@@ -142,13 +142,16 @@
                   <article class="meet-participant" role="listitem">
                     <div class="meet-participant__identity">
                       <strong>{{ displayName(participant.postulacion.postulante) }}</strong>
-                      <small>{{ participant.postulacion.postulante.documento || '@' + (participant.postulacion.postulante.usuarioMeta || '') }}</small>
+                      <span class="meet-participant__meta"><small>{{ participant.postulacion.postulante.documento || '@' + (participant.postulacion.postulante.usuarioMeta || '') }}</small><small class="meet-participant__contact-line"><i class="ti ti-device-mobile" aria-hidden="true"></i>{{ participant.postulacion.postulante.celular || participant.postulacion.postulante.numeroExclusivoLlamadas || 'Sin celular' }}</small></span>
                       @if (participant.asistencia !== 'ASISTIO' && !participant.resultadoEvaluacion) {
                         <button type="button" class="meet-participant__reschedule" (click)="openMeetParticipant(participant)" [attr.aria-label]="meetParticipantActionLabel(participant) + ' para ' + displayName(participant.postulacion.postulante)">
                           <i class="ti ti-calendar-plus" aria-hidden="true"></i>{{ meetParticipantActionLabel(participant) }}
                         </button>
                       }
                     </div>
+                    <button type="button" class="meet-participant__contact-action" title="Abrir ficha de contacto" [attr.aria-label]="'Abrir ficha de contacto de ' + displayName(participant.postulacion.postulante)" (click)="openMeetParticipant(participant)">
+                      <i class="ti ti-phone" aria-hidden="true"></i>
+                    </button>
                     <div class="field field--compact">
                       <span>Asistencia</span>
                       <div class="segmented-control" role="radiogroup" aria-label="Asistencia">
@@ -559,5 +562,5 @@
 }
 
 @if (facade.drawer() === 'detail' && facade.selectedPostulacion(); as selected) {
-  <app-gestion-reclutamiento-drawer [postulacion]="selected" [meetContext]="meetParticipantDrawerOpen()" [contactOnly]="groupMemberDrawerOpen()" (closed)="closeDetailDrawer()" (saved)="facade.load()" (meetAgendaRequested)="openMeetAgenda($event)" />
+  <app-gestion-reclutamiento-drawer [postulacion]="selected" [meetContext]="meetParticipantDrawerOpen()" [contactOnly]="contactOnlyDrawerOpen()" (closed)="closeDetailDrawer()" (saved)="facade.load()" (meetAgendaRequested)="openMeetAgenda($event)" />
 }

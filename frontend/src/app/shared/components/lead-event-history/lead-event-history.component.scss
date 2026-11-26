@@ -1,0 +1,225 @@
+.elh-wrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+// — Filter chips —
+.elh-filters {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.elh-filter-chip {
+  background: transparent;
+  border: 1.5px solid var(--app-border, #e5e7eb);
+  border-radius: 999px;
+  color: var(--app-text-muted, #6b7280);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.2em 0.75em;
+  text-transform: uppercase;
+  transition:
+    background 0.14s,
+    border-color 0.14s,
+    color 0.14s;
+
+  &:hover {
+    border-color: var(--app-text-muted, #6b7280);
+    color: var(--app-text, #111827);
+  }
+}
+
+.elh-filter-chip--active {
+  background: var(--app-text, #111827);
+  border-color: var(--app-text, #111827);
+  color: #fff;
+}
+
+.elh-filter-chip--tipificacion.elh-filter-chip--active {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.elh-filter-chip--registro.elh-filter-chip--active {
+  background: #15803d;
+  border-color: #15803d;
+}
+
+.elh-filter-chip--asignacion.elh-filter-chip--active {
+  background: #92400e;
+  border-color: #92400e;
+}
+
+.elh-filter-chip--contacto.elh-filter-chip--active,
+.elh-filter-chip--default.elh-filter-chip--active {
+  background: #475569;
+  border-color: #475569;
+}
+
+// — Table —
+.elh-table {
+  border-collapse: collapse;
+  min-width: 480px;
+  table-layout: fixed;
+  width: 100%;
+}
+
+// Column widths — event and note are fixed, asesor and detail share the rest
+.elh-col--event  { width: 128px; }
+.elh-col--asesor { width: 28%; }
+.elh-col--detail { width: auto; }
+.elh-col--note   { width: 36px; }
+
+.elh-th {
+  border-bottom: 1px solid var(--app-border, #e5e7eb);
+  color: var(--app-text-muted, #6b7280);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.elh-td {
+  border-bottom: 1px solid var(--app-border, #e5e7eb);
+  color: var(--app-text, #111827);
+  font-size: 0.82rem;
+  padding: 0.6rem 0.6rem;
+  vertical-align: middle;
+}
+
+.elh-row:last-child .elh-td {
+  border-bottom: 0;
+}
+
+.elh-row:hover .elh-td {
+  background: var(--app-surface-hover, #f9fafb);
+}
+
+// — Event cell: badge + time stacked inside a wrapper —
+.elh-event-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+// — Event badge —
+.elh-badge {
+  align-self: flex-start;
+  border-radius: 0.35rem;
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  padding: 0.25em 0.55em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.elh-badge--tipificacion { background: #dbeafe; color: #1d4ed8; }
+.elh-badge--registro     { background: #dcfce7; color: #15803d; }
+.elh-badge--asignacion   { background: #fef3c7; color: #92400e; }
+.elh-badge--contacto,
+.elh-badge--default      { background: #f1f5f9; color: #475569; }
+
+// — Time below badge —
+.elh-event-time {
+  color: var(--app-text-muted, #6b7280);
+  font-size: 0.7rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+// — Asesor cell —
+.elh-td--asesor {
+  vertical-align: middle;
+}
+
+.elh-actor-name {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// — Detail cell: micro-label + value stacked inside a wrapper —
+.elh-detail-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.elh-detail-label {
+  color: var(--app-text-muted, #6b7280);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.elh-detail-value {
+  display: block;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// — Note column —
+.elh-td--note {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.elh-note-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0.35rem;
+  color: var(--app-text-muted, #6b7280);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 1rem;
+  justify-content: center;
+  padding: 0.2rem;
+  transition: color 0.15s;
+
+  &:hover { color: var(--role-accent, #1a66cc); }
+
+  &:focus-visible {
+    outline: 2px solid var(--role-accent, #1a66cc);
+    outline-offset: 2px;
+  }
+}
+
+
+// — Empty state —
+.elh-empty {
+  color: var(--app-text-muted, #6b7280);
+  font-size: 0.84rem;
+  padding: 1.5rem 0.6rem;
+  text-align: center;
+}
+
+// — sr-only utility —
+.sr-only {
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}

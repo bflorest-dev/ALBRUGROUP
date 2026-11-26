@@ -24,6 +24,7 @@
       class="phone-field__number"
       [formControl]="numberControl"
       [placeholder]="numberPlaceholder"
+      [attr.maxlength]="numberMaxLength"
       autocomplete="off"
       aria-label="Numero telefonico"
       (input)="onNumberInput($event)"
