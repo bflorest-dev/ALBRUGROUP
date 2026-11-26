@@ -70,7 +70,7 @@
           <button type="button" class="gdlg-chip"
             [class.gdlg-chip--active]="facade.tipificationHistoryFilterSelected(option.value)"
             (click)="facade.toggleTipificationHistoryFilter(option.value)"
-          >{{ option.label }} ({{ option.count }})</button>
+          >{{ truncateAdvisor(option.label) }} ({{ option.count }})</button>
         }
       }
     </div>

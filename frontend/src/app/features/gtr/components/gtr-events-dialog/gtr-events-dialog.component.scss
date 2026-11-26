@@ -83,7 +83,16 @@
 }
 
 .gdlg-chip-group--right {
+  align-content: flex-start;
   border-left: 1px solid var(--app-border, #e5e7eb);
+  max-height: 5.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--app-border, #e5e7eb) transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar { width: 3px; }
+  &::-webkit-scrollbar-thumb { background: var(--app-border, #e5e7eb); border-radius: 2px; }
 }
 
 // — Chips —
