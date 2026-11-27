@@ -206,6 +206,7 @@ export class AsesorVentasWorkspaceFacade {
   readonly detailDialogOpen = signal(false);
   readonly activeDataTab = signal<ActiveDataTab>('datos');
   readonly showComment = signal(false);
+  readonly canViewPreviousComment = computed(() => !this.isSalesAdvisorOrOjt());
   readonly skeletonRows = Array.from({ length: 8 });
   readonly todayLabel = this.capitalizeFirst(
     new Intl.DateTimeFormat('es-PE', {
@@ -1954,7 +1955,7 @@ export class AsesorVentasWorkspaceFacade {
     this.tipificacionForm.reset({
       codigoTipificacion: '',
       codigoSubtipificacion: '',
-      comentario: '',
+      comentario: this.canViewPreviousComment() ? detail.comentario ?? '' : '',
       horaProgramada: '',
       idPlataformaDigitalOfrecida: null,
       tecnologia: '',

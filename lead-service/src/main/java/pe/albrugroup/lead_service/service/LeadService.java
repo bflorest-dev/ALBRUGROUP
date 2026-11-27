@@ -341,6 +341,7 @@ public class LeadService {
     private static final Set<String> ROLES_RANKING_ASESOR_GTR = Set.of(
             "ASESOR_VENTAS", "OJT", "SUPERVISOR_VENTAS", "ASESOR_GTR", "SUPERVISOR_GTR"
     );
+    private static final Set<String> ROLES_SIN_COMENTARIO_PREVIO = Set.of("ASESOR_VENTAS", "OJT");
 
     public PageResponse<LeadGtrResponse> listarBandejaGtr(
             LocalDate fecha,
@@ -6548,13 +6549,17 @@ public class LeadService {
                 proveedorFallback == null ? null : proveedorFallback.getId(),
                 proveedorFallback == null ? null : proveedorFallback.getNombre(),
                 ofertaComercialActualizadaEnCicloActualVenta(lead),
-                lead.getComentario(),
+                comentarioVisibleParaRol(lead),
                 lead.getTecnologia(),
                 lead.isEsFullClaro(),
                 lead.isEsJalaCobertura(),
                 lead.isEsZonaPintada(),
                 lead.getEstadoExpediente()
         );
+    }
+
+    private String comentarioVisibleParaRol(Lead lead) {
+        return ROLES_SIN_COMENTARIO_PREVIO.contains(currentUser.rolActivo()) ? null : lead.getComentario();
     }
 
     private FechaRelevanteVenta resolverFechaRelevanteVenta(

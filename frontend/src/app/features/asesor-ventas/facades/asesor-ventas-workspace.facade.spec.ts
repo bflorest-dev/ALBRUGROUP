@@ -45,8 +45,10 @@ describe('resolveSalesAdvisorAvailability', () => {
 describe('AsesorVentasWorkspaceFacade', () => {
   let facade: AsesorVentasWorkspaceFacade;
   let preventaService: Record<string, ReturnType<typeof vi.fn>>;
+  let activeRole = 'ASESOR_VENTAS';
 
   beforeEach(() => {
+    activeRole = 'ASESOR_VENTAS';
     preventaService = {
       tipificarLead: vi.fn(() => of(void 0)),
       listarLeadsAsesorVentas: vi.fn(() => of({ content: [], totalElements: 0, totalPages: 0 })),
@@ -115,8 +117,8 @@ describe('AsesorVentasWorkspaceFacade', () => {
         {
           provide: SessionService,
           useValue: {
-            getSession: vi.fn(() => ({ empleadoId: 7, primaryRole: 'ASESOR_VENTAS' })),
-            getActiveRole: vi.fn(() => 'ASESOR_VENTAS')
+            getSession: vi.fn(() => ({ empleadoId: 7, primaryRole: activeRole })),
+            getActiveRole: vi.fn(() => activeRole)
           }
         },
         {
@@ -133,6 +135,26 @@ describe('AsesorVentasWorkspaceFacade', () => {
     });
 
     facade = TestBed.inject(AsesorVentasWorkspaceFacade);
+  });
+
+  it.each(['ASESOR_VENTAS', 'OJT'])('limpia el comentario previo para el rol %s', (role) => {
+    activeRole = role;
+    const detail = { id: 25202, comentario: 'Comentario de la gestión anterior' } as never;
+
+    (facade as any).patchForms(detail);
+
+    expect(facade.canViewPreviousComment()).toBe(false);
+    expect(facade.tipificacionForm.controls.comentario.value).toBe('');
+  });
+
+  it.each(['ASESOR_GTR', 'SUPERVISOR_GTR', 'ADMINISTRADOR'])('conserva el comentario previo para el rol %s', (role) => {
+    activeRole = role;
+    const detail = { id: 25202, comentario: 'Comentario de la gestión anterior' } as never;
+
+    (facade as any).patchForms(detail);
+
+    expect(facade.canViewPreviousComment()).toBe(true);
+    expect(facade.tipificacionForm.controls.comentario.value).toBe('Comentario de la gestión anterior');
   });
 
   it('bloquea el cierre de PREVENTA cuando el lead no tiene numero', async () => {
