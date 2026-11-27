@@ -22,8 +22,10 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.DarBajaPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarClasificacionPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDatosPostulanteRequest;
+import pe.albrugroup.recruitment_service.entity.request.ActualizarDatosOperativosPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AsignarOfertaPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AltaMetaPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
@@ -77,6 +79,15 @@ public class PostulacionController {
         return ResponseEntity.ok(postulacionService.actualizarDatosPostulante(idPostulacion, request));
     }
 
+    @PatchMapping("/{idPostulacion}/datos-operativos")
+    @PreAuthorize("hasAuthority('UPDATE_POSTULACIONES')")
+    public ResponseEntity<PostulacionResponse> actualizarDatosOperativos(
+            @PathVariable @Positive Long idPostulacion,
+            @Valid @RequestBody ActualizarDatosOperativosPostulacionRequest request
+    ) {
+        return ResponseEntity.ok(postulacionService.actualizarDatosOperativos(idPostulacion, request));
+    }
+
     @PatchMapping("/{idPostulacion}/clasificacion")
     @PreAuthorize("hasAuthority('UPDATE_CLASIFICACION_POSTULACIONES')")
     public ResponseEntity<PostulacionResponse> actualizarClasificacion(
@@ -111,6 +122,15 @@ public class PostulacionController {
             @Valid @RequestBody TipificarPostulacionRequest request
     ) {
         return ResponseEntity.ok(postulacionService.tipificarPostulacion(idPostulacion, request));
+    }
+
+    @PostMapping("/{idPostulacion}/baja")
+    @PreAuthorize("hasAuthority('CLOSE_POSTULACIONES')")
+    public ResponseEntity<PostulacionResponse> darDeBaja(
+            @PathVariable @Positive Long idPostulacion,
+            @Valid @RequestBody DarBajaPostulacionRequest request
+    ) {
+        return ResponseEntity.ok(postulacionService.darDeBaja(idPostulacion, request));
     }
 
     @GetMapping("/bandeja/supervisor")

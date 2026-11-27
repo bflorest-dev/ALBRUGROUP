@@ -1,6 +1,7 @@
 package pe.albrugroup.recruitment_service.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -109,6 +110,15 @@ public class GlobalExceptionHandler {
                 "status", HttpStatus.CONFLICT.value(),
                 "error", HttpStatus.CONFLICT.getReasonPhrase(),
                 "message", "Conflicto de integridad de datos"
+        ));
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthorizationDenied(AuthorizationDeniedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "status", HttpStatus.FORBIDDEN.value(),
+                "error", HttpStatus.FORBIDDEN.getReasonPhrase(),
+                "message", "No tiene permisos para realizar esta accion"
         ));
     }
 

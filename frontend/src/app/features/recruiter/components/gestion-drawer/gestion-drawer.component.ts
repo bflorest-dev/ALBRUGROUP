@@ -12,6 +12,7 @@ import { EventoResponse } from '../../../../shared/models/recruitment/evento-res
 import { GrupoCapacitacionResponse } from '../../../../shared/models/recruitment/grupo-capacitacion-response';
 import { GestionAccion, GestionReclutamiento, GestionRequest, HorarioMeet } from '../../../../shared/models/recruitment/gestion-reclutamiento';
 import { ActualizarDatosPostulanteRequest } from '../../../../shared/models/recruitment/actualizar-datos-postulante-request';
+import { ActualizarDatosOperativosPostulacionRequest } from '../../../../shared/models/recruitment/actualizar-datos-operativos-postulacion-request';
 import { buildTelUrl, buildWhatsAppUrl, normalizeUsermeta } from '../../../../shared/utils/phone-link';
 
 @Component({
@@ -28,6 +29,7 @@ export class GestionDrawerComponent implements OnInit {
  readonly closed=output<void>();
  readonly saved=output<void>();
  readonly meetAgendaRequested=output<string>();
+ readonly bajaRequested=output<void>();
  private readonly api=inject(RecruiterPostulantesService);
  private readonly realtime=inject(RecruitmentRealtimeService);
  private readonly destroyRef=inject(DestroyRef);
@@ -75,10 +77,14 @@ export class GestionDrawerComponent implements OnInit {
  readonly pendingMeet=computed(()=>{const next=this.pending();return next?.tipo==='ENTREVISTA'&&next.modalidad==='MEET';});
  readonly active=computed(()=>!!this.state()?.accionesDisponibles.length);
  readonly canContact=computed(()=>this.active()||this.contactOnly());
- readonly canEditDatos=computed(()=>this.p().etapa==='RECLUTAMIENTO');
+ readonly canEditDatos=computed(()=>this.p().etapa==='RECLUTAMIENTO'&&this.p().estado==='EN_PROCESO');
+ readonly canRequestBaja=computed(()=>this.p().estado!=='CERRADA' && !!this.state());
  readonly hasPhone=computed(()=>this.hasContactValue(this.candidate().numeroExclusivoLlamadas)||this.hasContactValue(this.candidate().celular));
  readonly hasWhatsApp=computed(()=>this.hasContactValue(this.candidate().celular)||!!normalizeUsermeta(this.candidate().usuarioMeta));
- readonly datosIncomplete=computed(()=>!this.candidate().nombres||!this.candidate().apellidos||!this.candidate().documento||!this.candidate().celular);
+ readonly datosIncomplete=computed(()=>!this.candidate().nombres||!this.candidate().apellidos||!this.candidate().tipoDocumento||!this.candidate().documento||!this.candidate().celular);
+ readonly metaOnly=computed(()=>!!normalizeUsermeta(this.candidate().usuarioMeta)&&this.datosIncomplete());
+ readonly canEditPersonalData=computed(()=>this.canEditDatos()&&this.metaOnly());
+ readonly canEditPostulationData=computed(()=>this.canEditDatos());
  readonly form=this.fb.nonNullable.group({
   fechaHoraGestion:[this.now(),Validators.required], modalidadContacto:['LLAMADA',Validators.required],
   motivo:[''], observacion:['',Validators.maxLength(2000)], programarReintento:[false],
@@ -86,7 +92,10 @@ export class GestionDrawerComponent implements OnInit {
   fechaMeet:[''], fechaMeetText:[''], idHorarioMeet:[0], idSesionMeet:[0]
  });
  readonly datosForm=this.fb.nonNullable.group({
-  nombres:[''],apellidos:[''],tipoDocumento:[''],documento:[''],celular:[''],numeroExclusivoLlamadas:[''],usuarioMeta:[''],fechaNacimiento:['']
+  nombres:[''],apellidos:[''],tipoDocumento:this.fb.nonNullable.control({value:'',disabled:true}),documento:[''],celular:[''],usuarioMeta:[''],fechaNacimiento:['']
+ });
+ readonly postulationForm=this.fb.nonNullable.group({
+  horario:[''],modalidad:[''],numeroExclusivoLlamadas:['']
  });
  readonly changed=signal(0);
  readonly meetBooking=computed(()=>{this.changed();return ['AGENDAR_MEET','REPROGRAMAR_MEET'].includes(this.action()??'');});
@@ -200,23 +209,42 @@ export class GestionDrawerComponent implements OnInit {
   const candidate=postulacion.postulante;
   this.datosForm.reset({
    nombres:candidate.nombres||'',apellidos:candidate.apellidos||'',tipoDocumento:candidate.tipoDocumento||'',documento:candidate.documento||'',
-   celular:candidate.celular||'',numeroExclusivoLlamadas:candidate.numeroExclusivoLlamadas||'',usuarioMeta:normalizeUsermeta(candidate.usuarioMeta),fechaNacimiento:candidate.fechaNacimiento||''
+   celular:candidate.celular||'',usuarioMeta:normalizeUsermeta(candidate.usuarioMeta),fechaNacimiento:candidate.fechaNacimiento||''
+  });
+  this.datosForm.controls.tipoDocumento.disable({emitEvent:false});
+  this.postulationForm.reset({
+   horario:postulacion.horario||'',modalidad:postulacion.modalidad||'',numeroExclusivoLlamadas:candidate.numeroExclusivoLlamadas||''
   });
   this.dataMessage.set('');this.dataError.set('');
  }
  saveDatos():void {
-  if(this.dataSaving()||!this.canEditDatos())return;
+  if(this.dataSaving()||!this.canEditPersonalData())return;
   const value=this.datosForm.getRawValue();
   const tipoDocumento=value.tipoDocumento||null;const documento=value.documento.trim()||null;
   if((tipoDocumento===null)!==(documento===null)){this.dataError.set('Tipo y número de documento deben completarse juntos.');return;}
   const request:ActualizarDatosPostulanteRequest={
    nombres:value.nombres.trim()||null,apellidos:value.apellidos.trim()||null,tipoDocumento,documento,
-   celular:value.celular.trim()||null,numeroExclusivoLlamadas:value.numeroExclusivoLlamadas.trim()||null,
+   celular:value.celular.trim()||null,numeroExclusivoLlamadas:this.candidate().numeroExclusivoLlamadas||null,
    usuarioMeta:normalizeUsermeta(value.usuarioMeta)||null,fechaNacimiento:value.fechaNacimiento||null
   };
   this.dataSaving.set(true);this.dataError.set('');this.dataMessage.set('');
   this.api.actualizarDatosPostulante(this.p().id,request).pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
    next:saved=>{const current=this.state();if(current)this.state.set({...current,postulacion:saved});this.syncDatosForm(saved);this.dataSaving.set(false);this.dataMessage.set('Datos personales guardados');this.message.set('Ficha actualizada');this.loadHistory();this.saved.emit();},
+   error:e=>{this.dataSaving.set(false);this.dataError.set(this.errorText(e));}
+  });
+ }
+ saveDatosOperativos():void {
+  if(this.dataSaving()||!this.canEditPostulationData())return;
+  const value=this.postulationForm.getRawValue();
+  const numero=value.numeroExclusivoLlamadas.trim();
+  if(!value.horario||!value.modalidad){this.dataError.set('Selecciona el turno y la modalidad de la postulación.');return;}
+  if(numero&&!/^9\d{8}$/.test(numero)){this.dataError.set('El número exclusivo de llamadas debe tener 9 dígitos y comenzar en 9.');return;}
+  const request:ActualizarDatosOperativosPostulacionRequest={
+   horario:value.horario,modalidad:value.modalidad,numeroExclusivoLlamadas:numero||null
+  };
+  this.dataSaving.set(true);this.dataError.set('');this.dataMessage.set('');
+  this.api.actualizarDatosOperativos(this.p().id,request).pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
+   next:saved=>{const current=this.state();if(current)this.state.set({...current,postulacion:saved});this.syncDatosForm(saved);this.dataSaving.set(false);this.dataMessage.set('Datos operativos guardados');this.message.set('Ficha actualizada');this.loadHistory();this.saved.emit();},
    error:e=>{this.dataSaving.set(false);this.dataError.set(this.errorText(e));}
   });
  }
@@ -325,6 +353,9 @@ export class GestionDrawerComponent implements OnInit {
  label(s:string|null|undefined):string {
   const labels:Record<string,string>={RECLUTAMIENTO:'Postulación',POSTULANTE:'Por contactar',EN_GESTION:'En gestión',SIN_CONTACTO:'Sin contacto',NO_INTERESADO:'No interesado',EN_PROCESO:'En proceso',WHATSAPP:'WhatsApp',MEET:'Meet',APTO_PARA_CAPACITACION:'Apto para capacitación'};
   return !s?'Sin registrar':labels[s]??s.toLowerCase().replace(/_/g,' ').replace(/^./,x=>x.toUpperCase());
+ }
+ documentTypeLabel(value:string|null|undefined):string {
+  return value==='DNI'?'DNI':value==='CE'?'CE':value==='PASAPORTE'?'Pasaporte':'Pendiente';
  }
  reasonLabel():string {
   const value=this.form.controls.motivo.value;

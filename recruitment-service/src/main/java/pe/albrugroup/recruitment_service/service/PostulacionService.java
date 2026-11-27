@@ -28,10 +28,12 @@ import pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto;
 import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarClasificacionPostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.ActualizarDatosOperativosPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDatosPostulanteRequest;
 import pe.albrugroup.recruitment_service.entity.request.AsignarOfertaPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AltaMetaPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.DarBajaPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.RegistrarContactoPostulacionRequest;
@@ -87,6 +89,7 @@ public class PostulacionService {
     private final CurrentUser currentUser;
     private final PaginationService paginationService;
     private final PostulacionRealtimeNotifier postulacionRealtimeNotifier;
+    private final GrupoCapacitacionRealtimeNotifier grupoCapacitacionRealtimeNotifier;
     private final pe.albrugroup.recruitment_service.repository.GestionReclutamientoRepository gestionReclutamientoRepository;
     private final pe.albrugroup.recruitment_service.repository.ActividadReclutamientoRepository actividadReclutamientoRepository;
 
@@ -259,8 +262,9 @@ public class PostulacionService {
                 .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
         if (currentUser.tieneRol("RECLUTADOR")
                 && !currentUser.tieneRol("SUPERVISOR_RECLUTAMIENTO")
-                && postulacion.getEtapa() != Etapa.RECLUTAMIENTO) {
-            throw new ForbiddenException("El Reclutador solo puede completar datos durante la etapa de reclutamiento");
+                && (postulacion.getEtapa() != Etapa.RECLUTAMIENTO
+                || !esAltaMetaIncompleta(postulacion.getPostulante()))) {
+            throw new ForbiddenException("El Reclutador solo puede completar altas por usuario Meta incompletas durante el reclutamiento");
         }
 
         postulanteService.actualizarDatos(postulacion.getPostulante(), request);
@@ -278,6 +282,64 @@ public class PostulacionService {
         postulacionRealtimeNotifier.publishAfterCommit(
                 "ACTUALIZACION_DATOS_POSTULANTE",
                 "POSTULANTE",
+                guardada,
+                guardada.getEtapa(),
+                guardada.getEstado(),
+                guardada.getEstadoBandeja(),
+                null,
+                guardada.getPuestoObjetivo()
+        );
+        return mapearPostulacionResponse(guardada);
+    }
+
+    private boolean esAltaMetaIncompleta(Postulante postulante) {
+        return PostulanteService.normalizarUsuarioMeta(postulante.getUsuarioMeta()) != null
+                && (estaVacio(postulante.getNombres())
+                || estaVacio(postulante.getApellidos())
+                || postulante.getTipoDocumento() == null
+                || estaVacio(postulante.getDocumento())
+                || estaVacio(postulante.getCelular()));
+    }
+
+    private boolean estaVacio(String valor) {
+        return valor == null || valor.isBlank();
+    }
+
+    public PostulacionResponse actualizarDatosOperativos(
+            Long idPostulacion,
+            ActualizarDatosOperativosPostulacionRequest request
+    ) {
+        Postulacion postulacion = postulacionRepository.findById(idPostulacion)
+                .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+
+        if (currentUser.tieneRol("RECLUTADOR")
+                && !currentUser.tieneRol("SUPERVISOR_RECLUTAMIENTO")
+                && (postulacion.getEtapa() != Etapa.RECLUTAMIENTO
+                || postulacion.getEstado() != EstadoPostulacion.EN_PROCESO)) {
+            throw new ForbiddenException("El Reclutador solo puede actualizar datos operativos durante el reclutamiento activo");
+        }
+
+        postulacion.setHorario(request.getHorario());
+        postulacion.setModalidad(request.getModalidad());
+        postulanteService.actualizarNumeroExclusivoLlamadas(
+                postulacion.getPostulante(),
+                request.getNumeroExclusivoLlamadas()
+        );
+
+        Postulacion guardada = postulacionRepository.save(postulacion);
+        eventoService.registrarEvento(
+                guardada,
+                Accion.ACTUALIZACION_POSTULACION,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "Datos operativos actualizados"
+        );
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_POSTULACION",
+                "POSTULACION",
                 guardada,
                 guardada.getEtapa(),
                 guardada.getEstado(),
@@ -528,6 +590,72 @@ public class PostulacionService {
         );
 
         return new ContactoPostulacionResponse(request.getModalidadContacto(), fechaHoraGestion);
+    }
+
+    public PostulacionResponse darDeBaja(Long idPostulacion, DarBajaPostulacionRequest request) {
+        Postulacion postulacion = postulacionRepository.findLockedById(idPostulacion)
+                .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+
+        if (postulacion.getEstado() == EstadoPostulacion.FINALIZADA) {
+            throw new ConflictException("La postulación tiene una contratación confirmada y no puede darse de baja.");
+        }
+        if (postulacion.getEstado() == EstadoPostulacion.CERRADA) {
+            throw new ConflictException("La postulación ya está cerrada y no admite una segunda baja.");
+        }
+
+        Etapa etapaAnterior = postulacion.getEtapa();
+        EstadoPostulacion estadoAnterior = postulacion.getEstado();
+        EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
+        GrupoCapacitacionDetalle detalle = grupoCapacitacionDetalleRepository.findByPostulacionId(idPostulacion)
+                .orElse(null);
+
+        if (detalle != null && detalle.getIdEmpleadoContratado() != null) {
+            throw new ConflictException("La postulación tiene una contratación confirmada y no puede darse de baja.");
+        }
+
+        actividadReclutamientoRepository.findByPostulacionIdAndEstadoIn(idPostulacion, List.of("PENDIENTE"))
+                .forEach(actividad -> {
+                    actividad.setEstado("CANCELADA");
+                    actividadReclutamientoRepository.save(actividad);
+                });
+
+        Long idGrupoCapacitacion = null;
+        if (detalle != null) {
+            idGrupoCapacitacion = detalle.getGrupoCapacitacion().getId();
+            detalle.setEstadoCapacitacion(EstadoCapacitacionPostulante.RETIRADO);
+            detalle.setFechaResultado(LocalDate.now(ZoneId.of("America/Lima")));
+            grupoCapacitacionDetalleRepository.save(detalle);
+        }
+
+        postulacion.setEstado(EstadoPostulacion.CERRADA);
+        postulacion.setEstadoBandeja(EstadoBandejaPostulacion.NO_INTERESADO);
+        Postulacion guardada = postulacionRepository.save(postulacion);
+
+        String observacion = "Baja transversal · Motivo: " + request.getMotivo().trim();
+        if (request.getObservacion() != null && !request.getObservacion().isBlank()) {
+            observacion += " · Observación: " + request.getObservacion().trim();
+        }
+        observacion += " · Estado anterior: " + estadoBandejaAnterior + " · Etapa: " + etapaAnterior;
+        eventoService.registrarEvento(guardada, Accion.BAJA_POSTULACION, null, null, null, null, null, observacion);
+
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "BAJA_POSTULACION",
+                "POSTULACION",
+                guardada,
+                etapaAnterior,
+                estadoAnterior,
+                estadoBandejaAnterior,
+                idGrupoCapacitacion,
+                guardada.getPuestoObjetivo()
+        );
+        if (detalle != null) {
+            grupoCapacitacionRealtimeNotifier.publishAfterCommit(
+                    "ACTUALIZACION_GRUPO_CAPACITACION",
+                    "BAJA_POSTULACION",
+                    detalle.getGrupoCapacitacion()
+            );
+        }
+        return mapearPostulacionResponse(guardada);
     }
 
     @Transactional(readOnly = true)

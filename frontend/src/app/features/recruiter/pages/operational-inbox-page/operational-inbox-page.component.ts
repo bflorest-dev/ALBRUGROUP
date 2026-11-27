@@ -11,14 +11,17 @@ import { RecruiterPostulantesService } from '../../services/recruiter-postulante
 import { SesionMeetParticipanteResponse, SesionMeetResponse } from '../../../../shared/models/recruitment/sesion-meet-response';
 import { MeetAsistencia, MeetEvaluacion, MeetGestionBatchItemRequest } from '../../../../shared/models/recruitment/meet-batch';
 import { GrupoCapacitacionDetalleResponse } from '../../../../shared/models/recruitment/grupo-capacitacion-detalle-response';
+import { PostulacionResponse } from '../../../../shared/models/recruitment/postulacion-response';
 import { RecruiterTrainingGroupsFacade } from '../../facades/recruiter-training-groups.facade';
 import { RecruiterTrainingGroupsService } from '../../services/recruiter-training-groups.service';
 import { TrainingGroupFormPanelComponent } from '../../components/training-group-form-panel/training-group-form-panel.component';
 import { CurrentUserRecruitmentNegocioScopeService } from '../../../../core/services/current-user-recruitment-negocio-scope.service';
+import { PostulationCloseConfirmationComponent } from '../../../../shared/components/postulation-close-confirmation/postulation-close-confirmation.component';
+import { DarBajaPostulacionRequest } from '../../../../shared/models/recruitment/dar-baja-postulacion-request';
 
 @Component({
   selector: 'app-recruiter-operational-inbox-page',
-  imports: [FormsModule, ReactiveFormsModule, DatePickerModule, PopoverModule, GestionDrawerComponent, TrainingGroupFormPanelComponent],
+  imports: [FormsModule, ReactiveFormsModule, DatePickerModule, PopoverModule, GestionDrawerComponent, TrainingGroupFormPanelComponent, PostulationCloseConfirmationComponent],
   providers: [RecruiterOperationalInboxFacade, RecruiterTrainingGroupsFacade],
   templateUrl: './operational-inbox-page.component.html',
   styleUrl: './operational-inbox-page.component.scss',
@@ -65,10 +68,16 @@ export class OperationalInboxPageComponent implements OnInit {
   protected readonly createGroupDrawerOpen = signal(false);
   protected readonly meetParticipantDrawerOpen = signal(false);
   protected readonly contactOnlyDrawerOpen = signal(false);
+  protected readonly drawerBajaRelated = signal('');
   protected readonly expandedGroupId = signal<number | null>(null);
   protected readonly movingDetalleId = signal<number | null>(null);
   protected readonly moveDestinoId = signal<number | null>(null);
   protected readonly groupOpBusy = signal(false);
+  protected readonly bajaPostulacion = signal<PostulacionResponse | null>(null);
+  protected readonly bajaContext = signal('');
+  protected readonly bajaRelated = signal('');
+  protected readonly bajaBusy = signal(false);
+  protected readonly bajaError = signal('');
   private trainingGroupsInitialized = false;
   private readonly meetDatePopover = viewChild.required<Popover>('meetDatePopover');
 
@@ -193,6 +202,7 @@ export class OperationalInboxPageComponent implements OnInit {
   protected openMeetAgenda(fechaHora?: string): void {
     this.meetParticipantDrawerOpen.set(false);
     this.contactOnlyDrawerOpen.set(false);
+    this.drawerBajaRelated.set('');
     this.facade.closeDrawer();
     const agendaDate = fechaHora ? this.dateInLima(fechaHora) : null;
     if (agendaDate) {
@@ -304,10 +314,57 @@ export class OperationalInboxPageComponent implements OnInit {
     return detalle.postulacion.postulante.numeroExclusivoLlamadas || 'Sin número exclusivo';
   }
 
-  protected openGroupMember(detalle: GrupoCapacitacionDetalleResponse): void {
+  protected openGroupMember(detalle: GrupoCapacitacionDetalleResponse, related = ''): void {
     this.meetParticipantDrawerOpen.set(false);
     this.contactOnlyDrawerOpen.set(true);
+    this.drawerBajaRelated.set(related);
     this.facade.openDetail(detalle.postulacion);
+  }
+
+  protected openBaja(postulacion: PostulacionResponse, context: string, related = ''): void {
+    this.bajaPostulacion.set(postulacion);
+    this.bajaContext.set(context);
+    this.bajaRelated.set(related);
+    this.bajaError.set('');
+  }
+
+  protected openBajaFromDrawer(postulacion: PostulacionResponse): void {
+    const context = this.meetParticipantDrawerOpen()
+      ? 'Agenda de Meets'
+      : this.contactOnlyDrawerOpen()
+        ? 'Grupos de capacitación'
+        : 'Bandeja operativa';
+    this.openBaja(postulacion, context, this.drawerBajaRelated());
+  }
+
+  protected closeBaja(): void {
+    if (this.bajaBusy()) return;
+    this.bajaPostulacion.set(null);
+    this.bajaRelated.set('');
+    this.bajaError.set('');
+  }
+
+  protected confirmBaja(request: DarBajaPostulacionRequest): void {
+    const postulacion = this.bajaPostulacion();
+    if (!postulacion || this.bajaBusy()) return;
+    this.bajaBusy.set(true);
+    this.bajaError.set('');
+    this.api.darDeBajaPostulacion(postulacion.id, request)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.bajaBusy.set(false);
+          this.bajaPostulacion.set(null);
+          this.bajaRelated.set('');
+          this.facade.refresh();
+          this.loadMeetAgenda();
+          this.trainingFacade.handleRealtime();
+        },
+        error: error => {
+          this.bajaBusy.set(false);
+          this.bajaError.set(error?.error?.message || 'No se pudo dar de baja la postulación.');
+        }
+      });
   }
 
   protected confirmMove(idGrupoOrigen: number, idPostulacion: number): void {
@@ -523,12 +580,15 @@ export class OperationalInboxPageComponent implements OnInit {
   protected openMeetParticipant(participant: SesionMeetParticipanteResponse): void {
     this.contactOnlyDrawerOpen.set(true);
     this.meetParticipantDrawerOpen.set(true);
+    const session = this.selectedMeet();
+    this.drawerBajaRelated.set(session ? this.meetWorkspaceTitle(session) : 'Agenda de Meets');
     this.facade.openDetail(participant.postulacion);
   }
 
   protected closeDetailDrawer(): void {
     this.meetParticipantDrawerOpen.set(false);
     this.contactOnlyDrawerOpen.set(false);
+    this.drawerBajaRelated.set('');
     this.facade.closeDrawer();
   }
 

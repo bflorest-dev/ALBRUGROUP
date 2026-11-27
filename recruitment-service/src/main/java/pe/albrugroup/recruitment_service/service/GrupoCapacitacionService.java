@@ -23,6 +23,7 @@ import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionDetalleResponse;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionResponse;
 import pe.albrugroup.recruitment_service.entity.response.PageResponse;
+import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.exception.BadRequestException;
 import pe.albrugroup.recruitment_service.exception.ConflictException;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
@@ -104,7 +105,7 @@ public class GrupoCapacitacionService {
         }
 
         Page<GrupoCapacitacionResponse> grupos = gruposPagina
-                .map(grupoCapacitacionMapper::toResumenResponse);
+                .map(this::mapearGrupoVisible);
         return PageResponse.from(grupos);
     }
 
@@ -113,13 +114,13 @@ public class GrupoCapacitacionService {
         return grupoCapacitacionRepository
                 .findByFechaInicioBetweenAndNegocioOrderByFechaInicioAscTurnoAsc(desde, hasta, negocio)
                 .stream()
-                .map(grupoCapacitacionMapper::toResumenResponse)
+                .map(this::mapearGrupoVisible)
                 .toList();
     }
 
     public GrupoCapacitacionResponse obtenerGrupo(Long idGrupoCapacitacion, Negocio negocio) {
         grupoCapacitacionLifecycleService.sincronizarEstados();
-        return grupoCapacitacionMapper.toResponse(obtenerGrupoConDetalles(idGrupoCapacitacion, negocio));
+        return mapearGrupoVisible(obtenerGrupoConDetalles(idGrupoCapacitacion, negocio));
     }
 
     public GrupoCapacitacionDetalleResponse agregarPostulacion(
@@ -203,6 +204,7 @@ public class GrupoCapacitacionService {
         validarGrupoOperativo(grupo);
 
         Postulacion postulacion = detalle.getPostulacion();
+        validarPostulacionActivaParaGestionDeGrupo(postulacion);
         Etapa etapaAnterior = postulacion.getEtapa();
         EstadoPostulacion estadoAnterior = postulacion.getEstado();
         EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
@@ -258,6 +260,10 @@ public class GrupoCapacitacionService {
                             "La postulacion " + idPostulacion + " no pertenece al grupo de origen indicado"
                     ));
             Postulacion postulacion = detalle.getPostulacion();
+            validarPostulacionActivaParaGestionDeGrupo(postulacion);
+            if (detalle.getEstadoCapacitacion() == EstadoCapacitacionPostulante.RETIRADO) {
+                throw new ConflictException("La postulacion ya fue retirada del grupo y no puede trasladarse");
+            }
             validarNegocioCompatible(destino, postulacion);
             Etapa etapaAnterior = postulacion.getEtapa();
             EstadoPostulacion estadoAnterior = postulacion.getEstado();
@@ -472,6 +478,27 @@ public class GrupoCapacitacionService {
         return grupo;
     }
 
+    private GrupoCapacitacionResponse mapearGrupoVisible(GrupoCapacitacion grupo) {
+        GrupoCapacitacionResponse response = grupoCapacitacionMapper.toResumenResponse(grupo);
+        if (response.getDetalles() != null) {
+            response.setDetalles(response.getDetalles().stream()
+                    .filter(this::esDetalleActivo)
+                    .toList());
+        }
+        return response;
+    }
+
+    private boolean esDetalleActivo(GrupoCapacitacionDetalleResponse detalle) {
+        if (detalle == null || detalle.getEstadoCapacitacion() == EstadoCapacitacionPostulante.RETIRADO) {
+            return false;
+        }
+        PostulacionResponse postulacion = detalle.getPostulacion();
+        return postulacion != null
+                && postulacion.getEstado() != EstadoPostulacion.CERRADA
+                && postulacion.getEstado() != EstadoPostulacion.FINALIZADA
+                && postulacion.getEstadoBandeja() != EstadoBandejaPostulacion.NO_INTERESADO;
+    }
+
     private void validarNegocioCompatible(GrupoCapacitacion grupo, Postulacion postulacion) {
         if (grupo.getNegocio() != postulacion.getNegocio()) {
             throw new BadRequestException("La postulacion y el grupo deben pertenecer al mismo negocio");
@@ -519,6 +546,7 @@ public class GrupoCapacitacionService {
     }
 
     private void validarPostulacionAptaParaCapacitacion(Postulacion postulacion) {
+        validarPostulacionActivaParaGestionDeGrupo(postulacion);
         if (postulacion.getEtapa() == Etapa.RECLUTAMIENTO) {
             boolean aprobada = gestionReclutamientoRepository.findById(postulacion.getId())
                     .map(g -> "APROBADO".equals(g.getResultadoEvaluacion()))
@@ -536,6 +564,14 @@ public class GrupoCapacitacionService {
 
         if (postulacion.getPuestoObjetivo() != PuestoObjetivo.ASESOR_VENTAS) {
             throw new BadRequestException("Solo se pueden agregar postulaciones del puesto objetivo ASESOR_VENTAS");
+        }
+    }
+
+    private void validarPostulacionActivaParaGestionDeGrupo(Postulacion postulacion) {
+        if (postulacion.getEstado() == EstadoPostulacion.CERRADA
+                || postulacion.getEstado() == EstadoPostulacion.FINALIZADA
+                || postulacion.getEstadoBandeja() == EstadoBandejaPostulacion.NO_INTERESADO) {
+            throw new ConflictException("La postulacion está cerrada y no puede permanecer ni volver a un grupo de capacitacion");
         }
     }
 

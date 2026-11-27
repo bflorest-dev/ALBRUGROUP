@@ -146,11 +146,15 @@
                       <button type="button" class="mini mini--ghost" [disabled]="opBusy()" (click)="cancelMove()">Cancelar</button>
                     } @else {
                       <button type="button" class="mini" [disabled]="opBusy() || !moveTargets().length" (click)="startMove(detalle.id)">Mover</button>
+                      <button type="button" class="mini mini--danger" [disabled]="opBusy()" (click)="openBaja(detalle.postulacion, grupo)" [attr.aria-label]="'Dar de baja a ' + nombreCompleto(detalle.postulacion)"><i class="ti ti-user-off" aria-hidden="true"></i>Baja</button>
                       <button type="button" class="mini mini--danger" [disabled]="opBusy()" (click)="retire(detalle.postulacion.id)">Retirar</button>
                     }
                   </div>
                 } @else if (canManage) {
-                  <small class="muted">grupo iniciado</small>
+                  <div class="mrow__act">
+                    <small class="muted">grupo iniciado</small>
+                    <button type="button" class="mini mini--danger" [disabled]="opBusy()" (click)="openBaja(detalle.postulacion, grupo)" [attr.aria-label]="'Dar de baja a ' + nombreCompleto(detalle.postulacion)"><i class="ti ti-user-off" aria-hidden="true"></i>Baja</button>
+                  </div>
                 } @else if (grupo.estado === 'EN_CURSO') {
                   <div class="mrow__result">
                     <select [value]="resultValue(detalle)" (change)="setResultValue(detalle.id, $any($event.target).value)" aria-label="Resultado de capacitación">
@@ -159,6 +163,12 @@
                     <button type="button" class="mini" [disabled]="resultBusy() !== null" (click)="saveTrainingResult(grupo, detalle)">
                       {{ resultBusy() === detalle.id ? 'Guardando…' : 'Guardar' }}
                     </button>
+                    <button type="button" class="mini mini--danger" [disabled]="resultBusy() !== null" (click)="openBaja(detalle.postulacion, grupo)" [attr.aria-label]="'Dar de baja a ' + nombreCompleto(detalle.postulacion)"><i class="ti ti-user-off" aria-hidden="true"></i>Baja</button>
+                  </div>
+                } @else {
+                  <div class="mrow__act">
+                    <small class="muted">Solo lectura</small>
+                    <button type="button" class="mini mini--danger" [disabled]="resultBusy() !== null" (click)="openBaja(detalle.postulacion, grupo)" [attr.aria-label]="'Dar de baja a ' + nombreCompleto(detalle.postulacion)"><i class="ti ti-user-off" aria-hidden="true"></i>Baja</button>
                   </div>
                 }
               </div>
@@ -236,4 +246,16 @@
 
 @if (toastMsg()) {
   <div class="toast">{{ toastMsg() }}</div>
+}
+
+@if (bajaPostulacion(); as postulacion) {
+  <app-postulation-close-confirmation
+    [postulacion]="postulacion"
+    [context]="bajaContext()"
+    [related]="bajaRelated()"
+    [busy]="bajaBusy()"
+    [errorMessage]="bajaError()"
+    (confirmed)="confirmBaja($event)"
+    (cancelled)="closeBaja()"
+  />
 }

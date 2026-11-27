@@ -1,0 +1,52 @@
+<dialog #dialog class="postulation-close-dialog" aria-labelledby="postulation-close-title" closedby="none" (cancel)="$event.preventDefault()">
+  <form method="dialog" class="postulation-close-dialog__panel" (submit)="$event.preventDefault(); submit()">
+    <header class="postulation-close-dialog__header">
+      <span class="postulation-close-dialog__icon" aria-hidden="true"><i class="ti ti-user-off"></i></span>
+      <div>
+        <span class="postulation-close-dialog__eyebrow">Confirmación final</span>
+        <h2 id="postulation-close-title">Dar de baja postulación</h2>
+        <p>Esta acción cierra el expediente como <strong>No interesado</strong>.</p>
+      </div>
+    </header>
+
+    <dl class="postulation-close-dialog__data">
+      <div><dt>Postulante</dt><dd>{{ nombre() }}</dd></div>
+      <div><dt>Etapa actual</dt><dd>{{ etapa() }}</dd></div>
+      <div><dt>Contexto</dt><dd>{{ context }}</dd></div>
+      <div><dt>Relacionado</dt><dd>{{ related }}</dd></div>
+    </dl>
+
+    <div class="postulation-close-dialog__warning" role="note">
+      <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+      <span>Se cancelarán actividades pendientes y se conservará la trazabilidad. Si pertenece a un grupo, quedará retirado para auditoría.</span>
+    </div>
+
+    <label class="postulation-close-dialog__field">
+      <span>Motivo <b aria-hidden="true">*</b></span>
+      <select [(ngModel)]="motivo" name="motivo" required [disabled]="busy">
+        <option value="">Seleccionar motivo</option>
+        <option value="No desea continuar">No desea continuar</option>
+        <option value="No asistió al Meet">No asistió al Meet</option>
+        <option value="No apto para el proceso">No apto para el proceso</option>
+        <option value="Solicitud del postulante">Solicitud del postulante</option>
+        <option value="Otro motivo">Otro motivo</option>
+      </select>
+    </label>
+
+    <label class="postulation-close-dialog__field">
+      <span>Observación <small>(opcional)</small></span>
+      <input [(ngModel)]="observacion" name="observacion" maxlength="500" placeholder="Comentario" [disabled]="busy" />
+    </label>
+
+    @if (errorMessage) {
+      <div class="postulation-close-dialog__error" role="alert"><i class="ti ti-alert-circle" aria-hidden="true"></i>{{ errorMessage }}</div>
+    }
+
+    <footer class="postulation-close-dialog__actions">
+      <button type="button" class="postulation-close-dialog__cancel" [disabled]="busy" (click)="cancel()">Cancelar</button>
+      <button type="submit" class="postulation-close-dialog__confirm" [disabled]="busy || !motivo.trim()">
+        @if (busy) { <span class="postulation-close-dialog__spinner" aria-hidden="true"></span> Procesando… } @else { Dar de baja postulación }
+      </button>
+    </footer>
+  </form>
+</dialog>

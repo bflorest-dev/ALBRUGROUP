@@ -8,6 +8,7 @@ import java.util.*;
 public interface ActividadReclutamientoRepository extends JpaRepository<ActividadReclutamiento,Long> {
  List<ActividadReclutamiento> findByPostulacionIdOrderByIdDesc(Long id);
  Optional<ActividadReclutamiento> findByPostulacionIdAndEstado(Long id,String estado);
+ List<ActividadReclutamiento> findByPostulacionIdAndEstadoIn(Long id, Collection<String> estados);
  List<ActividadReclutamiento> findByMeetSesionIdOrderByFechaHoraAscIdAsc(Long meetSesionId);
 
     @Query("""

@@ -502,7 +502,7 @@
                               </span>
                             } @else {
                               <span class="mrow__act">
-                                <button type="button" class="mini mini--contact" [disabled]="groupOpBusy()" (click)="openGroupMember(detalle)" [attr.aria-label]="'Gestionar contacto de ' + groupMemberName(detalle)"><i class="ti ti-phone-call" aria-hidden="true"></i><span>Gestionar</span></button>
+                                <button type="button" class="mini mini--contact" [disabled]="groupOpBusy()" (click)="openGroupMember(detalle, group.codigo)" [attr.aria-label]="'Gestionar contacto de ' + groupMemberName(detalle)"><i class="ti ti-phone-call" aria-hidden="true"></i><span>Gestionar</span></button>
                                 <button type="button" class="mini" [disabled]="trainingFacade.groups().length < 2 || groupOpBusy()" (click)="startMove(detalle.id)"><i class="ti ti-arrow-right" aria-hidden="true"></i>Mover</button>
                                 <button type="button" class="mini mini--danger" [disabled]="groupOpBusy()" (click)="retirarMiembro(group.id, detalle.postulacion.id)"><i class="ti ti-x" aria-hidden="true"></i>Retirar</button>
                               </span>
@@ -562,5 +562,17 @@
 }
 
 @if (facade.drawer() === 'detail' && facade.selectedPostulacion(); as selected) {
-  <app-gestion-reclutamiento-drawer [postulacion]="selected" [meetContext]="meetParticipantDrawerOpen()" [contactOnly]="contactOnlyDrawerOpen()" (closed)="closeDetailDrawer()" (saved)="facade.load()" (meetAgendaRequested)="openMeetAgenda($event)" />
+  <app-gestion-reclutamiento-drawer [postulacion]="selected" [meetContext]="meetParticipantDrawerOpen()" [contactOnly]="contactOnlyDrawerOpen()" (closed)="closeDetailDrawer()" (saved)="facade.load()" (meetAgendaRequested)="openMeetAgenda($event)" (bajaRequested)="openBajaFromDrawer(selected)" />
+}
+
+@if (bajaPostulacion(); as postulacion) {
+  <app-postulation-close-confirmation
+    [postulacion]="postulacion"
+    [context]="bajaContext()"
+    [related]="bajaRelated()"
+    [busy]="bajaBusy()"
+    [errorMessage]="bajaError()"
+    (confirmed)="confirmBaja($event)"
+    (cancelled)="closeBaja()"
+  />
 }

@@ -65,6 +65,7 @@ public class DataLoader {
         savePermiso("READ_POSTULACIONES_RECLUTAMIENTO", "Puede ver la bandeja de postulaciones en reclutamiento", "POSTULACION", "READ");
         savePermiso("READ_POSTULACIONES_CAPACITACION", "Puede ver la bandeja de postulaciones en capacitacion", "POSTULACION", "READ");
         savePermiso("CONFIRM_CONTRATACION_POSTULACIONES", "Puede confirmar la contratacion de postulaciones", "POSTULACION", "CONFIRM");
+        savePermiso("CLOSE_POSTULACIONES", "Puede dar de baja una postulacion sin importar su etapa, si no fue contratada", "POSTULACION", "CLOSE");
         savePermiso("CREATE_CONTACTO_POSTULACION", "Puede registrar intentos de contacto de postulaciones", "POSTULACION", "CONTACT");
         savePermiso("ASSIGN_OFERTA_POSTULACION", "Puede asociar una oferta laboral a una postulacion", "POSTULACION", "ASSIGN_OFFER");
         savePermiso("UPDATE_DATOS_POSTULANTE", "Puede completar y corregir los datos personales de un postulante", "POSTULANTE", "UPDATE");
@@ -352,6 +353,7 @@ public class DataLoader {
                 getPermiso("READ_HISTORIAL_POSTULANTES"),
                 getPermiso("UPDATE_POSTULACIONES"),
                 getPermiso("CREATE_CONTACTO_POSTULACION"),
+                getPermiso("CLOSE_POSTULACIONES"),
                 getPermiso("UPDATE_DATOS_POSTULANTE"),
 
                 getPermiso("READ_OFERTAS_LABORALES_ACTIVAS"),
@@ -378,6 +380,7 @@ public class DataLoader {
                 getPermiso("READ_HISTORIAL_POSTULANTES"),
                 getPermiso("UPDATE_POSTULACIONES"),
                 getPermiso("UPDATE_DATOS_POSTULANTE"),
+                getPermiso("CLOSE_POSTULACIONES"),
                 getPermiso("READ_OFERTAS_LABORALES_ACTIVAS"),
                 getPermiso("ASSIGN_OFERTA_POSTULACION"),
                 getPermiso("READ_GRUPOS_CAPACITACION"),
@@ -403,6 +406,7 @@ public class DataLoader {
 
                 getPermiso("READ_TIPIFICACIONES_CAPACITACION"),
                 getPermiso("UPDATE_RESULTADOS_CAPACITACION"),
+                getPermiso("CLOSE_POSTULACIONES"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS")
         );

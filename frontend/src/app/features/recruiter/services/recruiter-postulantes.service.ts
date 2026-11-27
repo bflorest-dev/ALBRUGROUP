@@ -9,6 +9,7 @@ import { EventoResponse } from '../../../shared/models/recruitment/evento-respon
 import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
 import { ActualizarDatosPostulanteRequest } from '../../../shared/models/recruitment/actualizar-datos-postulante-request';
+import { ActualizarDatosOperativosPostulacionRequest } from '../../../shared/models/recruitment/actualizar-datos-operativos-postulacion-request';
 import { RegistrarContactoPostulacionRequest } from '../../../shared/models/recruitment/registrar-contacto-postulacion-request';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
 import { GestionReclutamiento, GestionRequest, HorarioMeet } from '../../../shared/models/recruitment/gestion-reclutamiento';
@@ -22,6 +23,7 @@ import {
   MeetGestionBatchRequest
 } from '../../../shared/models/recruitment/meet-batch';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
+import { DarBajaPostulacionRequest } from '../../../shared/models/recruitment/dar-baja-postulacion-request';
 
 @Injectable({
   providedIn: 'root'
@@ -213,6 +215,20 @@ export class RecruiterPostulantesService {
     request: ActualizarDatosPostulanteRequest
   ): Observable<PostulacionResponse> {
     return this.http.put<PostulacionResponse>(`${this.postulacionesUrl}/${idPostulacion}/datos-postulante`, request);
+  }
+
+  actualizarDatosOperativos(
+    idPostulacion: number,
+    request: ActualizarDatosOperativosPostulacionRequest
+  ): Observable<PostulacionResponse> {
+    return this.http.patch<PostulacionResponse>(`${this.postulacionesUrl}/${idPostulacion}/datos-operativos`, request);
+  }
+
+  darDeBajaPostulacion(
+    idPostulacion: number,
+    request: DarBajaPostulacionRequest
+  ): Observable<PostulacionResponse> {
+    return this.http.post<PostulacionResponse>(`${this.postulacionesUrl}/${idPostulacion}/baja`, request);
   }
 
 }

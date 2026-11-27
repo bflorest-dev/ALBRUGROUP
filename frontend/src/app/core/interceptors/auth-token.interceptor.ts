@@ -6,6 +6,7 @@ import { IdleSessionService } from '../services/idle-session.service';
 import { TokenService } from '../services/token.service';
 
 const HAS_REFRESH_RETRY = new HttpContextToken<boolean>(() => false);
+const HAS_PERMISSION_REFRESH_RETRY = new HttpContextToken<boolean>(() => false);
 
 function isPublicAuthRequest(url: string): boolean {
   return (
@@ -46,20 +47,26 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: unknown) => {
       if (
         !(error instanceof HttpErrorResponse) ||
-        error.status !== 401 ||
+        ![401, 403].includes(error.status) ||
         isPublicRequest ||
         isTeardownRequest ||
-        request.context.get(HAS_REFRESH_RETRY)
+        request.context.get(HAS_REFRESH_RETRY) ||
+        request.context.get(HAS_PERMISSION_REFRESH_RETRY)
       ) {
         return throwError(() => error);
       }
+
+      const retryContext = request.context.set(
+        error.status === 401 ? HAS_REFRESH_RETRY : HAS_PERMISSION_REFRESH_RETRY,
+        true
+      );
 
       return authSessionService.refreshAccessToken().pipe(
         switchMap((refreshedToken) =>
           next(
             withAuthorizationHeader(
               request.clone({
-                context: request.context.set(HAS_REFRESH_RETRY, true)
+                context: retryContext
               }),
               refreshedToken
             )

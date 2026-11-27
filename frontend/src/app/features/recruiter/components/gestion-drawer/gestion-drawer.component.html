@@ -132,22 +132,37 @@
    }
     @if(panel()==='datos') {
      <section class="data-panel" aria-labelledby="candidate-data-title">
-      <div class="form-heading"><div><h3 id="candidate-data-title">Datos del postulante</h3><p class="intro">Completa solo la identidad y los medios de contacto. La clasificación y la etapa permanecen protegidas.</p></div><span class="data-status">{{ canEditDatos() ? 'Editable en reclutamiento' : 'Solo consulta en esta etapa' }}</span></div>
-      @if(datosIncomplete()){<div class="notice warning"><strong>Ficha incompleta</strong><p>Faltan datos personales. WhatsApp puede abrirse con el usuario Meta; las llamadas requieren un número.</p></div>}
+      <div class="form-heading"><div><h3 id="candidate-data-title">Datos del postulante</h3><p class="intro">La identidad queda protegida después de completar un alta por usuario Meta. Aquí se ajustan solo los datos operativos de la postulación.</p></div><span class="data-status">{{ canEditPersonalData() ? 'Completar alta Meta' : canEditPostulationData() ? 'Datos operativos editables' : 'Solo consulta' }}</span></div>
+      @if(metaOnly()){<div class="notice warning"><strong>Alta por usuario Meta incompleta</strong><p>Completa los datos personales para cerrar la ficha. Después de guardarlos completos, quedarán bloqueados para el Reclutador.</p></div>}
       @if(dataMessage()){<div class="notice success" role="status"><i class="ti ti-circle-check" aria-hidden="true"></i>{{ dataMessage() }}</div>}
       @if(dataError()){<div class="notice error" role="alert">{{ dataError() }}</div>}
-      <form class="data-form" [formGroup]="datosForm" (ngSubmit)="saveDatos()">
-       <label>Nombres<input formControlName="nombres" placeholder="Nombres completos" [readonly]="!canEditDatos()" /><small>Puede quedar pendiente en un alta por usuario Meta.</small></label>
-       <label>Apellidos<input formControlName="apellidos" placeholder="Apellidos completos" [readonly]="!canEditDatos()" /></label>
-       <label>Tipo de documento<select formControlName="tipoDocumento" [disabled]="!canEditDatos()"><option value="">Pendiente</option><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></select></label>
-       <label>Número de documento<input formControlName="documento" placeholder="8 dígitos" [readonly]="!canEditDatos()" /></label>
-       <label>Celular<input formControlName="celular" placeholder="9 dígitos" inputmode="tel" [readonly]="!canEditDatos()" /><small>Habilita llamadas y WhatsApp.</small></label>
-       <label>Número exclusivo de llamadas<input formControlName="numeroExclusivoLlamadas" placeholder="9 dígitos (opcional)" inputmode="tel" [readonly]="!canEditDatos()" /></label>
-       <label>Usuario Meta<input formControlName="usuarioMeta" placeholder="@usuario (opcional)" [readonly]="!canEditDatos()" /><small>Se guarda sin @ y permite buscarlo en WhatsApp.</small></label>
-       <label>Fecha de nacimiento<input type="date" formControlName="fechaNacimiento" [readonly]="!canEditDatos()" /></label>
-       @if(canEditDatos()){<div class="data-form__action"><button type="submit" class="primary" [disabled]="dataSaving()">{{ dataSaving() ? 'Guardando…' : 'Guardar datos' }}</button></div>}
-      </form>
-      <h3>Datos de la postulación</h3><dl class="data-grid"><div><dt>Fecha de postulación</dt><dd>{{ date(p().fechaPostulacion) }}</dd></div><div><dt>Puesto objetivo</dt><dd>{{ label(p().puestoObjetivo) }}</dd></div><div><dt>Negocio</dt><dd>{{ label(p().negocio) }}</dd></div><div><dt>Turno</dt><dd>{{ label(p().horario) }}</dd></div><div><dt>Modalidad laboral</dt><dd>{{ label(p().modalidad) }}</dd></div><div><dt>Origen</dt><dd>{{ label(p().origen) }}</dd></div><div><dt>Oferta laboral</dt><dd>{{ p().ofertaLaboral?.codigo || 'Sin asociar' }}</dd></div></dl><p class="context-note">La asociación de ofertas es gestionada por el Supervisor de Reclutamiento.</p>
+      <section class="data-section">
+       <div class="data-section__heading"><h4>Datos personales</h4>@if(metaOnly()){<span>Edición puntual</span>} @else {<span>Solo lectura</span>}</div>
+       <form class="data-form" [formGroup]="datosForm" (ngSubmit)="saveDatos()">
+        <label>Nombres<input name="nombres" formControlName="nombres" placeholder="Nombres completos" [readonly]="!canEditPersonalData()" autocomplete="given-name" /></label>
+        <label>Apellidos<input name="apellidos" formControlName="apellidos" placeholder="Apellidos completos" [readonly]="!canEditPersonalData()" autocomplete="family-name" /></label>
+        <label>Tipo de documento<input name="tipoDocumento" [value]="documentTypeLabel(datosForm.controls.tipoDocumento.value)" readonly aria-readonly="true" tabindex="-1" /></label>
+        <label>Número de documento<input name="documento" formControlName="documento" placeholder="8 dígitos" [readonly]="!canEditPersonalData()" inputmode="numeric" /></label>
+        <label>Celular<input name="celular" formControlName="celular" placeholder="9 dígitos" inputmode="tel" [readonly]="!canEditPersonalData()" autocomplete="tel" /><small>Habilita llamadas y WhatsApp.</small></label>
+        <label>Usuario Meta<input name="usuarioMeta" formControlName="usuarioMeta" placeholder="@usuario (opcional)" [readonly]="!canEditPersonalData()" autocapitalize="none" autocorrect="off" spellcheck="false" /><small>Se guarda sin @ y permite buscarlo en WhatsApp.</small></label>
+        <label>Fecha de nacimiento<input name="fechaNacimiento" type="date" formControlName="fechaNacimiento" [readonly]="!canEditPersonalData()" autocomplete="bday" /></label>
+        @if(canEditPersonalData()){<div class="data-form__action"><button type="submit" class="primary" [disabled]="dataSaving()">{{ dataSaving() ? 'Guardando…' : 'Guardar datos personales' }}</button></div>}
+       </form>
+      </section>
+      <section class="data-section data-section--operational">
+       <div class="data-section__heading"><h4>Datos operativos de la postulación</h4><span>Editable en reclutamiento</span></div>
+       <form class="data-form" [formGroup]="postulationForm" (ngSubmit)="saveDatosOperativos()">
+        <label>Turno<span aria-hidden="true"> *</span><select name="horario" formControlName="horario" [disabled]="!canEditPostulationData()" required><option value="">Seleccionar turno</option><option value="MORNING">Mañana</option><option value="AFTERNOON">Tarde</option><option value="NIGHT">Noche</option></select></label>
+        <label>Modalidad<span aria-hidden="true"> *</span><select name="modalidad" formControlName="modalidad" [disabled]="!canEditPostulationData()" required><option value="">Seleccionar modalidad</option><option value="FULL_TIME">Tiempo completo</option><option value="PART_TIME">Medio tiempo</option><option value="SEMI_FULL">Semi full</option><option value="SUPER_FULL">Super full</option></select></label>
+        <label class="wide">Número exclusivo de llamadas<input name="numeroExclusivoLlamadas" formControlName="numeroExclusivoLlamadas" placeholder="9 dígitos (opcional)" inputmode="tel" maxlength="9" [readonly]="!canEditPostulationData()" autocomplete="tel" /><small>Si existe, se usará antes que el celular al llamar.</small></label>
+        @if(canEditPostulationData()){<div class="data-form__action"><button type="submit" class="primary" [disabled]="dataSaving()">{{ dataSaving() ? 'Guardando…' : 'Guardar datos operativos' }}</button></div>}
+       </form>
+      </section>
+      <section class="data-section">
+       <div class="data-section__heading"><h4>Contexto de la postulación</h4><span>Protegido</span></div>
+       <dl class="data-grid"><div><dt>Fecha de postulación</dt><dd>{{ date(p().fechaPostulacion) }}</dd></div><div><dt>Puesto objetivo</dt><dd>{{ label(p().puestoObjetivo) }}</dd></div><div><dt>Negocio</dt><dd>{{ label(p().negocio) }}</dd></div><div><dt>Origen</dt><dd>{{ label(p().origen) }}</dd></div><div><dt>Oferta laboral</dt><dd>{{ p().ofertaLaboral?.codigo || 'Sin asociar' }}</dd></div></dl>
+       <p class="context-note">La asociación de ofertas es gestionada por el Supervisor de Reclutamiento.</p>
+      </section>
      </section>
     }
    @if(panel()==='historial') {
@@ -164,7 +179,9 @@
    @if(error()){<div class="footer-error" role="alert"><span>{{ error() }}</span>@if(!state()){<button type="button" (click)="load()">Reintentar carga</button>}</div>}
    @else {<span role="status">{{ busy()?'Guardando gestión…':message()?'Listo':action()?'Gestión pendiente de guardar':'Bandeja compartida' }}</span>}
   </div>
-  <div class="footer-actions"><button type="button" (click)="close()" [disabled]="busy()">Cancelar</button>
+  <div class="footer-actions">
+    @if(canRequestBaja()){<button type="button" class="footer-danger" [disabled]="busy()" (click)="bajaRequested.emit()"><i class="ti ti-user-off" aria-hidden="true"></i><span>Dar de baja</span></button>}
+    <button type="button" (click)="close()" [disabled]="busy()">Cancelar</button>
     @if(action()&&panel()==='gestion'){<button type="submit" form="management-form" class="primary" [disabled]="busy()||stale()||(action()==='ASIGNAR_GRUPO'&&!groups().length)">{{ cta() }}</button>}
   </div>
  </footer>

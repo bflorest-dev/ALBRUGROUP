@@ -108,6 +108,13 @@ public class PostulanteService {
         return postulanteRepository.save(postulante);
     }
 
+    public Postulante actualizarNumeroExclusivoLlamadas(Postulante postulante, String numero) {
+        String normalizado = normalizarTexto(numero);
+        validarTelefono(normalizado, false, "Número exclusivo de llamadas");
+        postulante.setNumeroExclusivoLlamadas(normalizado);
+        return postulanteRepository.save(postulante);
+    }
+
     public static String normalizarUsuarioMeta(String usuarioMeta) {
         if (usuarioMeta == null) {
             return null;

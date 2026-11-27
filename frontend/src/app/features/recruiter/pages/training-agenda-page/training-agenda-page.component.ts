@@ -20,6 +20,8 @@ import { RecruiterTrainingGroupsFacade } from '../../facades/recruiter-training-
 import { RecruiterPostulantesService } from '../../services/recruiter-postulantes.service';
 import { RecruiterTrainingGroupsService } from '../../services/recruiter-training-groups.service';
 import { CurrentUserRecruitmentNegocioScopeService } from '../../../../core/services/current-user-recruitment-negocio-scope.service';
+import { PostulationCloseConfirmationComponent } from '../../../../shared/components/postulation-close-confirmation/postulation-close-confirmation.component';
+import { DarBajaPostulacionRequest } from '../../../../shared/models/recruitment/dar-baja-postulacion-request';
 
 interface ChipView {
   id: number;
@@ -56,7 +58,7 @@ const DOW_CORTO = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 
 @Component({
   selector: 'app-training-agenda-page',
-  imports: [FormsModule, TrainingGroupFormPanelComponent],
+  imports: [FormsModule, TrainingGroupFormPanelComponent, PostulationCloseConfirmationComponent],
   providers: [RecruiterTrainingGroupsFacade],
   templateUrl: './training-agenda-page.component.html',
   styleUrl: './training-agenda-page.component.scss',
@@ -95,6 +97,11 @@ export class TrainingAgendaPageComponent implements OnInit {
   protected readonly resultBusy = signal<number | null>(null);
   protected readonly resultMessage = signal('');
   protected readonly resultError = signal('');
+  protected readonly bajaPostulacion = signal<PostulacionResponse | null>(null);
+  protected readonly bajaContext = signal('');
+  protected readonly bajaRelated = signal('');
+  protected readonly bajaBusy = signal(false);
+  protected readonly bajaError = signal('');
   protected readonly resultOptions = ['ASIGNADO', 'EN_CAPACITACION', 'APROBADO', 'DESAPROBADO'];
 
   protected readonly dragGroupId = signal<number | null>(null);
@@ -381,6 +388,39 @@ export class TrainingAgendaPageComponent implements OnInit {
       'Postulante retirado · vuelve a aprobados sin grupo.',
       'No se pudo retirar al postulante. El grupo debe estar Abierto.'
     );
+  }
+
+  protected openBaja(postulacion: PostulacionResponse, grupo: GrupoCapacitacionResponse): void {
+    this.bajaPostulacion.set(postulacion);
+    this.bajaContext.set(`Agenda de capacitación · ${grupo.codigo}`);
+    this.bajaRelated.set(`${grupo.codigo} · ${this.estadoLabel(grupo.estado)}`);
+    this.bajaError.set('');
+  }
+
+  protected closeBaja(): void {
+    if (this.bajaBusy()) return;
+    this.bajaPostulacion.set(null);
+    this.bajaError.set('');
+  }
+
+  protected confirmBaja(request: DarBajaPostulacionRequest): void {
+    const postulacion = this.bajaPostulacion();
+    if (!postulacion || this.bajaBusy()) return;
+    this.bajaBusy.set(true);
+    this.bajaError.set('');
+    this.postulantesApi.darDeBajaPostulacion(postulacion.id, request)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.bajaBusy.set(false);
+          this.bajaPostulacion.set(null);
+          this.loadAgenda();
+        },
+        error: error => {
+          this.bajaBusy.set(false);
+          this.bajaError.set(error?.error?.message || 'No se pudo dar de baja la postulación.');
+        }
+      });
   }
 
   protected resultValue(detalle: { id: number; estadoCapacitacion: string }): string {
