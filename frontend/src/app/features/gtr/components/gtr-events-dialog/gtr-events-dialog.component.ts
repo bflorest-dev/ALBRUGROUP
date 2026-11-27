@@ -42,7 +42,7 @@ export class GtrEventsDialogComponent {
     return [...seen];
   });
 
-  protected readonly eventFilterLabels: Record<string, string> = {
+  protected readonly eventFilterLabels: Partial<Record<string, string>> = {
     tipificacion: 'Tipificación', registro: 'Registro',
     asignacion: 'Asignación', contacto: 'Contacto',
   };
