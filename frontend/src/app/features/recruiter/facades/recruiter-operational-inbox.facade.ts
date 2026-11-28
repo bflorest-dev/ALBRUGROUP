@@ -12,8 +12,7 @@ import { ResumenReclutadorResponse } from '../../../shared/models/recruitment/re
 import { RegistrarContactoPostulacionRequest } from '../../../shared/models/recruitment/registrar-contacto-postulacion-request';
 import { SubtipificacionResponse } from '../../../shared/models/recruitment/subtipificacion-response';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
-import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
-import { RecruiterPostulantesService } from '../services/recruiter-postulantes.service';
+import { EmpleadoAccesoResponse, RecruiterPostulantesService } from '../services/recruiter-postulantes.service';
 import { CurrentUserRecruitmentNegocioScopeService } from '../../../core/services/current-user-recruitment-negocio-scope.service';
 
 export type RecruiterOperationalDrawer = 'none' | 'detail';
@@ -55,7 +54,7 @@ export class RecruiterOperationalInboxFacade {
 
   readonly rows = signal<PostulacionResponse[]>([]);
   readonly trainingRows = signal<PostulacionResponse[]>([]);
-  readonly responsibleEmployees = signal<Record<number, EmpleadoRolResponse>>({});
+  readonly responsibleEmployees = signal<Record<number, EmpleadoAccesoResponse>>({});
   readonly selectedPostulacion = signal<PostulacionResponse | null>(null);
   readonly eventos = signal<EventoResponse[]>([]);
   readonly catalogo = signal<CatalogoTipificacionResponse>(EMPTY_CATALOG);
@@ -307,16 +306,17 @@ export class RecruiterOperationalInboxFacade {
     const id = row.ultimaGestionResponsableId;
     if (!id) return 'Sin gestión registrada';
     const employee = this.responsibleEmployees()[id];
-    if (!employee) return `Empleado #${id}`;
-    const words = `${employee.nombres} ${employee.apellidos}`.trim().split(/\s+/).filter(Boolean);
+    if (!employee) return 'Responsable no disponible';
+    const words = employee.nombreCompleto.trim().split(/\s+/).filter(Boolean);
     return words.length >= 3 ? `${words[0]} ${words[2]}` : words.join(' ');
   }
 
   recruiterInitials(row: PostulacionResponse): string {
     const id = row.ultimaGestionResponsableId;
     const employee = id ? this.responsibleEmployees()[id] : null;
-    if (!employee) return id ? 'E' : '—';
-    return `${employee.nombres.charAt(0)}${employee.apellidos.charAt(0)}`.toUpperCase();
+    if (!employee) return id ? '?' : '—';
+    const words = employee.nombreCompleto.trim().split(/\s+/).filter(Boolean);
+    return `${words[0]?.charAt(0) ?? ''}${words[words.length - 1]?.charAt(0) ?? ''}`.toUpperCase();
   }
 
   isNewPostulacion(row: PostulacionResponse): boolean {
@@ -395,15 +395,15 @@ export class RecruiterOperationalInboxFacade {
       return;
     }
 
-    this.service.listarEmpleadosLight(ids).pipe(timeout(this.requestTimeoutMs)).subscribe({
-      next: employees => {
-        const directory = employees.reduce<Record<number, EmpleadoRolResponse>>((accumulator, employee) => {
-          accumulator[employee.idEmpleado] = employee;
+    forkJoin(ids.map(id => this.service.obtenerAccesoEmpleado(id).pipe(catchError(() => of(null))))).pipe(
+      timeout(this.requestTimeoutMs)
+    ).subscribe(employees => {
+      const directory = employees.filter((employee): employee is EmpleadoAccesoResponse => !!employee)
+        .reduce<Record<number, EmpleadoAccesoResponse>>((accumulator, employee) => {
+          accumulator[employee.empleadoId] = employee;
           return accumulator;
         }, {});
-        this.responsibleEmployees.set(directory);
-      },
-      error: () => this.responsibleEmployees.set({})
+      this.responsibleEmployees.set(directory);
     });
   }
 

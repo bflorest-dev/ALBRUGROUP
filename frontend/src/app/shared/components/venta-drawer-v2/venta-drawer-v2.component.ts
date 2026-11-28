@@ -773,7 +773,8 @@ export class VentaDrawerV2Component implements OnChanges, OnDestroy {
       AUDIO_OBSERVADO: 'Audio observado',
       SERVICIO_DESACTIVO: 'Servicio desactivo',
       SERVICIO_SUSPENDIDO: 'Servicio suspendido',
-      EXPEDIENTE_PENDIENTE: 'Expediente pendiente'
+      EXPEDIENTE_PENDIENTE: 'Expediente pendiente',
+      CLAWBACK: 'Clawback'
     };
     return labels[estado] ?? estado;
   }

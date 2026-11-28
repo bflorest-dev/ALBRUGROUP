@@ -5,7 +5,8 @@ public enum EstadoExpediente {
     AUDIO_OBSERVADO,
     SERVICIO_DESACTIVO,
     SERVICIO_SUSPENDIDO,
-    EXPEDIENTE_PENDIENTE;
+    EXPEDIENTE_PENDIENTE,
+    CLAWBACK;
 
     public boolean isPositivo() {
         return this == AUDIO_CONFORME;

@@ -98,6 +98,7 @@ const ESTADO_BADGES: Record<string, EstadoBadge> = {
   SERVICIO_DESACTIVO: { label: 'Servicio desactivo', severity: 'danger' },
   SERVICIO_SUSPENDIDO: { label: 'Servicio suspendido', severity: 'danger' },
   EXPEDIENTE_PENDIENTE: { label: 'Expediente pendiente', severity: 'warn' },
+  CLAWBACK: { label: 'Clawback', severity: 'danger' },
   // Entregas / credenciales
   ACTIVA: { label: 'Activa', severity: 'success' },
   CANCELADA: { label: 'Cancelada', severity: 'secondary' },
@@ -165,7 +166,8 @@ const SEM_COLOR_MAP: Record<string, SemaforoColor> = {
   AUDIO_OBSERVADO: 'sem--red',
   SERVICIO_DESACTIVO: 'sem--red',
   SERVICIO_SUSPENDIDO: 'sem--red',
-  EXPEDIENTE_PENDIENTE: 'sem--yellow'
+  EXPEDIENTE_PENDIENTE: 'sem--yellow',
+  CLAWBACK: 'sem--red'
 };
 
 const SEM_ABREV_MAP: Record<string, string> = {
@@ -187,7 +189,8 @@ const SEM_ABREV_MAP: Record<string, string> = {
   AUDIO_OBSERVADO: 'Observ.',
   SERVICIO_DESACTIVO: 'Desact.',
   SERVICIO_SUSPENDIDO: 'Susp.',
-  EXPEDIENTE_PENDIENTE: 'Pend.'
+  EXPEDIENTE_PENDIENTE: 'Pend.',
+  CLAWBACK: 'Claw.'
 };
 
 const SEM_LABEL_MAP: Record<string, string> = {
@@ -209,7 +212,8 @@ const SEM_LABEL_MAP: Record<string, string> = {
   AUDIO_OBSERVADO: 'Audio observado',
   SERVICIO_DESACTIVO: 'Servicio desactivo',
   SERVICIO_SUSPENDIDO: 'Servicio suspendido',
-  EXPEDIENTE_PENDIENTE: 'Expediente pendiente'
+  EXPEDIENTE_PENDIENTE: 'Expediente pendiente',
+  CLAWBACK: 'Clawback'
 };
 
 export function semColor(value: unknown): SemaforoColor {

@@ -25,6 +25,13 @@ import {
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { DarBajaPostulacionRequest } from '../../../shared/models/recruitment/dar-baja-postulacion-request';
 
+export interface EmpleadoAccesoResponse {
+  empleadoId: number;
+  nombreCompleto: string;
+  roles: string[];
+  rolPrincipal: string | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -32,6 +39,7 @@ export class RecruiterPostulantesService {
   private readonly recruitmentUrl = `${API_CONSTANTS.gatewayBaseUrl}/recruitment`;
   private readonly postulacionesUrl = `${this.recruitmentUrl}/postulaciones`;
   private readonly empleadosUrl = `${API_CONSTANTS.gatewayBaseUrl}/rrhh/empleados`;
+  private readonly authUrl = `${API_CONSTANTS.gatewayBaseUrl}${API_CONSTANTS.authBasePath}`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -108,6 +116,10 @@ export class RecruiterPostulantesService {
     let params = new HttpParams();
     empleadoIds.forEach(id => params = params.append('empleadoIds', id));
     return this.http.get<EmpleadoRolResponse[]>(`${this.empleadosUrl}/light`, { params });
+  }
+
+  obtenerAccesoEmpleado(empleadoId: number): Observable<EmpleadoAccesoResponse> {
+    return this.http.get<EmpleadoAccesoResponse>(`${this.authUrl}/${empleadoId}/empleado`);
   }
 
   listarBandejaReclutamiento(

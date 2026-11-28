@@ -17,7 +17,7 @@
    <button type="button" [class.current]="panel()==='historial'" (click)="panel.set('historial')">Historial</button>
   </nav>
  </header>
- <main [attr.inert]="busy()?'':null" [attr.aria-busy]="busy()">
+ <main [class.main--history]="panel()==='historial'" [attr.inert]="busy()?'':null" [attr.aria-busy]="busy()">
   @if(loading()) {<div class="loading" role="status"><span class="spinner"></span>Cargando ficha de gestión…</div>}
   @if(stale()) {<div class="notice warning" role="alert"><strong>La ficha cambió durante tu gestión.</strong><p>Tu borrador está conservado. Actualiza el contexto para revisar el cambio.</p><button type="button" (click)="reloadContext()">Actualizar contexto</button></div>}
   @if(message()) {<div class="notice success" role="status"><i class="ti ti-circle-check"></i>{{ message() }}</div>}
@@ -131,8 +131,7 @@
     }
    }
     @if(panel()==='datos') {
-     <section class="data-panel" aria-labelledby="candidate-data-title">
-      <div class="form-heading"><div><h3 id="candidate-data-title">Datos del postulante</h3><p class="intro">La identidad queda protegida después de completar un alta por usuario Meta. Aquí se ajustan solo los datos operativos de la postulación.</p></div><span class="data-status">{{ canEditPersonalData() ? 'Completar alta Meta' : canEditPostulationData() ? 'Datos operativos editables' : 'Solo consulta' }}</span></div>
+      <section class="data-panel" aria-label="Datos del postulante">
       @if(metaOnly()){<div class="notice warning"><strong>Alta por usuario Meta incompleta</strong><p>Completa los datos personales para cerrar la ficha. Después de guardarlos completos, quedarán bloqueados para el Reclutador.</p></div>}
       @if(dataMessage()){<div class="notice success" role="status"><i class="ti ti-circle-check" aria-hidden="true"></i>{{ dataMessage() }}</div>}
       @if(dataError()){<div class="notice error" role="alert">{{ dataError() }}</div>}
@@ -152,35 +151,63 @@
       <section class="data-section data-section--operational">
        <div class="data-section__heading"><h4>Datos operativos de la postulación</h4><span>Editable en reclutamiento</span></div>
        <form class="data-form" [formGroup]="postulationForm" (ngSubmit)="saveDatosOperativos()">
-        <label>Turno<span aria-hidden="true"> *</span><select name="horario" formControlName="horario" [disabled]="!canEditPostulationData()" required><option value="">Seleccionar turno</option><option value="MORNING">Mañana</option><option value="AFTERNOON">Tarde</option><option value="NIGHT">Noche</option></select></label>
-        <label>Modalidad<span aria-hidden="true"> *</span><select name="modalidad" formControlName="modalidad" [disabled]="!canEditPostulationData()" required><option value="">Seleccionar modalidad</option><option value="FULL_TIME">Tiempo completo</option><option value="PART_TIME">Medio tiempo</option><option value="SEMI_FULL">Semi full</option><option value="SUPER_FULL">Super full</option></select></label>
-        <label class="wide">Número exclusivo de llamadas<input name="numeroExclusivoLlamadas" formControlName="numeroExclusivoLlamadas" placeholder="9 dígitos (opcional)" inputmode="tel" maxlength="9" [readonly]="!canEditPostulationData()" autocomplete="tel" /><small>Si existe, se usará antes que el celular al llamar.</small></label>
-        @if(canEditPostulationData()){<div class="data-form__action"><button type="submit" class="primary" [disabled]="dataSaving()">{{ dataSaving() ? 'Guardando…' : 'Guardar datos operativos' }}</button></div>}
+        <div class="field-select-field"><span class="field-select-field__label">Turno <span aria-hidden="true">*</span></span>@if(canEditPostulationData()){<details #turnoMenu class="field-select" aria-required="true"><summary class="field-select__summary" aria-haspopup="listbox"><span class="field-select__trigger"><strong>{{ turnoLabel() }}</strong><i class="ti ti-chevron-down" aria-hidden="true"></i></span></summary><div class="field-select__menu" role="listbox" aria-label="Turno"><button type="button" role="option" class="field-select__option" [class.active]="!operationalSelected('horario','MORNING')&&!operationalSelected('horario','AFTERNOON')&&!operationalSelected('horario','NIGHT')" [attr.aria-selected]="!postulationForm.controls.horario.value" (click)="selectHorario('', turnoMenu)"><span>Seleccionar turno</span>@if(!postulationForm.controls.horario.value){<i class="ti ti-check" aria-hidden="true"></i>}</button><button type="button" role="option" class="field-select__option" [class.active]="operationalSelected('horario','MORNING')" [attr.aria-selected]="operationalSelected('horario','MORNING')" (click)="selectHorario('MORNING', turnoMenu)"><span>Mañana</span>@if(operationalSelected('horario','MORNING')){<i class="ti ti-check" aria-hidden="true"></i>}</button><button type="button" role="option" class="field-select__option" [class.active]="operationalSelected('horario','AFTERNOON')" [attr.aria-selected]="operationalSelected('horario','AFTERNOON')" (click)="selectHorario('AFTERNOON', turnoMenu)"><span>Tarde</span>@if(operationalSelected('horario','AFTERNOON')){<i class="ti ti-check" aria-hidden="true"></i>}</button><button type="button" role="option" class="field-select__option" [class.active]="operationalSelected('horario','NIGHT')" [attr.aria-selected]="operationalSelected('horario','NIGHT')" (click)="selectHorario('NIGHT', turnoMenu)"><span>Noche</span>@if(operationalSelected('horario','NIGHT')){<i class="ti ti-check" aria-hidden="true"></i>}</button></div></details>} @else {<div class="field-select field-select--readonly"><div class="field-select__trigger"><strong>{{ turnoLabel() }}</strong><i class="ti ti-lock" aria-hidden="true"></i></div></div>}</div>
+        <div class="field-select-field"><span class="field-select-field__label">Modalidad <span aria-hidden="true">*</span></span>@if(canEditPostulationData()){<details #modalidadMenu class="field-select" aria-required="true"><summary class="field-select__summary" aria-haspopup="listbox"><span class="field-select__trigger"><strong>{{ modalidadLabel() }}</strong><i class="ti ti-chevron-down" aria-hidden="true"></i></span></summary><div class="field-select__menu" role="listbox" aria-label="Modalidad"><button type="button" role="option" class="field-select__option" [class.active]="!postulationForm.controls.modalidad.value" [attr.aria-selected]="!postulationForm.controls.modalidad.value" (click)="selectModalidad('', modalidadMenu)"><span>Seleccionar modalidad</span>@if(!postulationForm.controls.modalidad.value){<i class="ti ti-check" aria-hidden="true"></i>}</button><button type="button" role="option" class="field-select__option" [class.active]="operationalSelected('modalidad','FULL_TIME')" [attr.aria-selected]="operationalSelected('modalidad','FULL_TIME')" (click)="selectModalidad('FULL_TIME', modalidadMenu)"><span>Tiempo completo</span>@if(operationalSelected('modalidad','FULL_TIME')){<i class="ti ti-check" aria-hidden="true"></i>}</button><button type="button" role="option" class="field-select__option" [class.active]="operationalSelected('modalidad','PART_TIME')" [attr.aria-selected]="operationalSelected('modalidad','PART_TIME')" (click)="selectModalidad('PART_TIME', modalidadMenu)"><span>Medio tiempo</span>@if(operationalSelected('modalidad','PART_TIME')){<i class="ti ti-check" aria-hidden="true"></i>}</button><button type="button" role="option" class="field-select__option" [class.active]="operationalSelected('modalidad','SEMI_FULL')" [attr.aria-selected]="operationalSelected('modalidad','SEMI_FULL')" (click)="selectModalidad('SEMI_FULL', modalidadMenu)"><span>Semi full</span>@if(operationalSelected('modalidad','SEMI_FULL')){<i class="ti ti-check" aria-hidden="true"></i>}</button><button type="button" role="option" class="field-select__option" [class.active]="operationalSelected('modalidad','SUPER_FULL')" [attr.aria-selected]="operationalSelected('modalidad','SUPER_FULL')" (click)="selectModalidad('SUPER_FULL', modalidadMenu)"><span>Super full</span>@if(operationalSelected('modalidad','SUPER_FULL')){<i class="ti ti-check" aria-hidden="true"></i>}</button></div></details>} @else {<div class="field-select field-select--readonly"><div class="field-select__trigger"><strong>{{ modalidadLabel() }}</strong><i class="ti ti-lock" aria-hidden="true"></i></div></div>}</div>
+        <label>Número Exclusivo de Llamadas<input name="numeroExclusivoLlamadas" formControlName="numeroExclusivoLlamadas" placeholder="9 dígitos (opcional)" inputmode="tel" maxlength="9" [readonly]="!canEditPostulationData()" autocomplete="tel" /><small>Si existe, se usará antes que el celular al llamar.</small></label>
+        @if(canEditPostulationData()){<div class="data-form__action data-form__action--inline"><button type="submit" class="primary" [disabled]="dataSaving()">{{ dataSaving() ? 'Guardando…' : 'Guardar datos operativos' }}</button></div>}
        </form>
       </section>
       <section class="data-section">
-       <div class="data-section__heading"><h4>Contexto de la postulación</h4><span>Protegido</span></div>
-       <dl class="data-grid"><div><dt>Fecha de postulación</dt><dd>{{ date(p().fechaPostulacion) }}</dd></div><div><dt>Puesto objetivo</dt><dd>{{ label(p().puestoObjetivo) }}</dd></div><div><dt>Negocio</dt><dd>{{ label(p().negocio) }}</dd></div><div><dt>Origen</dt><dd>{{ label(p().origen) }}</dd></div><div><dt>Oferta laboral</dt><dd>{{ p().ofertaLaboral?.codigo || 'Sin asociar' }}</dd></div></dl>
-       <p class="context-note">La asociación de ofertas es gestionada por el Supervisor de Reclutamiento.</p>
+        <div class="data-section__heading"><h4>Contexto de la postulación</h4></div>
+        <div class="data-grid data-grid--readonly">
+         <label for="context-postulation-date">Fecha de postulación<input id="context-postulation-date" name="context-postulation-date" readonly aria-readonly="true" [value]="date(p().fechaPostulacion)" /></label>
+         <label for="context-target-role">Puesto objetivo<input id="context-target-role" name="context-target-role" readonly aria-readonly="true" [value]="label(p().puestoObjetivo)" /></label>
+         <label for="context-business">Negocio<input id="context-business" name="context-business" readonly aria-readonly="true" [value]="label(p().negocio)" /></label>
+         <label for="context-source">Origen<input id="context-source" name="context-source" readonly aria-readonly="true" [value]="label(p().origen)" /></label>
+         <label for="context-job-offer">Oferta laboral<input id="context-job-offer" name="context-job-offer" readonly aria-readonly="true" [value]="p().ofertaLaboral?.codigo || 'Sin asociar'" /></label>
+        </div>
       </section>
      </section>
     }
    @if(panel()==='historial') {
-    <div class="form-heading"><h3>Historial de gestión</h3><button type="button" (click)="loadHistory()">Actualizar historial</button></div>
-    <p class="intro">Gestiones y responsable de cada registro, desde la más reciente.</p>
-    <ol class="timeline">@for(e of events();track e.id){<li><div><strong>{{ label(e.subtipificacion||e.accion) }}</strong><time>{{ date(e.fechaHoraGestion||e.createdAt) }}</time></div><p>{{ e.observacion||'Evento registrado en el proceso.' }}</p><small>{{ label(e.modalidadContacto) }} · Empleado #{{ e.idEmpleadoResponsable }} · Registrado {{ date(e.createdAt) }}</small></li>}@empty{<li>Aún no hay gestiones registradas.</li>}</ol>
-    @if(historyPages()>1){<div class="inline-actions" aria-label="Paginación del historial"><button type="button" [disabled]="historyLoading()||historyPage()===0" (click)="loadHistory(historyPage()-1)">Más recientes</button><span>Página {{ historyPage()+1 }} de {{ historyPages() }}</span><button type="button" [disabled]="historyLoading()||historyPage()+1>=historyPages()" (click)="loadHistory(historyPage()+1)">Más antiguas</button></div>}
-    <h3>Agenda y reprogramaciones</h3><ol class="timeline">@for(a of context.actividades;track a.id){<li><div><strong>{{ label(a.tipo) }} · {{ label(a.estado) }}</strong><time>{{ date(a.fechaHora) }}</time></div><p>{{ label(a.modalidad) }} · {{ a.referencia||'Sin referencia adicional' }}</p><small>Empleado #{{ a.responsableId }}</small></li>}@empty{<li>Aún no hay actividades programadas.</li>}</ol>
+    <section class="history-view" aria-labelledby="history-title">
+     <div class="history-heading">
+      <div><span class="history-heading__eyebrow">TRAZABILIDAD</span><h3 id="history-title">Historial de la postulación</h3></div>
+      <button type="button" class="history-heading__refresh" (click)="loadHistory()" [disabled]="historyLoading()"><i class="ti ti-refresh" aria-hidden="true"></i><span>Actualizar</span></button>
+     </div>
+     <div class="history-scroll">
+      <ol class="history-list">
+       @for(e of events();track e.id){
+        <li class="history-event" [class]="'history-event history-event--'+historyTone(e)">
+         <div class="history-event__icon" aria-hidden="true"><i class="ti {{ historyIcon(e) }}"></i></div>
+         <div class="history-event__body">
+          <div class="history-event__line"><strong>{{ historyTitle(e) }}</strong><span class="history-event__meta">{{ historyMeta(e) }}</span><time>{{ date(e.fechaHoraGestion||e.createdAt) }}</time></div>
+          @if(e.observacion){<p class="history-event__comment">{{ e.observacion }}</p>}
+         </div>
+        </li>
+       } @empty {<li class="history-empty"><i class="ti ti-history" aria-hidden="true"></i><span>Aún no hay eventos registrados.</span></li>}
+      </ol>
+      <section class="history-agenda" aria-labelledby="history-agenda-title">
+       <div class="history-agenda__heading"><h3 id="history-agenda-title">Agenda y reprogramaciones</h3><span>{{ context.actividades.length }} actividades</span></div>
+       <ol class="history-agenda__list">@for(a of context.actividades;track a.id){<li class="history-event" [class]="'history-event history-event--'+activityTone(a)"><div class="history-event__icon" aria-hidden="true"><i class="ti {{ activityIcon(a) }}"></i></div><div class="history-event__body"><div class="history-event__line"><strong>{{ label(a.tipo) }} · {{ label(a.estado) }}</strong><span class="history-event__meta">{{ label(a.modalidad) }} · {{ activityResponsible(a.responsableId) }}</span><time>{{ date(a.fechaHora) }}</time></div><p class="history-event__comment">{{ a.referencia||'Sin referencia adicional' }}</p></div></li>}@empty{<li class="history-empty"><i class="ti ti-calendar-off" aria-hidden="true"></i><span>Aún no hay actividades programadas.</span></li>}</ol>
+      </section>
+     </div>
+     @if(historyPages()>1){<nav class="history-pagination" aria-label="Paginación del historial"><button type="button" [disabled]="historyLoading()||historyPage()===0" (click)="loadHistory(historyPage()-1)"><i class="ti ti-chevron-left" aria-hidden="true"></i><span>Más recientes</span></button><span aria-live="polite">Página {{ historyPage()+1 }} de {{ historyPages() }}</span><button type="button" [disabled]="historyLoading()||historyPage()+1>=historyPages()" (click)="loadHistory(historyPage()+1)"><span>Más antiguas</span><i class="ti ti-chevron-right" aria-hidden="true"></i></button></nav>}
+    </section>
    }
   }
  </main>
  <footer [class.footer--error]="!!error()">
-  <div class="footer-feedback">
-   @if(error()){<div class="footer-error" role="alert"><span>{{ error() }}</span>@if(!state()){<button type="button" (click)="load()">Reintentar carga</button>}</div>}
-   @else {<span role="status">{{ busy()?'Guardando gestión…':message()?'Listo':action()?'Gestión pendiente de guardar':'Bandeja compartida' }}</span>}
+  <div class="footer-leading">
+   @if(canRequestBaja()){<button type="button" class="footer-danger" [disabled]="busy()" (click)="bajaRequested.emit()"><i class="ti ti-user-off" aria-hidden="true"></i><span>Dar de baja</span></button>}
+   <div class="footer-feedback">
+    @if(error()){<div class="footer-error" role="alert"><span>{{ error() }}</span>@if(!state()){<button type="button" (click)="load()">Reintentar carga</button>}</div>}
+    @else if(busy()){<span role="status">Guardando gestión…</span>}
+    @else if(message()){<span role="status">Listo</span>}
+    @else if(action()){<span role="status">Gestión pendiente de guardar</span>}
+   </div>
   </div>
   <div class="footer-actions">
-    @if(canRequestBaja()){<button type="button" class="footer-danger" [disabled]="busy()" (click)="bajaRequested.emit()"><i class="ti ti-user-off" aria-hidden="true"></i><span>Dar de baja</span></button>}
     <button type="button" (click)="close()" [disabled]="busy()">Cancelar</button>
     @if(action()&&panel()==='gestion'){<button type="submit" form="management-form" class="primary" [disabled]="busy()||stale()||(action()==='ASIGNAR_GRUPO'&&!groups().length)">{{ cta() }}</button>}
   </div>

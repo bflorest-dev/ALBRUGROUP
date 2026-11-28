@@ -2,9 +2,9 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListene
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { A11yModule } from '@angular/cdk/a11y';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin, timeout } from 'rxjs';
+import { catchError, forkJoin, of, timeout } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { RecruiterPostulantesService } from '../../services/recruiter-postulantes.service';
+import { EmpleadoAccesoResponse, RecruiterPostulantesService } from '../../services/recruiter-postulantes.service';
 import { RecruitmentRealtimeService } from '../../../../core/services/recruitment-realtime.service';
 import { PostulacionResponse } from '../../../../shared/models/recruitment/postulacion-response';
 import { CatalogoTipificacionResponse } from '../../../../shared/models/recruitment/catalogo-tipificacion-response';
@@ -41,6 +41,7 @@ export class GestionDrawerComponent implements OnInit {
  readonly meetSlots=signal<HorarioMeet[]>([]);
  readonly meetSlotsLoading=signal(false);
  readonly events=signal<EventoResponse[]>([]);
+ readonly responsibleEmployees=signal<Record<number,EmpleadoAccesoResponse>>({});
  readonly historyPage=signal(0);
  readonly historyPages=signal(0);
  readonly historyLoading=signal(false);
@@ -165,8 +166,23 @@ export class GestionDrawerComponent implements OnInit {
  loadHistory(page=0):void {
   this.historyLoading.set(true);
   this.api.listarEventos(this.postulacion().id,page).pipe(timeout(15000),takeUntilDestroyed(this.destroyRef)).subscribe({
-   next:r=>{this.events.set(r.content);this.historyPage.set(r.page);this.historyPages.set(r.totalPages);this.historyLoading.set(false);},error:()=>{this.historyLoading.set(false);this.error.set('No se pudo cargar el historial. Puedes reintentar la carga.');}
+   next:r=>{
+    this.events.set(r.content);this.historyPage.set(r.page);this.historyPages.set(r.totalPages);this.historyLoading.set(false);
+    this.loadResponsibleEmployees([
+     ...r.content.map(event=>event.idEmpleadoResponsable),
+     ...(this.state()?.actividades??[]).map(activity=>activity.responsableId)
+    ]);
+   },error:()=>{this.historyLoading.set(false);this.error.set('No se pudo cargar el historial. Puedes reintentar la carga.');}
   });
+ }
+ private loadResponsibleEmployees(ids:Array<number|null|undefined>):void {
+  const missingIds=[...new Set(ids.filter((id):id is number=>typeof id==='number'&&Number.isInteger(id)&&id>0))]
+   .filter(id=>!this.responsibleEmployees()[id]);
+  if(!missingIds.length)return;
+  forkJoin(missingIds.map(id=>this.api.obtenerAccesoEmpleado(id).pipe(catchError(()=>of(null))))).pipe(
+   timeout(15000),takeUntilDestroyed(this.destroyRef)
+  ).subscribe(employees=>this.responsibleEmployees.update(current=>employees.filter((employee):employee is EmpleadoAccesoResponse=>!!employee)
+   .reduce<Record<number,EmpleadoAccesoResponse>>((directory,employee)=>({...directory,[employee.empleadoId]:employee}),{...current})));
  }
  can(a:GestionAccion):boolean{return !!this.state()?.accionesDisponibles.includes(a);}
  chooseContact(value:'sin'|'con'|'no'):void {
@@ -350,8 +366,63 @@ export class GestionDrawerComponent implements OnInit {
   const labels:Record<GestionAccion,string>={NO_CONTACTO:'Intento sin contacto',SEGUIMIENTO:'Guardar seguimiento',AGENDAR:'Programar actividad',AGENDAR_MEET:'Asignar Meet',REPROGRAMAR:'Reprogramar actividad',REPROGRAMAR_MEET:'Reprogramar Meet',ASISTIO_MEET:'Registrar asistencia',INASISTENCIA:'Registrar inasistencia',CANCELAR_CITA:'Cancelar actividad',EVALUAR:'Registrar evaluación',NO_INTERESADO:'Cerrar postulación',RECHAZAR:'Rechazar postulación',APROBAR:'Aprobar postulación',ASIGNAR_GRUPO:'Asignar grupo'};
   return a?labels[a]:'Selecciona una gestión';
  }
+ eventLabel(value:string|null|undefined):string {
+  const labels:Record<string,string>={REGISTRO_POSTULACION:'Postulación registrada',ACTUALIZACION_DATOS_POSTULANTE:'Datos actualizados',REGISTRAR_CONTACTO:'Contacto registrado',CONTACTO:'Contacto registrado',TIPIFICACION:'Tipificación',AGENDAR_MEET:'Meet programado',REPROGRAMAR_MEET:'Meet reprogramado',ASISTIO_MEET:'Asistencia al Meet',INASISTENCIA:'Inasistencia al Meet',EVALUAR:'Evaluación del Meet',APROBACION_RECLUTAMIENTO:'Postulación aprobada',RECHAZO_RECLUTAMIENTO:'Postulación rechazada',BAJA_POSTULACION:'Postulación dada de baja'};
+  return !value?'Evento registrado':labels[value]??this.label(value);
+ }
+ historyTitle(event:EventoResponse):string {
+  const detail=event.subtipificacion||event.tipificacion;
+  return event.accion==='TIPIFICACION'&&detail?`${this.eventLabel(event.accion)} · ${this.label(detail)}`:this.eventLabel(event.accion);
+ }
+ historyMeta(event:EventoResponse):string {
+  return [event.modalidadContacto?this.label(event.modalidadContacto):null,event.etapa?this.label(event.etapa):null,this.responsibleLabel(event.idEmpleadoResponsable)].filter(Boolean).join(' · ');
+ }
+ activityResponsible(id:number|null|undefined):string {
+  return this.responsibleLabel(id);
+ }
+ private responsibleLabel(id:number|null|undefined):string {
+  const employee=id?this.responsibleEmployees()[id]:undefined;
+  if(!employee)return 'Responsable no disponible';
+  const words=(employee.nombreCompleto??'').trim().split(/\s+/).filter(Boolean);
+  const name=words.length>=3?[words[0],words[2]].join(' '):words.slice(0,2).join(' ')||'Responsable';
+  const role=this.label(employee.rolPrincipal||employee.roles?.[0]||'RESPONSABLE');
+  return `${name} · ${role}`;
+ }
+ activityIcon(activity:{tipo?:string|null;estado?:string|null}):string {
+  const status=(activity.estado||'').toUpperCase();
+  if(status.includes('CANCEL'))return 'ti-calendar-off';
+  if(status.includes('REALIZ')||status.includes('COMPLET'))return 'ti-calendar-check';
+  if(status.includes('INASIST'))return 'ti-calendar-x';
+  return 'ti-calendar-event';
+ }
+ activityTone(activity:{tipo?:string|null;estado?:string|null}):string {
+  const status=(activity.estado||'').toUpperCase();
+  if(status.includes('CANCEL')||status.includes('INASIST'))return 'danger';
+  if(status.includes('REALIZ')||status.includes('COMPLET'))return 'success';
+  return 'accent';
+ }
+ historyIcon(event:EventoResponse):string {
+  const action=(event.accion||'').toUpperCase();
+  if(action.includes('APROB'))return 'ti-circle-check';
+  if(action.includes('RECHAZ')||action.includes('BAJA')||action.includes('NO_INTERES'))return 'ti-circle-x';
+  if(action.includes('INASIST'))return 'ti-user-off';
+  if(action.includes('ASIST')||action.includes('EVALU'))return 'ti-user-check';
+  if(action.includes('MEET')||action.includes('AGENDAR')||action.includes('REPROGRAM'))return 'ti-calendar-event';
+  if(event.modalidadContacto==='WHATSAPP')return 'ti-brand-whatsapp';
+  if(event.modalidadContacto==='LLAMADA')return 'ti-phone';
+  if(action.includes('ACTUALIZACION'))return 'ti-pencil';
+  return 'ti-history';
+ }
+ historyTone(event:EventoResponse):string {
+  const action=(event.accion||'').toUpperCase();
+  if(action.includes('APROB'))return 'success';
+  if(action.includes('RECHAZ')||action.includes('BAJA')||action.includes('NO_INTERES'))return 'danger';
+  if(action.includes('INASIST'))return 'warning';
+  if(action.includes('MEET')||action.includes('AGENDAR')||action.includes('REPROGRAM'))return 'accent';
+  return 'neutral';
+ }
  label(s:string|null|undefined):string {
-  const labels:Record<string,string>={RECLUTAMIENTO:'Postulación',POSTULANTE:'Por contactar',EN_GESTION:'En gestión',SIN_CONTACTO:'Sin contacto',NO_INTERESADO:'No interesado',EN_PROCESO:'En proceso',WHATSAPP:'WhatsApp',MEET:'Meet',APTO_PARA_CAPACITACION:'Apto para capacitación'};
+  const labels:Record<string,string>={RECLUTAMIENTO:'Postulación',POSTULANTE:'Por contactar',EN_GESTION:'En gestión',SIN_CONTACTO:'Sin contacto',NO_INTERESADO:'No interesado',EN_PROCESO:'En proceso',WHATSAPP:'WhatsApp',MEET:'Meet',APTO_PARA_CAPACITACION:'Apto para capacitación',RECLUTADOR:'Reclutador',SUPERVISOR_RECLUTAMIENTO:'Supervisor de Reclutamiento',CAPACITADOR:'Capacitador',RRHH:'RRHH'};
   return !s?'Sin registrar':labels[s]??s.toLowerCase().replace(/_/g,' ').replace(/^./,x=>x.toUpperCase());
  }
  documentTypeLabel(value:string|null|undefined):string {
@@ -378,6 +449,23 @@ export class GestionDrawerComponent implements OnInit {
   this.form.markAsDirty();
   this.error.set('');this.invalidField.set('');
   menu.open=false;
+ }
+ turnoLabel():string {
+  const labels:Record<string,string>={MORNING:'Mañana',AFTERNOON:'Tarde',NIGHT:'Noche'};
+  return labels[this.postulationForm.controls.horario.value]??'Seleccionar turno';
+ }
+ modalidadLabel():string {
+  const labels:Record<string,string>={FULL_TIME:'Tiempo completo',PART_TIME:'Medio tiempo',SEMI_FULL:'Semi full',SUPER_FULL:'Super full'};
+  return labels[this.postulationForm.controls.modalidad.value]??'Seleccionar modalidad';
+ }
+ operationalSelected(control:'horario'|'modalidad',value:string):boolean {
+  return this.postulationForm.controls[control].value===value;
+ }
+ selectHorario(value:string,menu:HTMLDetailsElement):void {
+  this.postulationForm.controls.horario.setValue(value);this.postulationForm.controls.horario.markAsDirty();this.postulationForm.markAsDirty();this.dataError.set('');menu.open=false;
+ }
+ selectModalidad(value:string,menu:HTMLDetailsElement):void {
+  this.postulationForm.controls.modalidad.setValue(value);this.postulationForm.controls.modalidad.markAsDirty();this.postulationForm.markAsDirty();this.dataError.set('');menu.open=false;
  }
  date(value:string|null|undefined):string {
   if(!value)return 'Sin registrar';
